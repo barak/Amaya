@@ -1,0 +1,11 @@
+--- Amaya/configure.in.orig	Wed Jun 16 15:18:00 1999
++++ Amaya/configure.in	Wed Jun 16 15:17:42 1999
+@@ -186,7 +186,7 @@
+ AC_FUNC_MMAP
+ AC_TYPE_SIGNAL
+ AC_FUNC_VPRINTF
+-AC_CHECK_FUNCS(getcwd gethostname gettimeofday getwd mkdir mktime putenv select socket strdup strerror strftime strstr strtod strtol uname lstat strcasecmp strncasecmp strchr)
++AC_CHECK_FUNCS(getcwd gethostname gettimeofday getwd mkdir mktime putenv select socket strdup strerror strftime strstr strtod strtol uname lstat strcasecmp strncasecmp strchr memcpy)
+ 
+ dnl
+ dnl Checking for Motif libraries and includes

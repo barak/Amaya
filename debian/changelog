@@ -1,3 +1,53 @@
+amaya (2.4-1) unstable; urgency=low
+
+  * New upstream version
+  * Split dictionaries into seperate source package
+
+ -- Steve Dunham <dunham@debian.org>  Wed,  5 Jan 2000 13:41:54 -0800
+
+amaya (2.2-1) unstable; urgency=low
+
+  * New upstream version
+
+ -- Steve Dunham <dunham@debian.org>  Mon, 22 Nov 1999 23:21:21 -0800
+
+amaya (2.1-2) unstable; urgency=low
+
+  * Compile against lesstif1
+
+ -- Steve Dunham <dunham@debian.org>  Mon, 18 Oct 1999 13:28:37 -0400
+
+amaya (2.1-1) unstable; urgency=low
+
+  * New upstream version
+
+ -- Steve Dunham <dunham@debian.org>  Sun, 27 Jun 1999 16:24:44 -0400
+
+amaya (2.0a-2) unstable; urgency=low
+
+  * Disable dynamic libjpeg
+
+ -- Steve Dunham <dunham@debian.org>  Fri, 25 Jun 1999 14:37:11 -0400
+
+amaya (2.0a-1) unstable; urgency=low
+
+  * New upstream version (#37580)
+  * Fix manpage (#28825)
+
+ -- Steve Dunham <dunham@debian.org>  Wed, 16 Jun 1999 14:52:01 -0400
+
+amaya (1.4a-1) unstable; urgency=low
+
+  * New Upstream version
+
+ -- Steve Dunham <dunham@debian.org>  Fri, 15 Jan 1999 17:56:03 -0500
+
+amaya (1.3-2) unstable; urgency=low
+
+  * Change configure scripts to define HAVE_MEMCPY, which the source uses.
+
+ -- Steve Dunham <dunham@debian.org>  Sun, 20 Dec 1998 19:41:25 -0500
+
 amaya (1.3-1) unstable; urgency=low
 
   * Switch to Debhelper

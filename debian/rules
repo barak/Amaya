@@ -7,67 +7,85 @@
 #export DH_VERBOSE=1
 
 build: build-stamp
-build-stamp:
+build-stamp: patch-stamp
 	dh_testdir
 
-	-mkdir BUILD
-	cd BUILD && ../configure --prefix=/usr --datadir=/usr/lib
+	-mkdir Amaya/BUILD
+	cd Amaya && autoconf && autoheader
+	cd Amaya/BUILD && ../configure --prefix=/usr --datadir=/usr/lib \
+		`dpkg --print-architecture`-linux
 	# Add here commands to compile the package.
-	cd BUILD && make CFLAGS="-O2 -g -Wall" all amaya
+	cd Amaya/BUILD && make CFLAGS="-O2 -g -Wall" all amaya
 
 	touch build-stamp
+
+patch: patch-stamp
+patch-stamp: source-stamp
+	for i in debian/patches/*; do \
+		patch -p0 -s <$$i; \
+	done
+
+	touch patch-stamp
+
+source: source-stamp
+source-stamp:
+	tar zxf amaya-src-2.4.tar.gz
+	touch source-stamp
 
 clean:
 	dh_testdir
 	dh_testroot
-	rm -f build-stamp
+	rm -f *-stamp
 
-	# Doesn't really clean anything
-
+	-rm -rf Amaya libwww
 
 	dh_clean
 
 # Build architecture-independent files here.
 binary-indep: build
-# We have nothing to do by default.
+	dh_testdir
 
 # Build architecture-dependent files here.
 binary-arch: build
 #	dh_testversion
 	dh_testdir
 	dh_testroot
-	dh_clean -k
-	dh_installdirs
+	dh_clean -k -a
+	dh_installdirs -a
 
 	# Install
-	cd BUILD && $(MAKE) install prefix=$(PWD)/debian/tmp/usr datadir=$(PWD)/debian/tmp/usr/lib
+	cd Amaya/BUILD && $(MAKE) install prefix=`pwd`/../../debian/tmp/usr datadir=`pwd`/../../debian/tmp/usr/lib
 
-	# Doesn't quite work:
+	# Doesn't quite work, so we move some stuff around
+	mv debian/tmp/usr/Amaya debian/tmp/usr/lib
 	-rm debian/tmp/usr/bin/amaya
-	ln -s ../lib/thot/applis/bin/amaya debian/tmp/usr/bin
-	install -m 0644 amaya/AmayaPage.html debian/tmp/usr/lib/thot/amaya
-	install -m 0644 debian/amaya.1 debian/tmp/usr/man/man1
-	dh_installdocs
-	dh_installexamples
-	dh_installmenu
-#	dh_installinit
-#	dh_installcron
+	ln -s ../lib/Amaya/applis/bin/amaya debian/tmp/usr/bin
+	install -m 0644 Amaya/amaya/AmayaPage.html \
+		debian/tmp/usr/lib/Amaya/amaya
+	install -m 0644 debian/amaya.1 debian/tmp/usr/share/man/man1
+	cp Amaya/amaya/*.{en,fr,TRA,STR,PRS,trans,gif,conf} \
+		debian/tmp/usr/lib/Amaya/amaya
+
+	chmod -R o+w debian/tmp/usr/lib/Amaya
+
+	dh_installdocs -a
+	dh_installexamples -a
+	dh_installmenu -a
 #	dh_installmanpages
 #	dh_undocumented
-	dh_installchangelogs
-	dh_strip
-	dh_compress
-	dh_fixperms
-	dh_suidregister
-	dh_installdeb
-	dh_shlibdeps
-	dh_gencontrol
+	dh_installchangelogs -a
+	dh_strip -a
+	dh_compress -a
+	dh_fixperms -a
+	dh_installdeb -a
+	dh_shlibdeps -a
+	dh_gencontrol -a
 #	dh_makeshlibs
-	dh_md5sums
-	dh_builddeb
+	dh_md5sums -a
+	dh_builddeb -a
 
-source diff:                                                                  
-	@echo >&2 'source and diff are obsolete - use dpkg-source -b'; false
+#source diff:                                                                  
+#	@echo >&2 'source and diff are obsolete - use dpkg-source -b'; false
 
 binary: binary-indep binary-arch
 .PHONY: build clean binary-indep binary-arch binary
