@@ -1,0 +1,16 @@
+amaya (1.2-1) unstable; urgency=low
+
+  * Switched to new version
+
+ -- Steve Dunham <dunham@debian.org>  Mon,  9 Feb 1998 23:16:19 -0500
+
+amaya (1.1c-1) unstable; urgency=low
+
+  * Package completely reengineered for 1.1c release.
+
+ -- Steve Dunham <dunham@debian.org>  Tue, 25 Nov 1997 13:44:14 -0500
+
+Local variables:
+mode: debian-changelog
+add-log-mailing-address: "dunham@debian.org"
+End:

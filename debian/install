@@ -1,0 +1,25 @@
+#!/usr/bin/make -f
+#
+#  This installs Amaya into the debian tree
+#
+INSTROOT=debian/tmp
+
+
+AMAYASTUFF=HTML.conf *.gif *.PRS *.TRA *.STR
+CONFIGSTUFF={en,fr}-{amaya,print,lib,trans,corr}dialogue *-amayamsg thot.ini XKeysymDB amaya.keyboard
+
+install:
+	$(checkdir)	
+	
+	install -m 755 BUILD/bin/amaya BUILD/bin/print $(INSTROOT)/usr/lib/thot/LINUX-ELF/bin/
+	cd amaya && install -m 644 $(AMAYASTUFF) ../$(INSTROOT)/usr/lib/thot/amaya/
+	cd config && install -m 644 $(CONFIGSTUFF) ../$(INSTROOT)/usr/lib/thot/config/
+	install -m 644 batch/MachineType $(INSTROOT)/usr/lib/thot/batch
+	cd debian/tmp/usr/lib/thot && tar zxvf ../../../../../extra-1.2.tar.gz
+	ln -sf ../lib/thot/LINUX-ELF/bin/amaya debian/tmp/usr/bin
+
+
+define checkdir
+        test -f debian/rules
+endef
+
