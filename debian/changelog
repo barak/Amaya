@@ -1,3 +1,9 @@
+amaya (2.4-1potato1) unstable; urgency=high
+
+  * SECURITY: zlib double-free patch
+
+ -- Michael Stone <mstone@debian.org>  Sat,  9 Mar 2002 12:51:27 -0500
+
 amaya (2.4-1) unstable; urgency=low
 
   * New upstream version
