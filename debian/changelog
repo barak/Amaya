@@ -1,8 +1,37 @@
-amaya (2.4-1potato1) unstable; urgency=high
+amaya (5.1-1) unstable; urgency=low
 
-  * SECURITY: zlib double-free patch
+  * New upstream source. Closes: #
+  * Tweak rules file to update config.*
 
- -- Michael Stone <mstone@debian.org>  Sat,  9 Mar 2002 12:51:27 -0500
+ -- Steve Dunham <dunham@debian.org>  Wed, 11 Jul 2001 12:17:32 -0700
+
+amaya (4.3.2-1.1) unstable; urgency=low
+  * Non-maintainer upload.
+  * Run libtoolize to get support for new architectures.  Closes: #103548
+
+ -- LaMont Jones <lamont@debian.org>  Mon,  9 Jul 2001 21:39:34 -0600
+
+amaya (4.3.2-1) unstable; urgency=low
+
+  * New upstream version (closes: #91783).
+  * Much belated fixing of manpage (closes: #46322).
+
+ -- Steve Dunham <dunham@debian.org>  Tue, 27 Mar 2001 08:46:48 -0800
+
+amaya (4.2.1-1.1) unstable; urgency=low
+
+  * Bugsquash party NMU.
+  * Added missing build dependencies and fixed bad syntax (closes: #70075).
+  * Added menu hint (closes: #80066).
+
+ -- Colin Watson <cjwatson@debian.org>  Sun, 25 Feb 2001 03:24:23 +0000
+
+amaya (4.2.1-1) unstable woody; urgency=low
+
+  * New upstream vesion
+  * New standards version
+
+ -- Steve Dunham <dunham@tobasco.cse.msu.edu>  Sun, 28 Jan 2001 13:16:10 -0800
 
 amaya (2.4-1) unstable; urgency=low
 

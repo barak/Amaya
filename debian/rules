@@ -1,17 +1,20 @@
 #!/usr/bin/make -f
-# MAde with the aid of dh_make, by Craig Small
+# Made with the aid of dh_make, by Craig Small
 # Sample debian/rules that uses debhelper. GNU copyright 1997 by Joey Hess.
 # Some lines taken from debmake, by Cristoph Lameter.
 
-# Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
+
+SOURCE:=amaya-src-5.1.tgz
 
 build: build-stamp
 build-stamp: patch-stamp
 	dh_testdir
 
 	-mkdir Amaya/BUILD
-	cd Amaya && autoconf && autoheader
+	cd Amaya && \
+		cp /usr/share/misc/config.sub /usr/share/misc/config.guess . \
+		&& autoconf && autoheader
 	cd Amaya/BUILD && ../configure --prefix=/usr --datadir=/usr/lib \
 		`dpkg --print-architecture`-linux
 	# Add here commands to compile the package.
@@ -21,15 +24,18 @@ build-stamp: patch-stamp
 
 patch: patch-stamp
 patch-stamp: source-stamp
+	if [ -d debian/patches ]; then \
 	for i in debian/patches/*; do \
 		patch -p0 -s <$$i; \
-	done
+	done; fi
 
 	touch patch-stamp
 
 source: source-stamp
 source-stamp:
-	tar zxf amaya-src-2.4.tar.gz
+	tar zxf $(SOURCE)
+	cd libwww && libtoolize --force --copy
+	cp /usr/share/misc/config.guess /usr/share/misc/config.sub Amaya
 	touch source-stamp
 
 clean:

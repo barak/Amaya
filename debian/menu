@@ -1,2 +1,2 @@
-?package(amaya):needs=X11 section=Apps/Net\
+?package(amaya):needs=X11 section=Apps/Net hints="Web browsers"\
   title="amaya" command="/usr/bin/amaya"

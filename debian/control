@@ -2,7 +2,8 @@ Source: amaya
 Section: web
 Priority: optional
 Maintainer: Steve Dunham <dunham@debian.org>
-Standards-Version: 2.4.0.0
+Standards-Version: 3.2.1.0
+Build-Depends: lesstif-dev, bison, flex, autoconf, debhelper (>= 2.0.40), libtool
 
 Package: amaya
 Architecture: any
