@@ -1,4 +1,4 @@
-# Makefile.in generated automatically by automake 1.1f from Makefile.am
+# Makefile.in generated automatically by automake 1.0 from Makefile.am
 
 # Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
 # This Makefile.in is free software; the Free Software Foundation
@@ -37,17 +37,8 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 transform = @program_transform_name@
-target_alias = @target_alias@
-build_alias = @build_alias@
-host_triplet = @host@
-target_triplet = @target@
-build_triplet = @build@
-host_alias = @host_alias@
 
 SUFFIXES = .files .def
-
-SRC := $(wildcard *.c)
-MAK := $(wildcard *.mak)
 
 AUTOMAKE_OPTIONS = foreign
 
@@ -67,17 +58,16 @@ EXTRA_DIST = \
 	$(MAK)
 mkinstalldirs = $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = ../../../config.h
-CONFIG_CLEAN_FILES = 
-DIST_COMMON =  README Makefile.am Makefile.in README
+DIST_COMMON = README Makefile.am Makefile.in README
 
 
 PACKAGE = @PACKAGE@
 VERSION = @VERSION@
 
-DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) \
-	$(TEXINFOS) $(INFOS) $(MANS) $(EXTRA_DIST)
-DEP_DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) \
-	$(TEXINFOS) $(INFO_DEPS) $(MANS) $(EXTRA_DIST)
+DISTFILES = $(DIST_COMMON) $(SOURCES) $(BUILT_SOURCES) $(HEADERS) \
+	$(TEXINFOS) $(INFOS) $(MANS) $(EXTRA_DIST) $(DATA)
+DEP_DISTFILES = $(DIST_COMMON) $(SOURCES) $(BUILT_SOURCES) $(HEADERS) \
+	$(TEXINFOS) $(INFO_DEPS) $(MANS) $(EXTRA_DIST) $(DATA)
 
 TAR = tar
 default: all
@@ -86,15 +76,14 @@ default: all
 $(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in
 	cd $(top_srcdir) && automake $(subdir)/Makefile
 
-Makefile: $(top_builddir)/config.status $(srcdir)/Makefile.in
+Makefile: $(top_builddir)/config.status Makefile.in
 	cd $(top_builddir) && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= ./config.status
 tags: TAGS
 TAGS:
 
 
-distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
-
 subdir = Library/src/windows
+distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
 distdir: $(DEP_DISTFILES)
 	@for file in `cd $(srcdir) && echo $(DISTFILES)`; do \
 	  test -f $(distdir)/$$file \
@@ -102,21 +91,23 @@ distdir: $(DEP_DISTFILES)
 	  || cp -p $(srcdir)/$$file $(distdir)/$$file; \
 	done
 info:
+
 dvi:
+
 check: all
+
 installcheck:
+
 install-exec: 
-	$(NORMAL_INSTALL)
 
 install-data: 
-	$(NORMAL_INSTALL)
 
 install: install-exec install-data all
 	@:
 
 uninstall: 
 
-all: $(BUILT_SOURCES) Makefile
+all: Makefile
 
 install-strip:
 	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' install
@@ -131,8 +122,7 @@ clean-generic:
 
 distclean-generic:
 	rm -f Makefile $(DISTCLEANFILES)
-	rm -f config.cache config.log stamp-h
-	test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
+	rm -f config.cache config.log $(CONFIG_HEADER) stamp-h
 
 maintainer-clean-generic:
 	test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
@@ -154,12 +144,15 @@ distclean-generic clean-generic maintainer-clean-generic clean \
 mostlyclean distclean maintainer-clean
 
 
+SRC := $(wildcard *.c)
+MAK := $(wildcard *.mak)
+
 def:  maintainer-clean-generic $(BUILT_SOURCES)
 
 .files.def:
 	$(top_srcdir)/config/makedefs.pl -headerEXPORTS -d.. @$(srcdir)/$(*F).files > $(srcdir)/$(*F).def
 .SUFFIXES:
-.SUFFIXES: .files .def
+.SUFFIXES: $(SUFFIXES)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

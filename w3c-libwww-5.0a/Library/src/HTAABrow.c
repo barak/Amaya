@@ -3,7 +3,7 @@
 **
 **	(c) COPYRIGHT MIT 1995.
 **	Please first read the full copyright statement in the file COPYRIGH.
-**	@(#) $Id: HTAABrow.c,v 1.1.1.1 1996/10/15 13:08:37 cvs Exp $
+**	@(#) $Id: HTAABrow.c,v 1.3 1998/07/09 15:14:46 cvs Exp $
 **
 **	Contains code for parsing challenges and creating credentials for 
 **	basic authentication schemes. See also the HTAAUtil module
@@ -74,10 +74,14 @@ PRIVATE char * make_template (const char * docname)
 	char * slash = strrchr(path, '/');
 	if (slash) {
 	    if (*(slash+1)) {		
-		strcpy(slash, "*");
+		strcpy(slash+1, "*");
 		StrAllocCat(host, path);
 	    } else
-		StrAllocCat(host, "/*");
+	      /* JK: fixing a bug */
+	      {
+		StrAllocCat(host, path);
+		StrAllocCat(host, "*");
+	      }
 	}
 	HT_FREE(path);
 	tmplate = host;
@@ -142,6 +146,28 @@ PUBLIC int HTBasic_delete (void * context)
     }
     return NO;
 }
+
+/*	HTBasic_copy
+**	--------------
+**	Copies a "basic" information object into a new object
+*/
+
+PUBLIC void * HTBasic_copy (void *context)
+{
+ HTBasic *source = (HTBasic *) context;
+ HTBasic *dest = NULL;
+
+ if (source) {
+   dest = HTBasic_new ();
+   StrAllocCopy (dest->uid, source->uid);
+   StrAllocCopy (dest->pw, source->pw);
+   dest->retry = source->retry;
+   dest->proxy = source->proxy;
+ }
+
+ return (void *) dest;
+}
+
 
 /*
 **	Make basic authentication scheme credentials and register this
@@ -376,6 +402,30 @@ PUBLIC int HTDigest_delete (void * context)
     return NO;
 }
 
+/*	HTDigest_copy
+**	--------------
+**	Copies a "digest" information object into a new object
+*/
+
+PUBLIC HTDigest * HTDigest_copy (void *context)
+{
+ HTDigest *source = (HTDigest *) context;
+ HTDigest *dest = NULL;
+
+ if (source) {
+   dest = HTDigest_new ();
+   StrAllocCopy (dest->uid, source->uid);
+   StrAllocCopy (dest->pw, source->pw);
+   StrAllocCopy (dest->nounce, source->nounce);
+   StrAllocCopy (dest->opaque, source->opaque);
+   dest->retry = source->retry;
+   dest->proxy = source->proxy;
+   dest->references = 0;
+ }
+
+ return dest;
+}
+
 /*
 **	Make digest authentication scheme credentials and register this
 **	information in the request object as credentials. They will then
@@ -595,4 +645,14 @@ PUBLIC int HTDigest_parse (HTRequest * request, HTResponse * response,
     if (AUTH_TRACE) HTTrace("Auth........ No challenges found\n");
     return HT_ERROR;
 }
+
+
+
+
+
+
+
+
+
+
 

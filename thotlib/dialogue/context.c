@@ -44,6 +44,8 @@ static ThotColorStruct cwhite;
 #include "registry_f.h"
 
 #ifdef _WINDOWS
+#include "win_f.h"
+
 static int palSize ;
 int nbPalEntries;
 PALETTEENTRY palEntries[256];
@@ -70,9 +72,10 @@ ThotGC              WinCreateGC (void)
  *   Full description of Device Context Attributes : Petzolt p 102
  ----------------------------------------------------------------------*/
 #ifdef __STDC__
-void WinLoadGC (int fg, int RO)
+void WinLoadGC (HDC hDC, int fg, int RO)
 #else  /* __STDC__ */
-void WinLoadGC (fg, RO)
+void WinLoadGC (hDC, fg, RO)
+HDC hDC;
 int fg;
 int RO;
 #endif /* __STDC__ */
@@ -87,37 +90,19 @@ int RO;
 
    if (TtLineGC.capabilities & THOT_GC_FOREGROUND)
       if (RO && fg == 1)
-         SetTextColor (TtDisplay, Pix_Color[RO_Color]);
+         SetTextColor (hDC, Pix_Color[RO_Color]);
       else         
-         SetTextColor (TtDisplay, Pix_Color[fg]);
+         SetTextColor (hDC, Pix_Color[fg]);
 
    if (TtLineGC.capabilities & THOT_GC_BACKGROUND) {
-      SetBkMode (TtDisplay, OPAQUE);
-      SetBkColor (TtDisplay, TtLineGC.background);
+      SetBkMode (hDC, OPAQUE);
+      SetBkColor (hDC, TtLineGC.background);
    } else 
-         SetBkMode (TtDisplay, TRANSPARENT);
+         SetBkMode (hDC, TRANSPARENT);
 /*
    if (TtLineGC.capabilities & THOT_GC_FUNCTION)
       SetROP2 (TtDisplay, TtLineGC.mode);
 	  */
-}
-
-/*----------------------------------------------------------------------
- *      WinUnloadGC has to be called after using an GC X-Windows
- *         emulation under MS-Windows.
- ----------------------------------------------------------------------*/
-#ifdef __STDC__
-void WinUnloadGC (void)
-#else  /* __STDC__ */
-void WinUnloadGC ()
-#endif /* __STDC__ */
-{
-	/*
-    if (TtLineGC.pen) {
-       DeleteObject (TtLineGC.pen);
-       TtLineGC.pen = 0;
-    }
-	*/
 }
 
 /*----------------------------------------------------------------------
@@ -135,10 +120,6 @@ void WinInitColors ()
 
    if (initialized)
       return;
-
-#  ifdef _WIN_DEBUG
-   fprintf (stderr, "WinInitColors\n");
-#  endif /* _WIN_DEBUG */
 
    WIN_GetDeviceContext (-1);
 
@@ -177,7 +158,7 @@ void WinInitColors ()
           SelectPalette (TtDisplay, TtCmap, FALSE);
           nbPalEntries = RealizePalette (TtDisplay);
           if (nbPalEntries == 0)
-             WinErrorBox ();
+             WinErrorBox (WIN_Main_Wd);
    }
    *********************************************************************************/
 
@@ -669,7 +650,8 @@ static void InitGraphicContexts ()
    */
    /* !!!! WIN_LastBitmap created by pix = CreatePattern(...); */
    /* TtBlackGC.brush = CreatePatternBrush(WIN_LastBitmap); */
-   DeleteObject (WIN_LastBitmap);
+   if (WIN_LastBitmap && !DeleteObject (WIN_LastBitmap))
+      WinErrorBox (WIN_Main_Wd);
    WIN_LastBitmap = 0;
 #  endif
 }
@@ -695,8 +677,6 @@ int                 dy;
    TtWDepth = GetDeviceCaps (hdc, PLANES);
    if (TtWDepth == 1)
       TtWDepth = GetDeviceCaps (hdc, BITSPIXEL);
-
-   ReleaseDC (WIN_Main_Wd, hdc);
 #  endif /* _WINDOWS */
 
 #  ifndef _WINDOWS
@@ -712,7 +692,13 @@ int                 dy;
    InitColors (name);
    InitGraphicContexts ();
    InitCurs ();
+
+#  ifdef _WINDOWS 
+   WIN_InitDialogueFonts (hdc, name);
+   DeleteDC (hdc);
+#  else /* !_WINDOWS */
    InitDialogueFonts (name);
+#endif /* _WINDOWS */
 
    /* Initialization of Picture Drivers */
    InitPictureHandlers (FALSE);

@@ -46,13 +46,14 @@ DEFAULT PROTOCOL MODULES
  */
 #include "WWWHTTP.h"
 #include "WWWFile.h"
+#if 0
 #include "WWWFTP.h"
 #include "WWWGophe.h"
 #include "WWWTelnt.h"
 #include "WWWNews.h"
-
 #ifdef HT_DIRECT_WAIS
 #include "WWWWAIS.h"
+#endif
 #endif
 
 #define HTAccessInit    HTProtocolInit
@@ -208,6 +209,6 @@ extern void HTIconInit (const char * url_prefix);
    
    ___________________________________
    
-                            @(#) $Id: HTInit.h,v 1.1.1.1 1996/10/15 13:08:40 cvs Exp $
+                            @(#) $Id: HTInit.h,v 1.3 1998/03/11 18:42:22 cvs Exp $
                                                                                           
     */

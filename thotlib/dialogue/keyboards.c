@@ -394,6 +394,14 @@ static ITEM         Items_Graph[] =
 #include "textcommands_f.h"
 #include "windowdisplay_f.h"
 
+#ifdef _WINDOWS
+#ifdef __STDC__
+extern void CreateGreekKeyboardDlgWindow (HWND);
+#else /* __STDC__ */
+extern void CreateGreekKeyboardDlgWindow ();
+#endif /* __STDC__ */
+#endif /* _WINDOWS */
+
 /*----------------------------------------------------------------------
    WChar
    displays character ch at position <x,y> of window w using the character
@@ -707,7 +715,7 @@ int                 nbitem;
 	for (i = 0; i < nbitem; i++, it++)
 	  {
 	     string[0] = it->name;
-	     string[1] = '\0';
+	     string[1] = EOS;
 	     w = XmCreatePushButton (row, string, args, n);
 	     XtManageChild (w);
 	     XtAddCallback (w, XmNactivateCallback, (XtCallbackProc) KbdCallbackHandler, (XtPointer) (param + (int) (it->value)));
@@ -955,7 +963,7 @@ View                view;
    TtaSetCurrentKeyboard (2);
 }
 
-
+#ifndef _WIN_PRINT
 /*----------------------------------------------------------------------
    TtcDisplayGreekKeyboard
    displays the greek keyboard 
@@ -978,3 +986,4 @@ View                view;
    CreateGreekKeyboardDlgWindow (NULL);
 #  endif /* _WINDOWS */
 }
+#endif /* _WIN_PRINT */

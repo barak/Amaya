@@ -6,24 +6,33 @@
 #ifndef __CEXTRACT__
 #ifdef __STDC__
 
+extern void SetBoundingBox ( int xMin,
+                             int xMax,
+                             int *xOrg,
+                             int yMin,
+                             int yMax,
+                             int *yOrg,
+                             PtrBox pBox,
+                             int nbPoints );
 extern int PolyLineCreation ( int frame,
-                              int x,
-                              int y,
-                              PtrTextBuffer Pbuffer,
-                              PtrTextBuffer Bbuffer );
+                              int *xOrg,
+                              int *yOrg,
+                              PtrBox pBox,
+                              PtrAbstractBox draw,
+                              int maxPoints );
 extern void PolyLineModification ( int frame,
-                                   int x,
-                                   int y,
-                                   PtrTextBuffer Pbuffer,
-                                   PtrTextBuffer Bbuffer,
+                                   int *xOrg,
+                                   int *yOrg,
+                                   PtrBox pBox,
+                                   PtrAbstractBox draw,
                                    int nbpoints,
                                    int point,
                                    boolean close );
 extern int PolyLineExtension ( int frame,
-                               int x,
-                               int y,
-                               PtrTextBuffer Pbuffer,
-                               PtrTextBuffer Bbuffer,
+                               int *xOrg,
+                               int *yOrg,
+                               PtrBox pBox,
+                               PtrAbstractBox draw,
                                int nbpoints,
                                int point,
                                boolean close );
@@ -41,7 +50,9 @@ extern void UserGeometryCreate ( int frame,
                                  int PosX,
                                  int PosY,
                                  int DimX,
-                                 int DimY );
+                                 int DimY,
+                                 int percentW,
+                                 int percentH );
 extern void UserGeometryMove ( int frame,
                                int *x,
                                int *y,
@@ -67,28 +78,39 @@ extern void UserGeometryResize ( int frame,
                                  int ymin,
                                  int ymax,
                                  int xm,
-                                 int ym );
+                                 int ym,
+                                 int percentW,
+                                 int percentH );
 
 #else /* __STDC__ */
 
+extern void SetBoundingBox (/* int xMin,
+                               int xMax,
+                               int *xOrg,
+                               int yMin,
+                               int yMax,
+                               int *yOrg,
+                               PtrBox pBox,
+                               int nbPoints */);
 extern int PolyLineCreation (/* int frame,
-                                int x,
-                                int y,
-                                PtrTextBuffer Pbuffer,
-                                PtrTextBuffer Bbuffer */);
+                                int *xOrg,
+                                int *yOrg,
+                                PtrBox pBox,
+                                PtrAbstractBox draw,
+                                int maxPoints */);
 extern void PolyLineModification (/* int frame,
-                                     int x,
-                                     int y,
-                                     PtrTextBuffer Pbuffer,
-                                     PtrTextBuffer Bbuffer,
+                                     int *xOrg,
+                                     int *yOrg,
+                                     PtrBox pBox,
+                                     PtrAbstractBox draw,
                                      int nbpoints,
                                      int point,
                                      boolean close */);
 extern int PolyLineExtension (/* int frame,
-                                 int x,
-                                 int y,
-                                 PtrTextBuffer Pbuffer,
-                                 PtrTextBuffer Bbuffer,
+                                 int *xOrg,
+                                 int *yOrg,
+                                 PtrBox pBox,
+                                 PtrAbstractBox draw,
                                  int nbpoints,
                                  int point,
                                  boolean close */);
@@ -106,7 +128,9 @@ extern void UserGeometryCreate (/* int frame,
                                    int PosX,
                                    int PosY,
                                    int DimX,
-                                   int DimY */);
+                                   int DimY,
+                                   int percentW,
+                                   int percentH */);
 extern void UserGeometryMove (/* int frame,
                                  int *x,
                                  int *y,
@@ -132,7 +156,9 @@ extern void UserGeometryResize (/* int frame,
                                    int ymin,
                                    int ymax,
                                    int xm,
-                                   int ym */);
+                                   int ym,
+                                   int percentW,
+                                   int percentH */);
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

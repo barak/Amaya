@@ -72,15 +72,15 @@ char               *pBuffer;
    int                 uniteid, dixid, centid;
    int                 i = 0, j = 0, k;
 
-   while (pBuffer[i] != '\0')
+   while (pBuffer[i] != EOS)
      {
 	/* On lit jusqu'au premier backslash rencontre */
-	while ((pBuffer[i] != '\\') && (pBuffer[i] != '\0'))
+	while ((pBuffer[i] != '\\') && (pBuffer[i] != EOS))
 	   result[j++] = pBuffer[i++];
 
 	/* Teste si on est en presence de deux backslashs ou */
 	/* si on se trouve devant un caractere special */
-	if (pBuffer[i] != '\0')
+	if (pBuffer[i] != EOS)
 	   if (pBuffer[i + 1] == '\\')
 	     {
 		/* On est dans le cas de deux backslashs consecutifs; on les prend */
@@ -101,10 +101,10 @@ char               *pBuffer;
 		k = 0;
 		while ((pBuffer[i] >= '0')
 		       && (pBuffer[i] <= '9')
-		       && (pBuffer[i] != '\0')
+		       && (pBuffer[i] != EOS)
 		       && (k <= 2))
 		   nombre[k++] = pBuffer[i++];
-		nombre[k] = '\0';
+		nombre[k] = EOS;
 
 		switch (strlen (nombre))
 		      {
@@ -129,7 +129,7 @@ char               *pBuffer;
 		      }
 	     }
      }
-   result[j] = '\0';
+   result[j] = EOS;
    return (result);
 }
 
@@ -176,8 +176,7 @@ int                 msgNumber;
 	/* Alloue une nouvelle table */
 	currenttable = (PtrTabMsg) TtaGetMemory (sizeof (struct _TabMsg));
 
-	currenttable->TabMessages = (char **)
-	   TtaGetMemory (sizeof (char *) * msgNumber);
+	currenttable->TabMessages = (char **) TtaGetMemory (sizeof (char *) * msgNumber);
 
 	currenttable->TabNext = NULL;
 	currenttable->TabLength = msgNumber;
@@ -211,6 +210,27 @@ int                 msgNumber;
      }
    return (origineid);
 }
+
+
+/*----------------------------------------------------------------------
+  FreeAllMessages
+  ----------------------------------------------------------------------*/
+void              FreeAllMessages ()
+{
+   int                 i;
+   PtrTabMsg           currenttable;
+
+   while (FirstTableMsg != NULL)
+     {
+       currenttable = FirstTableMsg;
+       FirstTableMsg = FirstTableMsg->TabNext;
+       for (i = 0; i < currenttable->TabLength; i++)
+	 TtaFreeMemory (currenttable->TabMessages[i]);
+       TtaFreeMemory (currenttable->TabMessages);
+       TtaFreeMemory (currenttable);
+     }
+}
+
 
 /*----------------------------------------------------------------------
    TtaGetMessage retourne le message correspondant a` l'origine et 
@@ -264,6 +284,7 @@ char               *fmt;
 
 #endif /* __STDC__ */
 {
+#ifndef _WINDOWS
    va_list             pa;
    int                 i, lg, vald;
    char               *vals, *p;
@@ -322,12 +343,13 @@ char               *fmt;
 	       }
 	  }
 	/* Display the final message */
-	pBuffer[i] = '\0';
+	pBuffer[i] = EOS;
 	if (msgType == CONFIRM)
 	   DisplayConfirmMessage (pBuffer);
 	else
 	   DisplayMessage (pBuffer, msgType);
      }
+#endif /* _WINDOWS */
 }
 
 
@@ -344,7 +366,9 @@ int                 number;
 
 #endif /* __STDC__ */
 {
+#ifndef _WINDOWS
    TtaDisplayMessage (msgType, TtaGetMessage (origin, number));
+#endif /* _WINDOWS */
 }
 
 
@@ -360,8 +384,10 @@ char               *code;
 
 #endif /* __STDC__ */
 {
+#ifndef _WINDOWS
    char                pBuffer[THOT_MAX_CHAR];
 
    strncpy (pBuffer, code, THOT_MAX_CHAR);
    TtaDisplayMessage (INFO, TtaGetMessage (LIB, TMSG_ERR_PIV), pBuffer);
+#endif /* _WINDOWS */
 }

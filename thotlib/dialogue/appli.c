@@ -12,8 +12,8 @@
  * French, but their translation is in progress and the full module
  * will be available in English in the next release.
  * 
- */
- 
+ */ 
+  
 /*
  * Handle application frames
  *
@@ -40,18 +40,21 @@
 
 #define MAX_ARGS 20
 
-/* Declarations des variables */
 #undef THOT_EXPORT
 #define THOT_EXPORT extern
+
+#ifndef _WINDOWS
+static XmString  null_string;
+#endif
+static char         OldMsgSelect[MAX_TXT_LEN];
+static PtrDocument  OldDocMsgSelect;
+
+
 #include "boxes_tv.h"
 #include "font_tv.h"
 #include "edit_tv.h"
 #include "frame_tv.h"
 #include "appdialogue_tv.h"
-
-#ifndef _WINDOWS
-static XmString     null_string;
-#endif
 
 #ifdef _WINDOWS
 #define URL_TXTZONE     0
@@ -90,18 +93,27 @@ static XmString     null_string;
 #define ToolBar_AddString(hwnd, hinst, idString) \
     (int)SendMessage((hwnd), TB_ADDSTRING, (WPARAM)(HINSTANCE)hinst, (LPARAM)idString)
 
-extern HWND      hwndClient ;
-extern HWND      ToolBar    ;
-extern HWND      StatusBar  ;
+#define ToolTip_AddTool(hwnd, lpti) \
+    (BOOL)SendMessage((hwnd), TTM_ADDTOOL, 0, (LPARAM) (LPTOOLINFO) lpti)
+
+extern HWND      hwndClient;
+extern HWND      ToolBar;
+extern HWND      logoFrame;
+extern HWND      StatusBar;
 extern HWND      currentWindow;
 extern HWND      WIN_curWin;
-extern HINSTANCE hInstance  ;
-/* extern BOOL      WIN_UserGeometry;  */
+extern HINSTANCE hInstance;
+extern int       ReturnOption;
 #ifndef _WIN_PRINT
-extern int       Window_Curs;
+extern int  Window_Curs;
+#if 0
+HBITMAP     appLogo = (HBITMAP)0;
+int         cyLogo;
+int         bmpID;
+#endif /* 0 */
 #endif /* !_WIN_PRINT */
 
-static HWND      hwndHead   ;
+static HWND      hwndHead;
 static char*     txtZoneLabel;
 static BOOL      paletteRealized = FALSE;
 
@@ -111,24 +123,27 @@ static char      doc_title [500];
 static int       oldXPos;
 static int       oldYPos;
 static int       oldSPos = 0;
+static int       latestFrame = -1;
 
 int         X_Pos;
 int         Y_Pos;
-int         cyToolBar ;
-int         CommandToString [MAX_BUTTON];
+int         cyToolBar;
+int         CommandToString [MAX_FRAME][MAX_BUTTON];
 char        szTbStrings [4096];
-/* HRGN        hrgn; */
+BOOL        buttonCommand;
 
 boolean viewClosed = FALSE;
-#ifdef AMAYA_TOOLTIPS
+#ifdef THOT_TOOLTIPS
 DWORD       dwToolBarStyles   = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | CCS_TOP | TBSTYLE_TOOLTIPS;
-#else  /* !AMAYA_TOOLTIPS */
+#else  /* !THOT_TOOLTIPS */
 DWORD       dwToolBarStyles   = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | CCS_TOP;
-#endif /* AMAYA_TOOLTIPS */
+#endif /* THOT_TOOLTIPS */
 DWORD       dwStatusBarStyles = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | CCS_BOTTOM | SBARS_SIZEGRIP;
 TBADDBITMAP ThotTBBitmap;
 
-#ifdef AMAYA_TOOLTIPS
+#include "win_f.h"
+
+#ifdef THOT_TOOLTIPS
 #ifdef __STDC__
 BOOL InitToolTip (HWND hwndToolBar)
 #else  /* __STDC__ */
@@ -145,14 +160,24 @@ HWND hwndToolBar;
    if (hwndTT == NULL) 
       return FALSE ;
 
+   ZeroMemory (&ti, sizeof (TOOLINFO));
+   ti.cbSize   = sizeof (TOOLINFO);
+   ti.uFlags   = TTF_IDISHWND | TTF_CENTERTIP | TTF_SUBCLASS;
+   ti.hwnd     = hwndToolBar;
+   ti.uId      = 0;
+   ti.lpszText = LPSTR_TEXTCALLBACK;
+   bSuccess = ToolTip_AddTool (hwndTT, &ti);
+   if (!bSuccess)
+      return FALSE;
 
    return bSuccess ;
 }
 
 #ifdef __STDC__
-static void CopyToolTipText (LPTOOLTIPTEXT lpttt)
+static void CopyToolTipText (int frame, LPTOOLTIPTEXT lpttt)
 #else  /* __STDC__ */
-static void CopyToolTipText (lpttt)
+static void CopyToolTipText (frame, lpttt)
+int           frame;
 LPTOOLTIPTEXT lpttt;
 #endif /* __STDC__ */
 {
@@ -164,8 +189,8 @@ LPTOOLTIPTEXT lpttt;
    LPSTR pDest = lpttt->lpszText ;
 
    /* Map command ID to string index */
-   for (i = 0 ; CommandToString[i] != -1 ; i++) {
-       if (CommandToString[i] == iButton) {
+   for (i = 0 ; CommandToString[frame][i] != -1 ; i++) {
+       if (CommandToString[frame][i] == iButton) {
           iButton = i ;
           break ;
        }
@@ -174,7 +199,7 @@ LPTOOLTIPTEXT lpttt;
    /* To be safe, count number of strings in text */
    pString = &szTbStrings [0] ;
    cMax = 0 ;
-   while (*pString != '\0') {
+   while (*pString != EOS) {
          cMax++ ;
          cb = lstrlen (pString) ;
          pString += (cb + 1) ;
@@ -194,7 +219,7 @@ LPTOOLTIPTEXT lpttt;
 
    lstrcpy (pDest, pString) ;
 }
-#endif /* AMAYA_TOOLTIPS */
+#endif /* THOT_TOOLTIPS */
 #endif /* _WINDOWS */
 
 #include "absboxes_f.h"
@@ -350,7 +375,7 @@ void               *ev;
    if (frame > 0 && frame <= MAX_FRAME)
      {
 	/* ne pas traiter si le document est en mode NoComputedDisplay */
-	if (documentDisplayMode[FrameTable[frame].FrDoc - 1] != NoComputedDisplay)
+	if (documentDisplayMode[FrameTable[frame].FrDoc - 1] == DisplayImmediately)
 	  {
 	     DefRegion (frame, x, y, x + l, y + h);
 	     SwitchSelection (frame, FALSE);
@@ -475,80 +500,64 @@ int                 reason;
 int                 value;
 #endif /* __STDC__ */
 {
-   int        delta;
-   int        sMin, sMax, sPos, total;
-   int        y, n, start, end, h;
-   float      carparpix;
+   int        delta, Xpos, Ypos, width, height;
+   int        sPos, nbPages, remaining;
 
    /* do not redraw it if in NoComputedDisplay mode */
    if (documentDisplayMode[FrameTable[frame].FrDoc - 1] == NoComputedDisplay)
       return;
 
    switch (reason) {
-	  case SB_TOP:
-	       JumpIntoView (frame, 0);
-	       break;
+          case SB_TOP:
+               JumpIntoView (frame, 0);
+               break;
 
           case SB_BOTTOM:
-	       JumpIntoView (frame, 100);
+               JumpIntoView (frame, 100);
                break;
 
           case SB_LINEUP:
-	       delta = -15;
-	       VerticalScroll (frame, delta, TRUE);
-	       break;
+               delta = -13;
+               VerticalScroll (frame, delta, TRUE);
+               break;
 
           case SB_LINEDOWN:
-	       delta = 15;
-	       VerticalScroll (frame, delta, TRUE);
-	       break;
+               delta = 13;
+               VerticalScroll (frame, delta, TRUE);
+               break;
 
           case SB_PAGEUP:
-	       delta = -FrameTable[frame].FrHeight;
-	       VerticalScroll (frame, delta, TRUE);
-	       break;
+               delta = -FrameTable[frame].FrHeight;
+               VerticalScroll (frame, delta, TRUE);
+               break;
 
           case SB_PAGEDOWN:
-	       delta = FrameTable[frame].FrHeight;
-	       VerticalScroll (frame, delta, TRUE);
-	       break;
+               delta = FrameTable[frame].FrHeight;
+               VerticalScroll (frame, delta, TRUE);
+               break;
 
-	  case SB_THUMBPOSITION:
-           GetScrollRange (FrameTable[frame].WdScrollV, SB_CTL, &sMin, &sMax);
-		   sPos = GetScrollPos (FrameTable[frame].WdScrollV, SB_CTL);
-		   /*if (value >= oldSPos)
-              delta = oldSPos + (value - oldSPos);
-		   else */
-               delta = value - sPos;
-		   VerticalScroll (frame, delta, TRUE);
-		   oldSPos = value;
-		  /*
-		   sPos = GetScrollPos (FrameTable[frame].WdScrollV, SB_CTL);
-           value = (value * 100) / (sMax - sMin);
-	       JumpIntoView (frame, value);
-		   */
-	       break;
+          case SB_ENDSCROLL:
+               break;
 
-	  case SB_THUMBTRACK:
-		  /*
-           PositionAbsBox (frame, &sMin, &sMax, &total);
-		   */
-           GetScrollRange (FrameTable[frame].WdScrollV, SB_CTL, &sMin, &sMax);
-		   sPos = GetScrollPos (FrameTable[frame].WdScrollV, SB_CTL);
-		   /*if (value >= oldSPos)
-              delta = oldSPos + (value - oldSPos);
-		   else*/ 
+          case SB_THUMBPOSITION:
+          case SB_THUMBTRACK:
+               ComputeDisplayedChars (frame, &Xpos, &Ypos, &width, &height);
+               sPos = GetScrollPos (FrameTable[frame].WdScrollV, SB_CTL);
                delta = value - sPos;
-		   VerticalScroll (frame, delta, TRUE);
-		   oldSPos = value;
-           /*value = (value * 100) / (sMax - sMin);
-	       JumpIntoView (frame, value);*/
-	       break;
+               nbPages = abs (delta) / height;
+               remaining = abs (delta) - (height * nbPages);
+			   if (nbPages <= 3) {
+                  if (delta > 0)
+                      delta = nbPages * FrameTable[frame].FrHeight + (int) ((remaining * FrameTable[frame].FrHeight) / height);
+                  else 
+                      delta = -(nbPages * FrameTable[frame].FrHeight + (int) ((remaining * FrameTable[frame].FrHeight) / height));
+                  VerticalScroll (frame, delta, TRUE);
+			   } else {
+                     delta = (int) (((float)value / (float)FrameTable[frame].FrHeight) * 100) ;
+                     JumpIntoView (frame, delta);
+               }
+               break;
    }
-
-   /* get some information on the position of the displayed part
-    * for this document. */
-    /* UpdateScrollbars (frame); */
 }
 
 /*----------------------------------------------------------------------
@@ -785,9 +794,73 @@ int                *param;
 	notifyDoc.horizontalValue = 0;
 	CallEventType ((NotifyEvent *) & notifyDoc, FALSE);
      }
-}				/*FrameVScrolled */
-
+}/*FrameVScrolled */
 #endif /* !_WINDOWS */
+
+/*----------------------------------------------------------------------
+   LineUp scrolls one line up.                                    
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
+void                TtcLineUp (Document document, View view)
+#else  /* __STDC__ */
+void                TtcLineUp (document, view)
+Document            document;
+View                view;
+
+#endif /* __STDC__ */
+{
+   int                 frame;
+#  ifndef _WINDOWS
+   XmScrollBarCallbackStruct infos;
+#  else   /* _WINDOWS */
+   int delta;
+#  endif  /* _WINDOWS */
+
+   if (document != 0)
+      frame = GetWindowNumber (document, view);
+   else
+     frame = 0;
+#  ifndef _WINDOWS
+   infos.reason = XmCR_DECREMENT;
+   FrameVScrolled (0, frame, (int *) &infos);
+#  else  /* _WINDOWS */
+   delta = -13;
+   VerticalScroll (frame, delta, TRUE);
+#  endif /* _WINDOWS */
+}
+
+/*----------------------------------------------------------------------
+   LineDown scrolls one line down.                                
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
+void                TtcLineDown (Document document, View view)
+#else  /* __STDC__ */
+void                TtcLineDown (document, view)
+Document            document;
+View                view;
+
+#endif /* __STDC__ */
+{
+   int                 frame;
+
+#  ifndef _WINDOWS
+   XmScrollBarCallbackStruct infos;
+#  else   /* _WINDOWS */
+   int delta;
+#  endif  /* !_WINDOWS */
+
+   if (document != 0)
+      frame = GetWindowNumber (document, view);
+   else
+     frame = 0;
+#  ifndef _WINDOWS
+   infos.reason = XmCR_INCREMENT;
+   FrameVScrolled (0, frame, (int *) &infos);
+#  else  /* _WINDOWS */
+   delta = 13;
+   VerticalScroll (frame, delta, TRUE);
+#  endif /* _WINDOWS */
+}
 
 /*----------------------------------------------------------------------
    PageUp scrolls one screen up.                                    
@@ -927,10 +1000,12 @@ void                InitializeOtherThings ()
    ClickX = 0;
    ClickY = 0;
    /* message de selection vide */
-#ifndef _WINDOWS
+#  ifndef _WINDOWS
    null_string = XmStringCreateSimple ("");
-#endif /* _WINDOWS */
-}				/*InitializeOtherThings */
+#  endif /* _WINDOWS */
+   OldMsgSelect[0] = EOS;
+   OldDocMsgSelect = NULL;
+}
 
 
 /*----------------------------------------------------------------------
@@ -974,11 +1049,6 @@ Document            document;
 View                view;
 
 #endif /* __STDC__ */
-
-
-
-
-
 {
    int                 frame;
 
@@ -1009,26 +1079,29 @@ View                view;
    la fenetre active.                                            
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
-void                DisplaySelMessage (char *text)
+void                DisplaySelMessage (char *text, PtrDocument pDoc)
 #else  /* __STDC__ */
-void                DisplaySelMessage (text)
+void                DisplaySelMessage (text, pDoc)
 char               *text;
+PtrDocument         pDoc;
 #endif /* __STDC__ */
 {
    int                 doc;
    int                 view;
 
-   if (ActiveFrame != 0)
+   if (ActiveFrame != 0 && (strcmp (OldMsgSelect, text) ||pDoc != OldDocMsgSelect))
      {
-	doc = FrameTable[ActiveFrame].FrDoc;	/* recupere le document concerne */
+	/* recupere le document concerne */
+	doc = FrameTable[ActiveFrame].FrDoc;
 	for (view = 1; view <= MAX_VIEW_DOC; view++)
 	  {
-	  /****frame = LoadedDocument[doc-1]->DocView[view - 1].DvPSchemaView;
-	  if (frame != 0)****/
 	     TtaSetStatus ((Document) doc, view, text, NULL);
 	     if (view < MAX_ASSOC_DOC)
                TtaSetStatus ((Document) doc, view + 100, text, NULL);
 	  }
+	/* sel old message */
+	strncpy (OldMsgSelect, text, MAX_TXT_LEN);
+	OldDocMsgSelect = pDoc;
      }
 }
 
@@ -1057,6 +1130,9 @@ CONST char         *name;
       return;
    else
      {
+       /* clean up old message */
+       OldMsgSelect[0] = EOS;
+
 	frame = GetWindowNumber (document, view);
 	if (frame == 0)
 	  /* try to display in document 1 */
@@ -1116,7 +1192,7 @@ POINT ptEnd;
      /* SelectObject (hdc, GetStockObject (BLACK_PEN)) ; */
      Rectangle (hdc, ptBeg.x, ptBeg.y, ptEnd.x, ptEnd.y) ;
 
-     ReleaseDC (hwnd, hdc) ;
+     DeleteDC (hwnd, hdc) ;
 }
 #endif /* 0 */
 
@@ -1134,186 +1210,235 @@ WPARAM      wParam;
 LPARAM      lParam; 
 #endif /* __STDC__ */
 {
-	HWND  hwndTextEdit;
-    HWND  hwndToolTip ;
-	RECT  rect;
-	int   doc, view ;
-	char* viewName ;
-	int  frame = GetMainFrameNumber (hwnd);
+    HWND   hwndTextEdit;
+#   ifdef  THOT_TOOLTIPS
+    HWND   hwndToolTip ;
+#   endif  /* THOT_TOOLTIPS */
+    RECT   rect;
+    int    doc, view ;
+    char*  viewName ;
+	static HPALETTE hPal;
+	/*
+	HDC    hDC, hMemDC;
+	BITMAP bm;
+	*/
+    RECT   rWindow ;
+    int  frame = GetMainFrameNumber (hwnd);
+    GetWindowRect (hwnd, &rect);
 
-	GetWindowRect (hwnd, &rect);
-
-     switch (mMsg) {
-            case WM_CREATE:
+    switch (mMsg) {
+           case WM_CREATE:
                 /* Create toolbar  */
-                 ThotTBBitmap.hInst = hInstance;
-                 ThotTBBitmap.nID   = IDR_TOOLBAR;
-                 ToolBar = CreateWindow (TOOLBARCLASSNAME, NULL, dwToolBarStyles,
-                                         0, 0, 0, 0, hwnd, (HMENU) 1, hInstance, 0) ;
+                ThotTBBitmap.hInst = hInstance;
+                ThotTBBitmap.nID   = IDR_TOOLBAR;
 
-				 SendMessage (ToolBar, TB_BUTTONSTRUCTSIZE, (WPARAM) sizeof (TBBUTTON), 0L);
+                ToolBar = CreateWindow (TOOLBARCLASSNAME, NULL, dwToolBarStyles,
+                                        0, 0, 0, 0, hwnd, (HMENU) 1, hInstance, 0) ;
 
-				 if ((SendMessage (ToolBar, TB_ADDBITMAP, (WPARAM) MAX_BUTTON, (LPARAM) (LPTBADDBITMAP) &ThotTBBitmap)) == -1)
-                    WinErrorBox (NULL);
+                SendMessage (ToolBar, TB_BUTTONSTRUCTSIZE, (WPARAM) sizeof (TBBUTTON), 0L);
 
-#                ifdef AMAYA_TOOLTIPS
-                 ToolBar_AddString (ToolBar, 0, &szTbStrings [0]);
-                 hwndToolTip = ToolBar_GetToolTips (ToolBar);
+                if ((SendMessage (ToolBar, TB_ADDBITMAP, (WPARAM) MAX_BUTTON, (LPARAM) (LPTBADDBITMAP) &ThotTBBitmap)) == -1)
+                   WinErrorBox (NULL);
+
+#               ifdef THOT_TOOLTIPS
+                /* ToolBar_AddString (ToolBar, 0, &szTbStrings [0]); */
+                hwndToolTip = ToolBar_GetToolTips (ToolBar);
 				 
-                 if (dwToolBarStyles & TBSTYLE_TOOLTIPS)
-                    InitToolTip (ToolBar) ;	
-#                endif /* AMAYA_TOOLTIPS */
+                if (dwToolBarStyles & TBSTYLE_TOOLTIPS)
+                   InitToolTip (ToolBar) ;	
+#               endif /* THOT_TOOLTIPS */
 
-                 /* Create status bar  */
-                 StatusBar = CreateStatusWindow (dwStatusBarStyles, "", hwnd, 2) ;
-                 ShowWindow (StatusBar, SW_SHOWNORMAL);
-                 UpdateWindow (StatusBar);
+                /* Create status bar  */
+                StatusBar = CreateStatusWindow (dwStatusBarStyles, "", hwnd, 2) ;
+                ShowWindow (StatusBar, SW_SHOWNORMAL);
+                UpdateWindow (StatusBar);
 
-                 /* Create client window */
-                 hwndClient = CreateWindowEx (WS_EX_CLIENTEDGE, "ClientWndProc", NULL,
-                                              WS_CHILD | WS_VISIBLE | WS_BORDER, 0, 0, 0, 0,
-                                              hwnd, (HMENU) 2, hInstance, NULL) ;
-                 ShowWindow (hwndClient, SW_SHOWNORMAL);
-                 UpdateWindow (hwndClient);
+                /* Create client window */
+                hwndClient = CreateWindowEx (WS_EX_CLIENTEDGE, "ClientWndProc", NULL,
+                                             WS_CHILD | WS_VISIBLE | WS_BORDER, 0, 0, 0, 0,
+                                             hwnd, (HMENU) 2, hInstance, NULL) ;
+                ShowWindow (hwndClient, SW_SHOWNORMAL);
+                UpdateWindow (hwndClient);
 
-                 return 0 ;
+                return 0;
 
-	    case WM_VSCROLL:
-	         WIN_ChangeVScroll (frame, LOWORD (wParam), HIWORD (wParam));
-	         return 0;
+           case WM_PALETTECHANGED: 
+			   if ((HWND) wParam != hwnd) {
+                  HDC hDC = GetDC (hwnd);
+                  SelectPalette (hDC, hPal, 0);
+                  if (RealizePalette (hDC))
+                     UpdateColors (hDC);
+                  ReleaseDC (hwnd, hDC);
+               }
+               return 0;
 
-	    case WM_HSCROLL:
-             WIN_ChangeHScroll (frame, LOWORD (wParam), HIWORD (wParam));
-	         return 0;
+           case WM_VSCROLL:
+                WIN_ChangeVScroll (frame, LOWORD (wParam), HIWORD (wParam));
+                return 0;
 
-		case WM_ENTER:
-			 hwndTextEdit = GetFocus ();
-		     WIN_APP_TextCallback (hwndTextEdit, frame);
-			 return 0;
+           case WM_HSCROLL:
+                WIN_ChangeHScroll (frame, LOWORD (wParam), HIWORD (wParam));
+                return 0;
 
-	    case WM_KEYDOWN:
-                 SendMessage (FrRef [frame], WM_KEYDOWN, wParam, lParam);
-                 return 0;
+           case WM_ENTER:
+                hwndTextEdit = GetFocus ();
+                WIN_APP_TextCallback (hwndTextEdit, frame);
+				SetFocus (FrRef [frame]);
+                return 0;
 
-	    case WM_CHAR:
-                 SendMessage (FrRef [frame], WM_CHAR, wParam, lParam);
-                 return 0;
+           case WM_KEYDOWN:
+                SendMessage (FrRef [frame], WM_KEYDOWN, wParam, lParam);
+                return 0;
 
-#       ifdef AMAYA_TOOLTIPS		 
-        case WM_NOTIFY: {
-             LPNMHDR pnmh = (LPNMHDR) lParam ;
-             int idCtrl = (int) wParam ;
+           case WM_CHAR:
+                SendMessage (FrRef [frame], WM_CHAR, wParam, lParam);
+                return 0;
 
-		     /*Toolbar notifications */
-		     if ((pnmh->code >= TBN_LAST) && (pnmh->code <= TBN_FIRST))
-		        return ToolBarNotify (frame, hwnd, wParam, lParam) ;
+#          ifdef THOT_TOOLTIPS		 
+           case WM_NOTIFY: {
+                LPNMHDR pnmh = (LPNMHDR) lParam ;
+                int idCtrl = (int) wParam ;
+
+                /*Toolbar notifications */
+                if ((pnmh->code >= TBN_LAST) && (pnmh->code <= TBN_FIRST))
+                   return ToolBarNotify (frame, hwnd, wParam, lParam) ;
 		 
-		     /* Fetch tooltip text */
-		     if (pnmh->code == TTN_NEEDTEXT) {
-		        LPTOOLTIPTEXT lpttt = (LPTOOLTIPTEXT) lParam ;
-		        CopyToolTipText (lpttt) ;
-		     }
-		 
-		     return 0 ;
-	    }
-#      	endif /* AMAYA_TOOLTIPS */
+                /* Fetch tooltip text */
+                if (pnmh->code == TTN_NEEDTEXT) {
+                   LPTOOLTIPTEXT lpttt = (LPTOOLTIPTEXT) lParam ;
+                   CopyToolTipText (frame, lpttt) ;
+                }
+                return 0;
+           }
+#          endif /* THOT_TOOLTIPS */
 
-            case WM_COMMAND:
-			     if (LOWORD (wParam) >= TBBUTTONS_BASE)
-					   APP_ButtonCallback (FrameTable[frame].Button[LOWORD (wParam) - TBBUTTONS_BASE], frame, "\n");
-				 else 
-					 WIN_ThotCallBack (hwnd, wParam, lParam);
-	             break;
+           case WM_COMMAND:
+                if (LOWORD (wParam) >= TBBUTTONS_BASE) {
+                   buttonCommand = TRUE;
+                   APP_ButtonCallback (FrameTable[frame].Button[LOWORD (wParam) - TBBUTTONS_BASE], frame, "\n");
+                } else {
+                     buttonCommand = FALSE;
+                     WIN_ThotCallBack (hwnd, wParam, lParam);
+				}
+                return 0;
 
-            case WM_DESTROY:
-				 if (!viewClosed) {
-                    FrameToView (frame, &doc, &view);
-					viewName = TtaGetViewName (doc, view);
-					if (!strcmp (viewName, "Formatted_view"))
-                       TtcCloseDocument (doc, view);
-                    else
-					    TtcCloseView (doc, view);
-                 }
+           case WM_DESTROY:
+                if (!viewClosed) {
+                   FrameToView (frame, &doc, &view);
+                   viewName = TtaGetViewName (doc, view);
+                   if (!strcmp (viewName, "Formatted_view"))
+                      TtcCloseDocument (doc, view);
+                   else
+                       TtcCloseView (doc, view);
+                }
 
-                 viewClosed = FALSE;
-                 PostQuitMessage (0);
-                 break ;
+                viewClosed = FALSE;
+                PostQuitMessage (0);
+                return 0 ;
 
-            case WM_SIZE: {
-                 int   cx = LOWORD (lParam) ;
-                 int   cy = HIWORD (lParam) ;
-                 int   cyStatus ;
-                 int   cxVSB ;
-                 int   cyHSB ;
-                 int   cyTB ;
-                 int   x, y ;
-                 int   index = 0;
-                 int   cyTxtZone ;
-                 DWORD dwStyle ;
-                 RECT  rWindow ;
+           case WM_SIZE: {
+                int    cx = LOWORD (lParam) ;
+                int    cy = HIWORD (lParam) ;
+                int    cyStatus ;
+                int    cxVSB ;
+                int    cyHSB ;
+                int    cyTB ;
+                int    x, y ;
+                int    index = 0;
+                int    cyTxtZone ;
+                DWORD  dwStyle ;
 
-                 /* Adjust toolbar size. */
-                 if (IsWindowVisible (WinToolBar[frame])) {
-                    dwStyle = GetWindowLong (WinToolBar[frame], GWL_STYLE) ;
+#               if 0
+				if (appLogo) 
+                   GetObject (appLogo, sizeof (BITMAP), &bm);
+#               endif /* 0 */
 
-                    if (dwStyle & CCS_NORESIZE)
-                       MoveWindow (WinToolBar[frame], 0, 0, cx, cyToolBar, FALSE) ;
-                    else
-                        ToolBar_AutoSize (WinToolBar[frame]) ;
+                /* Adjust toolbar size. */
+                if (IsWindowVisible (WinToolBar[frame])) {
+                   dwStyle = GetWindowLong (WinToolBar[frame], GWL_STYLE) ;
 
-                    InvalidateRect (WinToolBar[frame], NULL, TRUE) ;
-                    GetWindowRect (WinToolBar[frame], &rWindow) ;
-                    ScreenToClient (hwnd, (LPPOINT) &rWindow.left) ;
-                    ScreenToClient (hwnd, (LPPOINT) &rWindow.right) ;
-                    cyTB = rWindow.bottom - rWindow.top ;
-	         } else 
+                   if (dwStyle & CCS_NORESIZE)
+                      MoveWindow (WinToolBar[frame], 0, 0, cx, cyToolBar, FALSE) ;
+                   else
+                       ToolBar_AutoSize (WinToolBar[frame]) ;
+
+                   InvalidateRect (WinToolBar[frame], NULL, TRUE) ;
+                   GetWindowRect (WinToolBar[frame], &rWindow) ;
+                   ScreenToClient (hwnd, (LPPOINT) &rWindow.left) ;
+                   ScreenToClient (hwnd, (LPPOINT) &rWindow.right) ;
+                   cyTB = rWindow.bottom - rWindow.top ;
+                } else 
                       cyTB = 0 ;
 
-                 cyTxtZone = cyTB ;
+                cyTxtZone = cyTB ;
+				/* cyLogo    = cyTB ; */
 
-                 /* Adjust text zones */
-                 for (index = 0; index < MAX_TEXTZONE; index++) {
-                     if (FrameTable[frame].Text_Zone[index] && IsWindowVisible (FrameTable[frame].Text_Zone[index])) {
-                        MoveWindow (FrameTable[frame].Label[index], 5, cyTxtZone + 5, 100, 20, TRUE);
-                        MoveWindow (FrameTable[frame].Text_Zone[index], 105, cyTxtZone + 5, cx - 120, 20, TRUE) ;
-                        cyTxtZone += 25 ;
-                     }
-		 }
+                /* Adjust text zones */
+                for (index = 0; index < MAX_TEXTZONE; index++) {
+                    if (FrameTable[frame].Text_Zone[index] && IsWindowVisible (FrameTable[frame].Text_Zone[index])) {
+                       MoveWindow (FrameTable[frame].Label[index], 15, cyTxtZone + 5, 70, 20, TRUE);
+                       MoveWindow (FrameTable[frame].Text_Zone[index], 85, cyTxtZone + 5, cx - 100, 20, TRUE) ;
+                       cyTxtZone += 25 ;
+                    }
+                }
+/*
+                if (appLogo) {
+				   hDC = GetDC (FrMainRef [frame]);
+				   hMemDC = CreateCompatibleDC (hDC);
+				   SelectObject (hMemDC, appLogo);
+				   BitBlt (hDC, 1, cyTB, bm.bmWidth, bm.bmHeight, hMemDC, 0, 0, SRCCOPY);
+				   DeleteDC (hMemDC);
+				   DeleteDC (hDC);
+				}*/
 
-                 /* Adjust status bar size. */
-                 if (IsWindowVisible (FrameTable[frame].WdStatus)) {
-                    GetWindowRect (FrameTable[frame].WdStatus, &rWindow) ;
-                    cyStatus = rWindow.bottom - rWindow.top ;
-                    MoveWindow (FrameTable[frame].WdStatus, 0, cy - cyStatus, cx, cyStatus, TRUE) ;
-	         } else
-                       cyStatus = 0 ;
+                /* Adjust status bar size. */
+                if (IsWindowVisible (FrameTable[frame].WdStatus)) {
+                   GetWindowRect (FrameTable[frame].WdStatus, &rWindow) ;
+                   cyStatus = rWindow.bottom - rWindow.top ;
+                   MoveWindow (FrameTable[frame].WdStatus, 0, cy - cyStatus, cx, cyStatus, TRUE) ;
+                } else
+                      cyStatus = 0 ;
 
-		 /* Adjust Vertical scroll bar */
-                 MoveWindow (FrameTable[frame].WdScrollV, cx - 15, cyTxtZone, 15, cy - (cyStatus + cyTxtZone + 15), TRUE) ;
+                /* Adjust Vertical scroll bar */
+                MoveWindow (FrameTable[frame].WdScrollV, cx - 15, cyTxtZone, 15, cy - (cyStatus + cyTxtZone + 15), TRUE) ;
                 
-		 /* Adjust Hoizontal scroll bar */
-                 MoveWindow (FrameTable[frame].WdScrollH, 0, cy - (cyStatus + 15), cx - 15, 15, TRUE) ;
+                /* Adjust Hoizontal scroll bar */
+                MoveWindow (FrameTable[frame].WdScrollH, 0, cy - (cyStatus + 15), cx - 15, 15, TRUE) ;
 
                 /* Adjust client window size. */
-                 GetWindowRect (FrameTable[frame].WdScrollV, &rWindow) ;
-                 cxVSB = rWindow.right - rWindow.left ;
+                GetWindowRect (FrameTable[frame].WdScrollV, &rWindow) ;
+                cxVSB = rWindow.right - rWindow.left ;
 
-                 GetWindowRect (FrameTable[frame].WdScrollH, &rWindow) ;
-                 cyHSB = rWindow.bottom - rWindow.top ;
+                GetWindowRect (FrameTable[frame].WdScrollH, &rWindow) ;
+                cyHSB = rWindow.bottom - rWindow.top ;
 
-                 x = 0 ;
-                 y = cyTxtZone ;
-                 cx = cx - cxVSB ;
-                 cy = cy - (cyStatus + cyTxtZone + cyHSB) ;
-                 MoveWindow (FrRef [frame], x, y, cx, cy, TRUE) ;
+                x = 0 ;
+                y = cyTxtZone ;
+                cx = cx - cxVSB ;
+                cy = cy - (cyStatus + cyTxtZone + cyHSB) ;
+                MoveWindow (FrRef [frame], x, y, cx, cy, TRUE) ;
 
-                 SetScrollRange (FrameTable[frame].WdScrollV, SB_CTL, 0, cy, TRUE);
-                 SetScrollRange (FrameTable[frame].WdScrollH, SB_CTL, 0, cx, TRUE);
-                 return 0;
-	    }
+                SetScrollRange (FrameTable[frame].WdScrollV, SB_CTL, 0, cy, TRUE);
+                SetScrollRange (FrameTable[frame].WdScrollH, SB_CTL, 0, cx, TRUE);
 
-            default:
-                  return (DefWindowProc (hwnd, mMsg, wParam, lParam)) ;
+                return 0;
+           }
+
+           default: 
+#                  if 0
+                   GetWindowRect (WinToolBar[frame], &rWindow) ;
+                   ScreenToClient (hwnd, (LPPOINT) &rWindow.left) ;
+                   ScreenToClient (hwnd, (LPPOINT) &rWindow.right) ;
+                   if ((frame != -1) && appLogo && FrameTable[frame].showLogo) {
+                      hDC = GetDC (FrMainRef [frame]);
+				      hMemDC = CreateCompatibleDC (hDC);
+				      SelectObject (hMemDC, appLogo);
+				      BitBlt (hDC, 1, cyLogo, bm.bmWidth, bm.bmHeight, hMemDC, 0, 0, SRCCOPY);
+				      DeleteDC (hMemDC);
+				      DeleteDC (hDC);
+				   }
+#                  endif /* 0 */
+		    return (DefWindowProc (hwnd, mMsg, wParam, lParam)) ;
      }
 }
 
@@ -1337,9 +1462,18 @@ LPARAM lParam;
 
 	 static POINT ptBegin;
 	 static POINT ptEnd;
+	 static POINT ptCursor;
 	 static BOOL  fBlocking;
 
      frame = GetFrameNumber (hwnd);
+
+#if 0
+	 if (latestFrame != frame) {
+        DeleteDC (TtDisplay) ;
+		TtDisplay = GetDC (hwnd);
+		latestFrame = frame;
+	 }
+#endif /* 0 */
 	 GetWindowRect (hwnd, &rect);
 
      /* do not handle events if the Document is in NoComputedDisplay mode. */
@@ -1415,6 +1549,7 @@ LPARAM lParam;
                  return 0;
 
             case WM_LBUTTONDBLCLK:/* left double click handling */
+				 ReturnOption = -1;
                  TtaAbortShowDialogue ();
 	  
                  /* memorise la position de la souris */
@@ -1435,7 +1570,8 @@ LPARAM lParam;
                  status = GetKeyState (VK_CONTROL);
                  if (HIBYTE (status)) {
                     /* changes the box size */
-                    ApplyDirectResize (frame, LOWORD (lParam), HIWORD (lParam));
+                    /* ApplyDirectResize (frame, LOWORD (lParam), HIWORD (lParam)); */
+                    ApplyDirectResize (frame, ClickX, ClickY);
                     /* memorize the click position */
                  } else {
                       TtaAbortShowDialogue ();
@@ -1447,6 +1583,17 @@ LPARAM lParam;
                  ClickFrame = frame;
                  ClickX = LOWORD (lParam);
                  ClickY = HIWORD (lParam);
+                 /* stop any current insertion of text */
+                 CloseInsertion ();
+		    
+                 /* if the CTRL key is pressed this is a size change */
+                 status = GetKeyState (VK_CONTROL);
+                 if (HIBYTE (status)) {
+                    /* changes the box size */
+                    /* ApplyDirectResize (frame, LOWORD (lParam), HIWORD (lParam)); */
+                    ApplyDirectResize (frame, ClickX, ClickY);
+                    /* memorize the click position */
+                 } 
 				 return 0;
 
             case WM_MOUSEMOVE:
@@ -1493,8 +1640,10 @@ void               *event;
    PtrElement          firstSel, lastSel;
    ThotEvent           event;
    ThotEvent          *ev = (ThotEvent *) evnt;
+   Document            document;
+   View                view;
    int                 firstCar, lastCar;
-   int                 comm, dx, dy, sel;
+   int                 comm, dx, dy, sel, h;
    boolean             ok;
 
    /* ne pas traiter si le document est en mode NoComputedDisplay */
@@ -1536,6 +1685,14 @@ void               *event;
 	       /* On change la position d'une boite */
 	       ApplyDirectTranslate (frame, ev->xbutton.x, ev->xbutton.y);
 	     }
+	   /* Est-ce que la touche modifieur d'extension est active ? */
+	   if ((ev->xbutton.state & THOT_KEY_ShiftMask) != 0)
+	     {
+	       TtaAbortShowDialogue ();
+	       LocateSelectionInView (frame, ev->xbutton.x, ev->xbutton.y, 0);
+	       FrameToView (frame, &document, &view);
+	       TtcCopyToClipboard (document, view);
+	     }
 	   /* Est-ce un double clic */
 	   else if (t1 + (Time) 500 > ev->xbutton.time)
 	     {
@@ -1572,6 +1729,8 @@ void               *event;
 	       /* Regarde s'il s'agit d'un drag ou d'une simple marque d'insertion */
 	       comm = 0;	/* il n'y a pas de drag */
 	       TtaFetchOneEvent (&event);
+	       FrameToView (frame, &document, &view);
+	       h = FrameTable[frame].FrHeight;
 	       while (event.type != ButtonRelease)
 		 {
 		   if (event.type == MotionNotify)
@@ -1582,16 +1741,36 @@ void               *event;
 			 {
 			   LocateSelectionInView (frame, event.xbutton.x, event.xbutton.y, 1);
 			   comm = 1;	/* il y a un drag */
+			   if (event.xmotion.y > h - 4)
+			     {
+			       TtcLineDown (document, view);
+			       XWarpPointer (TtDisplay, None, FrRef[frame], 0, 0, 0, 0,
+					     event.xmotion.x, h - 4);
+			     }
+			   else if (event.xmotion.y < 4)
+			     {
+			       TtcLineUp (document, view);
+			       XWarpPointer (TtDisplay, None, FrRef[frame], 0, 0, 0, 0,
+					     event.xmotion.x, 4);
+			     }
 			 }
 		     }
 		   TtaHandleOneEvent (&event);
 		   TtaFetchOneEvent (&event);
-		 }	/*while */
+		 }
 	       TtaHandleOneEvent (&event);
 	       
 	       /* S'il y a un drag on termine la selection */
 	       if (comm == 1)
-		 LocateSelectionInView (frame, event.xbutton.x, event.xbutton.y, 0);
+		 {
+		   FrameToView (frame, &document, &view);
+		   LocateSelectionInView (frame, event.xbutton.x, event.xbutton.y, 0);
+		 }
+	       else if (comm != 0)
+		 FrameToView (frame, &document, &view);
+
+	       if (comm != 0)
+		 TtcCopyToClipboard (document, view);
 	     }
 	   break;
 	   
@@ -1608,8 +1787,9 @@ void               *event;
 	     }
 	   else
 	     {
-	       TtaAbortShowDialogue ();
-	       LocateSelectionInView (frame, ev->xbutton.x, ev->xbutton.y, 0);
+	       FrameToView (frame, &document, &view);
+	       if (MenuActionList[CMD_PasteFromClipboard].Call_Action != NULL)
+		 (*MenuActionList[CMD_PasteFromClipboard].Call_Action) (document, view);
 	     }
 	   break;
 	   
@@ -1902,24 +2082,24 @@ PtrAbstractBox     *pave;
    ClickY = 0;
    while (ClickIsDone == 1)
      {
-#ifndef _WINDOWS 
+#        ifndef _WINDOWS 
          TtaFetchOneEvent (&event);
          TtaHandleOneEvent (&event);
-#else /* _WINDOWS */
+#        else /* _WINDOWS */
          GetMessage (&event, NULL, 0, 0);
          TtaHandleOneWindowEvent (&event);
          SetCursor (cursor);
-#endif /* !_WINDOWS */
+#        endif /* !_WINDOWS */
      }
 
    /* Restauration du curseur */
    for (i = 1; i <= MAX_FRAME; i++)
      {
-#ifndef _WINDOWS
+#      ifndef _WINDOWS
        drawable = TtaGetThotWindow (i);
        if (drawable != 0)
 	 XUndefineCursor (TtDisplay, drawable);
-#endif /* _WINDOWS */
+#      endif /* _WINDOWS */
      }
 
    *frame = ClickFrame;
@@ -2121,7 +2301,6 @@ int                 raz;
 	XSetClipRectangles (TtDisplay, TtGraphicGC, clipx + FrameTable[frame].FrLeftMargin,
 		 clipy + FrameTable[frame].FrTopMargin, &rect, 1, Unsorted);
 #   else  /* _WINDOWS */ 
-    WIN_GetDeviceContext (frame);
     clipRgn = CreateRectRgn (clipx + FrameTable[frame].FrLeftMargin, clipy + FrameTable[frame].FrTopMargin, 
                              clipx + FrameTable[frame].FrLeftMargin + clipwidth, clipy + FrameTable[frame].FrTopMargin + clipheight);
     SelectClipRgn(TtDisplay, clipRgn); 
@@ -2158,7 +2337,12 @@ int                 frame;
    XSetClipRectangles (TtDisplay, TtGreyGC, 0, 0, &rect, 1, Unsorted);
    XFlushOutput (frame);
 #  else  /* _WINDOWS */
+   WIN_GetDeviceContext (frame);
    SelectClipRgn(TtDisplay, NULL); 
+   if (clipRgn && !DeleteObject (clipRgn))
+      WinErrorBox (NULL);
+   clipRgn = (HRGN) 0;
+   WIN_ReleaseDeviceContext ();
 #  endif /* _WINDOWS */
 }
 

@@ -49,6 +49,12 @@ struct my_error_mgr
 
 typedef struct my_error_mgr *my_error_ptr;
 
+#ifdef _WINDOWS
+extern int bgRed;
+extern int bgGreen;
+extern int bgBlue;
+#endif /* _WINDOWS */
+
 #ifdef __STDC__
 static void my_error_exit (j_common_ptr cinfo)
 #else  /* !__STDC__ */
@@ -66,6 +72,12 @@ static void my_error_exit (j_common_ptr cinfo)
 
 struct jpeg_decompress_struct cinfo;
 struct my_error_mgr           jerr;
+
+#ifdef _WINDOWS 
+extern BOOL pic2print;
+#endif /* _WINDOWS */
+
+#include "jinclude.h"
 
 
 /*----------------------------------------------------------------------
@@ -237,9 +249,9 @@ int                 ErrorNumber;
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
-ThotBitmap          JpegCreate (char *fn, PictureScaling pres, int *xif, int *yif, int *wif, int *hif, unsigned long BackGroundPixel, Drawable * mask1)
+ThotBitmap          JpegCreate (char *fn, PictureScaling pres, int *xif, int *yif, int *wif, int *hif, unsigned long BackGroundPixel, ThotBitmap *mask1, int *width, int *height, int zoom)
 #else  /* __STDC__ */
-ThotBitmap          JpegCreate (fn, pres, xif, yif, wif, hif, BackGroundPixel, mask1)
+ThotBitmap          JpegCreate (fn, pres, xif, yif, wif, hif, BackGroundPixel, mask1, width, height, zoom)
 char               *fn;
 PictureScaling      pres;
 int                *xif;
@@ -248,7 +260,9 @@ int                *wif;
 int                *hif;
 unsigned long       BackGroundPixel;
 ThotBitmap         *mask1;
-
+int                *width;
+int                *height;
+int                 zoom;
 #endif /* __STDC__ */
 {
   int                 w, h;
@@ -256,39 +270,59 @@ ThotBitmap         *mask1;
   ThotColorStruct     colrs[256];
   unsigned char      *buffer,*buffer2;
 
+# ifdef _WINDOWS
+  bgRed   = -1;
+  bgGreen = -1;
+  bgBlue  = -1;
+# endif /* _WINDOWS */
+
   /* effective load of the Picture from Jpeg Library */
   buffer = ReadJpegToData (fn, &w, &h, colrs);
-
+  /* return image dimensions */
+  *width = w;
+  *height = h;
   if (!buffer)
-	 return ThotBitmapNone;
+    return (ThotBitmapNone);
 
-  if (*xif == 0 && *yif != 0)
-    *xif = w;
-  if (*xif != 0 && *yif == 0)
-    *yif = h;
+  if (zoom != 0 && *xif == 0 && *yif == 0)
+    {
+      /* take zoom into account */
+      *xif = PixelValue (w, UnPixel, NULL, zoom);
+      *yif = PixelValue (h, UnPixel, NULL, zoom);
+    }
+  else
+    {
+      if (*xif == 0 && *yif != 0)
+	*xif = PixelValue (w, UnPixel, NULL, zoom);
+      if (*xif != 0 && *yif == 0)
+	*yif = PixelValue (h, UnPixel, NULL, zoom);
+    }
+
   if ((*xif != 0 && *yif != 0) && (w != *xif || h != *yif))
     {   
       /* xif and yif contain width and height of the box */
       buffer2 = ZoomPicture (buffer, w , h, *xif, *yif, 1);
-      free(buffer);
+      TtaFreeMemory (buffer);
       buffer = buffer2;
       buffer2 = NULL;
       w = *xif;
       h = *yif;
     }
   
+  if (buffer == NULL)
+    return (ThotBitmapNone);	
+
   pixmap = DataToPixmap (buffer, w, h, 100, colrs);
-  
-  free (buffer);  
+  TtaFreeMemory (buffer);  
   if (pixmap == None)
-    return ThotBitmapNone;
+    return (ThotBitmapNone);
   else
     {
       *wif = w;
       *hif = h;
       *xif = 0;
       *yif = 0;
-      return (ThotBitmap) pixmap;
+      return ((ThotBitmap) pixmap);
     }
 }
 
@@ -422,7 +456,7 @@ boolean             IsJpegFormat (fn)
 char               *fn;
 
 #endif /* __STDC__ */
-{
+{ 
    /*JSAMPROW buffer[1]; *//* row pointer array for read_scanlines */
    FILE               *fd;
 

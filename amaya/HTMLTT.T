@@ -62,11 +62,6 @@ RULES
 	Remove;
 	END;
 
- StyleRule:
-	BEGIN
-	Remove;
-	END;
-
  SCRIPT: BEGIN
 	Remove;
 	END;
@@ -239,6 +234,12 @@ RULES
 	Create DoubleQuote; 
 	Create DoubleQuote After;
 	END;
+ ABBR:
+	BEGIN
+	END;
+ ACRONYM:
+	BEGIN
+	END;
 
  Font_: BEGIN
 	END;
@@ -252,12 +253,34 @@ RULES
 	Remove;
 	END;
 
-#ifdef COUGAR
  Object: BEGIN
 	Create Attributes;
 	Remove;
 	END;
-#endif
+
+ Quotation:
+	BEGIN
+	Create DoubleQuote; 
+	Create DoubleQuote After;
+	END;
+
+ INS:	BEGIN
+	END;
+
+ DEL:	BEGIN
+	END;
+
+ Span:	BEGIN
+	END;
+
+ BDO:	BEGIN
+	END;
+
+ IFRAME: BEGIN
+	Create '\12';
+	Create '\12' After;
+	END;
+
 #ifdef MATHML
  Math:  BEGIN
         Create '[math]';
@@ -363,34 +386,6 @@ RULES
 	Remove;
 	END;
 
- Toggle_Menu: BEGIN
-	END;
-
- Toggle_Item: BEGIN
-	If NOT Selected
-	   Remove;
-	Create Content;
-	Remove;
-	END;
-
- Radio_Menu: BEGIN
-	END;
-
- Radio_Item: BEGIN
-       If NOT Selected
-	   Remove;
-	Create Content;
-	Remove;
-	END;
-
- Text_Input_Line: BEGIN
-	If Empty
-	   Remove;
-	END;
-
- Command_Line: BEGIN
-	END;
-
  Text_Area: BEGIN
 	Create Content;
 	Remove;
@@ -454,19 +449,14 @@ RULES
 	END;
 
  PICTURE_UNIT: BEGIN
-#ifdef COUGAR
 	If Immediately within Object
 		Remove;
 	If NOT Immediately within Object BEGIN
 		Create Attributes;
 		END;
-#else
-	Create Attributes;
-#endif
 	If NOT ALT 
 	  Create '[Image]';
 	END;
-
 
  Anchor: BEGIN
 	If HREF_ AND NOT InternalLink
@@ -514,7 +504,6 @@ RULES
  Table_head:
 	Remove;
 
-#ifdef COUGAR
  thead:
 	BEGIN
 	END;
@@ -525,7 +514,6 @@ RULES
  tbody:
 	BEGIN
 	END;
-#endif
 
  Table_body:
 	BEGIN
@@ -588,33 +576,54 @@ ATTRIBUTES
 	Remove;
 	END;
 
- HREF_ :
+ HREF_:
 	BEGIN
 	If NOT Within LINK AND NOT InternalLink
 	   Create IN TmpFile HREF_;
 	END;
 
- background_ :
+ cite: BEGIN
+	If NOT InternalLink
+	  BEGIN
+	    Add AnchorCounter 1;
+	    Create In TmpFile  OUT_AnchorCounter;
+	    Create In TmpFile ' ';
+	    Create IN TmpFile '\12' After;
+#ifdef ANCHOR_PREFIX
+	    Create OUT_AnchorCounter;
+	    Create Content;
+	    Remove;
+#else
+	    Create OUT_AnchorCounter After;
+#endif
+	  END;
+	END;
+
+ datetime:
 	BEGIN
 	END;
 
- BackgroundColor :
+ background_:
 	BEGIN
 	END;
 
- TextColor :
+ BackgroundColor:
 	BEGIN
 	END;
 
- LinkColor :
+ TextColor:
 	BEGIN
 	END;
 
- VisitedLinkColor :
+ LinkColor:
 	BEGIN
 	END;
 
- ActiveLinkColor :
+ VisitedLinkColor:
+	BEGIN
+	END;
+
+ ActiveLinkColor:
 	BEGIN
 	END;
 
@@ -622,11 +631,23 @@ ATTRIBUTES
 	BEGIN
 	END;
 
- Font_size :
+ BaseFontColor:
 	BEGIN
 	END;
 
- color :
+ BaseFontFace:
+	BEGIN
+	END;
+
+ Font_size:
+	BEGIN
+	END;
+
+ color:
+	BEGIN
+	END;
+
+ face:
 	BEGIN
 	END;
 
@@ -654,6 +675,19 @@ ATTRIBUTES
 	BEGIN
 	END;
 
+ TextAlign = left_:
+	BEGIN
+	END;
+ TextAlign = center_:
+	BEGIN
+	END;
+ TextAlign = right_:
+	BEGIN
+	END;
+ TextAlign = justify_:
+	BEGIN
+	END;
+
  NoShade:
 	BEGIN
 	END;
@@ -678,7 +712,7 @@ ATTRIBUTES
 
  Param_value: BEGIN
 	END;
-#ifdef COUGAR
+
  classid: BEGIN
 	END;
 
@@ -693,7 +727,7 @@ ATTRIBUTES
 
  codetype: BEGIN
 	END;
-#endif
+
  Title : BEGIN
 	NoTranslation;
 	END;
@@ -907,9 +941,6 @@ ATTRIBUTES
  Cell_valign = Cell_bottom:
 		BEGIN
 		END;
-
- Cell_height: BEGIN
-	END;
 
  No_wrap = no_wrap:
 		BEGIN

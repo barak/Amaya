@@ -1,6 +1,3 @@
 usr/bin
-usr/doc
-usr/lib/thot/LINUX-ELF/bin
-usr/lib/thot/amaya
-usr/lib/thot/config
-usr/lib/thot/batch
+usr/lib
+usr/man/man1

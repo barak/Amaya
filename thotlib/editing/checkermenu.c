@@ -76,6 +76,12 @@ extern HWND hwnListWords;
 extern HWND hwndCurrentWord;
 extern HWND hwndLanguage;
 extern char currentWord [30];
+
+#ifdef __STDC__
+extern void CreateSpellCheckDlgWindow (HWND, char*, char*,	int, int, int, int, int, int, int);
+#else  /* __STDC__ */
+extern void CreateSpellCheckDlgWindow ();
+#endif /* __STDC__ */
 #endif /* _WINDOWS */
 
 
@@ -149,14 +155,14 @@ void WIN_DisplayWords ()
 	SetWindowText (wordButton, ChkrCorrection[0]);
 	SendMessage (hwnListWords, LB_RESETCONTENT, 0, 0);
     if ((strcmp (ChkrCorrection[1], "$")) == 0)	{
-       currentWord [0] = '\0';
+       currentWord [0] = EOS;
        SetWindowText (hwndCurrentWord, "");
-	   SendMessage (hwnListWords, LB_ADDSTRING, 0, "");  
+	   SendMessage (hwnListWords, LB_ADDSTRING, 0, (LPARAM) ((LPCTSTR)""));  
     } else {
          sprintf (currentWord, "%s", ChkrCorrection[1]);
          SetWindowText (hwndCurrentWord, ChkrCorrection[1]);
 	     for (i = 1; (i <= NC && strcmp (ChkrCorrection[i], "$") != 0); i++) {
-	         SendMessage (hwnListWords, LB_INSERTSTRING, i - 1, ChkrCorrection[i]);  
+	         SendMessage (hwnListWords, LB_INSERTSTRING, i - 1, (LPARAM) ((LPCTSTR)ChkrCorrection[i]));  
 	   }
 	}
     OldNC = NC;
@@ -346,7 +352,7 @@ Language            language;
    if (strcmp (ChkrCorrection[1], "$") != 0)
       strcpy (CorrectWord, ChkrCorrection[1]);
    else
-      CorrectWord[0] = '\0';
+      CorrectWord[0] = EOS;
 
    /* afficher la langue de correction courante */
    sprintf (Lab, "%s: %s", TtaGetMessage (LIB, TMSG_LANGUAGE), TtaGetLanguageName (ChkrLanguage));
@@ -367,8 +373,8 @@ static boolean      StartSpellChecker ()
 
    /* preparer le lancement de la premiere correction */
    ok = TRUE;
-   CorrectWord[0] = '\0';
-   CurrentWord[0] = '\0';
+   CorrectWord[0] = EOS;
+   CurrentWord[0] = EOS;
    ToReplace = FALSE;
    /* Rechercher la premiere erreur */
    if (FirstStep)
@@ -380,7 +386,7 @@ static boolean      StartSpellChecker ()
 
    /* en tenant compte des options choisies (par defaut) */
    NextSpellingError (CurrentWord, ChkrFileDict);
-   if (CurrentWord[0] != '\0')
+   if (CurrentWord[0] != EOS)
       /* calculer la 1ere liste des propositions ds selecteur */
       SetProposals (ChkrLanguage);
    else
@@ -437,7 +443,7 @@ int                 val;
 		    /* Passer apres maj du dictionnaire */
 		    /* mettre CurrentWord dans le dictionnaire */
 		    if (ChkrElement != NULL)	/* Sauf au 1er lancement */
-		       if (CorrectWord[0] != '\0' && (strcmp (CorrectWord, ChkrCorrection[1]) != 0))
+		       if (CorrectWord[0] != EOS && (strcmp (CorrectWord, ChkrCorrection[1]) != 0))
 			 {
 			    /* ajouter le mot corroge dans le dictionaire */
 			    if (!CheckWord (CorrectWord, ChkrLanguage, ChkrFileDict))
@@ -454,7 +460,7 @@ int                 val;
 		    /* ToReplace */
 		    if (ToReplace)	/* CorrectWord est rempli */
 		      {		/* et ce n'est pas 1er lancement */
-			 if (ChkrElement != NULL && CurrentWord[0] != '\0')
+			 if (ChkrElement != NULL && CurrentWord[0] != EOS)
 			    WordReplace (CurrentWord, CorrectWord);
 			 ToReplace = FALSE;
 		      }
@@ -463,7 +469,7 @@ int                 val;
 		    /* ToReplace et maj dictionnaire */
 		    if (ToReplace)	/* CorrectWord est rempli */
 		      {		/* et ce n'est pas 1er lancement */
-			 if (ChkrElement != NULL && CurrentWord[0] != '\0')
+			 if (ChkrElement != NULL && CurrentWord[0] != EOS)
 			   {
 			      WordReplace (CurrentWord, CorrectWord);
 			      /* mettre CorrectWord dans le dictionnaire */
@@ -534,13 +540,15 @@ char               *data;
 	if (!IgnoreSpecial)
 	  {
 	    IgnoreSpecial = TRUE;
+#       ifndef _WINDOWS 
 	    TtaSetToggleMenu (SpellingBase + ChkrMenuIgnore, 3, IgnoreSpecial);
+#       endif /* _WINDOWS */
 	  }
 	break;
       case ChkrCaptureNC:
 	/* modification de Nb de corrections a proposer */
 	NC = (int) data;
-	if (NC > OldNC && ChkrElement != NULL && CurrentWord[0] != '\0')
+	if (NC > OldNC && ChkrElement != NULL && CurrentWord[0] != EOS)
 	  SetProposals (ChkrLanguage);
 	else
 #     ifndef _WINDOWS 
@@ -595,8 +603,8 @@ char               *data;
 	/* retour du selecteur de propositions */
 	/* recopier le choix dans CorrectWord */
 	strcpy (CorrectWord, data);
-	if (CorrectWord[0] != '\0'
-	    && CurrentWord != '\0'
+	if (CorrectWord[0] != EOS
+	    && CurrentWord != EOS
 	    && strcmp (CorrectWord, CurrentWord) != 0)
 	  ToReplace = TRUE;
 	break;

@@ -252,8 +252,9 @@ View                view;
 
    /* if the document has been edited, ask the user to confirm, except
       if it's simply a jump in the same document */
-   if (strcmp(DocumentURLs[doc], DocHistory[doc][prev].HistUrl))
-      if (!CanReplaceCurrentDocument (doc, view))
+   if (DocumentURLs[doc] != NULL)
+     if (strcmp(DocumentURLs[doc], DocHistory[doc][prev].HistUrl))
+       if (!CanReplaceCurrentDocument (doc, view))
          return;
 
    /* the current document must be put in the history if it's the last one */
@@ -293,7 +294,17 @@ View                view;
    ctx->last = last;
    ctx->doc = doc;
       
-   (void) GetHTMLDocument (url, NULL, doc, doc, CE_FALSE, hist, (void *) GotoPreviousHTML_callback, (void *) ctx);
+   /* is it the current document ? */
+   if (!strcmp (url, DocumentURLs[doc]))
+     {
+       /* it's just a move in the same document */
+       if (hist)
+	 /* record the current position in the history */
+	 AddDocHistory (doc, url);
+       GotoPreviousHTML_callback (doc, 0, url, NULL, NULL, (void *) ctx);
+     }
+   else
+     (void) GetHTMLDocument (url, NULL, doc, doc, CE_FALSE, hist, (void *) GotoPreviousHTML_callback, (void *) ctx);
 }
 
 /*----------------------------------------------------------------------
@@ -376,8 +387,9 @@ View                view;
 
    /* if the document has been edited, ask the user to confirm, except
       if it's simply a jump in the same document */
-   if (strcmp(DocumentURLs[doc], DocHistory[doc][next].HistUrl))
-      if (!CanReplaceCurrentDocument (doc, view))
+   if (DocumentURLs[doc] != NULL)
+     if (strcmp(DocumentURLs[doc], DocHistory[doc][next].HistUrl))
+       if (!CanReplaceCurrentDocument (doc, view))
          return;
 
    /* set the Back button on if it's off */
@@ -409,7 +421,12 @@ View                view;
    ctx->prevnext = next;
    ctx->doc = doc;
 
-   (void) GetHTMLDocument (url, NULL, doc, doc, CE_FALSE, FALSE, (void *) GotoNextHTML_callback, (void *) ctx);
+   /* is it the current document ? */
+   if (!strcmp (url, DocumentURLs[doc]))
+     /* it's just a move in the same document */
+     GotoNextHTML_callback (doc, 0, url, NULL, NULL, (void *) ctx);
+   else
+     (void) GetHTMLDocument (url, NULL, doc, doc, CE_FALSE, FALSE, (void *) GotoNextHTML_callback, (void *) ctx);
 }
 
 /*----------------------------------------------------------------------

@@ -61,9 +61,9 @@ PtrDocument        *pDoc;
 
    /* cherche un pointeur de descripteur de document libre */
    doc = 0;
-   while (LoadedDocument[doc] != NULL && doc < MAX_DOCUMENTS - 1)
+   while (doc < MAX_DOCUMENTS && LoadedDocument[doc] != NULL)
       doc++;
-   if (LoadedDocument[doc] != NULL)
+   if (doc >= MAX_DOCUMENTS)
      {
 	TtaDisplaySimpleMessage (INFO, LIB, TMSG_TOO_MANY_DOCS);
 	*pDoc = NULL;
@@ -390,7 +390,7 @@ PtrElement          pEl;
 		       if (pSRule->SrSSchemaNat == NULL)
 			  /* structure schema of nature is not loaded. Load it */
 			 {
-			    name[0] = '\0';
+			    name[0] = EOS;
 			    LoadNatureSchema (pSS1, name, typeNum1);
 			 }
 		       if (pSRule->SrSSchemaNat == NULL)
@@ -846,15 +846,18 @@ PtrSSchema         *pSS;
 
 
 /*----------------------------------------------------------------------
-   Rend le type de constructeur d'un element                        
+   Rend le type de constructeur d'un element
+   et, dans nComp, le nombre de composants definis par le schema s'il
+   s'agit d'un agregat.
   ----------------------------------------------------------------------*/
 
 #ifdef __STDC__
-RConstruct          GetElementConstruct (PtrElement pEl)
+RConstruct          GetElementConstruct (PtrElement pEl, int *nComp)
 
 #else  /* __STDC__ */
-RConstruct          GetElementConstruct (pEl)
+RConstruct          GetElementConstruct (pEl, nComp)
 PtrElement          pEl;
+int		   *nComp;
 
 #endif /* __STDC__ */
 
@@ -863,16 +866,19 @@ PtrElement          pEl;
    int                 typ;
 
    constr = CsNatureSchema;
+   *nComp = 0;
    if (pEl != NULL)
      {
-	constr = pEl->ElStructSchema->SsRule[pEl->ElTypeNumber - 1].SrConstruct;
 	typ = pEl->ElTypeNumber;
+	constr = pEl->ElStructSchema->SsRule[typ - 1].SrConstruct;
 	while (constr == CsIdentity)
 	  {
 	     typ = pEl->ElStructSchema->SsRule[typ - 1].SrIdentRule;
 	     constr = pEl->ElStructSchema->SsRule[typ - 1].SrConstruct;
 	  }
      }
+   if (constr == CsUnorderedAggregate || constr == CsAggregate)
+      *nComp = pEl->ElStructSchema->SsRule[typ - 1].SrNComponents;
    return constr;
 }
 
@@ -895,6 +901,7 @@ PtrElement          pEl;
 {
    boolean             stop;
    RConstruct          constr;
+   int		       nComp;
 
    stop = FALSE;
    if (pEl != NULL)
@@ -905,8 +912,9 @@ PtrElement          pEl;
 	    stop = TRUE;
          else
 	   {
-	     constr = GetElementConstruct (pEl);
-	     if (constr == CsAggregate || constr == CsUnorderedAggregate)
+	     constr = GetElementConstruct (pEl, &nComp);
+	     if ((constr == CsAggregate || constr == CsUnorderedAggregate) &&
+		 nComp > 1)
 	       {
 		  pEl = NULL;
 		  stop = TRUE;
@@ -1276,13 +1284,13 @@ int                *typeNum;
 	      *pSS = NULL;
 	   else
 	      *pSS = pRefEl->ElStructSchema;
-	   if (pRule->SrRefTypeNat[0] != '\0')
+	   if (pRule->SrRefTypeNat[0] != EOS)
 	      /* le type reference' est defini dans un autre schema de */
 	      /* structure */
 	      /* cherche, ou charge si ce n'est pas deja fait, le schema de */
 	      /* structure qui definit le type reference' */
 	     {
-		presName[0] = '\0';
+		presName[0] = EOS;
 		/* pas de schema de presentation prefere' */
 		referredNature = CreateNature (pRule->SrRefTypeNat, presName, *pSS);
 		if (referredNature == 0)
@@ -1307,13 +1315,13 @@ int                *typeNum;
 	   /* schema de structure qui definit l'attribut */
 	   *pSS = pRefAttr->AeAttrSSchema;
 
-	if (pAtt->AttrTypeRefNature[0] != '\0')
+	if (pAtt->AttrTypeRefNature[0] != EOS)
 	   /* le type reference' est defini dans un autre schema de */
 	   /* structure */
 	   /* cherche, ou charge si ce n'est pas deja fait, le schema de */
 	   /* structure qui definit le type reference' */
 	  {
-	     presName[0] = '\0';
+	     presName[0] = EOS;
 	     /* pas de schema de presentation prefere' */
 	     referredNature = CreateNature (pAtt->AttrTypeRefNature, presName, *pSS);
 	     if (referredNature == 0)
@@ -1497,8 +1505,10 @@ boolean             inTree;
 		   if (pRule->SrConstruct == CsChoice)
 		      ok = FALSE;
 		   else if (pRule->SrConstruct == CsIdentity)
-		      if (EquivalentSRules (pEl->ElTypeNumber, pEl->ElStructSchema,
-					    pEl->ElParent->ElTypeNumber, pEl->ElParent->ElStructSchema, pEl))
+		      if (EquivalentSRules (pEl->ElParent->ElTypeNumber,
+					    pEl->ElParent->ElStructSchema, 
+					    pEl->ElTypeNumber, pEl->ElStructSchema,
+					    pEl))
 			 /* le fils et le pere sont de type equivalent, refus */
 			 ok = FALSE;
 	     }
@@ -2146,7 +2156,7 @@ PtrSSchema          pDescSS;
 		       if (pRule1->SrSSchemaNat == NULL)
 			  /* si le schema de nature n'est pas charge' on le charge */
 			 {
-			    N[0] = '\0';
+			    N[0] = EOS;
 			    /* pas de schema de presentation prefere' */
 			    LoadNatureSchema (pSS, N, typeNum);
 			 }
@@ -2450,7 +2460,7 @@ PtrSSchema          pExtSS;
 		  {
 		     r = 0;
 		     while (RegleExt == NULL && r < pExtSS->SsNExtensRules)
-			if (pExtSS->SsExtensBlock->EbExtensRule[r].SrName[0] == '\0')
+			if (pExtSS->SsExtensBlock->EbExtensRule[r].SrName[0] == EOS)
 			   RegleExt = &(pExtSS->SsExtensBlock->EbExtensRule[r]);
 			else
 			   r++;
@@ -2519,17 +2529,13 @@ PtrSSchema         *pExt;
    valeur differente) que celui pointe par pAttr.                  
    Retourne un pointeur sur cet attribut ou NULL s'il n'existe pas 
   ----------------------------------------------------------------------*/
-
 #ifdef __STDC__
 PtrAttribute        GetAttributeOfElement (PtrElement pEl, PtrAttribute pAttr)
-
 #else  /* __STDC__ */
 PtrAttribute        GetAttributeOfElement (pEl, pAttr)
 PtrElement          pEl;
 PtrAttribute        pAttr;
-
 #endif /* __STDC__ */
-
 {
    boolean             found;
    PtrAttribute        pA;
@@ -2558,17 +2564,13 @@ PtrAttribute        pAttr;
    Si cet attribut n'a pas de valeur pour l'element pEl, retourne	
    NULL.								
   ----------------------------------------------------------------------*/
-
 #ifdef __STDC__
 PtrAttribute        AttributeValue (PtrElement pEl, PtrAttribute pAttr)
-
 #else  /* __STDC__ */
 PtrAttribute        AttributeValue (pEl, pAttr)
 PtrElement          pEl;
 PtrAttribute        pAttr;
-
 #endif /* __STDC__ */
-
 {
    if (pEl != NULL)
       return (GetAttributeOfElement (pEl, pAttr));
@@ -2689,6 +2691,7 @@ PtrElement         *pSplitEl;
 #endif /* __STDC__ */
 {
    PtrElement          pE;
+   int		       nComp;
    boolean             exctab;
 
    *pList = NULL;
@@ -2722,15 +2725,15 @@ PtrElement         *pSplitEl;
 				 else
 				    pE = pE->ElParent;
 			      if (*pList == NULL)
-				 if (GetElementConstruct (firstEl->ElParent) == CsList)
+				 if (GetElementConstruct (firstEl->ElParent, &nComp) == CsList)
 				    *pList = AncestorList (firstEl->ElParent);
 				 else
 				   {
 				      pE = firstEl;
-				      if (GetElementConstruct (firstEl->ElParent) ==
+				      if (GetElementConstruct (firstEl->ElParent, &nComp) ==
 								      CsChoice)
 					 if (firstEl->ElParent->ElParent != NULL)
-					    if (GetElementConstruct (firstEl->ElParent->ElParent) == CsList)
+					    if (GetElementConstruct (firstEl->ElParent->ElParent, &nComp) == CsList)
 					       pE = firstEl->ElParent->ElParent;
 				      *pList = AncestorList (pE);
 				   }
@@ -2767,7 +2770,7 @@ PtrElement         *pSplitEl;
 		    {
 		       pE = pE->ElParent;
 		       if (pE != NULL)
-			  if (GetElementConstruct (pE) == CsList)
+			  if (GetElementConstruct (pE, &nComp) == CsList)
 			     *pList = pE;
 		    }
 	       }

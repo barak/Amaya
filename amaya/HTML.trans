@@ -1,0 +1,447 @@
+! Use of the file HTML.trans
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! This file can be edited during an Amaya session. It will be 
+! dynamically parsed when the transformation tool is required by
+! the editor. So new transformations can be added while editing.
+!
+! Syntax of the transformation language for Amaya
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! comments begin with !
+!
+! This file can be edited during an Amaya session. It will be 
+! dynamically parsed when the transformation tool is required by
+! the editor. So new transformations can be added while editing.
+!
+! A tranformation rule has three parts : 
+!     - a name terminated by a colon ":"
+!     - a source pattern terminated by a semi-colon ";"
+!     - and a list of rules between braces "{" "}", each one
+!           terminated by a semi-colon ";"
+!
+! The name will appear in the transform menu.
+!
+! The pattern gives of a specific organization of the elements
+! to be transformed: it contains HTML tags and SGML-like syntax
+! for the composition operators:
+!     e1 | e2   for a choice between elements e1 and e2
+!     e1 , e2   for a sequence e1 followed by e2
+!     e+        for a sequence of one or more elements e
+!     ?e        for an optional element e
+!     ( )       for grouping nodes
+! The braces "{" "}" define the content of a node.
+! The symbol "*" is a token that matches any element type
+! It is possible to rename a tag by preceeding it with a name
+! followed by a colon ":"
+!
+! A rule expresses transformations to be applied to the elements 
+! identified in the pattern. They have two parts :
+!        - a source identifier: a tag or a name which occurs in
+!          the pattern and links the rule to the pattern nodes
+!        -  a rule body: drives the transformation
+!  Each rule end with a symbol ";"
+!
+! there are two kinds of rule bodies:
+! - A discard rule body is slash and express that the correspoding
+!    pattern node does not occurin the transformation result
+!
+! - A generation rule begins with
+!     - a symbol ">"
+!     - and a target tag list. This list is itself divided into
+!       two parts separated by a colon":": 
+!         * the generation location path
+!         * and the list of tags to be generated
+! The dot symbol "." is used for descending in the tree structure.
+! if the special token star "*" ends the list of tags to be 
+! generated, the source elment tag is not changed but this element
+! can be moved in a different place in the destination. 
+!
+! The rules are applied in the order the identifeiers are met when
+! (depth first) traversing the source structure.
+! Several rules may have the same identifier, in that case, the rules
+! are applied in the order they are defined.
+
+! Transformation rules 
+!!!!!!!!!!!!!!!!!!!!!!
+
+Address:(P{*+})+;
+	{
+	* > ADDRESS:*;
+	}
+
+!between lists
+!!!!!!!!!!!!!!
+
+Definition list:*{(LI{(P|list:*{(li2:LI)+})+})+};
+	{
+	P > DL:DT;
+	list > DL:DD;
+	li2 > DL.DD:;
+	}
+
+Bulleted list:(DL{(DT|DD{(*)+})+})+;
+	{
+	DT > UL:LI;
+	* > UL.LI.UL:LI.*;
+	}
+
+Numbered list:(DL{(DT|DD{(*)+})+})+;
+	{
+	DT > OL:LI;
+	* > OL.LI.OL:LI.*;
+	}
+
+Remove DL: (DL{(DT|DD{*+})+})+;
+	{
+	 DT > :P;
+	 * > :*;
+	}
+
+!flattering headings 
+!!!!!!!!!!!!!!!!!!!!
+
+Paragraphs: 
+(H1|H2|H3|H4|H5|H6|*{(LI{(il:*)+})+}),(H1|H2|H3|H4|H5|H6|P|*{(LI{(il:*)+})+})+;
+	{ 
+	H1 > :P;
+	H2 > :P;
+	H3 > :P;
+	H4 > :P;
+	H5 > :P;
+	H6 > :P;
+	P > :P;
+	il > :P;
+	}
+
+! Preformatted to/from paragraphs
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+Preformatted: P+;
+	{
+	P>:PRE;
+	}
+
+Paragraph: PRE+;
+	{
+	PRE>:P;
+	}
+
+
+
+
+!Tables to/from lists
+!!!!!!!!!!!!!!!!!!!!
+
+Table: *{(lev1:LI{?(*{(lev2:LI)+}|elem:*)+})+};
+	{
+	lev1 > <TABLE border=1>:TR;
+	elem > TABLE.TR:TD.*;
+	lev2 > TABLE.TR:TD;
+	}
+
+Table: DL{(DT|DD)+};
+	{
+	DT > <TABLE border=1>.TBODY:TR.TD;
+	DD > TABLE.TBODY.TR:TD;
+	}
+
+Numbered List:TABLE{?CAPTION,(block:*{(TR{(TD|TH),?(TD2:TD|TH2:TH)+})+})+};
+  	{
+	CAPTION > :OL.LI.STRONG;
+	block > :OL;
+	TR > OL:LI;
+	TD > OL.LI:;
+	TH > OL.LI:;
+	TD2 >OL.LI.UL:LI;
+	TH2 >OL.LI.UL:LI;
+	}
+
+Bulleted List:TABLE{?CAPTION,(block:*{(TR{(TD|TH),?(TD2:TD|TH2:TH)+})+})+};
+	{
+	CAPTION > :UL.LI.STRONG;
+	block > :UL;
+	TR > UL:LI;
+	TD > UL.LI:;
+	TH > UL.LI:;
+	TD2 >UL.LI.UL:LI;
+	TH2 >UL.LI.UL:LI;
+	}
+
+! List transformations
+!!!!!!!!!!!!!!!!!!!!!!
+
+Remove one level: *{(LI{(cont:*)+})+};
+	{
+	cont > :*;
+	}
+
+Remove two levels: *{(LI{(*{?(LI{(Lev2:*)+})+})+})+};
+	{
+	Lev2 > :*;
+	}
+
+Merge Items: LI,(LI2:LI)+;
+	{
+	LI > LI:;
+	LI2 > LI:;
+	}
+
+Split Items: (LI{a:*,(b:*)+})+;
+	{
+	a > :LI.*;
+	b > :LI.*;
+	}
+
+Merge Lists: UL{LI+},(UL{LI+})+;
+	{
+	LI > UL:LI;
+	}
+
+Merge Lists: OL{LI+},(OL{LI+})+;
+	{
+	LI > OL:LI;
+	}
+
+Merge Lists: DL{(DT|DD)+},(DL{(DT|DD)+})+;
+	{
+	DT > DL:DT;
+	DD > DL:DD;
+	}
+
+! Forms to/from elements
+!!!!!!!!!!!!!!!!!!!!!!!!
+
+Form: *+;
+	{
+	*>Form:*;
+	}
+
+Remove Form: FORM{*+};
+	{
+	*>:*;
+	}
+
+! Lists to/from elements
+!!!!!!!!!!!!!!!!!!!!!!!!
+
+Bulleted list: (P|OL|MENU|DIR|PRE|FORM)+;
+   	{
+        P > UL:LI;
+        OL> UL;
+        MENU> UL:LI.MENU;
+        DIR> UL:LI.DIR;
+        PRE> UL:LI.PRE;
+        FORM> UL:LI.FORM;
+        }
+
+Numbered list:(P|UL|MENU|DIR|PRE|FORM)+;
+	   {
+        P > OL:LI;
+        UL> OL;
+        MENU> OL:LI.MENU;
+        DIR> OL:LI.DIR;
+        PRE> OL:LI.PRE;
+        FORM> OL:LI.FORM;
+        }
+
+! Tables to/from elements
+!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!Table: (H:H1|H:H2|H:H3|H:H4|H:H5|H:H6|P),(H:H1|H:H2|H:H3|H:H4|H:H5|H:H6|*)+;
+!	{
+!	P> <TABLE border=1>.TR.TD:P;
+!	H> <TABLE border=1>:TR.TD.*;
+!	*> <TABLE border=1>.TR:TD.*;
+!	}
+
+
+Vertical Table: *,*+;
+	{
+	*><TABLE border=1>:TR.TD.*;
+	}
+
+Horizontal Table : *,*+;
+	{
+	*><TABLE border=1>.TR:TD.*;
+	}
+
+Remove Table:TABLE{?CAPTION,?(body:*{(TR{(*{(?cell_content:*)+})+})+})+};
+	{
+	CAPTION>H3;
+	cell_content>:*;
+	}
+
+Transpose Table:TABLE{TBODY{TR{(TD|TH)+}|(TR{td2:TD|th2:TH})+}};
+	{
+	TD><TABLE BORDER=TABLE.BORDER>:TR.TD;
+	TH>TABLE:TR.TD;
+	td2><TABLE BORDER=TABLE.BORDER>.TR:TD;
+	th2>TABLE.TR:TD;
+	}
+
+Heading Cell :?(TD|TH)+,TD,?(TD|TH)+;
+	{
+	TD>:TH;
+	}
+
+Data Cell :?(TD|TH)+,TH,?(TD|TH)+;
+	{
+	TH>:TD;
+	}
+
+!headings to/from definitions
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+Definition list:((H1|H2|H3|H4|H5|H6),*+)+;
+	{
+	H1 > DL:DT;
+	H2 > DL:DT;
+	H2 > DL:DT;
+	H3 > DL:DT;
+	H4 > DL:DT;
+	H5 > DL:DT;
+	H6 > DL:DT;
+	* > DL.DD:*;
+	}
+
+
+Definition list:(H1,?HR,?(level1:*)+,?(H2,?(level2:*)+,?((H3|H4|H5|H6),(level3:*)+)+)+)+;
+	{
+	H1 > DL:DT;
+	level1>DL.DD:*;
+	H2 > DL.DD:DL.DT ;
+	level2 > DL.DD.DL.DD:*;
+	H3 > DL.DD.DL.DD:DL.DT ;
+	H4 > DL.DD.DL.DD:DL.DT ;
+	H5 > DL.DD.DL.DD:DL.DT ;
+	H6 > DL.DD.DL.DD:DL.DT ;
+	level3 > DL.DD.DL.DD.DL.DD:*;
+	}
+
+Definition list:(H2,?HR,?(level1:*)+,(H3,?(level2:*)+,((H4|H5|H6),(level3:*)+)+)+)+;
+	{
+	H2 > DL:DT;
+	level1>DL.DD:*;
+	H3 > DL.DD:DL.DT ;
+	level2 > DL.DD.DL.DD:*;
+	H4 > DL.DD.DL.DD:DL.DT ;
+	H5 > DL.DD.DL.DD:DL.DT ;
+	H6 > DL.DD.DL.DD:DL.DT ;
+	level3 > DL.DD.DL.DD.DL.DD:*;
+	}
+
+
+
+Definition list:(H3,?HR,?(level1:*)+,?(H4,?(level2:*)+,((H5|H6),(level3:*)+)+)+)+;
+	{
+	H3 > DL:DT;
+	level1>DL.DD:*;
+	H4 > DL.DD:DL.DT ;
+	level2 > DL.DD.DL.DD:*;
+	H5 > DL.DD.DL.DD:DL.DT ;
+	H6 > DL.DD.DL.DD:DL.DT ;
+	level3 > DL.DD.DL.DD.DL.DD:*;
+	}
+
+Multi level Definition list:(H4,?HR,?(level1:*)+,(H5,?(level2:*)+,((H6)+,(level3:*)+)+)+)+;
+	{
+	H4 > DL:DT;
+	level1>DL.DD:*;
+	H5 > DL.DD:DL.DT ;
+	level2 > DL.DD.DL.DD:*;
+	H6 > DL.DD.DL.DD:DL.DT ;
+	level3 > DL.DD.DL.DD.DL.DD:*;
+	}
+
+
+
+Headings H1:(DL{(dt1:DT|DD{(DL{(dt2:DT|DD{(DL{(dt3:DT|DD{content:*})+}|content:*)+})+}|content:*)+})+}|HR)+;
+	{
+	dt1 > :H1;
+	dt2 > :H2;
+	dt3 > :H3;
+	content > :*;
+	}
+
+Headings H2:(DL{(dt1:DT|DD{(DL{(dt2:DT|DD{(DL{(dt3:DT|DD{content:*})+}|content:*)+})+}|content:*)+})+}|HR)+;
+	{
+	dt1 > :H2;
+	dt2 > :H3;
+	dt3 > :H4;
+	content > :*;
+	}
+
+
+Headings H3:(DL{(dt1:DT|DD{(DL{(dt2:DT|DD{(DL{(dt3:DT|DD{content:*})+}|content:*)+})+}|content:*)+})+}|HR)+;
+	{
+	dt1 > :H3;
+	dt2 > :H4;
+	dt3 > :H5;
+	content > :*;
+	}
+
+Definition list: P,*+;
+	{
+	P > DL:DT;
+	* > DL.DD:*;
+	}
+
+Remove Div: (DIV{*+})+;
+	{
+        * > :*;
+	}
+
+Remove P level: P{IMG};
+	{
+        IMG > :*;
+	}
+
+Remove BlockQuote: (BLOCKQUOTE{*+})+;
+	{
+	* > :*;
+	}
+
+Remove tag FONT: FONT{*+};
+	{
+	* > :*;
+	}
+
+Remove SPAN: SPAN{*+};
+	{
+	*>:*;
+	}
+
+Remove Subscript: SUB{*+};
+	{
+	* > :*;
+	}
+	
+Remove Superscript: SUP{*+};
+	{
+	* > :*;
+	}
+	
+Remove Quotation: Q{*+};
+	{
+        * > :*;
+	}
+
+Remove BiDi: BDO{*+};
+	{
+        * > :*;
+	}
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Global Document transformation tests !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+DistrThot: BODY{*+}
+	{
+	BODY > 	<TABLE border=0 with="100%">.TBODY.TR.<TD with="30%">.<A href="http://opera.inrialpes.fr/OPERA/Thot.en.html"><IMG src="thot.gif" alt="Thot Editor" border=0 align="middle">;
+	BODY > TABLE.TBODY.TR.TD:<A href = "http://opera.inrialpes.fr">.<IMG src="opera.gif" alt="Opera project" border=0 align="middle">;
+	BODY > TABLE.TBODY.TR:TD.<IMG src="guide.gif" alt="Documentation" border=0 align="middle">;
+	BODY > TABLE.TBODY.TR.TD:H1."Title of the page";
+	BODY > :<TABLE border=0 with="100%">.TBODY.TR.<TD with="30%">.H2.<A href="Index.html">."Home";
+	* > TABLE.TBODY.TR:TD.*;
+	}
+

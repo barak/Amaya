@@ -1,0 +1,84 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<title>
+Editing Tables</title>
+<meta name="GENERATOR" content="amaya V1.0a Beta">
+</head>
+<body lang="en">
+
+<table border="0" width="100%">
+<tbody>
+<tr>
+<td><p>
+<img border="0" alt="W3C" src="../../Icons/WWW/w3c_home"> <img border="0"
+alt="Amaya" src="../Icons/amaya.gif"></p>
+</td>
+<td><p align="right">
+<a href="Changing.html"><img alt="previous" border="0"
+src="../Icons/left.gif"></a> <a href="Manual.html"><img alt="top" border="0"
+src="../Icons/up.gif"></a> <a href="Math.html"><img alt="next" border="0"
+src="../Icons/right.gif"></a></p>
+</td>
+</tr>
+</tbody>
+</table>
+
+<div id="Editing">
+
+<h2>Editing tables</h2>
+<p>
+There is no separate table editor in <strong>Amaya</strong>. A table is simply
+a structure described by the HTML DTD and it is edited as such. The same
+commands apply to tables as to other HTML structures.</p>
+<p>
+Tables can be created very efficiently with the <a
+href="Creating.html#L906">Return key</a>. Create a one-cell table with the
+table button or the <strong>Table</strong> entry from the
+<strong>Types</strong> menu. The space above the table is reserved for the
+caption. Move the insertion point to the new cell. Type in the content of that
+cell ("Cell 1.1" in the example below). Create a second cell by hitting the
+Return key twice (the first hit creates a paragraph in the first cell). To
+create a new row, press Return three times. To create a new
+<code>tbody</code>, press Return four times, etc.</p>
+
+<table border="1">
+<caption>Caption</caption>
+<tbody>
+<tr>
+<td>
+Cell 1.1
+</td>
+<td>
+Cell 1.2
+</td>
+</tr>
+<tr>
+<td>
+Cell 2.1
+</td>
+<td>
+
+</td>
+</tr>
+</tbody>
+</table>
+<p>
+When you have built the previous table by creating 3 cells, Amaya have had
+automatically generated an empty cell (future Cell 2.2). You can click on it
+and insert text. You can also move to this empty cell by using arrow keys.
+When the selection is at the end of the text "Cell 2.1", you can create a new
+column between Cell 2.1 and the empty cell by pressing Return key twice.</p>
+<p>
+There is no specific command to create or delete a column. When you create a
+new cell, Amaya generates a new column and when you delete a cell in a column
+that becomes empty, Amaya deletes the column.</p>
+<p>
+Note that the table model implemented in <strong>Amaya</strong> is the <a
+href="../../TR/REC-html40">HTML&nbsp;4.0</a> model. This includes features
+such as multiple bodies (<code>tbody</code>), header (<code>thead</code>) and
+footer (<code>tfoot</code>).</p>
+<hr>
+</div>
+</body>
+</html>

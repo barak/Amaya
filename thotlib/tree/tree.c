@@ -551,7 +551,7 @@ PtrSSchema          pSS;
 	 /* searches the element's attributes */
 	{
 	   pAttr = pEl->ElFirstAttr;
-	   while (pAttr != NULL && !ret)
+	   while (pAttr != NULL && pAttr->AeAttrSSchema != NULL && !ret)
 	     {
 		if ((pSS == NULL || pAttr->AeAttrSSchema->SsCode == pSS->SsCode)
 		    && pAttr->AeAttrNum == attrNum)
@@ -742,7 +742,7 @@ int                 Kind;
 			      break;
 			   case LtSymbol:
 			   case LtGraphics:
-			      if (pEl->ElGraph == '\0')
+			      if (pEl->ElGraph == EOS)
 				 ret = TRUE;
 			      break;
 			   case LtReference:
@@ -1037,7 +1037,7 @@ PtrElement          pEl;
 	if (pAttr != NULL)
 	   /* found a Language attribute in one ancestor */
 	   if (pAttr->AeAttrText != NULL)
-	      if (pAttr->AeAttrText->BuContent[0] != '\0')
+	      if (pAttr->AeAttrText->BuContent[0] != EOS)
 		 /* this Language attribute has a value */
 		{
 		   lang = TtaGetLanguageIdFromName (pAttr->AeAttrText->BuContent);
@@ -1174,7 +1174,7 @@ int                 assocNum;
 		  i++;
 		  pEl->ElText->BuContent[i - 1] = pR->SrName[i - 2];
 	       }
-	     while (pEl->ElText->BuContent[i - 1] != '\0' && i != THOT_MAX_CHAR);
+	     while (pEl->ElText->BuContent[i - 1] != EOS && i != THOT_MAX_CHAR);
 	     if (i < THOT_MAX_CHAR)
 	       {
 		  pEl->ElText->BuContent[i - 1] = '$';
@@ -1183,7 +1183,7 @@ int                 assocNum;
 
 	     else
 		pEl->ElText->BuContent[i - 2] = '$';
-	     pEl->ElText->BuContent[i - 1] = '\0';
+	     pEl->ElText->BuContent[i - 1] = EOS;
 	     pEl->ElTextLength = i - 1;
 	     pEl->ElVolume = pEl->ElTextLength;
 	     pEl->ElText->BuLength = i - 1;
@@ -2911,7 +2911,7 @@ boolean             withLabel;
 		/* nature scheme is not loaded */
 		/* so, load it! */
 	       {
-		  PSchName[0] = '\0';
+		  PSchName[0] = EOS;
 		  LoadNatureSchema (pSS, PSchName, typeNum);
 	       }
 	     if (pSRule->SrSSchemaNat == NULL)
@@ -2998,12 +2998,12 @@ boolean             withLabel;
 				     break;
 				  case GraphicElem:
 				     pEl->ElLeafType = LtGraphics;
-				     pEl->ElGraph = '\0';
+				     pEl->ElGraph = EOS;
 				     pEl->ElVolume = 0;
 				     break;
 				  case Symbol:
 				     pEl->ElLeafType = LtSymbol;
-				     pEl->ElGraph = '\0';
+				     pEl->ElGraph = EOS;
 				     pEl->ElVolume = 0;
 				     break;
 				  case PageBreak:
@@ -3033,8 +3033,8 @@ boolean             withLabel;
 			      pBu1->BuContent[i] = pSS->SsConstBuffer[i + pSRule->SrIndexConst - 1];
 			      i++;
 			   }
-			 while (pBu1->BuContent[i - 1] != '\0' && i < THOT_MAX_CHAR);
-			 pBu1->BuContent[i - 1] = '\0';
+			 while (pBu1->BuContent[i - 1] != EOS && i < THOT_MAX_CHAR);
+			 pBu1->BuContent[i - 1] = EOS;
 			 pEl->ElTextLength = i - 1;
 			 pEl->ElVolume = pEl->ElTextLength;
 			 pEl->ElText->BuLength = i - 1;
@@ -3324,8 +3324,11 @@ PtrAttribute        pAttr;
      {
 	/* removes the attribute from the element's chain of attributes */
 	if (pEl->ElFirstAttr == pAttr)
-	   /* it's the first attribute of the element */
-	   pEl->ElFirstAttr = pAttr->AeNext;
+	  {
+	    /* it's the first attribute of the element */
+	    pEl->ElFirstAttr = pAttr->AeNext;
+	    pAttr->AeNext = NULL;
+	  }
 	else
 	   /* searches the attribute to remove in the element's chain of attributes */
 	  {
@@ -3340,6 +3343,7 @@ PtrAttribute        pAttr;
 		   /* found it, so unlink it */
 		  {
 		     pPrevAttr->AeNext = pAttr->AeNext;
+		     pAttr->AeNext = NULL;
 		     stop = TRUE;
 		  }
 		else
@@ -3481,7 +3485,7 @@ PtrElement         *pEl;
 		       DeleteTextBuffer (&pBuf);
 		       pBuf = pNextBuf;
 		    }
-		  while (c < pEl1->ElTextLength && pBuf != NULL);
+		  while (/*c < pEl1->ElTextLength &&*/ pBuf != NULL);
 		  pEl1->ElText = NULL;
 		  pEl1->ElTextLength = 0;
 
@@ -3510,7 +3514,10 @@ PtrElement         *pEl;
 	       {
 		  CancelReference (*pEl);
 		  if (pEl1->ElReference != NULL)
-		     FreeReference (pEl1->ElReference);
+		    {
+		      FreeReference (pEl1->ElReference);
+		      pEl1->ElReference = NULL;
+		    }
 	       }
 	     if (pEl1->ElLeafType == LtPairedElem)
 		if (pEl1->ElOtherPairedEl != NULL)
@@ -3793,7 +3800,7 @@ boolean             shareRef;
 		      the schemes for the copy */
 		  {
 		     /* loads the structure and presentation schemes for the copy */
-		     PSchName[0] = '\0';
+		     PSchName[0] = EOS;
 		     /* no preference for the presentation scheme */
 		     nR = CreateNature (pSource->ElStructSchema->SsName, PSchName, pSSchema);
 		     if (nR == 0)
@@ -4060,7 +4067,7 @@ PtrDocument         pDoc;
 		  done = pEl->ElNPoints > 0;
 	       case LtSymbol:
 	       case LtGraphics:
-		  done = pEl->ElGraph != '\0';
+		  done = pEl->ElGraph != EOS;
 		  break;
 	       case LtPageColBreak:
 	       case LtReference:

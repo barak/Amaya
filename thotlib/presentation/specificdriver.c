@@ -86,7 +86,7 @@ SpecificContext     ctxt;
       return;
    if (ctxt->drv != &SpecificStrategy)
       return;
-   TtaFreeMemory ((char *) ctxt);
+   TtaFreeMemory ( ctxt);
 }
 
 /*
@@ -188,7 +188,6 @@ PresentationValue   v;
    Function used to to add a specific presentation rule
    for a given type of rule associated to an element.
   ----------------------------------------------------------------------*/
-
 #ifdef __STDC__
 static PtrPRule  InsertElementPRule (SpecificTarget el, PRuleType type, int extra)
 #else
@@ -199,7 +198,7 @@ int                 extra;
 
 #endif
 {
-    PtrPRule cur, prev, new;
+    PtrPRule cur, prev, pRule;
     
     prev = NULL;
     cur = ((PtrElement) el)->ElFirstPRule;
@@ -234,31 +233,31 @@ int                 extra;
 	return (cur);
 
     /* not found, allocate it, fill it and insert it */
-    GetPresentRule (&new);
-    if (new == NULL)
+    GetPresentRule (&pRule);
+    if (pRule == NULL)
      {
 	TtaDisplaySimpleMessage (FATAL, LIB, TMSG_NO_MEMORY);
 	return (NULL);
      }
-    new->PrType = type;
-    new->PrCond = NULL;
-    new->PrViewNum = 1;
-    new->PrSpecifAttr = 0;
-    new->PrSpecifAttrSSchema = NULL;
+    pRule->PrType = type;
+    pRule->PrCond = NULL;
+    pRule->PrViewNum = 1;
+    pRule->PrSpecifAttr = 0;
+    pRule->PrSpecifAttrSSchema = NULL;
 
     /* Add the order / conditions .... */
     /* chain in the rule */
     if (prev == NULL)
      {
-	new->PrNextPRule = ((PtrElement) el)->ElFirstPRule;
-	((PtrElement) el)->ElFirstPRule = new;
+	pRule->PrNextPRule = ((PtrElement) el)->ElFirstPRule;
+	((PtrElement) el)->ElFirstPRule = pRule;
      }
     else
      {
-	new->PrNextPRule = prev->PrNextPRule;
-	prev->PrNextPRule = new;
+	pRule->PrNextPRule = prev->PrNextPRule;
+	prev->PrNextPRule = pRule;
      }
-    return (new);
+    return (pRule);
 }
 
 /*----------------------------------------------------------------------
@@ -812,39 +811,34 @@ void               *param;
 
 #endif /* __STDC__ */
 {
-   Element                  el = (Element) target;
-   PtrPRule                 rule;
-   PresentationSettingBlock setting;
-   PtrPSchema               pSc1;
-   int                      cst;
+  Element                  el = (Element) target;
+  PtrPRule                 rule;
+  PresentationSettingBlock setting;
+  PtrPSchema               pSc1;
+  int                      cst;
     
-   if (target == NULL)
-      return;
-   rule = ((PtrElement) el)->ElFirstPRule;
-   /*
-    * for each rule corresponding to the same context i.e. identical
-    * conditions, create the corresponding PresentationSetting and
-    * call the user handler.
-    */
-   while (rule != NULL)
-     {
-	/*
-	 * fill in the PresentationSetting and call the handler.
-	 */
-	if (rule->PrPresMode == PresFunction)
-	    PRuleToPresentationSetting ((PRule) rule, &setting, 
-	                                rule->PrPresFunction);
-	else
-	    PRuleToPresentationSetting ((PRule) rule, &setting, 0);
+  if (target == NULL)
+    return;
+  rule = ((PtrElement) el)->ElFirstPRule;
+  /*
+   * for each rule corresponding to the same context i.e. identical
+   * conditions, create the corresponding PresentationSetting and
+   * call the user handler.
+   */
+  while (rule != NULL)
+    {
+      /* fill in the PresentationSetting and call the handler */
+      if (rule->PrPresMode == PresFunction)
+	PRuleToPresentationSetting ((PRule) rule, &setting, rule->PrPresFunction);
+      else
+	PRuleToPresentationSetting ((PRule) rule, &setting, 0);
 
-	/*
-	 * need to do some tweaking in the case of BackgroudPicture
-	 */
-	if (setting.type == DRIVERP_BGIMAGE) {
-            cst = setting.value.typed_data.value;
-	    pSc1 = (PtrPSchema) GetDocumentMainPSchema (ctxt->doc);
-
-            setting.value.pointer = &pSc1->PsConstant[cst-1].PdString[0];
+      /* need to do some tweaking in the case of BackgroudPicture */
+      if (setting.type == DRIVERP_BGIMAGE)
+	{
+	  cst = setting.value.typed_data.value;
+	  pSc1 = (PtrPSchema) GetDocumentMainPSchema (ctxt->doc);
+	  setting.value.pointer = &pSc1->PsConstant[cst-1].PdString[0];
 	}
 
 	handler (target, ctxt, &setting, param);

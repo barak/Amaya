@@ -15,6 +15,8 @@
 #define THOT_EXPORT extern
 #include "amaya.h"
 #include "trans.h"
+
+#include "HTMLimage_f.h"
 #include "html2thot_f.h"
 #include "transparse_f.h"
 #include "tree.h"
@@ -101,11 +103,11 @@ structureTree       t;
 	     while (mc != NULL)
 	       {
 		  mc2 = mc->Next;
-		  TtaFreeMemory ((char *) mc);
+		  TtaFreeMemory ( mc);
 		  mc = mc2;
 	       }
 	     m2 = m->Next;
-	     TtaFreeMemory ((char *) m);
+	     TtaFreeMemory ( m);
 	     m = m2;
 	  }
 
@@ -117,7 +119,7 @@ structureTree       t;
 	     c = n;
 	  }
 	TtaFreeMemory (t->Tag);
-	TtaFreeMemory ((char *) t);
+	TtaFreeMemory ( t);
      }
 }
 
@@ -140,7 +142,7 @@ static void         FreeMatchEnv ()
      {
 	l1 = l;
 	l = l->Next;
-	TtaFreeMemory ((char *) l1);
+	TtaFreeMemory ( l1);
      }
    strMatchEnv.ListSubTrees = NULL;
 
@@ -212,7 +214,7 @@ int                 depth;
    Attribute           attr;
    ElementType         elemType;
    char               *tag;
-   strNode            *new, *child;
+   strNode            *added, *child;
 #ifdef AMAYA_DEBUG
    int i;
 #endif
@@ -224,34 +226,34 @@ int                 depth;
    strcpy (tag, GITagNameByType (elemType));
    attr = NULL;
    TtaNextAttribute (elem, &attr);
-   if (strcmp (tag, "???") && strcmp (tag, "NONE") && (TtaGetFirstChild (elem) != NULL || attr != NULL || TtaIsLeaf (elemType)))
+   if (strcmp (tag, "???") && strcmp (tag, "none") && (TtaGetFirstChild (elem) != NULL || attr != NULL || TtaIsLeaf (elemType)))
      {
-	new = NewNode (tag);
-	new->Elem = elem;
-	new->Parent = father;
-	new->NodeDepth = depth;
+	added = NewNode (tag);
+	added->Elem = elem;
+	added->Parent = father;
+	added->NodeDepth = depth;
 	if (father->Child == NULL)
 	  {
-	     father->Child = new;
-	     new->Previous = NULL;
+	     father->Child = added;
+	     added->Previous = NULL;
 	  }
 	else
 	  {
 	     child = father->Child;
 	     while (child->Next != NULL)
 		child = child->Next;
-	     child->Next = new;
-	     new->Previous = child;
+	     child->Next = added;
+	     added->Previous = child;
 	  }
 	depth++;
 #ifdef AMAYA_DEBUG
 	for (i=0;i<depth;i++)
 	  printf("  ");
-	printf("%s\n",new->Tag);
+	printf("%s\n",added->Tag);
 #endif
      }
    else
-      new = father;
+      added = father;
    TtaFreeMemory (tag);
    if ((strcmp ( TtaGetSSchemaName (elemType.ElSSchema), "HTML") != 0) ||
        (elemType.ElTypeNum != HTML_EL_Comment_ && 
@@ -260,7 +262,7 @@ int                 depth;
 	elemCour = TtaGetFirstChild (elem);
 	while (elemCour != NULL)
 	  {
-	     BuildStructureTree (elemCour, doc, new, maxdepth, depth);
+	     BuildStructureTree (elemCour, doc, added, maxdepth, depth);
 	     TtaNextSibling (&elemCour);
 	  }
      }
@@ -833,14 +835,17 @@ Document doc;
   char		      tmpfilename[25];
   char		      charRead;
   FILE		     *inputFile = NULL;
-  Language	      lang;
   int                 len;
   boolean	      result = FALSE;
   struct stat        *StatBuffer;
   int		      status;
+# ifndef _WINDOWS
+  Language	      lang;
+# endif /* _WINDOWS */
 
   len = BUFFER_LEN - szHTML;
-  if (TtaGetElementType (subTree).ElTypeNum == HTML_EL_TEXT_UNIT)
+  /*****
+    if (TtaGetElementType (subTree).ElTypeNum == HTML_EL_TEXT_UNIT)
     {
       if (len > TtaGetTextLength (subTree))
 	{
@@ -852,6 +857,7 @@ Document doc;
     }
   else
     {
+    *****/
 # ifndef _WINDOWS  
       strcpy (tmpfilename, "/tmp/amayatrans.tmp");
 # else  /* _WINDOWS */
@@ -874,8 +880,8 @@ Document doc;
 	  TtaReadClose (inputFile);  
 	  if (charRead == EOF)
 	    result = TRUE;
+	  /*}*/
 	}
-    }
   bufHTML[szHTML] = EOS;
   return result;
 }
@@ -905,7 +911,7 @@ Element *elem;
 	  prev = TtaGetParent (p);
 	  if (prev != NULL && ((strcmp (GITagName (prev), "???") == 0)
 			       ||
-			       (strcmp (GITagName (prev), "NONE") == 0)))
+			       (strcmp (GITagName (prev), "none") == 0)))
 	    TtaPreviousSibling (&prev);
 	  else
 	    prev = NULL;
@@ -1007,8 +1013,7 @@ Document            doc;
        printf("%s\n\n",bufHTML);
 #endif
 	TtaSetStructureChecking (0, doc);
-	InitializeParser (myFirstSelect, isClosed, doc);
-	HTMLparse (NULL, bufHTML);
+	ParseSubTree (bufHTML, myFirstSelect, isClosed, doc);
 	TtaSetStructureChecking (1, doc);
 	typeEl.ElSSchema = TtaGetDocumentSSchema (doc);
 	typeEl.ElTypeNum = HTML_EL_Invalid_element;
@@ -1058,8 +1063,8 @@ Document            doc;
 		       courEl = TtaGetFirstChild (myFirstSelect);
 		       while (courEl != NULL && courEl != myLastSelect)
 			 {
-			    TtaDeleteTree (courEl, doc);
-			    courEl = TtaGetFirstChild (lastEl);
+			   TtaDeleteTree (courEl, doc);
+			   courEl = TtaGetFirstChild (myFirstSelect);
 			 }
 		       /* restoring the source elements */
 		       DMatch = sMatch;
@@ -1588,8 +1593,8 @@ strNode            *TN;
   if (TransferMode == ByAttribute)
     {
       /*free the ZZGHOST attribute */
-      TtaFreeMemory ((char *) NS->Attributes->NameAttr);
-      TtaFreeMemory ((char *) NS->Attributes);
+      TtaFreeMemory ( NS->Attributes->NameAttr);
+      TtaFreeMemory ( NS->Attributes);
     }
   NS->Attributes = NULL;
   TtaFreeMemory (attrValue);
@@ -1680,7 +1685,7 @@ boolean             inplace;
 	  {
 	    res = res && PutEndTag (generationStack[topGenerStack]);
 	    TtaFreeMemory (generationStack[topGenerStack]->Tag);
-	    TtaFreeMemory ((char *) generationStack[topGenerStack]);
+	    TtaFreeMemory ( generationStack[topGenerStack]);
 	    topGenerStack--;
 	  }
       elType = TtaGetElementType (node->Elem); 
@@ -1817,7 +1822,7 @@ strMatchChildren   *sm;
 	     { /* closes the opened tags (on generation stack) */
 	       result = result && PutEndTag (generationStack[topGenerStack]);
 	       TtaFreeMemory (generationStack[topGenerStack]->Tag);
-	       TtaFreeMemory ((char *) generationStack[topGenerStack]);
+	       TtaFreeMemory ( generationStack[topGenerStack]);
 	       topGenerStack--;
 	     }
 	   
@@ -1922,7 +1927,7 @@ Document            doc;
 	  {
 	     res = res && PutEndTag (generationStack[topGenerStack]);
 	     TtaFreeMemory (generationStack[topGenerStack]->Tag);
-	     TtaFreeMemory ((char *) generationStack[topGenerStack]);
+	     TtaFreeMemory ( generationStack[topGenerStack]);
 	     topGenerStack--;
 	  }
 	
@@ -2161,7 +2166,7 @@ char               *prevtag;
       if (subTypes[0].ElTypeNum == tagElType.ElTypeNum)
 	result = TRUE;
       else if (!strcmp (GITagNameByType (subTypes[0]), "???") ||
-	       !strcmp (GITagNameByType (subTypes[0]), "NONE"))
+	       !strcmp (GITagNameByType (subTypes[0]), "none"))
 	/* search if tag can be inserted as a child of the identity */
 	result = IsValidHtmlChild (subTypes[0], tag, "");
 #ifdef MATHML
@@ -2176,7 +2181,7 @@ char               *prevtag;
       if (subTypes[0].ElTypeNum == tagElType.ElTypeNum)
 	result = TRUE;
       else if (!strcmp (GITagNameByType (subTypes[0]), "???") ||
-	       !strcmp (GITagNameByType (subTypes[0]), "NONE"))
+	       !strcmp (GITagNameByType (subTypes[0]), "none"))
 	result = IsValidHtmlChild (subTypes[0], tag, "");
       break;
 
@@ -2186,7 +2191,7 @@ char               *prevtag;
 	  if (subTypes[i].ElTypeNum == tagElType.ElTypeNum)
 	    result = TRUE;
 	  else if (!strcmp (GITagNameByType (subTypes[i]),"???") ||
-		   !strcmp (GITagNameByType (subTypes[i]), "NONE"))
+		   !strcmp (GITagNameByType (subTypes[i]), "none"))
 	    result = IsValidHtmlChild (subTypes[i], tag, "");
 	}
       break;
@@ -2201,7 +2206,7 @@ char               *prevtag;
 	  if (prevElType.ElTypeNum == subTypes[i].ElTypeNum)
 	    found = TRUE;
 	  else if (strcmp (GITagNameByType (subTypes[i]),"???") ||
-		   strcmp (GITagNameByType (subTypes[i]), "NONE"))
+		   strcmp (GITagNameByType (subTypes[i]), "none"))
 	    i = cardinal;
 	}
       if (found)
@@ -2211,11 +2216,11 @@ char               *prevtag;
 	      if (tagElType.ElTypeNum == subTypes[i].ElTypeNum)
 		result = TRUE;
 	      else if (!strcmp (GITagNameByType (subTypes[i]), "???") ||
-		       !strcmp (GITagNameByType (subTypes[i]), "NONE"))
+		       !strcmp (GITagNameByType (subTypes[i]), "none"))
 		result = IsValidHtmlChild (subTypes[i], tag, "");
 	      if (!result)
 		if (!strcmp (GITagNameByType (subTypes[i]), "???") ||
-		    !strcmp (GITagNameByType (subTypes[i]), "NONE") ||
+		    !strcmp (GITagNameByType (subTypes[i]), "none") ||
 		    TtaIsOptionalInAggregate(i,elemType)) 
 		  i++;
 		else
@@ -2229,7 +2234,7 @@ char               *prevtag;
 	  if (tagElType.ElTypeNum == subTypes[i].ElTypeNum)
 	    result = TRUE;
 	  else if (!strcmp (GITagNameByType (subTypes[i]), "???") ||
-		   !strcmp (GITagNameByType (subTypes[i]), "NONE"))
+		   !strcmp (GITagNameByType (subTypes[i]), "none"))
 	    result = IsValidHtmlChild (subTypes[i], tag, "");
 	  if (!result)
 	    if (TtaIsOptionalInAggregate(i,elemType)) 
@@ -2246,7 +2251,7 @@ char               *prevtag;
 	    if (tagElType.ElTypeNum == subTypes[0].ElTypeNum)
 	      result = TRUE;
 	    else if (!strcmp (GITagNameByType (subTypes[0]), "???") ||
-		     !strcmp (GITagNameByType (subTypes[0]), "NONE"))
+		     !strcmp (GITagNameByType (subTypes[0]), "none"))
 	    result = IsValidHtmlChild (subTypes[0], tag, "");
 	  }
       }
@@ -2258,7 +2263,7 @@ char               *prevtag;
     case ConstructError:
       break;
     }
-  TtaFreeMemory((char *)subTypes);
+  TtaFreeMemory((void*)subTypes);
   return result;
 }
 
@@ -2425,21 +2430,9 @@ char               *data;
 	      if (elParent != NULL)
 		{
 		  TtaSetStructureChecking (0, TransDoc);
-#              ifdef MATHML
-		  CheckMathElement (elParent);
-#              endif /* MATHML */
+		  XMLElementComplete (elParent, TransDoc);
 		  TtaSetStructureChecking (1, TransDoc);
 		} 
-	    }
-	  else
-	    {
-	      /* checking the HTML thot tree */
-	      InitializeParser (TtaGetMainRoot (TransDoc), TRUE, TransDoc);
-	      TtaSetStructureChecking (0, TransDoc);
-	      CheckAbstractTree (NULL);
-	      if (TtaIsViewOpened (TransDoc, 1))
-		ApplyFinalStyle (TransDoc);
-	      TtaSetStructureChecking (1, TransDoc);
 	    }
 		   
 	  if (myLastSelect == NULL)
@@ -2500,7 +2493,7 @@ char               *data;
 	      myFirstSelect = elFound;
 	      myLastSelect = NULL;
 	    }
-			
+	  TtaSetDocumentModified (TransDoc);
 	  TtaSetDisplayMode (TransDoc, DisplayImmediately);
 	  TtaSelectElement (TransDoc, myFirstSelect);
 	  if (myLastSelect != NULL && TtaIsBefore (myFirstSelect, myLastSelect))
@@ -2530,6 +2523,7 @@ View                view;
   StructureTree       node;
   boolean	       ok;
   strTransSet*	       transSets [4] = {NULL,NULL,NULL,NULL};
+  SSchema	      transSchema;
   
   strMatchEnv.SourceTree = NULL;
   strMatchEnv.ListSubTrees = NULL;
@@ -2553,7 +2547,7 @@ View                view;
 	    {
 	      elType = TtaGetElementType (elemSelect);
 	      strcpy (nameSet, TtaGetSSchemaName (elType.ElSSchema));
-	      ok =  ppStartParser (nameSet, &CourTransSet) || ok;
+	      ok =  ppStartParser (nameSet, elType.ElSSchema, &CourTransSet) || ok;
 	      if (i < 4 && ok && (i == 0 || CourTransSet != transSets[i-1]))
 		{
 		  transSets [i++] = CourTransSet;
@@ -2570,6 +2564,7 @@ View                view;
 	  elemSelect = myFirstSelect;
 	  elType = TtaGetElementType (elemSelect);
 	  strcpy (nameSet, TtaGetSSchemaName (elType.ElSSchema));
+	  transSchema = elType.ElSSchema;
 	  while (elemSelect != NULL)
 	    {
 	      elType = TtaGetElementType (elemSelect);
@@ -2580,10 +2575,11 @@ View                view;
 	      else
 		{
 		  strcpy (nameSet, "");
+		  transSchema = NULL;
 		  elemSelect = NULL;
 		}
 	    }
-	  ok = ppStartParser (nameSet, &CourTransSet);
+	  ok = ppStartParser (nameSet, transSchema, &CourTransSet);
 	  if (ok)
 	    {
 	      transSets [0] = CourTransSet;
@@ -2635,7 +2631,7 @@ View                view;
 		  TtaPreviousSibling (&elemSelect);
 		  if (elemSelect != NULL)
 		    strcpy (tag, GITagNameByType (TtaGetElementType (elemSelect)));
-		  while (elemSelect != NULL && (!strcmp (tag, "???") || !strcmp (tag, "NONE")))
+		  while (elemSelect != NULL && (!strcmp (tag, "???") || !strcmp (tag, "none")))
 		    {
 		      TtaPreviousSibling (&elemSelect);
 		      if (elemSelect != NULL)
@@ -2677,7 +2673,7 @@ View                view;
   else
     /* display an status message */
     TtaSetStatus (TransDoc, 1, TtaGetMessage (AMAYA, AM_NO_TRANS), NULL);
-  TtaFreeMemory(nameSet);
+  TtaFreeMemory (nameSet);
 }
 
 
@@ -2706,6 +2702,7 @@ Document            doc;
   strMatch           *sm;
   StructureTree       node;
   char               *tag, *nameSet;
+  SSchema	      transSchema;
 
   strMatchEnv.SourceTree = NULL;
   strMatchEnv.ListSubTrees = NULL;
@@ -2732,7 +2729,7 @@ Document            doc;
 	      if (TtaSameSSchemas (elType.ElSSchema, resultType.ElSSchema))
 		{
 		  strcpy (nameSet, TtaGetSSchemaName (elType.ElSSchema));
-		  ok =  ppStartParser (nameSet, &CourTransSet);
+		  ok =  ppStartParser (nameSet, elType.ElSSchema, &CourTransSet);
 		}
 	      if (CourTransSet == NULL)
 		elemSelect = TtaGetParent (elemSelect);
@@ -2743,6 +2740,7 @@ Document            doc;
 	  elemSelect = myFirstSelect;
 	  elType = TtaGetElementType (elemSelect);
 	  strcpy (nameSet, TtaGetSSchemaName(elType.ElSSchema));
+	  transSchema = elType.ElSSchema;
 	  while (elemSelect != NULL)
 	    {
 	      elType = TtaGetElementType (elemSelect);
@@ -2755,10 +2753,11 @@ Document            doc;
 	      else
 		{
 		  strcpy (nameSet, "");
+		  transSchema = NULL;
 		  elemSelect = NULL;
 		}
 	    }
-	  ok = ppStartParser (nameSet, &CourTransSet);
+	  ok = ppStartParser (nameSet, transSchema, &CourTransSet);
 	}
     }
   if (ok)

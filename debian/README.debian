@@ -17,16 +17,7 @@ so I created extra.tar.gz with the extraneous files.
 
 The original source can be gotten from:
 
-  ftp://ftp.w3.org/pub/amaya/amaya-src-1.1c.tar.gz
-
-The files in extra.tar.gz were taken from:
-
-  ftp://ftp.w3.org/pub/amaya/amaya-LINUX-ELF-1.1c.tar.gz 
-
-
-My install script, a gross hack, has "LINUX-ELF" hard coded into it.
-If anyone wants to port this to another platform (e.g. sparc), I'm
-willing to fix this.
+  ftp://ftp.w3.org/pub/amaya/amaya-src-1.3.tar.gz
 
 
 Steve Dunham <dunham@debian.org>, Tue, 25 Nov 1997 13:44:14 -0500

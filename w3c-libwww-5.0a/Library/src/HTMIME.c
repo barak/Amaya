@@ -3,7 +3,7 @@
 **
 **	(c) COPYRIGHT MIT 1995.
 **	Please first read the full copyright statement in the file COPYRIGH.
-**	@(#) $Id: HTMIME.c,v 1.1.1.1 1996/10/15 13:08:37 cvs Exp $
+**	@(#) $Id: HTMIME.c,v 1.2 1998/03/11 17:45:38 cvs Exp $
 **
 **	This is RFC 1341-specific code.
 **	The input stream pushed into this parser is assumed to be
@@ -35,7 +35,8 @@
 typedef enum _HTMIMEMode {
     HT_MIME_HEADER	= 0x1,
     HT_MIME_FOOTER	= 0x2,
-    HT_MIME_PARTIAL	= 0x4
+    HT_MIME_PARTIAL	= 0x4,
+    HT_MIME_CONT        = 0x8
 } HTMIMEMode;
 
 struct _HTStream {
@@ -455,6 +456,18 @@ PUBLIC HTStream * HTMIMEHeader (HTRequest *	request,
     HTStream * me = HTMIMEConvert(request, param, input_format,
 				  output_format, output_stream);
     me->mode |= HT_MIME_HEADER;
+    return me;
+}
+
+PUBLIC HTStream * HTMIMEContinue (HTRequest *   request,
+                                  void *        param,
+                                  HTFormat      input_format,
+                                  HTFormat      output_format,
+                                  HTStream *    output_stream)
+{
+    HTStream * me = HTMIMEConvert(request, param, input_format,
+                                  output_format, output_stream);
+    me->mode |= HT_MIME_CONT;
     return me;
 }
 

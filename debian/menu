@@ -1,0 +1,2 @@
+?package(amaya):needs=X11 section=Apps/Net\
+  title="amaya" command="/usr/bin/amaya"

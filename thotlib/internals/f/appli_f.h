@@ -24,6 +24,10 @@ extern void FrameHScrolled ( int *w,
 extern void FrameVScrolled ( int *w,
                              int frame,
                              int *param );
+extern void TtcLineUp ( Document document,
+                        View view );
+extern void TtcLineDown ( Document document,
+                          View view );
 extern void TtcPageUp ( Document document,
                         View view );
 extern void TtcPageDown ( Document document,
@@ -37,7 +41,8 @@ extern void TtaRaiseView ( Document document,
                            View view );
 extern ThotWidget TtaGetViewFrame ( Document document,
                                     View view );
-extern void DisplaySelMessage ( char *text );
+extern void DisplaySelMessage ( char *text,
+                                PtrDocument pDoc );
 extern void TtaSetStatus ( Document document,
                            View view,
                            CONST char *text,
@@ -96,6 +101,10 @@ extern void FrameHScrolled (/* int *w,
 extern void FrameVScrolled (/* int *w,
                                int frame,
                                int *param */);
+extern void TtcLineUp (/* Document document,
+                          View view */);
+extern void TtcLineDown (/* Document document,
+                            View view */);
 extern void TtcPageUp (/* Document document,
                           View view */);
 extern void TtcPageDown (/* Document document,
@@ -109,7 +118,8 @@ extern void TtaRaiseView (/* Document document,
                              View view */);
 extern ThotWidget TtaGetViewFrame (/* Document document,
                                       View view */);
-extern void DisplaySelMessage (/* char *text */);
+extern void DisplaySelMessage (/* char *text,
+                                  PtrDocument pDoc */);
 extern void TtaSetStatus (/* Document document,
                              View view,
                              CONST char *text,

@@ -17,11 +17,6 @@
 #include "typemedia.h"
 #include "frame.h"
 
-#ifdef _WINDOWS
-#define FOR_MSW
-#endif /* _WINDOWS */
-
-#include "xpmP.h"
 #include "xpm.h"
 
 #undef THOT_EXPORT
@@ -115,6 +110,8 @@ char              **d;
 	   XFreePixmap (TtDisplay, PicMask);
      }
    return (pixmap);
+#  else  /* _WINDOWS */
+   return (Pixmap) NULL;
 #  endif /* _WINDOWS */
 }
 #endif /* _WIN_PRINT */

@@ -7,7 +7,8 @@
 
 /*
  *
- * Author: V. Quint (INRIA)
+ * Authors: V. Quint (INRIA)
+ *          I. Vatton (INRIA)
  *
  */
  
@@ -20,6 +21,8 @@
 #include "tree.h"
 #include "typecorr.h"
 
+#define THOT_EXPORT extern
+#include "boxes_tv.h"
 #undef THOT_EXPORT
 #define THOT_EXPORT
 #include "edit_tv.h"
@@ -828,13 +831,13 @@ Document            document;
 			    x = pAb->AbEnclosing->AbBox->BxWidth;
 			    y = pAb->AbEnclosing->AbBox->BxHeight;
 			 }
-		       deltaX = PixelValue (deltaX, UnPercent, (PtrAbstractBox) x);
-		       deltaY = PixelValue (deltaY, UnPercent, (PtrAbstractBox) y);
+		       deltaX = PixelValue (deltaX, UnPercent, (PtrAbstractBox) x, 0);
+		       deltaY = PixelValue (deltaY, UnPercent, (PtrAbstractBox) y, 0);
 		    }
-		  else if (unit != UnPixel)
+		  else
 		    {
-		       deltaX = PixelValue (deltaX, unit, pAb);
-		       deltaY = PixelValue (deltaY, unit, pAb);
+		       deltaX = PixelValue (deltaX, unit, pAb, ViewFrameTable[frame - 1].FrMagnification);
+		       deltaY = PixelValue (deltaY, unit, pAb, ViewFrameTable[frame - 1].FrMagnification);
 		    }
 		  NewDimension (pAb, deltaX+pAb->AbBox->BxWidth, deltaY+pAb->AbBox->BxHeight, frame, FALSE);
 		  RedispNewGeometry (document, (PtrElement) element);
@@ -910,13 +913,13 @@ TypeUnit            unit;
 			    x = pAb->AbEnclosing->AbBox->BxWidth;
 			    y = pAb->AbEnclosing->AbBox->BxHeight;
 			 }
-		       deltaX = PixelValue (deltaX, UnPercent, (PtrAbstractBox) x);
-		       deltaY = PixelValue (deltaY, UnPercent, (PtrAbstractBox) y);
+		       deltaX = PixelValue (deltaX, UnPercent, (PtrAbstractBox) x, 0);
+		       deltaY = PixelValue (deltaY, UnPercent, (PtrAbstractBox) y, 0);
 		    }
-		  else if (unit != UnPixel)
+		  else
 		    {
-		       deltaX = PixelValue (deltaX, unit, pAb);
-		       deltaY = PixelValue (deltaY, unit, pAb);
+		       deltaX = PixelValue (deltaX, unit, pAb, ViewFrameTable[frame - 1].FrMagnification);
+		       deltaY = PixelValue (deltaY, unit, pAb, ViewFrameTable[frame - 1].FrMagnification);
 		    }
 		  NewPosition (pAb, deltaX, deltaY, frame, FALSE);
 		  RedispNewGeometry (document, (PtrElement) element);
@@ -999,13 +1002,13 @@ int                *height;
 			    x = pAb->AbEnclosing->AbBox->BxWidth;
 			    y = pAb->AbEnclosing->AbBox->BxHeight;
 			 }
-		       *width = PixelValue (*width, UnPercent, (PtrAbstractBox) x);
-		       *height = PixelValue (*height, UnPercent, (PtrAbstractBox) y);
+		       *width = PixelValue (*width, UnPercent, (PtrAbstractBox) x, 0);
+		       *height = PixelValue (*height, UnPercent, (PtrAbstractBox) y, 0);
 		    }
-		  else if (unit != UnPixel)
+		  else
 		    {
-		       *width = PixelValue (*width, unit, pAb);
-		       *height = PixelValue (*height, unit, pAb);
+		       *width = PixelValue (*width, unit, pAb, ViewFrameTable[frame - 1].FrMagnification);
+		       *height = PixelValue (*height, unit, pAb, ViewFrameTable[frame - 1].FrMagnification);
 		    }
 	       }
 	  }
@@ -1097,13 +1100,13 @@ int                *yCoord;
 	      /* Convert values to pixels */
 	      if (unit == UnPercent)
 		{
-		  *xCoord = PixelValue (*xCoord, UnPercent, (PtrAbstractBox) x);
-		  *yCoord = PixelValue (*yCoord, UnPercent, (PtrAbstractBox) y);
+		  *xCoord = PixelValue (*xCoord, UnPercent, (PtrAbstractBox) x, 0);
+		  *yCoord = PixelValue (*yCoord, UnPercent, (PtrAbstractBox) y, 0);
 		}
-	      else if (unit != UnPixel)
+	      else
 		{
-		  *xCoord = PixelValue (*xCoord, unit, pAb);
-		  *yCoord = PixelValue (*yCoord, unit, pAb);
+		  *xCoord = PixelValue (*xCoord, unit, pAb, ViewFrameTable[frame - 1].FrMagnification);
+		  *yCoord = PixelValue (*yCoord, unit, pAb, ViewFrameTable[frame - 1].FrMagnification);
 		}
 	    }
 	}
@@ -1292,168 +1295,176 @@ int                 TtaGetPRuleValue (pRule)
 PRule               pRule;
 #endif /* __STDC__ */
 {
-   int                 value;
+  int                 value;
 
-   UserErrorCode = 0;
-   value = 0;
-   if (pRule == NULL)
-     TtaError (ERR_invalid_parameter);
-   else
-      switch (((PtrPRule) pRule)->PrType)
-	    {
-	       case PtSize:
-		  /* Body-size in typographic points */
-		  value = ((PtrPRule) pRule)->PrMinValue;
-		  break;
-	       case PtStyle:
-		  switch (((PtrPRule) pRule)->PrChrValue)
-			{
-			   case 'R':
-			      value = StyleRoman;
-			      break;
-			   case 'B':
-			      value = StyleBold;
-			      break;
-			   case 'I':
-			      value = StyleItalics;
-			      break;
-			   case 'O':
-			      value = StyleOblique;
-			      break;
-			   case 'G':
-			      value = StyleBoldItalics;
-			      break;
-			   case 'Q':
-			      value = StyleBoldOblique;
-			      break;
-			   default:
-			      TtaError (ERR_invalid_parameter);
-			      break;
-			}
-		  break;
-	       case PtFont:
-		  switch (((PtrPRule) pRule)->PrChrValue)
-			{
-			   case 'T':
-			      value = FontTimes;
-			      break;
-			   case 'H':
-			      value = FontHelvetica;
-			      break;
-			   case 'C':
-			      value = FontCourier;
-			      break;
-			   default:
-			      TtaError (ERR_invalid_parameter);
-			      break;
-			}
-		  break;
-	       case PtUnderline:
-		  switch (((PtrPRule) pRule)->PrChrValue)
-			{
-			   case 'N':
-			      value = NoUnderline;
-			      break;
-			   case 'U':
-			      value = Underline;
-			      break;
-			   case 'O':
-			      value = Overline;
-			      break;
-			   case 'C':
-			      value = CrossOut;
-			      break;
-			   default:
-			      TtaError (ERR_invalid_parameter);
-			      break;
-			}
-		  break;
-	       case PtThickness:
-		  switch (((PtrPRule) pRule)->PrChrValue)
-			{
-			   case 'N':
-			      value = ThinUnderline;
-			      break;
-			   case 'T':
-			      value = ThickUnderline;
-			      break;
-			   default:
-			      TtaError (ERR_invalid_parameter);
-			      break;
-			}
-		  break;
-	       case PtIndent:
-		  value = ((PtrPRule) pRule)->PrMinValue;
-		  break;
-	       case PtLineSpacing:
-		  value = ((PtrPRule) pRule)->PrMinValue;
-		  break;
-	       case PtDepth:
-		  value = ((PtrPRule) pRule)->PrIntValue;
-		  break;
-	       case PtAdjust:
-		  switch (((PtrPRule) pRule)->PrAdjust)
-			{
-			   case AlignLeft:
-			      value = AdjustLeft;
-			      break;
-			   case AlignRight:
-			      value = AdjustRight;
-			      break;
-			   case AlignCenter:
-			      value = Centered;
-			      break;
-			   case AlignLeftDots:
-			      value = LeftWithDots;
-			      break;
-			   default:
-			      TtaError (ERR_invalid_parameter);
-			      break;
-			}
-		  break;
-	       case PtJustify:
-		  if (((PtrPRule) pRule)->PrJustify)
-		     value = Justified;
-		  else
-		     value = NotJustified;
-		  break;
-	       case PtHyphenate:
-		  if (((PtrPRule) pRule)->PrJustify)
-		     value = Hyphenation;
-		  else
-		     value = NoHyphenation;
-		  break;
-	       case PtLineStyle:
-		  switch (((PtrPRule) pRule)->PrChrValue)
-			{
-			   case 'S':
-			      value = SolidLine;
-			      break;
-			   case '-':
-			      value = DashedLine;
-			      break;
-			   case '.':
-			      value = DottedLine;
-			      break;
-			   default:
-			      TtaError (ERR_invalid_parameter);
-			      break;
-			}
-		  break;
-	       case PtLineWeight:
-		  /* value = thickness of the line in typographic points */
-		  value = ((PtrPRule) pRule)->PrMinValue;
-		  break;
-	       case PtFillPattern:
-	       case PtBackground:
-	       case PtForeground:
-		  value = ((PtrPRule) pRule)->PrIntValue;
-		  break;
-	       default:
-		  TtaError (ERR_invalid_parameter);
-		  break;
-	    }
-   return value;
+  UserErrorCode = 0;
+  value = 0;
+  if (pRule == NULL)
+    TtaError (ERR_invalid_parameter);
+  else
+    switch (((PtrPRule) pRule)->PrType)
+      {
+      case PtSize:
+	/* Body-size in typographic points */
+	value = ((PtrPRule) pRule)->PrMinValue;
+	break;
+      case PtStyle:
+	switch (((PtrPRule) pRule)->PrChrValue)
+	  {
+	  case 'R':
+	    value = StyleRoman;
+	    break;
+	  case 'B':
+	    value = StyleBold;
+	    break;
+	  case 'I':
+	    value = StyleItalics;
+	    break;
+	  case 'O':
+	    value = StyleOblique;
+	    break;
+	  case 'G':
+	    value = StyleBoldItalics;
+	    break;
+	  case 'Q':
+	    value = StyleBoldOblique;
+	    break;
+	  default:
+	    TtaError (ERR_invalid_parameter);
+	    break;
+	  }
+	break;
+      case PtFont:
+	switch (((PtrPRule) pRule)->PrChrValue)
+	  {
+	  case 'T':
+	    value = FontTimes;
+	    break;
+	  case 'H':
+	    value = FontHelvetica;
+	    break;
+	  case 'C':
+	    value = FontCourier;
+	    break;
+	  default:
+	    TtaError (ERR_invalid_parameter);
+	    break;
+	  }
+	break;
+      case PtUnderline:
+	switch (((PtrPRule) pRule)->PrChrValue)
+	  {
+	  case 'N':
+	    value = NoUnderline;
+	    break;
+	  case 'U':
+	    value = Underline;
+	    break;
+	  case 'O':
+	    value = Overline;
+	    break;
+	  case 'C':
+	    value = CrossOut;
+	    break;
+	  default:
+	    TtaError (ERR_invalid_parameter);
+	    break;
+	  }
+	break;
+      case PtThickness:
+	switch (((PtrPRule) pRule)->PrChrValue)
+	  {
+	  case 'N':
+	    value = ThinUnderline;
+	    break;
+	  case 'T':
+	    value = ThickUnderline;
+	    break;
+	  default:
+	    TtaError (ERR_invalid_parameter);
+	    break;
+	  }
+	break;
+      case PtIndent:
+	value = ((PtrPRule) pRule)->PrMinValue;
+	break;
+      case PtLineSpacing:
+	value = ((PtrPRule) pRule)->PrMinValue;
+	break;
+      case PtDepth:
+	value = ((PtrPRule) pRule)->PrIntValue;
+	break;
+      case PtAdjust:
+	switch (((PtrPRule) pRule)->PrAdjust)
+	  {
+	  case AlignLeft:
+	    value = AdjustLeft;
+	    break;
+	  case AlignRight:
+	    value = AdjustRight;
+	    break;
+	  case AlignCenter:
+	    value = Centered;
+	    break;
+	  case AlignLeftDots:
+	    value = LeftWithDots;
+	    break;
+	  default:
+	    TtaError (ERR_invalid_parameter);
+	    break;
+	  }
+	break;
+      case PtJustify:
+	if (((PtrPRule) pRule)->PrJustify)
+	  value = Justified;
+	else
+	  value = NotJustified;
+	break;
+      case PtHyphenate:
+	if (((PtrPRule) pRule)->PrJustify)
+	  value = Hyphenation;
+	else
+	  value = NoHyphenation;
+	break;
+      case PtLineStyle:
+	switch (((PtrPRule) pRule)->PrChrValue)
+	  {
+	  case 'S':
+	    value = SolidLine;
+	    break;
+	  case '-':
+	    value = DashedLine;
+	    break;
+	  case '.':
+	    value = DottedLine;
+	    break;
+	  default:
+	    TtaError (ERR_invalid_parameter);
+	    break;
+	  }
+	break;
+      case PtLineWeight:
+	/* value = thickness of the line in typographic points */
+	value = ((PtrPRule) pRule)->PrMinValue;
+	break;
+      case PtFillPattern:
+      case PtBackground:
+      case PtForeground:
+	value = ((PtrPRule) pRule)->PrIntValue;
+	break;
+      case PtWidth:
+      case PtHeight:
+	value = ((PtrPRule) pRule)->PrDimRule.DrValue;
+	break;
+      case PtVertPos:
+      case PtHorizPos:
+	value = ((PtrPRule) pRule)->PrPosRule.PoDistance;
+	break;
+      default:
+	TtaError (ERR_invalid_parameter);
+	break;
+      }
+  return value;
 }
 
 /*----------------------------------------------------------------------

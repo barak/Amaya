@@ -116,7 +116,8 @@ PtrAbstractBox     *pAbb;
 
 /*----------------------------------------------------------------------
    	AncestorAbsBox	  rend le premier element pElAsc ascendant de pE
-   			  et qui possede un pave dans la vue view
+   			  et qui possede un pave (non de presentation)
+			  dans la vue view
    			  retourne ce pave dans pAbb ou NULL sinon
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
@@ -133,15 +134,16 @@ PtrElement         *pElAsc;
 
    *pElAsc = pE;
    *pAbb = NULL;
-   if ((*pElAsc)->ElParent == NULL)
-      *pAbb = NULL;
-   else
+   if (pE->ElParent != NULL)
       while ((*pElAsc)->ElParent != NULL && *pAbb == NULL)
 	{
 	   *pElAsc = (*pElAsc)->ElParent;
 	   *pAbb = (*pElAsc)->ElAbstractBox[view - 1];
+	   while (*pAbb && (*pAbb)->AbPresentationBox &&
+		           (*pAbb)->AbElement == *pElAsc)
+	      *pAbb = (*pAbb)->AbNext;
 	   if (*pAbb != NULL)
-	      if ((*pAbb)->AbDead)
+	      if ((*pAbb)->AbDead || (*pAbb)->AbElement != *pElAsc)
 		 *pAbb = NULL;
 	}
 }
@@ -557,8 +559,8 @@ PtrAttribute        pAttr;
 #endif /* __STDC__ */
 {
    PtrAbstractBox      pAbb;
-   int                 val, i;
    PtrElement          pElInherit;
+   int                 val, i;
 
    val = 0;
    *ok = TRUE;
@@ -840,7 +842,7 @@ PtrAbstractBox      pAb;
 	   if (refKind == RkElType)
 	     /* un pave d'un element de structure */
 	     {
-	     if (numAbType == MAX_PRES_VARIABLE + 1)
+	     if (numAbType == MAX_RULES_SSCHEMA + 1)
 		{
 		/* C'est une regle Not AnyElem, on accepte la premiere */
 		/* boite de presentation trouvee */
@@ -883,7 +885,7 @@ PtrAbstractBox      pAb;
 	   if (refKind == RkElType)
 	     /* un pave d'un element de structure */
 	     {
-	     if (numAbType == MAX_PRES_VARIABLE + 1)
+	     if (numAbType == MAX_RULES_SSCHEMA + 1)
 		{
 		/* C'est une regle AnyElem, on accepte le premier element
 		   trouve' */
@@ -1473,7 +1475,7 @@ PtrDocument         pDoc;
 		 case LtGraphics:
 		    pAb->AbShape = pEl->ElGraph;
 		    pAb->AbGraphAlphabet = 'G';
-		    if (pAb->AbShape == '\0')
+		    if (pAb->AbShape == EOS)
 		       pAb->AbVolume = 0;
 		    else
 		       pAb->AbVolume = 1;
@@ -1508,7 +1510,7 @@ PtrDocument         pDoc;
 				   {
 				      i = 1;
 				      pDe1 = pPR1->RdReferred;
-				      while (pDe1->ReExtDocument[i - 1] != '\0')
+				      while (pDe1->ReExtDocument[i - 1] != EOS)
 					{
 					   pBu1->BuContent[lg - 1] = pDe1->ReExtDocument[i - 1];
 					   lg++;
@@ -1526,7 +1528,7 @@ PtrDocument         pDoc;
 				 pBu1->BuContent[lg - 1] = ']';
 			   }
 		      }
-		    pBu1->BuContent[lg] = '\0';
+		    pBu1->BuContent[lg] = EOS;
 		    /* fin de la chaine de car. */
 		    pBu1->BuLength = lg;
 		    pAb->AbVolume = lg;
@@ -1546,7 +1548,7 @@ PtrDocument         pDoc;
 			 pBu1->BuContent[0] = '>';
 			 pBu1->BuContent[1] = '>';
 		      }
-		    pBu1->BuContent[2] = '\0';
+		    pBu1->BuContent[2] = EOS;
 		    /* fin de la chaine de car. */
 		    pBu1->BuLength = 2;
 		    pAb->AbVolume = 2;
@@ -1796,11 +1798,11 @@ PtrDocument         pDoc;
    		rend vrai dans appl si la regle a ete appliquee.	
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
-static void         ApplyPos (AbPosition * PPos, PosRule positionRule, PtrPRule pPRule, PtrAttribute pAttr, PtrPSchema pSchP, PtrAbstractBox pAbb1, PtrDocument pDoc, boolean * appl)
+static void         ApplyPos (AbPosition * PPos, PosRule *positionRule, PtrPRule pPRule, PtrAttribute pAttr, PtrPSchema pSchP, PtrAbstractBox pAbb1, PtrDocument pDoc, boolean * appl)
 #else  /* __STDC__ */
 static void         ApplyPos (PPos, positionRule, pPRule, pAttr, pSchP, pAbb1, pDoc, appl)
 AbPosition         *PPos;
-PosRule             positionRule;
+PosRule            *positionRule;
 PtrPRule            pPRule;
 PtrAttribute        pAttr;
 PtrPSchema          pSchP;
@@ -1827,7 +1829,7 @@ boolean            *appl;
    if (pAbb1->AbElement->ElTerminal && pAbb1->AbElement->ElLeafType == LtPageColBreak)
       if (pAbb1->AbLeafType != LtCompound && !pAbb1->AbPresentationBox)
 	 pageBreak = TRUE;
-   pPosRule = &positionRule;
+   pPosRule = positionRule;
    if (pPosRule->PoPosDef == NoEdge || pageBreak)
       /* position flottante: regle VertPos=NULL ou HorizPos=NULL */
      {
@@ -1963,7 +1965,7 @@ boolean            *appl;
 		  }
 	  }
 	else
-	   /* on n'a pas found le pave de reference */
+	   /* on n'a pas trouve' le pave' de reference */
 	   if (pAbb1->AbLeafType != LtCompound
 	       && !(pPosRule->PoRelation == RlNext
 		    || pPosRule->PoRelation == RlPrevious
@@ -2016,7 +2018,7 @@ boolean            *appl;
 	     *appl = TRUE;
 	  }
 	else
-	   /* on n'a pas found' le pave' de reference */
+	   /* on n'a pas trouv' le pave' de reference */
 	   /* si c'est un positionnement par rapport au precedent ou au */
 	   /* suivant, on positionne le pave par rapport a l'englobant */
 	   if (pAbb1->AbEnclosing != NULL &&
@@ -2034,7 +2036,7 @@ boolean            *appl;
 	   /* c'est une regle de positionnement vertical en dessous du
 	      precedent et on n'a pas trouve' le precedent. On remplace par
 	      un positionnement en haut de l'englobant */
-	  {
+	     {
 	     PPos->PosAbRef = pAbb1->AbEnclosing;
 	     PPos->PosEdge = pPosRule->PoPosDef;
 	     PPos->PosRefEdge = pPosRule->PoPosDef;
@@ -2061,7 +2063,19 @@ boolean            *appl;
 	     if (PPos->PosUserSpecified)
 		PPos->PosUserSpecified = CheckPPosUser (pAbb1, pDoc);
 	     pAbb1->AbVertEnclosing = TRUE;
-	  }
+	     }
+           else
+             /* position flottante, equivalente a une regle VertPos=NULL ou
+                HorizPos=NULL */
+             {
+	     PPos->PosEdge = NoEdge;
+             PPos->PosRefEdge = NoEdge;
+             PPos->PosDistance = 0;
+             PPos->PosUnit = UnRelative;
+             PPos->PosAbRef = NULL;
+             PPos->PosUserSpecified = FALSE;
+	     *appl = FALSE;
+             }
      }
 }
 
@@ -2112,7 +2126,7 @@ PtrDocument         pDoc;
      {
 	/* Box elastique, la dimension est definie comme une position */
 	/* applique la regle */
-	ApplyPos (&pdimAb->DimPosition, pDRule->DrPosRule, pPRule, pAttr, pSchP, pAb, pDoc, appl);
+	ApplyPos (&(pdimAb->DimPosition), &(pDRule->DrPosRule), pPRule, pAttr, pSchP, pAb, pDoc, appl);
 	/* si la regle a pu etre appliquee, le boite est reellement elastique */
 	if (*appl)
 	   pdimAb->DimIsPosition = TRUE;
@@ -3125,7 +3139,7 @@ Name                typeName;
    PtrElement          pEC, pElChild;
 
    pEC = NULL;			/* a priori on n'a pas found' */
-   if (typeName[0] != '\0')
+   if (typeName[0] != EOS)
       /* on compare les noms de type */
      {
 	if (strcmp (typeName, pElRoot->ElStructSchema->SsRule[pElRoot->ElTypeNumber - 1].SrName) == 0)
@@ -3495,16 +3509,15 @@ PtrAttribute        pAttr;
 #endif /* __STDC__ */
 #endif /* __COLPAGE__ */
 {
-  boolean             appl;
   TypeUnit            unit;
   AbPosition          Posit;
+  PtrAbstractBox      pAbb1;
+  PresConstant	     *pConst;
+  PathBuffer	      directoryName;
+  char		      fname[MAX_PATH];
   char                c;
   int                 viewSch, i;
-  PtrAbstractBox      pAbb1;
-  PresConstant	      *pConst;
-  char		       fname[MAX_PATH];
-  PathBuffer	       directoryName;
-
+  boolean             appl;
 #ifdef __COLPAGE__
   *destroyedAb = FALSE;
 #else  /* __COLPAGE__ */
@@ -3767,13 +3780,13 @@ PtrAttribute        pAttr;
 	    break;
 	  case PtVertRef:
 	    Posit = pAbb1->AbVertRef;
-	    ApplyPos (&Posit, pPRule->PrPosRule, pPRule, pAttr, pSchP, pAb,
+	    ApplyPos (&Posit, &(pPRule->PrPosRule), pPRule, pAttr, pSchP, pAb,
 		      pDoc, &appl);
 	    pAbb1->AbVertRef = Posit;
 	    break;
 	  case PtHorizRef:
 	    Posit = pAbb1->AbHorizRef;
-	    ApplyPos (&Posit, pPRule->PrPosRule, pPRule, pAttr, pSchP, pAb,
+	    ApplyPos (&Posit, &(pPRule->PrPosRule), pPRule, pAttr, pSchP, pAb,
 		      pDoc, &appl);
 	    pAbb1->AbHorizRef = Posit;
 	    break;
@@ -3787,7 +3800,7 @@ PtrAttribute        pAttr;
 	    /* ses regles */
 	    /* applique la regle de positionnement de l'element */
 	    Posit = pAbb1->AbVertPos;
-	    ApplyPos (&Posit, pPRule->PrPosRule, pPRule, pAttr, pSchP, pAb,
+	    ApplyPos (&Posit, &(pPRule->PrPosRule), pPRule, pAttr, pSchP, pAb,
 		      pDoc, &appl);
 	    pAbb1->AbVertPos = Posit;
 	    /* traitement special pour le debordement vertical des cellules */
@@ -3878,7 +3891,7 @@ PtrAttribute        pAttr;
 		  /* applique la regle de positionnement de l'element */
 		  {
 		    Posit = pAbb1->AbVertPos;
-		    ApplyPos (&Posit, pPRule->PrPosRule, pPRule, pAttr,
+		    ApplyPos (&Posit, &(pPRule->PrPosRule), pPRule, pAttr,
 			      pSchP, pAb, pDoc, &appl);
 		    pAbb1->AbVertPos = Posit;
 		  }
@@ -3891,7 +3904,7 @@ PtrAttribute        pAttr;
 #endif /* __COLPAGE__ */
 	  case PtHorizPos:
 	    Posit = pAbb1->AbHorizPos;
-	    ApplyPos (&Posit, pPRule->PrPosRule, pPRule, pAttr, pSchP,
+	    ApplyPos (&Posit, &(pPRule->PrPosRule), pPRule, pAttr, pSchP,
 		      pAb, pDoc, &appl);
 	    pAbb1->AbHorizPos = Posit;
 	    break;
@@ -3966,7 +3979,7 @@ PtrAttribute        pAttr;
 		    if (pSchP == NULL)
 		      pSchP = pDoc->DocSSchema->SsPSchema;
 		    pConst = &pSchP->PsConstant[pPRule->PrPresBox[0] - 1];
-		    if (pConst->PdString[0] != '\0')
+		    if (pConst->PdString[0] != EOS)
 		      {
 # ifndef _WINDOWS
 			if (pConst->PdString[0] == DIR_SEP)
@@ -4168,7 +4181,7 @@ PtrAbstractBox      pAb;
 
 #endif /* __STDC__ */
 {
-   boolean             new, ok;
+   boolean             IsNew, ok;
    PtrPRule            pPRuleDimH, pPRuleDimV, pR, pRStd;
    PtrPSchema          pSPR;
    PtrSSchema          pSSR;
@@ -4218,8 +4231,8 @@ PtrAbstractBox      pAb;
    if (ok)
      {
 	/* cherche si l'element a deja une regle de largeur specifique */
-	pPRuleDimH = SearchPresRule (pEl, PtWidth, 0, &new, pDoc, view);
-	if (new)
+	pPRuleDimH = SearchPresRule (pEl, PtWidth, 0, &IsNew, pDoc, view);
+	if (IsNew)
 	   /* on a cree' une regle de largeur pour l'element */
 	  {
 	     pR = pPRuleDimH->PrNextPRule;	/* on recopie la regle standard */
@@ -4253,8 +4266,8 @@ PtrAbstractBox      pAb;
    if (ok)
      {
 	/* cherche si l'element a deja une regle de hauteur specifique */
-	pPRuleDimV = SearchPresRule (pEl, PtHeight, 0, &new, pDoc, view);
-	if (new)
+	pPRuleDimV = SearchPresRule (pEl, PtHeight, 0, &IsNew, pDoc, view);
+	if (IsNew)
 	   /* on a cree' une regle de hauteur pour l'element */
 	  {
 	     pR = pPRuleDimV->PrNextPRule;	/* on recopie la regle standard */

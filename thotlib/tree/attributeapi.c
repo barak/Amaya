@@ -19,10 +19,13 @@
 #include "attribute.h"
 #include "tree.h"
 #include "typecorr.h"
+#include "appdialogue.h"
 
 #undef THOT_EXPORT
 #define THOT_EXPORT
 #include "edit_tv.h"
+#include "frame_tv.h"
+#include "appdialogue_tv.h"
 
 #include "tree_f.h"
 #include "attributes_f.h"
@@ -67,14 +70,10 @@ AttributeType       attributeType;
    UserErrorCode = 0;
    pAttr = NULL;
    if (attributeType.AttrSSchema == NULL)
-     {
-	TtaError (ERR_invalid_attribute_type);
-     }
+     TtaError (ERR_invalid_attribute_type);
    else if (attributeType.AttrTypeNum < 1 ||
 	    attributeType.AttrTypeNum > ((PtrSSchema) (attributeType.AttrSSchema))->SsNAttributes)
-     {
-	TtaError (ERR_invalid_attribute_type);
-     }
+     TtaError (ERR_invalid_attribute_type);
    else
      {
 	GetAttribute (&pAttr);
@@ -129,72 +128,62 @@ Document            document;
 
    UserErrorCode = 0;
    if (element == NULL || attribute == NULL || ((PtrElement) element)->ElStructSchema == NULL)
-     {
-	TtaError (ERR_invalid_parameter);
-     }
-   else
-      /* to verify parameter document */
-   if (document < 1 || document > MAX_DOCUMENTS)
-     {
-	TtaError (ERR_invalid_document_parameter);
-     }
+     TtaError (ERR_invalid_parameter);
+   else if (document < 1 || document > MAX_DOCUMENTS)
+     TtaError (ERR_invalid_document_parameter);
    else if (LoadedDocument[document - 1] == NULL)
-     {
-	TtaError (ERR_invalid_document_parameter);
-     }
-   else
-      /* parameter document is correct */
-      /* has the element an attribute of the same type ? */
-   if (AttributeValue ((PtrElement) element, (PtrAttribute) attribute) != NULL)
-      /* yes, error */
-     {
-	TtaError (ERR_duplicate_attribute);
-     }
-   else
-      /* can wa apply the attribute to the element ? */
-   if (AvecControleStruct && !CanAssociateAttr ((PtrElement) element, NULL, (PtrAttribute) attribute, &obligatory))
-      /* no, error */
-     {
-	TtaError (ERR_attribute_element_mismatch);
-     }
+     TtaError (ERR_invalid_document_parameter);
+   else if (AttributeValue ((PtrElement) element, (PtrAttribute) attribute) != NULL)
+     /* parameter document is correct */
+     /* has the element an attribute of the same type ? */
+     /* yes, error */ 
+     TtaError (ERR_duplicate_attribute);
+   else if (AvecControleStruct && !CanAssociateAttr ((PtrElement) element, NULL, (PtrAttribute) attribute, &obligatory))
+     /* can wa apply the attribute to the element ? */
+     /* no, error */
+     TtaError (ERR_attribute_element_mismatch);
    else
      {
 #ifndef NODISPLAY
-	UndisplayInheritedAttributes ((PtrElement) element, (PtrAttribute) attribute, document, FALSE);
+       UndisplayInheritedAttributes ((PtrElement) element, (PtrAttribute) attribute, document, FALSE);
 #endif
-	if (((PtrElement) element)->ElFirstAttr == NULL)
-	   ((PtrElement) element)->ElFirstAttr = (PtrAttribute) attribute;
-	else
-	  {
-	     pAttr = ((PtrElement) element)->ElFirstAttr;
-	     while (pAttr->AeNext != NULL)
-		pAttr = pAttr->AeNext;
-	     pAttr->AeNext = (PtrAttribute) attribute;
-	  }
-	pAttr = (PtrAttribute) attribute;
-	pAttr->AeNext = NULL;
-	pAttr->AeDefAttr = FALSE;
-	if (pAttr->AeAttrType == AtReferenceAttr)
-	   if (pAttr->AeAttrReference != NULL)
-	      pAttr->AeAttrReference->RdElement = (PtrElement) element;
-	/* Special processing when adding an attribute to an element of a Draw object */
-	DrawAddAttr (&pAttr, (PtrElement) element);
+       if (((PtrElement) element)->ElFirstAttr == NULL)
+	 ((PtrElement) element)->ElFirstAttr = (PtrAttribute) attribute;
+       else
+	 {
+	   pAttr = ((PtrElement) element)->ElFirstAttr;
+	   while (pAttr->AeNext != NULL)
+	     pAttr = pAttr->AeNext;
+	   pAttr->AeNext = (PtrAttribute) attribute;
+	 }
+       /* update the menu attributes */
+       if (ThotLocalActions[T_chattr] != NULL)
+	(*ThotLocalActions[T_chattr]) (LoadedDocument[document - 1]);
+
+       pAttr = (PtrAttribute) attribute;
+       pAttr->AeNext = NULL;
+       pAttr->AeDefAttr = FALSE;
+       if (pAttr->AeAttrType == AtReferenceAttr)
+	 if (pAttr->AeAttrReference != NULL)
+	   pAttr->AeAttrReference->RdElement = (PtrElement) element;
+       /* Special processing when adding an attribute to an element of a Draw object */
+       DrawAddAttr (&pAttr, (PtrElement) element);
 #ifndef NODISPLAY
-	DisplayAttribute ((PtrElement) element, pAttr, document);
+       DisplayAttribute ((PtrElement) element, pAttr, document);
 #endif
      }
 }
 
-	/* AttrOfElement verifies that the attribute belongs to the element */
+/*----------------------------------------------------------------------
+  AttrOfElement verifies that the attribute belongs to the element
+  ----------------------------------------------------------------------*/
 #ifdef __STDC__
 static boolean      AttrOfElement (Attribute attribute, Element element)
 #else  /* __STDC__ */
 static boolean      AttrOfElement (attribute, element)
 Attribute           attribute;
 Element             element;
-
 #endif /* __STDC__ */
-
 {
    PtrAttribute        pAttr;
    boolean             ok;
@@ -653,7 +642,7 @@ int                *attrKind;
    (*attributeType).AttrSSchema = NULL;
    (*attributeType).AttrTypeNum = 0;
    *attrKind = 0;
-   if (name[0] == '\0' || strlen (name) >= MAX_NAME_LENGTH || element == NULL)
+   if (name[0] == EOS || strlen (name) >= MAX_NAME_LENGTH || element == NULL)
       TtaError (ERR_invalid_parameter);
    else
      {
@@ -721,7 +710,7 @@ int                *attrKind;
    (*attributeType).AttrSSchema = NULL;
    (*attributeType).AttrTypeNum = 0;
    *attrKind = 0;
-   if (name[0] == '\0' || strlen (name) >= MAX_NAME_LENGTH || element == NULL)
+   if (name[0] == EOS || strlen (name) >= MAX_NAME_LENGTH || element == NULL)
       TtaError (ERR_invalid_parameter);
    else
      {
@@ -780,7 +769,7 @@ AttributeType       attributeType;
 {
 
    UserErrorCode = 0;
-   bufferName[0] = '\0';
+   bufferName[0] = EOS;
    if (attributeType.AttrSSchema == NULL)
      {
 	TtaError (ERR_invalid_attribute_type);
@@ -822,7 +811,7 @@ AttributeType       attributeType;
 {
 
    UserErrorCode = 0;
-   bufferName[0] = '\0';
+   bufferName[0] = EOS;
    if (attributeType.AttrSSchema == NULL)
      {
 	TtaError (ERR_invalid_attribute_type);
@@ -852,17 +841,13 @@ AttributeType       attributeType;
    0 if both types are different, 1 if they are identical.
 
    ---------------------------------------------------------------------- */
-
 #ifdef __STDC__
 int                 TtaSameAttributeTypes (AttributeType type1, AttributeType type2)
-
 #else  /* __STDC__ */
 int                 TtaSameAttributeTypes (type1, type2)
 AttributeType       type1;
 AttributeType       type2;
-
 #endif /* __STDC__ */
-
 {
    int                 result;
 
@@ -902,30 +887,24 @@ AttributeType       type2;
    Value of that attribute.
 
    ---------------------------------------------------------------------- */
-
 #ifdef __STDC__
 int                 TtaGetAttributeValue (Attribute attribute)
-
 #else  /* __STDC__ */
 int                 TtaGetAttributeValue (attribute)
 Attribute           attribute;
-
 #endif /* __STDC__ */
-
 {
    int                 value;
 
    UserErrorCode = 0;
    value = 0;
-   if (((PtrAttribute) attribute)->AeAttrType != AtEnumAttr &&
-       ((PtrAttribute) attribute)->AeAttrType != AtNumAttr)
-     {
-	TtaError (ERR_invalid_attribute_type);
-     }
+   if (attribute == NULL)
+     TtaError (ERR_invalid_attribute_type);
+   else if (((PtrAttribute) attribute)->AeAttrType != AtEnumAttr &&
+	    ((PtrAttribute) attribute)->AeAttrType != AtNumAttr)
+     TtaError (ERR_invalid_attribute_type);
    else
-     {
-	value = ((PtrAttribute) attribute)->AeAttrValue;
-     }
+     value = ((PtrAttribute) attribute)->AeAttrValue;
    return value;
 }
 
@@ -941,34 +920,30 @@ Attribute           attribute;
    length of the character string contained in the attribute.
 
    ---------------------------------------------------------------------- */
-
 #ifdef __STDC__
 int                 TtaGetTextAttributeLength (Attribute attribute)
-
 #else  /* __STDC__ */
 int                 TtaGetTextAttributeLength (attribute)
 Attribute           attribute;
-
 #endif /* __STDC__ */
-
 {
    int                 length;
    PtrTextBuffer       pBT;
 
    UserErrorCode = 0;
    length = 0;
-   if (((PtrAttribute) attribute)->AeAttrType != AtTextAttr)
-     {
-	TtaError (ERR_invalid_attribute_type);
-     }
+   if (attribute == NULL)
+     TtaError (ERR_invalid_attribute_type);
+   else if (((PtrAttribute) attribute)->AeAttrType != AtTextAttr)
+     TtaError (ERR_invalid_attribute_type);
    else
      {
-	pBT = ((PtrAttribute) attribute)->AeAttrText;
-	while (pBT != NULL)
-	  {
-	     length += pBT->BuLength;
-	     pBT = pBT->BuNext;
-	  }
+       pBT = ((PtrAttribute) attribute)->AeAttrText;
+       while (pBT != NULL)
+	 {
+	   length += pBT->BuLength;
+	   pBT = pBT->BuNext;
+	 }
      }
    return length;
 }
@@ -998,11 +973,11 @@ int                *length;
 #endif /* __STDC__ */
 
 {
-
   UserErrorCode = 0;
-  /**** supprimer ca :	*length = 0;	****/
-  *buffer = '\0';
-  if (((PtrAttribute) attribute)->AeAttrType != AtTextAttr)
+  *buffer = EOS;
+  if (attribute == NULL)
+    TtaError (ERR_invalid_attribute_type);
+   else if (((PtrAttribute) attribute)->AeAttrType != AtTextAttr)
     TtaError (ERR_invalid_attribute_type);
   else
     CopyTextToString (((PtrAttribute) attribute)->AeAttrText, buffer, length);
@@ -1053,6 +1028,11 @@ Attribute          *attributeFound;
    *elementFound = NULL;
    *attributeFound = NULL;
    if (element == NULL)
+     {
+	TtaError (ERR_invalid_parameter);
+	ok = FALSE;
+     }
+   else if (((PtrElement) element)->ElStructSchema == NULL)
      {
 	TtaError (ERR_invalid_parameter);
 	ok = FALSE;

@@ -1,4 +1,4 @@
-	{ Presentation Schema de structure for MathML.
+	{ Presentation Schema for MathML.
 
 	  I. Vatton			June 1997	}
 
@@ -11,11 +11,11 @@ VIEWS
 #define OPERATOR_SPACE 0.27
 #define ROOT_OFFSET 0.6
 #define STRUCT_INDENT 1.5
-#define TAG_FONTSIZE 10 pt
+#define TAG_FONTSIZE 12 pt
 #define DOC_FONTSIZE 12 pt
-#define TAG_Style Bold
+#define TAG_Style Roman
 #define TAG_Visibility 7
-#define ATTR_Style Bold
+#define ATTR_Style Roman
 #define ATTR_Visibility 7
 
 #ifdef BLACK_WHITE
@@ -49,7 +49,7 @@ DEFAULT
    Justify: No;
    Adjust: Left;
    LineSpacing: 1;
-   Depth : 0;
+   Depth : Enclosing =;
    UnderLine: Enclosing =;
    Thickness: Enclosing =;
    LineStyle: Enclosing =;
@@ -66,7 +66,7 @@ DEFAULT
 BOXES
 
  MROW_S: BEGIN
-	Content: Text 'MROW';
+	Content: Text 'mrow';
 	Visibility: 0;
 	IN Math_Structure_view BEGIN
 		Size: TAG_FONTSIZE;
@@ -77,7 +77,7 @@ BOXES
 	END;
 
  MROOT_S: BEGIN
-	Content: Text 'MROOT';
+	Content: Text 'mroot';
 	Visibility: 0;
 	IN Math_Structure_view BEGIN
 		Size: TAG_FONTSIZE;
@@ -88,7 +88,7 @@ BOXES
 	END;
 
  MSQRT_S: BEGIN
-	Content: Text 'MSQRT';
+	Content: Text 'msqrt';
 	Visibility: 0;
 	IN Math_Structure_view BEGIN
 		Size: TAG_FONTSIZE;
@@ -99,7 +99,7 @@ BOXES
 	END;
 
  MFRAC_S: BEGIN
-	Content: Text 'MFRAC';
+	Content: Text 'mfrac';
 	Visibility: 0;
 	IN Math_Structure_view BEGIN
 		Size: TAG_FONTSIZE;
@@ -110,7 +110,7 @@ BOXES
 	END;
 
  MFENCED_S: BEGIN
-	Content: Text 'MFENCED';
+	Content: Text 'mfenced';
 	Visibility: 0;
 	IN Math_Structure_view BEGIN
 		Size: TAG_FONTSIZE;
@@ -121,7 +121,7 @@ BOXES
 	END;
 
  MSUBSUP_S: BEGIN
-	Content: Text 'MSUBSUP';
+	Content: Text 'msubsup';
 	Visibility: 0;
 	IN Math_Structure_view BEGIN
 		Size: TAG_FONTSIZE;
@@ -132,7 +132,7 @@ BOXES
 	END;
 
  MSUB_S: BEGIN
-	Content: Text 'MSUB';
+	Content: Text 'msub';
 	Visibility: 0;
 	IN Math_Structure_view BEGIN
 		Size: TAG_FONTSIZE;
@@ -143,7 +143,7 @@ BOXES
 	END;
 
  MSUP_S: BEGIN
-	Content: Text 'MSUP';
+	Content: Text 'msup';
 	Visibility: 0;
 	IN Math_Structure_view BEGIN
 		Size: TAG_FONTSIZE;
@@ -154,7 +154,7 @@ BOXES
 	END;
 
  MUNDER_S: BEGIN
-	Content: Text 'MUNDER';
+	Content: Text 'munder';
 	Visibility: 0;
 	IN Math_Structure_view BEGIN
 		Size: TAG_FONTSIZE;
@@ -165,7 +165,7 @@ BOXES
 	END;
 
  MOVER_S: BEGIN
-	Content: Text 'MOVER';
+	Content: Text 'mover';
 	Visibility: 0;
 	IN Math_Structure_view BEGIN
 		Size: TAG_FONTSIZE;
@@ -176,7 +176,7 @@ BOXES
 	END;
 
  MUNDEROVER_S: BEGIN
-	Content: Text 'MUNDEROVER';
+	Content: Text 'munderover';
 	Visibility: 0;
 	IN Math_Structure_view BEGIN
 		Size: TAG_FONTSIZE;
@@ -187,7 +187,7 @@ BOXES
 	END;
 
  MMULTISCRIPTS_S: BEGIN
-	Content: Text 'MMULTISCRIPTS';
+	Content: Text 'mmultiscripts';
 	Visibility: 0;
 	IN Math_Structure_view BEGIN
 		Size: TAG_FONTSIZE;
@@ -198,7 +198,7 @@ BOXES
 	END;
 
  NONE_S: BEGIN
-	Content: Text 'NONE';
+	Content: Text 'none';
 	Visibility: 0;
 	IN Math_Structure_view BEGIN
 		Size: TAG_FONTSIZE;
@@ -209,7 +209,7 @@ BOXES
 	END;
 
  MPRESCRIPTS_S: BEGIN
-	Content: Text 'MPRESCRIPTS';
+	Content: Text 'mprescripts';
 	Visibility: 0;
 	IN Math_Structure_view BEGIN
 		Size: TAG_FONTSIZE;
@@ -219,8 +219,67 @@ BOXES
 		END;
 	END;
 
+ MTABLE_S: BEGIN
+	Content: Text 'mtable';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MTR_S: BEGIN
+	Content: Text 'mtr';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MTD_S: BEGIN
+	Content: Text 'mtd';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MALIGNGROUP_S: BEGIN
+	Content: Text 'maligngroup';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		VertPos: Top = Enclosing . Top;
+		Width: 1.5;
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MALIGNMARK_S: BEGIN
+	Content: Text 'malignmark';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		VertPos: Top = Enclosing . Top;
+		Width: 1.5;
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
  MN_S: BEGIN
-	Content: Text 'MN';
+	Content: Text 'mn';
 	Visibility: 0;
 	IN Math_Structure_view BEGIN
 		VertPos: Top = Enclosing . Top;
@@ -233,7 +292,7 @@ BOXES
 	END;
 
  MI_S: BEGIN
-	Content: Text 'MI';
+	Content: Text 'mi';
 	Visibility: 0;
 	IN Math_Structure_view BEGIN
 		VertPos: Top = Enclosing . Top;
@@ -246,7 +305,7 @@ BOXES
 	END;
 
  MO_S: BEGIN
-	Content: Text 'MO';
+	Content: Text 'mo';
 	Visibility: 0;
 	IN Math_Structure_view BEGIN
 		VertPos: Top = Enclosing . Top;
@@ -259,7 +318,7 @@ BOXES
 	END;
 
  MS_S: BEGIN
-	Content: Text 'MS';
+	Content: Text 'ms';
 	Visibility: 0;
 	IN Math_Structure_view BEGIN
 		VertPos: Top = Enclosing . Top;
@@ -272,7 +331,7 @@ BOXES
 	END;
 
  MTEXT_S: BEGIN
-	Content: Text 'MTEXT';
+	Content: Text 'mtext';
 	Visibility: 0;
 	IN Math_Structure_view BEGIN
 		VertPos: Top = Enclosing . Top;
@@ -284,7 +343,7 @@ BOXES
 	END;
 
  SEP_S: BEGIN
-	Content: Text 'SEP';
+	Content: Text 'sep';
 	Visibility: 0;
 	IN Math_Structure_view BEGIN
 		VertPos: Top = Enclosing . Top;
@@ -297,7 +356,7 @@ BOXES
 	END;
 
  MSPACE_S: BEGIN
-	Content: Text 'MSPACE';
+	Content: Text 'mspace';
 	Visibility: 0;
 	IN Math_Structure_view BEGIN
 		VertPos: Top = Enclosing . Top;
@@ -310,7 +369,7 @@ BOXES
 	END;
 
  MSTYLE_S: BEGIN
-	Content: Text 'MSTYLE';
+	Content: Text 'mstyle';
 	Visibility: 0;
 	IN Math_Structure_view BEGIN
 		Size: TAG_FONTSIZE;
@@ -321,7 +380,7 @@ BOXES
 	END;
 
  MERROR_S: BEGIN
-	Content: Text 'MERROR';
+	Content: Text 'merror';
 	Visibility: 0;
 	IN Math_Structure_view BEGIN
 		Size: TAG_FONTSIZE;
@@ -332,7 +391,7 @@ BOXES
 	END;
 
  MPADDED_S: BEGIN
-	Content: Text 'MPADDED';
+	Content: Text 'mpadded';
 	Visibility: 0;
 	IN Math_Structure_view BEGIN
 		Size: TAG_FONTSIZE;
@@ -343,7 +402,7 @@ BOXES
 	END;
 
  MPHANTOM_S: BEGIN
-	Content: Text 'MPHANTOM';
+	Content: Text 'mphantom';
 	Visibility: 0;
 	IN Math_Structure_view BEGIN
 		Size: TAG_FONTSIZE;
@@ -353,8 +412,8 @@ BOXES
 		END;
 	END;
 
- ATTR_fontslant_plain: BEGIN
-        Content: Text ' fontslant=plain';
+  ATTR_link_simple: BEGIN
+        Content: Text ' xml:link=simple';
         Visibility: 0;
         IN Math_Structure_view BEGIN
                 HorizPos: Left = Previous . Right;
@@ -364,8 +423,64 @@ BOXES
                 Visibility: ATTR_Visibility;  Foreground: ATTR_Color;
                 END;
         END;
- ATTR_fontslant_italic: BEGIN
-        Content: Text ' fontslant=italic';
+  ATTR_link_extended: BEGIN
+        Content: Text ' xml:link=extended';
+        Visibility: 0;
+        IN Math_Structure_view BEGIN
+                HorizPos: Left = Previous . Right;
+                VertPos: HRef = Previous . HRef;
+                Size: TAG_FONTSIZE;
+                Style: ATTR_Style;
+                Visibility: ATTR_Visibility;  Foreground: ATTR_Color;
+                END;
+        END;
+  ATTR_link_locator: BEGIN
+        Content: Text ' xml:link=locator';
+        Visibility: 0;
+        IN Math_Structure_view BEGIN
+                HorizPos: Left = Previous . Right;
+                VertPos: HRef = Previous . HRef;
+                Size: TAG_FONTSIZE;
+                Style: ATTR_Style;
+                Visibility: ATTR_Visibility;  Foreground: ATTR_Color;
+                END;
+        END;
+  ATTR_link_group: BEGIN
+        Content: Text ' xml:link=group';
+        Visibility: 0;
+        IN Math_Structure_view BEGIN
+                HorizPos: Left = Previous . Right;
+                VertPos: HRef = Previous . HRef;
+                Size: TAG_FONTSIZE;
+                Style: ATTR_Style;
+                Visibility: ATTR_Visibility;  Foreground: ATTR_Color;
+                END;
+        END;
+  ATTR_link_document: BEGIN
+        Content: Text ' xml:link=document';
+        Visibility: 0;
+        IN Math_Structure_view BEGIN
+                HorizPos: Left = Previous . Right;
+                VertPos: HRef = Previous . HRef;
+                Size: TAG_FONTSIZE;
+                Style: ATTR_Style;
+                Visibility: ATTR_Visibility;  Foreground: ATTR_Color;
+                END;
+        END;
+
+ ATTR_fontstyle_normal: BEGIN
+        Content: Text ' fontstyle=normal';
+        Visibility: 0;
+        IN Math_Structure_view BEGIN
+                HorizPos: Left = Previous . Right;
+                VertPos: HRef = Previous . HRef;
+                Size: TAG_FONTSIZE;
+                Style: ATTR_Style;
+                Visibility: ATTR_Visibility;  Foreground: ATTR_Color;
+                END;
+        END;
+ ATTR_fontstyle_italic: BEGIN
+        Content: Text ' fontstyle=italic';
         Visibility: 0;
         IN Math_Structure_view BEGIN
                 HorizPos: Left = Previous . Right;
@@ -505,7 +620,8 @@ BOXES
 	VertPos: Top = Enclosing . Top;
 	HorizPos: Left = RootBase . Left - ROOT_OFFSET;
 	Content: Symbol 'r';		{ root symbol }
-	Depth: Enclosing + 1;
+	LineStyle: Solid;
+	Depth: Creator + 1;
 	Background: Creator =;
 	Foreground: Creator =;
 	IN Math_Structure_view
@@ -546,6 +662,26 @@ BOXES
 		END;
 	END;
 
+   Comment_Start:
+        BEGIN
+        Content: Text '<!--';
+        Visibility: 0;
+        IN Math_Structure_view BEGIN
+                Visibility: Enclosing =;
+                Foreground: TAG_Color;
+                END;
+        END;
+ 
+   Comment_End:
+        BEGIN
+        Content: Text '-->';
+        Visibility: 0;
+        IN Math_Structure_view BEGIN
+                Visibility: Enclosing =;
+                Foreground: TAG_Color;
+                END;
+        END;
+ 
 RULES
 
    MathML:
@@ -563,6 +699,24 @@ RULES
 		END;
 	END;
 
+   XMLcomment:
+        BEGIN
+        Visibility: 0;
+        IN Math_Structure_view BEGIN
+                Visibility: 10;
+                Width: Enclosing . Width ;
+                END;
+        END;
+
+   XMLcomment_line:
+	BEGIN
+        IF First CreateFirst(Comment_Start);
+        IF Last CreateLast(Comment_End);
+	HorizPos: Left = Enclosing . Left;
+        VertPos: Top = Previous . Bottom + 0.2;
+        Width: Enclosed . Width;
+        END;
+ 
    MROW:
 	BEGIN
 	CreateBefore(MROW_S);
@@ -1007,6 +1161,116 @@ RULES
 		END;
 	END;
 
+   MTABLE:
+	BEGIN
+	Gather: Yes;
+	LineBreak: No;
+	Justify: No;
+	PageBreak: No;
+	HorizRef: * . HMiddle;
+	CreateBefore(MTABLE_S);
+	CreateWith(VerticalLine);
+	VertPos: HRef = Previous not ElemWithAttr vertstretch . HRef;
+	IN Math_Structure_view BEGIN
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width - STRUCT_INDENT;
+		HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
+		END;	
+	END;
+
+   MTable_head:
+	BEGIN
+	HorizRef: * . Top;
+	HorizPos: Left = Enclosing . Left;
+	VertPos: Top = Enclosing . Top;
+	Width: Enclosed . Width;
+	IN Math_Structure_view
+		Visibility: 0;
+	END;
+
+   MColumn_head:
+        BEGIN
+        HorizRef: * . Top;
+        HorizPos: Left = Previous . Right + 0.8;
+        VertPos: Top = Enclosing . Top;
+        Width: 2 px;
+        END;
+
+   MC_Head:
+        BEGIN
+        HorizRef: * . Top;
+        VertPos : Top = Enclosing . Top;
+        Width: 2 px;
+        Height: 1 px;
+        FillPattern: nopattern;
+        END;
+
+   MTable_body:
+	BEGIN
+	HorizPos: Left = Enclosing . Left;
+	VertPos: Top = Previous . Bottom;
+	IN Math_Structure_view BEGIN
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width;
+		HorizPos: Left = Enclosing . Left;
+		END;	
+	END;
+
+   MTR:
+	BEGIN
+	CreateBefore(MTR_S);
+	CreateWith(VerticalLine);
+	HorizPos: Left = Enclosing . Left;
+	VertPos: Top = Previous . Bottom + 1 ex;
+	IN Math_Structure_view BEGIN
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width - STRUCT_INDENT;
+		HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
+		END;		
+	END;
+
+   MTD:
+	BEGIN
+	CreateBefore(MTD_S);
+	CreateWith(VerticalLine);
+	IN Math_Structure_view BEGIN
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width - STRUCT_INDENT;
+		HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
+		END;		
+	END;
+
+   CellWrapper:
+	BEGIN
+	VertPos: Top = Enclosing . Top;
+	HorizPos: VMiddle = Enclosing . VMiddle;
+	IN Math_Structure_view BEGIN
+		Width: Enclosing . Width;
+		END;		
+	END;
+
+   MALIGNGROUP:
+	BEGIN
+	CreateFirst(MALIGNGROUP_S);
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		Visibility: Enclosing =;
+		Size: DOC_FONTSIZE;
+		Font: Helvetica;
+		END;		
+	END;
+
+   MALIGNMARK:
+	BEGIN
+	CreateFirst(MALIGNMARK_S);
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		Visibility: Enclosing =;
+		Size: DOC_FONTSIZE;
+		Font: Helvetica;
+		END;		
+	END;
+
    MF:
 	BEGIN
 	CreateFirst(MO_S);
@@ -1023,12 +1287,11 @@ RULES
    MI:
 	BEGIN
 	CreateFirst(MI_S);
-	VertPos: HRef = Previous not ElemWithAttr vertstretch . HRef;
 	Style: Italics;
+	VertPos: HRef = Previous not ElemWithAttr vertstretch . HRef;
 	IN Math_Structure_view BEGIN
 		Size: DOC_FONTSIZE;
 		Width: Enclosing . Width;
-		Height: Enclosed . Height;
 		Style: Enclosing =;
 		END;
 	END;
@@ -1040,7 +1303,6 @@ RULES
 	IN Math_Structure_view BEGIN
 		Size: DOC_FONTSIZE;
 		Width: Enclosing . Width;
-		Height: Enclosed . Height;
 		END;
 	END;
 
@@ -1051,7 +1313,6 @@ RULES
 	IN Math_Structure_view BEGIN
 		Size: DOC_FONTSIZE;
 		Width: Enclosing . Width;
-		Height: Enclosed . Height;
 		END;
 	END;
 
@@ -1064,7 +1325,6 @@ RULES
 	IN Math_Structure_view BEGIN
 		Size: DOC_FONTSIZE;
 		Width: Enclosing . Width;
-		Height: Enclosed . Height;
 		END;
 	END;
 
@@ -1075,7 +1335,6 @@ RULES
 	IN Math_Structure_view BEGIN
 		Size: DOC_FONTSIZE;
 		Width: Enclosing . Width;
-		Height: Enclosed . Height;
 		END;
 	END;
 
@@ -1101,7 +1360,6 @@ RULES
 	IN Math_Structure_view BEGIN
 		Size: DOC_FONTSIZE;
 		Width: Enclosing . Width;
-		Height: Enclosed . Height;
 		END;
 	END;
 
@@ -1196,15 +1454,26 @@ RULES
 
 ATTRIBUTES
 
-  fontslant = plain:
+  link = simple:
+	CreateBefore(ATTR_link_simple);
+  link = extended:
+	CreateBefore(ATTR_link_extended);
+  link = locator:
+	CreateBefore(ATTR_link_locator);
+  link = group:
+	CreateBefore(ATTR_link_group);
+  link = document:
+	CreateBefore(ATTR_link_document);
+
+  fontstyle = normal:
 	BEGIN
 	Style: roman;
-	CreateFirst(ATTR_fontslant_plain);
+	CreateFirst(ATTR_fontstyle_normal);
 	END;
-  fontslant = italic:
+  fontstyle = italic:
 	BEGIN
 	Style: Italics;
-	CreateFirst(ATTR_fontslant_italic);
+	CreateFirst(ATTR_fontstyle_italic);
 	END;
   open:
 	BEGIN
@@ -1225,9 +1494,9 @@ ATTRIBUTES
 	CreateFirst(ATTR_fence_true);
   fence = false:
 	CreateFirst(ATTR_fence_false);
-  IntFontslant = IntPlain:
+  IntFontstyle = IntNormal:
 	Style: roman;
-  IntFontslant = IntItalic:
+  IntFontstyle = IntItalic:
 	Style: Italics;
 
   addspace = nospace:
@@ -1396,4 +1665,15 @@ ATTRIBUTES
 		HorizRef: Enclosed . HRef;
 		END;
 	END;
+
+  MRef_column:
+	BEGIN
+	Width: Referred . Width;
+        HorizPos: Left = Referred . Left;
+        IN Math_Structure_view BEGIN
+                Width: Enclosing . Width - STRUCT_INDENT;
+                HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
+                END;	
+	END;
+
 END

@@ -3,7 +3,7 @@
 **
 **	(c) COPYRIGHT MIT 1995.
 **	Please first read the full copyright statement in the file COPYRIGH.
-**	@(#) $Id: HTInet.c,v 1.1.1.1 1996/10/15 13:08:37 cvs Exp $
+**	@(#) $Id: HTInet.c,v 1.2 1998/03/11 17:45:37 cvs Exp $
 **
 **	This code is in common between client and server sides.
 **
@@ -605,3 +605,22 @@ PUBLIC char * HTGetTmpFileName (const char * dir)
     }
     return result;
 }
+
+/*
+**  Copied from X utilities
+*/
+PUBLIC ms_t HTGetTimeInMillis (void)
+{
+#ifdef WWW_MSWINDOWS
+    return GetTickCount();
+#else /* WWW_MSWINDOWS */
+#ifdef HAVE_GETTIMEOFDAY
+    struct timeval tp;
+    gettimeofday(&tp, NULL);
+    return(tp.tv_sec * 1000) + (tp.tv_usec / 1000);
+#else
+    return((ms_t) 0);
+#endif
+#endif /* !WWW_MSWINDOWS */
+}
+

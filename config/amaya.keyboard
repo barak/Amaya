@@ -56,7 +56,13 @@ Shift Ctrl <Key>B:	CreateElemStrong()
 Shift Ctrl <Key>C:	ChangeLink()
 Shift Ctrl <Key>D:	DeleteAnchor()
 Shift Ctrl <Key>I:	CreateElemEmphasis()
+Shift Ctrl <Key>M:	CreateMTABLE()
 Shift Ctrl <Key>P:	CreateMROW()
 Shift Ctrl <Key>S:	CreateMSUBSUP()
 Shift Ctrl <Key>U:	CreateMUNDEROVER()
+
+Alt <Key>+:	ZoomIn()
+Alt <Key>-:	ZoomOut()
+Alt <Key>r:	Reload()
+Alt <Key>x:     AmayaClose()
 

@@ -80,6 +80,7 @@ extern void	    BackupOnFatalErrorLoadResources ();
 #ifndef __CEXTRACT__
 #ifdef __STDC__
 extern void         TteConnectAction (int id, Proc procedure);
+extern void         TtaSetBackup (Proc procedure);
 extern void         TteZeroMenu (WindowType windowtype, char *schemaName);
 extern void         TteOpenMainWindow (char *name, Pixmap logo, Pixmap icon);
 extern void         TteInitMenus (char *name, int number);
@@ -126,6 +127,8 @@ extern void         TtcInsert (Document document, View view);
 extern void         TtcInsertChar (Document document, View view, char c);
 extern void         TtcInsertGraph (Document document, View view, char c);
 extern void         TtcInsertPageBreak (Document document, View view);
+extern void         TtcLineDown (Document document, View view);
+extern void         TtcLineUp (Document document, View view);
 extern void         TtcNextChar (Document document, View view);
 extern void         TtcNextElement (Document document, View view);
 extern void         TtcNextLine (Document document, View view);
@@ -167,6 +170,7 @@ extern void         TtcSwitchCommands (Document document, View view);
 #else  /* __STDC__ */
 
 extern void         TteConnectAction ( /*int id, Proc procedure */ );
+extern void         TtaSetBackup (/* Proc procedure */);
 extern void         TteZeroMenu ( /*WindowType windowtype, char *schemaName */ );
 extern void         TteOpenMainWindow ( /*char *name, Pixmap logo, Pixmap icon */ );
 extern void         TteInitMenus ( /*char *name,int number */ );
@@ -208,6 +212,8 @@ extern void         TtcInsert ( /*Document document, View view */ );
 extern void         TtcInsertChar ( /*Document document, View view, char c */ );
 extern void         TtcInsertGraph ( /*Document document, View view, char c */ );
 extern void         TtcInsertPageBreak ( /*Document document, View view */ );
+extern void         TtLineDown ( /*Document document, View view */ );
+extern void         TtcLineUp ( /*Document document, View view */ );
 extern void         TtcNextChar ( /*Document document, View view */ );
 extern void         TtcNextElement ( /*Document document, View view */ );
 extern void         TtcNextLine ( /*Document document, View view */ );

@@ -1,13 +1,11 @@
 Source: amaya
 Section: web
-Priority: extra
+Priority: optional
 Maintainer: Steve Dunham <dunham@debian.org>
-Standards-Version: 2.3.0.0
+Standards-Version: 2.4.0.0
 
 Package: amaya
-Architecture: i386
-Conflicts: thot-common
-Replaces: thot-common, amaya-static
+Architecture: any
 Depends: ${shlibs:Depends}
 Description: Graphical HTML Editor from w3.org
  Amaya is a WYSIWYG HTML Editor, based on the thot toolkit

@@ -4,7 +4,7 @@
 **
 **	(c) COPYRIGHT MIT 1995.
 **	Please first read the full copyright statement in the file COPYRIGH.
-**	@(#) $Id: HTAAUtil.c,v 1.1.1.1 1996/10/15 13:08:37 cvs Exp $
+**	@(#) $Id: HTAAUtil.c,v 1.2 1998/06/18 14:04:26 cvs Exp $
 **
 **	The authentication information is stored in a list of authentication
 **	data bases, each uniquely identified by a hostname and a port number.
@@ -42,6 +42,7 @@ struct _HTAAModule {
     HTNetBefore *	before;
     HTNetAfter *	after;
     HTUTree_gc *	gc;
+    HTUTree_gc *	copy;
 };
 
 typedef struct _HTAAElement {
@@ -81,7 +82,8 @@ PRIVATE HTAAModule * find_module (const char * scheme)
 PUBLIC HTAAModule * HTAA_newModule (const char *	scheme,
 				    HTNetBefore *	before,
 				    HTNetAfter *	after,
-				    HTUTree_gc *	gc)
+				    HTUTree_gc *	gc,
+				    HTUTree_gc *        copy)
 {
     if (scheme) {
 	HTAAModule * pres = find_module(scheme);
@@ -94,6 +96,7 @@ PUBLIC HTAAModule * HTAA_newModule (const char *	scheme,
 	    pres->before = before;
 	    pres->after = after;
 	    pres->gc = gc;
+	    pres->copy = copy;
 
 	    /* Add the new AA Module to the list */
 	    HTList_addObject(HTSchemes, (void *) pres);
@@ -315,7 +318,33 @@ PUBLIC void * HTAA_updateNode (BOOL proxy_access, char const * scheme,
     {
 	char * path = HTParse(url, "", PARSE_PATH | PARSE_PUNCTUATION);
 	HTAAElement * element = NULL;
+	HTAAElement * tmp_element = NULL;
+	void        * new_context;
 	BOOL status;
+
+	if ((element = (HTAAElement *) HTUTree_findNode(tree, NULL, path)))
+	  status = HTAA_updateElement(element, scheme, context);
+	else {
+	  /* create the new element */
+	  element = HTAA_newElement(scheme, context);
+	  /* JK: rewrote this on Apr 16 */
+	  /* if we had some password information associated with this realm,
+	     copy it to the new element */
+	  tmp_element = HTUTree_findNode(tree, realm, NULL);
+	  status = HTUTree_addNode(tree, realm, path, element);
+	  if (tmp_element && tmp_element->context && context == NULL) {
+	    HTAAModule * module = HTAA_findModule(scheme);
+	    if (module && module->copy) {
+	      new_context = (*module->copy)(tmp_element->context);
+	      HTAA_updateElement(element, scheme, new_context);
+	      /* we need to clear this up when copying an existing context */
+	      status = NULL;
+	    }
+	  }
+	}
+	HT_FREE(path);
+	return status==YES ? element->context : NULL;
+/****
 	if ((element = (HTAAElement *) HTUTree_findNode(tree, realm, path)))
 	    status = HTAA_updateElement(element, scheme, context);
 	else {
@@ -324,6 +353,7 @@ PUBLIC void * HTAA_updateNode (BOOL proxy_access, char const * scheme,
 	}
 	HT_FREE(path);
 	return status==YES ? element->context : NULL;
+****/
     }
 }
 

@@ -52,6 +52,9 @@ extern HTConverter HTMIMEHeader;
    Parse only a footer, for example after a chunked encoding.
    
  */
+
+extern HTConverter HTMIMEContinue;
+
 extern HTConverter HTMIMEFooter;
 /*
 
@@ -73,6 +76,6 @@ extern HTConverter HTMIMEPartial;
    
    ___________________________________
    
-                            @(#) $Id: HTMIME.h,v 1.1.1.1 1996/10/15 13:08:40 cvs Exp $
+                            @(#) $Id: HTMIME.h,v 1.2 1998/03/11 17:45:38 cvs Exp $
                                                                                           
     */

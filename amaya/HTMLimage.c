@@ -72,6 +72,7 @@ LoadedImageDesc   **desc;
 	     if (pImage->document == doc)
 	       {
 		  *desc = pImage;
+		  TtaFreeMemory (localname);
 		  return (FALSE);
 	       }
 	     else
@@ -103,6 +104,7 @@ LoadedImageDesc   **desc;
    pImage->nextImage = NULL;
    pImage->document = doc;
    pImage->elImage = NULL;
+   pImage->imageType = unknown_type;
    *desc = pImage;
    TtaFreeMemory (localname);
    if (sameImage != NULL)
@@ -154,6 +156,158 @@ Document            doc;
   return (NULL);
 }
 
+/*----------------------------------------------------------------------
+  UpdateImageMap sets or updates Ref_IMG MAP attributes for the current
+  image.
+  If there is a map, updates all mapareas.
+  oldWidth is -1 or the old image width.
+  oldHeight is -1 or the old image height.
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
+void                UpdateImageMap (Element image, Document document, int oldWidth, int oldHeight)
+#else  /* __STDC__ */
+void                UpdateImageMap (image, document, oldWidth, oldHeight)
+Element             image;
+Document            document;
+int                 oldWidth;
+int                 oldHeight;
+#endif /* __STDC__ */
+{
+   AttributeType       attrType;
+   Attribute           attr;
+   Element             el, child;
+   char               *text;
+   int                 shape, w, h, length;
+   int                 deltax, deltay, val;
+   DisplayMode         dispMode;
+
+   dispMode = TtaGetDisplayMode (document);
+   /* Search the USEMAP attribute */
+   attrType.AttrSSchema = TtaGetDocumentSSchema (document);
+   attrType.AttrTypeNum = HTML_ATTR_USEMAP;
+   attr = TtaGetAttribute (image, attrType);
+   if (attr != NULL)
+     {
+	/* Search the MAP element associated with IMAGE element */
+	length = TtaGetTextAttributeLength (attr);
+	length++;
+	text = TtaGetMemory (length);
+	TtaGiveTextAttributeValue (attr, text, &length);
+	if (text[0] == '#')
+	   el = SearchNAMEattribute (document, &text[1], NULL);
+	else
+	   el = NULL;
+	TtaFreeMemory (text);
+	if (el == NULL)
+	   return;
+
+	/* ask Thot to stop displaying changes made in the document */
+        if (dispMode == DisplayImmediately)
+	  TtaSetDisplayMode (document, DeferredDisplay);
+
+	/* Update MAP attribute */
+	attrType.AttrTypeNum = HTML_ATTR_Ref_IMG;
+	attr = TtaGetAttribute (el, attrType);
+	if (attr == NULL)
+	  {
+	     /* create it */
+	     attr = TtaNewAttribute (attrType);
+	     TtaAttachAttribute (el, attr, document);
+	  }
+	TtaSetAttributeReference (attr, el, document, image, document);
+
+	/* Update AREAs attribute */
+	el = TtaGetFirstChild (el);
+	TtaGiveBoxSize (image, document, 1, UnPixel, &w, &h);
+	while (el != NULL)
+	  {
+	     /* Search the shape attribute */
+	     attrType.AttrTypeNum = HTML_ATTR_shape;
+	     attr = TtaGetAttribute (el, attrType);
+	     if (attr != NULL)
+	       {
+		  shape = TtaGetAttributeValue (attr);
+		  if (shape == HTML_ATTR_shape_VAL_polygon)
+		    {
+		       attrType.AttrTypeNum = HTML_ATTR_AreaRef_IMG;
+		       attr = TtaGetAttribute (el, attrType);
+		       if (attr == NULL)
+			 {
+			    /* create it */
+			    attr = TtaNewAttribute (attrType);
+			    TtaAttachAttribute (el, attr, document);
+			 }
+		       TtaSetAttributeReference (attr, el, document, image, document);
+		       /* do we need to initialize the polyline limits */
+		       if (oldWidth == -1 && oldHeight == -1)
+			 {
+                            child = TtaGetFirstChild (el);
+                            TtaChangeLimitOfPolyline (child, UnPixel, w, h, document);
+			 }
+		    }
+		  else if (oldWidth != -1 || oldHeight != -1)
+		    {
+		      deltax = deltay = 0;
+		      /* move and resize the current map area */
+		      if (oldWidth != -1 && w != 0)
+			{
+			  deltax = (w - oldWidth) * 100 / oldWidth;
+			  if (deltax != 0)
+			    {
+			      /* Search the x_coord attribute */
+			      attrType.AttrTypeNum = HTML_ATTR_x_coord;
+			      attr = TtaGetAttribute (el, attrType);
+			      val = TtaGetAttributeValue (attr);
+			      val = val + (val * deltax / 100);
+			      TtaSetAttributeValue (attr, val, el, document);    
+			      /* Search the width attribute */
+			      attrType.AttrTypeNum = HTML_ATTR_IntWidthPxl;
+			      attr = TtaGetAttribute (el, attrType);
+			      val = TtaGetAttributeValue (attr);
+			      val = val + (val * deltax / 100);
+			      TtaSetAttributeValue (attr, val, el, document);
+			    }
+			}
+		      if (oldHeight != -1 && h != 0)
+			{
+			  deltay = (h - oldHeight) * 100 / oldHeight;
+			  if (deltay != 0)
+			    {
+			      /* Search the y_coord attribute */
+			      attrType.AttrTypeNum = HTML_ATTR_y_coord;
+			      attr = TtaGetAttribute (el, attrType);
+			      val = TtaGetAttributeValue (attr);
+			      val = val + (val * deltay / 100);
+			      TtaSetAttributeValue (attr, val, el, document);
+			      /* Search the height attribute */
+			      attrType.AttrTypeNum = HTML_ATTR_height_;
+			      attr = TtaGetAttribute (el, attrType);
+			      val = TtaGetAttributeValue (attr);
+			      val = val + (val * deltay / 100);
+			      TtaSetAttributeValue (attr, val, el, document);
+			    }
+			}
+
+		      /* update area coords */
+		      if (deltax && deltay)
+			/* both width and height */
+			SetAreaCoords (document, el, 0);
+		      else if (deltax)
+			/* only width */
+			SetAreaCoords (document, el, HTML_ATTR_IntWidthPxl);
+		      else
+			/* only height */
+			SetAreaCoords (document, el, HTML_ATTR_height_);
+		    }
+	       }
+	     TtaNextSibling (&el);
+	  }
+     }
+
+   /* ask Thot to display changes made in the document */
+   TtaSetDisplayMode (document, dispMode);
+}
+
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
@@ -175,11 +329,13 @@ char               *imageName;
     {
       /* display the content of a picture element */
       TtaSetTextContent (el, imageName, SPACE, doc);
-      UpdateImageMap (el, doc);
+      UpdateImageMap (el, doc, -1, -1);
     }
   else
     {
-fprintf(stderr,"Background image !\n");
+#      ifndef _WINDOWS
+       fprintf(stderr,"Background image !\n");
+#      endif /* _WINDOWS */
       /* create a background image for the element */
       /* set the value */
     }
@@ -247,9 +403,12 @@ void *context;
 	      DisplayImage (doc, ctxEl->currentElement, tempfile);
 	    else if (ctxEl->callback != NULL)
 	      ctxEl->callback(doc, ctxEl->currentElement, tempfile, ctxEl->extra);
-	     ctxPrev = ctxEl;
-	     ctxEl = ctxEl->nextElement;
-	     TtaFreeMemory ((char *) ctxPrev);
+	    /* get image type */
+	    if (desc->imageType == unknown_type)
+	      desc->imageType = TtaGetPictureType (ctxEl->currentElement);
+	    ctxPrev = ctxEl;
+	    ctxEl = ctxEl->nextElement;
+	    TtaFreeMemory ( ctxPrev);
 	  }
      }
    TtaFreeMemory (tempfile);
@@ -289,8 +448,7 @@ void *context;
 	return;
 
       /* rename the local file of the image */
-      HandleImageLoaded (doc, status, urlName,
-			 outputfile, context);
+      HandleImageLoaded (doc, status, urlName, outputfile, context);
      }
 }
 
@@ -349,16 +507,16 @@ void               *extra;
 
 #endif /* __STDC__ */
 {
-  int                 length, i;
-  char               *imageName;
+  ElemImage          *ctxEl;
   AttributeType       attrType;
   Attribute           attr;
   LoadedImageDesc    *desc;
-  char*               pathname = (char*) TtaGetMemory (sizeof (char) * MAX_LENGTH);
-  char*               tempfile = (char*) TtaGetMemory (sizeof (char) * MAX_LENGTH);
+  char               *imageName;
+  char                pathname[MAX_LENGTH];
+  char                tempfile[MAX_LENGTH];
+  int                 length, i;
   boolean             update;
   boolean             newImage;
-  ElemImage          *ctxEl;
 
   pathname[0] = EOS;
   tempfile[0] = EOS;
@@ -392,7 +550,7 @@ void               *extra;
 	{
 	  update = TRUE;
 	  /* add BASE to image name, if necessary */
-	  NormalizeURL (imageName, doc, pathname, imageName);
+	  NormalizeURL (imageName, doc, pathname, imageName, NULL);
 	  /* is the image already loaded ? */
 	  newImage = AddLoadedImage (imageName, pathname, doc, &desc);
 	  if (newImage)
@@ -415,7 +573,7 @@ void               *extra;
 #else /* !AMAYA_JAVA && !AMAYA_ILU */
 	      UpdateTransfer(doc);
 	      i = GetObjectWWW (doc, pathname, NULL, tempfile,
-	                        AMAYA_ASYNC, NULL, NULL,
+	                        AMAYA_ASYNC | flags, NULL, NULL,
 				(void *) libWWWImageLoaded,
 				(void *) desc, NO, NULL);
 #endif /* !AMAYA_JAVA && !AMAYA_ILU */
@@ -452,6 +610,8 @@ void               *extra;
 		      callback(doc, el, desc->localName, extra);
 		    else
 		      DisplayImage (doc, el, desc->localName);
+		    /* get image type */
+		    desc->imageType = TtaGetPictureType (el);
 		  }
 		else
 		  {
@@ -476,8 +636,6 @@ void               *extra;
       if (attr != NULL && imageName)
 	TtaFreeMemory (imageName);
     }
-  TtaFreeMemory (pathname);
-  TtaFreeMemory (tempfile);
   TtaHandlePendingEvents ();
 }
 

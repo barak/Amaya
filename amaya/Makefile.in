@@ -17,15 +17,16 @@ LIBS	=  $(AMAYA_OPTION_LIBS) \
 	  -lXext -lX11 $(X_EXTRA_LIBS) @LIBS@ @EXTRA_LIBS@ -lm
 
 CONFIGFILES=XKeysymDB thot.ini amaya.keyboard en-amayadialogue \
-            en-printdialogue en-amayamsg en-javamsg en-libdialogue \
+            en-printdialogue en-amayamsg en-libdialogue \
 	    en-transdialogue en-corrdialogue fr-amayadialogue \
-            fr-printdialogue fr-amayamsg fr-javamsg fr-libdialogue \
-	    fr-transdialogue fr-corrdialogue java.properties
+            fr-printdialogue fr-amayamsg fr-libdialogue \
+	    fr-transdialogue fr-corrdialogue 
 
 DICOFILES= *.ptn alphabet clavier
 
-AMAYAFILES=COPYRIGHT COPYRIGHT.html HTML.STR HTML.conf HTML.trans HTML.en \
-           HTML.fr HTML*.PRS HTML*.TRA MathML.S MathMLP.P MathMLT.T
+AMAYAFILES= HTML.STR HTML.conf HTML.trans HTML.en HTML.fr\
+           HTML*.PRS HTML*.TRA \
+	   MathML.STR MathMLP.PRS MathMLT.TRA
 
 FONTSFILES=Families.list fonts.dir icones*
 
@@ -36,7 +37,8 @@ exec_prefix = @exec_prefix@
 libdir = @libdir@
 datadir = @datadir@
 bindir = @bindir@
-
+math_schema: $(amaya_math_schema)
+graph_schema: $(amaya_graph_schema)
 #
 # specific entry point check the dependancies
 #
@@ -48,7 +50,7 @@ amaya : amaya_schemas amaya_src ../thotlib/libThotEditor.a ../tablelib/libThotTa
 all : amaya_schemas amaya_src ../bin/amaya
 
 clean :
-	$(RM) *.o *.h *.c EDITOR* HTML* logo.*
+	$(RM) *.o *.h *.c EDITOR* HTML* MathML* GraphML* logo.*
 
 ../bin/print : 
 	@(cd ../thotlib ; $(MAKE) print)
@@ -111,6 +113,9 @@ force :
 #include the fragment "amaya/Makefile.math" for math if configured in
 @math_frag@
 
+#include the fragment "amaya/Makefile.graph" for graphics if configured in
+@graph_frag@
+
 #include the fragment "ilulib/Makefile.ilu" for ILU if configured in
 @ilu_frag@
 
@@ -123,26 +128,31 @@ force :
 
 ALL_AMAYA_OPTIONS= $(AMAYA_OPTIONS) $(AMAYA_JAVA_OPTIONS) \
 	 $(AMAYA_PLUGIN_OPTIONS) $(AMAYA_LIBWWW_OPTIONS) \
-	 $(AMAYA_MATH_OPTIONS) $(AMAYA_ILU_OPTIONS)
+	 $(AMAYA_MATH_OPTIONS) $(AMAYA_GRAPH_OPTIONS) $(AMAYA_ILU_OPTIONS)
 
 AMAYA_OPTION_INCLUDES= $(AMAYA_JAVA_INCLUDES) $(AMAYA_PLUGIN_INCLUDES) \
          $(AMAYA_LIBWWW_INCLUDES) $(AMAYA_MATH_INCLUDES) \
-	 $(AMAYA_ILU_INCLUDES)
+	 $(AMAYA_GRAPH_INCLUDES) $(AMAYA_ILU_INCLUDES)
 
 AMAYA_OPTION_OBJ= $(AMAYA_JAVA_OBJ) $(AMAYA_PLUGIN_OBJ) \
-         $(AMAYA_LIBWWW_OBJ) $(AMAYA_MATH_OBJ) $(AMAYA_ILU_OBJ)
+         $(AMAYA_LIBWWW_OBJ) $(AMAYA_MATH_OBJ) $(AMAYA_GRAPH_OBJ) \
+         $(AMAYA_ILU_OBJ)
 
 AMAYA_SRC= $(AMAYA_JAVA_SRC) $(AMAYA_PLUGIN_SRC) \
-         $(AMAYA_LIBWWW_SRC) $(AMAYA_MATH_SRC) $(AMAYA_ILU_SRC)
+         $(AMAYA_LIBWWW_SRC) $(AMAYA_MATH_SRC) $(AMAYA_GRAPH_SRC) \
+         $(AMAYA_ILU_SRC)
 
 AMAYA_OPTION_LIBS= $(AMAYA_JAVA_LIBS) $(AMAYA_PLUGIN_LIBS) \
-         $(AMAYA_LIBWWW_LIBS) $(AMAYA_MATH_LIBS) $(AMAYA_ILU_LIBS)
+         $(AMAYA_LIBWWW_LIBS) $(AMAYA_MATH_LIBS) $(AMAYA_GRAPH_LIBS) \
+         $(AMAYA_ILU_LIBS)
 
 AMAYA_OPTION_EXTRA_LIBS= $(AMAYA_JAVA_EXTRA_LIBS) $(AMAYA_PLUGIN_EXTRA_LIBS) \
-         $(AMAYA_LIBWWW_EXTRA_LIBS) $(AMAYA_MATH_EXTRA_LIBS) $(AMAYA_ILU_EXTRA_LIBS)
+         $(AMAYA_LIBWWW_EXTRA_LIBS) $(AMAYA_MATH_EXTRA_LIBS) \
+         $(AMAYA_GRAPH_EXTRA_LIBS) $(AMAYA_ILU_EXTRA_LIBS)
 
 AMAYA_OPTION_SCHEMAS= $(AMAYA_JAVA_SCHEMAS) $(AMAYA_PLUGIN_SCHEMAS) \
-         $(AMAYA_LIBWWW_SCHEMAS) $(AMAYA_MATH_SCHEMAS) $(AMAYA_ILU_SCHEMAS)
+         $(AMAYA_LIBWWW_SCHEMAS) $(AMAYA_MATH_SCHEMAS) $(AMAYA_GRAPH_SCHEMAS) \
+         $(AMAYA_ILU_SCHEMAS)
 
 AMAYA_INCLUDES= -I. -I.. -I@top_srcdir@/thotlib/include -I@srcdir@ -I@srcdir@/f \
                 -I@top_srcdir@/libpng/zlib $(AMAYA_OPTION_INCLUDES)
@@ -152,7 +162,7 @@ AMAYA_LIBS= ../thotlib/libThotEditor.a ../tablelib/libThotTable.a \
 
 HTML2THOT_LIBS= ../thotlib/libThotKernel.a
 
-amaya_schemas : compHTML compHTMLP compHTMLT amaya_math_schema
+amaya_schemas : compHTML compHTMLP compHTMLT math_schema graph_schema
 
 amaya_src : $(AMAYA_SRC) 
 
@@ -235,7 +245,6 @@ $(AMAYA)/HTMLT.TRA : $(AMAYA)/HTMLT.T ../bin/tra
 	$$TRA $(ALL_AMAYA_OPTIONS) HTMLT ;\
 	$$TRA $(ALL_AMAYA_OPTIONS) HTMLTT
 
-
 #
 # Interface schemas compilation
 #
@@ -278,8 +287,7 @@ html2piv: ../bin/html2piv
 	$(CC) $(LDFLAGS) -DSTANDALONE $(AMAYA_INCLUDES) $(INCLUDES) -o ../bin/html2piv  @srcdir@/html2thot.c $(HTML2THOT_LIBS)
 	@$(ECHO) "====>" html2piv is done
 
-install : all ../bin/print $(AMAYA_JAVA_INSTALL) $(AMAYA_PLUGIN_INSTALL) \
-	   $(AMAYA_LIBWWW_INSTALL)
+install : all ../bin/print $(AMAYA_JAVA_INSTALL) $(AMAYA_PLUGIN_INSTALL)
 	@(if test ! -d $(datadir) ; then $(MKDIR) $(datadir) ; fi)
 	@(if test ! -d $(datadir)/thot ; then $(MKDIR) $(datadir)/thot ; fi)
 	@(if test ! -d $(datadir)/thot/amaya ; then $(MKDIR) $(datadir)/thot/amaya ; fi)

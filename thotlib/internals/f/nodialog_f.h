@@ -44,7 +44,6 @@ extern boolean CallEventAttribute ( NotifyAttribute * notifyAttr,
                                     boolean pre );
 extern void CloseParagraphInsertion ( PtrAbstractBox pAb,
                                       int frame );
-extern int CopyXClipboard ( unsigned char **buffer );
 extern void UpdateScrollbars ( int frame );
 extern void ChangeFrameTitle ( int frame,
                                char *texte );
@@ -94,55 +93,6 @@ extern boolean ConfigGetPSchemaNature ( PtrSSchema pSS,
                                         char *presNature );
 extern boolean ConfigDefaultPSchema ( char *schema,
                                       char *schpres );
-extern void UserGeometryMove ( int frame,
-                               int *x,
-                               int *y,
-                               int large,
-                               int haut,
-                               int xr,
-                               int yr,
-                               int xmin,
-                               int xmax,
-                               int ymin,
-                               int ymax,
-                               int xm,
-                               int ym );
-extern void UserGeometryResize ( int frame,
-                                 int x,
-                                 int y,
-                                 int *large,
-                                 int *haut,
-                                 int xr,
-                                 int yr,
-                                 int xmin,
-                                 int xmax,
-                                 int ymin,
-                                 int ymax,
-                                 int xm,
-                                 int ym );
-extern void UserGeometryCreate ( int frame,
-                                 int *x,
-                                 int *y,
-                                 int xr,
-                                 int yr,
-                                 int *large,
-                                 int *haut,
-                                 int xmin,
-                                 int xmax,
-                                 int ymin,
-                                 int ymax,
-                                 int PosX,
-                                 int PosY,
-                                 int DimX,
-                                 int DimY );
-extern void PolyLineModification ( int frame,
-                                   int x,
-                                   int y,
-                                   PtrTextBuffer Pbuffer,
-                                   PtrTextBuffer Bbuffer,
-                                   int nbpoints,
-                                   int point,
-                                   boolean close );
 
 #else /* __STDC__ */
 
@@ -184,7 +134,6 @@ extern boolean CallEventAttribute (/* NotifyAttribute * notifyAttr,
                                       boolean pre */);
 extern void CloseParagraphInsertion (/* PtrAbstractBox pAb,
                                         int frame */);
-extern int CopyXClipboard (/* unsigned char **buffer */);
 extern void UpdateScrollbars (/* int frame */);
 extern void ChangeFrameTitle (/* int frame,
                                  char *texte */);
@@ -234,55 +183,6 @@ extern boolean ConfigGetPSchemaNature (/* PtrSSchema pSS,
                                           char *presNature */);
 extern boolean ConfigDefaultPSchema (/* char *schema,
                                         char *schpres */);
-extern void UserGeometryMove (/* int frame,
-                                 int *x,
-                                 int *y,
-                                 int large,
-                                 int haut,
-                                 int xr,
-                                 int yr,
-                                 int xmin,
-                                 int xmax,
-                                 int ymin,
-                                 int ymax,
-                                 int xm,
-                                 int ym */);
-extern void UserGeometryResize (/* int frame,
-                                   int x,
-                                   int y,
-                                   int *large,
-                                   int *haut,
-                                   int xr,
-                                   int yr,
-                                   int xmin,
-                                   int xmax,
-                                   int ymin,
-                                   int ymax,
-                                   int xm,
-                                   int ym */);
-extern void UserGeometryCreate (/* int frame,
-                                   int *x,
-                                   int *y,
-                                   int xr,
-                                   int yr,
-                                   int *large,
-                                   int *haut,
-                                   int xmin,
-                                   int xmax,
-                                   int ymin,
-                                   int ymax,
-                                   int PosX,
-                                   int PosY,
-                                   int DimX,
-                                   int DimY */);
-extern void PolyLineModification (/* int frame,
-                                     int x,
-                                     int y,
-                                     PtrTextBuffer Pbuffer,
-                                     PtrTextBuffer Bbuffer,
-                                     int nbpoints,
-                                     int point,
-                                     boolean close */);
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

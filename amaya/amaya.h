@@ -5,7 +5,7 @@
  *
  */
 
-#ifndef AMAYA_H
+#ifndef AMAYA_H 
 #define AMAYA_H
 
 /* Thot interface */
@@ -34,10 +34,21 @@
 #define MAX_LENGTH     512
 #define NAME_LENGTH     32
 #define HTAppName "amaya"
-#define HTAppVersion "V1.2"
+#define HTAppVersion "V1.3"
 
 #define URL_SEP '/'
 #define URL_STR "/"
+
+/* The structures used for request callbacks */
+
+typedef void   TIcbf (Document doc, int status, char *urlName,
+		      char *outputfile, const char *content_type,
+		      const char *data_block, int data_block_size,
+		      void *context);
+
+typedef void  TTcbf (Document doc, int status, char *urlName,
+                     char *outputfile, const char *content_type,
+                     void *context);
 
 /* How are Network accesses provided ? */
 #ifdef AMAYA_JAVA
@@ -97,8 +108,10 @@ typedef char        AmayaReadChar ();
 #define About2		36
 #define About3		37
 #define Version		38
-#define FormAbout      	39    
-#define MAX_REF         40
+#define FormAbout      	39
+#define FromCSS         40
+#define CSSSelect       41
+#define MAX_REF         42
 
 /* The possible GET/POST/PUT request modes */
 
@@ -121,6 +134,7 @@ typedef char        AmayaReadChar ();
 #ifndef AMAYA_JAVA
 /* Prevents a stop race condition in ASYNC transfers */
 #define AMAYA_ASYNC_SAFE_STOP  256
+#define AMAYA_LOAD_CSS   512
 #endif /* ! AMAYA_JAVA */
 /*
  * Flags to indicate the status of the network requests associated
@@ -181,6 +195,10 @@ THOT_EXPORT boolean      SelectionInComment;
 THOT_EXPORT boolean      SelectionInEM;
 THOT_EXPORT boolean      SelectionInSTRONG;
 THOT_EXPORT boolean      SelectionInCITE;
+THOT_EXPORT boolean      SelectionInABBR;
+THOT_EXPORT boolean      SelectionInACRONYM;
+THOT_EXPORT boolean      SelectionInINS;
+THOT_EXPORT boolean      SelectionInDEL;
 THOT_EXPORT boolean      SelectionInDFN;
 THOT_EXPORT boolean      SelectionInCODE;
 THOT_EXPORT boolean      SelectionInVAR;
@@ -189,15 +207,19 @@ THOT_EXPORT boolean      SelectionInKBD;
 THOT_EXPORT boolean      SelectionInI;
 THOT_EXPORT boolean      SelectionInB;
 THOT_EXPORT boolean      SelectionInTT;
-THOT_EXPORT boolean      SelectionInU;
-THOT_EXPORT boolean      SelectionInSTRIKE;
 THOT_EXPORT boolean      SelectionInBIG;
 THOT_EXPORT boolean      SelectionInSMALL;
 
+typedef enum
+{
+  docHTML,
+  docHelp,
+  docText
+} DocumentType;
 #define DocumentTableLength 10
 THOT_EXPORT char        *DocumentURLs[DocumentTableLength];
 /* TRUE if the document is displayed by help commands */
-THOT_EXPORT boolean      HelpDocuments[DocumentTableLength];
+THOT_EXPORT DocumentType DocumentTypes[DocumentTableLength];
 /* The whole document is loaded when the corresponding value
    in FilesLoading is equal to 0 */
 THOT_EXPORT int          FilesLoading[DocumentTableLength];
@@ -231,13 +253,14 @@ ElemImage;
 
 typedef struct _LoadedImageDesc
   {
-     char               *originalName;	/* complete URL of the image             */
+     char               *originalName;	/* complete URL of the image                */
      char               *localName;	/* local name (without path) of the image   */
-     struct _LoadedImageDesc *prevImage;/* double linked list */
-     struct _LoadedImageDesc *nextImage;/* easier to unchain */
-     Document            document;	/* document concerned                        */
-     struct _ElemImage  *elImage;	/* first element using this image          */
-     int                 status;	/* the status of the Image loading */
+     struct _LoadedImageDesc *prevImage;/* double linked list                       */
+     struct _LoadedImageDesc *nextImage;/* easier to unchain                        */
+     Document            document;	/* document concerned                       */
+     struct _ElemImage  *elImage;	/* first element using this image           */
+     int                 imageType;     /* the type of the image                    */
+     int                 status;	/* the status of the image loading          */
   }
 LoadedImageDesc;
 

@@ -20,7 +20,8 @@
 #include "presentdriver.h"
 
 static char        *TargetDocumentURL = NULL;
-
+static int          OldWidth;
+static int          OldHeight;
 #define buflen 50
 
 #include "css_f.h"
@@ -31,8 +32,16 @@ static char        *TargetDocumentURL = NULL;
 #include "EDITORactions_f.h"
 #include "HTMLactions_f.h"
 #include "HTMLedit_f.h"
+#include "HTMLimage_f.h"
 #include "HTMLpresentation_f.h"
 #include "HTMLstyle_f.h"
+#include "HTMLimage_f.h"
+#ifdef MATHML
+#include "MathMLbuilder_f.h"
+#endif
+#ifdef GRAPHML
+#include "GraphMLbuilder_f.h"
+#endif
 #include "tree.h"
 
 /*----------------------------------------------------------------------
@@ -137,7 +146,8 @@ Document            targetDoc;
 
 /*----------------------------------------------------------------------
    GetNameAttr return the NAME attribute of the enclosing Anchor   
-   element or the ID attribute of the selected element or NULL.
+   element or the ID attribute of (an ascendant of) the selected element
+   or NULL.
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
 Attribute           GetNameAttr (Document doc, Element selectedElement)
@@ -157,7 +167,7 @@ Element             selectedElement;
    attr = NULL;		/* no NAME attribute yet */
    if (selectedElement != NULL)
      {
-	elType = TtaGetElementType (selectedElement);
+	elType.ElSSchema = TtaGetSSchema ("HTML", doc);
 	elType.ElTypeNum = HTML_EL_Anchor;
 	attrType.AttrSSchema = elType.ElSSchema;
 	el = TtaGetTypedAncestor (selectedElement, elType);
@@ -187,8 +197,8 @@ Element             selectedElement;
 
 
 /*----------------------------------------------------------------------
-   CreateTargetAnchor creates the NAME attribute with a default    
-   value (Label of the element).                           
+   CreateTargetAnchor creates a NAME or ID attribute with a default    
+   value for element el.                           
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
 void                CreateTargetAnchor (Document doc, Element el)
@@ -203,6 +213,7 @@ Element             el;
    Attribute           attr;
    ElementType         elType;
    Element             elText;
+   SSchema	       HTMLSSchema;
    Language            lang;
    char               *text;
    char*               url = (char*) TtaGetMemory (sizeof (char) * MAX_LENGTH);
@@ -212,9 +223,12 @@ Element             el;
 
    elType = TtaGetElementType (el);
    withinHTML = (strcmp(TtaGetSSchemaName (elType.ElSSchema), "HTML") == 0);
-   /* get the NAME or ID attribute */
-   attrType.AttrSSchema = elType.ElSSchema;
-   if (withinHTML && (elType.ElTypeNum == HTML_EL_Anchor || elType.ElTypeNum == HTML_EL_MAP))
+
+   /* get a NAME or ID attribute */
+   HTMLSSchema = TtaGetSSchema ("HTML", doc);
+   attrType.AttrSSchema = HTMLSSchema;
+   if (withinHTML && (elType.ElTypeNum == HTML_EL_Anchor ||
+		      elType.ElTypeNum == HTML_EL_MAP))
      attrType.AttrTypeNum = HTML_ATTR_NAME;
    else
      attrType.AttrTypeNum = HTML_ATTR_ID;
@@ -226,7 +240,7 @@ Element             el;
 	TtaAttachAttribute (el, attr, doc);
      }
 
-   /* get the Label text to build the name value */
+   /* build a value for the new attribute */
    if (withinHTML && elType.ElTypeNum == HTML_EL_MAP)
      {
        /* mapxxx for a map element */
@@ -234,10 +248,11 @@ Element             el;
      }
    else if (withinHTML && elType.ElTypeNum == HTML_EL_LINK)
      {
-       /* mapxxx for a map element */
+       /* linkxxx for a link element */
        strcpy (url, "link");
      }
    else
+       /* get the content for other elements */
      {
 	elType.ElTypeNum = HTML_EL_TEXT_UNIT;
 	elText = TtaSearchTypedElement (elType, SearchInTree, el);
@@ -281,19 +296,65 @@ Element             el;
 	  }
 	else
 	  {
-	    /* label of the element */
+	    /* get the element's label if there is no text */
 	    text = TtaGetElementLabel (el);
 	    strcpy (url, text);
 	  }
      }
    /* copie the text into the NAME attribute */
    TtaSetAttributeText (attr, url, el, doc);
-   /* Check attribute NAME in order to make sure that its value unique */
-   /* in the document */
+   /* Check the attribute value to make sure that it's unique within */
+   /* the document */
    MakeUniqueName (el, doc);
    /* set this new end-anchor as the new target */
    SetTargetContent (doc, attr);
    TtaFreeMemory (url);
+}
+
+/*----------------------------------------------------------------------
+   SetXMLlinkAttr attach an xml:link="simple" attribute to element el
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
+static void         SetXMLlinkAttr (Element el, Document doc)
+#else  /* __STDC__ */
+static void         SetXMLlinkAttr (el, doc)
+Element		    el;
+Document            doc;
+
+#endif /* __STDC__ */
+{
+  AttributeType	attrType;
+  ElementType	elType;
+  Attribute	attr;
+  int		val;
+
+  attrType.AttrTypeNum = 0;
+  elType = TtaGetElementType (el);
+#ifdef MATHML
+  if (strcmp(TtaGetSSchemaName (elType.ElSSchema), "MathML") == 0)
+     {
+     MapMathMLAttribute ("link", &attrType, "", doc);
+     MapMathMLAttributeValue ("simple", attrType, &val);
+     }
+  else
+#endif
+#ifdef GRAPHML
+   if (strcmp(TtaGetSSchemaName (elType.ElSSchema), "MathML") == 0)
+     {
+     MapGraphMLAttribute ("link", &attrType, "", doc);
+     MapGraphMLAttributeValue ("simple", attrType, &val);
+     }
+#endif
+  if (attrType.AttrTypeNum > 0)
+     {
+     attr = TtaGetAttribute (el, attrType);
+     if (attr == NULL)
+        {
+        attr = TtaNewAttribute (attrType);
+        TtaAttachAttribute (el, attr, doc);
+        }
+     TtaSetAttributeValue (attr, val, el, doc);
+     }
 }
 
 /*----------------------------------------------------------------------
@@ -302,8 +363,8 @@ Element             el;
 #ifdef __STDC__
 static void         CreateAnchor (Document doc, View view, boolean createLink)
 #else  /* __STDC__ */
-static void         CreateAnchor (document, view, createLink)
-Document            document;
+static void         CreateAnchor (doc, view, createLink)
+Document            doc;
 View                view;
 boolean             createLink;
 
@@ -311,30 +372,31 @@ boolean             createLink;
 {
   Element             first, last, el, next;
   Element             parag, prev, child, anchor;
-  SSchema            docSchema;
+  SSchema             HTMLSSchema;
   ElementType         elType;
   AttributeType       attrType;
   Attribute           attr;
   DisplayMode         dispMode;
   int                 c1, cN, lg, i;
-  boolean             noAnchor;
+  boolean             noAnchor, oldStructureChecking;
 
+  HTMLSSchema = TtaGetSSchema ("HTML", doc);
   dispMode = TtaGetDisplayMode (doc);
   /* get the first and last selected element */
   TtaGiveFirstSelectedElement (doc, &first, &c1, &i);
   TtaGiveLastSelectedElement (doc, &last, &i, &cN);
-  docSchema = TtaGetDocumentSSchema (doc);
 
   /* Check whether the selected elements are a valid content for an anchor */
   elType = TtaGetElementType (first);
-  if (elType.ElTypeNum == HTML_EL_Anchor && elType.ElSSchema == docSchema
-      && first == last)
+  if (elType.ElTypeNum == HTML_EL_Anchor &&
+      TtaSameSSchemas (elType.ElSSchema, HTMLSSchema) &&
+      first == last)
     /* add an attribute on the current anchor */
     anchor = first;
   else
     {
-      /* search if the selection is included into an anchor */
-      if (elType.ElSSchema == docSchema)
+      /* search if the selection is within an anchor */
+      if (TtaSameSSchemas (elType.ElSSchema, HTMLSSchema))
 	el = SearchAnchor (doc, first, !createLink);
       else
 	el = NULL;
@@ -349,19 +411,16 @@ boolean             createLink;
 	  while (!noAnchor && el != NULL)
 	    {
 	      elType = TtaGetElementType (el);
-	      if (elType.ElSSchema != docSchema)
+	      if (!TtaSameSSchemas (elType.ElSSchema, HTMLSSchema))
 		noAnchor = TRUE;
 	      else if (elType.ElTypeNum != HTML_EL_TEXT_UNIT &&
-		  elType.ElTypeNum != HTML_EL_PICTURE_UNIT &&
 		  elType.ElTypeNum != HTML_EL_Teletype_text &&
 		  elType.ElTypeNum != HTML_EL_Italic_text &&
 		  elType.ElTypeNum != HTML_EL_Bold_text &&
 		  elType.ElTypeNum != HTML_EL_Underlined_text &&
 		  elType.ElTypeNum != HTML_EL_Struck_text &&
-		  elType.ElTypeNum != HTML_EL_Small_text &&
 		  elType.ElTypeNum != HTML_EL_Big_text &&
-		  elType.ElTypeNum != HTML_EL_Subscript &&
-		  elType.ElTypeNum != HTML_EL_Superscript &&
+		  elType.ElTypeNum != HTML_EL_Small_text &&
 		  elType.ElTypeNum != HTML_EL_Emphasis &&
 		  elType.ElTypeNum != HTML_EL_Strong &&
 		  elType.ElTypeNum != HTML_EL_Def &&
@@ -370,10 +429,22 @@ boolean             createLink;
 		  elType.ElTypeNum != HTML_EL_Keyboard &&
 		  elType.ElTypeNum != HTML_EL_Variable &&
 		  elType.ElTypeNum != HTML_EL_Cite &&
+		  elType.ElTypeNum != HTML_EL_ABBR &&
+		  elType.ElTypeNum != HTML_EL_ACRONYM &&
+		  elType.ElTypeNum != HTML_EL_INS &&
+		  elType.ElTypeNum != HTML_EL_DEL &&
+		  elType.ElTypeNum != HTML_EL_PICTURE_UNIT &&
 		  elType.ElTypeNum != HTML_EL_Applet &&
+		  elType.ElTypeNum != HTML_EL_Object &&
 		  elType.ElTypeNum != HTML_EL_Font_ &&
 		  elType.ElTypeNum != HTML_EL_SCRIPT &&
-		  elType.ElTypeNum != HTML_EL_MAP)
+		  elType.ElTypeNum != HTML_EL_MAP &&
+		  elType.ElTypeNum != HTML_EL_Quotation &&
+		  elType.ElTypeNum != HTML_EL_Subscript &&
+		  elType.ElTypeNum != HTML_EL_Superscript &&
+		  elType.ElTypeNum != HTML_EL_Span &&
+		  elType.ElTypeNum != HTML_EL_BDO &&
+		  elType.ElTypeNum != HTML_EL_IFRAME )
 		noAnchor = TRUE;
 	      if (el == last)
 		el = NULL;
@@ -384,14 +455,38 @@ boolean             createLink;
 	  if (noAnchor)
 	    {
 	      if (createLink || el != NULL)
-		/* cannot create an anchor here */
-		TtaSetStatus (doc, 1, TtaGetMessage (AMAYA, AM_INVALID_ANCHOR1), NULL);
-	      else
 		{
+		elType = TtaGetElementType (first);
+		if (first == last && c1 == 0 && cN == 0 && createLink &&
+		    !TtaSameSSchemas (elType.ElSSchema, HTMLSSchema))
+		   /* a single element is selected and it's not a HTML elem
+		      neither a character string */
+		   {
+	           /* create an attributeHREF for the selected element */
+	           attrType.AttrSSchema = HTMLSSchema;
+	           attrType.AttrTypeNum = HTML_ATTR_HREF_;
+	           attr = TtaGetAttribute (first, attrType);
+	           if (attr == NULL)
+		     {
+		       attr = TtaNewAttribute (attrType);
+		       oldStructureChecking = TtaGetStructureChecking (doc);
+		       TtaSetStructureChecking (0, doc);
+		       TtaAttachAttribute (first, attr, doc);
+		       TtaSetStructureChecking (oldStructureChecking, doc);
+		     }
+		   SelectDestination (doc, first);
+		   /* create a xml:link attribute */
+		   SetXMLlinkAttr (first, doc);
+		   TtaSetDocumentModified (doc);
+		   }
+		else
+		  /* cannot create an anchor here */
+		  TtaSetStatus (doc, 1, TtaGetMessage (AMAYA, AM_INVALID_ANCHOR1), NULL);
+		}
+	      else
 		  /* create an ID for target element */
 		  CreateTargetAnchor (doc, first);
-		}
-	      return;	      
+	      return;
 	    }
 	  /* check if the anchor to be created is within an anchor element */
 	  else if (SearchAnchor (doc, first, TRUE) != NULL ||
@@ -404,7 +499,8 @@ boolean             createLink;
 	  /* stop displaying changes that will be made in the document */
 	  if (dispMode == DisplayImmediately)
 	    TtaSetDisplayMode (doc, DeferredDisplay);
-	  
+	  /* remove selection before modifications */
+	  TtaUnselect (doc);
 	  /* process the first selected element */
 	  elType = TtaGetElementType (first);
 	  if (c1 > 1 && elType.ElTypeNum == HTML_EL_TEXT_UNIT)
@@ -449,9 +545,7 @@ boolean             createLink;
 	  elType = TtaGetElementType (TtaGetParent (first));
 	  if (elType.ElTypeNum == HTML_EL_BODY ||
 	      elType.ElTypeNum == HTML_EL_Division ||
-#ifdef COUGAR
 	      elType.ElTypeNum == HTML_EL_Object_Content ||
-#endif /* COUGAR */
 	      elType.ElTypeNum == HTML_EL_Data_cell ||
 	      elType.ElTypeNum == HTML_EL_Heading_cell ||
 	      elType.ElTypeNum == HTML_EL_Block_Quote)
@@ -532,17 +626,19 @@ Document     doc;
   Element	    image;
   ElementType	    elType;
   AttributeType     attrType;
+  SSchema	    HTMLSSchema;
   Attribute         attr;
   char             *value;
-  char*             url = (char*) TtaGetMemory (sizeof (char) * MAX_LENGTH);
+  char              url[MAX_LENGTH];
   int               length, i;
-  boolean           change;
+  boolean           change, isHTML;
 
+  HTMLSSchema = TtaGetSSchema ("HTML", doc);
   elType = TtaGetElementType (el);
-  if (strcmp(TtaGetSSchemaName (elType.ElSSchema), "HTML") != 0)
-    return;
-  attrType.AttrSSchema = elType.ElSSchema;
-   if (elType.ElTypeNum == HTML_EL_Anchor || elType.ElTypeNum == HTML_EL_MAP)
+  isHTML = (strcmp(TtaGetSSchemaName (elType.ElSSchema), "HTML") == 0);
+  attrType.AttrSSchema = HTMLSSchema;
+   if (isHTML &&
+       (elType.ElTypeNum == HTML_EL_Anchor || elType.ElTypeNum == HTML_EL_MAP))
      attrType.AttrTypeNum = HTML_ATTR_NAME;
    else
      attrType.AttrTypeNum = HTML_ATTR_ID;
@@ -551,7 +647,7 @@ Document     doc;
    if (attr != 0)
      {
        /* the element has an attribute NAME or ID */
-       length = TtaGetTextAttributeLength (attr) + 10; /* reverve of 9 chars */
+       length = TtaGetTextAttributeLength (attr) + 10;
        value = TtaGetMemory (length);
        change = FALSE;
        if (value != NULL)
@@ -570,7 +666,7 @@ Document     doc;
 	     {
 	       /* copy the element Label into the NAME attribute */
 	       TtaSetAttributeText (attr, value, el, doc);
-	       if (elType.ElTypeNum == HTML_EL_MAP)
+	       if (isHTML && elType.ElTypeNum == HTML_EL_MAP)
 		 {
 		   /* Search backward the refered image */
 		   attrType.AttrTypeNum = HTML_ATTR_USEMAP;
@@ -595,7 +691,6 @@ Document     doc;
 	 }
        TtaFreeMemory (value);
      }
-   TtaFreeMemory (url);
 }
 
 
@@ -771,7 +866,7 @@ NotifyElement      *event;
 			    }
 			  /* get the complete URL of the referred document */
 			  /* Add the  base content if necessary */
-			  NormalizeURL (documentURL, originDocument, tempURL, path);
+			  NormalizeURL (documentURL, originDocument, tempURL, path, NULL);
 			}
 		      if (value[iName] == '#')
 			{
@@ -938,10 +1033,71 @@ NotifyAttribute    *event;
 
    el = event->element;
    elType = TtaGetElementType (el);
-   if (elType.ElTypeNum != HTML_EL_AREA)
-      el = TtaGetParent (el);
-   if (elType.ElTypeNum == HTML_EL_AREA)
-     SetAreaCoords (event->document, el, event->attributeType.AttrTypeNum);
+   if (elType.ElTypeNum == HTML_EL_PICTURE_UNIT)
+     {
+       /* update the associated map */
+       if (event->attributeType.AttrTypeNum == HTML_ATTR_IntWidthPxl)
+	 {
+	   UpdateImageMap (el, event->document, OldWidth, -1);
+	   OldWidth = -1;
+	 }
+       else
+	 {
+	   UpdateImageMap (el, event->document, -1, OldHeight);
+	   OldHeight = -1;
+	 }
+     }
+   else
+     {
+       if (elType.ElTypeNum != HTML_EL_AREA)
+	 el = TtaGetParent (el);
+       if (elType.ElTypeNum == HTML_EL_AREA)
+	 SetAreaCoords (event->document, el, event->attributeType.AttrTypeNum);
+     }
+}
+
+/*----------------------------------------------------------------------
+   StoreWidth IntWidthPxl will be changed, store the old value.
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
+boolean             StoreWidth (NotifyAttribute * event)
+#else  /* __STDC__ */
+boolean             StoreWidth (event)
+NotifyAttribute    *event;
+
+#endif /* __STDC__ */
+{
+  ElementType	     elType;
+  int                h;
+
+  elType = TtaGetElementType (event->element);
+  if (elType.ElTypeNum == HTML_EL_PICTURE_UNIT)
+    TtaGiveBoxSize (event->element, event->document, 1, UnPixel, &OldWidth, &h);
+  else
+    OldWidth = -1;
+  return FALSE;		/* let Thot perform normal operation */
+}
+
+/*----------------------------------------------------------------------
+   StoreHeight height_ will be changed, store the old value.
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
+boolean             StoreHeight (NotifyAttribute * event)
+#else  /* __STDC__ */
+boolean             StoreHeight (event)
+NotifyAttribute    *event;
+
+#endif /* __STDC__ */
+{
+  ElementType	     elType;
+  int                w;
+
+  elType = TtaGetElementType (event->element);
+  if (elType.ElTypeNum == HTML_EL_PICTURE_UNIT)
+    TtaGiveBoxSize (event->element, event->document, 1, UnPixel, &w, &OldHeight);
+  else
+     OldHeight = -1;
+   return FALSE;		/* let Thot perform normal operation */
 }
 
 /*----------------------------------------------------------------------
@@ -960,6 +1116,7 @@ NotifyAttribute    *event;
    AttributeType       attrType;
    Attribute           attr;
 
+   StoreHeight (event);
    attrType = event->attributeType;
    attrType.AttrTypeNum = HTML_ATTR_IntWidthPxl;
    attr = TtaGetAttribute (event->element, attrType);
@@ -986,14 +1143,14 @@ NotifyAttribute    *event;
 
 #endif /* __STDC__ */
 {
-   char               *buffer;
-   int                 length;
-
+  char               *buffer;
+  int                 length;
    length = buflen - 1;
    buffer = (char*) TtaGetMemory (buflen);
    TtaGiveTextAttributeValue (event->attribute, buffer, &length);
-   CreateAttrWidthPercentPxl (buffer, event->element, event->document);
+   CreateAttrWidthPercentPxl (buffer, event->element, event->document, OldWidth);
    TtaFreeMemory (buffer);
+   OldWidth = -1;
 }
 
 /*----------------------------------------------------------------------
@@ -1226,7 +1383,90 @@ NotifyAttribute    *event;
 }
 
 /*----------------------------------------------------------------------
-   AttrNAMEinMenu                                                  
+   GlobalAttrInMenu
+   Called by Thot when building the Attribute menu.
+   Prevent Thot from including a global attribute in the menu if the selected
+   element do not accept this attribute.
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
+boolean             GlobalAttrInMenu (NotifyAttribute * event)
+#else  /* __STDC__ */
+boolean             GlobalAttrInMenu (event)
+NotifyAttribute    *event;
+
+#endif /* __STDC__ */
+{
+   ElementType         elType;
+   SSchema	       HTMLSSchema;
+
+   HTMLSSchema = TtaGetSSchema ("HTML", event->document);
+   elType = TtaGetElementType (event->element);
+   if (!TtaSameSSchemas (elType.ElSSchema, HTMLSSchema))
+      return TRUE;	/* don't put any HTML attribute in the menu */
+   /* BASE and SCRIPT do not accept any global attribute */
+   if (elType.ElTypeNum == HTML_EL_BASE ||
+       elType.ElTypeNum == HTML_EL_SCRIPT)
+      return TRUE;
+   /* BASEFONT and PARAM accept only ID */
+   if (elType.ElTypeNum == HTML_EL_BaseFont ||
+       elType.ElTypeNum == HTML_EL_Parameter)
+      return (event->attributeType.AttrTypeNum != HTML_ATTR_ID);
+   /* coreattrs */
+   if (event->attributeType.AttrTypeNum == HTML_ATTR_ID ||
+       event->attributeType.AttrTypeNum == HTML_ATTR_Class ||
+       event->attributeType.AttrTypeNum == HTML_ATTR_Style_ ||
+       event->attributeType.AttrTypeNum == HTML_ATTR_Title)
+      if (elType.ElTypeNum == HTML_EL_HEAD ||
+	  elType.ElTypeNum == HTML_EL_TITLE ||
+	  elType.ElTypeNum == HTML_EL_META ||
+	  elType.ElTypeNum == HTML_EL_Styles ||
+	  elType.ElTypeNum == HTML_EL_HTML)
+	 return TRUE;
+      else
+	 return FALSE;
+   /* i18n */
+   if (event->attributeType.AttrTypeNum == HTML_ATTR_dir ||
+       event->attributeType.AttrTypeNum == HTML_ATTR_Langue)
+     if (elType.ElTypeNum == HTML_EL_BR ||
+	 elType.ElTypeNum == HTML_EL_Applet ||
+	 elType.ElTypeNum == HTML_EL_Horizontal_Rule ||
+	 elType.ElTypeNum == HTML_EL_FRAMESET ||
+	 elType.ElTypeNum == HTML_EL_FRAME ||
+	 elType.ElTypeNum == HTML_EL_IFRAME)
+	return TRUE;
+     else
+	return FALSE;
+   /* events */
+   if (event->attributeType.AttrTypeNum == HTML_ATTR_onclick ||
+       event->attributeType.AttrTypeNum == HTML_ATTR_ondblclick ||
+       event->attributeType.AttrTypeNum == HTML_ATTR_onmousedown ||
+       event->attributeType.AttrTypeNum == HTML_ATTR_onmouseup ||
+       event->attributeType.AttrTypeNum == HTML_ATTR_onmouseover ||
+       event->attributeType.AttrTypeNum == HTML_ATTR_onmousemove ||
+       event->attributeType.AttrTypeNum == HTML_ATTR_onmouseout ||
+       event->attributeType.AttrTypeNum == HTML_ATTR_onkeypress ||
+       event->attributeType.AttrTypeNum == HTML_ATTR_onkeydown ||
+       event->attributeType.AttrTypeNum == HTML_ATTR_onkeyup)
+     if (elType.ElTypeNum == HTML_EL_BDO ||
+	 elType.ElTypeNum == HTML_EL_Font_ ||
+	 elType.ElTypeNum == HTML_EL_BR ||
+	 elType.ElTypeNum == HTML_EL_Applet ||
+	 elType.ElTypeNum == HTML_EL_FRAMESET ||
+	 elType.ElTypeNum == HTML_EL_FRAME ||
+	 elType.ElTypeNum == HTML_EL_IFRAME ||
+	 elType.ElTypeNum == HTML_EL_HEAD ||
+	 elType.ElTypeNum == HTML_EL_TITLE ||
+	 elType.ElTypeNum == HTML_EL_META ||
+	 elType.ElTypeNum == HTML_EL_Styles ||
+	 elType.ElTypeNum == HTML_EL_HTML ||
+	 elType.ElTypeNum == HTML_EL_ISINDEX)
+	return TRUE;
+
+   return FALSE;
+}
+
+/*----------------------------------------------------------------------
+   AttrNAMEinMenu doen't display NAME in Reset_Input and Submit_Input
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
 boolean             AttrNAMEinMenu (NotifyAttribute * event)
@@ -1263,7 +1503,7 @@ int                 notType;
 #endif /* __STDC__ */
 {
    ElementType         elType, parentType;
-   Element             elFont, parent, prev, next, new, child, last;
+   Element             elFont, parent, prev, next, added, child, last;
 
    elType.ElSSchema = TtaGetDocumentSSchema (document);
    elType.ElTypeNum = notType;
@@ -1281,12 +1521,12 @@ int                 notType;
 	     TtaNextSibling (&next);
 	     if (prev != NULL)
 	       {
-		  new = TtaNewElement (document, parentType);
-		  TtaInsertSibling (new, parent, TRUE, document);
+		  added = TtaNewElement (document, parentType);
+		  TtaInsertSibling (added, parent, TRUE, document);
 		  child = prev;
 		  TtaPreviousSibling (&prev);
 		  TtaRemoveTree (child, document);
-		  TtaInsertFirstChild (&child, new, document);
+		  TtaInsertFirstChild (&child, added, document);
 		  while (prev != NULL)
 		    {
 		       last = child;
@@ -1298,12 +1538,12 @@ int                 notType;
 	       }
 	     if (next != NULL)
 	       {
-		  new = TtaNewElement (document, parentType);
-		  TtaInsertSibling (new, parent, FALSE, document);
+		  added = TtaNewElement (document, parentType);
+		  TtaInsertSibling (added, parent, FALSE, document);
 		  child = next;
 		  TtaNextSibling (&next);
 		  TtaRemoveTree (child, document);
-		  TtaInsertFirstChild (&child, new, document);
+		  TtaInsertFirstChild (&child, added, document);
 		  while (next != NULL)
 		    {
 		       last = child;
@@ -1340,7 +1580,7 @@ int                 newtype;
 #endif /* __STDC__ */
 {
    ElementType         elType, siblingType;
-   Element             prev, next, child, new, parent;
+   Element             prev, next, child, added, parent;
 
    elType.ElSSchema = TtaGetDocumentSSchema (document);
    elType.ElTypeNum = newtype;
@@ -1386,10 +1626,10 @@ int                 newtype;
 	       {
 		  if (TtaCanInsertSibling (elType, prev, FALSE, document))
 		    {
-		       new = TtaNewElement (document, elType);
+		       added = TtaNewElement (document, elType);
 		       TtaRemoveTree (*elem, document);
-		       TtaInsertSibling (new, prev, FALSE, document);
-		       TtaInsertFirstChild (elem, new, document);
+		       TtaInsertSibling (added, prev, FALSE, document);
+		       TtaInsertFirstChild (elem, added, document);
 		       TtaSetDocumentModified (document);
 		    }
 	       }
@@ -1428,9 +1668,9 @@ int                 newtype;
 		       if (TtaCanInsertSibling (elType, next, TRUE, document))
 			 {
 			    TtaRemoveTree (*elem, document);
-			    new = TtaNewElement (document, elType);
-			    TtaInsertSibling (new, next, TRUE, document);
-			    TtaInsertFirstChild (elem, new, document);
+			    added = TtaNewElement (document, elType);
+			    TtaInsertSibling (added, next, TRUE, document);
+			    TtaInsertFirstChild (elem, added, document);
 			    TtaSetDocumentModified (document);
 			 }
 		    }
@@ -1441,9 +1681,9 @@ int                 newtype;
 		  if (TtaCanInsertFirstChild (elType, parent, document))
 		    {
 		       TtaRemoveTree (*elem, document);
-		       new = TtaNewElement (document, elType);
-		       TtaInsertFirstChild (&new, parent, document);
-		       TtaInsertFirstChild (elem, new, document);
+		       added = TtaNewElement (document, elType);
+		       TtaInsertFirstChild (&added, parent, document);
+		       TtaInsertFirstChild (elem, added, document);
 		       TtaSetDocumentModified (document);
 		    }
 	       }
@@ -1572,6 +1812,66 @@ View                view;
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
+void                CreateElemAbbr (Document document, View view)
+#else  /* __STDC__ */
+void                CreateElemAbbr (document, view)
+Document            document;
+View                view;
+
+#endif /* __STDC__ */
+{
+   SetCharFontOrPhrase (document, HTML_EL_ABBR);
+}
+
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
+void                CreateElemAcronym (Document document, View view)
+#else  /* __STDC__ */
+void                CreateElemAcronym (document, view)
+Document            document;
+View                view;
+
+#endif /* __STDC__ */
+{
+   SetCharFontOrPhrase (document, HTML_EL_ACRONYM);
+}
+
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
+void                CreateElemINS (Document document, View view)
+#else  /* __STDC__ */
+void                CreateElemINS (document, view)
+Document            document;
+View                view;
+
+#endif /* __STDC__ */
+{
+   SetCharFontOrPhrase (document, HTML_EL_INS);
+}
+
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
+void                CreateElemDEL (Document document, View view)
+#else  /* __STDC__ */
+void                CreateElemDEL (document, view)
+Document            document;
+View                view;
+
+#endif /* __STDC__ */
+{
+   SetCharFontOrPhrase (document, HTML_EL_DEL);
+}
+
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
 void                CreateElemItalic (Document document, View view)
 #else  /* __STDC__ */
 void                CreateElemItalic (document, view)
@@ -1611,36 +1911,6 @@ View                view;
 #endif /* __STDC__ */
 {
    SetCharFontOrPhrase (document, HTML_EL_Teletype_text);
-}
-
-
-/*----------------------------------------------------------------------
-  ----------------------------------------------------------------------*/
-#ifdef __STDC__
-void                CreateElemUnderline (Document document, View view)
-#else  /* __STDC__ */
-void                CreateElemUnderline (document, view)
-Document            document;
-View                view;
-
-#endif /* __STDC__ */
-{
-   SetCharFontOrPhrase (document, HTML_EL_Underlined_text);
-}
-
-
-/*----------------------------------------------------------------------
-  ----------------------------------------------------------------------*/
-#ifdef __STDC__
-void                CreateElemStrikeOut (Document document, View view)
-#else  /* __STDC__ */
-void                CreateElemStrikeOut (document, view)
-Document            document;
-View                view;
-
-#endif /* __STDC__ */
-{
-   SetCharFontOrPhrase (document, HTML_EL_Struck_text);
 }
 
 
@@ -1715,9 +1985,9 @@ View                view;
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
-void                CreateElemFont (Document document, View view)
+void                CreateQuotation (Document document, View view)
 #else  /* __STDC__ */
-void                CreateElemFont (document, view)
+void                CreateQuotation (document, view)
 Document            document;
 View                view;
 
@@ -1726,9 +1996,29 @@ View                view;
    ElementType         elType;
 
    elType.ElSSchema = TtaGetDocumentSSchema (document);
-   elType.ElTypeNum = HTML_EL_Font_;
+   elType.ElTypeNum = HTML_EL_Quotation;
    TtaCreateElement (elType, document);
 }
+
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
+void                CreateBDO (Document document, View view)
+#else  /* __STDC__ */
+void                CreateBDO (document, view)
+Document            document;
+View                view;
+
+#endif /* __STDC__ */
+{
+   ElementType         elType;
+
+   elType.ElSSchema = TtaGetDocumentSSchema (document);
+   elType.ElTypeNum = HTML_EL_BDO;
+   TtaCreateElement (elType, document);
+}
+
 
 /*----------------------------------------------------------------------
    SearchAnchor return the enclosing Anchor element with an        
@@ -1824,39 +2114,6 @@ char               *title;
 		    v, v_size);
    TtaFreeMemory (v);
 #endif /* !_WINDOWS */
-}
-
-/*----------------------------------------------------------------------
-   UpdateTitle update the content of the Title field on top of the 
-   main window, according to the contents of element el.   
-  ----------------------------------------------------------------------*/
-#ifdef __STDC__
-void                UpdateTitle (Element el, Document doc)
-#else  /* __STDC__ */
-void                UpdateTitle (el, doc)
-Element             el;
-Document            doc;
-
-#endif /* __STDC__ */
-{
-   Element             textElem;
-   int                 length;
-   Language            lang;
-   char               *text;
-
-   if (TtaGetViewFrame (doc, 1) == 0)
-      /* this document is not displayed */
-      return;
-   textElem = TtaGetFirstChild (el);
-   if (textElem != NULL)
-     {
-	length = TtaGetTextLength (textElem) + 1;
-	text = TtaGetMemory (length);
-	TtaGiveTextContent (textElem, text, &length, &lang);
-	TtaSetTextZone (doc, 1, 2, text);
-	UpdateAtom (doc, DocumentURLs[doc], text);
-	TtaFreeMemory (text);
-     }
 }
 
 /*----------------------------------------------------------------------

@@ -12,6 +12,10 @@ extern boolean AddLoadedImage ( char *name,
                                 LoadedImageDesc ** desc );
 extern LoadedImageDesc *SearchLoadedImage ( char *localpath,
                                             Document doc );
+extern void UpdateImageMap ( Element image,
+                             Document document,
+                             int oldWidth,
+                             int oldHeight );
 extern void DisplayImage ( Document doc,
                            Element el,
                            char *imageName );
@@ -26,14 +30,14 @@ extern void libWWWImageLoaded ( int doc,
                                 char *outputfile,
                                 char *content_type,
                                 void * context );
+extern char *GetActiveImageInfo ( Document document,
+                                  Element element );
 extern void FetchImage ( Document doc,
                          Element el,
                          char *URL,
                          int flags,
                          LoadedImageCallback callback,
                          void *extra );
-extern char *GetActiveImageInfo ( Document document,
-                                  Element element );
 extern void FetchAndDisplayImages ( Document doc,
                                     int flags );
 
@@ -45,6 +49,10 @@ extern boolean AddLoadedImage (/* char *name,
                                   LoadedImageDesc ** desc */);
 extern LoadedImageDesc *SearchLoadedImage (/* char *localpath,
                                               Document doc */);
+extern void UpdateImageMap (/* Element image,
+                               Document document,
+                               int oldWidth,
+                               int oldHeight */);
 extern void DisplayImage (/* Document doc,
                              Element el,
                              char *imageName */);

@@ -73,6 +73,8 @@ typedef enum _HTErrorElement {
         HTERR_TOO_BIG,                                          /* 413 */
         HTERR_URI_TOO_BIG,                                      /* 414 */
         HTERR_UNSUPPORTED,                                      /* 415 */
+        HTERR_REAUTH,                                           /* 418 */
+        HTERR_PROXY_REAUTH,                                     /* 419 */
         HTERR_INTERNAL,                                         /* 500 */
         HTERR_NOT_IMPLEMENTED,                                  /* 501 */
         HTERR_BAD_GATE,                                         /* 502 */
@@ -349,6 +351,6 @@ extern const char * HTError_location    (HTError * info);
    
    ___________________________________
    
-                              @(#) $Id: HTError.h,v 1.1.1.1 1996/10/15 13:08:40 cvs Exp $
+                              @(#) $Id: HTError.h,v 1.2 1998/03/11 17:45:37 cvs Exp $
                                                                                           
     */

@@ -34,6 +34,7 @@
 
 #undef THOT_EXPORT
 #define THOT_EXPORT extern
+#include "boxes_tv.h"
 #include "page_tv.h"
 #include "select_tv.h"
 #include "edit_tv.h"
@@ -752,14 +753,13 @@ int                 view;
 
 #ifndef _WIN_PRINT
 /*----------------------------------------------------------------------
-   	NewPosition est appele' par le Mediateur, lorsque		
-   		l'utilisateur deplace une boite a l'ecran.		
-   		pAb est le pave deplace' et deltaX et deltaY		
-   		representent l'amplitude du deplacement en pixels	
-   		frame indique la fenetre.				
-   		display indique s'il faut reafficher ou simplement		
-   		recalculer l'image.					
-  ----------------------------------------------------------------------*/
+  NewPosition est appele' par le Mediateur, lorsque l'utilisateur
+  deplace une boite a l'ecran.
+  pAb est le pave deplace' et deltaX et deltaY representent l'amplitude
+  du deplacement en pixels.
+  frame indique la fenetre.				
+  display indique s'il faut reafficher ou simplement recalculer l'image.
+----------------------------------------------------------------------*/
 #ifdef __STDC__
 void                NewPosition (PtrAbstractBox pAb, int deltaX, int deltaY, int frame, boolean display)
 #else  /* __STDC__ */
@@ -839,10 +839,10 @@ boolean             display;
 		 GetSizesFrame (frame, &x, &y);
 	       else
 		 y = pAb->AbEnclosing->AbBox->BxHeight;
-	       deltaY = LogicalValue (deltaY, UnPercent, (PtrAbstractBox) y);
+	       deltaY = LogicalValue (deltaY, UnPercent, (PtrAbstractBox) y, 0);
 	     }
 	   else if (pRStd->PrPosRule.PoDistUnit != UnPixel)
-	     deltaY = LogicalValue (deltaY, pRStd->PrPosRule.PoDistUnit, pAb);
+	     deltaY = LogicalValue (deltaY, pRStd->PrPosRule.PoDistUnit, pAb, ViewFrameTable[frame - 1].FrMagnification);
 	   /* cherche si la position verticale de l'element est determinee */
 	   /* par un attribut auquel est associee l'exception NewVPos */
 	   attr = FALSE;
@@ -995,10 +995,10 @@ boolean             display;
 		 GetSizesFrame (frame, &x, &y);
 	       else
 		 x = pAb->AbEnclosing->AbBox->BxWidth;
-	       deltaX = LogicalValue (deltaX, UnPercent, (PtrAbstractBox) x);
+	       deltaX = LogicalValue (deltaX, UnPercent, (PtrAbstractBox) x, 0);
 	     }
 	   else if (pRStd->PrPosRule.PoDistUnit != UnPixel)
-	     deltaX = LogicalValue (deltaX, pRStd->PrPosRule.PoDistUnit, pAb);
+	     deltaX = LogicalValue (deltaX, pRStd->PrPosRule.PoDistUnit, pAb, ViewFrameTable[frame - 1].FrMagnification);
 	   /* cherche si la position horizontale de l'element est determinee */
 	   /* par un attribut auquel est associee l'exception NewHPos */
 	   attr = FALSE;
@@ -1173,6 +1173,8 @@ boolean             display;
    PtrElement          pEl;
    PtrAbstractBox      pAbbCur;
    NotifyAttribute     notifyAttr;
+   Document            doc;
+   DisplayMode         oldDisplayMode;
    int                 x, y;
    int                 heightRef, widthRef;
    int                 updateframe[MAX_VIEW_DOC];
@@ -1193,8 +1195,17 @@ boolean             display;
    reDisp = FALSE;
    /* l'element auquel correspond le pave */
    pEl = pAb->AbElement;
+
    /* le document auquel appartient le pave */
    pDoc = DocumentOfElement (pEl);
+   doc = (Document) IdentDocument (pDoc);
+   oldDisplayMode = documentDisplayMode[doc - 1];
+   if (oldDisplayMode == DisplayImmediately)
+     {
+       TtaSetDisplayMode (doc, DeferredDisplay);
+       reDisp = TRUE;
+     }
+
    /* numero de cette view dans le schema de presentation qui la definit */
    viewSch = AppliedView (pEl, NULL, pDoc, pAb->AbDocView);
    doit = FALSE;
@@ -1235,11 +1246,11 @@ boolean             display;
 		 /* de la boite englobante */
 		 widthRef = pAb->AbEnclosing->AbBox->BxWidth;
 	       /* calcule le isNew rapport (pourcentage) de la boite */
-	       x = LogicalValue (width, UnPercent, (PtrAbstractBox) widthRef);
+	       x = LogicalValue (width, UnPercent, (PtrAbstractBox) widthRef, 0);
 	     }
 	   else
 	     /* calcule la nouvelle largeur en unite logique */
-	     x = LogicalValue (width, pRStd->PrDimRule.DrUnit, pAb);
+	     x = LogicalValue (width, pAb->AbWidth.DimUnit, pAb, ViewFrameTable[frame - 1].FrMagnification);
 	   
 	   /* cherche si la largeur de l'element est determinee par un */
 	   /* attribut auquel est associee l'exception NewWidth */
@@ -1257,7 +1268,7 @@ boolean             display;
 		 /* modifie la valeur de l'attribut */
 		 {
 		   notifyAttr.event = TteAttrModify;
-		   notifyAttr.document = (Document) IdentDocument (pDoc);
+		   notifyAttr.document = doc;
 		   notifyAttr.element = (Element) pEl;
 		   notifyAttr.attribute = (Attribute) pAttr;
 		   notifyAttr.attributeType.AttrSSchema = (SSchema) (pAttr->AeAttrSSchema);
@@ -1405,11 +1416,11 @@ boolean             display;
 		 /* de la boite englobante */
 		 heightRef = pAb->AbEnclosing->AbBox->BxHeight;
 	       /* calcule le isNew rapport (pourcentage) de la boite */
-	       y = LogicalValue (height, UnPercent, (PtrAbstractBox) heightRef);
+	       y = LogicalValue (height, UnPercent, (PtrAbstractBox) heightRef, 0);
 	     }
 	   else
 	     /* calcule la nouvelle largeur en unite logique */
-	     y = LogicalValue (height, pRStd->PrDimRule.DrUnit, pAb);
+	     y = LogicalValue (height, pAb->AbHeight.DimUnit, pAb, ViewFrameTable[frame - 1].FrMagnification);
 	   
 	   /* cherche si la hauteur de l'element est determinee par un */
 	   /* attribut auquel est associee l'exception NewHeight */
@@ -1426,7 +1437,7 @@ boolean             display;
 		 /* modifier la valeur de l'attribut */
 		 {
 		   notifyAttr.event = TteAttrModify;
-		   notifyAttr.document = (Document) IdentDocument (pDoc);
+		   notifyAttr.document = doc;
 		   notifyAttr.element = (Element) pEl;
 		   notifyAttr.attribute = (Attribute) pAttr;
 		   notifyAttr.attributeType.AttrSSchema = (SSchema) (pAttr->AeAttrSSchema);
@@ -1536,16 +1547,21 @@ boolean             display;
 	 }
      }
 
-   if (reDisp)
+   if (reDisp || oldDisplayMode == DisplayImmediately)
      {
+       TtaSetDisplayMode (doc, DisplayImmediately);
+       SwitchSelection (frame, TRUE);
+       
        if (display)
 	 {
 	   for (view = 1; view <= MAX_VIEW_DOC; view++)
 	     if (updateframe[view - 1] > 0)
 	       /* eteint la selection dans la view traitee */
 	       SwitchSelection (updateframe[view - 1], FALSE);
+
 	   AbstractImageUpdated (pDoc);	/* mise a jour de l'image abstraite */
 	   RedisplayDocViews (pDoc);	/* reafficher ce qu'il faut */
+
 	   for (view = 1; view <= MAX_VIEW_DOC; view++)
 	     if (updateframe[view - 1] > 0)
 	       /* rallume la selection dans la view traitee */
@@ -1972,6 +1988,7 @@ boolean             Background;
    int                 fillPatternNum;
    RuleSet             rulesS;
 
+   CloseInsertion ();
    /* demande quelle est la selection courante */
    selok = GetCurrentSelection (&SelDoc, &pElFirstSel, &pElLastSel, &firstChar, &lastChar);
    if (!selok)
@@ -2751,7 +2768,7 @@ boolean            remove;
     }
   /* tente de fusionner les elements voisins et reaffiche les paves */
   /* modifie's et la selection */
-  if (pSelDoc != NULL)
+  if (pSelDoc != NULL && pSelDoc == pDoc)
     MergeAndSelect (pSelDoc, pFirstSel, pLastSel, firstChar, lastChar);
 }
 

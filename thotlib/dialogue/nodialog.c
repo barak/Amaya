@@ -203,17 +203,6 @@ int                 frame;
 
 
 #ifdef __STDC__
-int                 CopyXClipboard (unsigned char **buffer)
-#else  /* __STDC__ */
-int                 CopyXClipboard (buffer)
-unsigned char     **buffer;
-
-#endif /* __STDC__ */
-{
-   return 0;
-}
-
-#ifdef __STDC__
 void                UpdateScrollbars (int frame)
 #else  /* __STDC__ */
 void                UpdateScrollbars (frame)
@@ -480,90 +469,4 @@ char               *schpres;
 #endif /* __STDC__ */
 {
    return FALSE;
-}
-
-/* Les procedures de geom.c */
-#ifdef __STDC__
-void                UserGeometryMove (int frame, int *x, int *y, int large, int haut, int xr, int yr, int xmin, int xmax, int ymin, int ymax, int xm, int ym)
-#else  /* __STDC__ */
-void                UserGeometryMove (frame, x, y, large, haut, xr, yr, xmin, xmax, ymin, ymax, xm, ym)
-int                 frame;
-int                *x;
-int                *y;
-int                 large;
-int                 haut;
-int                 xr;
-int                 yr;
-int                 xmin;
-int                 xmax;
-int                 ymin;
-int                 ymax;
-int                 xm;
-int                 ym;
-
-#endif /* __STDC__ */
-{
-}
-
-#ifdef __STDC__
-void                UserGeometryResize (int frame, int x, int y, int *large, int *haut, int xr, int yr, int xmin, int xmax, int ymin, int ymax, int xm, int ym)
-#else  /* __STDC__ */
-void                UserGeometryResize (frame, x, y, large, haut, xr, yr, xmin, xmax, ymin, ymax, xm, ym)
-int                 frame;
-int                 x;
-int                 y;
-int                *large;
-int                *haut;
-int                 xr;
-int                 yr;
-int                 xmin;
-int                 xmax;
-int                 ymin;
-int                 ymax;
-int                 xm;
-int                 ym;
-
-#endif /* __STDC__ */
-{
-}
-
-#ifdef __STDC__
-void                UserGeometryCreate (int frame, int *x, int *y, int xr, int yr, int *large, int *haut, int xmin, int xmax, int ymin, int ymax, int PosX, int PosY, int DimX, int DimY)
-#else  /* __STDC__ */
-void                UserGeometryCreate (frame, x, y, xr, yr, large, haut, xmin, xmax, ymin, ymax, PosX, PosY, DimX, DimY)
-int                 frame;
-int                *x;
-int                *y;
-int                 xr;
-int                 yr;
-int                *large;
-int                *haut;
-int                 xmin;
-int                 xmax;
-int                 ymin;
-int                 ymax;
-int                 PosX;
-int                 PosY;
-int                 DimX;
-int                 DimY;
-
-#endif /* __STDC__ */
-{
-}
-
-#ifdef __STDC__
-void                PolyLineModification (int frame, int x, int y, PtrTextBuffer Pbuffer, PtrTextBuffer Bbuffer, int nbpoints, int point, boolean close)
-#else  /* __STDC__ */
-void                PolyLineModification (frame, x, y, Pbuffer, Bbuffer, nbpoints, point, close)
-int                 frame;
-int                 x;
-int                 y;
-PtrTextBuffer       Pbuffer;
-PtrTextBuffer       Bbuffer;
-int                 nbpoints;
-int                 point;
-boolean             close;
-
-#endif /* __STDC__ */
-{
 }

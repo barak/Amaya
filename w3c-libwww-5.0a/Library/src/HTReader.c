@@ -3,7 +3,7 @@
 **
 **	(c) COPYRIGHT MIT 1995.
 **	Please first read the full copyright statement in the file COPYRIGH.
-**	@(#) $Id: HTReader.c,v 1.1.1.1 1996/10/15 13:08:37 cvs Exp $
+**	@(#) $Id: HTReader.c,v 1.2 1998/03/11 17:45:39 cvs Exp $
 **
 ** HISTORY:
 **	6 June 95  HFN	Written
@@ -28,6 +28,7 @@ struct _HTInputStream {
     HTStream *			target;		 /* Target for incoming data */
     char *			write;			/* Last byte written */
     char *			read;			   /* Last byte read */
+    int                         b_read;
     char			data [INPUT_BUFFER_SIZE];	   /* buffer */
 };
 
@@ -76,14 +77,15 @@ PRIVATE int HTReader_abort (HTInputStream * me, HTList * e)
 PRIVATE int HTReader_read (HTInputStream * me)
 {
     HTNet * net = me->net;
+    HTRequest *request = net->request;
     SOCKET soc = net->sockfd;
-    int b_read = me->read - me->data;
+    /*    int b_read = me->read - me->data; */
     int status;
 
     /* Read from socket if we got rid of all the data previously read */
     do {
 	if (me->write >= me->read) {
-	    if ((b_read = NETREAD(soc, me->data, INPUT_BUFFER_SIZE)) < 0) {
+	    if ((me->b_read = NETREAD(soc, me->data, INPUT_BUFFER_SIZE)) < 0) {
 #ifdef EAGAIN
 		if (socerrno==EAGAIN || socerrno==EWOULDBLOCK)      /* POSIX */
 #else
@@ -105,6 +107,10 @@ PRIVATE int HTReader_read (HTInputStream * me)
                 } else if (socerrno == EINTR) {
                     continue;
 #endif /* __svr4__ */
+#ifdef EPIPE
+		} else if (socerrno == EPIPE) {
+		    goto socketClosed;
+#endif /* EPIPE */
 		} else { 			     /* We have a real error */
 
 		    /* HERE WE SHOULD RETURN target abort */
@@ -114,22 +120,25 @@ PRIVATE int HTReader_read (HTInputStream * me)
 		    return HT_ERROR;
 		}
 #ifdef ECONNRESET
-	    } else if (!b_read || socerrno==ECONNRESET) {
+	    } else if (!me->b_read || socerrno==ECONNRESET) {
 #else
-	    } else if (!b_read) {
+	    } else if (!me->b_read) {
 #endif
-		HTAlertCallback *cbf = HTAlert_find(HT_PROG_DONE);
+	    socketClosed:
 		if (PROT_TRACE)
 		    HTTrace("Read Socket. FIN received on socket %d\n", soc);
-		if (cbf) (*cbf)(net->request, HT_PROG_DONE,
-				HT_MSG_NULL, NULL, NULL, NULL);
+		if (request) {
+		  HTAlertCallback *cbf = HTAlert_find(HT_PROG_DONE);
+		  if (cbf) (*cbf)(net->request, HT_PROG_DONE,
+				  HT_MSG_NULL, NULL, NULL, NULL);
+		}
 	        HTEvent_unregister(soc, FD_ALL);
 		return HT_CLOSED;
 	    }
 
 	    /* Remember how much we have read from the input socket */
 	    me->write = me->data;
-	    me->read = me->data + b_read;
+	    me->read = me->data + me->b_read;
 
 #ifdef NOT_ASCII
 	    {
@@ -143,10 +152,10 @@ PRIVATE int HTReader_read (HTInputStream * me)
 
 	    if (PROT_TRACE) 
 		HTTrace("Read Socket. %d bytes read from socket %d\n",
-			b_read, soc);
+			me->b_read, soc);
 	    {
 		HTAlertCallback * cbf = HTAlert_find(HT_PROG_READ);
-		net->bytes_read += b_read;
+		net->bytes_read += me->b_read;
 		if (cbf) (*cbf)(net->request, HT_PROG_READ,
 				HT_MSG_NULL, NULL, NULL, NULL);
 	    }
@@ -154,7 +163,7 @@ PRIVATE int HTReader_read (HTInputStream * me)
 
 	/* Now push the data down the stream */
 	if ((status = (*me->target->isa->put_block)
-	     (me->target, me->data, b_read)) != HT_OK) {
+	     (me->target, me->data, me->b_read)) != HT_OK) {
 	    if (status == HT_WOULD_BLOCK) {
 		if (PROT_TRACE) HTTrace("Read Socket. Target WOULD BLOCK\n");
 		HTEvent_unregister(soc, FD_READ);
@@ -165,19 +174,19 @@ PRIVATE int HTReader_read (HTInputStream * me)
 		return HT_PAUSE;
 	    } else if (status == HT_CONTINUE) {
 		if (PROT_TRACE) HTTrace("Read Socket. CONTINUE\n");
-		me->write = me->data + b_read;
+		me->write = me->data + me->b_read;
 		return HT_CONTINUE;
 	    } else if (status>0) {	      /* Stream specific return code */
 		if (PROT_TRACE)
 		    HTTrace("Read Socket. Target returns %d\n", status);
-		me->write = me->data + b_read;
+		me->write = me->data + me->b_read;
 		return status;
 	    } else {				     /* We have a real error */
 		if (PROT_TRACE) HTTrace("Read Socket. Target ERROR\n");
 		return status;
 	    }
 	}
-	me->write = me->data + b_read;
+	me->write = me->data + me->b_read;
     } while (net->preemptive);
     HTEvent_register(soc, net->request, (SockOps) FD_READ,
 		     net->cbf, net->priority);

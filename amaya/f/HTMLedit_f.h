@@ -26,6 +26,8 @@ extern void CreateTarget ( Document doc,
 extern void UpdateAttrID ( NotifyAttribute * event );
 extern void CoordsModified ( NotifyAttribute * event );
 extern void GraphicsModified ( NotifyAttribute * event );
+extern boolean StoreWidth ( NotifyAttribute * event );
+extern boolean StoreHeight ( NotifyAttribute * event );
 extern boolean AttrWidthDelete ( NotifyAttribute * event );
 extern void AttrWidthModified ( NotifyAttribute * event );
 extern void AttrFontSizeCreated ( NotifyAttribute * event );
@@ -36,6 +38,7 @@ extern void ListItemCreated ( NotifyElement * event );
 extern void ListChangedType ( NotifyElement * event );
 extern void UpdateAttrIntItemStyle ( NotifyAttribute * event );
 extern void AttrItemStyle ( NotifyAttribute * event );
+extern boolean GlobalAttrInMenu ( NotifyAttribute * event );
 extern boolean AttrNAMEinMenu ( NotifyAttribute * event );
 extern void ResetFontOrPhraseOnText ( Document document,
                                       Element elem,
@@ -59,16 +62,20 @@ extern void CreateElemSample ( Document document,
                                View view );
 extern void CreateElemKeyboard ( Document document,
                                  View view );
+extern void CreateElemAbbr ( Document document,
+                             View view );
+extern void CreateElemAcronym ( Document document,
+                                View view );
+extern void CreateElemINS ( Document document,
+                            View view );
+extern void CreateElemDEL ( Document document,
+                            View view );
 extern void CreateElemItalic ( Document document,
                                View view );
 extern void CreateElemBold ( Document document,
                              View view );
 extern void CreateElemTeletype ( Document document,
                                  View view );
-extern void CreateElemUnderline ( Document document,
-                                  View view );
-extern void CreateElemStrikeOut ( Document document,
-                                  View view );
 extern void CreateElemBig ( Document document,
                             View view );
 extern void CreateElemSmall ( Document document,
@@ -77,16 +84,16 @@ extern void CreateSub ( Document document,
                         View view );
 extern void CreateSup ( Document document,
                         View view );
-extern void CreateElemFont ( Document document,
-                             View view );
+extern void CreateQuotation ( Document document,
+                              View view );
+extern void CreateBDO ( Document document,
+                        View view );
 extern Element SearchAnchor ( Document doc,
                               Element element,
                               boolean link );
 extern void UpdateAtom ( Document doc,
                          char *url,
                          char *title );
-extern void UpdateTitle ( Element el,
-                          Document doc );
 extern void TitleModified ( NotifyOnTarget * event );
 
 #else /* __STDC__ */
@@ -111,6 +118,8 @@ extern void CreateTarget (/* Document doc,
 extern void UpdateAttrID (/* NotifyAttribute * event */);
 extern void CoordsModified (/* NotifyAttribute * event */);
 extern void GraphicsModified (/* NotifyAttribute * event */);
+extern boolean StoreWidth (/* NotifyAttribute * event */);
+extern boolean StoreHeight (/* NotifyAttribute * event */);
 extern boolean AttrWidthDelete (/* NotifyAttribute * event */);
 extern void AttrWidthModified (/* NotifyAttribute * event */);
 extern void AttrFontSizeCreated (/* NotifyAttribute * event */);
@@ -121,6 +130,7 @@ extern void ListItemCreated (/* NotifyElement * event */);
 extern void ListChangedType (/* NotifyElement * event */);
 extern void UpdateAttrIntItemStyle (/* NotifyAttribute * event */);
 extern void AttrItemStyle (/* NotifyAttribute * event */);
+extern boolean GlobalAttrInMenu (/* NotifyAttribute * event */);
 extern boolean AttrNAMEinMenu (/* NotifyAttribute * event */);
 extern void ResetFontOrPhraseOnText (/* Document document,
                                         Element elem,
@@ -144,16 +154,20 @@ extern void CreateElemSample (/* Document document,
                                  View view */);
 extern void CreateElemKeyboard (/* Document document,
                                    View view */);
+extern void CreateElemAbbr (/* Document document,
+                               View view */);
+extern void CreateElemAcronym (/* Document document,
+                                  View view */);
+extern void CreateElemINS (/* Document document,
+                              View view */);
+extern void CreateElemDEL (/* Document document,
+                              View view */);
 extern void CreateElemItalic (/* Document document,
                                  View view */);
 extern void CreateElemBold (/* Document document,
                                View view */);
 extern void CreateElemTeletype (/* Document document,
                                    View view */);
-extern void CreateElemUnderline (/* Document document,
-                                    View view */);
-extern void CreateElemStrikeOut (/* Document document,
-                                    View view */);
 extern void CreateElemBig (/* Document document,
                               View view */);
 extern void CreateElemSmall (/* Document document,
@@ -162,16 +176,16 @@ extern void CreateSub (/* Document document,
                           View view */);
 extern void CreateSup (/* Document document,
                           View view */);
-extern void CreateElemFont (/* Document document,
-                               View view */);
+extern void CreateQuotation (/* Document document,
+                                View view */);
+extern void CreateBDO (/* Document document,
+                          View view */);
 extern Element SearchAnchor (/* Document doc,
                                 Element element,
                                 boolean link */);
 extern void UpdateAtom (/* Document doc,
                            char *url,
                            char *title */);
-extern void UpdateTitle (/* Element el,
-                            Document doc */);
 extern void TitleModified (/* NotifyOnTarget * event */);
 
 #endif /* __STDC__ */

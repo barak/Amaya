@@ -587,7 +587,7 @@ PtrTRule           *pNextTRule;
 
    if (!TtaReadByte (file, &c))
       TSchemaError (17);
-   if (c == '\0')
+   if (c == EOS)
       pTRule = NULL;
    else
       pTRule = *pNextTRule;
@@ -697,7 +697,7 @@ PtrTRuleBlock      *pNextBlock;
    char                c;
 
    TtaReadByte (file, &c);
-   if (c == '\0')
+   if (c == EOS)
       return NULL;
    else
       return (*pNextBlock);
@@ -1140,7 +1140,7 @@ PtrSSchema          pSS;
 	     }
 	TtaReadShort (file, &pTSch->TsPictureBuffer);
 	for (i = 0; i < MAX_TRANSL_BUFFER; i++)
-	   pTSch->TsBuffer[i][0] = '\0';
+	   pTSch->TsBuffer[i][0] = EOS;
 	if (pSS->SsFirstDynNature == 0)
 	   InitialNElems = pSS->SsNRules;
 	else
@@ -1232,12 +1232,12 @@ PtrSSchema          pSS;
 		j = 0;
 		do
 		   TtaReadByte (file, &pStringTr->StSource[j++]);
-		while (pStringTr->StSource[j - 1] != '\0');
+		while (pStringTr->StSource[j - 1] != EOS);
 		/* lit la chaine cible */
 		j = 0;
 		do
 		   TtaReadByte (file, &pStringTr->StTarget[j++]);
-		while (pStringTr->StTarget[j - 1] != '\0');
+		while (pStringTr->StTarget[j - 1] != EOS);
 	     }
 	if (!error)
 	   /* lit les constantes */
@@ -1246,7 +1246,7 @@ PtrSSchema          pSS;
 		j = pTSch->TsConstBegin[i] - 1;
 		do
 		   TtaReadByte (file, &pTSch->TsConstant[j++]);
-		while (pTSch->TsConstant[j - 1] != '\0');
+		while (pTSch->TsConstant[j - 1] != EOS);
 	     }
 	/* lit les blocs de regles des elements */
 	if (!error)
@@ -1263,8 +1263,8 @@ PtrSSchema          pSS;
 	   if (!error)
 	      ReadPresTRules (file, i, &pNextBlock, &pNextTRule, &pSS,
 			      &pTSch);
-	TtaFreeMemory ((char *) pNextTRule);
-	TtaFreeMemory ((char *) pNextBlock);
+	TtaFreeMemory ( pNextTRule);
+	TtaFreeMemory ( pNextBlock);
 
 	/* ferme le fichier */
 	TtaReadClose (file);
@@ -1312,5 +1312,5 @@ PtrSSchema          pSS;
    for (i = 0; i < MAX_TRANSL_PRULE; i++)
       FreeTRulesPres (i + 1, &pTSch->TsPresTRule[i]);
    /* libere le schema de traduction lui-meme */
-   TtaFreeMemory ((char *) pTSch);
+   TtaFreeMemory ( pTSch);
 }

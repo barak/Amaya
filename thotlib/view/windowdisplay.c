@@ -55,6 +55,10 @@ static int          stack_deep;
 #include "inites_f.h"
 #include "buildlines_f.h"
 
+#ifdef _WINDOWS 
+#include "win_f.h"
+#endif /* _WINDOWS */
+
 /*----------------------------------------------------------------------
   FontOrig update and (x, y) location before DrawString
   accordingly to the ascent of the font used.
@@ -192,6 +196,7 @@ int                 y2;
 {
 #  ifdef _WINDOWS 
    HPEN pen ;
+   HPEN hOldPen;
 #  endif /* _WINDOWS  */
    x1 += FrameTable[frame].FrLeftMargin;
    y1 += FrameTable[frame].FrTopMargin;
@@ -200,12 +205,14 @@ int                 y2;
 #  ifdef _WINDOWS
    WIN_GetDeviceContext (frame);
    pen = CreatePen (PS_SOLID, 1, RGB (RGB_colors[TtLineGC.foreground].red, RGB_colors[TtLineGC.foreground].green, RGB_colors[TtLineGC.foreground].blue));
-   SelectObject (TtDisplay, pen);
+   hOldPen = SelectObject (TtDisplay, pen);
 
    MoveToEx (TtDisplay, x1, y1, NULL);
    LineTo (TtDisplay, x2, y2);
-   DeleteObject (pen);
+   SelectObject (TtDisplay, hOldPen);
    WIN_ReleaseDeviceContext ();
+   if (!DeleteObject (pen))
+      WinErrorBox (WIN_Main_Wd);
 #  else  /* _WINDOWS */
    XDrawLine (TtDisplay, FrRef[frame], TtLineGC, x1, y1, x2, y2);
 #  endif /* _WINDOWS */
@@ -278,6 +285,7 @@ int                 fg;
    ThotWindow          w;
 #  ifdef _WINDOWS
    char                str[2] = {car, 0};
+   HFONT               hOldFont;
 #  endif /* _WINDOWS */
 
    w = FrRef[frame];
@@ -288,11 +296,11 @@ int                 fg;
 
 #  ifdef _WINDOWS
    WIN_GetDeviceContext (frame);
-   WinLoadGC (fg, RO);
+   WinLoadGC (TtDisplay, fg, RO);
    SetMapperFlags (TtDisplay, 1);
-   WinLoadFont (TtDisplay, font);
+   hOldFont = WinLoadFont (TtDisplay, font);
    TextOut (TtDisplay, x + FrameTable[frame].FrLeftMargin, y + FrameTable[frame].FrTopMargin, (unsigned char*) str, 1);   
-   WinUnloadGC ();
+   SelectObject (TtDisplay, hOldFont);
    WIN_ReleaseDeviceContext ();
 #  else  /* _WINDOWS */
    XSetFont (TtDisplay, TtLineGC, ((XFontStruct *) font)->fid);
@@ -348,6 +356,7 @@ int                 fg;
 #  ifdef _WINDOWS
    SIZE                size;
    RECT                rect;
+   HFONT               hOldFont;
 #  endif
 
    w = FrRef[frame];
@@ -358,7 +367,7 @@ int                 fg;
 #     ifdef _WINDOWS
       WIN_GetDeviceContext (frame);
       SetMapperFlags (TtDisplay, 1);
-      WinLoadFont (TtDisplay, font);
+      hOldFont = WinLoadFont (TtDisplay, font);
       /* GetTextExtentPoint32(TtDisplay, ptcar, lg, &size); */
       GetTextExtentPoint (TtDisplay, ptcar, lg, &size);
       width = size.cx;
@@ -374,14 +383,14 @@ int                 fg;
 #     ifndef _WINDOWS 
       LoadColor (0, RO, active, fg);
 #     else /* _WINDOWS */
-	  WinLoadGC (fg, RO);
+	  WinLoadGC (TtDisplay, fg, RO);
 #     endif /* _WINDOWS */
 
       if (!ShowSpace) {
          /* draw the spaces */
          ptcar = TtaGetMemory (lg + 1);
          strncpy (ptcar, &buff[i - 1], lg);
-         ptcar[lg] = '\0';
+         ptcar[lg] = EOS;
 	     SpaceToChar (ptcar);	/* substitute spaces */
 #        ifdef _WINDOWS
          GetClientRect (TtDisplay, &rect);
@@ -415,7 +424,7 @@ int                 fg;
       }
       FinishDrawing (0, RO, active);
 #     ifdef _WINDOWS
-	  WinUnloadGC ();
+	  SelectObject (TtDisplay, hOldFont);
       WIN_ReleaseDeviceContext ();
 #     endif /* _WINDOWS */
 
@@ -1167,7 +1176,7 @@ int                 fg;
 
    exnum = 0;
 
-   if (FontHeight (font) >= h)
+   if (h <= (int) (1.3 * FontHeight (font)) )
      {
 	/* With only one glyph */
 	if (direction == 0)
@@ -1271,7 +1280,7 @@ int                 fg;
 
    exnum = 0;
 
-   if (FontHeight (font) >= h)
+   if (h <= (int) (1.3 * FontHeight (font)) )
      {
 	/* need only one char */
 	if (direction == 0)
@@ -1417,24 +1426,30 @@ int                 pattern;
 #endif /* __STDC__ */
 
 {
-   /*int eps2; */
    Pixmap              pat;
-
 #  ifdef _WINDOWS
    HBRUSH              hBrush;
-   HPEN                hPen;
+   HBRUSH              hOldBrush;
+   HPEN                hPen = 0;
+   HPEN                hOldPen;
 #  endif
 
 #  ifdef _WINDOWS 
    WIN_GetDeviceContext (frame);
 #  endif /* _WINDOWS */
    if (width <= 0 || height <= 0)
-     return;
-   width = width - thick - 1;
-   height = height - thick - 1;
+     {
+#     ifdef _WINDOWS
+      WIN_ReleaseDeviceContext ();
+#     endif /* _WINDOWS */
+      return;
+     }
+   if (width > thick + 1)
+     width = width - thick - 1;
+   if (height > thick + 1)
+     height = height - thick - 1;
    x += thick / 2;
    y += thick / 2;
-   /*eps2 = thick > 1; */
 
    /* Fill in the rectangle */
    pat = (Pixmap) CreatePattern (0, RO, active, fg, bg, pattern);
@@ -1446,13 +1461,14 @@ int                 pattern;
       XFreePixmap (TtDisplay, pat);
 #  else /* _WINDOWS */
       SelectClipRgn(TtDisplay, clipRgn); 
-      WinLoadGC (fg, RO);
+      WinLoadGC (TtDisplay, fg, RO);
    
       hBrush = CreateSolidBrush (Pix_Color[bg]);
-      hBrush = SelectObject (TtDisplay, hBrush);
+      hOldBrush = SelectObject (TtDisplay, hBrush);
       PatBlt (TtDisplay, x + FrameTable[frame].FrLeftMargin, y + FrameTable[frame].FrTopMargin, width, height, PATCOPY);
-      hBrush = SelectObject (TtDisplay, hBrush);
-      DeleteObject (hBrush); 
+      SelectObject (TtDisplay, hOldBrush);
+      if (!DeleteObject (hBrush))
+         WinErrorBox (WIN_Main_Wd);
 #  endif /* _WINDOWS */
    }
 
@@ -1464,17 +1480,18 @@ int                 pattern;
 	XDrawRectangle (TtDisplay, FrRef[frame], TtLineGC, x + FrameTable[frame].FrLeftMargin, y + FrameTable[frame].FrTopMargin, width, height);
 #       else  /* _WINDOWS */
         if (!(hPen = CreatePen (PS_SOLID, thick, Pix_Color [fg])))
-           WinErrorBox (NULL);
-        hPen = SelectObject (TtDisplay, hPen) ;
+           WinErrorBox (WIN_Main_Wd);
+        hOldPen = SelectObject (TtDisplay, hPen) ;
         SelectObject (TtDisplay, GetStockObject (NULL_BRUSH)) ;
         Rectangle (TtDisplay, x + FrameTable[frame].FrLeftMargin, y + FrameTable[frame].FrTopMargin, x + FrameTable[frame].FrLeftMargin + width, y + FrameTable[frame].FrTopMargin + height);
-        DeleteObject (hPen);
-	    WinUnloadGC ();
+		SelectObject (TtDisplay, hOldPen);
 #       endif /* _WINDOWS */
 	FinishDrawing (0, RO, active);
    }
 #       ifdef _WINDOWS 
 	WIN_ReleaseDeviceContext ();
+    if (hPen && !DeleteObject (hPen))
+       WinErrorBox (WIN_Main_Wd);
 #       endif /* _WINDOWS */
 }
 
@@ -1510,8 +1527,10 @@ int                 pattern;
    ThotPoint           point[5];
    Pixmap              pat;
 
-   width = width - thick - 1;
-   height = height - thick - 1;
+   if (width > thick + 1)
+     width = width - thick - 1;
+   if (height > thick + 1)
+     height = height - thick - 1;
    x += thick / 2;
    y += thick / 2;
 
@@ -1662,10 +1681,12 @@ int                 pattern;
    ThotPoint          *points;
    int                 i, j;
    PtrTextBuffer       adbuff;
-   Pixmap              pat;
 
 #  ifdef _WINDOWS 
    HPEN hPen;
+   HPEN hOldPen;
+#  else  /* _WINDOWS */
+   Pixmap              pat;
 #  endif /* _WINDOWS */
 
    /* Allocate a table of points */
@@ -1706,13 +1727,15 @@ int                 pattern;
 #     ifdef _WINDOWS
       WIN_GetDeviceContext (frame);
       if (!(hPen = CreatePen (PS_SOLID, thick, Pix_Color [fg])))
-         WinErrorBox (NULL);
-      hPen = SelectObject (TtDisplay, hPen) ;
+         WinErrorBox (WIN_Main_Wd);
+      hOldPen = SelectObject (TtDisplay, hPen) ;
       InitDrawing (0, style, thick, RO, active, fg);
       Polyline (TtDisplay, points, nb);
       FinishDrawing (0, RO, active);
-	  DeleteObject (hPen);
+	  SelectObject (TtDisplay, hOldPen);
       WIN_ReleaseDeviceContext ();
+	  if (!DeleteObject (hPen))
+         WinErrorBox (WIN_Main_Wd);
 #     else  /* !_WINDOWS */
       InitDrawing (0, style, thick, RO, active, fg);
       XDrawLines (TtDisplay, FrRef[frame], TtLineGC, points, nb, CoordModeOrigin);
@@ -2265,10 +2288,10 @@ int                 pattern;
 
 /*----------------------------------------------------------------------
   DrawEllips draw an ellips (or a circle).
-  RO indicates whether it's a read-only box
-  active indicates if the box is active
-  Parameters fg, bg, and pattern are for drawing
-  color, background color and fill pattern.
+  RO indicates whether it's a read-only box active indicates if the box
+  is active.
+  Parameters fg, bg, and pattern are for drawing color, background color
+  and fill pattern.
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
 void                DrawEllips (int frame, int thick, int style, int x, int y, int width, int height, int RO, int active, int fg, int bg, int pattern)
@@ -2287,15 +2310,13 @@ int                 active;
 int                 fg;
 int                 bg;
 int                 pattern;
-
 #endif /* __STDC__ */
-
 {
-   Pixmap              pat;
-
 #  ifdef _WINDOWS
    HPEN hPen;
+   HPEN hOldPen;
 #  endif /* _WINDOWS */
+   Pixmap              pat;
 
    width -= thick + 1;
    height -= thick + 1;
@@ -2303,8 +2324,8 @@ int                 pattern;
    y += thick / 2 + FrameTable[frame].FrTopMargin;
 
    /* Fill in the rectangle */
-#  ifndef _WINDOWS
    pat = (Pixmap) CreatePattern (0, RO, active, fg, bg, pattern);
+#  ifndef _WINDOWS
    if (pat != 0)
      {
 	XSetTile (TtDisplay, TtGreyGC, pat);
@@ -2320,13 +2341,15 @@ int                 pattern;
 #     ifdef _WINDOWS
       WIN_GetDeviceContext (frame);
       if (!(hPen = CreatePen (PS_SOLID, thick, Pix_Color [fg])))
-         WinErrorBox (NULL);
-      hPen = SelectObject (TtDisplay, hPen) ;
+         WinErrorBox (WIN_Main_Wd);
+      hOldPen = SelectObject (TtDisplay, hPen) ;
       SelectObject (TtDisplay, GetStockObject (NULL_BRUSH)) ;
 	  if (!Ellipse (TtDisplay, x, y, x + width, y + height))
          WinErrorBox (FrRef  [frame]);
-	  DeleteObject (hPen);
+	  SelectObject (TtDisplay, hOldPen);
 	  WIN_ReleaseDeviceContext ();
+	  if (!DeleteObject (hPen))
+         WinErrorBox (FrRef [frame]);
 #     else  /* !_WINDOWS */
       XDrawArc (TtDisplay, FrRef[frame], TtLineGC, x, y, width, height, 0, 360 * 64);
 #     endif /* _WINDOWS */
@@ -2493,6 +2516,7 @@ int                 fg;
 
 #  ifdef _WINDOWS
    HPEN pen;
+   HPEN hOldPen;
 #  endif /* _WINDOWS */
 
    if (thick <= 0)
@@ -2545,13 +2569,14 @@ int                 fg;
    FinishDrawing (0, RO, active);
 #  else /* _WINDOWS */
    WIN_GetDeviceContext (frame);
-   WinLoadGC (fg, RO);
+   WinLoadGC (TtDisplay, fg, RO);
    pen = CreatePen (PS_SOLID, 1, RGB (RGB_colors[TtLineGC.foreground].red, RGB_colors[TtLineGC.foreground].green, RGB_colors[TtLineGC.foreground].blue));
-   SelectObject (TtDisplay, pen);
+   hOldPen = SelectObject (TtDisplay, pen);
    Polyline (TtDisplay, point, 3);
-   DeleteObject (pen);
-   WinUnloadGC ();
+   SelectObject (TtDisplay, hOldPen);
    WIN_ReleaseDeviceContext ();
+   if (!DeleteObject (pen))
+      WinErrorBox (WIN_Main_Wd);
 #  endif /* _WINDOWS */
 }
 
@@ -2864,6 +2889,7 @@ int                 y;
 
 #  ifdef _WINDOWS
    HBRUSH              hBrush;
+   HBRUSH              hOldBrush;
 #  endif /* _WINDOWS */
 
    w = FrRef[frame];
@@ -2875,11 +2901,12 @@ int                 y;
 #       else /* _WINDOWS */
 	WIN_GetDeviceContext (frame);
 	hBrush = CreateSolidBrush (ColorPixel (BackgroundColor[frame]));
-	hBrush = SelectObject (TtDisplay, hBrush);
+	hOldBrush = SelectObject (TtDisplay, hBrush);
 	PatBlt (TtDisplay, x + FrameTable[frame].FrLeftMargin, y + FrameTable[frame].FrTopMargin, width, height, PATCOPY);
-	hBrush = SelectObject (TtDisplay, hBrush);
-	DeleteObject (hBrush);
-        WIN_ReleaseDeviceContext ();
+	SelectObject (TtDisplay, hOldBrush);
+    WIN_ReleaseDeviceContext ();
+	if (!DeleteObject (hBrush))
+       WinErrorBox (WIN_Main_Wd);
 #       endif /* _WINDOWS */
      }
 }
@@ -2906,10 +2933,13 @@ ThotGC              GClocal;
    FontOrig (font, string[0], &x, &y);
    XDrawString (TtDisplay, w, GClocal, x, y, string, strlen (string));
 #  else /* _WINDOWS */
+   HFONT hOldFont;
+
    WIN_GetDeviceContext (GetFrameNumber (w));
    SetMapperFlags (TtDisplay, 1);
-   WinLoadFont(TtDisplay, font);
+   hOldFont = WinLoadFont(TtDisplay, font);
    TextOut(TtDisplay, x, y, string, strlen(string));
+   SelectObject (TtDisplay, hOldFont);
 #  endif /* _WINDOWS */
 }
 
@@ -2936,13 +2966,13 @@ int                 y;
 
    if (w != None)
      {
-#       ifndef _WINDOWS
+#ifndef _WINDOWS
 	XFillRectangle (TtDisplay, w, TtInvertGC, x + FrameTable[frame].FrLeftMargin, y + FrameTable[frame].FrTopMargin, width, height);
-#       else /* _WINDOWS */
+#else /* _WINDOWS */
 	WIN_GetDeviceContext (frame);
 	PatBlt (TtDisplay, x + FrameTable[frame].FrLeftMargin, y + FrameTable[frame].FrTopMargin, width, height, PATINVERT);
-        WIN_ReleaseDeviceContext ();
-#       endif /* _WINDOWS */
+    WIN_ReleaseDeviceContext ();
+#endif /* _WINDOWS */
      }
 }
 
@@ -2964,18 +2994,22 @@ int xf;
 int yf;
 #endif /* __STDC__ */
 {
-   ThotWindow          w;
-
-   w = FrRef[frame];
-
-   if (w != None) {
+   if (FrRef[frame] != None) {
 #     ifndef _WINDOWS
-      XCopyArea (TtDisplay, w, w, TtWhiteGC, xd + FrameTable[frame].FrLeftMargin, yd + FrameTable[frame].FrTopMargin, width, height, xf + FrameTable[frame].FrLeftMargin, yf + FrameTable[frame].FrTopMargin);
+      XCopyArea (TtDisplay, FrRef[frame], FrRef[frame], TtWhiteGC, xd + FrameTable[frame].FrLeftMargin, yd + FrameTable[frame].FrTopMargin, width, height, xf + FrameTable[frame].FrLeftMargin, yf + FrameTable[frame].FrTopMargin);
 #     else  /* _WINDOWS */
+	  RECT cltRect;
       WIN_GetDeviceContext (frame);
+
+	  GetClientRect (FrRef [frame], &cltRect);
+	  /*
       BitBlt (TtDisplay, xf + FrameTable[frame].FrLeftMargin, yf + FrameTable[frame].FrTopMargin, width, height,
 	      TtDisplay, xd + FrameTable[frame].FrLeftMargin, yd + FrameTable[frame].FrTopMargin, SRCCOPY);
+	  */
+	  /* ScrollDC (TtDisplay, xf - xd, yf - yd, NULL, &cltRect, NULL, NULL); */
+	  ScrollWindowEx (FrRef [frame], xf - xd, yf - yd, NULL, &cltRect, NULL, NULL, SW_ERASE | SW_INVALIDATE);
       WIN_ReleaseDeviceContext ();
+      /*InvalidateRect (FrRef[frame], NULL, TRUE);*/
 #     endif /* _WINDOWS */
    }
 }
@@ -2983,6 +3017,7 @@ int yf;
 #ifndef _WIN_PRINT
 /*----------------------------------------------------------------------
   EndOfString check wether string end by suffix.
+
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
 int                 EndOfString (char *string, char *suffix)
@@ -3048,11 +3083,11 @@ int                 pattern;
 
 #endif /* __STDC__ */
 {
+#  ifndef _WINDOWS
    Pixmap              pat;
 
    /* Fill the rectangle associated to the given frame */
    pat = (Pixmap) CreatePattern (0, RO, active, fg, 0, pattern);
-#  ifndef _WINDOWS
    if (pat != 0)
      {
 	XSetTile (TtDisplay, TtGreyGC, pat);

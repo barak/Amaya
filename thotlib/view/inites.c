@@ -29,6 +29,10 @@
 #include "registry_f.h"
 #include "context_f.h"
 
+#ifdef _WINDOWS
+#include "win_f.h"
+#endif /* _WINDOW S*/
+
 static ThotColorStruct def_colrs[256];
 static int          allocation_index[256];
 static int          have_colors = 0;
@@ -60,6 +64,7 @@ ThotColorStruct    *colr;
    int                 NumCells;
 
    match = XAllocColor (dsp, colormap, colr);
+   NumCells = 0;
    if (match == 0)
      {
 	NumCells = DisplayCells (dsp, TtScreen);
@@ -398,7 +403,7 @@ char               *name;
    if (Color_Table[i] == NULL)
       return -1;		/* the table is empty */
    do
-      if (strcmp (Color_Table[i], name) == 0)
+      if (strcasecmp (Color_Table[i], name) == 0)
 	 found = TRUE;
       else
 	 i++;
@@ -652,7 +657,8 @@ int                 motif;
 #ifdef _WINDOWS
    if (WIN_LastBitmap != 0)
      {
-	DeleteObject (WIN_LastBitmap);
+	if (!DeleteObject (WIN_LastBitmap))
+       WinErrorBox (WIN_Main_Wd);
 	WIN_LastBitmap = 0;
      }
    switch (motif)

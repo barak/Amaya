@@ -42,7 +42,6 @@ LIBRARY INCLUDES
 #include "HTMLPDTD.h"
 #include "SGML.h"
 #include "HTMLGen.h"
-#include "HTTeXGen.h"
 /*
 
    End of HTML module
@@ -58,6 +57,6 @@ LIBRARY INCLUDES
    
    ___________________________________
    
-                            @(#) $Id: WWWHTML.h,v 1.1.1.1 1996/10/15 13:08:38 cvs Exp $
+                            @(#) $Id: WWWHTML.h,v 1.2 1998/03/05 14:37:27 cvs Exp $
                                                                                           
     */

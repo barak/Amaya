@@ -243,18 +243,19 @@ PtrSSchema          pSS;
 
 /*----------------------------------------------------------------------
    InitAbsBoxes cree et initialise un pave pour l'element pEl et dans  
-   la vue view, avec la visibilite Visib.                    
+   la vue view, avec la visibilite Visib.
+   ro est vrai si le document est en ReadOnly
   ----------------------------------------------------------------------*/
 
 #ifdef __STDC__
-PtrAbstractBox      InitAbsBoxes (PtrElement pEl, DocViewNumber view, int Visib)
+PtrAbstractBox      InitAbsBoxes (PtrElement pEl, DocViewNumber view, int Visib, boolean ro)
 
 #else  /* __STDC__ */
-PtrAbstractBox      InitAbsBoxes (pEl, view, Visib)
+PtrAbstractBox      InitAbsBoxes (pEl, view, Visib, ro)
 PtrElement          pEl;
 DocViewNumber       view;
 int                 Visib;
-
+boolean             ro;
 #endif /* __STDC__ */
 
 {
@@ -322,7 +323,6 @@ int                 Visib;
    pAb->AbWidth.DimMinimum = FALSE;
 
    pAb->AbVolume = 0;
-   pAb->AbBox = NULL;
    pAb->AbIndent = 0;
    pAb->AbDepth = 0;
    pAb->AbNum = 0;
@@ -378,7 +378,7 @@ int                 Visib;
 	      pAscend = pAscend->ElParent;
      }
    pAb->AbReadOnly = FALSE;
-   if (ElementIsReadOnly (pEl))
+   if (ro || ElementIsReadOnly (pEl))
      {
 	pAb->AbCanBeModified = FALSE;
 	pAb->AbReadOnly = TRUE;
@@ -467,7 +467,7 @@ PtrAbstractBox      pAb;
 	       pAb->AbLeafType = LtSymbol;
 	       pAb->AbShape = pConst->PdString[0];
 	       pAb->AbGraphAlphabet = 'G';
-	       if (pAb->AbShape == '\0')
+	       if (pAb->AbShape == EOS)
 		  pAb->AbVolume = 0;
 	       else
 		  pAb->AbVolume = 1;
@@ -477,7 +477,7 @@ PtrAbstractBox      pAb;
 	       if (pAb->AbText == NULL)
 		  GetConstantBuffer (pAb);
 	       strncpy (pAb->AbText->BuContent, pConst->PdString, THOT_MAX_CHAR - 1);
-	       pAb->AbText->BuContent[THOT_MAX_CHAR - 1] = '\0';
+	       pAb->AbText->BuContent[THOT_MAX_CHAR - 1] = EOS;
 	       pAb->AbText->BuLength = strlen (pAb->AbText->BuContent);
 	       pAb->AbLanguage = TtaGetLanguageIdFromAlphabet (pConst->PdAlphabet);
 	       pAb->AbVolume = pAb->AbText->BuLength;
@@ -530,6 +530,35 @@ PtrElement          pEl;
 
 
 /*----------------------------------------------------------------------
+   AttrIsAfter retourne vrai si attribut pAttr est un attribut qui suit
+   l'attribut pRefAttr.
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
+static boolean      AttrIsAfter (PtrAttribute pAttr, PtrAttribute pRefAttr)
+#else  /* __STDC__ */
+static boolean      AttrIsAfter (pAttr, pRefAttr)
+PtrAttribute        pAttr;
+PtrAttribute        pRefAttr;
+#endif /* __STDC__ */
+{
+  PtrAttribute        pA;
+
+  if (pAttr == NULL || pRefAttr == NULL)
+    return FALSE;
+  else
+    {
+      pA = pRefAttr->AeNext;
+      while (pA != NULL && pA != pAttr)
+	pA = pA->AeNext;
+      if (pA == NULL)
+	return FALSE;
+      else
+	return TRUE;
+    }
+}
+
+
+/*----------------------------------------------------------------------
    DoesViewExist retourne vrai si la vue de numero viewNb ou` doit      
    s'afficher l'element pEl existe.                        
   ----------------------------------------------------------------------*/
@@ -546,22 +575,25 @@ DocViewNumber       viewNb;
 #endif /* __STDC__ */
 
 {
-   boolean             existView;
+  int                 v;    
+  boolean             existView;
 
-   if (AssocView (pEl))
-     {
-	/* c'est une vue d'elements associes, elle existe */
-	/* si la fenetre correspondante existe */
-	existView = pDoc->DocAssocVolume[pEl->ElAssocNum - 1] != 0;
-     }
-   else
-     {
-	/* c'est une vue de l'arbre principal du document, elle existe */
-	/* si l'entree correspondante de la table des vues du document */
-	/* n'est pas libre. */
-	existView = pDoc->DocView[viewNb - 1].DvPSchemaView != 0;
-     }
-   return existView;
+  if (AssocView (pEl))
+    {
+      /* c'est une vue d'elements associes, elle existe */
+      /* si la fenetre correspondante existe */
+      existView = pDoc->DocAssocVolume[pEl->ElAssocNum - 1] != 0;
+    }
+  else
+    {
+      /* c'est une vue de l'arbre principal du document, elle existe */
+      /* si l'entree correspondante de la table des vues du document */
+      /* n'est pas libre. */
+      v = pDoc->DocView[viewNb - 1].DvPSchemaView;
+      existView = (v == 1 ||
+		   (v > 1 /*&& pDoc->DocView[viewNb - 1].DvSSchema == pEl->ElStructSchema*/));
+    }
+  return existView;
 }
 
 /*----------------------------------------------------------------------
@@ -1806,7 +1838,7 @@ boolean             completeCreator;
 		  if (!isCreated)
 		    {
 		      /* on cree le pave */
-		      pAb = InitAbsBoxes (pEl, viewNb, vis);
+		      pAb = InitAbsBoxes (pEl, viewNb, vis, pDoc->DocReadOnly);
 		      pAb->AbEnclosing = pAbboxEl;
 		      pAb->AbReadOnly = pAbboxEl->AbReadOnly;
 		      if (pAb->AbEnclosing->AbFirstEnclosed == NULL)
@@ -1926,7 +1958,7 @@ boolean             completeCreator;
 		  if (!isCreated)
 		    {
 		      /* on cree le pave */
-		      pAb = InitAbsBoxes (pEl, viewNb, vis);
+		      pAb = InitAbsBoxes (pEl, viewNb, vis, pDoc->DocReadOnly);
 		      pAb->AbEnclosing = pAbboxEl;
 		      pAb->AbReadOnly = pAbboxEl->AbReadOnly;
 		      if (pAb->AbEnclosing->AbFirstEnclosed == NULL)
@@ -1970,7 +2002,7 @@ boolean             completeCreator;
 		  if (!isCreated)
 		    {
 		      /* on cree le pave */
-		      pAb = InitAbsBoxes (pEl, viewNb, vis);
+		      pAb = InitAbsBoxes (pEl, viewNb, vis, pDoc->DocReadOnly);
 		      pAb->AbReadOnly = pAbb1->AbReadOnly;
 		      pAb->AbEnclosing = pAbb1->AbEnclosing;
 		      if (pAb->AbEnclosing->AbFirstEnclosed == pAbb1)
@@ -2037,7 +2069,7 @@ boolean             completeCreator;
 		  if (!isCreated)
 		    {
 		      /* on cree le pave */
-		      pAb = InitAbsBoxes (pEl, viewNb, vis);
+		      pAb = InitAbsBoxes (pEl, viewNb, vis, pDoc->DocReadOnly);
 		      pAb->AbReadOnly = pAbb1->AbReadOnly;
 		      pAb->AbEnclosing = pAbb1->AbEnclosing;
 		      pAb->AbNext = pAbb1->AbNext;
@@ -2094,22 +2126,22 @@ boolean             InAssocBox;
 boolean             completeCreator;
 #endif /* __STDC__ */
 {
-  int                 view, vis;
-  int                 viewSch, viewIndex;
-  int                 volume;
   PtrPRule            pRD, pRS;
   PtrPRule            pR, pR1, pRV;
   PtrAbstractBox      pAb, pAbb1, pAbbNext;
   PtrAbstractBox      pAbbCreated;
   PtrElement          pE, pER, pElSibling;
-  boolean             ok, stop, finish, volok;
   PtrPRule            queuePR[MAX_QUEUE_LEN];
-  int                 lqueue, pqueue;
   PtrPSchema          pSP;
-  PtrAttribute        pA;
+  PtrAttribute        pSelAttr;
   PresentationBox    *pBox;
-  boolean             complete;
   TypeUnit            unit;
+  int                 view, vis;
+  int                 viewSch, viewIndex;
+  int                 volume;
+  int                 lqueue, pqueue;
+  boolean             ok, stop, finish, volok;
+  boolean             complete;
 
   pAbbCreated = NULL;
   pAb = NULL;
@@ -2324,7 +2356,7 @@ boolean             completeCreator;
 	 {
 	   lqueue = 0;
 	   pqueue = 0;
-	   pAb = InitAbsBoxes (pEl, viewNb, vis);
+	   pAb = InitAbsBoxes (pEl, viewNb, vis, pDoc->DocReadOnly);
 	   /* pAb: pave cree */
 	   pAbbCreated = pAb;
 	   pAb->AbPresentationBox = TRUE;
@@ -2347,6 +2379,7 @@ boolean             completeCreator;
 	       /* avec la regle CreateBefore */
 	       while (pAbb1->AbPresentationBox)
 		 pAbb1 = pAbb1->AbNext;
+
 	       pAb->AbEnclosing = pAbb1;
 	       pAb->AbReadOnly = pAbb1->AbReadOnly;
 	       if (pAb->AbEnclosing->AbFirstEnclosed == NULL)
@@ -2365,21 +2398,26 @@ boolean             completeCreator;
 		     if ((pAbb1->AbPresentationBox && pAbb1->AbElement == pEl)
 			 || (pAbb1->AbElement->ElTypeNumber == PageBreak + 1
 			     && pAbb1->AbElement->ElPageType == PgBegin))
-		       /* c'est un pave de presentation de l'element ou */
-		       /* un saut de page de debut d'element */
-		       if (pAbb1->AbTypeNum == pAb->AbTypeNum
-			   && pAbb1->AbPresentationBox
-			   && pAbb1->AbPSchema == pSchP
-			   && (!pAbb1->AbDead))
-			 /* c'est le meme que celui qu'on veut creer */
-			 {
-			   pAbbCreated = NULL;
+		       {
+			 /* c'est un pave de presentation de l'element ou */
+			 /* un saut de page de debut d'element */
+			 if (pAbb1->AbTypeNum == pAb->AbTypeNum
+			     && pAbb1->AbPresentationBox
+			     && pAbb1->AbPSchema == pSchP
+			     && !pAbb1->AbDead)
+			   /* c'est le meme que celui qu'on veut creer */
+			   {
+			     pAbbCreated = NULL;
+			     stop = TRUE;
+			   }
+			 else if (pAbb1->AbNext == NULL ||
+				  AttrIsAfter (pAbb1->AbCreatorAttr, pAttr))
+			   /* le nouveau pave attache a un attribut doit s'inserer
+			      avant ceux d'un attribut suivant */
 			   stop = TRUE;
-			 }
-		       else if (pAbb1->AbNext == NULL)
-			 stop = TRUE;
-		       else
-			 pAbb1 = pAbb1->AbNext;
+			 else
+			   pAbb1 = pAbb1->AbNext;
+		       }
 		     else
 		       /* ce n'est ni pave de presentation de l'element */
 		       /* ni un saut de page de debut d'element */
@@ -2420,6 +2458,7 @@ boolean             completeCreator;
 	       /* avec la regle CreateBefore */
 	       while (pAbb1->AbPresentationBox)
 		 pAbb1 = pAbb1->AbNext;
+
 	       pAb->AbEnclosing = pAbb1;
 	       pAb->AbReadOnly = pAbb1->AbReadOnly;
 	       if (pAb->AbEnclosing->AbFirstEnclosed == NULL)
@@ -2431,20 +2470,24 @@ boolean             completeCreator;
 		   /* et verifie si le pave de presentation existe deja */
 		   stop = FALSE;
 		   do
-		     if (pAbb1->AbTypeNum == pAb->AbTypeNum
-			 && pAbb1->AbPresentationBox == pAb->AbPresentationBox
+		     if (pAbb1->AbPresentationBox == pAb->AbPresentationBox
+			 && pAbb1->AbTypeNum == pAb->AbTypeNum
 			 && pAbb1->AbPSchema == pSchP
-			 && (!pAbb1->AbDead))
+			 && !pAbb1->AbDead)
 		       /* ce pave de presentation existe deja */
 		       {
 			 pAbbCreated = NULL;
 			 stop = TRUE;
 		       }
-		     else if (pAbb1->AbNext == NULL)
+		     else if (pAbb1->AbNext == NULL ||
+			      AttrIsAfter (pAbb1->AbNext->AbCreatorAttr, pAttr))
+		       /* le nouveau pave attache a un attribut doit s'inserer
+			  avant ceux d'un attribut suivant */
 		       stop = TRUE;
 		     else
 		       pAbb1 = pAbb1->AbNext;
 		   while (!stop);
+
 		   /* chaine le nouveau pave apres le dernier pave */
 		   /* fils du pave createur */
 		   if (pAbbCreated != NULL)
@@ -2458,16 +2501,26 @@ boolean             completeCreator;
 	     case FnCreateBefore:
 	       /* saute les paves de presentation deja crees */
 	       /* avec la regle CreateBefore */
-	       while (pAbb1->AbPresentationBox)
-		 {
-		   if ((pAbb1->AbTypeNum == pAb->AbTypeNum)
-		       && (pAbb1->AbPresentationBox == pAb->AbPresentationBox)
-		       && (pAbb1->AbPSchema == pSchP)
-		       && (!pAbb1->AbDead))
-		     /* ce pave de presentation existe deja */
+	       stop = FALSE;
+	       do
+		 if (pAbb1->AbTypeNum == pAb->AbTypeNum
+		     && pAbb1->AbPresentationBox == pAb->AbPresentationBox
+		     && pAbb1->AbPSchema == pSchP
+		     && !pAbb1->AbDead)
+		   /* ce pave de presentation existe deja */
+		   {
 		     pAbbCreated = NULL;
+		     stop = TRUE;
+		   }
+		 else if (!pAbb1->AbPresentationBox ||
+			  AttrIsAfter (pAbb1->AbCreatorAttr, pAttr))
+		   /* le nouveau pave attache a un attribut doit s'inserer
+		      avant ceux d'un attribut suivant */
+		   stop = TRUE;
+		 else
 		   pAbb1 = pAbb1->AbNext;
-		 }
+	       while (!stop);
+
 	       if (pAbbCreated != NULL)
 		 {
 		   pAb->AbReadOnly = pAbb1->AbReadOnly;
@@ -2478,10 +2531,12 @@ boolean             completeCreator;
 		   pAb->AbPrevious = pAbb1->AbPrevious;
 		   pAbb1->AbPrevious = pAb;
 		   if (pAb->AbPrevious != NULL)
-		     pAb->AbPrevious->AbNext = pAb;
-		   if (pAb->AbPrevious == NULL)
-		     pEl->ElAbstractBox[viewIndex] = pAb;
-		   else if (pAb->AbPrevious->AbElement != pEl)
+		     {
+		       pAb->AbPrevious->AbNext = pAb;
+		       if (pAb->AbPrevious->AbElement != pEl)
+			 pEl->ElAbstractBox[viewIndex] = pAb;
+		     }
+		   else
 		     pEl->ElAbstractBox[viewIndex] = pAb;
 		 }
 	       break;
@@ -2493,18 +2548,24 @@ boolean             completeCreator;
 		   stop = TRUE;
 		 else if (pAbb1->AbNext->AbElement != pEl)
 		   stop = TRUE;
-		 else
+		 else if (pAbb1->AbNext->AbPresentationBox
+			  && pAbb1->AbNext->AbTypeNum == pAb->AbTypeNum
+			  && pAbb1->AbNext->AbPresentationBox == pAb->AbPresentationBox
+			  && pAbb1->AbNext->AbPSchema == pSchP
+			  && !pAbb1->AbNext->AbDead)
+		   /* ce pave de presentation existe deja */
 		   {
-		     if (pAbb1->AbNext->AbPresentationBox)
-		       if (pAbb1->AbNext->AbTypeNum == pAb->AbTypeNum
-			   && pAbb1->AbNext->AbPresentationBox == pAb->AbPresentationBox
-			   && pAbb1->AbNext->AbPSchema == pSchP
-			   && (!pAbb1->AbNext->AbDead))
-			 /* ce pave de presentation existe deja */
-			 pAbbCreated = NULL;
-		     pAbb1 = pAbb1->AbNext;
+		     pAbbCreated = NULL;
+		     stop = TRUE;
 		   }
+		 else if (AttrIsAfter (pAbb1->AbNext->AbCreatorAttr, pAttr))
+		   /* le nouveau pave attache a un attribut doit s'inserer
+		      avant ceux d'un attribut suivant */
+		   stop = TRUE;
+		 else
+		   pAbb1 = pAbb1->AbNext;
 	       while (!stop);
+
 	       if (pAbbCreated != NULL)
 		 {
 		   pAb->AbReadOnly = pAbb1->AbReadOnly;
@@ -2517,12 +2578,13 @@ boolean             completeCreator;
 		 }
 	       break;
 	     case FnCreateEnclosing:
-	       if (pAbb1->AbEnclosing != NULL)
-		 if (pAbb1->AbEnclosing->AbPresentationBox)
-		   if (pAbb1->AbEnclosing->AbElement == pEl)
-		     /* l'element a deja un pave de presentation englobant. */
-		     /* on refuse d'en creer un autre */
-		     pAbbCreated = NULL;
+	       if (pAbb1->AbEnclosing != NULL &&
+		   pAbb1->AbEnclosing->AbPresentationBox &&
+		   pAbb1->AbEnclosing->AbElement == pEl)
+		 /* l'element a deja un pave de presentation englobant. */
+		 /* on refuse d'en creer un autre */
+		 pAbbCreated = NULL;
+
 	       if (pAbbCreated != NULL)
 		 {
 		   pAb->AbReadOnly = pAbb1->AbReadOnly;
@@ -2547,6 +2609,7 @@ boolean             completeCreator;
 		       else
 			 pAbb1 = pAbb1->AbNext;
 		     }
+
 		   /* traite le dernier pave' de l'element */
 		   pAb->AbNext = pAbb1->AbNext;
 		   pAbb1->AbNext = NULL;
@@ -2571,19 +2634,16 @@ boolean             completeCreator;
 			 FreePictInfo (pAb->AbPictInfo);
 		       pAb->AbPictInfo = NULL;
 		     }
-		   else if (pAb->AbLeafType == LtCompound &&
-			    pAb->AbPictBackground != NULL)
-		     {
-		       /* in this particular case we need to free filename */
-		       TtaFreeMemory (((PictInfo *)(pAb->AbPictBackground))->PicFileName);
-		       FreePictInfo (pAb->AbPictBackground);
-		       pAb->AbPictBackground = NULL;
-		     }
-		   
-		   FreeAbstractBox (pAb);
 		 }
-	       else if (pAb)
-		 FreeAbstractBox (pAb);
+
+	       if (pAb->AbLeafType == LtCompound && pAb->AbPictBackground != NULL)
+		 {
+		   /* in this particular case we need to free filename */
+		   TtaFreeMemory (((PictInfo *)(pAb->AbPictBackground))->PicFileName);
+		   FreePictInfo (pAb->AbPictBackground);
+		   pAb->AbPictBackground = NULL;
+		 }
+	       FreeAbstractBox (pAb);
 	     }
 	   else
 	     /* rend non modifiable le pave de presentation */
@@ -2817,10 +2877,10 @@ boolean             completeCreator;
 	       do		/* applique les regles retardees */
 		 {
 		   pAbb1 = pAbbCreated;
-		   GetDelayedRule (&pR, &pSP, &pAbb1, &pA);
+		   GetDelayedRule (&pR, &pSP, &pAbb1, &pSelAttr);
 		   if (pR != NULL)
-		     if (!ApplyRule (pR, pSP, pAbb1, pDoc, pA))
-		       Delay (pR, pSP, pAbb1, pA, pAbbCreated);
+		     if (!ApplyRule (pR, pSP, pAbb1, pDoc, pSelAttr))
+		       Delay (pR, pSP, pAbb1, pSelAttr, pAbbCreated);
 		 }
 	       while (pR != NULL);
 	       /* retablit AbPresentationBox qui a ete modifie' pour les boites de */
@@ -3029,7 +3089,7 @@ PtrPSchema          pSchP;
 	    case AtTextAttr:
 	       if (pPRclass)
 		  pRule = pPRclass->ApTextFirstPRule;
-	       else if (pAPRule->ApString[0] == '\0')
+	       else if (pAPRule->ApString[0] == EOS)
 		  pRule = pAPRule->ApTextFirstPRule;
 	       break;
 	    case AtReferenceAttr:
@@ -3221,6 +3281,18 @@ PtrDocument         pDoc;
 			/* cherche la 1ere regle de presentation associee a ce type */
 			/* d'element */
 			SearchPresSchema (pAb->AbElement, &pSchP, &index, &pSchS);
+/*********/
+			if (pSchS != NULL && pSchS != pAb->AbElement->ElStructSchema)
+			   /* il s'agit de l'element racine d'une nature qui
+			   utilise le schema de presentation de son englobant*/
+			   if (pDoc->DocView[pAb->AbDocView - 1].DvSSchema !=
+					 pDoc->DocSSchema)
+			      {
+			      pSchS = pAb->AbElement->ElStructSchema;
+			      pSchP = pSchS->SsPSchema;
+			      index = pAb->AbElement->ElTypeNumber;
+			      }
+/*********/
 			pRule = pSchP->PsElemPRule[index - 1];
 
 			/* traite les regles de creation associees au type de l'element */
@@ -5147,20 +5219,20 @@ boolean            *complete;
    PtrElement          pElChild, pElParent, pAsc;
    PtrAbstractBox      pAbb, pAbbChild, pNewAbbox, pAbbReturn, pAbbPres;
    PtrAbstractBox      pPRP, pAbbParentAssoc;
-   int                 vis, typePres;
-   int                 viewSch;
-   int                 index;
+   PtrAbstractBox      pAb1;
+   PtrSSchema          pSchS, savePSS;
+   PtrAttribute        pAttr;
    PtrPRule            queuePR[MAX_QUEUE_LEN];
    PtrAbstractBox      queuePP[MAX_QUEUE_LEN];
    PtrPSchema          queuePS[MAX_QUEUE_LEN];
    PtrAttribute        queuePA[MAX_QUEUE_LEN];
+   int                 vis, typePres;
+   int                 viewSch;
+   int                 index;
    int                 lqueue, pqueue;
+   boolean             completeChild;
    boolean             stop, ok, crAbsBox, truncate, notBreakable, ignoreDescent;
    boolean             Creation, ApplyRules, PcFirst, PcLast;
-   PtrSSchema          pSchS;
-   PtrAttribute        pAttr;
-   PtrAbstractBox      pAb1;
-   boolean             completeChild;
 #ifdef __COLPAGE__
    int                 view;
    boolean             bool;
@@ -5170,6 +5242,8 @@ boolean            *complete;
 #endif /* __COLPAGE__ */
 
    pAbbReturn = NULL;
+   lqueue = 0;
+   pqueue = 0;
    /* Abstract boxes of the element are not created */
    *complete = FALSE;
    if (pEl != NULL && pEl->ElStructSchema != NULL)
@@ -5235,6 +5309,26 @@ boolean            *complete;
 	   /* cherche le schema de presentation a appliquer */
 	  {
 	     SearchPresSchema (pEl, &pSchP, &index, &pSchS);
+/*********/
+	     if (pSchS != NULL && pSchS != pEl->ElStructSchema)
+	        /* il s'agit de l'element racine d'une nature qui utilise le
+		   schema de presentation de son englobant */
+	        if (pDoc->DocView[viewNb - 1].DvSSchema == pDoc->DocSSchema)
+		   {
+		   /* il faut utiliser le schema de presentation de
+		   l'environnement englobant. On reevalue la vue a appliquer */
+		   savePSS = pEl->ElStructSchema;
+		   pEl->ElStructSchema = pSchS;
+		   viewSch = AppliedView (pEl, NULL, pDoc, viewNb);
+		   pEl->ElStructSchema = savePSS;
+		   }
+		else
+		   {
+		   pSchS = pEl->ElStructSchema;
+		   pSchP = pSchS->SsPSchema;
+		   index = pEl->ElTypeNumber;
+		   }
+/*********/
 	     /* pRSpec: premiere regle de presentation specifique. */
 	     pRSpec = pSchP->PsElemPRule[index - 1];
 	     /* premiere regle de presentation par defaut */
@@ -5301,7 +5395,7 @@ boolean            *complete;
 		   /* plusieurs paves sont crees si l'element est une marque */
 		   /* de pages : paves corps de page, plus paves dupliques (V4)  */
 		  {
-		     pNewAbbox = InitAbsBoxes (pEl, viewNb, vis);
+		     pNewAbbox = InitAbsBoxes (pEl, viewNb, vis, pDoc->DocReadOnly);
 		     pNewAbbox->AbPSchema = pSchP;
 		     pNewAbbox->AbAcceptLineBreak = pSchP->PsAcceptLineBreak[pEl->ElTypeNumber - 1];
 		     pNewAbbox->AbAcceptPageBreak = pSchP->PsAcceptPageBreak[pEl->ElTypeNumber - 1];
