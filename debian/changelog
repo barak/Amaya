@@ -1,3 +1,148 @@
+amaya (8.5-1) unstable; urgency=low
+
+  * New upstream release. Closes: #246924
+
+ -- Steve Dunham <dunham@debian.org>  Sun,  9 May 2004 07:25:47 -0700
+
+amaya (8.4-1) unstable; urgency=low
+
+  * New upstream release. Closes: #244909
+  * Provide www-browser and an alternative for x-www-browser. Closes: #228815
+  * Remove dummy packages
+
+ -- Steve Dunham <dunham@debian.org>  Wed, 21 Apr 2004 15:39:22 -0700
+
+amaya (8.2-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Steve Dunham <dunham@debian.org>  Sat, 22 Nov 2003 08:52:43 -0800
+
+amaya (8.1b-1) unstable; urgency=low
+
+  * New upstream release
+  * ia64 fix.  Closes: #207173
+  * Fix copyright file. Closes: #211599
+
+ -- Steve Dunham <dunham@debian.org>  Wed,  8 Oct 2003 09:49:08 -0700
+
+amaya (8.1a-1) unstable; urgency=low
+
+  * New upstream release. Closes: #203348
+  * Change description to say wysiwyg: #205401
+
+ -- Steve Dunham <dunham@cse.msu.edu>  Mon, 18 Aug 2003 13:57:42 -0700
+
+amaya (8.0-4) unstable; urgency=low
+
+  * Disable opengl support: It doesn't work for a lot of people.
+  * Closes: #196788, #196742
+
+ -- Steve Dunham <dunham@debian.org>  Wed, 11 Jun 2003 14:29:35 -0700
+
+amaya (8.0-3) unstable; urgency=low
+
+  * fix build-depends: I broke down and installed pbuilder. :)
+
+ -- Steve Dunham <dunham@debian.org>  Sun,  8 Jun 2003 18:41:07 -0700
+
+amaya (8.0-2) unstable; urgency=low
+
+  * Change a path and depend on autotools-dev to fix FTBFS
+  * Closes: #196565
+
+ -- Steve Dunham <dunham@debian.org>  Sat,  7 Jun 2003 21:32:58 -0700
+
+amaya (8.0-1) unstable; urgency=low
+
+  * New upstream release. Lots of bug fixes, see "changelog.html"
+    in the docs directory.
+  * Turned on GL support - It's now much prettier, but
+    appears to have some SVG bugs.
+  * Include http://www.w3.org/Amaya/User/New.html in lieu of
+    changelog.
+  * Add menu file (it got lost in the 7.0 consolidation).
+  * Add mime entries.
+  * Closes: #196072, #189668, #184408, #185354
+
+ -- Steve Dunham <dunham@debian.org>  Sun,  1 Jun 2003 08:36:37 -0700
+
+amaya (7.2-1) unstable; urgency=low
+
+  * New upstream source
+
+ -- Steve Dunham <dunham@debian.org>  Sun,  9 Mar 2003 19:27:08 -0800
+
+amaya (7.1-1) unstable; urgency=low
+
+  * new upstream release 
+
+ -- Steve Dunham <dunham@debian.org>  Mon, 20 Jan 2003 21:17:43 -0800
+
+amaya (7.0-1) unstable; urgency=low
+
+  * New upstream release
+  * Remove lesstif version of amaya, simplify packaging
+  * Closes: #111250, #138082, #171708
+
+ -- Steve Dunham <dunham@debian.org>  Fri,  6 Dec 2002 15:09:33 -0800
+
+amaya (6.4-3) unstable; urgency=low
+
+  * relink against gdk-imlib1-dev
+
+ -- Steve Dunham <dunham@debian.org>  Tue, 29 Oct 2002 21:10:59 -0800
+
+amaya (6.4-2) unstable; urgency=low
+
+  * Fix int/char issues
+  * Add Replaces: amaya-dict-*
+  * Closes: #161522, #138450
+
+ -- Steve Dunham <dunham@debian.org>  Thu, 19 Sep 2002 12:40:28 -0700
+
+amaya (6.4-1) unstable; urgency=low
+
+  * New upstream release
+  * Fix hppa/ia64 build issues (hopefully)
+  * Closes: #146585
+
+ -- Steve Dunham <dunham@debian.org>  Wed, 18 Sep 2002 10:54:50 -0700
+
+amaya (5.3-4) unstable; urgency=low
+
+  * Remove dangling symlink
+  * Remove dictionaries
+  * Fix description typo
+  * Fix issue with dependencies
+  * Add symlink to fix printing
+  * Closes: #138082, #138450, #137509, #140532, #135900, #135899
+
+ -- Steve Dunham <dunham@debian.org>  Wed, 10 Apr 2002 13:13:38 -0700
+
+amaya (5.3-3) unstable; urgency=low
+
+  * Tweak depends to upgrade better, add "amaya" dummy package
+  * Conflict with english dictionary, included in amaya-common.
+  * Closes: #135624, #135613
+
+ -- Steve Dunham <dunham@debian.org>  Sun, 24 Feb 2002 21:46:08 -0800
+
+amaya (5.3-2) unstable; urgency=low
+
+  * fix build-depends
+  * Closes: #135397
+
+ -- Steve Dunham <dunham@debian.org>  Sat, 23 Feb 2002 11:40:24 -0800
+
+amaya (5.3-1) unstable; urgency=low
+
+  * New upstream release
+  * Split into lesstif/gtk/common packages
+  * Closes: #117667, #132470
+
+ -- Steve Dunham <dunham@debian.org>  Tue,  5 Feb 2002 08:24:13 -0800
+
 amaya (5.1-1) unstable; urgency=low
 
   * New upstream source. Closes: #
@@ -104,7 +249,3 @@ amaya (1.1c-1) unstable; urgency=low
 
  -- Steve Dunham <dunham@debian.org>  Tue, 25 Nov 1997 13:44:14 -0500
 
-Local variables:
-mode: debian-changelog
-add-log-mailing-address: "dunham@debian.org"
-End:

@@ -1,32 +1,43 @@
 #!/usr/bin/make -f
 # Made with the aid of dh_make, by Craig Small
 # Sample debian/rules that uses debhelper. GNU copyright 1997 by Joey Hess.
-# Some lines taken from debmake, by Cristoph Lameter.
 
 #export DH_VERBOSE=1
 
-SOURCE:=amaya-src-5.1.tgz
+SOURCE:=amaya-src-8.5.tgz
 
 build: build-stamp
 build-stamp: patch-stamp
 	dh_testdir
 
-	-mkdir Amaya/BUILD
+	# I copy the config.* because the amaya's copy doesn't
+	# cover all of debian's archs
 	cd Amaya && \
-		cp /usr/share/misc/config.sub /usr/share/misc/config.guess . \
+		cp /usr/share/misc/config.{sub,guess} . \
 		&& autoconf && autoheader
-	cd Amaya/BUILD && ../configure --prefix=/usr --datadir=/usr/lib \
-		`dpkg --print-architecture`-linux
-	# Add here commands to compile the package.
-	cd Amaya/BUILD && make CFLAGS="-O2 -g -Wall" all amaya
 
+	#cp debian/acinclude.m4 libwww
+	cd libwww && \
+		cp /usr/share/misc/config.{sub,guess} . && \
+		aclocal-1.6 && \
+		automake-1.6 && \
+		libtoolize --force --copy && \
+		autoconf
+
+	# build gtk version
+	-mkdir Amaya/BUILD
+	cd Amaya/BUILD && ../configure --prefix=/usr --datadir=/usr/lib \
+		--without-graphic-libs --with-dav --with-gtk \
+		`dpkg --print-architecture`-linux
+
+	cd Amaya/BUILD && make CFLAGS="-O2 -g -Wall" all amaya
 	touch build-stamp
 
 patch: patch-stamp
 patch-stamp: source-stamp
 	if [ -d debian/patches ]; then \
 	for i in debian/patches/*; do \
-		patch -p0 -s <$$i; \
+		patch -p0 -s < $$i; \
 	done; fi
 
 	touch patch-stamp
@@ -34,22 +45,37 @@ patch-stamp: source-stamp
 source: source-stamp
 source-stamp:
 	tar zxf $(SOURCE)
-	cd libwww && libtoolize --force --copy
-	cp /usr/share/misc/config.guess /usr/share/misc/config.sub Amaya
 	touch source-stamp
 
 clean:
 	dh_testdir
 	dh_testroot
-	rm -f *-stamp
+	-rm -f *-stamp
 
-	-rm -rf Amaya libwww
+	-rm -rf Amaya libwww redland
 
 	dh_clean
 
 # Build architecture-independent files here.
 binary-indep: build
 	dh_testdir
+	dh_testroot
+	dh_clean -k -i
+	dh_installdirs -i
+	dh_installdocs -i
+	dh_installexamples -i
+	dh_installmenu -i
+#	dh_installmanpages
+#	dh_undocumented
+	dh_installchangelogs -i
+	dh_strip -i
+	dh_compress -i
+	dh_fixperms -i
+	dh_installdeb -i
+	dh_shlibdeps -i
+	dh_gencontrol -i
+	dh_md5sums -i
+	dh_builddeb -i
 
 # Build architecture-dependent files here.
 binary-arch: build
@@ -58,21 +84,22 @@ binary-arch: build
 	dh_testroot
 	dh_clean -k -a
 	dh_installdirs -a
+	dh_installmime -a
 
-	# Install
-	cd Amaya/BUILD && $(MAKE) install prefix=`pwd`/../../debian/tmp/usr datadir=`pwd`/../../debian/tmp/usr/lib
+	cd Amaya/BUILD && $(MAKE) install prefix=`pwd`/../../debian/amaya/usr/lib datadir=`pwd`/../../debian/amaya/usr/lib
+	-rm -rf debian/amaya/usr/lib/bin
+	ln -s ../lib/Amaya/applis/bin/amaya debian/amaya/usr/bin/amaya
+	#mv debian/amaya/usr/lib/Amaya/doc debian/amaya/usr/share/doc/amaya/doc
+	#ln -s ../../share/doc/amaya/doc debian/amaya/usr/lib/Amaya/doc
 
-	# Doesn't quite work, so we move some stuff around
-	mv debian/tmp/usr/Amaya debian/tmp/usr/lib
-	-rm debian/tmp/usr/bin/amaya
-	ln -s ../lib/Amaya/applis/bin/amaya debian/tmp/usr/bin
+	# Add stuff the makefile forgot
 	install -m 0644 Amaya/amaya/AmayaPage.html \
-		debian/tmp/usr/lib/Amaya/amaya
-	install -m 0644 debian/amaya.1 debian/tmp/usr/share/man/man1
+		debian/amaya/usr/lib/Amaya/amaya
+	install -m 0644 debian/amaya.1 debian/amaya/usr/share/man/man1
 	cp Amaya/amaya/*.{en,fr,TRA,STR,PRS,trans,gif,conf} \
-		debian/tmp/usr/lib/Amaya/amaya
+		debian/amaya/usr/lib/Amaya/amaya
 
-	chmod -R o+w debian/tmp/usr/lib/Amaya
+	chmod -R o+w debian/amaya/usr/lib/Amaya
 
 	dh_installdocs -a
 	dh_installexamples -a
@@ -93,5 +120,5 @@ binary-arch: build
 #source diff:                                                                  
 #	@echo >&2 'source and diff are obsolete - use dpkg-source -b'; false
 
-binary: binary-indep binary-arch
+binary:  binary-arch
 .PHONY: build clean binary-indep binary-arch binary

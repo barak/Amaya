@@ -1,0 +1,11 @@
+--- Amaya/configure.in.orig	Thu Apr 25 07:18:32 2002
++++ Amaya/configure.in	Fri Jun  7 09:32:04 2002
+@@ -267,7 +267,7 @@
+ 
+ GTK_INCLUDES="`gtk-config --cflags`"
+ AC_SUBST(GTK_INCLUDES)
+-GTK_LIBRARIES="`gtk-config --libs` -lgdk_imlib"
++GTK_LIBRARIES="`gtk-config --libs` `imlib-config --libs-gdk` -ljpeg -lpng -lz"
+ AC_SUBST(GTK_LIBRARIES)
+ GTK_OPTIONS=-D_GTK
+   no_motif=yes

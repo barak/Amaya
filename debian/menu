@@ -1,2 +1,3 @@
-?package(amaya):needs=X11 section=Apps/Net hints="Web browsers"\
-  title="amaya" command="/usr/bin/amaya"
+?package(amaya):needs=X11 section=Apps/Net\
+  title="Amaya" command="/usr/bin/amaya"\
+  hints="HTML editor,Web browsers"
