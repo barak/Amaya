@@ -1,0 +1,308 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>librdf_new_storage_from_factory</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Redland RDF Application Framework API Reference Manual"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="RDF Model Storage Class"
+HREF="storage.html#AEN9196"><LINK
+REL="PREVIOUS"
+TITLE="librdf_new_storage_from_storage"
+HREF="r9456.html"><LINK
+REL="NEXT"
+TITLE="librdf_free_storage"
+HREF="r9539.html"></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Redland RDF Application Framework API Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="r9456.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="r9539.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><H1
+><A
+NAME="AEN9487"
+></A
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_storage_from_factory</SPAN
+></SPAN
+></H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN9491"
+></A
+><H2
+>Name</H2
+>librdf_new_storage_from_factory&nbsp;--&nbsp;      Constructor - create a new librdf_storage object
+ </DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN9494"
+></A
+><H2
+>Synopsis</H2
+><DIV
+CLASS="FUNCSYNOPSIS"
+><A
+NAME="AEN9496"
+></A
+><P
+></P
+><P
+><CODE
+><CODE
+CLASS="FUNCDEF"
+>librdf_storage* <TT
+CLASS="FUNCTION"
+>librdf_new_storage_from_factory </TT
+></CODE
+>(librdf_world * <TT
+CLASS="PARAMETER"
+><I
+>world</I
+></TT
+>, librdf_storage_factory* <TT
+CLASS="PARAMETER"
+><I
+>factory</I
+></TT
+>, char * <TT
+CLASS="PARAMETER"
+><I
+>name</I
+></TT
+>, librdf_hash* <TT
+CLASS="PARAMETER"
+><I
+>options</I
+></TT
+>);</CODE
+></P
+><P
+></P
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN9508"
+></A
+><H2
+>Arguments</H2
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>world</I
+></TT
+></DT
+><DD
+><P
+>      redland world object
+    </P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>factory</I
+></TT
+></DT
+><DD
+><P
+>      the factory to use to construct the storage
+    </P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>name</I
+></TT
+></DT
+><DD
+><P
+>      name to use for storage
+    </P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>options</I
+></TT
+></DT
+><DD
+><P
+>      <SPAN
+CLASS="STRUCTNAME"
+>librdf_hash</SPAN
+> of options to initialise storage
+    </P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN9532"
+></A
+><H2
+>Description</H2
+><P
+>   If the options are present, they become owned by the storage
+   and should no longer be used.
+ </P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN9535"
+></A
+><H2
+>Return value</H2
+><P
+>    a new <SPAN
+CLASS="STRUCTNAME"
+>librdf_storage</SPAN
+> object or NULL on failure
+ </P
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="r9456.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="r9539.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_storage_from_storage</SPAN
+></SPAN
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="storage.html#AEN9196"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_free_storage</SPAN
+></SPAN
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

@@ -1,127 +1,160 @@
 #!/usr/bin/make -f
-# Made with the aid of dh_make, by Craig Small
-# Sample debian/rules that uses debhelper. GNU copyright 1997 by Joey Hess.
+# -*- makefile -*-
+# Sample debian/rules that uses debhelper.
+#
+# This file was originally written by Joey Hess and Craig Small.
+# As a special exception, when this file is copied by dh-make into a
+# dh-make output file, you may use that output file without restriction.
+# This special exception was added by Craig Small in version 0.37 of dh-make.
+#
+# Modified to make a template file for a multi-binary package with separated
+# build-arch and build-indep targets  by Bill Allombert 2001
 
+# Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-SOURCE:=amaya-src-8.5.tgz
+# This has to be exported to make some magic below work.
+export DH_OPTIONS
 
-DEB_BUILD_GNU_TYPE := $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
-DEB_HOST_GNU_TYPE := $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+# These are used for cross-compiling and for saving the configure script
+# from having to guess our platform (since we know it already)
+DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
 
-build: build-stamp
-build-stamp: patch-stamp
+CFLAGS = -Wall -g
+
+ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
+	CFLAGS += -O0
+else
+	CFLAGS += -O2
+endif
+
+ifneq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
+	INSTALLER_PROGRAM += -s
+endif
+
+
+configure: configure-stamp
+configure-stamp:
 	dh_testdir
+	# Add here commands to configure the package.
+	mkdir -p Amaya/WX
+	cd Amaya/WX && \
+	../configure --prefix=/usr --with-wx --with-dav \
+		     --enable-offical-build && \
+	cd ../..
+	# --libpng, libjpeg, libtiff (currently builtin)
+	# --gnomeprint
+	# --enable-plugins
+	#  related to wxWidget mainly
+	touch configure-stamp
 
-	# I copy the config.* because the amaya's copy doesn't
-	# cover all of debian's archs
-	cd Amaya && \
-		cp /usr/share/misc/config.{sub,guess} . \
-		&& autoconf && autoheader
 
-	#cp debian/acinclude.m4 libwww
-	cd libwww && \
-		cp /usr/share/misc/config.{sub,guess} . && \
-		aclocal-1.6 && \
-		automake-1.6 && \
-		libtoolize --force --copy && \
-		autoconf
+#Architecture 
+build: build-arch build-indep
 
-	# build gtk version
-	-mkdir Amaya/BUILD
-	cd Amaya/BUILD && ../configure --prefix=/usr --datadir=/usr/lib \
-		--without-graphic-libs --with-dav --with-gtk \
-		--build=$(DEB_BUILD_GNU_TYPE) --host=$(DEB_HOST_GNU_TYPE)
+build-arch: build-arch-stamp
+build-arch-stamp: configure-stamp 
 
-	cd Amaya/BUILD && make CFLAGS="-O2 -g -Wall" all amaya
-	touch build-stamp
+	# Add here commands to compile the arch part of the package.
+	cd Amaya/WX && \
+	$(MAKE) CFLAGS="$(CFLAGS)" && \
+	cd ../..
+	touch build-arch-stamp
 
-patch: patch-stamp
-patch-stamp: source-stamp
-	if [ -d debian/patches ]; then \
-	set -e; for i in debian/patches/*; do \
-		patch -p0 -s < $$i; \
-	done; fi
+build-indep: build-indep-stamp
+build-indep-stamp: configure-stamp 
 
-	touch patch-stamp
-
-source: source-stamp
-source-stamp:
-	tar zxf $(SOURCE)
-	touch source-stamp
+	# Add here commands to compile the indep part of the package.
+	#$(MAKE) doc
+	touch build-indep-stamp
 
 clean:
 	dh_testdir
 	dh_testroot
-	-rm -f *-stamp
+	rm -f build-arch-stamp build-indep-stamp configure-stamp
 
-	-rm -rf Amaya libwww redland
+	# Add here commands to clean up after the build process.
+	-$(MAKE) clean
+	-rm -rf Amaya/WX
 
-	dh_clean
+	dh_clean 
 
-# Build architecture-independent files here.
-binary-indep: build
+install: install-indep install-arch
+install-indep:
 	dh_testdir
 	dh_testroot
-	dh_clean -k -i
+	dh_clean -k -i 
 	dh_installdirs -i
-	dh_installdocs -i
-	dh_installexamples -i
-	dh_installmenu -i
-#	dh_installmanpages
-#	dh_undocumented
-	dh_installchangelogs -i
-	dh_strip -i
-	dh_compress -i
-	dh_fixperms -i
-	dh_installdeb -i
-	dh_shlibdeps -i
-	dh_gencontrol -i
-	dh_md5sums -i
-	dh_builddeb -i
 
-# Build architecture-dependent files here.
-binary-arch: build
-#	dh_testversion
+	# Add here commands to install the indep part of the package into
+	# debian/<package>-doc.
+	#INSTALLDOC#
+
+	dh_install -i
+
+install-arch:
 	dh_testdir
 	dh_testroot
-	dh_clean -k -a
-	dh_installdirs -a
-	dh_installmime -a
+	dh_clean -k -s 
+	dh_installdirs -s
 
-	cd Amaya/BUILD && $(MAKE) install prefix=`pwd`/../../debian/amaya/usr/lib datadir=`pwd`/../../debian/amaya/usr/lib
-	-rm -rf debian/amaya/usr/lib/bin
-	ln -s ../lib/Amaya/applis/bin/amaya debian/amaya/usr/bin/amaya
-	#mv debian/amaya/usr/lib/Amaya/doc debian/amaya/usr/share/doc/amaya/doc
-	#ln -s ../../share/doc/amaya/doc debian/amaya/usr/lib/Amaya/doc
-
-	# Add stuff the makefile forgot
-	install -m 0644 Amaya/amaya/AmayaPage.html \
-		debian/amaya/usr/lib/Amaya/amaya
+	# Add here commands to install the arch part of the package into 
+	# debian/tmp.
+	cd Amaya/WX && \
+	$(MAKE) install prefix=$(CURDIR)/debian/amaya/usr && \
+	cd ..
 	install -m 0644 debian/amaya.1 debian/amaya/usr/share/man/man1
-	cp Amaya/amaya/*.{en,fr,TRA,STR,PRS,trans,gif,conf} \
-		debian/amaya/usr/lib/Amaya/amaya
+	# find and destory any .arch-ids that have snuck it
+	-find $(CURDIR)/debian/amaya -type d -name .arch-ids -exec rm -rf '{}' \;
+	# find and destory any {arch} as well
+	-find $(CURDIR)/debian/amaya -type d -name \{arch\} -ids -exec rm -rf '{}' \;
+	# fixup symlinks in /usr/bin
+	(cd $(CURDIR)/debian/amaya/usr/bin && \
+	 rm -f amaya amaya-wx && \
+	 ln -sf /usr/lib/amaya/wx/bin/amaya amaya-wx && \
+	 ln -sf /usr/bin/amaya-wx amaya )
 
-	chmod -R o+w debian/amaya/usr/lib/Amaya
+	dh_install -s
+# Must not depend on anything. This is to be called by
+# binary-arch/binary-indep
+# in another 'make' thread.
+binary-common:
+	dh_testdir
+	dh_testroot
+	dh_installchangelogs 
+	dh_installdocs
+	dh_installexamples
+	dh_installmenu
+#	dh_installdebconf	
+#	dh_installlogrotate	
+#	dh_installemacsen
+#	dh_installpam
+	dh_installmime
+#	dh_installinit
+#	dh_installcron
+#	dh_installinfo
+	dh_installman
+	dh_link
+	dh_strip
+	dh_compress 
+	dh_fixperms
+#	dh_perl
+#	dh_python
+	dh_makeshlibs
+	dh_installdeb
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+# Build architecture independant packages using the common target.
+binary-indep: build-indep install-indep
+	$(MAKE) -f debian/rules DH_OPTIONS=-i binary-common
 
-	dh_installdocs -a
-	dh_installexamples -a
-	dh_installmenu -a
-#	dh_installmanpages
-#	dh_undocumented
-	dh_installchangelogs -a
-	dh_strip -a
-	dh_compress -a
-	dh_fixperms -a
-	dh_installdeb -a
-	dh_shlibdeps -a
-	dh_gencontrol -a
-#	dh_makeshlibs
-	dh_md5sums -a
-	dh_builddeb -a
+# Build architecture dependant packages using the common target.
+binary-arch: build-arch install-arch
+	$(MAKE) -f debian/rules DH_OPTIONS=-a binary-common
 
-#source diff:                                                                  
-#	@echo >&2 'source and diff are obsolete - use dpkg-source -b'; false
-
-binary:  binary-arch
-.PHONY: build clean binary-indep binary-arch binary
+#binary: binary-arch binary-indep
+binary: binary-arch
+.PHONY: build clean binary-indep binary-arch binary install install-indep install-arch configure

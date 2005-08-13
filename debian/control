@@ -1,18 +1,24 @@
 Source: amaya
 Section: web
 Priority: optional
-Maintainer: Steve Dunham <dunham@debian.org>
-Standards-Version: 3.5.8
-Build-Depends: bison, flex, autoconf, automake1.6, debhelper (>= 4.1.34), libtool, libjpeg62-dev, libpng12-dev, zlib1g-dev, libgtk1.2-dev, gdk-imlib11-dev, perl, libungif4-dev, autotools-dev
+Maintainer: Anand Kumria <wildfire@progsoc.org>
+Build-Depends: debhelper (>= 4.0.0), automake1.7, libpng12-dev
+Standards-Version: 3.6.2.1
 
 Package: amaya
 Architecture: any
-Depends: ${shlibs:Depends}
-Conflicts: amaya-dict-de, amaya-dict-en, amaya-dict-fr, amaya-dict-it, amaya-dict-ne, amaya-dict-se
-Replaces: amaya-dict-de, amaya-dict-en, amaya-dict-fr, amaya-dict-it, amaya-dict-ne, amaya-dict-se, amaya-common
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Recommends: amaya-doc
 Provides: www-browser
 Description: Web Browser, HTML Editor and Testbed for Draft W3C standards
- Amaya is a WYSIWYG HTML Editor and browser with support for many of the latest
- draft standards for HTML/XHTML (e.g. SVG, MathML, Annotea).  This package
- contains the gtk version of Amaya.
-
+ Amaya is a WYSIWYG HTML Editor and browser with support for many 
+ of the latest standards from the W3C and other features, such as:
+        - eXtensible HyperText Markup Language (XHTML)
+        - Scalable Vector Graphics (SVG)
+        - Math Markup Language (MathML)
+        - Cascading Style Sheets (CSS)
+        - Resource Description Framework (RDF)
+        - XML Link (XLink)
+        - XML Pointer Language (XPointer)
+        - Collaborative annoations
+ 

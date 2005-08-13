@@ -1,0 +1,214 @@
+# encoding= latin1
+0 Erreur X11 : %s\n
+1 Confirmer
+2 Absence de fichier alphabet
+3 La nouvelle vue ne peut remplacer l\'ancienne.
+4 Schémas incompatibles. Recompiler %s
+5 Erreur fatale : fontes inaccessibles
+6 Manque de mémoire
+7 Erreur fatale : connexion au serveur X impossible
+8 La vue est modifiée avant création.
+9 Table des règles saturée.
+10 Fichier incorrect : %s.STR
+11 Fichier incorrect : %s.PRS
+12 Impression terminée: %s
+13 Disposition
+14 1 page/feuille
+15 2 pages/feuille
+16 4 pages/feuille
+17 %s
+18 Pas assez de mémoire
+19 *** Amaya: erreur irrécupérable ***\n
+20 les documents modifiés vont être sauvés \n
+21 Fichier .TRA incorrect : %s
+22 %s est un frère invalide pour %s (%s)
+23 %s est un fils invalide pour %s (%s%)
+24 %s, page %d
+25 Langue
+26 Attributs
+27 Présentation standard
+28 Appliquer
+29 Caractères
+30 Souligné
+31 Graphiques
+32 Format
+33 Défaut
+34 Alignement
+35 Renfoncement
+36 Impression en cours
+37 Imprimer
+38 Alimentation manuelle
+39 Options
+40 A4
+41 US
+42 Format du papier
+43 Fermer
+44 Répertoires
+45 Le document %s existe déjà. Voulez-vous l'écraser ?
+46 Bouton gauche change la couleur du texte
+47 Bouton milieu ou droit change la couleur du fond
+48 Police
+49 Normal
+50 Gras
+51 Italique
+52 Oblique
+53 Normal
+54 Graisse
+55 Non souligné
+56 Souligné
+57 Biffé
+58 Corps (pt)
+59 Renfoncement (pt)
+60 Interligne (pt)
+61 Interligne
+62 Sauver le document
+63 Fermer sans sauver
+64 Style des caractères
+65 Couleurs
+66 XHTML
+67 Supprimer
+68 Destination
+69 Fichier PostScript
+70 Imprimante
+71 Texte à chercher
+72 Ignorer la casse
+73 Texte de remplacement
+74 Remplacement
+75 Sans remplacement
+76 Remplacement à la demande
+77 Remplacement automatique
+78 Où rechercher
+79 Avant la sélection
+80 Dans la sélection
+81 Après la sélection
+82 Dans tout le document
+83 Sauter
+84 Couleurs par défaut
+85 avant de le fermer
+86 Fermer un document
+87 Symboles mathématiques
+88 Graphiques
+89 Alphabet latin
+90 Alphabet grec
+91 Sauver
+92 Texte
+93 Graphique
+94 Symbole
+95 Image
+96 Type d'élément XML
+97 après
+98 avant
+99 autour
+100 Inclure
+101 Coller
+102 à créer
+103 Insérer
+104 Saut de page
+105 Langue de l'élément
+106 Langue héritée :
+107 Pas trouvé
+108 Recherche dans
+109 Recherche
+110 Elément en lecture seule
+111 Plus de remplacements
+112 Caractères standard
+113 Graphiques standard
+114 Format standard
+115 Géométrie standard
+116 pt
+117 Style des traits
+118 Epaisseur des traits
+119 Motif de remplissage
+120 Diviser
+121 Type d'objet
+122 Aller page numéro :
+123 any
+124 Attribut à chercher
+125 Type à chercher
+126 Natures
+127 Valeur de l'attribut
+128 Attribut inconnu
+129 Annuler
+130 Erreur dans la traduction en PostScript
+131 Commande refusée par le spooler : %s
+132 Création impossible : %s
+133 Surligné
+134 Format de document
+135 Événements
+136 Retirer l'attribut
+137 Bouton gauche change la couleur de sélection
+138 Bouton milieu ou droit change la couleur du curseur
+139 Autres ...
+140 Actualiser
+141 Couleur
+142 Couleur de l'arrière-plan
+143 Couleur du premier plan
+144 Echanger les couleurs
+145 Séléctionner une structure XML générique
+146 Où corriger
+147 Chercher/Suivant
+148 Remplacer (+ dic)
+149 Remplacer
+150 Autre langue
+151 Suivant (+ dic)
+152 incluant les caractères :
+153 Corriger...
+154 en chiffres romains
+155 Ignorer les mots
+156 en lettres capitales
+157 incluant des chiffres
+158 Erreur dans le fichier des paramètres
+159 Absence de fichier clavier
+160 Impossible d\'enregistrer le dictionnaire du document
+161 Mot "%s" incorrect refusé dans ce dictionnaire
+162 Mot "%s" ajouté dans le dictionnaire du document
+163 Correction terminée
+164 Correction interrompue
+165 Sélectionnez un document
+166 Sauvegarde du dictionnaire "%s"
+167 Pas disponible dans cette version
+168 Activer/Desactiver palette
+169 Outils
+170 Cet attribut est obligatoire, il ne peut pas être supprimé
+171 Actualiser
+172 Gauche
+173 Droite
+174 Centré
+175 Justifié
+176 Appliquer classe
+177 Sélectionner une classe ou une pseudo-classe
+178 Sélectionner
+179 Utiliser la touche F2 pour sélectionner l'élément englobant
+180 Maths
+181 Divers
+182 Relations binaires
+183 Relations binaires de négation
+184 Opérateurs
+185 Alphabet grec (majuscules)
+186 Flèches
+187 Caractères spéciaux
+188 Interrompre le chargement
+189 Document précédent
+190 Document suivant
+191 Recharger
+192 Sauver
+193 Imprimer
+194 Chercher
+195 Page personnelle
+196 Mise en évidence
+197 Important
+198 Fonte fixe
+199 Ajout d'une image
+200 Titre niveau 1
+201 Titre niveau 2
+202 Titre niveau 3
+203 Liste
+204 Liste numérotée
+205 Liste de définitions
+206 Lien
+207 Table
+208 Etes vous certain de vouloir fermer %d onglets?
+209 M'avertir quand je ferme plusieurs onglets
+210 Fermer les onglets
+211 Aucune erreur détectée
+212 Montrer les erreurs

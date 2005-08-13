@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+       "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fr" lang="fr">
+<head>
+  <title>Images et Zones actives</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <meta name="GENERATOR" content="amaya 9.1, see http://www.w3.org/Amaya/" />
+  <link href="style.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body xml:lang="fr" lang="fr">
+
+<div>
+<img alt="Amaya" src="../../resources/icons/22x22/logo.png" class="logo" />
+
+<p class="nav"><a href="Tables.html.fr" accesskey="p"><img alt="previous"
+src="../../resources/icons/misc/left.png" /></a> <a href="Manual.html.fr"
+accesskey="t"><img alt="top" src="../../resources/icons/misc/up.png" /></a>
+<a href="Math.html.fr" accesskey="n"><img alt="next"
+src="../../resources/icons/misc/right.png" /></a></p>
+</div>
+
+<div class="toc">
+<ul>
+  <li><a href="#Images">Images et Zones actives</a>
+    <ul>
+      <li><a href="#Ajouter">Ajouter une image</a></li>
+      <li><a href="#Remplacer">Remplacer une image</a></li>
+      <li><a href="#Texte">Texte de remplacement et descriptions
+      longues</a></li>
+      <li><a href="#Utiliser">Utiliser des zones actives</a></li>
+    </ul>
+  </li>
+</ul>
+</div>
+
+<div id="Client-sid">
+<h2 id="Images"><a name="L1013">Images et Zones actives</a></h2>
+
+<h3 id="Ajouter"><a name="Adding">Ajouter une image</a></h3>
+
+<p>Pour insérer une image, choisissez l'entrée <strong>Image</strong> depuis
+le menu <strong>XHTML</strong> ou cliquez sur le bouton <img alt="Image "
+src="../../resources/icons/22x22/XHTML_Image.png" longdesc="longdesc.htm" />
+(ou encore utilisez le raccourci clavier <code>Ctrl h Ctrl i</code>). Ceci
+fait apparaître une boîte de dialogue qui vous permet de rentrer le nom du
+fichier et le <a href="#Alternative">texte de remplacement</a> (Attribut
+<strong>Alt</strong>) de l'image désirée.</p>
+
+<p class="Note"><strong>Note</strong>: le texte de remplacement est
+obligatoire. Vous devez saisir un texte dans le champ correspondant.</p>
+
+<p>Pour faciliter la recherche d'un fichier image vous pouvez entrer une
+valeur de <strong>filtre</strong>, et utiliser le bouton
+<strong>filtre</strong>. Ainsi le dialogue listera seulement les fichiers qui
+correspondent à votre critère.</p>
+
+<p>Si vous souhaitez fournir une longue description (par exemple si votre
+image présente une information complexe) vous devriez la faire dans un
+document séparé et la relier en donnant l'URI comme un descripteur long
+(<strong>longdesc</strong>), également disponible dans la liste des
+<strong>Attributs</strong>.</p>
+
+<h3 id="Remplacer">Remplacer une image</h3>
+
+<p>Pour remplacer une image sélectionnez cette image en draguant sur l'image
+avec la souris. Procédez alors comme pour l'ajout d'une image (voir
+ci-dessus). Lorsqu'une image (et seulement une image) est entièrement
+sélectionnée, la boîte de dialogue des images effectue le remplacement de
+l'image sélectionnée au lieu d'insérer une nouvelle image.</p>
+
+<h3 id="Texte"><a name="Alternative">Texte de remplacement et descriptions
+longues</a></h3>
+
+<p>Pour les éléments comme les images (et autres objets multimédia) vous
+devez fournir un texte de remplacement. Celui ci sera présenté, comme à
+l'habitude, à la place de l'image par un navigateur avec un système de sortie
+vocale, ou une visualisation en Braille (utilisé par de nombreux aveugles).
+Il est également courant que les utilisateurs ayant des connections de
+mauvaise qualité demandent la vue alternée, où le texte est transmis beaucoup
+plus vite que les images.</p>
+
+<p>Le texte de remplacement devrait remplacer l'image en fonction. Par
+exemple, si l'image est utilisée pour fournir une icône de lien (c'est le cas
+de l'icône du W3C en haut de cette page) ainsi le titre de la page référencée
+serait un bon texte de remplacement.</p>
+
+<p>Il existe des cas où une image n'est utilisée que pour un effet visuel, et
+n'apporte aucune information supplémentaire à la page. Dans ce cas, il est
+approprié d'utiliser un blanc de remplacement car il faut toujours un texte
+de substitution.</p>
+
+<p>Dans les cas où l'image transporte une information importante qui n'est
+pas disponible depuis le texte du document, vous devez fournir une
+description de l'information. L'option <strong>longdesc</strong> dans la
+liste des <strong>Attributs</strong> vous permet de relier une description
+(qui est un URI - un document séparé, ou une partie nommée du document
+courant) à une image.</p>
+
+<p>Afin de donner une idée de comment une page sans les images doit être
+présentée, Amaya fournit une option <strong>Montrer la vue alternée</strong>
+dans le menu <strong>Vues</strong>. Dans le cas d'un navigateur oral, la <a
+href="Views.html.fr#Alternate">vue alternée</a> pourrait être simplement lue
+à voix haute. Sans des textes de remplacement pour les images, de nombreuses
+pages deviendraient difficiles voire impossibles à naviguer, et les
+utilisateurs seraient condamnés à trouver "leur chemin dans le noir".</p>
+
+<h3 id="Utiliser"><a name="Using">Utiliser des zones actives</a></h3>
+
+<p><strong>Amaya</strong> vous donne la possibilité d'utiliser des zones
+actives :</p>
+
+<p class="ProcedureCaption">Pour activer une zone dans un plan</p>
+<ul>
+  <li>Double-cliquez sur la zone avec le bouton gauche de la souris. L'URI
+    attaché à cette zone est alors importé.</li>
+</ul>
+
+<p class="ProcedureCaption">Pour visualiser les zones existantes</p>
+<ul>
+  <li>Choisissez <strong>Montrer les zones actives</strong> du menu
+    <strong>Vues</strong>.<br />
+
+    <p class="Note"><strong>Note</strong> : Vous pouvez aussi visualiser les
+    zones actives depuis le clavier par la séquence <code>Ctrl v Ctrl
+    t</code> (<code>Ctrl u</code><code>Ctrl t</code> sur les plates-formes
+    Windows).</p>
+  </li>
+</ul>
+</div>
+</body>
+</html>

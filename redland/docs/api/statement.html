@@ -1,0 +1,456 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>RDF Statement / Assertion / Triple</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Redland RDF Application Framework API Reference Manual"
+HREF="index.html"><LINK
+REL="PREVIOUS"
+TITLE="librdf_model_find_statements_with_options"
+HREF="r2171.html"><LINK
+REL="NEXT"
+TITLE="librdf_init_statement"
+HREF="r2237.html"></HEAD
+><BODY
+CLASS="CHAPTER"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Redland RDF Application Framework API Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="r2171.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="r2237.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="STATEMENT"
+></A
+>RDF Statement / Assertion / Triple</H1
+><P
+>This module provides the RDF statement functionality, and contains
+three parts: resource, predicate and object which are all
+nodes provided by the librdf_node class.  Statements can be added /
+removed from models.</P
+><P
+>Statements have at least one rdf:type and are always of rdf:type rdf:resource.
+They can be present in the model and/or
+<I
+CLASS="EMPHASIS"
+>reified</I
+> in which they are quoted or talked about
+by other statements.</P
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN2235"
+></A
+>RDF Statement Class</H1
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+><A
+HREF="r2237.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_init_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Initialise the librdf_statement module
+ </DT
+><DT
+><A
+HREF="r2260.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_finish_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Terminate the librdf_statement module
+ </DT
+><DT
+><A
+HREF="r2283.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new empty librdf_statement
+ </DT
+><DT
+><A
+HREF="r2310.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_statement_from_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Copy constructor - create a new librdf_statement from an existing librdf_statement
+ </DT
+><DT
+><A
+HREF="r2338.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_statement_from_nodes</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_statement from existing librdf_node objects
+ </DT
+><DT
+><A
+HREF="r2392.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_init</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      initialise a statically declared librdf_statement
+ </DT
+><DT
+><A
+HREF="r2430.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_clear</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      empty a librdf_statement of nodes
+ </DT
+><DT
+><A
+HREF="r2454.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_free_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Destructor - destroy a librdf_statement
+ </DT
+><DT
+><A
+HREF="r2478.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_get_subject</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the statement subject
+ </DT
+><DT
+><A
+HREF="r2506.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_set_subject</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Set the statement subject
+ </DT
+><DT
+><A
+HREF="r2541.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_get_predicate</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the statement predicate
+ </DT
+><DT
+><A
+HREF="r2569.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_set_predicate</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Set the statement predicate
+ </DT
+><DT
+><A
+HREF="r2604.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_get_object</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the statement object
+ </DT
+><DT
+><A
+HREF="r2632.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_set_object</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Set the statement object
+ </DT
+><DT
+><A
+HREF="r2667.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_is_complete</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Check if statement has all subject, predicate, object fields present
+ </DT
+><DT
+><A
+HREF="r2694.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_to_string</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Format the librdf_statement as a string
+ </DT
+><DT
+><A
+HREF="r2723.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_print</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      pretty print the statement to a file descriptor
+ </DT
+><DT
+><A
+HREF="r2756.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_equals</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Check if two statements are equal
+ </DT
+><DT
+><A
+HREF="r2791.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_match</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Match a statement against a 'partial' statement
+ </DT
+><DT
+><A
+HREF="r2828.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_encode</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Serialise a statement into a buffer
+ </DT
+><DT
+><A
+HREF="r2871.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_encode_parts</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Serialise parts of a statement into a buffer
+ </DT
+><DT
+><A
+HREF="r2931.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_decode</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Decodes a statement from a buffer
+ </DT
+><DT
+><A
+HREF="r2975.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_decode_parts</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Decodes a statement + context node from a buffer
+ </DT
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="r2171.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="r2237.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_find_statements_with_options</SPAN
+></SPAN
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_init_statement</SPAN
+></SPAN
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

@@ -1,0 +1,1594 @@
+dnl
+dnl Process this file with autoconf to produce a configure script.
+dnl Autoconf script for Amaya and Thot.
+dnl Daniel Veillard and Irene Vatton, 1997
+dnl
+
+dnl  ***************************************************************
+dnl
+dnl    GENERIC AUTOCONF STUFF : GUESS INFORMATIONS ON SYSTEM SETUP
+dnl
+dnl  ***************************************************************
+
+AC_PREREQ(2.53)
+AC_INIT(thotlib/internals/h/constpiv.h)
+AC_REVISION
+
+dnl
+dnl Verify that configure is not being called in the Amaya directory
+dnl
+if test -d batch -a -f configure.in ; then
+   echo 
+   echo "****************************************************************"
+   echo ERROR: You must invoke the configure script in a subidrectory
+   echo under the Amaya tree.
+   echo For example:
+   echo "  cd Amaya ; mkdir obj ; cd obj ; ../configure [your options] "
+   echo "****************************************************************"
+   echo 
+   exit 1
+fi
+
+dnl
+dnl Checks for platform information
+dnl
+
+AC_CANONICAL_SYSTEM
+AC_CONFIG_HEADER(config.h)
+
+dnl
+dnl Initializing Automake
+dnl
+
+AC_PROG_MAKE_SET
+AC_ARG_PROGRAM
+
+dnl
+dnl Checks for programs.
+dnl
+
+AC_PROG_YACC
+AC_PROG_CC
+AC_PROG_CPP
+AC_PROG_CXX
+AC_PROG_LEX
+AC_PROG_AWK
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_PROG_MAKE_SET
+AC_PROG_RANLIB
+AC_PATH_PROG(CP, cp, /bin/cp, $PATH:/bin:/usr/bin:/usr/ucb/bin)
+AC_PATH_PROG(MV, mv, /bin/mv, $PATH:/bin:/usr/bin:/usr/ucb/bin)
+AC_PATH_PROG(RM, rm, /bin/rm, $PATH:/bin:/usr/bin:/usr/ucb/bin)
+AC_PATH_PROG(MKDIR, mkdir, /bin/mkdir, $PATH:/bin:/usr/bin:/usr/ucb/bin)
+AC_PATH_PROG(ECHO, echo, /bin/echo, $PATH:/bin:/usr/bin:/usr/ucb/bin)
+AC_PATH_PROG(CAT, cat, /bin/cat, $PATH:/bin:/usr/bin:/usr/ucb/bin)
+AC_PATH_PROG(CHMOD, chmod, /bin/chmod, $PATH:/bin:/usr/bin:/usr/ucb/bin)
+AC_PATH_PROG(SED, sed, /bin/sed, $PATH:/bin:/usr/bin:/usr/ucb/bin)
+AC_PATH_PROG(AR, ar, /usr/bin/ar, $PATH:/bin:/usr/bin:/usr/ucb/bin)
+AC_PATH_PROG(DIFF, diff, /usr/bin/diff, $PATH:/bin:/usr/bin:/usr/ucb/bin)
+
+
+dnl
+dnl Checks for libraries.
+dnl
+
+AC_CHECK_LIB(socket, socket, )
+AC_CHECK_LIB(inet, connect)
+AC_CHECK_LIB(nsl, t_accept)
+AC_CHECK_LIB(dl, dlopen)
+#AC_PATH_X
+#AC_PATH_XTRA
+
+dnl
+dnl Checks for header files.
+dnl
+
+AC_HEADER_DIRENT
+AC_HEADER_STDC
+AC_HEADER_SYS_WAIT
+
+AC_CHECK_HEADERS(stdio.h)
+AC_CHECK_HEADERS(sys/types.h types.h)
+AC_CHECK_HEADERS(sys/unistd.h unistd.h)
+AC_CHECK_HEADERS(sys/fcntl.h fcntl.h)
+AC_CHECK_HEADERS(sys/limits.h limits.h)
+AC_CHECK_HEADERS(sys/stat.h stat.h)
+AC_CHECK_HEADERS(sys/file.h)
+AC_CHECK_HEADERS(sys/ioctl.h)
+AC_CHECK_HEADERS(sys/time.h time.h)
+AC_CHECK_HEADERS(sys/systeminfo.h)
+AC_CHECK_HEADERS(sys/string.h strings.h)
+AC_CHECK_HEADERS(sys/syslog.h syslog.h)
+AC_CHECK_HEADERS(sys/socket.h socket.h)
+
+# SG: not used ? => do not compile on macosx
+# AC_CHECK_HEADERS(appkit/appkit.h appkit.h)
+# AC_CHECK_HEADERS(apppkit/apppkit.h apppkit.h)
+
+AC_CHECK_HEADERS(netinet/in.h in.h)
+AC_CHECK_HEADERS(dn.h)
+AC_CHECK_HEADERS(sys/ipc.h)
+AC_CHECK_HEADERS(net/errno.h sys/errno.h errno.h)
+AC_CHECK_HEADERS(pwd.h)
+AC_CHECK_HEADERS(grp.h)
+AC_CHECK_HEADERS(arpa/inet.h inet.h)
+AC_CHECK_HEADERS(netdb.h)
+AC_CHECK_HEADERS(manifest.h)
+AC_CHECK_HEADERS(bsdtypes.h)
+AC_CHECK_HEADERS(stdefs.h)
+AC_CHECK_HEADERS(bsdtime.h)
+AC_CHECK_HEADERS(sys/select.h select.h)
+AC_CHECK_HEADERS(dnetdb.h)
+AC_CHECK_HEADERS(libc.h)
+AC_CHECK_HEADERS(stdlib.h)
+AC_CHECK_HEADERS(malloc.h)
+AC_CHECK_HEADERS(memory.h)
+AC_CHECK_HEADERS(unixlib.h)
+AC_CHECK_HEADERS(ctype.h)
+AC_CHECK_HEADERS(cursesX.h curses.h)
+AC_CHECK_HEADERS(sys/resource.h resource.h)
+AC_HEADER_DIRENT
+AC_CHECK_HEADERS(dir.h direct.h) dnl AC_HEADER_DIRENT only checks for some..
+AC_HEADER_STDC
+AC_HEADER_SYS_WAIT
+AC_HEADER_TIME
+AC_HEADER_STAT
+AC_CHECK_HEADERS(stdint.h)
+
+dnl
+dnl Checks for typedefs, structures, and compiler characteristics.
+dnl
+
+AC_C_CONST
+AC_C_INLINE
+AC_TYPE_MODE_T
+AC_TYPE_OFF_T
+AC_TYPE_SIZE_T
+AC_HEADER_TIME
+AC_STRUCT_TM
+AC_STRUCT_TIMEZONE
+AC_TYPE_UID_T
+
+dnl
+dnl Checks for library functions.
+dnl
+
+AC_FUNC_ALLOCA
+AC_TYPE_GETGROUPS
+AC_PROG_GCC_TRADITIONAL
+AC_FUNC_MEMCMP
+AC_FUNC_MMAP
+AC_TYPE_SIGNAL
+AC_FUNC_VPRINTF
+AC_CHECK_FUNCS(getcwd gethostname gettimeofday getwd mkdir mktime putenv select socket strdup strerror strftime strstr strtod strtol uname lstat strcasecmp strncasecmp strchr memcpy)
+
+#
+# Check for operating system (UNIX / WINDOWS / MACOSX )
+# ---------->
+# canonicalize the target OS
+AMAYAOS="LINUX"
+case $target_os in
+  aix*)       AMAYAOS="LINUX" ;;
+  cygwin*)    AMAYAOS="WINDOWS" ;;
+  darwin*)    AMAYAOS="MACOSX" ;;
+  freebsd2*)  AMAYAOS="LINUX" ;;
+  freebsd*)   AMAYAOS="LINUX" ;;
+  hpux*)      AMAYAOS="LINUX" ;;
+  irix*)      AMAYAOS="LINUX" ;;
+  linuxaout*) AMAYAOS="LINUX" ;;
+  linux*)     AMAYAOS="LINUX" ;;
+  mingw32*)   AMAYAOS="WINDOWS" ;;
+  netbsd*)    AMAYAOS="LINUX" ;;
+  openbsd*)   AMAYAOS="LINUX" ;;
+  osf[12]*)   AMAYAOS="LINUX" ;;
+  osf*)       AMAYAOS="LINUX" ;;
+  solaris2*)  AMAYAOS="LINUX" ;;
+  sunos4*)    AMAYAOS="LINUX" ;;
+  ultrix*)    AMAYAOS="LINUX" ;;
+esac
+AC_SUBST(AMAYAOS)
+
+if test "$AMAYAOS" = "WINDOWS" ; then
+  AC_MSG_ERROR(Windows port do not use configure - not yet tested.)
+fi
+
+OS_OPTIONS="-D_UNIX" # default is UNIX
+case $AMAYAOS in
+  LINUX)       OS_OPTIONS="-D_UNIX" ;;
+  WINDOWS)     OS_OPTIONS="-D_WINDOWS" ;; # not tested (cygwin or mingw)
+  MACOSX)      OS_OPTIONS="-D_UNIX -D_MACOS" ;;
+esac
+
+AC_ARG_WITH(GL,              [  --with-gl               enable Opengl canvas (experimental) ])
+dnl
+dnl GL canvas is disabled by default in 8.7.x
+dnl GL canvas is enabled by default in 9.x
+dnl - 8.7.x needs : GL, GLX, GLU, freetype2, gtkgl
+dnl - 9.x needs : GL, GLX, GLU, freetype2, wxGLCanvas
+dnl GL is for opengl
+dnl GlX is for XWindow integration
+dnl GLU is for tesselation algortihms (until we extract it from this lib)
+dnl (tesselation is used for polygons with holes in it...)
+dnl gtkgl is for integration of opengl in GTK
+dnl freetype2 is for text drawing (fonts ...)
+dnl wxGLCanvas is for integration of opengl in wxWidgets (WX)
+if test "$with_gl" = "" ; then
+ if test "$enable_gl" = "yes" ; then
+    with_gl="yes"
+  else
+    with_gl="no"
+  fi
+fi  
+
+# check if gtk gui should be used
+AC_ARG_WITH(gtk, [  --with-gtk              use GTK GUI toolkit ])
+if test "$with_gtk" = "yes" -o "$enable_gtk" = "yes" ; then
+  if test "$withval" = "no" ; then
+    with_gtk="no"
+  else
+    with_gtk="yes"
+  fi
+fi
+
+# check for mesa library (OpenGL)
+AC_ARG_WITH(MESA,              [  --with-mesa             enable canvas with software OpenGL implementation (Mesa) ])
+if test "$with_mesa" = "" ; then
+ if test "$enable_mesa" = "yes" ; then
+    with_mesa="yes"
+    with_gl="no"
+  else
+    with_mesa="no"
+  fi
+fi
+
+# check if wxWidgets gui should be used
+AC_ARG_WITH(wx, [  --with-wx               use wxWidgets GUI toolkit (experimental)])
+if test "$with_wx" = "yes" -o "$enable_wx" = "yes" ; then
+  if test "$withval" = "no" ; then
+    with_wx="no"
+  else
+    with_wx="yes"
+  fi
+fi
+
+# Check if at least one GUI toolkit is enabled
+if test "$with_wx" = "no" -o "$with_wx" = "" ; then
+  if test "$with_gtk" = "no" -o "$with_gtk" = "" ; then
+    # Nothing is enable so force the default GUI toolkit (GTK)
+    with_wx="no"
+    with_gtk="yes"
+  fi
+fi
+
+# mesa (software) gl implementation is default with wx (hardware gl implem can be choosen with --with-gl option)
+if test "$with_wx" = "yes" ; then
+ if test "$AMAYAOS" = "MACOSX" ; then
+    with_mesa="no"
+    with_gl="yes"
+ else
+  if test "$with_gl" = "no" ; then
+    with_mesa="yes"
+  fi
+ fi
+fi
+
+# check if no gui is enable
+AC_ARG_WITH(nogui, [  --with-nogui            do not use GUI toolkit (not maintained) ])
+if test "$with_nogui" = "yes" -o "$enable_nogui" = "yes" ; then
+  with_nogui="yes"
+  with_gtk="no"
+  with_wx="no"
+  NOGUI_OPTIONS="-D_NOGUI"
+fi
+
+# check if wxWidgets debug is enable
+AC_ARG_WITH(wxdebug,              [  --with-wxdebug          compiles wxWidgets with debuging options ])
+if test "$with_wxdebug" = "yes" ; then
+  with_wxdebug="yes"
+else
+  with_wxdebug="no"
+fi
+
+# it is possible to specify wxWidgets library path,
+# usefull for developpers who want to compile amaya with different wxWidgets version
+AC_ARG_WITH(wxsrcdir, [  --with-wxsrcdir=...     compiles Amaya with a specific wxWidgets sources path ])
+if test "$with_wxsrcdir" = "" ; then
+  with_wxsrcdir="../../wxWidgets"
+fi
+
+
+if test "$with_wx" = "yes" ; then
+  if test "$with_gtk" = "yes" ; then
+    echo 
+    echo "****************************************************************"
+    echo " ERROR: "
+    echo " More than one GUI toolkit is enable"
+    echo " Only one GUI toolkit should be enable (turn off one)"
+    echo " exemple ok :  ../configure --with-gtk "
+    echo " exemple !ok : ../configure --with-gtk --with-wx"
+    echo "****************************************************************"
+    echo 
+    exit 1
+  fi
+fi
+
+
+# setup the AMAYAGUI variable used to identify used GUI when 'make install' is called
+# now several amaya gui can coexist.
+if test "$with_gtk" = "yes" ; then
+  AMAYAGUI="gtk"
+fi
+if test "$with_gl" = "yes" ; then
+  AMAYAGUI="gl"
+fi
+if test "$with_wx" = "yes" ; then
+  AMAYAGUI="wx"
+fi
+AC_SUBST(AMAYAGUI)
+
+
+if test "$with_gtk" = "yes" ; then
+  gdkimlib_h_found="no"
+
+  # check that gtk-config exists
+  AC_CHECK_PROG(GTKCONFIG_FOUND,gtk-config,yes,no)
+  if test "$GTKCONFIG_FOUND" = no ; then
+    AC_MSG_ERROR(Cannot find gtk-config. Please install gtk development library.)
+  fi
+		    
+  GTK_INCLUDES="${GTK_INCLUDES} `gtk-config --cflags`"
+  AC_SUBST(GTK_INCLUDES)
+  GTK_LIBRARIES="`gtk-config --libs`"
+  # GL doesn't need the imlib
+  if test "${with_gl}" != "yes" ; then
+    GTK_LIBRARIES="${GTK_LIBRARIES} -lgdk_imlib"
+  else
+    gdkimlib_h_found="yes"
+  fi
+
+  AC_SUBST(GTK_LIBRARIES)
+  GTK_OPTIONS="-D_GTK"
+  no_graphic=yes
+
+  # SG : lookingfor gtkimlib includes
+  #      because not found with gtk-config on macosx
+  gtk_path_for_gdkimlib_h="`gtk-config --prefix`"
+  for ac_dir in               \
+    /sw/include/              \
+    /sw/local/include         \
+    /usr/include              \
+    /usr/local/include        \
+    "$gtk_path_for_gdkimlib_h/include" \
+    "$gtk_path_for_gdkimlib_h/local/include" \
+    ; \
+  do
+    if test -r "$ac_dir/gdk_imlib.h"; then
+      echo "found gdk_imlib.h"
+      gdkimlib_h_found="yes"
+      GTK_INCLUDES="${GTK_INCLUDES} -I$ac_dir"
+      break
+    fi
+  done 
+
+  if test "$gdkimlib_h_found" = "no" ; then
+    echo
+    echo "****************************************************************"
+    echo " ERROR: gdk_imlib.h not found -"
+    echo " [please install imlib developpement package (libimlib1-devel on mandrake)]"
+    echo "****************************************************************"
+    exit 1
+  fi											      
+fi
+
+
+if test "$with_mesa" = "yes" ; then
+  # --------- compile Mesa library (opengl) --------------- #
+
+  # check that sources of Mesa exists
+  if test ! -f ../../Mesa/Makefile ; then
+    AC_MSG_ERROR(Mesa library sources not found (opengl). Please download Mesa sources (http://www.mesa3d.org/) or remove --with-gl option !)
+  fi
+
+  OLDDIR=`pwd`
+  GL_BUILDDIR="${OLDDIR}/Mesa"
+
+  echo "---> Install Mesa library into ${GL_BUILDDIR}"
+
+  mkdir -p ${GL_BUILDDIR}
+  cp -r ../../Mesa/* ${GL_BUILDDIR}
+
+  echo "---> Install Mesa library into ${GL_BUILDDIR} - DONE"
+
+  # this is the flags used to build amaya with OpenGL
+  GL_OPTIONS="-D_GL"
+  GL_INCLUDES="-I${GL_BUILDDIR}/include"
+  GL_LIBRARIES="-Wl,-rpath,${GL_BUILDDIR}/lib -L${GL_BUILDDIR}/lib -lGL -lGLU"
+  AC_SUBST(GL_BUILDDIR)
+  AC_SUBST(GL_INCLUDES)
+  AC_SUBST(GL_LIBRARIES)
+fi
+
+if test "$with_wx" = "yes" ; then
+  # WX_SRCDIR is better to understand the code than with_wxsrcdir variable
+  if test ! -f $with_wxsrcdir/Makefile.in ; then
+    $with_wxsrcdir = ../../wxWidgets
+  fi
+  cd $with_wxsrcdir
+  WX_SRCDIR=`pwd`
+  cd -
+  AC_SUBST(WX_SRCDIR)
+
+  # check that sources of wxWidgets exists
+  if test ! -f $WX_SRCDIR/Makefile.in ; then
+    AC_MSG_ERROR(wxWidgets library sources not found. Please download wxWidgets sources (http://www.wxwidgets.org/), or remove --with-wx option, or check --with-wxsrcdir is correct !)
+  fi
+
+  # --------- configure wxWidgets library --------------- #
+  echo "---> Configuring wxWidgets library."
+  OLDDIR=`pwd`
+  # create the build directory (debug or release)
+  if test $with_wxdebug = yes ; then
+    WX_BUILDDIR="wxWidgets_DEBUG"
+  else
+    WX_BUILDDIR="wxWidgets_RELEASE"
+  fi
+  mkdir -p $WX_BUILDDIR
+  cd $WX_BUILDDIR
+  AC_SUBST(WX_BUILDDIR)
+
+  # remove old configure cached options
+  rm -f configarg.cache
+
+  # setup configure options
+  
+  # disable unused wx features
+  #   --disable-htmlhelp
+  #   --disable-html
+  #   --disable-docview
+  #   --disable-mdi
+  #   --disable-mdidoc
+  #   --disable-protocols
+  #   --disable-ftp
+  #   --disable-http
+  #   --disable-sound
+  #   --disable-backtrace # to avoid the buggy popup when an assert occurs
+  WXCONFIGURE_TUNNING_OPTION="--disable-printarch --disable-htmlhelp --disable-html --disable-docview --disable-mdi --disable-mdidoc --disable-sound --disable-backtrace"
+  
+  if test "$AMAYAOS" = "LINUX" ; then
+    # LINUX
+    #   --enable-gtk2           use GTK+ 2.0 if available (EXPERIMENTAL)
+    #   --disable-shared        create only static library (.a)
+    #   --enable-unicode        compile wxString with Unicode support
+    #   --with-gtk              use GTK+
+    #   --with-opengl           use OpenGL (or Mesa)
+    WXCONFIGURE_OPTION="--with-opengl --with-gtk --enable-gtk2 --enable-unicode --enable-ipc --disable-shared  --with-libpng=builtin --with-libjpeg=builtin --with-libtiff=builtin $WXCONFIGURE_TUNNING_OPTION"
+  fi
+  if test "$AMAYAOS" = "MACOSX" ; then
+    # MACOSX
+    WXCONFIGURE_OPTION="--with-opengl --disable-shared --enable-unicode --with-libpng=builtin --with-libjpeg=builtin"
+  fi
+  if test $with_wxdebug = yes ; then
+    WXCONFIGURE_OPTION="$WXCONFIGURE_OPTION --enable-debug"
+    # SG: I've disabled other debug options because the lib has bugs when using these flags \
+    # (maybe because these flags are not often used by wxWidgets developpers)
+    # WXCONFIGURE_OPTION="$WXCONFIGURE_OPTION --enable-debug --enable-debug_cntxt --enable-debug_gdb --enable-debug_info --enable-debug_flag --enable-mem_tracing"
+  else
+    WXCONFIGURE_OPTION="$WXCONFIGURE_OPTION --enable-optimise"
+  fi
+
+  # launch the configure
+  if test "$with_mesa" = "yes" ; then
+    # use internal OpenGL (mesa) libraries
+    $WX_SRCDIR/configure CFLAGS="-I${GL_BUILDDIR}/include" CXXFLAGS="-I${GL_BUILDDIR}/include" CPPFLAGS="-I${GL_BUILDDIR}/include" $WXCONFIGURE_OPTION
+    #../$WX_SRCDIR/configure CFLAGS="-I${GL_BUILDDIR}/include" CXXFLAGS="-I${GL_BUILDDIR}/include" CPPFLAGS="-I${GL_BUILDDIR}/include" OPENGL_LIBS="-lGL -lGLU" $WXCONFIGURE_OPTION
+    if test $? != 0 ; then
+      AC_MSG_ERROR(A problem occurs durring wxWidgets library configuration. Please fix the problem and try again.)
+    fi
+  else
+    # use OpenGL system libraries
+    $WX_SRCDIR/configure $WXCONFIGURE_OPTION    
+  fi
+  cd $OLDDIR
+  echo "---> Configuring wxWidgets library. - DONE"
+
+  # --------- configuring wxWidgets paths --------------- #
+  WXCONFIG=$WX_BUILDDIR/wx-config
+  # check that wx-config exists
+  if test ! -f $WXCONFIG ; then
+    AC_MSG_ERROR(Cannot find wx-config. Please download wxWidgets (http://www.wxwidgets.org/))
+  fi
+
+  # setup include paths  
+  # "-I$WX_SRCDIR/src/png -I$WX_SRCDIR/src/jpeg -I$WX_SRCDIR/src/tiff" is a temporary patch to fix incorrect generated paths by wx-config --cxxflags (remove it when wxWidgets will be fixed)
+  WX_INCLUDES="-I$WX_SRCDIR/src/png -I$WX_SRCDIR/src/jpeg -I$WX_SRCDIR/src/tiff `$WXCONFIG --cxxflags`"
+  AC_SUBST(WX_INCLUDES)
+
+  # setup libraries paths
+  WX_LIBRARIES=""
+  WX_LIBRARIES_EXTRA_PARAM=""
+  WXCONFIG_LIBS_PARAM="xrc,adv,core,xml,net"
+  # GL is used ?
+  if test "$with_gl" = "yes" -o "$with_mesa" = "yes" ; then
+    WXCONFIG_LIBS_PARAM="${WXCONFIG_LIBS_PARAM},gl"
+    # SG: this is a mistery why wx-config doesn't add these needed option on macosx
+    if test "$AMAYAOS" = "MACOSX" ; then
+      WX_LIBRARIES_EXTRA_PARAM="-framework OpenGL -framework AGL"
+    fi
+  fi
+ if test "$AMAYAOS" = "MACOSX" ; then
+   WXCONFIG_LIBS_PARAM="${WXCONFIG_LIBS_PARAM},html"
+ fi
+
+  WX_LIBRARIES="`$WXCONFIG --libs $WXCONFIG_LIBS_PARAM` ${WX_LIBRARIES_EXTRA_PARAM}"
+  AC_SUBST(WX_LIBRARIES)
+  
+  WX_LINKDEPS="`$WXCONFIG --linkdeps`"
+  AC_SUBST(WX_LINKDEPS)
+
+  WX_OPTIONS="-D_WX"
+  # --------- configuring wxWidgets paths - DONE --------------- #
+
+  no_graphic=yes
+fi
+
+if test "${GCC}" = "yes"; then
+   CPP="${CPP} -x c"
+fi
+
+dnl  ***************************************************************
+dnl
+dnl    SPECIFIC STUFF : CONFIGURATION OPTIONS FOR AMAYA
+dnl
+dnl  ***************************************************************
+
+# Do not care with libpng or libjpeg with wx version because we use the wxwidgets one.
+if test "$with_wx" = "no" ; then
+  # We don't use our graphic libraries for the pure GTK version (without GL)
+
+  # if configure has option --with-graphiclibs then dont check for system graphic libs
+  # force amaya static graphic libs to be used
+  AC_ARG_WITH(graphiclibs, [  --with-graphiclibs      use static libjpeg, libpng.])
+  if test "$with_graphiclibs" = "yes" -o "$enable_graphiclibs" = "yes" ; then
+    no_graphic="no"
+  else
+    no_graphic="yes"
+  fi
+		  
+  if test "$no_graphic" = yes; then
+  dnl
+      AC_MSG_CHECKING([for libjpeg version = 6b])
+      AC_EGREP_CPP([x 62 *x],
+          [#include <jpeglib.h>
+           x JPEG_LIB_VERSION x],
+  dnl
+      AC_MSG_RESULT([yes])
+        JPEGINCL=''
+        LIBJPEG='-ljpeg'
+        MAKEJPEG=['#'],
+  dnl
+        AC_MSG_RESULT([no])
+        JPEGINCL='-I$(THOTDIR)/libjpeg'
+        LIBJPEG='../libjpeg.a'      dnl LIBJPEG goes into amaya/Makefile.in
+        )
+  dnl    
+  dnl
+    AC_MSG_CHECKING([for libpng version = 1.0.x or 1.2.x])
+    AC_EGREP_CPP([x \"1.[02]\..*\" *x],
+        [#include <png.h>
+	x PNG_LIBPNG_VER_STRING x],
+  dnl
+    AC_MSG_RESULT([yes])
+        PNGINCL=''
+        LIBPNG='-lpng'
+        LIBZ=''
+	MAKEPNG=['#'],
+dnl
+    AC_MSG_RESULT([no])
+  	    PNGINCL='-I$(THOTDIR)/libpng -I$(THOTDIR)/libpng/zlib'
+        LIBPNG='../libpng.a'
+        LIBZ='../libz.a'
+        )
+  else
+    JPEGINCL='-I$(THOTDIR)/libjpeg'
+    LIBJPEG='../libjpeg.a'
+    PNGINCL='-I$(THOTDIR)/libpng -I$(THOTDIR)/libpng/zlib'
+    LIBPNG='../libpng.a'
+    LIBZ='../libz.a'
+  fi
+  dnl
+  AC_SUBST(LIBJPEG)
+  AC_SUBST(LIBPNG)
+  AC_SUBST(LIBZ)
+  AC_SUBST(MAKEJPEG)
+  AC_SUBST(MAKEPNG)
+fi # with_wx = no
+
+# the wx version
+AMAYAWX_MAJVER=9
+AMAYAWX_MINVER=2
+AMAYAWX_SUBVER=1
+
+#the old version (to remove when switching on wx)
+AMAYA_MAJVER=8
+AMAYA_MINVER=8
+AMAYA_SUBVER=1
+
+if test "$with_wx" = "yes" ; then
+  APP_MAJVER=$AMAYAWX_MAJVER
+  APP_MINVER=$AMAYAWX_MINVER
+  APP_SUBVER=$AMAYAWX_SUBVER
+else
+  APP_MAJVER=$AMAYA_MAJVER
+  APP_MINVER=$AMAYA_MINVER
+  APP_SUBVER=$AMAYA_SUBVER
+fi
+
+if test $APP_SUBVER = 0 ; then
+  APP_VER=$APP_MAJVER.$APP_MINVER
+else
+  APP_VER=$APP_MAJVER.$APP_MINVER.$APP_SUBVER
+fi
+
+# generate a header file with the right version number, so it can be used on windows AND on unix
+APPVERSION_H=../thotlib/internals/h/appversion.h
+echo "#ifndef __APPVERSION_H__" > $APPVERSION_H
+echo "#define __APPVERSION_H__" >> $APPVERSION_H
+echo "#ifdef _WX" >> $APPVERSION_H
+echo "#define APP_MAJVER $AMAYAWX_MAJVER" >> $APPVERSION_H
+echo "#define APP_MINVER $AMAYAWX_MINVER" >> $APPVERSION_H
+echo "#define APP_SUBVER $AMAYAWX_SUBVER" >> $APPVERSION_H
+echo "#else /* _WX */" >> $APPVERSION_H
+echo "#define APP_MAJVER $AMAYA_MAJVER" >> $APPVERSION_H
+echo "#define APP_MINVER $AMAYA_MINVER" >> $APPVERSION_H
+echo "#define APP_SUBVER $AMAYA_SUBVER" >> $APPVERSION_H
+echo "#endif /* _WX */" >> $APPVERSION_H
+echo "#endif /* __APPVERSION_H__ */" >> $APPVERSION_H
+
+dnl
+dnl We use a special versoin of cextract patched for alignment
+dnl to build the signatures of the modules functions located in f subdirs
+dnl
+CEXTRACT_VER="1.7"
+CEXTRACT_FLAGS="+O"
+
+# Check if debug is enable
+AC_ARG_WITH(debug,              [  --with-debug          compiles Amaya with debuging options (-g) ])
+if test "$with_debug" = "yes" ; then
+  with_debug="yes"
+  CFLAGS="-g"
+  CXXFLAGS="-g"
+else
+  with_debug="no"
+  CFLAGS="-O2"
+  CXXFLAGS="-O2"
+fi
+
+if test "${CC}" = "gcc" ; then
+ CFLAGS="${CFLAGS} -Wall"
+  case "${host}" in
+      *-*-irix5* | *-*irix6* )
+         CFLAGS="${CFLAGS} -fsigned-char"
+      ;;
+  esac
+fi
+
+if test "$ac_cv_c_const" = "no" ; then
+  CFLAGS="${CFLAGS} -DCONST= "
+fi
+
+
+# force C mode (-x c)
+CFLAGS="${CFLAGS} -x c"
+
+# C++ options (-x c++)
+CXX_OPTIONS="-D__cplusplus"
+CXXFLAGS="${CXXFLAGS} -Wall -x c++ ${CXX_OPTIONS}"
+
+# setup LDFLAGS
+# on macosx, specific flags must be set to avoid conflicts with allready installed libwww
+# for exemple it's possible to install libwww with fink (fink install libwww)
+# to avoid conflicts, we just force the linker to search for specified amaya path first
+if test "$AMAYAOS" = "MACOSX" ; then
+  LDFLAGS="-Wl,-search_paths_first"
+else
+  LDFLAGS=""
+fi
+
+dnl
+dnl Check for availability of amaya sources
+dnl
+
+build_amaya="yes"
+
+if test "$with_amaya" = "no" ; then
+    build_amaya="no"
+else
+  if test ! -f $srcdir/amaya/Makefile.in ; then
+    AC_MSG_WARN(Amaya browser/editor sources not found, disabling Amaya build !)
+    build_amaya="no"
+  fi
+fi
+
+dnl
+dnl Check for additionnal packages
+dnl use AC_CONFIG_SUBDIRS to launch configure in the subdir
+dnl
+
+if test "$with_gl" = "yes" -o "$with_mesa" = "yes" ; then
+
+  # if with_gl is on then test system opengl library (GL & GLU)
+  if test "$with_gl" = "yes" ; then
+    if test "$AMAYAOS" = "LINUX" ; then
+	# setup a list of standard paths int LDFLAGS
+	# for AC_CHECK_LIB library existance checks
+	LIBS_OLD=$LIBS
+	LDFLAGS_OLD=$LDFLAGS
+	LDFLAGS="-L/usr/X11R6/lib -L/usr/lib -L/usr/local/lib"
+  	AC_MSG_CHECKING([OpenGL])
+	for ac_dir in               		\
+		/usr/include			\
+		/usr/X11R6/include 		\
+		/usr/local/include		\
+		; \
+	do  if test -r "$ac_dir/GL/gl.h" ; then
+          gl_inc="yes"
+          GL_INC_I="$ac_dir"
+          if test "$ac_dir" != "/usr/include" ; then
+            GL_INCLUDES="-I$ac_dir"
+	  fi
+          AC_CHECK_LIB(GL,glBegin,,AC_MSG_ERROR(Cannot find OpenGL library. Please install OpenGL.))
+          AC_MSG_RESULT([yes])
+       	  break	
+        fi
+	done
+	
+  	AC_MSG_CHECKING([GLU])	
+	for ac_dir in               		\
+		/usr/include		\
+		/usr/X11R6/include		\
+		/usr/local/include		\
+		; \
+	do  if test -r "$ac_dir/GL/glu.h" ; then
+          glu_inc="yes"
+          GL_INC_II="$ac_dir"
+          if test "$ac_dir" != "/usr/include" ; then
+            if test "$ac_dir" != "$GL_INC_I" ; then
+              GL_INCLUDES="$GL_INCLUDES -I$ac_dir"
+            fi
+          fi
+          # now test that glu version is >= 1.2
+          AC_CHECK_LIB(GLU,gluNewTess,,AC_CHECK_LIB(glu32,gluNewTess,,AC_MSG_ERROR(Cannot find OpenGL GLU lib or existing version is < 1.2. Pease upgrade your GLU library.)))
+          AC_MSG_RESULT([yes])
+       	  break	
+        fi
+        done
+	LDFLAGS=$LDFLAGS_OLD
+	LIBS=$LIBS_OLD
+
+    if test "$gl_inc" = "" ; then	        
+      AC_MSG_WARN(Opengl headers (gl.h) not found !!)
+      AC_MSG_WARN(Disabling opengl build !)
+      with_gl="no"
+      GL_OPTIONS=	
+      GL_INCLUDES=	
+      GL_LIBRARIES=
+      exit 1;
+    fi
+
+    if test "$glu_inc" = "" ; then
+      AC_MSG_WARN(Glu headers (glu.h) not found !!)
+      AC_MSG_WARN(Disabling opengl build !)
+  
+      with_gl="no"
+      GL_OPTIONS=	
+      GL_INCLUDES=	
+      GL_LIBRARIES=
+      exit 1;
+    fi
+    fi # AMAYAOS = LINUX
+
+    if test "$AMAYAOS" = "MACOSX" ; then
+      GL_OPTIONS="-D_GL"	
+      GL_INCLUDES="-I/System/Library/Frameworks/OpenGL.framework/Versions/Current/Headers/"	
+      GL_LIBRARIES=""
+      GL_BUILDDIR=""
+    else
+      GL_LIBRARIES="-L/usr/lib -L/usr/X11R6/lib -lGL -lGLU"
+      GL_OPTIONS="-D_GL"
+    fi
+
+    AC_SUBST(GL_INCLUDES)
+    AC_SUBST(GL_LIBRARIES)
+  fi # if with_gl
+	
+  # ---------- Check for gtkglarea.h only if gtk gui is selected
+  if test "$with_gtk" = "yes" ; then
+    AC_MSG_CHECKING([GTKGLAREA])
+    for ac_dir in               		\
+	  	/usr/include/GL			\
+		/usr/include 			\
+		/usr/X11R6/include/GL   	\
+		/usr/X11R6/include 		\
+		/usr/local/include		\
+		/usr/local/include/GL		\
+		; \
+    do  if test -r "$ac_dir/gtkgl/gtkglarea.h" ; then
+      gtkgl_inc="yes"
+        if test "$ac_dir" != "/usr/include" ; then
+          if test "$ac_dir" != "$GL_INC_II" ; then
+            if test "$ac_dir" != "$GL_INC_I" ; then
+              GTK_GL_INCLUDES="-I$ac_dir"
+            fi
+          fi
+        fi
+        AC_MSG_RESULT([yes])
+        break	
+    fi
+    done
+    GTK_GL_LIBRARIES="-lgtkgl"
+
+    if test "$gtkgl_inc" = "" ; then
+      AC_MSG_WARN(Gtkglarea headers (gktglarea.h) not found !!)
+      AC_MSG_WARN(Disabling opengl build !)
+      with_gl="no"
+      exit 1;
+    fi
+    AC_SUBST(GTK_GL_INCLUDES)
+    AC_SUBST(GTK_GL_LIBRARIES)
+  fi # "$with_gtk" = "yes"
+
+  # ---------- Checking for freetype lib (fonts library)
+  if test "$AMAYAOS" = "MACOSX" ; then
+     # we use a static version of freetype lib for mac osx
+     # ** search for includes (freetype.h)
+     for ac_dir in               \
+         /Developer/SDKs/MacOSX10.1.5.sdk/usr/X11R6/include/  \
+         /Developer/SDKs/MacOSX10.1.5.sdk/usr/X11R6/include/freetype2/  \
+         /Developer/SDKs/MacOSX10.2.8.sdk/usr/X11R6/include/  \
+         /Developer/SDKs/MacOSX10.2.8.sdk/usr/X11R6/include/freetype2/  \
+         /Developer/SDKs/MacOSX10.3.0.sdk/usr/X11R6/include/  \
+         /Developer/SDKs/MacOSX10.3.0.sdk/usr/X11R6/include/freetype2/  \
+         /Developer/SDKs/MacOSX10.3.9.sdk/usr/X11R6/include/  \
+         /Developer/SDKs/MacOSX10.3.9.sdk/usr/X11R6/include/freetype2/  \
+         /Developer/SDKs/MacOSX10.4.0.sdk/usr/X11R6/include/  \
+         ; \
+         do
+         if test -r "$ac_dir/ft2build.h"; then
+            FREETYPE_INCLUDES="${FREETYPE_INCLUDES} -I$ac_dir"
+            break
+         fi
+     done
+     # ** search for binary (libfreetype.a)
+     for ac_dir in               \
+         /Developer/SDKs/MacOSX10.1.5.sdk/usr/X11R6/lib/  \
+         /Developer/SDKs/MacOSX10.2.8.sdk/usr/X11R6/lib/  \
+         /Developer/SDKs/MacOSX10.3.0.sdk/usr/X11R6/lib/  \
+         /Developer/SDKs/MacOSX10.3.9.sdk/usr/X11R6/lib/  \
+         /Developer/SDKs/MacOSX10.4.0.sdk/usr/X11R6/lib/  \
+         ; \
+         do
+         if test -r "$ac_dir/libfreetype.a"; then
+            FREETYPE_LIBRARIES="$ac_dir"
+            break
+         fi
+     done
+  else # "$AMAYAOS" = "MACOSX"
+     if test ! -f $(which freetype-config) ; then
+       AC_MSG_ERROR(Cannot find freetype library (font load/display routines). Please install it.)
+     fi
+     FREETYPE_INCLUDES=`freetype-config --cflags`
+     FREETYPE_LIBRARIES=`freetype-config --libs`
+  fi # "$AMAYAOS" = "MACOSX"
+  AC_SUBST(FREETYPE_INCLUDES)
+  AC_SUBST(FREETYPE_LIBRARIES)
+
+
+
+  # ----------- START CHECKING XFT
+  # checking for Xft which is only used on GTK version (not wxWidgets)
+if test "$with_gtk" = "yes" ; then
+
+  # checking for xft lib
+  # (not used because xft-config doesn't exist on debian stable)
+  #if test ! -f $(which xft-config) ; then
+  #  AC_MSG_ERROR(Cannot find Xft library. Please install it.)
+  #fi
+  #XFT_INCLUDES=`xft-config --cflags`
+  #XFT_LIBRARIES=`xft-config --libs`
+  #AC_SUBST(XFT_INCLUDES)
+  #AC_SUBST(XFT_LIBRARIES)
+
+  AC_MSG_CHECKING([Xft])
+  for ac_dir in               		\
+		/usr/include 			\
+		/usr/X11R6/include 		\
+		/usr/local/include		\
+		/usr/include/X11/Xft		\
+		/usr/X11R6/include/X11/Xft	\
+		/usr/local/include/X11/Xft	\
+		/usr/include/X11/Xft1		\
+		/usr/X11R6/include/X11/Xft1	\
+		/usr/include/Xft2/X11/Xft/      \
+		/usr/local/include/X11/Xft1	\
+		/usr/include/X11/Xft2		\
+		/usr/X11R6/include/X11/Xft2	\
+		/usr/local/include/X11/Xft2	\
+		; \
+  do  if test -r "$ac_dir/Xft.h" ; then
+    xft_inc="yes"
+    XFT_INCLUDES="-I$ac_dir"
+    AC_MSG_RESULT([yes])	
+    break	
+  fi
+  done	
+  if test "$xft_inc" = "" ; then
+    AC_MSG_WARN(Xft 2 headers (Xft.h) not found !!)
+    AC_MSG_WARN(Disabling opengl build !)
+      with_gl="no"
+      exit 1;
+  fi
+
+  AC_MSG_CHECKING([Xft-library])
+ 
+  for ac_dir in               		\
+		/usr/lib 			\
+		/usr/X11R6/lib	 		\
+		/usr/local/lib	 		\
+		; \
+  do  if test -r "$ac_dir/libXft.so" ; then
+    xft_lib="yes"
+    XFT_LIBRARIES="-L$ac_dir -lXft"
+    AC_MSG_RESULT([yes])
+    break	
+  fi
+  done	
+  if test "$xft_lib" = "" ; then
+    AC_MSG_WARN(Xft 2 librarie (libXft.so) not found !!)
+    AC_MSG_WARN(Disabling opengl build !)
+      with_gl="no"
+      exit 1;
+  fi
+
+  AC_SUBST(XFT_INCLUDES)
+  AC_SUBST(XFT_LIBRARIES)
+  # END CHECKING XFT #
+fi # "$with_gtk" = "yes"
+
+
+  AC_MSG_CHECKING([gcc3])	
+  for ac_dir in               		\
+		/usr/lib 			\
+		/usr/X11R6/lib 		\
+		/usr/local/lib		\
+		; \
+  do  if test -r "$ac_dir/libstdc++.so.5" ; then
+    stdglu_inc="yes"
+    STDCPP_LIBRARIES="-lstdc++"
+    STDCPP_INCLUDES=""
+    AC_MSG_RESULT([yes])	
+    break
+  fi
+  done
+
+# not used in makefiles
+#  AC_SUBST(STDCPP_INCLUDES)
+#  AC_SUBST(STDCPP_LIBRARIES)
+
+  NOPRINT=""
+  PRINTIFNOTGL=" print_prog"
+
+else # if with_gl or with_mesa
+
+  NOPRINT=""
+  PRINTIFNOTGL=" print_prog"
+
+fi # if with_gl or with_mesa
+
+AC_SUBST(PRINTIFNOTGL)
+AC_SUBST(NOPRINT)
+
+
+AC_ARG_ENABLE(svg,           [  --disable-svg           remove SVG support ])
+AC_ARG_ENABLE(annot,         [  --disable-annot         remove Annotations support ])
+AC_ARG_ENABLE(redland,       [  --disable-redland       disable the redland RDF library ])
+AC_ARG_ENABLE(system-redland,       [  --enable-system-redland try the redland RDF system library ])
+AC_ARG_ENABLE(bookmarks,     [  --enable-bookmarks      enables experimental bookmark support ])
+AC_ARG_ENABLE(templates,     [  --enable-templates      enables experimental templates support ])
+AC_ARG_ENABLE(generic-xml,   [  --disable-generic-xml   remove Generic XML support ])
+
+dnl
+dnl plugins support is disabled by default
+dnl
+
+if test "$with_plugin" = "" ; then
+  if test "$enable_plugin" = "yes" ; then
+    with_plugin="yes"
+  else
+    with_plugin="no"
+  fi
+fi  
+
+dnl
+dnl svg is enabled by default
+dnl
+if test "$with_svg" = "" ; then
+    if test "$enable_svg" = "no" ; then
+	with_svg="no"
+    else
+	with_svg="yes"
+    fi
+fi
+
+dnl
+dnl annotations is enabled by default
+dnl
+if test "$with_annot" = "" ; then
+    if test "$enable_annot" = "no" ; then
+	with_annot="no"
+    else
+	with_annot="yes"
+    fi
+else
+    with_annot="yes"
+fi
+
+
+dnl
+dnl The redland library is enabled by default
+dnl
+if test "$with_redland" = "" ; then
+    if test "$enable_redland" = "no" ; then
+	with_redland="no"
+    else
+	with_redland="yes"
+    fi
+else
+    with_redland="yes"
+fi
+
+dnl
+dnl The redland library is disabled by default
+dnl
+if test "$with_system_redland" = "" ; then
+    if test "$enable_system_redland" = "yes" ; then
+	with_redland="yes"
+	with_system_redland="yes"
+    else
+	with_system_redland="no"
+    fi
+else
+    with_system_redland="no"
+fi
+
+dnl
+dnl The bookmarks support is disabled by default
+dnl
+if test "$with_bookmarks" = "" ; then
+    if test "$enable_bookmarks" = "yes" ; then
+	with_bookmarks="yes"
+	with_redland="yes"
+    else
+	with_bookmarks="no"
+    fi
+else
+    with_bookmarks="no"
+fi
+
+dnl
+dnl The templates support is disabled by default
+dnl
+if test "$with_templates" = "" ; then
+   if test "$with_wx" = "yes"; then
+       if test "$enable_templates" = "yes" ; then
+	  with_templates="yes"
+       else
+          with_templates="no"
+       fi
+   else	
+      AC_MSG_WARN(Templates are only available in WX version !!)
+      AC_MSG_WARN(Disabling templates)
+      with_templates="no"
+   fi
+else
+    with_templates="no"
+fi
+
+dnl
+dnl Generic XML support enabled by default
+dnl
+if test "$with_generic_xml" = "" ; then
+    if test "$enable_generic_xml" = "no" ; then
+	with_generic_xml="no"
+	GENERIC_XML_OPTIONS=
+    else
+	with_generic_xml="yes"
+	GENERIC_XML_OPTIONS=-DXML_GENERIC
+    fi
+fi
+
+dnl
+dnl WebDAV support enabled by default
+dnl
+AC_ARG_WITH(dav,            [  --with-dav              enable WebDAV support (experimental) ])
+if test "$with_dav" = "" ; then
+  with_dav="yes"
+fi
+if test "$with_dav" = "yes" ; then
+   DAV_OPTIONS=-DDAV
+   DAVDIR="davlib"
+   LIBDAV="libwwwdav"
+   WITHDAV="--with-dav" 
+   WWWDAV="-lwwwdav" 
+else
+   with_dav="no"
+   DAV_OPTIONS=""
+   DAVDIR=""
+   LIBDAV=""
+   WITHDAV="" 
+   WWWDAV="" 
+fi
+
+
+if test "$build_amaya" = "yes" ; then
+    if test ! -f $srcdir/../libwww/Makefile.in ; then
+	AC_MSG_WARN(libwww sources not found !!)
+	AC_MSG_WARN(Disabling Amaya build !)
+	build_amaya="no"
+    fi
+
+    if test ! -f $srcdir/amaya/MathML.S ; then
+	if test "$with_math" = "yes" ; then
+	    AC_MSG_WARN(MathML sources not found !!)
+	    AC_MSG_WARN(Disabling Math build !)
+	    with_math="no"
+	    MATH_OPTIONS=
+	fi
+    fi
+
+    if test ! -f $srcdir/amaya/SVG.S ; then
+	if test "$with_svg" = "yes" ; then
+	    AC_MSG_WARN(SVG sources not found !!)
+	    AC_MSG_WARN(Disabling SVG build !)
+	    with_svg="no"
+	    SVG_OPTIONS=
+	fi
+    fi
+
+    if test ! -f $srcdir/annotlib/Makefile.in ; then
+	if test "$with_annot" = "yes" ; then
+	    AC_MSG_WARN(Annotation makefile not found !!)
+	    AC_MSG_WARN(Disabling Annotations build !)
+	    with_annot="no"
+	fi
+    fi
+
+    if test "$with_redland" = "yes" -a "$with_annot" = "no" -a "$with_bookmarks" = "no"; then
+       AC_MSG_WARN(Disabling redland as neither annotations nor bookmarks are enabled !)
+       MAKERAPTOR=['#']
+       with_raptor="no"
+    fi
+
+    redland_compile_source=yes
+    if test "$with_redland" = "yes" -a "$with_system_redland" = "yes" ; then
+       # check to see if we have a redland library
+       AC_MSG_CHECKING(system redland library)
+       redland_min_version=0.9.16
+       REDLAND_CONFIG="redland-config"
+       REDLAND_VERSION=`$REDLAND_CONFIG --version`
+       redland_version_dec=`echo $REDLAND_VERSION | awk -F. '{printf("%d\n", 10000*$1 + 100*$2 + $3)};'`
+       redland_min_version_dec=`echo $redland_min_version | awk -F. '{printf("%d\n", 10000*$1 + 100*$2 + $3)};'`
+       if test $redland_version_dec -lt $redland_min_version_dec; then
+         AC_MSG_RESULT(no - found version $REDLAND_VERSION and minimal version is $redland_min_version)
+       else
+         AC_MSG_RESULT(yes - found version $REDLAND_VERSION)
+	 AC_MSG_CHECKING(checking for redland headers)
+	 dnl  We should use awk here and remove the -I from the following line
+         dnl REDLAND_HEADERS=`$REDLAND_CONFIG --cflags`
+	 REDLAND_HEADERS=""
+	 if test -e "/usr/include/redland.h" ; then
+	   REDLAND_HEADERS="/usr/include";
+	 else 
+           if test -e "/usr/local/include/redland.h" ; then
+	     REDLAND_HEADERS="/usr/local/include";
+           fi
+         fi	    
+	 if test $REDLAND_HEADERS != ""; then
+           AC_MSG_RESULT(yes - have development version)
+           redland_compile_source=no
+	 else
+           AC_MSG_RESULT(no - no development version)
+         fi
+       fi
+    fi
+
+    if test "$with_redland" = "yes" -a "$redland_compile_source" = "yes" \
+	-a ! -d "$srcdir/../redland" ; then
+       AC_MSG_WARN(Redland source dir not found !!)
+       AC_MSG_WARN(Disabling redland build !)
+       MAKEREDLAND=['#']
+       with_redland="no"
+    fi
+
+    if test "$with_redland" = "yes" ; then
+       AMAYA_ANNOT_OPTIONS="$AMAYA_ANNOT_OPTIONS -DLIBRDF_INTERNAL=1 -DAM_REDLAND -DRAPTOR_RDF_PARSER"
+       if test "$redland_compile_source" = "yes" ; then
+         AMAYA_RAPTOR_SRC="amaya_comp_redland"
+         AMAYA_ANNOT_OPTIONS="$AMAYA_ANNOT_OPTIONS -I\$(THOTDIR)/../redland/librdf -I\$(THOTDIR)/../redland/raptor"
+         AMAYA_RAPTOR_LIBS="../redland/librdf/.libs/librdf.a ../redland/raptor/.libs/libraptor.a"
+         AMAYA_RAPTOR_INCLUDES="-I\$(THOTDIR)/../redland/librdf -I\$(THOTDIR)/../redland/raptor"
+       else
+         MAKEREDLAND=['#']
+	 AMAYA_RAPTOR_SRC=
+	 redland_includes=`$REDLAND_CONFIG --cflags`
+	 redland_libs=`$REDLAND_CONFIG --libs`
+         AMAYA_ANNOT_OPTIONS="$AMAYA_ANNOT_OPTIONS"
+         AMAYA_ANNOT_INCLUDES="$redland_includes -I\$(THOTDIR)/thotlib/include"
+         AMAYA_ANNOT_EXTRA_LIBS="$redland_libs"
+         AMAYA_RAPTOR_INCLUDES="$redland_includes"
+       fi
+    fi
+
+
+    dnl control whether we should build the bookmarks support
+    if test "$with_annot" = "yes" -a "$with_redland" = "no" ; then
+       AC_MSG_WARN(Disabling annotations build as redland is disabled !)
+       with_annot="no"
+    fi
+    if test "$with_bookmarks" = "yes" -a "$with_annot" = "no" ; then
+       AC_MSG_WARN(Disabling bookmarks build as annotations are disabled !)
+       with_bookmarks="no"
+    fi
+    if test "$with_bookmarks" = "yes" -a "$with_redland" = "no" ; then
+       AC_MSG_WARN(Disabling bookmarks build as redland is disabled !)
+       with_bookmarks="no"
+    fi
+    if test "$with_bookmarks" = "yes" ; then
+	ANNOTLIB_COMPILE_BM=
+	AMAYA_ANNOT_OPTIONS="$AMAYA_ANNOT_OPTIONS -DBOOKMARKS"
+    else
+	ANNOTLIB_COMPILE_BM=['#']
+    fi
+
+    if test "$with_templates" = "yes" ; then
+	TEMPLATES_OPTIONS= 
+    fi
+
+    if test "$with_plugin" = "yes" ; then
+        AC_MSG_WARN(The plugin library isn't supported anymore in Amaya !!)
+	AC_MSG_WARN(Disabling plugin build !)
+	with_plugin="no"
+    fi
+
+
+    if test ! -f $srcdir/davlib/Makefile.in ; then
+	if test "$with_dav" = "yes" ; then
+	    AC_MSG_WARN(WebDAV makefile not found !!)
+	    AC_MSG_WARN(Disabling WebDAV build !)
+	    with_dav="no"
+            DAVDIR=""
+            LIBDAV=""
+            WITHDAV="" 
+            WWWDAV="" 
+	fi
+    fi
+   
+
+fi
+
+dnl
+dnl The options for each library or binary
+dnl
+
+THOT_OPTIONS="$OS_OPTIONS $GTK_OPTIONS $GL_OPTIONS $WX_OPTIONS $NOGUI_OPTIONS"
+if test "$with_debug" = "yes" ; then
+  AMAYA_OPTIONS="$OS_OPTIONS $MATH_OPTIONS $SVG_OPTIONS $GENERIC_XML_OPTIONS $GTK_OPTIONS $GL_OPTIONS $WX_OPTIONS $NOGUI_OPTIONS $TEMPLATES_OPTIONS -DAMAYA_DEBUG"
+else
+  AMAYA_OPTIONS="$OS_OPTIONS $MATH_OPTIONS $SVG_OPTIONS $GENERIC_XML_OPTIONS $GTK_OPTIONS $GL_OPTIONS $WX_OPTIONS $NOGUI_OPTIONS $TEMPLATES_OPTIONS"
+fi
+#PLUGIN_OPTIONS="-DPLUGIN_TRACE -DXP_UNIX"
+AMAYA_ANNOT_OPTIONS="$OS_OPTIONS $AMAYA_ANNOT_OPTIONS"
+
+if test "$with_wx" = "yes" ; then
+  IMGLIBS=""
+else
+  IMGLIBS="-ljpeg -lpng -lz"
+fi
+
+EXTRA_LIBS=
+EXTRA_INCLUDES=
+
+# check for malloc.h
+# on macosx, this file is not at the right place
+if test "$AMAYAOS" = "MACOSX" ; then
+for ac_dir in               \
+  /Developer/SDKs/MacOSX10.1.5.sdk/usr/include/objc/   \
+  /Developer/SDKs/MacOSX10.1.5.sdk/usr/include/sys/    \
+  /Developer/SDKs/MacOSX10.2.8.sdk/usr/include/objc/   \
+  /Developer/SDKs/MacOSX10.2.8.sdk/usr/include/sys/    \
+  /Developer/SDKs/MacOSX10.3.0.sdk/usr/include/objc/   \
+  /Developer/SDKs/MacOSX10.3.0.sdk/usr/include/sys/    \
+  ; \
+do
+  if test -r "$ac_dir/malloc.h"; then
+    echo "found malloc.h"
+    EXTRA_INCLUDES="${EXTRA_INCLUDES} -I$ac_dir"
+    break
+  fi
+done
+else # "$AMAYAOS" = "MACOSX"
+for ac_dir in               \
+  /usr/include/malloc/      \
+  /sw/include/malloc/       \
+  ; \
+do
+  if test -r "$ac_dir/malloc.h"; then
+    echo "found malloc.h"
+    EXTRA_INCLUDES="${EXTRA_INCLUDES} -I$ac_dir"
+    break
+  fi
+done
+fi # "$AMAYAOS" = "MACOSX"
+
+dnl
+dnl Set up the PATHs needed
+dnl
+
+API="\$(THOTDIR)/thotlib/include"
+VAR="\$(THOTDIR)/thotlib/internals/var"
+INCL="\$(THOTDIR)/thotlib/internals/h"
+FUNC="\$(THOTDIR)/thotlib/internals/f"
+
+dnl
+dnl Set up the include variables.
+dnl
+
+THOTINCLUDES="-I${API} -I${VAR} -I${INCL} -I${FUNC} ${JPEGINCL} ${PNGINCL}"
+APIINCLUDES=-I${API}
+ 
+if test "${VPATHOPT}" = "" ; then
+	VPATHOPT="VPATH"
+fi
+
+dnl
+dnl Exports the current values of the variables.
+dnl
+
+AC_SUBST(APP_MAJVER)
+AC_SUBST(APP_MINVER)
+AC_SUBST(APP_SUBVER)
+AC_SUBST(APP_VER)
+AC_SUBST(CEXTRACT_VER)
+AC_SUBST(CEXTRACT_FLAGS)
+
+AC_SUBST(THOTINCLUDES)
+AC_SUBST(APIINCLUDES)
+AC_SUBST(VPATHOPT)
+
+AC_SUBST(GTK_OPTIONS)
+AC_SUBST(THOT_OPTIONS)
+AC_SUBST(AMAYA_OPTIONS)
+AC_SUBST(PLUGIN_OPTIONS)
+AC_SUBST(AMAYA_ANNOT_OPTIONS)
+AC_SUBST(AMAYA_ANNOT_INCLUDES)
+AC_SUBST(AMAYA_ANNOT_EXTRA_LIBS)
+AC_SUBST(IMGLIBS)
+AC_SUBST(EXTRA_LIBS)
+AC_SUBST(EXTRA_INCLUDES)
+
+AC_SUBST(DAVDIR)
+AC_SUBST(LIBDAV)
+AC_SUBST(WITHDAV)
+AC_SUBST(WWWDAV)
+
+AC_SUBST(MAKERAPTOR)
+AC_SUBST(MAKEREDLAND)
+AC_SUBST(ANNOTLIB_COMPILE_BM)
+AC_SUBST(AMAYA_RAPTOR_SRC)
+AC_SUBST(AMAYA_RAPTOR_LIBS)
+AC_SUBST(AMAYA_RAPTOR_INCLUDES)
+AC_SUBST(MAKE_LIBWWW_RDF_PARSER)
+AC_SUBST(LIBWWW_RDF_PARSER)
+
+AC_SUBST(SUBDIRS)
+
+dnl
+dnl Include the option Makefile.xxx fragment according to the configure options
+dnl
+
+if test "$with_plugin" = "yes" ; then
+    AC_SUBST_FILE(plugin_frag)
+    plugin_frag=$srcdir/pluginlib/Makefile.plugin
+else
+    AC_SUBST_FILE(plugin_frag)
+    plugin_frag=/dev/null
+fi
+
+    AC_SUBST_FILE(www_frag)
+    www_frag=$srcdir/amaya/Makefile.libwww
+
+if test "$with_math" = "no" ; then
+    AC_SUBST_FILE(math_frag)
+    math_frag=/dev/null
+else
+    AC_SUBST_FILE(math_frag)
+    math_frag=$srcdir/amaya/Makefile.math
+fi
+
+if test "$with_svg" = "no" ; then
+    AC_SUBST_FILE(svg_frag)
+    svg_frag=/dev/null
+else
+    AC_SUBST_FILE(svg_frag)
+    svg_frag=$srcdir/amaya/Makefile.svg
+fi
+
+if test "$with_annot" = "yes" ; then
+    AC_SUBST_FILE(annot_frag)
+    annot_frag=$srcdir/annotlib/Makefile.annot
+else
+    AC_SUBST_FILE(annot_frag)
+    annot_frag=/dev/null
+fi
+
+if test "$with_dav" = "yes" ; then
+    AC_SUBST_FILE(dav_frag)
+    dav_frag=$srcdir/davlib/Makefile.dav
+else
+    AC_SUBST_FILE(dav_frag)
+    dav_frag=/dev/null
+fi
+
+if test "$with_templates" = "yes" ; then
+    AC_SUBST_FILE(templates_frag)
+    templates_frag=$srcdir/amaya/Makefile.templates
+else
+    AC_SUBST_FILE(templates_frag)
+    templates_frag=/dev/null
+fi
+
+dnl  ***************************************************************
+dnl
+dnl      FINAL STEP : PRODUCE ALL THE MAKEFILES AND CONFIG FILES
+dnl
+dnl  ***************************************************************
+
+EXTRA_MAKEFILE_IN=
+make_output="Makefile Options.orig:Options.in tools/Makefile \
+       libjpeg/Makefile libpng/Makefile libpng/zlib/Makefile \
+       tools/mkdep/Makefile \
+       tools/cextract-1.7/Makefile thotlib/Makefile \
+       thotlib/include/Makefile batch/Makefile"
+
+if test "$build_amaya" = "yes" ; then
+
+    make_output="$make_output amaya/Makefile pluginlib/Makefile"
+    EXTRA_MAKEFILE_IN="$srcdir/amaya/Makefile.in \
+    $srcdir/amaya/Makefile.libwww"
+
+    if test "$with_plugin" = "yes" ; then
+       make_output="$make_output pluginlib/Makefile"
+       EXTRA_MAKEFILE_IN="$srcdir/pluginlib/Makefile.in \
+       $srcdir/pluginlib/Makefile.plugin"
+    fi
+
+    if test "$with_annot" = "yes" ; then
+       make_output="$make_output annotlib/Makefile"
+       EXTRA_MAKEFILE_IN="$srcdir/annotlib/Makefile.in"
+    fi
+
+    if test "$with_dav" = "yes" ; then
+       make_output="$make_output davlib/Makefile"
+       EXTRA_MAKEFILE_IN="$srcdir/davlib/Makefile.in"
+    fi
+
+    if test "$with_wx" = "yes" ; then
+       EXTRA_MAKEFILE_IN="$EXTRA_MAKEFILE_IN $WX_SRCDIR/Makefile.in $WX_SRCDIR/configure.in"
+    fi
+
+fi
+
+AC_SUBST(EXTRA_MAKEFILE_IN)
+AC_OUTPUT($make_output , [
+dnl
+dnl This fragment of shell code is executed after the
+dnl Makefile(s) dump ...
+dnl
+
+echo timestamp > stamp-h
+
+dnl
+dnl Check for an upgrade in the Options numbers
+dnl
+
+if test -f Options ; then
+   oldversion=`grep Version Options`
+   newversion=`grep Version Options.orig`
+   if test "$oldversion" != "$newversion" ; then
+       echo WARNING : Options files have changed, old options saved to Options.old
+       cp Options Options.old
+       cp Options.orig Options
+       exit 1
+   fi
+fi
+])
+
+if test "$build_amaya" = "yes" ; then
+    echo Amaya $AMAYA_VER configured
+    echo Amaya configured with libWWW
+    if test "$with_plugin" = "yes" ; then
+        echo Amaya configured with Plugins support
+    fi
+    if test "$with_math" = "yes" ; then
+	echo Amaya configured with Math support
+    fi
+    if test "$with_svg" = "yes" ; then
+	echo Amaya configured with SVG support
+    fi
+    if test "$with_annot" = "yes" ; then
+	echo Amaya configured with Annotations support
+    fi
+    if test "$with_raptor" = "yes" ; then
+	echo Amaya configured with the Raptor RDF parser
+    fi
+    if test "$with_redland" = "yes" ; then
+	if test "$with_system_redland" = "no" ; then
+ 	  echo Amaya configured with the Redland RDF library \(local source\)
+	else
+	  echo Amaya configured with the Redland RDF library \(system\)
+	fi
+    fi
+    if test "$with_bookmarks" = "yes" ; then
+	echo Amaya configured with bookmarks support \(experimental\)
+    fi
+    if test "$with_templates" = "yes" ; then
+	echo Amaya configured with templates support \(experimental\)
+    fi
+    if test "$with_generic_xml" = "yes" ; then
+	echo Amaya configured with generic XML suppport
+    fi
+    echo Amaya configured with internationalization suppport
+    if test "$with_gl" = "yes" ; then
+	echo Amaya configured with OpenGL Canvas Rendering \(System library\) \(experimental\)
+    fi
+    if test "$with_mesa" = "yes" ; then
+	echo Amaya configured with OpenGL Canvas Rendering \(MesaLib\)
+    fi
+    if test "$with_dav" = "yes" ; then
+	echo Amaya configured with WebDAV support
+    fi
+fi
+
+if test "$with_wx" = "no" ; then
+  if test "$no_graphic" = "yes" ; then
+      echo "Amaya configured with system graphic libraries (libjpeg, libpng, zlib)"
+  else
+      echo "Amaya configured with static graphic libraries (libjpeg, libpng, zlib)"
+      if test "$with_gtk" = "yes" -o "$with_gl" = "yes" ; then
+        echo "  N.B. This option may not work in your platform. If Amaya crashes"
+        echo "  when opening a PNG file. Recompile it using the system libraries."
+      fi
+  fi
+fi
+
+if test "$with_gtk" = "yes" ; then
+    echo "Amaya configured with GTK"
+fi
+
+if test "$with_wx" = "yes" ; then
+  if test "$with_wxdebug" = "yes" ; then
+    echo "Amaya configured with wxWidgets {srcdir=$WX_SRCDIR} (debug)"
+  else
+    echo "Amaya configured with wxWidgets {srcdir=$WX_SRCDIR}"
+  fi
+fi
+
+if test "$with_nogui" = "yes" ; then
+  echo "Amaya configured without GUI toolkit"
+fi
+
+
+echo ""
+echo "Now type \"make\" (GNU make preferably) to build the binaries"
+echo ""
+
