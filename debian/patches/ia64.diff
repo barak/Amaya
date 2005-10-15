@@ -44,15 +44,14 @@ diff -Nru Amaya.orig/configure.in Amaya/configure.in
  AC_C_CONST
  AC_C_INLINE
  AC_TYPE_MODE_T
-diff -Nru Amaya.orig/thotlib/base/fileaccess.c Amaya/thotlib/base/fileaccess.c
---- Amaya.orig/thotlib/base/fileaccess.c	2003-07-04 05:35:35.000000000 -0700
-+++ Amaya/thotlib/base/fileaccess.c	2003-08-25 14:05:10.000000000 -0700
-@@ -268,35 +268,15 @@
+--- Amaya/thotlib/base/fileaccess.c.orig        2004-04-27 15:16:24.000000000 +0200
++++ Amaya/thotlib/base/fileaccess.c     2005-10-15 19:23:43.000000000 +0200
+@@ -264,33 +264,15 @@
    float f;
    /* This is the IEEE 754 float-precision format.  */
    struct {
 -#ifdef _WINDOWS
--	unsigned int negative:1;
+-    unsigned int negative:1;
 -    unsigned int exponent:8;
 -    unsigned int mantissa:23;
 -#else /*_WINDOWS*/
@@ -61,26 +60,24 @@ diff -Nru Amaya.orig/thotlib/base/fileaccess.c Amaya/thotlib/base/fileaccess.c
 -    unsigned int negative:1;
 -    unsigned int exponent:8;
 -    unsigned int mantissa:23;
--#endif
--#if     __BYTE_ORDER == __LITTLE_ENDIAN
+-#else
 -    unsigned int mantissa:23;
 -    unsigned int exponent:8;
 -    unsigned int negative:1;
 -#endif
--#else
+-#else /* i386 || __i386 */
 -#if defined(_BIG_ENDIAN)
 +#if defined(WORDS_BIGENDIAN)
      unsigned int negative:1;
      unsigned int exponent:8;
      unsigned int mantissa:23;
--#endif
--#if defined(_LITTLE_ENDIAN)
+-#else
 +#else /*WORDS_BIGENDIAN*/
      unsigned int mantissa:23;
      unsigned int exponent:8;
      unsigned int negative:1;
 -#endif
--#endif
+-#endif /* i386 || __i386 */
 -#endif /*_WINDOWS*/
 +#endif /*WORDS_BIGENDIAN*/
    } ieee;

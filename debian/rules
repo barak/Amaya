@@ -6,6 +6,9 @@
 
 SOURCE:=amaya-src-8.5.tgz
 
+DEB_BUILD_GNU_TYPE := $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+DEB_HOST_GNU_TYPE := $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+
 build: build-stamp
 build-stamp: patch-stamp
 	dh_testdir
@@ -28,7 +31,7 @@ build-stamp: patch-stamp
 	-mkdir Amaya/BUILD
 	cd Amaya/BUILD && ../configure --prefix=/usr --datadir=/usr/lib \
 		--without-graphic-libs --with-dav --with-gtk \
-		`dpkg --print-architecture`-linux
+		--build=$(DEB_BUILD_GNU_TYPE) --host=$(DEB_HOST_GNU_TYPE)
 
 	cd Amaya/BUILD && make CFLAGS="-O2 -g -Wall" all amaya
 	touch build-stamp
@@ -36,7 +39,7 @@ build-stamp: patch-stamp
 patch: patch-stamp
 patch-stamp: source-stamp
 	if [ -d debian/patches ]; then \
-	for i in debian/patches/*; do \
+	set -e; for i in debian/patches/*; do \
 		patch -p0 -s < $$i; \
 	done; fi
 

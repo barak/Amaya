@@ -1,3 +1,16 @@
+amaya (8.5-1.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Change build-depends on libpng2-dev to libpng12-dev
+    (Closes: #207756, #328338, #331082)
+  * Fix debian/rules to make the package buildable on non-linux archs
+    (Closes: #300606)
+  * Remove conflict of the package on itself
+  * Fix debian/patches/ia64.diff to be actually applied and debian/rules
+    to actually fail the build if a patch can't be applied
+
+ -- Frank Lichtenheld <djpig@debian.org>  Sat, 15 Oct 2005 19:06:46 +0200
+
 amaya (8.5-1) unstable; urgency=low
 
   * New upstream release. Closes: #246924
