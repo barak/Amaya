@@ -1,3 +1,12 @@
+amaya (8.5-1.3) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * Add debian/patches/64bit-gcc401.patch to let it compile on
+    64bit arches with current gcc versions. Partly based on a
+    patch from John Ellson against the CVS version. 
+
+ -- Frank Lichtenheld <djpig@debian.org>  Fri, 21 Oct 2005 18:23:55 +0200
+
 amaya (8.5-1.2) unstable; urgency=low
 
   * Non-maintainer upload.
