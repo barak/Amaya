@@ -3,7 +3,7 @@ Section: web
 Priority: optional
 Maintainer: Steve Dunham <dunham@debian.org>
 Standards-Version: 3.5.8
-Build-Depends: bison, flex, autoconf, automake1.6, debhelper (>= 4.1.34), libtool, libjpeg62-dev, libpng12-dev, zlib1g-dev, libgtk1.2-dev, gdk-imlib1-dev, perl, libungif4-dev, autotools-dev
+Build-Depends: bison, flex, autoconf, automake1.6, debhelper (>= 4.1.34), libtool, libjpeg62-dev, libpng12-dev, zlib1g-dev, libgtk1.2-dev, gdk-imlib11-dev, perl, libungif4-dev, autotools-dev
 
 Package: amaya
 Architecture: any

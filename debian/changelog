@@ -1,3 +1,11 @@
+amaya (8.5-1.2) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * Change build-dependency from gdk-imlib1-dev to gdk-imlib11-dev.
+    Isn't required strictly speaking but makes sbuild happy
+
+ -- Frank Lichtenheld <djpig@debian.org>  Fri, 21 Oct 2005 12:34:23 +0200
+
 amaya (8.5-1.1) unstable; urgency=medium
 
   * Non-maintainer upload.
