@@ -1,3 +1,9 @@
+amaya (9.2.1-4) unstable; urgency=low
+
+  * Fourth times is a charm: add xutils to Build-Deps
+
+ -- Anand Kumria <wildfire@progsoc.org>  Thu, 27 Oct 2005 16:25:13 +1000
+
 amaya (9.2.1-3) unstable; urgency=low
 
   * Add libglu1-xorg-dev to Build-Deps
