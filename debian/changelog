@@ -1,3 +1,9 @@
+amaya (9.2.1-2) unstable; urgency=low
+
+  * Update build dependancies
+
+ -- Anand Kumria <wildfire@progsoc.org>  Thu, 27 Oct 2005 12:23:58 +1000
+
 amaya (9.2.1-1) unstable; urgency=low
 
   * New maintainer (thanks Steve for all your efforts) (Closes: #329668)
