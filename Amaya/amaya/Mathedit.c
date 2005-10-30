@@ -1681,7 +1681,7 @@ void MathElementCreated (NotifyElement *event)
 static void CallbackMaths (int ref, int typedata, char *data)
 {
   Document           doc;
-  int                val = (int) data;
+  intptr_t           val = (intptr_t) data;
 
   ref -= MathsDialogue;
   if (ref == MenuMaths1)

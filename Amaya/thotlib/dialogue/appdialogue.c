@@ -4295,23 +4295,23 @@ void ThotCallback (int ref, int typedata, char *data)
 	(*(Proc3)ThotLocalActions[T_rcinsertpaste]) (
 		(void *)TRUE,
 		(void *)FALSE,
-		(void *)((int) data + 1) );
+		(void *)((intptr_t) data + 1) );
 	break;
       case NumMenuPaste:
 	(*(Proc3)ThotLocalActions[T_rcinsertpaste]) (
 		(void *)FALSE,
 		(void *)TRUE,
-	       	(void *)((int) data + 1));
+	       	(void *)((intptr_t) data + 1));
 	break;
       case NumMenuInclude:
 	(*(Proc3)ThotLocalActions[T_rcinsertpaste]) (
 		(void *)FALSE,
 		(void *)FALSE,
-	       	(void *)((int) data + 1));
+	       	(void *)((intptr_t) data + 1));
 	break;
       case NumMenuElChoice:
 	(*(Proc2)ThotLocalActions[T_rchoice]) (
-		(void *)((int) data + 1),
+		(void *)((intptr_t) data + 1),
 		(void *)NULL);
 	break;
       case NumSelectNatureName:
@@ -4326,7 +4326,7 @@ void ThotCallback (int ref, int typedata, char *data)
       case NumMenuAttrEnumNeeded:
 	(*(Proc3)ThotLocalActions[T_rattrreq]) (
 		(void *)ref,
-		(void *)((int) data),
+		(void *)((intptr_t) data),
 		(void *)data);
 	break;
       case NumMenuAttr:
@@ -4335,7 +4335,7 @@ void ThotCallback (int ref, int typedata, char *data)
       case NumMenuAttrEnum:
 	(*(Proc3)ThotLocalActions[T_rattrval]) (
 		(void *)ref,
-		(void *)((int) data),
+		(void *)((intptr_t) data),
 	       	(void *)data);
 	break;
 	
@@ -4349,7 +4349,7 @@ void ThotCallback (int ref, int typedata, char *data)
       case NumMenuAlphaLanguage:
 	(*(Proc3)ThotLocalActions[T_rattrlang]) (
 		(void *)ref,
-		(void *)((int) data),
+		(void *)((intptr_t) data),
 		(void *)NULL);
 	break;
       case NumFormClose:
@@ -4380,7 +4380,7 @@ void ThotCallback (int ref, int typedata, char *data)
       case NumTogglePatternUnchanged:
 	(*(Proc3)ThotLocalActions[T_present]) (
 		(void *)ref,
-		(void *)(int) data,
+		(void *)(intptr_t) data,
 		(void *)NULL);
 	break;
       case NumSelectPattern:
@@ -4395,7 +4395,7 @@ void ThotCallback (int ref, int typedata, char *data)
       case NumMenuPresentStandard:
 	(*(Proc2)ThotLocalActions[T_presentstd]) (
 		(void *)ref,
-		(void *)((int) data));
+		(void *)((intptr_t) data));
 	break;
       case NumFormSearchText:
       case NumMenuReplaceMode:
@@ -4404,7 +4404,7 @@ void ThotCallback (int ref, int typedata, char *data)
 	/* sous-menu mode de remplacement */
 	(*(Proc3)ThotLocalActions[T_searchtext]) (
 		(void *)ref,
-		(void *)((int) data),
+		(void *)((intptr_t) data),
 	       	(void *)NULL);
 	break;
       case NumZoneTextSearch:
@@ -4420,10 +4420,10 @@ void ThotCallback (int ref, int typedata, char *data)
       case NumMenuOrSearchText:
 	(*(Proc2)ThotLocalActions[T_locatesearch]) (
 		(void *)ref,
-		(void *)((int) data));
+		(void *)((intptr_t) data));
 	break;  
       case NumFormElemToBeCreated:
-	CallbackElemToBeCreated (ref, (int)data, NULL);
+	CallbackElemToBeCreated (ref, (intptr_t)data, NULL);
 	break;
       case NumSelectElemToBeCreated:
 	CallbackElemToBeCreated (ref, 0, data);
@@ -4438,7 +4438,7 @@ void ThotCallback (int ref, int typedata, char *data)
 #endif /* #if defined(_GTK) */
 	    (*(Proc3)ThotLocalActions[T_rattr]) (
 		(void *)ref,
-		(void *)((int) data),
+		(void *)((intptr_t) data),
 		(void *)ActiveFrame);
 	  }
 	break;
@@ -4477,7 +4477,7 @@ void ThotCallback (int ref, int typedata, char *data)
 #endif /* #if defined(_GTK) */
 	      (*(Proc3)ThotLocalActions[T_rattr]) (
 			(void *)ref,
-			(void *)((int) data),
+			(void *)((intptr_t) data),
 			(void *)frame);
 	      return;
 	    }
@@ -4493,7 +4493,7 @@ void ThotCallback (int ref, int typedata, char *data)
 	      TtaSetDialoguePosition ();
 #endif /* #if defined(_GTK) */
 	      (*(Proc3)ThotLocalActions[T_rselect]) ((void *)ref,
-						     (void *)((int) data + 1),
+						     (void *)((intptr_t) data + 1),
 						     (void *)frame);
 	      return;
 	    }
@@ -4523,7 +4523,7 @@ void ThotCallback (int ref, int typedata, char *data)
 
       if (ptrmenu)
 	{
-	  item = (int) data;
+	  item = (intptr_t) data;
 	  if (item < ptrmenu->ItemsNb && ptrmenu->ItemsList != NULL)
 	    {
 	      for (i = 0; i <= item; i++)
@@ -4534,7 +4534,7 @@ void ThotCallback (int ref, int typedata, char *data)
 		    item++;
 		}
 	    }
-	  /*action = GetActionItem(frame, menu, (int)data); */
+	  /*action = GetActionItem(frame, menu, (intptr_t)data); */
 	  if (action > 0 && action < MaxMenuAction)
 	    /* l'action existe et le menu est actif */
 #ifdef _WX

@@ -1,3 +1,16 @@
+amaya (9.2.1-6) unstable; urgency=low
+
+  * Apply patch from Frank Lichtenheld so that amaya can build on 64 bit
+    platforms. Awesome work Frank! (Closes: #336053)
+
+ -- Anand Kumria <wildfire@progsoc.org>  Mon, 31 Oct 2005 03:58:42 +1100
+
+amaya (9.2.1-5) unstable; urgency=low
+
+  * Make amaya.desktop useful and usable
+
+ -- Anand Kumria <wildfire@progsoc.org>  Fri, 28 Oct 2005 02:39:48 +1000
+
 amaya (9.2.1-4) unstable; urgency=low
 
   * Fourth times is a charm: add xutils to Build-Deps

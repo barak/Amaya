@@ -125,18 +125,18 @@ bool AmayaAttributePanel::IsFreezed()
   ----------------------------------------------------------------------*/
 void AmayaAttributePanel::SendDataToPanel( AmayaParams& p )
 {
-  int action_id = (int)p.param1;
+  intptr_t action_id = (intptr_t)p.param1;
   switch ( action_id )
     {
     case wxATTR_ACTION_LISTUPDATE:
       ShowAttributValue( wxATTR_TYPE_NONE );
-      SetupListValue( (const char *)p.param2, (int)p.param3, (const int *)p.param4, (const char *)p.param5, (int)p.param6, (const int *)p.param7 );
+      SetupListValue( (const char *)p.param2, (intptr_t)p.param3, (const int *)p.param4, (const char *)p.param5, (intptr_t)p.param6, (const int *)p.param7 );
       break;
     case wxATTR_ACTION_SETUPLANG:
       m_CurrentAttType = wxATTR_TYPE_LANG;
       ShowAttributValue( wxATTR_TYPE_LANG );
       SetMandatoryState( p.param2 != NULL );
-      SetupLangValue( (const char *)p.param3,(const char *)p.param4, (const char *)p.param5, (int)p.param6, (int)p.param7 );
+      SetupLangValue( (const char *)p.param3,(const char *)p.param4, (const char *)p.param5, (intptr_t)p.param6, (intptr_t)p.param7 );
       break;
     case wxATTR_ACTION_SETUPTEXT:
       m_CurrentAttType = wxATTR_TYPE_TEXT;
@@ -148,13 +148,13 @@ void AmayaAttributePanel::SendDataToPanel( AmayaParams& p )
       m_CurrentAttType = wxATTR_TYPE_ENUM;
       ShowAttributValue( wxATTR_TYPE_ENUM );
       SetMandatoryState( p.param2 != NULL );
-      SetupEnumValue( (const char *)p.param3, (int)p.param4, (int)p.param5 );
+      SetupEnumValue( (const char *)p.param3, (intptr_t)p.param4, (intptr_t)p.param5 );
       break;
     case wxATTR_ACTION_SETUPNUM:
       m_CurrentAttType = wxATTR_TYPE_NUM;
       ShowAttributValue( wxATTR_TYPE_NUM );
       SetMandatoryState( p.param2 != NULL );
-      SetupNumValue( (int)p.param3 );
+      SetupNumValue( (intptr_t)p.param3 );
       break;
     }
 }

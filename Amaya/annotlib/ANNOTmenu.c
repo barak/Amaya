@@ -85,7 +85,7 @@ typedef struct _typeSelector
   ----------------------------------------------------------------------*/
 static void CustomQueryCallbackDialog (int ref, int typedata, char *data)
 {
-  int                 val;
+  intptr_t                 val;
 
   if (ref == -1)
     {
@@ -95,7 +95,7 @@ static void CustomQueryCallbackDialog (int ref, int typedata, char *data)
   else
     {
       /* has the user changed the options? */
-      val = (int) data;
+      val = (intptr_t) data;
       switch (ref - CustomQueryBase)
 	{
 	case CustomQueryMenu:
@@ -775,7 +775,7 @@ LRESULT CALLBACK WIN_AnnotFilterDlgProc (ThotWindow hwnDlg, UINT msg,
   ----------------------------------------------------------------------*/
 static void AnnotFilterCallbackDialog (int ref, int typedata, char * data)
 {
-  int val;
+  intptr_t val;
 
   if (ref == -1)
     {
@@ -785,7 +785,7 @@ static void AnnotFilterCallbackDialog (int ref, int typedata, char * data)
   else
     {
       /* has the user changed the options? */
-      val = (int) data;
+      val = (intptr_t) data;
       switch (ref - AnnotFilterBase)
 	{
 	case AnnotFilterMenu:

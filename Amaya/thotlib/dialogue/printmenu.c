@@ -357,9 +357,9 @@ static void Print (char *name, char *dir, char *thotSch, char *thotDoc,
        printArgc++;
 #else /* _WINDOWS */
 #ifndef _WX
-       sprintf (&cmd[i], " -w%u", (unsigned int) FrRef[0]);
+       sprintf (&cmd[i], " -w%u", (uintptr_t) FrRef[0]);
 #else /* _WX */
-       sprintf (&cmd[i], " -w%u", (unsigned int) FrameTable[0].WdFrame);
+       sprintf (&cmd[i], " -w%u", (uintptr_t) FrameTable[0].WdFrame);
 #endif /* _WX */
 #endif /* _WINDOWS */
      }

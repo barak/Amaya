@@ -124,16 +124,16 @@ void AmayaApplyClassPanel::RefreshToolTips()
  */
 void AmayaApplyClassPanel::SendDataToPanel( AmayaParams& p )
 {
-  int nb_class              = (long int)p.param1;
+  intptr_t nb_class         = (intptr_t)p.param1;
   const char * listBuffer   = (char *)p.param2;
   const char * currentClass = (char *)p.param3;
-  int ref                   = (int)p.param4;;
+  intptr_t ref              = (intptr_t)p.param4;;
   
   m_ApplyClassRef = ref;
   
   /* fill the list */
   m_pClassList->Clear();
-  int i = 0;
+  intptr_t i = 0;
   int index = 0;
   while (i < nb_class && listBuffer[index] != EOS)
     {

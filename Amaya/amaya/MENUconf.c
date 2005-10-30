@@ -1072,7 +1072,7 @@ LRESULT CALLBACK WIN_CacheDlgProc (HWND hwnDlg, UINT msg, WPARAM wParam,
   ----------------------------------------------------------------------*/
 static void CacheCallbackDialog (int ref, int typedata, char *data)
 {
-  int                 val;
+  intptr_t                 val;
 
   if (ref == -1)
     {
@@ -1082,7 +1082,7 @@ static void CacheCallbackDialog (int ref, int typedata, char *data)
   else
     {
       /* has the user changed the options? */
-      val = (int) data;
+      val = (intptr_t) data;
       switch (ref - CacheBase)
 	{
 	case CacheMenu:
@@ -1394,7 +1394,7 @@ LRESULT CALLBACK WIN_ProxyDlgProc (HWND hwnDlg, UINT msg, WPARAM wParam,
   ----------------------------------------------------------------------*/
 static void ProxyCallbackDialog (int ref, int typedata, char *data)
 {
-  int                 val;
+  intptr_t                 val;
 
   if (ref == -1)
     {
@@ -1404,7 +1404,7 @@ static void ProxyCallbackDialog (int ref, int typedata, char *data)
   else
     {
       /* has the user changed the options? */
-      val = (int) data;
+      val = (intptr_t) data;
       switch (ref - ProxyBase)
 	{
 	case ProxyMenu:
@@ -2102,7 +2102,7 @@ static void RefreshGeneralMenu ()
   ----------------------------------------------------------------------*/
 static void GeneralCallbackDialog (int ref, int typedata, char *data)
 {
-  int                 val;
+  intptr_t                 val;
 
   if (ref == -1)
     {
@@ -2112,7 +2112,7 @@ static void GeneralCallbackDialog (int ref, int typedata, char *data)
   else
     {
       /* has the user changed the options? */
-      val = (int) data;
+      val = (intptr_t) data;
       switch (ref - GeneralBase)
 	{
 	case GeneralMenu:
@@ -2585,7 +2585,7 @@ static void BuildCharsetSelector (void)
   ----------------------------------------------------------------------*/
 static void PublishCallbackDialog (int ref, int typedata, char *data)
 {
-  int                 val;
+  intptr_t                 val;
 
   if (ref == -1)
     {
@@ -2595,7 +2595,7 @@ static void PublishCallbackDialog (int ref, int typedata, char *data)
   else
     {
       /* has the user changed the options? */
-      val = (int) data;
+      val = (intptr_t) data;
       switch (ref - PublishBase)
 	{
 	case PublishMenu:
@@ -3051,7 +3051,7 @@ static void RefreshBrowseMenu ()
   ----------------------------------------------------------------------*/
 static void BrowseCallbackDialog (int ref, int typedata, char *data)
 {
-  int               val;
+  intptr_t               val;
 
   if (ref == -1)
     /* removes the network conf menu */
@@ -3059,7 +3059,7 @@ static void BrowseCallbackDialog (int ref, int typedata, char *data)
   else
     {
       /* has the user changed the options? */
-      val = (int) data;
+      val = (intptr_t) data;
       switch (ref - BrowseBase)
         {
         case BrowseMenu:
@@ -3415,7 +3415,7 @@ LRESULT CALLBACK WIN_ColorDlgProc (HWND hwnDlg, UINT msg, WPARAM wParam,
   ----------------------------------------------------------------------*/
 static void ColorCallbackDialog (int ref, int typedata, char *data)
 {
-  int val;
+  intptr_t val;
 
   if (ref == -1)
     {
@@ -3425,7 +3425,7 @@ static void ColorCallbackDialog (int ref, int typedata, char *data)
   else
     {
       /* has the user changed the options? */
-      val = (int) data;
+      val = (intptr_t) data;
       switch (ref - ColorBase)
 	{
 	case ColorMenu:
@@ -3776,7 +3776,7 @@ LRESULT CALLBACK WIN_GeometryDlgProc (HWND hwnDlg, UINT msg, WPARAM wParam,
   ----------------------------------------------------------------------*/
 static void GeometryCallbackDialog (int ref, int typedata, char *data)
 {
-  int val;
+  intptr_t val;
 
   TtaDestroyDialogue (GeometryBase + GeometryMenu);
   if (ref == -1)
@@ -3787,7 +3787,7 @@ static void GeometryCallbackDialog (int ref, int typedata, char *data)
   else
     {
       /* has the user changed the options? */
-      val = (int) data;
+      val = (intptr_t) data;
       switch (ref - GeometryBase)
 	{
 	case GeometryMenu:
@@ -4056,7 +4056,7 @@ LRESULT CALLBACK WIN_AnnotDlgProc (HWND hwnDlg, UINT msg, WPARAM wParam,
   ----------------------------------------------------------------------*/
 static void AnnotCallbackDialog (int ref, int typedata, char *data)
 {
-  int                 val;
+  intptr_t                 val;
 
   if (ref == -1)
     {
@@ -4066,7 +4066,7 @@ static void AnnotCallbackDialog (int ref, int typedata, char *data)
   else
     {
       /* has the user changed the options? */
-      val = (int) data;
+      val = (intptr_t) data;
       switch (ref - AnnotBase)
 	{
 	case AnnotMenu:
@@ -4549,14 +4549,14 @@ void PreferenceMenu (Document document, View view)
 static void PreferenceCallbackDialog (int ref, int typedata, char *data)
 {
 #ifdef _WX
-  int val;
+  intptr_t val;
 
   if (ref == -1)
       TtaDestroyDialogue (PreferenceBase);
   else
     {
       /* has the user changed the options? */
-      val = (int) data;
+      val = (intptr_t) data;
       switch (ref - PreferenceBase)
 	{
 	case 0:

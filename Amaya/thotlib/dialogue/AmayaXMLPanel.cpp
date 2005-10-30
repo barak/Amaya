@@ -109,18 +109,18 @@ void AmayaXMLPanel::RefreshToolTips()
  */
 void AmayaXMLPanel::SendDataToPanel( AmayaParams& p )
 {
-  int nb_el                 = (int)p.param1;
+  intptr_t nb_el            = (intptr_t)p.param1;
   const char * listBuffer   = (char *)p.param2;
   const char * currentEl    = (char *)p.param3;
-  int ref                   = (int)p.param4;;
+  intptr_t ref              = (intptr_t)p.param4;;
   
   m_XMLRef = ref;
   
   /* fill the list */
   m_pXMLList->Clear();
-  int i = 0;
+  intptr_t i = 0;
   int index = 0;
-  int sel = 0;
+  intptr_t sel = 0;
   while (i < nb_el && listBuffer[index] != EOS)
     {
       m_pXMLList->Append( TtaConvMessageToWX( &listBuffer[index] ) );

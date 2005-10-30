@@ -129,10 +129,10 @@ void AmayaFormatPanel::RefreshToolTips()
  */
 void AmayaFormatPanel::SendDataToPanel( AmayaParams& p )
 {
-  int modif_type       = (int)p.param1;
-  int align_num        = (int)p.param2;
-  int indent_value     = (int)p.param3;
-  int line_space_value = (int)p.param4;
+  intptr_t modif_type       = (intptr_t)p.param1;
+  intptr_t align_num        = (intptr_t)p.param2;
+  intptr_t indent_value     = (intptr_t)p.param3;
+  intptr_t line_space_value = (intptr_t)p.param4;
 
   if ( modif_type & wxFORMAT_MODIF_FORMAT)
     {

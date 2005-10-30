@@ -160,11 +160,11 @@ void AmayaCharStylePanel::RefreshToolTips()
  */
 void AmayaCharStylePanel::SendDataToPanel( AmayaParams& p )
 {
-  int font_family    = (int)p.param1;
-  int font_style     = (int)p.param2;
-  int font_weight    = (int)p.param3;
-  int font_underline = (int)p.param4;
-  int font_size      = (int)p.param5;
+  intptr_t font_family    = (intptr_t)p.param1;
+  intptr_t font_style     = (intptr_t)p.param2;
+  intptr_t font_weight    = (intptr_t)p.param3;
+  intptr_t font_underline = (intptr_t)p.param4;
+  intptr_t font_size      = (intptr_t)p.param5;
 
   XRCCTRL(*m_pPanelContentDetach, "wxID_CHOICE_FONTFAMILY", wxChoice)->SetSelection(font_family);
   XRCCTRL(*m_pPanelContentDetach, "wxID_CHOICE_UNDERLINE", wxChoice)->SetSelection(font_underline);

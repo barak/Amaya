@@ -354,7 +354,7 @@ void AmayaSpeCharPanel::OnButtonInsert( wxCommandEvent& event )
  */
 void AmayaSpeCharPanel::SendDataToPanel( AmayaParams& p )
 {
-  int action = (int)p.param1;
+  intptr_t action = (intptr_t)p.param1;
   if (action == wxSPECHAR_ACTION_INIT)
     {
       XmlEntity *MathEntityTable = (XmlEntity *)p.param2;
