@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by: Ron Lee
 // Created:     04/01/98
-// RCS-ID:      $Id: object.cpp,v 1.1.1.1 2005/07/06 09:30:49 gully Exp $
+// RCS-ID:      $Id: object.cpp,v 1.1.1.2 2005/07/26 09:31:04 gully Exp $
 // Copyright:   (c) 1998 Julian Smart
 //              (c) 2001 Ron Lee <ron@debian.org>
 // Licence:     wxWindows licence
@@ -230,11 +230,11 @@ void wxClassInfo::Register()
         sm_classTable = new wxHashTable(wxKEY_STRING);
     }
 
-    // using IMPLEMENT_DYNAMIC_CLASS() macro twice (which may happen if you
-    // link any object module twice mistakenly) will break this function
-    // because it will enter an infinite loop and eventually die with "out of
-    // memory" - as this is quite hard to detect if you're unaware of this,
-    // try to do some checks here
+    // Using IMPLEMENT_DYNAMIC_CLASS() macro twice (which may happen if you
+    // link any object module twice mistakenly, or link twice against wx shared
+    // library) will break this function because it will enter an infinite loop
+    // and eventually die with "out of memory" - as this is quite hard to
+    // detect if you're unaware of this, try to do some checks here.
     wxASSERT_MSG( sm_classTable->Get(m_className) == NULL,
                   _T("class already in RTTI table - have you used IMPLEMENT_DYNAMIC_CLASS() twice (may be by linking some object module(s) twice)?") );
 

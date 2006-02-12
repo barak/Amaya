@@ -4,7 +4,7 @@
 // Author:      Robert Roebling, Vadim Zeitlin
 // Modified by:
 // Created:     28.12.2000
-// RCS-ID:      $Id: filename.cpp,v 1.1.1.1 2005/07/06 09:30:49 gully Exp $
+// RCS-ID:      $Id: filename.cpp,v 1.1.1.2 2005/07/26 09:31:04 gully Exp $
 // Copyright:   (c) 2000 Robert Roebling
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -1910,6 +1910,9 @@ bool wxFileName::SetTimes(const wxDateTime *dtAccess,
         return true;
     }
 #else // other platform
+    wxUnusedVar(dtAccess);
+    wxUnusedVar(dtMod);
+    wxUnusedVar(dtCreate);
 #endif // platforms
 
     wxLogSysError(_("Failed to modify file times for '%s'"),
@@ -2000,6 +2003,9 @@ bool wxFileName::GetTimes(wxDateTime *dtAccess,
         return true;
     }
 #else // other platform
+    wxUnusedVar(dtAccess);
+    wxUnusedVar(dtMod);
+    wxUnusedVar(dtCreate);
 #endif // platforms
 
     wxLogSysError(_("Failed to retrieve file times for '%s'"),

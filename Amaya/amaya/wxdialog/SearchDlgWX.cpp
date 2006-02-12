@@ -10,6 +10,7 @@
 #include "amaya.h"
 #include "appdialogue_wx.h"
 #include "message_wx.h"
+#include "dialog.h"
 
 //-----------------------------------------------------------------------------
 // Event table: connect the events to the handler functions to process them
@@ -21,6 +22,7 @@ BEGIN_EVENT_TABLE(SearchDlgWX, AmayaDialog)
   EVT_RADIOBOX( XRCID("wxID_REPLACE_BOX"),     SearchDlgWX::OnReplaceBox )
   EVT_RADIOBOX( XRCID("wxID_SEARCH_AREA_BOX"), SearchDlgWX::OnSearchAreaBox )
   EVT_CHECKBOX( XRCID("wxID_CHECK_CASE"),      SearchDlgWX::OnCheckCaseBox )
+  EVT_TEXT( XRCID("wxID_REPLACE_BY_TXT"),      SearchDlgWX::OnTextChanged )
   EVT_TEXT_ENTER( XRCID("wxID_SEARCH_FOR_TXT"),SearchDlgWX::OnConfirmButton )
 END_EVENT_TABLE()
 
@@ -34,13 +36,9 @@ END_EVENT_TABLE()
     + do_replace: true if the replace should be done
     + searchAfter: true is the search goes forward
   ----------------------------------------------------------------------*/
-  SearchDlgWX::SearchDlgWX( int ref, 
-			    wxWindow* parent,
-			    const wxString & caption,
-			    const wxString & searched,
-			    const wxString & replace,
-			    bool do_replace,
-			    bool searchAfter) : 
+  SearchDlgWX::SearchDlgWX( int ref, wxWindow* parent, const wxString & caption,
+                            const wxString & searched, const wxString & replace,
+                            bool do_replace, bool searchAfter) : 
     AmayaDialog( parent, ref )
 {
   wxXmlResource::Get()->LoadDialog(this, parent, wxT("SearchDlgWX"));
@@ -63,6 +61,7 @@ END_EVENT_TABLE()
   XRCCTRL(*this, "wxID_SEARCH_AREA_BOX", wxRadioBox)->SetString(1, TtaConvMessageToWX( TtaGetMessage(LIB, TMSG_WITHIN_SEL) ));
   XRCCTRL(*this, "wxID_SEARCH_AREA_BOX", wxRadioBox)->SetString(2, TtaConvMessageToWX( TtaGetMessage(LIB, TMSG_AFTER_SEL) ));
   XRCCTRL(*this, "wxID_SEARCH_AREA_BOX", wxRadioBox)->SetString(3, TtaConvMessageToWX( TtaGetMessage(LIB, TMSG_IN_WHOLE_DOC) ));
+  XRCCTRL(*this, "wxID_SEARCH_COMPLETE", wxStaticText)->SetLabel(TtaConvMessageToWX( "" ));
 
   // update button labels
   XRCCTRL(*this, "wxID_OK", wxButton)->SetLabel(TtaConvMessageToWX( TtaGetMessage(LIB, TMSG_LIB_CONFIRM) ));
@@ -86,12 +85,13 @@ END_EVENT_TABLE()
   m_iarea = XRCCTRL(*this, "wxID_SEARCH_AREA_BOX", wxRadioBox)->GetSelection( );
 
   // Give focus to first text control
-  //  XRCCTRL(*this, "wxID_SEARCH_FOR_TXT", wxTextCtrl)->SetFocus();
+  //XRCCTRL(*this, "wxID_SEARCH_FOR_TXT", wxTextCtrl)->SetFocus();
 
   Layout();
   
   SetAutoLayout( TRUE );
 }
+
 
 /*----------------------------------------------------------------------
   Destructor. (Empty, as I don't need anything special done when destructing).
@@ -112,6 +112,7 @@ void SearchDlgWX::OnConfirmButton( wxCommandEvent& event )
   wxString newText = XRCCTRL(*this, "wxID_REPLACE_BY_TXT",
 			     wxTextCtrl)->GetValue( );
   
+  WX_SearchResult = 0; /* By default the search is OK */
   // allocate temporary buffers to copy the *text* buffers
   // allocate a temporary buffer to convert wxString to (char *) UTF-8 buffer
   char buf_old_text[512];
@@ -121,11 +122,6 @@ void SearchDlgWX::OnConfirmButton( wxCommandEvent& event )
   wxASSERT( newText.Len() < 512 );
   strcpy( buf_new_text, (const char*)newText.mb_str(wxConvUTF8) );
 
-  if (buf_new_text && buf_new_text[0] != '\0' && m_ireplace == 0)
-    {
-      m_ireplace = 1;
-      XRCCTRL(*this, "wxID_REPLACE_BOX", wxRadioBox)->SetSelection(1);
-    }
   if (m_ireplace == 1 || m_ireplace == 2) 
     ThotCallback (NumZoneTextReplace, STRING_DATA, buf_new_text);
 
@@ -138,6 +134,12 @@ void SearchDlgWX::OnConfirmButton( wxCommandEvent& event )
       XRCCTRL(*this, "wxID_SEARCH_AREA_BOX", wxRadioBox)->SetSelection(2);
       m_iarea = 2;
     }
+  if (WX_SearchResult == 1)
+    XRCCTRL(*this, "wxID_SEARCH_COMPLETE", wxStaticText)->SetLabel(TtaConvMessageToWX( TtaGetMessage (LIB, TMSG_NOTHING_TO_REPLACE) ));
+  else if (WX_SearchResult == 2)
+    XRCCTRL(*this, "wxID_SEARCH_COMPLETE", wxStaticText)->SetLabel(TtaConvMessageToWX( TtaGetMessage (LIB, TMSG_NOT_FOUND) ));
+  else
+    XRCCTRL(*this, "wxID_SEARCH_COMPLETE", wxStaticText)->SetLabel(TtaConvMessageToWX( "" ));
 }
 
 /*----------------------------------------------------------------------
@@ -178,8 +180,16 @@ void SearchDlgWX::OnCancelButton( wxCommandEvent& event )
   ----------------------------------------------------------------------*/
 void SearchDlgWX::OnReplaceBox ( wxCommandEvent& event )
 {
-  m_ireplace = XRCCTRL(*this, "wxID_REPLACE_BOX",
-		       wxRadioBox)->GetSelection( );
+  m_ireplace = XRCCTRL(*this, "wxID_REPLACE_BOX", wxRadioBox)->GetSelection( );
+}
+
+/*----------------------------------------------------------------------
+  OnTextChanged called when changing the replace text
+  ----------------------------------------------------------------------*/
+void SearchDlgWX::OnTextChanged ( wxCommandEvent& event )
+{
+  m_ireplace = 1;
+  XRCCTRL(*this, "wxID_REPLACE_BOX", wxRadioBox)->SetSelection(1);
 }
 
 /*----------------------------------------------------------------------

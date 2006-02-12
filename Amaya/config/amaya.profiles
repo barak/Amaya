@@ -36,7 +36,6 @@
 <Editor>
 +browsing
 +config
-#+templates
 +edit
 ConfigAnnot
 CooperationConfig
@@ -113,7 +112,6 @@ HelpAtW3C
 +presentation-module
 +maths
 &CreateMath
-&CreateXMLElementMenu
 +object-module
 +script-module
 +struct-module
@@ -138,7 +136,6 @@ HelpAtW3C
 +presentation-module
 +maths
 &CreateMath
-&CreateXMLElementMenu
 +object-module
 +script-module
 +struct-module
@@ -159,7 +156,6 @@ HelpAtW3C
 +object-module
 +struct-module
 +text-module
-&CreateXMLElementMenu
 &InsertBefore
 &InsertAfter
 
@@ -186,7 +182,6 @@ HelpAtW3C
 +tables
 +text-module
 +ruby
-&CreateXMLElementMenu
 &InsertBefore
 &InsertAfter
 
@@ -195,7 +190,6 @@ HelpAtW3C
 +basic-style
 +hypertext-module
 +maths
-&CreateXMLElementMenu
 &InsertBefore
 &InsertAfter
 
@@ -204,7 +198,6 @@ HelpAtW3C
 +basic-style
 +hypertext-module
 +maths
-&CreateXMLElementMenu
 &InsertBefore
 &InsertAfter
 
@@ -225,7 +218,6 @@ HelpAtW3C
 +presentation-module
 +maths
 &CreateMath
-&CreateXMLElementMenu
 +object-module
 +script-module
 +struct-module
@@ -237,10 +229,6 @@ PostAnnotation
 &InsertBefore
 &InsertAfter
 
-################# Bookmarks
-{Bookmarks}
-AddSeparator
-MoveItem
 
 #-------------------- Modules ---------------------------------------------
 # shorter list of functions
@@ -258,7 +246,6 @@ DAVLockDocument
 ######### BROWSING
 [browsing]
 +annot
-+bookmarks
 +views
 +print
 AmayaClose
@@ -302,6 +289,7 @@ ReadAsISO_8859_8
 ReadAsWINDOWS_1255
 ReadAsISO_8859_9
 ReadAsWINDOWS_1254
+ReadAsGB_2312
 ReadAsISO_2022_JP
 ReadAsEUC_JP
 ReadAsSHIFT_JIS
@@ -310,8 +298,7 @@ TtcSearchText
 
 [browsing_WX]
 +annot
-+bookmarks
-+views
++views_WX
 +print
 AmayaClose
 DocumentInfo
@@ -353,6 +340,7 @@ ReadAsISO_8859_8
 ReadAsWINDOWS_1255
 ReadAsISO_8859_9
 ReadAsWINDOWS_1254
+ReadAsGB_2312
 ReadAsISO_2022_JP
 ReadAsEUC_JP
 ReadAsSHIFT_JIS
@@ -367,7 +355,6 @@ TtcSearchText
 +clientside-module
 +css-style
 +davbase
-+edit-bookmarks
 +hypertext-module
 +image-module
 +list-module
@@ -432,7 +419,6 @@ HelpXml
 +clientside-module
 +css-style
 +davbase
-+edit-bookmarks
 +hypertext-module
 +image-module
 +list-module
@@ -455,7 +441,7 @@ HelpXml
 +tables
 &CreateBase
 &CreateMath
-&CreateXMLElementMenu
+&SetCSSStyle
 HelpDocument
 HelpAttributes
 HelpChanging
@@ -494,6 +480,18 @@ ShowLinks
 ShowSource
 ShowStructure
 ShowFormatted
+ShowToC
+# ShowTimeLineWindow
+TtcCloseView
+
+######### VIEWS_WX
+[views_WX]
+HelpViews
+ShowAlternate
+ShowLinks
+ShowSource
+ShowStructure
+#ShowFormatted
 ShowToC
 # ShowTimeLineWindow
 TtcCloseView
@@ -710,7 +708,6 @@ HelpSVG
 [attr-style_WX]
 &CreateStyle
 &CreateClass
-&ChangeBackgroundImage
 
 [css-browsing]
 OpenCSS
@@ -770,15 +767,5 @@ MoveAnnotationXPtr
 PostAnnotation
 ReplyToAnnotation
 XPointer_bufferStore
-
-[bookmarks]
-HelpBookmarks
-BookmarkFile
-ViewBookmarks
-
-[edit-bookmarks]
-EditTopics
-AddSeparator
-MoveItem
 
 

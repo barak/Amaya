@@ -4,7 +4,7 @@
 // Author:      David Webster
 // Modified by:
 // Created:     10/17/99
-// RCS-ID:      $Id: tooltip.h,v 1.1.1.1 2005/07/06 09:30:11 gully Exp $
+// RCS-ID:      $Id: tooltip.h,v 1.1.1.2 2005/07/26 09:30:54 gully Exp $
 // Copyright:   (c) David Webster
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -27,9 +27,9 @@ public:
 
     // controlling tooltip behaviour: globally change tooltip parameters
         // enable or disable the tooltips globally
-    static void Enable(bool flag) {}
+    static void Enable(bool WXUNUSED(flag)) {}
         // set the delay after which the tooltip appears
-    static void SetDelay(long milliseconds) {}
+    static void SetDelay(long WXUNUSED(milliseconds)) {}
 
     //
     // Implementation
@@ -44,4 +44,3 @@ private:
     wxString                        m_sText;           // tooltip text
     wxWindow*                       m_pWindow;         // window we're associated with
 }; // end of CLASS wxToolTip
-

@@ -1,0 +1,57 @@
+<?xml version="1.0" ?>
+<resource>
+  <object class="wxDialog" name="DIALOG1">
+    <title>Preferences</title>
+    <object class="wxBoxSizer">
+      <orient>wxVERTICAL</orient>
+      <object class="sizeritem">
+        <object class="wxBoxSizer">
+          <orient>wxVERTICAL</orient>
+          <object class="sizeritem">
+            <object class="wxBoxSizer">
+              <orient>wxHORIZONTAL</orient>
+              <object class="sizeritem">
+                <object class="wxScrolledWindow" name="window">
+                  <pos>10,10</pos>
+                  <size>50,300</size>
+                  <style>wxVSCROLL|wxSIMPLE_BORDER</style>
+                  <bg>#FFFFFF</bg>
+                  <object class="wxToolBar" name="id_toolbar">
+                    <object class="tool" name="Tool1">
+                      <bitmap>../icons/16x16/preferences.png</bitmap>
+                    </object>
+                    <object class="tool" name="Tool1">
+                      <bitmap>../icons/16x16/preferences.png</bitmap>
+                    </object>
+                    <object class="tool" name="Tool1">
+                      <bitmap>../icons/16x16/preferences.png</bitmap>
+                    </object>
+                  </object>
+                </object>
+                <border>10</border>
+              </object>
+              <object class="spacer">
+                <size>10,0</size>
+              </object>
+              <object class="sizeritem">
+                <object class="wxScrolledWindow" name="window">
+                  <pos>10,10</pos>
+                  <size>200,300</size>
+                  <style>wxVSCROLL|wxSIMPLE_BORDER</style>
+                  <bg>#FFFFFF</bg>
+                </object>
+                <border>10</border>
+              </object>
+              <object class="sizeritem">
+                <object class="wxBoxSizer">
+                  <orient>wxHORIZONTAL</orient>
+                </object>
+              </object>
+            </object>
+            <border>10</border>
+          </object>
+        </object>
+      </object>
+    </object>
+  </object>
+</resource>

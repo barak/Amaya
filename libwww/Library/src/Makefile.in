@@ -937,7 +937,8 @@ RECURSIVE_TARGETS = info-recursive dvi-recursive pdf-recursive \
 	all-recursive install-data-recursive install-exec-recursive \
 	installdirs-recursive install-recursive uninstall-recursive \
 	check-recursive installcheck-recursive
-DIST_COMMON = $(pkginclude_HEADERS) $(srcdir)/Makefile.in Makefile.am
+DIST_COMMON = $(pkginclude_HEADERS) $(srcdir)/Makefile.in COPYING.LIB \
+	INSTALL Makefile.am configure.in
 DIST_SUBDIRS = $(SUBDIRS)
 SOURCES = $(libwwwapp_la_SOURCES) $(libwwwcache_la_SOURCES) $(libwwwcore_la_SOURCES) $(libwwwdav_la_SOURCES) $(libwwwdir_la_SOURCES) $(libwwwfile_la_SOURCES) $(libwwwftp_la_SOURCES) $(libwwwgopher_la_SOURCES) $(libwwwhtml_la_SOURCES) $(libwwwhttp_la_SOURCES) $(libwwwinit_la_SOURCES) $(libwwwmime_la_SOURCES) $(libwwwmux_la_SOURCES) $(libwwwnews_la_SOURCES) $(libwwwsql_la_SOURCES) $(libwwwstream_la_SOURCES) $(libwwwtelnet_la_SOURCES) $(libwwwtrans_la_SOURCES) $(libwwwutils_la_SOURCES) $(libwwwwais_la_SOURCES) $(libwwwxml_la_SOURCES) $(libwwwzip_la_SOURCES)
 

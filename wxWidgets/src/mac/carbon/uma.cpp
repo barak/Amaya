@@ -4,7 +4,7 @@
 // Author:      Stefan Csomor
 // Modified by:
 // Created:     04/01/98
-// RCS-ID:      $Id: uma.cpp,v 1.1.1.1 2005/07/06 09:30:53 gully Exp $
+// RCS-ID:      $Id: uma.cpp,v 1.1.1.2 2005/07/26 09:31:08 gully Exp $
 // Copyright:   (c) Stefan Csomor
 // Licence:     The wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -14,9 +14,9 @@
 #if wxUSE_GUI
 
 #include "wx/dc.h"
-#include <MacTextEditor.h>
 
 #ifndef __DARWIN__
+#  include <MacTextEditor.h>
 #  include <Navigation.h>
 #  if defined(TARGET_CARBON)
 #    if PM_USE_SESSION_APIS

@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     04/01/98
-// RCS-ID:      $Id: settings.cpp,v 1.1.1.1 2005/07/06 09:30:55 gully Exp $
+// RCS-ID:      $Id: settings.cpp,v 1.1.1.2 2005/07/26 09:31:10 gully Exp $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -172,7 +172,7 @@ wxColour wxSystemSettingsNative::GetColour(wxSystemColour index)
                         index = wxSYS_COLOUR_MENU ;
                 }
             }
-       }
+        }
 
         if ( useDefault )
         {

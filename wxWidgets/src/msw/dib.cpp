@@ -4,7 +4,7 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     03.03.03 (replaces the old file with the same name)
-// RCS-ID:      $Id: dib.cpp,v 1.1.1.1 2005/07/06 09:30:54 gully Exp $
+// RCS-ID:      $Id: dib.cpp,v 1.1.1.2 2005/07/26 09:31:09 gully Exp $
 // Copyright:   (c) 2003 Vadim Zeitlin <vadim@wxwindows.org>
 // License:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -634,7 +634,7 @@ wxPalette *wxDIB::CreatePalette() const
     // and the colour table
     wxCharBuffer rgb(sizeof(RGBQUAD) * biClrUsed);
     RGBQUAD *pRGB = (RGBQUAD*)rgb.data();
-    SelectInHDC(hDC, m_handle);
+    SelectInHDC selectHandle(hDC, m_handle);
     ::GetDIBColorTable(hDC, 0, biClrUsed, pRGB);
     for ( DWORD i = 0; i < biClrUsed; i++, pRGB++ )
     {

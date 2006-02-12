@@ -4,7 +4,7 @@
 // Author:      Stefan Csomor
 // Modified by:
 // Created:     1998-01-01
-// RCS-ID:      $Id: filedlg.cpp,v 1.1.1.1 2005/07/06 09:30:53 gully Exp $
+// RCS-ID:      $Id: filedlg.cpp,v 1.1.1.2 2005/07/26 09:31:08 gully Exp $
 // Copyright:   (c) Stefan Csomor
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -33,7 +33,9 @@ IMPLEMENT_CLASS(wxFileDialog, wxFileDialogBase)
 
 #include "wx/mac/private.h"
 
+#ifndef __DARWIN__
 #include <Navigation.h>
+#endif
 
 #include "MoreFilesX.h"
 

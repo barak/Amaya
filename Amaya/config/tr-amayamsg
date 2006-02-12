@@ -215,7 +215,7 @@
 213 **Try the 'File/Force a Character Coding' entry
 214 Yanlış karakter
 215 Belgenin profili:
-216 Hata - Görünümler/Hataları göster bakın
+216 Hata - Dosya > Hataları göster bakın
 217 Bu belgenin kodlaması Amaya tarafından yapılamıyor
 218 Yazmak ve kaydetmek bu belgenin tipini değiştirir
 219 Kullanıma hazır değil
@@ -258,7 +258,7 @@
 256 URL\'i kullanmak için HTTP tipten olması gerekiyor
 257 Hata: MIME tipi doğru değil
 258 Yabancı
-259 Dizayn bilinmiyor - Görünümler/Hataları göster bakın
+259 Dizayn bilinmiyor - Görünümler > Hataları göster bakın
 260 Bu belge başka bir pencerede açılmıştır
 261 Bu belgeleri kayıt etmek güncelleştirme problemleri çıkara bilir
 262 **Adding or changing the doctype will remove some elements or attributes
@@ -362,12 +362,22 @@
 360 **File
 361 **Replace current
 362 **In new tab
-363 **In new tab (not yet available on Mac OSX)
-364 **In new Window
-365 Anti-aliasing
-366 **ISO format for date
-367 **New documents location
-368 **Opening location
-369 **Warn when closing multiple tabs
-370 **Max url number in history
-371 **Clear url list
+363 **In new Window
+364 Anti-aliasing
+365 **ISO format for date
+366 **New documents location
+367 **Opening location
+368 **Warn when closing multiple tabs
+369 **Max url number in history
+370 **Clear url list
+371 **Display all shortcuts
+372 **Fixed line length (0 = default value)
+373 **Template
+374 **Save the document as...
+375 **Template not found
+376 **Show template's boxes
+377 **Apply closes the dialogue
+378 **Not allowed in this document
+379 **Protected element
+380 **The selection should not cross an element of this type
+381 **No heading found after the selection

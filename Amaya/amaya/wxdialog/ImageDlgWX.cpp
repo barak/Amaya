@@ -13,7 +13,7 @@
 #include "message_wx.h"
 
 static int      MyRef;
-
+static int      Waiting = 0;
 
 //-----------------------------------------------------------------------------
 // Event table: connect the events to the handler functions to process them
@@ -21,7 +21,7 @@ static int      MyRef;
 BEGIN_EVENT_TABLE(ImageDlgWX, AmayaDialog)
   EVT_BUTTON(     XRCID("wxID_OPENBUTTON"),   ImageDlgWX::OnOpenButton )
   EVT_BUTTON(     XRCID("wxID_BROWSEBUTTON"), ImageDlgWX::OnBrowseButton )
-  EVT_BUTTON(     XRCID("wxID_CANCEL"), ImageDlgWX::OnCancelButton )
+  EVT_BUTTON(     XRCID("wxID_CANCEL"),       ImageDlgWX::OnCancelButton )
   EVT_TEXT_ENTER( XRCID("wxID_COMBOBOX"),     ImageDlgWX::OnOpenButton )
 END_EVENT_TABLE()
 
@@ -34,17 +34,17 @@ END_EVENT_TABLE()
     + alt: the suggested alt
   returns:
   ----------------------------------------------------------------------*/
-ImageDlgWX::ImageDlgWX( int ref,
-			    wxWindow* parent,
-			    const wxString & title,
-			    const wxString & urlToOpen,
-			    const wxString & alt,
-			    const wxString & filter ) :
+ImageDlgWX::ImageDlgWX( int ref, wxWindow* parent, const wxString & title,
+                        const wxString & urlToOpen, const wxString & alt,
+                        const wxString & filter, int * p_last_used_filter ) :
   AmayaDialog( NULL, ref ),
-  m_Filter(filter)
+  m_Filter(filter),
+  m_pLastUsedFilter(p_last_used_filter)
 {
   wxXmlResource::Get()->LoadDialog(this, parent, wxT("ImageDlgWX"));
   MyRef = ref;
+  // waiting for a return
+  Waiting = 1;
 
   // update dialog labels with given ones
   SetTitle( title );
@@ -66,7 +66,9 @@ ImageDlgWX::ImageDlgWX( int ref,
   ----------------------------------------------------------------------*/
 ImageDlgWX::~ImageDlgWX()
 {
-  ThotCallback (MyRef, INTEGER_DATA, (char*) 0);
+  if (Waiting)
+  // no return done
+    ThotCallback (MyRef, INTEGER_DATA, (char*) 0);
 }
 
 /*----------------------------------------------------------------------
@@ -96,8 +98,12 @@ void ImageDlgWX::OnOpenButton( wxCommandEvent& event )
   if (Alt[0] == EOS)
     XRCCTRL(*this, "wxID_MANDATORY", wxStaticText)->SetLabel( TtaConvMessageToWX( TtaGetMessage (AMAYA, AM_ALT_MISSING) ));
   else
-    // load the image
-    ThotCallback (MyRef, INTEGER_DATA, (char*)1);
+     {
+      // load the image
+      // return done
+      Waiting = 0;
+      ThotCallback (MyRef, INTEGER_DATA, (char*)1);
+     }
 }
 
 /*----------------------------------------------------------------------
@@ -109,20 +115,20 @@ void ImageDlgWX::OnBrowseButton( wxCommandEvent& event )
 {
   // Create a generic filedialog
   wxFileDialog * p_dlg = new wxFileDialog
-    (
-     this,
+    (this,
      TtaConvMessageToWX( TtaGetMessage (AMAYA, AM_OPEN_URL) ),
      _T(""),
      _T(""), 
      m_Filter,
-     wxOPEN | wxCHANGE_DIR /* wxCHANGE_DIR -> remember the last directory used. */
-     );
+     wxOPEN | wxCHANGE_DIR /* remember the last directory used. */);
 
-  // do not force the directory, let wxWidgets choose for the current one
-  // p_dlg->SetDirectory(wxGetHomeDir());
+  wxString url = XRCCTRL(*this, "wxID_URL", wxTextCtrl)->GetValue( );
+  p_dlg->SetPath(url);
+  p_dlg->SetFilterIndex(*m_pLastUsedFilter);
   
   if (p_dlg->ShowModal() == wxID_OK)
     {
+      *m_pLastUsedFilter = p_dlg->GetFilterIndex();
       XRCCTRL(*this, "wxID_URL", wxTextCtrl)->SetValue( p_dlg->GetPath() );
       // destroy the dlg before calling thotcallback because it's a child of this
       // dialog and thotcallback will delete the dialog...
@@ -133,6 +139,7 @@ void ImageDlgWX::OnBrowseButton( wxCommandEvent& event )
     }
   else
     {
+      *m_pLastUsedFilter = p_dlg->GetFilterIndex();
       p_dlg->Destroy();
     }
 }
@@ -144,6 +151,8 @@ void ImageDlgWX::OnBrowseButton( wxCommandEvent& event )
   ----------------------------------------------------------------------*/
 void ImageDlgWX::OnCancelButton( wxCommandEvent& event )
 {
+  // return done
+  Waiting = 0;
   ThotCallback (MyRef, INTEGER_DATA, (char*) 0);
 }
 

@@ -10,56 +10,56 @@
 8 &Özellik
 9 &Eklemeler
 10 &Birlikte çalışmak
-11 &Birlikte çalışmak
-12 &Yardım
-13 Yeni
-14 Yeni XHTML dosyası...
-15 Yeni XHTML 1.1 dosyası...
-16 Yeni XHTML 1.0 Transitional dosyası...
-17 Yeni XHTML 1.0 Strict dosyası...
-18 Yeni XHTML 1.0 Basic dosyası...
-19 Yeni MathML dosyası...
-20 Yeni SVG dosyası...
-21 Yeni CSS düz dizayn...
-22 Model
-23 Belge aç...
-24 Yeni pencerede aç...
-25 Belgeyi yeniden yükle
-26 Geri
-27 Ileri
-28 Kaydet
-29 Isimle kaydet...
-30 Eşlemek
-31 Doctype\'bı düzenle
-32 doctype\'bı sil
-33 **&Add a doctype
-34 XHTML 1.1 doctype
-35 XHTML 1.0 Transitional doctype
-36 XHTML 1.0 Strict doctype
-37 XHTML 1.0 Basic doctype
-38 HTML 4.01 Transitional doctype
-39 HTML 4.01 Strict doctype
-40 **Force a Character Coding
-41 Unicode (UTF-8)
-42 Western (ISO-8859-1)
-43 Western (ISO-8859-15)
-44 Western (Windows-1252)
-45 Central Europe (ISO-8859-2)
-46 Central Europe (Windows-1250)
-47 South Europe (ISO-8859-3)
-48 Baltic (ISO-8859-4)
-49 Baltic (Windows-1257)
-50 Cyrillic (ISO-8859-5)
-51 Cyrillic (Windows-1251)
-52 Cyrillic (KOI8-R)
-53 Arabic (ISO-8859-6)
-54 Arabic (Windows-1256)
-55 Greek (ISO-8859-7)
-56 Greek (Windows-1253)
-57 Hebrew (ISO-8859-8)
-58 Hebrew (Windows-1255)
-59 Turkish (ISO-8859-9)
-60 Turkish (Windows-125)
+11 &Yardım
+12 Yeni
+13 Yeni XHTML dosyası...
+14 Yeni XHTML 1.1 dosyası...
+15 Yeni XHTML 1.0 Transitional dosyası...
+16 Yeni XHTML 1.0 Strict dosyası...
+17 Yeni XHTML 1.0 Basic dosyası...
+18 Yeni MathML dosyası...
+19 Yeni SVG dosyası...
+20 Yeni CSS düz dizayn...
+21 Model
+22 Belge aç...
+23 Yeni pencerede aç...
+24 Belgeyi yeniden yükle
+25 Geri
+26 Ileri
+27 Kaydet
+28 Isimle kaydet...
+29 Eşlemek
+30 Doctype\'bı düzenle
+31 doctype\'bı sil
+32 **&Add a doctype
+33 XHTML 1.1 doctype
+34 XHTML 1.0 Transitional doctype
+35 XHTML 1.0 Strict doctype
+36 XHTML 1.0 Basic doctype
+37 HTML 4.01 Transitional doctype
+38 HTML 4.01 Strict doctype
+39 **Force a Character Coding
+40 Unicode (UTF-8)
+41 Western (ISO-8859-1)
+42 Western (ISO-8859-15)
+43 Western (Windows-1252)
+44 Central Europe (ISO-8859-2)
+45 Central Europe (Windows-1250)
+46 South Europe (ISO-8859-3)
+47 Baltic (ISO-8859-4)
+48 Baltic (Windows-1257)
+49 Cyrillic (ISO-8859-5)
+50 Cyrillic (Windows-1251)
+51 Cyrillic (KOI8-R)
+52 Arabic (ISO-8859-6)
+53 Arabic (Windows-1256)
+54 Greek (ISO-8859-7)
+55 Greek (Windows-1253)
+56 Hebrew (ISO-8859-8)
+57 Hebrew (Windows-1255)
+58 Turkish (ISO-8859-9)
+59 Turkish (Windows-125)
+60 Chinese (GB-2312)
 61 Japanese (ISO-2022-JP)
 62 Japanese (EUC-JP)
 63 Japanese (Shift-JIS)
@@ -244,88 +244,86 @@
 242 SVG kütüphanesine seçili alanı ekle
 243 Yorum
 244 XML elementlerin
-245 Önceki hedefe bağlantı
-246 Baglantı yarat...
-247 Hedef yarat
-248 tanımı sil
-249 IDs ekle/sil
-250 **Show &tools
-251 **&Fullscreen
-252 Tusları göster
-253 Adres göster
-254 Yakınlaştır
-255 Hedefi göster
-256 Uzaklaştır
-257 Harita alanlarını göster
-258 **Show &formatted view
-259 Yapıyı göster
-260 kaynak göster
-261 Bağlantıları göster
-262 Alternatif gösterim
-263 Içindekileri göster
-264 Zaman sırası
-265 **Split view horizontally
-266 **Split view vertically
-267 Karakter tarzı...
-268 Renkler...
-269 Biçim...
-270 Arkaplan görüntüsü...
-271 Kural yarat...
-272 \'class\' uygula...
-273 **Show applied style...
-274 Bağlantı
-275 Aç
-276 Olumsuzla
-277 Olumla
-278 Sil
-279 Seçili alan ekleme
-280 Doküman eklemek
-281 Seçili alanı taşı
-282 seçilen alanı XPointer gibi kaydet
-283 Xpointer\'daki birikenleri taşı
-284 Tekrar ekle
-285 Server\'e kaydet
-286 Sil
-287 Yükle
-288 Kişisel ayarlama...
-289 Sabit filitre...
-290 kilitli bilgileri kopyala
-291 **New Bookmark
-292 **New Topic
-293 **New Separator
-294 **Move Item
-295 Tekrar okumayı kitle...
-296 Tekrar okumayı kilidi aç...
-297 Tekrar okuma ayarlarını göster...
-298 kilitli bilgileri kopyala...
-299 kitli mi?
-300 Amaya hakkında
-301 W3C deki Amaya hakkında
-302 Içerik
-303 Tarama
-304 Görünümler
-305 Seç
-306 Döküman
-307 Yarat
-308 Tarz tanımları
-309 karakterler
-310 Yeniden yapılandırma
-311 Bağlantılar
-312 Tablolar
-313 Aktif alan
-314 Matematik
-315 Grafik
-316 XML desteği
-317 Görüntü haritaları
-318 Yazı hataları arama
-319 Yazı hataları düzeltmek
-320 Bastırma
-321 WebDAV
-322 Sayfa yerleştirme
-323 Numaralandır
-324 Kitap oluşturma
-325 Not ekleme
-326 &Birlikte çalışmak
-327 Amaya yapılandırması
-328 Kısalmalar
-329 Amaya\'ya ulaşmak
+245 **Copy location
+246 **Paste location
+247 **Copy link
+248 Önceki hedefe bağlantı
+249 Baglantı yarat...
+250 Hedef yarat
+251 tanımı sil
+252 IDs ekle/sil
+253 **Show &tools
+254 **&Fullscreen
+255 Tusları göster
+256 Adres göster
+257 Yakınlaştır
+258 Hedefi göster
+259 Uzaklaştır
+260 Harita alanlarını göster
+261 **Show &formatted view
+262 Yapıyı göster
+263 kaynak göster
+264 Bağlantıları göster
+265 Alternatif gösterim
+266 Içindekileri göster
+267 Zaman sırası
+268 **Split view horizontally
+269 **Split view vertically
+270 Karakter tarzı...
+271 Renkler...
+272 **CSS &Style...
+273 Biçim...
+274 Arkaplan görüntüsü...
+275 Kural yarat...
+276 \'class\' uygula...
+277 **Show applied style...
+278 Bağlantı
+279 Aç
+280 Olumsuzla
+281 Olumla
+282 Sil
+283 Seçili alan ekleme
+284 Doküman eklemek
+285 Seçili alanı taşı
+286 seçilen alanı XPointer gibi kaydet
+287 Xpointer\'daki birikenleri taşı
+288 Tekrar ekle
+289 Server\'e kaydet
+290 Sil
+291 Yükle
+292 Kişisel ayarlama...
+293 Sabit filitre...
+294 Tekrar okumayı kitle...
+295 Tekrar okumayı kilidi aç...
+296 Tekrar okuma ayarlarını göster...
+297 kilitli bilgileri kopyala...
+298 kitli mi?
+299 Amaya hakkında
+300 W3C deki Amaya hakkında
+301 Içerik
+302 Tarama
+303 Görünümler
+304 Seç
+305 Döküman
+306 Yarat
+307 Tarz tanımları
+308 karakterler
+309 Yeniden yapılandırma
+310 Bağlantılar
+311 Tablolar
+312 Aktif alan
+313 Matematik
+314 Grafik
+315 XML desteği
+316 Görüntü haritaları
+317 Yazı hataları arama
+318 Yazı hataları düzeltmek
+319 Bastırma
+320 WebDAV
+321 Sayfa yerleştirme
+322 Numaralandır
+323 Kitap oluşturma
+324 Not ekleme
+325 Amaya yapılandırması
+326 Kısalmalar
+327 Amaya\'ya ulaşmak

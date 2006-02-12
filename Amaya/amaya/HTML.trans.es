@@ -360,16 +360,16 @@ Eliminar el submenú: (optgroup{*+})+;
 
 Lista no ordenada: (p|ol|menu|dir|pre|form)+;
    	{
-        p > ul:<li style=p.style>;
-        ol > ul;
+        p > <ul class=p.class>:<li style=p.style>;
+        ol > <ul class=ol.class>;
         pre > ul:li.pre;
         form > ul:li.form;
         }
 
 Lista ordenada:(p|ul|menu|dir|pre|form)+;
 	   {
-        p > ol:li;
-        ul > ol;
+        p > <ol class=p.class>:<li style=p.style>;
+        ul > <ol class=ul.class>;
         pre > ol:li.pre;
         form > ol:li.form;
         }
@@ -493,14 +493,6 @@ Eliminar tabla:table{?caption,(block:*{(tr{(td|th),?(td2:td|th2:th)+})+})+};
         td2     > :div;
         th2     > :div;
         }
-
-Transponer tabla:table{tbody{tr{(td|th)+}|(tr{td2:td|th2:th})+}};
-	{
-	td > <table border=table.border>:tr.td;
-	th > table:tr.td;
-	td2 > <table border=table.border>.tr:td;
-	th2 > table.tr:td;
-	}
 
 Celdas de encabezado:?(td|th)+,td,?(td|th)+;
 	{

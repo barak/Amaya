@@ -20,6 +20,9 @@ extern void RemoveLink ( Element el,
                          Document doc );
 extern ThotBool DeleteLink ( NotifyElement *event );
 extern ThotBool CheckMandatory ( NotifyAttribute *event );
+extern void GenerateInlineElement ( int eType,
+                                    int aType,
+                                    char * data );
 extern void SetREFattribute ( Element element,
                               Document doc,
                               char *targetURL,
@@ -43,7 +46,8 @@ extern void CreateAnchor ( Document doc,
                            ThotBool createLink );
 extern ThotBool MakeUniqueName ( Element el,
                                  Document doc,
-                                 ThotBool doIt );
+                                 ThotBool doIt,
+                                 ThotBool withUndo );
 extern void CreateRemoveIDAttribute ( char *elName,
                                       Document doc,
                                       ThotBool createID,
@@ -60,6 +64,13 @@ extern void ChangeURI ( Element el,
                         Document doc );
 extern ThotBool ElementOKforProfile ( Element el,
                                       Document doc );
+extern void RemoveTextAttributes ( Element el,
+                                   Document doc );
+extern void CheckPastedElement ( Element el,
+                                 Document doc,
+                                 int info,
+                                 int position,
+                                 ThotBool by_ref );
 extern void ElementPasted ( NotifyElement * event );
 extern void CheckNewLines ( NotifyOnTarget *event );
 extern void CreateTarget ( Document doc,
@@ -146,6 +157,9 @@ extern void RemoveLink ( Element el,
                            Document doc );
 extern ThotBool DeleteLink ( NotifyElement *event );
 extern ThotBool CheckMandatory ( NotifyAttribute *event );
+extern void GenerateInlineElement ( int eType,
+                                      int aType,
+                                      char * data );
 extern void SetREFattribute ( Element element,
                                 Document doc,
                                 char *targetURL,
@@ -169,7 +183,8 @@ extern void CreateAnchor ( Document doc,
                              ThotBool createLink );
 extern ThotBool MakeUniqueName ( Element el,
                                    Document doc,
-                                   ThotBool doIt );
+                                   ThotBool doIt,
+                                   ThotBool withUndo );
 extern void CreateRemoveIDAttribute ( char *elName,
                                         Document doc,
                                         ThotBool createID,
@@ -186,6 +201,13 @@ extern void ChangeURI ( Element el,
                           Document doc );
 extern ThotBool ElementOKforProfile ( Element el,
                                         Document doc );
+extern void RemoveTextAttributes ( Element el,
+                                     Document doc );
+extern void CheckPastedElement ( Element el,
+                                   Document doc,
+                                   int info,
+                                   int position,
+                                   ThotBool by_ref );
 extern void ElementPasted ( NotifyElement * event );
 extern void CheckNewLines ( NotifyOnTarget *event );
 extern void CreateTarget ( Document doc,

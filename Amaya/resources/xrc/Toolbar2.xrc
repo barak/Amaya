@@ -1,0 +1,37 @@
+<?xml version="1.0" ?>
+<resource>
+  <object class="wxToolBar" name="AmayaToolbar">
+    <object class="tool" name="wxID_TOOL_BACK">
+      <bitmap>../icons/22x22/back.png</bitmap>
+    </object>
+    <object class="tool" name="wxID_TOOL_FORWARD">
+      <bitmap>../icons/22x22/forward.png</bitmap>
+    </object>
+    <object class="tool" name="wxID_TOOL_RELOAD">
+      <bitmap>../icons/22x22/reload.png</bitmap>
+    </object>
+    <object class="tool" name="wxID_TOOL_STOP">
+      <bitmap>../icons/22x22/stop.png</bitmap>
+    </object>
+    <object class="tool" name="wxID_TOOL_HOME">
+      <bitmap>../icons/22x22/home.png</bitmap>
+    </object>
+    <object class="separator"/>
+    <object class="tool" name="wxID_TOOL_SAVE">
+      <bitmap>../icons/22x22/save.png</bitmap>
+    </object>
+    <style>wxTB_FLAT</style>
+    <object class="tool" name="wxID_TOOL_PRINT">
+      <bitmap>../icons/22x22/print.png</bitmap>
+    </object>
+    <object class="tool" name="wxID_TOOL_FIND">
+      <bitmap>../icons/22x22/find.png</bitmap>
+    </object>
+    <object class="wxComboBox" name="wxID_TOOL_URL">
+      <content/>
+    </object>
+    <object class="tool" name="wxID_TOOL_LOGO">
+      <bitmap>../icons/22x22/logo.png</bitmap>
+    </object>
+  </object>
+</resource>

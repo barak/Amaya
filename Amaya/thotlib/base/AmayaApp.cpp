@@ -80,7 +80,6 @@ int AmayaApp::AttrList[] =
   WX_GL_NOT_ACCELERATED, /* don't change the position of this entry (12) */
   0
 };
-
 #endif /* _GL */
 
 wxImageList * AmayaApp::m_pDocImageList = NULL;
@@ -89,13 +88,11 @@ wxIcon AmayaApp::m_AppIcon = wxIcon();
 AmayaLogDebug * AmayaApp::m_pAmayaLogDebug = NULL;
 #endif /* #ifdef __WXDEBUG__ */
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApp
  *      Method:  OnInit
  * Description:  this is the entry point
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 bool AmayaApp::OnInit()
 {
   m_AmayaIsInit = false;
@@ -165,7 +162,6 @@ bool AmayaApp::OnInit()
 
   // Attention: rajouter ici toutes les autres ressources a charger  
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "AuthentDlgWX.xrc") );
-  wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "BgImageDlgWX.xrc") ); 
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "CheckedListDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "ConfirmCloseTab.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "CreateTableDlgWX.xrc") );
@@ -199,6 +195,7 @@ bool AmayaApp::OnInit()
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "SaveAsDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "SearchDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "SpellCheckDlgWX.xrc") );
+  wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "StyleDlgWX.xrc") ); 
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "TextDlgWX.xrc") ); 
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "TitleDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "Toolbar.xrc") );
@@ -249,13 +246,11 @@ bool AmayaApp::OnInit()
   return true;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApp
  *      Method:  OnExit
  * Description:  free all allocated memory
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 int AmayaApp::OnExit()
 {
   TTALOGDEBUG_0( TTA_LOG_INIT, _T("AmayaApp::OnExit"));
@@ -283,14 +278,12 @@ int AmayaApp::OnExit()
   return 0;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApp
  *      Method:  InitAmayaArgs
  * Description:  this methode convert wxApp::argc and wxApp::argv to amaya format
  *               amaya_argv must be free when closing application
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaApp::InitAmayaArgs()
 {
   // convert argc and argv in order to be compatible with amaya
@@ -306,13 +299,11 @@ void AmayaApp::InitAmayaArgs()
     }
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApp
  *      Method:  ClearAmayaArgs
  * Description:  free arguments -> must be called when appli exit
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaApp::ClearAmayaArgs()
 {
   for ( int i = 0; i < amaya_argc; i++ )
@@ -322,13 +313,11 @@ void AmayaApp::ClearAmayaArgs()
   delete [] amaya_argv;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApp
  *      Method:  OnIdle
  * Description:  called when there is no more event to procced
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaApp::OnIdle( wxIdleEvent& event )
 {
   // amaya_main is called only once when the first Idle event is received
@@ -380,13 +369,11 @@ void AmayaApp::OnIdle( wxIdleEvent& event )
 }
 
 #ifdef _GL
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApp
  *      Method:  GetGL_AttrList
  * Description:  static methode which returns the opengl best display attributes
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 int * AmayaApp::GetGL_AttrList()
 {
   // depending on thot.rc option set/unset OpenGL hardware acceleration
@@ -405,26 +392,22 @@ int * AmayaApp::GetGL_AttrList()
 }
 #endif /* _GL */
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApp
  *      Method:  GetDocumentIconList
  * Description:  Returns the documents image list
  *               this is where the document's icons are stored (as mozilla)
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 wxImageList * AmayaApp::GetDocumentIconList()
 {
   return m_pDocImageList;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApp
  *      Method:  SetupDocumentIconList
  * Description:  fill the image list with icons (order is important)
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaApp::SetupDocumentIconList()
 {
   /* setup the documents image list
@@ -448,28 +431,20 @@ void AmayaApp::SetupDocumentIconList()
   int i = 0;
   while ( icon_array[i][0] != '\0' )
     {
-      char gif_filename[128];
       char png_filename[128];
-      sprintf(gif_filename, "document_%s.gif", icon_array[i] );
       sprintf(png_filename, "document_%s.png", icon_array[i] );
-#ifdef _WINDOWS
-      wxBitmap icon( TtaGetResourcePathWX( WX_RESOURCES_ICON_16X16, gif_filename), wxBITMAP_TYPE_GIF );
-#else /* _WINDOWS */
       wxBitmap icon( TtaGetResourcePathWX( WX_RESOURCES_ICON_16X16, png_filename), wxBITMAP_TYPE_PNG );
-#endif /* _WINDOWS */
       m_pDocImageList->Add( icon );
       i++;
     }
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApp
  *      Method:  GetDocumentIconId
  * Description:  Returns the icon id corresponding to the document type name
  *               (see amaya.h => DocumentTypeNames)
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 int AmayaApp::GetDocumentIconId(const char * p_name)
 {
   if (!strcmp(p_name, "html"))
@@ -500,49 +475,41 @@ int AmayaApp::GetDocumentIconId(const char * p_name)
     return 0;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApp
  *      Method:  GetAppIcon
  * Description:  Returns the application icon which is shown in the window manager task bar
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 wxIcon AmayaApp::GetAppIcon()
 {
   return m_AppIcon;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApp
  *      Method:  RegisterOpenURLCallback
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaApp::RegisterOpenURLCallback( void (*callback) (void *) )
 {
   m_pAmayaInstance->RegisterOpenURLCallback( callback );  
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApp
  *      Method:  CallOpenURLCallback
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaApp::CallOpenURLCallback( char * url )
 {
   m_pAmayaInstance->CallOpenURLCallback(url);
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApp
  *      Method:  OnChar
  * Description:  manage keyboard events
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaApp::OnChar(wxKeyEvent& event)
 {
   TTALOGDEBUG_0( TTA_LOG_KEYINPUT, _T("AmayaApp::OnChar key=")+wxString(event.GetUnicodeKey()));
@@ -560,23 +527,21 @@ void AmayaApp::OnChar(wxKeyEvent& event)
     event.Skip();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApp
  *      Method:  OnKeyDown
  * Description:  manage keyboard events : CTRL+1,2,3 ... shortcuts
  *               shortcuts with numbers are managed differently than these with letter
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaApp::OnKeyDown(wxKeyEvent& event)
 {
-  TTALOGDEBUG_1( TTA_LOG_KEYINPUT, _T("AmayaApp::OnKeyDown key=%d"), event.GetKeyCode());
   // forward the key event to active window.
   // this code is only usfull on windows because on gtk,
   // the events are directly proceed in AmayaWindow class
   AmayaWindow * p_window = TtaGetActiveWindow();
   if (p_window && p_window->IsActive())
   {
+  TTALOGDEBUG_1( TTA_LOG_KEYINPUT, _T("AmayaApp::OnKeyDown key=%d"), event.GetKeyCode());
     if(!TtaHandleSpecialKey(event))
       if (!TtaHandleShortcutKey(event))
         event.Skip();
@@ -586,13 +551,11 @@ void AmayaApp::OnKeyDown(wxKeyEvent& event)
 }
 
 #ifdef __WXDEBUG__
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApp
  *      Method:  GetAmayaLogDebug
  * Description:  return an instance on the logdebug window
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaLogDebug * AmayaApp::GetAmayaLogDebug(wxWindow * p_parent)
 {
   if (!m_pAmayaLogDebug)
@@ -600,13 +563,11 @@ AmayaLogDebug * AmayaApp::GetAmayaLogDebug(wxWindow * p_parent)
   return m_pAmayaLogDebug;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApp
  *      Method:  DestroyAmayaLogDebug
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaApp::DestroyAmayaLogDebug()
 {
   if (m_pAmayaLogDebug)
@@ -616,8 +577,7 @@ void AmayaApp::DestroyAmayaLogDebug()
 
 #endif /* #ifdef __WXDEBUG__ */
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApp
  *      Method:  FilterEvent
  * Description:  This function is called before processing any event and allows the 
@@ -627,8 +587,7 @@ void AmayaApp::DestroyAmayaLogDebug()
  *               considering that the event had been already processed (for the former
  *               return value) or that it is not going to be processed at all
  *               (for the latter one).
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 int AmayaApp::FilterEvent(wxEvent& event)
 {
   //  if (event.GetEventType() == wxEVT_CHAR)

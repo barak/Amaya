@@ -4,10 +4,15 @@
 // Author:      David Webster
 // Modified by:
 // Created:     10/09/99
-// RCS-ID:      $Id: joystick.cpp,v 1.1.1.1 2005/07/06 09:30:55 gully Exp $
+// RCS-ID:      $Id: joystick.cpp,v 1.1.1.2 2005/07/26 09:31:10 gully Exp $
 // Copyright:   (c) David Webster
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
+
+//
+// For compilers that support precompilation, includes "wx.h".
+//
+#include "wx/wxprec.h"
 
 #include "wx/defs.h"
 
@@ -82,7 +87,7 @@ int wxJoystick::GetMovementThreshold() const
     return 0;
 }
 
-void wxJoystick::SetMovementThreshold(int threshold)
+void wxJoystick::SetMovementThreshold(int WXUNUSED(threshold))
 {
     // TODO
 }
@@ -93,7 +98,7 @@ void wxJoystick::SetMovementThreshold(int threshold)
 bool wxJoystick::IsOk() const
 {
     // TODO
-    return FALSE;
+    return false;
 }
 
 int wxJoystick::GetNumberJoysticks() const
@@ -231,58 +236,57 @@ int wxJoystick::GetVMax() const
 bool wxJoystick::HasRudder() const
 {
     // TODO
-    return FALSE;
+    return false;
 }
 
 bool wxJoystick::HasZ() const
 {
     // TODO
-    return FALSE;
+    return false;
 }
 
 bool wxJoystick::HasU() const
 {
     // TODO
-    return FALSE;
+    return false;
 }
 
 bool wxJoystick::HasV() const
 {
     // TODO
-    return FALSE;
+    return false;
 }
 
 bool wxJoystick::HasPOV() const
 {
     // TODO
-    return FALSE;
+    return false;
 }
 
 bool wxJoystick::HasPOV4Dir() const
 {
     // TODO
-    return FALSE;
+    return false;
 }
 
 bool wxJoystick::HasPOVCTS() const
 {
     // TODO
-    return FALSE;
+    return false;
 }
 
 // Operations
 ////////////////////////////////////////////////////////////////////////////
 
-bool wxJoystick::SetCapture(wxWindow* win, int pollingFreq)
+bool wxJoystick::SetCapture(wxWindow* WXUNUSED(win), int WXUNUSED(pollingFreq))
 {
     // TODO
-    return FALSE;
+    return false;
 }
 
 bool wxJoystick::ReleaseCapture()
 {
     // TODO
-    return FALSE;
+    return false;
 }
 #endif  // wxUSE_JOYSTICK
-

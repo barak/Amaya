@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     04/01/98
-// RCS-ID:      $Id: mdi.cpp,v 1.1.1.1 2005/07/06 09:30:55 gully Exp $
+// RCS-ID:      $Id: mdi.cpp,v 1.1.1.2 2005/07/26 09:31:09 gully Exp $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -313,7 +313,7 @@ void wxMDIParentFrame::DoMenuUpdates(wxMenu* menu)
             {
                 int nCount = bar->GetMenuCount();
                 for (int n = 0; n < nCount; n++)
-                bar->GetMenu(n)->UpdateUI(source);
+                    bar->GetMenu(n)->UpdateUI(source);
             }
         }
     }
@@ -1381,7 +1381,7 @@ static void InsertWindowMenu(wxWindow *win, WXHMENU menu, HMENU subMenu)
             {
                success = true;
                break;
-            } 
+            }
 
             if ( wxStripMenuCodes(wxString(buf)).IsSameAs(_("Help")) )
             {

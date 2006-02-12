@@ -4,9 +4,9 @@
 // Author:      Stefan Csomor
 // Modified by:
 // Created:     01/02/97
-// RCS-ID:      $Id: dc.cpp,v 1.1.1.1 2005/07/06 09:30:53 gully Exp $
+// RCS-ID:      $Id: dc.cpp,v 1.1.1.2 2005/07/26 09:31:08 gully Exp $
 // Copyright:   (c) Stefan Csomor
-// Licence:       wxWindows licence
+// Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
 #if defined(__GNUG__) && !defined(NO_GCC_PRAGMA)
@@ -32,9 +32,11 @@ using namespace std ;
 #endif
 
 #include "wx/mac/private.h"
+#ifndef __DARWIN__
 #include <ATSUnicode.h>
 #include <TextCommon.h>
 #include <TextEncodingConverter.h>
+#endif
 
 IMPLEMENT_ABSTRACT_CLASS(wxDC, wxObject)
 
@@ -365,7 +367,7 @@ void wxDC::DoDrawBitmap( const wxBitmap &bmp, wxCoord x, wxCoord y, bool useMask
      PixMapHandle bmappixels ;
      // Set foreground and background colours (for bitmaps depth = 1)
      if(bmp.GetDepth() == 1)
-    {
+     {
          RGBColor fore = MAC_WXCOLORREF(m_textForegroundColour.GetPixel());
          RGBColor back = MAC_WXCOLORREF(m_textBackgroundColour.GetPixel());
          RGBForeColor(&fore);
@@ -1666,9 +1668,9 @@ void wxDC::MacInstallFont() const
         Pattern whiteColor ;
         ::BackPat(GetQDGlobalsWhite(&whiteColor));
     }
-    
+
     wxASSERT( m_font.Ok() ) ;
-    
+
 
     ::TextFont( m_font.MacGetFontNum() ) ;
     ::TextSize( (short)(m_scaleY * m_font.MacGetFontSize()) ) ;
@@ -1745,7 +1747,7 @@ void wxDC::MacInstallFont() const
         atsuTags, atsuSizes, atsuValues);
 
     wxASSERT_MSG( status == noErr , wxT("couldn't Modify ATSU style") ) ;
-    
+
 }
 
 Pattern gPatterns[] =

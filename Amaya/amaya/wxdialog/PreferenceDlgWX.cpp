@@ -58,28 +58,28 @@ BEGIN_EVENT_TABLE(PreferenceDlgWX, AmayaDialog)
   
 
   EVT_CLOSE( PreferenceDlgWX::OnClose )
-END_EVENT_TABLE()
+  END_EVENT_TABLE()
 
-/*----------------------------------------------------------------------
-  PreferenceDlgWX create the dialog used to 
+  /*----------------------------------------------------------------------
+    PreferenceDlgWX create the dialog used to 
     - Change amaya preferences
-  params:
+    params:
     + parent : parent window
     + title : dialog title
     + ...
-  returns:
-  ----------------------------------------------------------------------*/
-PreferenceDlgWX::PreferenceDlgWX( int ref,
-				  wxWindow* parent,
-				  const wxArrayString & url_list ) :
-  AmayaDialog( parent, ref )
-  ,m_IsInitialized(false) // this flag is used to know when events can be proceed
+    returns:
+    ----------------------------------------------------------------------*/
+  PreferenceDlgWX::PreferenceDlgWX( int ref,
+                                    wxWindow* parent,
+                                    const wxArrayString & url_list ) :
+    AmayaDialog( parent, ref )
+                 ,m_IsInitialized(false) // this flag is used to know when events can be proceed
 {
   wxXmlResource::Get()->LoadDialog(this, parent, wxT("PreferenceDlgWX"));
   m_UrlList = url_list;
-  wxNotebook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxNotebook);
 
 #ifndef DAV
+  wxNotebook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxNotebook);
   // invalid WebDAV Page
   int page_id = GetPagePosFromXMLID( _T("wxID_PAGE_DAV") );
   if (page_id)
@@ -104,8 +104,8 @@ PreferenceDlgWX::PreferenceDlgWX( int ref,
   SetupLabelDialog_DAV();
 #endif /* DAV */
 
-  XRCCTRL(*this, "wxID_OK",      wxButton)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_APPLY_BUTTON)));
-  XRCCTRL(*this, "wxID_CANCEL",  wxButton)->SetLabel(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_DONE)));
+  XRCCTRL(*this, "wxID_OK", wxButton)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_APPLY_BUTTON)));
+  XRCCTRL(*this, "wxID_CANCEL", wxButton)->SetLabel(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_DONE)));
   XRCCTRL(*this, "wxID_DEFAULT", wxButton)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_DEFAULT_BUTTON)));
 
   // load current values and send it to the dialog
@@ -157,9 +157,9 @@ int PreferenceDlgWX::GetPagePosFromXMLID( const wxString & xml_id )
   while (!found && page_id < (int) p_notebook->GetPageCount() )
     {
       if ( p_page == p_notebook->GetPage(page_id))
-	found = true;
+        found = true;
       else
-	page_id++;
+        page_id++;
     }
 
   if (found)
@@ -172,14 +172,15 @@ int PreferenceDlgWX::GetPagePosFromXMLID( const wxString & xml_id )
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::OnPageChanged( wxNotebookEvent& event )
 {
-  wxNotebook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxNotebook);
-  wxPanel *    p_new_page = (wxPanel *)((event.GetSelection()>=0 && p_notebook)?p_notebook->GetPage(event.GetSelection()):NULL);
+  wxNotebook *p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxNotebook);
+  wxPanel *p_new_page = (wxPanel *)((event.GetSelection()>=0 && p_notebook)?p_notebook->GetPage(event.GetSelection()):NULL);
 
-  if(!m_IsInitialized || !p_new_page || !XRCCTRL(*this,"wxID_OK",wxButton) || !XRCCTRL(*this,"wxID_DEFAULT",wxButton))
-  {
-    event.Skip();
-    return;
-  }
+  if(!m_IsInitialized || !p_new_page || !XRCCTRL(*this,"wxID_OK",wxButton) ||
+     !XRCCTRL(*this,"wxID_DEFAULT",wxButton))
+    {
+      event.Skip();
+      return;
+    }
 
   int page_id_geom = wxXmlResource::GetXRCID(_T("wxID_PAGE_GEOMETRY"));
 
@@ -227,9 +228,17 @@ void PreferenceDlgWX::SetupLabelDialog_General()
   XRCCTRL(*this, "wxID_CHECK_NOALIASING", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_NOALIASING)) );
   XRCCTRL(*this, "wxID_CHECK_DATE", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_DATE)) );
   XRCCTRL(*this, "wxID_CHECK_SHOWTARGETS", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_SHOW_TARGETS)) );
+  XRCCTRL(*this, "wxID_CHECK_SHOWSHORTCUTS", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_SHOWSHORTCUTS)));
+  XRCCTRL(*this, "wxID_CHECK_SHOWTEMPLATES", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_SHOW_TEMPLATES)));
 
   XRCCTRL(*this, "wxID_RADIO_QUICKAXX", wxRadioBox)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_ACCESSKEY)) );
   XRCCTRL(*this, "wxID_RADIO_QUICKAXX", wxRadioBox)->SetString(2,TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_NONE)) );
+
+  /* tooltip of color buttons */
+  XRCCTRL(*this, "wxID_BUTTON_TEXTCOLOR", wxBitmapButton)->SetToolTip( TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_FG_SEL_COLOR) ));
+  XRCCTRL(*this, "wxID_BUTTON_BACKCOLOR", wxBitmapButton)->SetToolTip( TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_FG_SEL_COLOR) ));
+  XRCCTRL(*this, "wxID_BUTTON_SELCOLOR", wxBitmapButton)->SetToolTip( TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_FG_SEL_COLOR) ));
+  XRCCTRL(*this, "wxID_BUTTON_SELBACKCOLOR", wxBitmapButton)->SetToolTip( TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_FG_SEL_COLOR) ));
 
   // setup range of zoom
   XRCCTRL(*this, "wxID_CHARZOOM_VALUE", wxSpinCtrl)->SetRange( 10, 1000 );
@@ -241,7 +250,7 @@ void PreferenceDlgWX::SetupLabelDialog_General()
 /*----------------------------------------------------------------------
   SetupDialog_General send init value to dialog 
   params:
-    + const PropTab_General & prop : the values to setup into the dialog
+  + const PropTab_General & prop : the values to setup into the dialog
   returns:
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::SetupDialog_General( const Prop_General & prop )
@@ -256,9 +265,10 @@ void PreferenceDlgWX::SetupDialog_General( const Prop_General & prop )
   XRCCTRL(*this, "wxID_CHECK_NOALIASING", wxCheckBox)->SetValue( prop.S_NoAliasing );
   XRCCTRL(*this, "wxID_CHECK_DATE", wxCheckBox)->SetValue( prop.S_DATE );
   XRCCTRL(*this, "wxID_CHECK_SHOWTARGETS", wxCheckBox)->SetValue( prop.S_Targets );
+  XRCCTRL(*this, "wxID_CHECK_SHOWSHORTCUTS", wxCheckBox)->SetValue( prop.S_Shortcuts );
+  XRCCTRL(*this, "wxID_CHECK_SHOWTEMPLATES", wxCheckBox)->SetValue( prop.S_Templates );
 
-  XRCCTRL(*this, "wxID_RADIO_QUICKAXX",    wxRadioBox)->SetSelection( prop.AccesskeyMod );
-  
+  XRCCTRL(*this, "wxID_RADIO_QUICKAXX", wxRadioBox)->SetSelection( prop.AccesskeyMod );
   XRCCTRL(*this, "wxID_CHOICE_LG", wxChoice)->SetStringSelection( TtaConvMessageToWX(prop.DialogueLang) );
 }
 
@@ -266,7 +276,7 @@ void PreferenceDlgWX::SetupDialog_General( const Prop_General & prop )
   GetValueDialog_General get dialog values
   params:
   returns:
-    + PropTab_General prop : the dialog values
+  + PropTab_General prop : the dialog values
   ----------------------------------------------------------------------*/
 Prop_General PreferenceDlgWX::GetValueDialog_General()
 {
@@ -278,18 +288,14 @@ Prop_General PreferenceDlgWX::GetValueDialog_General()
   strcpy( prop.HomePage, (const char*)value.mb_str(wxConvUTF8) );
 
   prop.Zoom = XRCCTRL(*this, "wxID_CHARZOOM_VALUE",     wxSpinCtrl)->GetValue();
-#if 0
-  prop.FontMenuSize = 0 /* TODO ? */;
-#endif
-
-
   prop.PasteLineByLine = XRCCTRL(*this, "wxID_CHECK_CCLINE", wxCheckBox)->GetValue();
   prop.S_AutoSave = XRCCTRL(*this, "wxID_CHECK_BACKUP", wxCheckBox)->GetValue();
   prop.S_Geometry = XRCCTRL(*this, "wxID_CHECK_SAVEGEO", wxCheckBox)->GetValue();
   prop.S_NoAliasing = XRCCTRL(*this, "wxID_CHECK_NOALIASING", wxCheckBox)->GetValue();
   prop.S_DATE = XRCCTRL(*this, "wxID_CHECK_DATE", wxCheckBox)->GetValue();
   prop.S_Targets = XRCCTRL(*this, "wxID_CHECK_SHOWTARGETS", wxCheckBox)->GetValue();
-
+  prop.S_Shortcuts = XRCCTRL(*this, "wxID_CHECK_SHOWSHORTCUTS", wxCheckBox)->GetValue();
+  prop.S_Templates = XRCCTRL(*this, "wxID_CHECK_SHOWTEMPLATES", wxCheckBox)->GetValue();
   prop.AccesskeyMod = XRCCTRL(*this, "wxID_RADIO_QUICKAXX", wxRadioBox)->GetSelection();
 
   value = XRCCTRL(*this, "wxID_CHOICE_LG", wxChoice)->GetStringSelection();
@@ -318,12 +324,9 @@ void PreferenceDlgWX::SetupLabelDialog_Browse()
 
   // update dialog General tab labels with given ones
   XRCCTRL(*this, "wxID_RADIO_OPENLOC", wxRadioBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_OPENLOC)) );
-#ifdef _MACOS
-  XRCCTRL(*this, "wxID_RADIO_OPENLOC", wxRadioBox)->SetString(0, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_INNEWTAB_MACOS)));
-#else /* _MACOS */
-  XRCCTRL(*this, "wxID_RADIO_OPENLOC", wxRadioBox)->SetString(0, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_INNEWTAB)));
-#endif /*  _MACOS */
-  XRCCTRL(*this, "wxID_RADIO_OPENLOC", wxRadioBox)->SetString(1, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_INNEWWINDOW)));
+  XRCCTRL(*this, "wxID_RADIO_OPENLOC", wxRadioBox)->SetString(0, TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_REPLACECURRENT)));
+  XRCCTRL(*this, "wxID_RADIO_OPENLOC", wxRadioBox)->SetString(1, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_INNEWTAB)));
+  XRCCTRL(*this, "wxID_RADIO_OPENLOC", wxRadioBox)->SetString(2, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_INNEWWINDOW)));
   XRCCTRL(*this, "wxID_LABEL_SCREEN", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_SCREEN_TYPE)) );
   XRCCTRL(*this, "wxID_CHECK_LOADIMG", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_LOAD_IMAGES)) );
   XRCCTRL(*this, "wxID_CHECK_LOADOBJ", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_LOAD_OBJECTS)) );
@@ -340,7 +343,7 @@ void PreferenceDlgWX::SetupLabelDialog_Browse()
 /*----------------------------------------------------------------------
   SetupDialog_Browse send init value to dialog 
   params:
-    + const PropTab_Browse & prop : the values to setup into the dialog
+  + const PropTab_Browse & prop : the values to setup into the dialog
   returns:
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::SetupDialog_Browse( const Prop_Browse & prop )
@@ -362,7 +365,7 @@ void PreferenceDlgWX::SetupDialog_Browse( const Prop_Browse & prop )
   GetValueDialog_Browse get dialog values
   params:
   returns:
-    + PropTab_Browse prop : the dialog values
+  + PropTab_Browse prop : the dialog values
   ----------------------------------------------------------------------*/
 Prop_Browse PreferenceDlgWX::GetValueDialog_Browse()
 {
@@ -416,12 +419,14 @@ void PreferenceDlgWX::SetupLabelDialog_Publish()
   XRCCTRL(*this, "wxID_CHECK_ETAGS", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_USE_ETAGS)) );
   XRCCTRL(*this, "wxID_CHECK_PUTGET", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_VERIFY_PUT)) );
   XRCCTRL(*this, "wxID_CHECK_CRLF", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_EXPORT_CRLF)) );
+  XRCCTRL(*this, "wxID_LABEL_EXPORTLENGTH", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_EXPORT_LENGTH)) );
+  XRCCTRL(*this, "wxID_EXPORTLENGTH", wxSpinCtrl)->SetRange( 0, 1000 );
 }
 
 /*----------------------------------------------------------------------
   SetupDialog_Publish send init value to dialog 
   params:
-    + const PropTab_Publish & prop : the values to setup into the dialog
+  + const PropTab_Publish & prop : the values to setup into the dialog
   returns:
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::SetupDialog_Publish( const Prop_Publish & prop )
@@ -432,6 +437,7 @@ void PreferenceDlgWX::SetupDialog_Publish( const Prop_Publish & prop )
   XRCCTRL(*this, "wxID_CHECK_ETAGS", wxCheckBox)->SetValue( prop.LostUpdateCheck );
   XRCCTRL(*this, "wxID_CHECK_PUTGET", wxCheckBox)->SetValue( prop.VerifyPublish );
   XRCCTRL(*this, "wxID_CHECK_CRLF", wxCheckBox)->SetValue( prop.ExportCRLF );
+  XRCCTRL(*this, "wxID_EXPORTLENGTH", wxSpinCtrl)->SetValue( prop.ExportLength );
 
   XRCCTRL(*this, "wxID_VALUE_DEFAULTNAME", wxTextCtrl)->SetValue( TtaConvMessageToWX(prop.DefaultName) );
   XRCCTRL(*this, "wxID_VALUE_REDIRECT", wxTextCtrl)->SetValue( TtaConvMessageToWX(prop.SafePutRedirect) );
@@ -441,7 +447,7 @@ void PreferenceDlgWX::SetupDialog_Publish( const Prop_Publish & prop )
   GetValueDialog_Publish get dialog values
   params:
   returns:
-    + Prop_Publish prop : the dialog values
+  + Prop_Publish prop : the dialog values
   ----------------------------------------------------------------------*/
 Prop_Publish PreferenceDlgWX::GetValueDialog_Publish()
 {
@@ -456,6 +462,7 @@ Prop_Publish PreferenceDlgWX::GetValueDialog_Publish()
   prop.LostUpdateCheck  = XRCCTRL(*this, "wxID_CHECK_ETAGS", wxCheckBox)->GetValue();
   prop.VerifyPublish    = XRCCTRL(*this, "wxID_CHECK_PUTGET", wxCheckBox)->GetValue();
   prop.ExportCRLF       = XRCCTRL(*this, "wxID_CHECK_CRLF", wxCheckBox)->GetValue();
+  prop.ExportLength     = XRCCTRL(*this, "wxID_EXPORTLENGTH", wxSpinCtrl)->GetValue();
 
   value = XRCCTRL(*this, "wxID_VALUE_DEFAULTNAME", wxTextCtrl)->GetValue();
   strcpy( prop.DefaultName, (const char*)value.mb_str(wxConvUTF8) );
@@ -503,7 +510,7 @@ void PreferenceDlgWX::SetupLabelDialog_Cache()
 /*----------------------------------------------------------------------
   SetupDialog_Cache send init value to dialog 
   params:
-    + const Prop_Cache & prop : the values to setup into the dialog
+  + const Prop_Cache & prop : the values to setup into the dialog
   returns:
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::SetupDialog_Cache( const Prop_Cache & prop )
@@ -523,7 +530,7 @@ void PreferenceDlgWX::SetupDialog_Cache( const Prop_Cache & prop )
   GetValueDialog_Cache get dialog values
   params:
   returns:
-    + Prop_Cache prop : the dialog values
+  + Prop_Cache prop : the dialog values
   ----------------------------------------------------------------------*/
 Prop_Cache PreferenceDlgWX::GetValueDialog_Cache()
 {
@@ -595,7 +602,7 @@ void PreferenceDlgWX::SetupLabelDialog_Proxy()
 /*----------------------------------------------------------------------
   SetupDialog_Proxy send init value to dialog 
   params:
-    + const Prop_Proxy & prop : the values to setup into the dialog
+  + const Prop_Proxy & prop : the values to setup into the dialog
   returns:
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::SetupDialog_Proxy( const Prop_Proxy & prop )
@@ -611,7 +618,7 @@ void PreferenceDlgWX::SetupDialog_Proxy( const Prop_Proxy & prop )
   GetValueDialog_Proxy get dialog values
   params:
   returns:
-    + Prop_Proxy prop : the dialog values
+  + Prop_Proxy prop : the dialog values
   ----------------------------------------------------------------------*/
 Prop_Proxy PreferenceDlgWX::GetValueDialog_Proxy()
 {
@@ -674,7 +681,7 @@ void PreferenceDlgWX::SetupLabelDialog_Color()
 /*----------------------------------------------------------------------
   SetupDialog_Color send init value to dialog 
   params:
-    + const Prop_Color & prop : the values to setup into the dialog
+  + const Prop_Color & prop : the values to setup into the dialog
   returns:
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::SetupDialog_Color( const Prop_Color & prop )
@@ -706,7 +713,7 @@ void PreferenceDlgWX::SetupDialog_Color( const Prop_Color & prop )
   GetValueDialog_Color get dialog values
   params:
   returns:
-    + Prop_Color prop : the dialog values
+  + Prop_Color prop : the dialog values
   ----------------------------------------------------------------------*/
 Prop_Color PreferenceDlgWX::GetValueDialog_Color()
 {
@@ -740,20 +747,21 @@ void PreferenceDlgWX::OnColorPalette( wxCommandEvent& event )
   int backcolor_id = wxXmlResource::GetXRCID(_T("wxID_BUTTON_BACKCOLOR"));
   int selcolor_id = wxXmlResource::GetXRCID(_T("wxID_BUTTON_SELCOLOR"));
   int selbackcolor_id = wxXmlResource::GetXRCID(_T("wxID_BUTTON_SELBACKCOLOR"));
-
+  int id = event.GetId();
   // First of all setup the dialog with the combobox color
   wxString value;
   unsigned short      red;
   unsigned short      green;
   unsigned short      blue;
   char buffer[512];
-  if (event.GetId() == textcolor_id)
+
+  if (id == textcolor_id)
     value = XRCCTRL(*this, "wxID_COMBO_TEXTCOLOR", wxComboBox)->GetValue();
-  else if (event.GetId() == backcolor_id)
+  else if (id == backcolor_id)
     value = XRCCTRL(*this, "wxID_COMBO_BACKCOLOR", wxComboBox)->GetValue();
-  else if (event.GetId() == selcolor_id)
+  else if (id == selcolor_id)
     value = XRCCTRL(*this, "wxID_COMBO_SELCOLOR", wxComboBox)->GetValue();
-  else if (event.GetId() == selbackcolor_id)
+  else if (id == selbackcolor_id)
     value = XRCCTRL(*this, "wxID_COMBO_SELBACKCOLOR", wxComboBox)->GetValue();
   strcpy(buffer, (const char*)value.mb_str(wxConvUTF8) );
   TtaGiveRGB (buffer, &red, &green, &blue);
@@ -766,16 +774,16 @@ void PreferenceDlgWX::OnColorPalette( wxCommandEvent& event )
       colour_data = dialog.GetColourData();
       wxColour col = colour_data.GetColour();
       
-      char color_string[7];
+      char color_string[20];
       sprintf( color_string, "#%02x%02x%02x", col.Red(), col.Green(), col.Blue() );
       wxComboBox *     p_combo  = NULL;
-      if (event.GetId() == textcolor_id)
+      if (id == textcolor_id)
         p_combo = XRCCTRL(*this, "wxID_COMBO_TEXTCOLOR", wxComboBox);
-      else if (event.GetId() == backcolor_id)
+      else if (id == backcolor_id)
         p_combo = XRCCTRL(*this, "wxID_COMBO_BACKCOLOR", wxComboBox);
-      else if (event.GetId() == selcolor_id)
+      else if (id == selcolor_id)
         p_combo = XRCCTRL(*this, "wxID_COMBO_SELCOLOR", wxComboBox);
-      else if (event.GetId() == selbackcolor_id)
+      else if (id == selbackcolor_id)
         p_combo = XRCCTRL(*this, "wxID_COMBO_SELBACKCOLOR", wxComboBox);    
       if (p_combo)
         {
@@ -921,7 +929,7 @@ void PreferenceDlgWX::SetupLabelDialog_Annot()
 /*----------------------------------------------------------------------
   SetupDialog_Annot send init value to dialog 
   params:
-    + const Prop_Annot & prop : the values to setup into the dialog
+  + const Prop_Annot & prop : the values to setup into the dialog
   returns:
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::SetupDialog_Annot( const Prop_Annot & prop )
@@ -939,7 +947,7 @@ void PreferenceDlgWX::SetupDialog_Annot( const Prop_Annot & prop )
   GetValueDialog_Annot get dialog values
   params:
   returns:
-    + Prop_Annot prop : the dialog values
+  + Prop_Annot prop : the dialog values
   ----------------------------------------------------------------------*/
 Prop_Annot PreferenceDlgWX::GetValueDialog_Annot()
 {
@@ -978,7 +986,7 @@ void PreferenceDlgWX::SetupLabelDialog_DAV()
   wxNotebook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxNotebook);
   page_id = GetPagePosFromXMLID( _T("wxID_PAGE_DAV") );
   if (page_id >= 0)
-   p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_DAV_PREFERENCES)) );
+    p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_DAV_PREFERENCES)) );
 
   // update dialog WebDAV tab labels with given ones
   XRCCTRL(*this, "wxID_LABEL_USER_REF", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_DAV_USER_URL)) );
@@ -1027,7 +1035,7 @@ void PreferenceDlgWX::SetupDialog_DAV( const Prop_DAV & prop)
     val = 0;
   XRCCTRL(*this, "wxID_RADIO_TIMEOUT", wxRadioBox)->SetSelection( val );
   if (prop.numberTimeout < 300)
-  XRCCTRL(*this, "wxID_TIMEOUT_VALUE", wxSpinCtrl)->SetValue( 300 );
+    XRCCTRL(*this, "wxID_TIMEOUT_VALUE", wxSpinCtrl)->SetValue( 300 );
   else
     XRCCTRL(*this, "wxID_TIMEOUT_VALUE", wxSpinCtrl)->SetValue( prop.numberTimeout );
 
@@ -1086,6 +1094,9 @@ Prop_DAV PreferenceDlgWX::GetValueDialog_DAV()
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::OnOk( wxCommandEvent& event )
 {
+  if (m_OnApplyLock)
+    return;
+
   m_OnApplyLock = TRUE;
   XRCCTRL(*this, "wxID_CANCEL", wxButton)->Disable();
   
@@ -1209,6 +1220,7 @@ void PreferenceDlgWX::OnCancel( wxCommandEvent& event )
   if (m_OnApplyLock)
     return;
 
+  m_OnApplyLock = TRUE;
   ThotCallback (GetPrefGeneralBase() + GeneralMenu, INTEGER_DATA, (char*) 0);
   ThotCallback (GetPrefBrowseBase() + BrowseMenu, INTEGER_DATA, (char*) 0);
   ThotCallback (GetPrefPublishBase() + PublishMenu, INTEGER_DATA, (char*) 0);
@@ -1223,6 +1235,7 @@ void PreferenceDlgWX::OnCancel( wxCommandEvent& event )
   ThotCallback (GetPrefDAVBase() + DAVMenu, INTEGER_DATA, (char*) 0);
 #endif /* DAV */
   ThotCallback (m_Ref, INTEGER_DATA, (char*) 0);
+  m_OnApplyLock = FALSE;
 }
 
 /*----------------------------------------------------------------------

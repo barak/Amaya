@@ -54,8 +54,8 @@ typedef struct _AttSearch
 
 #ifdef _WINGUI
 #include "resource.h"
-static char       currentDocToSave[MAX_LENGTH];
-static char       currentPathName[MAX_LENGTH];
+static char       CurrentDocToSave[MAX_LENGTH];
+static char       CurrentPathName[MAX_LENGTH];
 extern HINSTANCE    hInstance;
 #endif /* _WINGUI */
 
@@ -132,15 +132,15 @@ LRESULT CALLBACK GetSaveDlgProc (ThotWindow hwnDlg, UINT msg, WPARAM wParam,
       SetWindowText (GetDlgItem (hwnDlg, IDC_BROWSE), "Browse");
       SetWindowText (GetDlgItem (hwnDlg, IDCANCEL),
                      TtaGetMessage (LIB, TMSG_CANCEL));
-      SetDlgItemText (hwnDlg, IDC_EDITDOCSAVE, currentPathName);
+      SetDlgItemText (hwnDlg, IDC_EDITDOCSAVE, CurrentPathName);
       break;
       
     case WM_COMMAND:
       if (HIWORD (wParam) == EN_UPDATE)
         {
           if (LOWORD (wParam) == IDC_EDITDOCSAVE)
-            GetDlgItemText (hwnDlg, IDC_EDITDOCSAVE, currentDocToSave,
-                            sizeof (currentDocToSave) - 1);
+            GetDlgItemText (hwnDlg, IDC_EDITDOCSAVE, CurrentDocToSave,
+                            sizeof (CurrentDocToSave) - 1);
         }
       switch (LOWORD (wParam))
         {
@@ -148,10 +148,10 @@ LRESULT CALLBACK GetSaveDlgProc (ThotWindow hwnDlg, UINT msg, WPARAM wParam,
           /* by default keep the same document name */
           WIN_ListSaveDirectory (hwnDlg,
                                  TtaGetMessage (AMAYA, AM_SAVE_AS),
-                                 currentDocToSave);
-          SetDlgItemText (hwnDlg, IDC_EDITDOCSAVE, currentDocToSave);
-          TtaExtractName (currentDocToSave, SavePath, ObjectName);
-          ThotCallback (BaseDialog + NameSave, STRING_DATA, currentDocToSave);
+                                 CurrentDocToSave);
+          SetDlgItemText (hwnDlg, IDC_EDITDOCSAVE, CurrentDocToSave);
+          TtaExtractName (CurrentDocToSave, SavePath, ObjectName);
+          ThotCallback (BaseDialog + NameSave, STRING_DATA, CurrentDocToSave);
           break;
 
         case IDCANCEL:
@@ -162,7 +162,7 @@ LRESULT CALLBACK GetSaveDlgProc (ThotWindow hwnDlg, UINT msg, WPARAM wParam,
         case ID_CONFIRM:
           /* TODO: Extract directory and file name from urlToOpen */
           EndDialog (hwnDlg, ID_CONFIRM);
-          strcpy (LastURLName, currentDocToSave);
+          strcpy (LastURLName, CurrentDocToSave);
           ThotCallback (BaseDialog + SaveForm, INTEGER_DATA, (char *) 1);
           break;
         }
@@ -178,14 +178,32 @@ LRESULT CALLBACK GetSaveDlgProc (ThotWindow hwnDlg, UINT msg, WPARAM wParam,
   ------------------------------------------------------------------------*/
 void CreateGetSaveDlgWindow (HWND parent, char *path_name)
 {  
-  strcpy (currentPathName, path_name);
+  strcpy (CurrentPathName, path_name);
   DialogBox (hInstance, MAKEINTRESOURCE (GETSAVEDIALOG), parent,
              (DLGPROC) GetSaveDlgProc);
 }
 #endif /* _WINGUI */
 
 /*----------------------------------------------------------------------
-  CheckGenerator                                                 
+  CheckValidProfile
+  If it's a HTML document, do not export elements (SVG/MathML) not allowed by
+  the document profile.
+  ----------------------------------------------------------------------*/
+ThotBool CheckValidProfile (NotifyElement *event)
+{
+  int       profile;
+
+  profile = TtaGetDocumentProfile(event->document);
+  if (DocumentTypes[event->document] != docHTML)
+    return FALSE;  /* let Thot perform normal operation */
+  else if (profile == L_Other || profile == L_Xhtml11 || profile == L_Transitional)
+    return FALSE;  /* let Thot perform normal operation */
+  else
+    return TRUE;
+}
+
+/*----------------------------------------------------------------------
+  CheckGenerator
   ----------------------------------------------------------------------*/
 ThotBool CheckGenerator (NotifyElement *event)
 {
@@ -238,6 +256,34 @@ ThotBool CheckGenerator (NotifyElement *event)
 
 
 /*----------------------------------------------------------------------
+  CheckUSEMAP
+  Usemap starts with # except for XHTML 1.1 document.
+  ----------------------------------------------------------------------*/
+ThotBool CheckUSEMAP (NotifyAttribute *event)
+{
+  int                  length, profile, doc;
+  char                *url;
+
+  length = TtaGetTextAttributeLength (event->attribute) + 3;
+  url = (char *)TtaGetMemory (length);
+  doc = event->document;
+  TtaGiveTextAttributeValue (event->attribute, &url[1], &length);
+  profile = TtaGetDocumentProfile (doc);
+  if (profile == L_Xhtml11 && url[1] == '#')
+    // remove the #
+    TtaSetAttributeText (event->attribute, &url[2], event->element, doc);
+  else if (profile != L_Xhtml11 && url[1] != '#')
+    {
+      // add a #
+      url[0] = '#';
+      TtaSetAttributeText (event->attribute, &url[0], event->element, doc);
+    }
+  TtaFreeMemory (url);
+  /* the document has a DocType */
+  return FALSE;  /* let Thot perform normal operation */
+}
+
+/*----------------------------------------------------------------------
   CheckValidEntity
   An Entity name attribute is about to be saved. If the document doesn't
   have a DocType, replace the entity name by an entity value.
@@ -247,11 +293,13 @@ ThotBool CheckValidEntity (NotifyAttribute *event)
   AttributeType     attrType;
   Attribute         attr;
   CHAR_T            c[3];
-  Language	    lang;
+  Language	        lang;
   char              mbc[20], *s;
   int               length;
+  ThotBool          withDocType, useMath;
 
-  if (HasADoctype (event->document))
+  HasADoctype (event->document, &withDocType, &useMath);
+  if (withDocType)
     /* the document has a DocType */
     return FALSE;  /* let Thot perform normal operation */
 
@@ -491,6 +539,10 @@ static void InitSaveForm (Document document, View view, char *pathname)
   char             s[MAX_LENGTH];
   int              i;
 #endif /* _GTK */
+#ifdef _WX
+  LoadedImageDesc *pImage;
+  ThotBool         created, saveImgs;
+#endif /* _WX */
 
   if (TextFormat)
     {
@@ -606,9 +658,20 @@ static void InitSaveForm (Document document, View view, char *pathname)
   CreateSaveAsDlgWindow (TtaGetViewFrame (document, view), pathname);
 #endif /* _WINGUI */
 #ifdef _WX
-  ThotBool created;
+  saveImgs = FALSE;
+  if (IsW3Path (pathname))
+    {
+      // check idf some images must be saved
+      pImage = ImageURLs;
+      while (!saveImgs && pImage)
+        {
+          saveImgs = (pImage->document == document && pImage->status == IMAGE_MODIFIED);
+          pImage = pImage->nextImage;
+        }
+    }
   created = CreateSaveAsDlgWX (BaseDialog + SaveForm,
-                               TtaGetViewFrame (document, view), pathname, document);
+                               TtaGetViewFrame (document, view), pathname,
+                               document, (bool)saveImgs);
   if (created)
     TtaShowDialogue (BaseDialog + SaveForm, FALSE);
 #endif /* _WX */
@@ -932,19 +995,19 @@ char *UpdateDocumentCharset (Document doc)
   ----------------------------------------------------------------------*/
 void SetNamespacesAndDTD (Document doc)
 {
-  Element		root, el, head, meta, docEl, doctype, elFound, text;
+  Element		    root, el, head, meta, docEl, doctype, elFound, text, elDecl;
   ElementType		elType;
-  Attribute		attr;
+  Attribute		  attr;
   AttributeType	attrType;
-  SSchema              nature;
-  Language              lang;
-  char                *ptr, *s;
-  char                *charsetname = NULL;
-  char		        buffer[300];
-  char                *attrText;
-  int                  length, profile, pi_type;
-  ThotBool		useMathML, useSVG, useHTML, useXML, mathPI;
-  ThotBool             xmlDecl, xhtml_mimetype, insertMeta;
+  SSchema       nature;
+  Language      lang;
+  char         *ptr, *s;
+  char         *charsetname = NULL;
+  char		      buffer[300];
+  char         *attrText;
+  int           length, profile, pi_type;
+  ThotBool		  useMathML, useSVG, useHTML, useXML, mathPI;
+  ThotBool      xmlDecl, xhtml_mimetype, insertMeta;
 
   insertMeta = FALSE;
   useMathML = FALSE;
@@ -953,6 +1016,7 @@ void SetNamespacesAndDTD (Document doc)
   useXML = FALSE;
   nature = NULL;
   doctype = NULL; /* no DOCTYPE */
+  elDecl = NULL;
 #ifdef ANNOTATIONS
   if (DocumentTypes[doc] == docAnnot)
     /* in an annotation, the body of the annotation corresponds to the
@@ -968,28 +1032,29 @@ void SetNamespacesAndDTD (Document doc)
       root = TtaGetRootElement (doc);
    
   /* Look for all natures used in the document */
-  do
-    {
-      TtaNextNature (doc, &nature);
-      if (nature)
-        {
-          /* A nature is found, is it used ? */
-          elFound = TtaSearchElementBySchema (nature, root);
-          if (elFound != NULL)
-            {
-              ptr = TtaGetSSchemaName (nature);
-              if (!strcmp (ptr, "MathML"))
-                useMathML = TRUE;
-              else if (!strcmp (ptr, "SVG"))
-                useSVG = TRUE;
-              else if (!strcmp (ptr, "XML"))
-                useXML = TRUE;
-              else if (!strcmp (ptr, "HTML"))
-                useHTML = TRUE;
-            }
-        }
-    }
-  while (nature);
+  if (DocumentMeta[doc] && DocumentMeta[doc]->compound)
+    do
+      {
+        TtaNextNature (doc, &nature);
+        if (nature)
+          {
+            /* A nature is found, is it used ? */
+            elFound = TtaSearchElementBySchema (nature, root);
+            if (elFound != NULL)
+              {
+                ptr = TtaGetSSchemaName (nature);
+                if (!strcmp (ptr, "MathML"))
+                  useMathML = TRUE;
+                else if (!strcmp (ptr, "SVG"))
+                  useSVG = TRUE;
+                else if (!strcmp (ptr, "XML"))
+                  useXML = TRUE;
+                else if (!strcmp (ptr, "HTML"))
+                  useHTML = TRUE;
+              }
+          }
+      }
+    while (nature);
    
   docEl = TtaGetMainRoot (doc);
   /* a PI is generated when the XHTML document includes math elements and
@@ -1078,20 +1143,23 @@ void SetNamespacesAndDTD (Document doc)
                 text = elFound;
               length = 300;
               TtaGiveTextContent (text, (unsigned char *)buffer, &length, &lang);
-              if (strstr (buffer, "pmathml.xsl"))
+              if (strstr (buffer, "xml version="))
                 {
-                  /* it's not necessary to generate the math PI */
-                  mathPI = FALSE;
+                  if (strstr (buffer, charsetname))
+                    {
+                      /* it's not necessary to generate the XML declaration */
+                      xmlDecl = FALSE;
+                      elDecl = elFound;
+                    }
+                  else
+                    {
+                      // the charset changed -> regenerate the declaration
+                      xmlDecl = TRUE;
+                      elDecl = NULL;
+                      TtaDeleteTree (elFound, doc);
+                    }
                   elFound = NULL;
-                }
-              else
-                {
-                  if (strstr (buffer, "xml version="))
-                    /* it's not necessary to generate the XML declaration */
-                    xmlDecl = FALSE;
-
                   /* check next PI ? */
-                  elFound = NULL;
                   TtaNextSibling (&el);
                   if (el)
                     {
@@ -1101,25 +1169,15 @@ void SetNamespacesAndDTD (Document doc)
                         elFound = TtaGetFirstChild (el);
                     }
                 }
+              else if (strstr (buffer, "pmathml.xsl"))
+                {
+                  /* it's not necessary to generate the math PI */
+                  mathPI = FALSE;
+                  elFound = NULL;
+                }
             }
         }
 
-      if (mathPI)
-        {
-          /* generate the David Carliste's xsl stylesheet for MathML */
-          /* Check the Thot abstract tree against the structure schema. */
-          TtaSetStructureChecking (FALSE, doc);
-          elType.ElTypeNum = HTML_EL_XMLPI;
-          el = TtaNewTree (doc, elType, "");
-          TtaInsertFirstChild (&el, docEl, doc);
-          elFound = TtaGetFirstChild (el);
-          text = TtaGetFirstChild (elFound);
-          strcpy (buffer, MATHML_XSLT_URI);
-          strcat (buffer, MATHML_XSLT_NAME);
-          strcat (buffer, "\"");
-          TtaSetTextContent (text, (unsigned char*)buffer,  Latin_Script, doc);
-          TtaSetStructureChecking (TRUE, doc);
-        }
       if (xmlDecl)
         {
           /* generate the XML declaration */
@@ -1127,11 +1185,31 @@ void SetNamespacesAndDTD (Document doc)
           TtaSetStructureChecking (FALSE, doc);
           elType.ElTypeNum = HTML_EL_XMLPI;
           el = TtaNewTree (doc, elType, "");
+          elDecl = el;
           TtaInsertFirstChild (&el, docEl, doc);
           elFound = TtaGetFirstChild (el);
           text = TtaGetFirstChild (elFound);
           strcpy (buffer, "xml version=\"1.0\" encoding=\"");
           strcat (buffer, charsetname);
+          strcat (buffer, "\"");
+          TtaSetTextContent (text, (unsigned char*)buffer,  Latin_Script, doc);
+          TtaSetStructureChecking (TRUE, doc);
+        }
+      if (mathPI)
+        {
+          /* generate the David Carliste's xsl stylesheet for MathML */
+          /* Check the Thot abstract tree against the structure schema. */
+          TtaSetStructureChecking (FALSE, doc);
+          elType.ElTypeNum = HTML_EL_XMLPI;
+          el = TtaNewTree (doc, elType, "");
+          if (elDecl)
+            TtaInsertSibling(el,elDecl, FALSE, doc );
+          else
+            TtaInsertFirstChild (&el, docEl, doc);
+          elFound = TtaGetFirstChild (el);
+          text = TtaGetFirstChild (elFound);
+          strcpy (buffer, MATHML_XSLT_URI);
+          strcat (buffer, MATHML_XSLT_NAME);
           strcat (buffer, "\"");
           TtaSetTextContent (text, (unsigned char*)buffer,  Latin_Script, doc);
           TtaSetStructureChecking (TRUE, doc);
@@ -1282,7 +1360,7 @@ ThotBool ParseWithNewDoctype (Document doc, char *localFile, char *tempdir,
   char          tempdoc2 [100];
   char          err_doc [100];
   char          err_extdoc [100];
-  ThotBool      xmlDec, withDoctype, isXML, isKnown;
+  ThotBool      xmlDec, withDoctype, isXML, useMath, isKnown;
   ThotBool      ok = FALSE;
 
   /* Clean up previous Parsing errors file */
@@ -1327,7 +1405,7 @@ ThotBool ParseWithNewDoctype (Document doc, char *localFile, char *tempdir,
   
   /* Check if there is a doctype declaration */
   charsetname[0] = EOS;
-  CheckDocHeader (localFile, &xmlDec, &withDoctype, &isXML, &isKnown,
+  CheckDocHeader (localFile, &xmlDec, &withDoctype, &isXML, &useMath, &isKnown,
                   &parsingLevel, &charset, charsetname, &thotType);
   
   /* Store the new document type */
@@ -1336,7 +1414,7 @@ ThotBool ParseWithNewDoctype (Document doc, char *localFile, char *tempdir,
   /* Calls the right parser */
   if (DocumentMeta[ext_doc]->xmlformat)       
     StartXmlParser (ext_doc, localFile, documentname, tempdir,
-                    localFile, xmlDec, withDoctype, TRUE);
+                    localFile, xmlDec, withDoctype, useMath, TRUE);
   else
     StartParser (ext_doc, localFile, documentname, tempdir, localFile, FALSE, TRUE);
   
@@ -1427,7 +1505,7 @@ void RestartParser (Document doc, char *localFile,
   DocumentType  thotType;
   char          charsetname[MAX_LENGTH];
   int           profile, parsingLevel;
-  ThotBool      xmlDec, withDoctype, isXML, isKnown;
+  ThotBool      xmlDec, withDoctype, isXML, useMath, isKnown;
 
   if (doc == 0)
     return;
@@ -1441,7 +1519,7 @@ void RestartParser (Document doc, char *localFile,
 
   /* check if there is an XML declaration with a charset declaration */
   charsetname[0] = EOS;
-  CheckDocHeader (localFile, &xmlDec, &withDoctype, &isXML, &isKnown,
+  CheckDocHeader (localFile, &xmlDec, &withDoctype, &isXML, &useMath, &isKnown,
                   &parsingLevel, &charset, charsetname, &thotType);
   /* Check charset information in a meta */
   if (charset == UNDEFINED_CHARSET)
@@ -1460,6 +1538,7 @@ void RestartParser (Document doc, char *localFile,
         DocumentMeta[doc]->charset = TtaStrdup (charsetname);
     }
   
+  DocumentMeta[doc]->compound = FALSE;
   if (isXML || IsMathMLName (localFile) ||
       IsSVGName (localFile) || IsXMLName (localFile) ||
       DocumentTypes[doc] == docXml)
@@ -1486,7 +1565,7 @@ void RestartParser (Document doc, char *localFile,
   /* Calls the corresponding parser */
   if (DocumentMeta[doc]->xmlformat)       
     StartXmlParser (doc, localFile, documentname, tempdir,
-                    localFile, xmlDec, withDoctype, FALSE);
+                    localFile, xmlDec, withDoctype, useMath, FALSE);
   else
     StartParser (doc, localFile, documentname, tempdir, localFile, FALSE, FALSE);
 
@@ -2159,9 +2238,8 @@ void DoSynchronize (Document doc, View view, NotifyElement *event)
   char              docname[MAX_LENGTH];
   char              tempdir[MAX_LENGTH];
   int               line, index;
-  int		     position;
-  int		     distance;
-  ThotBool          saveBefore;
+  int		            position, distance;
+  ThotBool          saveBefore, modified;
 
   if (!DocumentURLs[doc])
     /* the document is not loaded yet */
@@ -2179,9 +2257,10 @@ void DoSynchronize (Document doc, View view, NotifyElement *event)
     otherDoc = 0;
 
   saveBefore = TtaIsDocumentUpdated (doc);
+  modified = TtaIsDocumentModified (doc);
   if (DocumentTypes[doc] == docCSS)
     {
-      if (!TtaIsDocumentModified (doc))
+      if (!modified && !saveBefore)
         return;
     }
   else if (!saveBefore)
@@ -2231,11 +2310,17 @@ void DoSynchronize (Document doc, View view, NotifyElement *event)
             TtaExportDocumentWithNewLineNumbers (doc, tempdoc, "MathMLT");
           else
             TtaExportDocumentWithNewLineNumbers (doc, tempdoc, NULL);
+          ResetHighlightedElement ();
           RedisplaySourceFile (doc);
           otherDoc = DocumentSource[doc];
           /* the other document is now different from the original file. It can
              be saved */
-          TtaSetItemOn (otherDoc, 1, File, BSave);
+          if (modified)
+            {
+              TtaSetDocumentModified (otherDoc);
+              // but updated
+              TtaSetDocumentUnupdated (otherDoc);
+            }
 #ifdef ANNOTATIONS
           ANNOT_Reload (otherDoc, 1);
 #endif /* ANNOTATIONS */
@@ -2257,12 +2342,12 @@ void DoSynchronize (Document doc, View view, NotifyElement *event)
           tempdoc = GetLocalPath (otherDoc, DocumentURLs[otherDoc]);
           TtaExportDocumentWithNewLineNumbers (doc, tempdoc, "TextFileT");
           TtaExtractName (tempdoc, tempdir, docname);
+          ResetHighlightedElement ();
           RestartParser (otherDoc, tempdoc, tempdir, docname, TRUE);
           /* the other document is now different from the original file. It can
              be saved */
-          TtaSetDocumentModified (otherDoc);
-          /* the source can be closed without save */
-          TtaSetDocumentUnmodified (doc);
+          if (modified)
+            TtaSetDocumentModified (otherDoc);
 
           /* restore original display mode */
           TtaSetDisplayMode (doc, dispMode);
@@ -2285,26 +2370,44 @@ void DoSynchronize (Document doc, View view, NotifyElement *event)
           TtaExtractName (tempdoc, tempdir, docname);
           /* reapply the CSS to relative documents */
           UpdateStyleSheet (DocumentURLs[doc], tempdoc);
+          if (otherDoc)
+            {
+            if (modified)
+              TtaSetDocumentModified (otherDoc);
+            else
+              /* the source can be closed without save */
+              TtaSetDocumentUnmodified (otherDoc);
+            }
         }
     }
 
   /* disable the Synchronize command for both documents */
+  if (DocumentTypes[doc] == docCSS)
+    {
+      TtaSetItemOff (doc, 1, File, BSynchro);
+      TtaSetDocumentUnupdated (doc);
+    }
   if (otherDoc)
     {
       if (DocumentTypes[doc] != docCSS)
         {
           TtaSetItemOff (otherDoc, 1, File, BSynchro);
+          /* updates are now done */
           TtaSetDocumentUnupdated (otherDoc);
         }
       TtaSetItemOff (doc, 1, File, BSynchro);
+      /* updates are now done */
       TtaSetDocumentUnupdated (doc);
        
       /* Synchronize selections */
       if (saveBefore)
+        {
         /* recheck the clicked element */
         TtaGetClickedElement (&(event->document), &(event->element));
+        }
       SynchronizeSourceView (event);
     }
+  
   TtaFreeMemory (tempdoc);
   Synchronizing = FALSE;
 }
@@ -2518,10 +2621,7 @@ void SaveDocument (Document doc, View view)
           Synchronize (doc, view);
           /* save a local copy of the current document */
           if (xmlDoc)
-            {
-              ptr = GetLocalPath (xmlDoc, tempname);
-              TtaSetDocumentUnmodified (xmlDoc);
-            }
+            ptr = GetLocalPath (xmlDoc, tempname);
           else
             ptr = GetLocalPath (doc, tempname);
           ok = TtaFileCopy (ptr, tempname);
@@ -2542,7 +2642,20 @@ void SaveDocument (Document doc, View view)
           DocumentMeta[doc]->method = CE_ABSOLUTE;
           DocumentMetaClear (DocumentMeta[doc]);
         }
+      /* the document is now saved */
       TtaSetDocumentUnmodified (doc);
+      TtaSetInitialSequence (doc);
+      if (xmlDoc)
+        {
+          TtaSetDocumentUnmodified (xmlDoc);
+          TtaSetInitialSequence (xmlDoc);
+        }
+      else if (DocumentSource[doc])
+        {
+          TtaSetDocumentUnmodified (DocumentSource[doc]);
+      TtaSetInitialSequence (DocumentSource[doc]);
+        }
+        
       /* switch Amaya buttons and menus */
       DocStatusUpdate (doc, FALSE);
       TtaSetStatus (doc, 1, TtaGetMessage (AMAYA, AM_SAVED), DocumentURLs[doc]);
@@ -2555,8 +2668,12 @@ void SaveDocument (Document doc, View view)
         RemoveAutoSavedDoc (doc);
     }
   else
-    /* cannot save */
-    TtaSetStatus (doc, 1, TtaGetMessage (AMAYA, AM_CANNOT_SAVE), DocumentURLs[doc]);
+    {
+      char msg[200];
+      /* cannot save */
+      sprintf (msg, TtaGetMessage (AMAYA, AM_CANNOT_SAVE), DocumentURLs[doc]);
+      InitConfirm (0, 0, msg);
+    }
 }
 
 /*----------------------------------------------------------------------
@@ -2569,9 +2686,11 @@ ThotBool CanReplaceCurrentDocument (Document doc, View view)
   ThotBool	ret, always_replace;
 
   ret = TRUE;
-  if (TtaIsDocumentModified (doc) ||
+  if (DocumentTypes[doc] == docLog || DocumentTypes[doc] == docSource)
+    ret = TRUE;
+  else if (TtaIsDocumentModified (doc) ||
       (!Synchronizing &&
-       DocumentTypes[doc] != docLog && DocumentSource[doc] &&
+       DocumentSource[doc] &&
        TtaIsDocumentModified (DocumentSource[doc])))
     {
       TtaGetEnvBoolean ("IGNORE_UPDATES", &always_replace);
@@ -2597,7 +2716,7 @@ ThotBool CanReplaceCurrentDocument (Document doc, View view)
           TtaSetDocumentUnmodified (doc);
           if (DocumentSource[doc])
             TtaSetDocumentUnmodified (DocumentSource[doc]);
-          /* remove the corrsponding auto saved doc */
+          /* remove the corresponding auto saved doc */
           RemoveAutoSavedDoc (doc);
         }
       else
@@ -3423,26 +3542,27 @@ void DoSaveAs (char *user_charset, char *user_mimetype)
   AttributeType       attrType;
   ElementType         elType;
   Element             el, root, doc_url;
+  DisplayMode         dispMode;
+  CHARSET             charset;
   char               *documentFile;
   char               *tempname, *oldLocal, *newLocal = NULL;
   char               *imagePath, *base;
   char                imgbase[MAX_LENGTH];
   char                documentname[MAX_LENGTH];
   char                tempdir[MAX_LENGTH];
+  char                msg[200];
   char                url_sep;
   int                 res;
   int                 len, xmlDoc;
-  DisplayMode         dispMode;
-  ThotBool            src_is_local;
-  ThotBool            dst_is_local, ok;
-  ThotBool	      docModified, toUndo;
-  ThotBool            new_put_def_name;
   char               *old_charset = NULL;
   char               *old_mimetype = NULL;
   char               *old_content_location = NULL;
   char               *old_full_content_location = NULL;
   char               *ptr;
-  CHARSET             charset;
+  ThotBool            src_is_local;
+  ThotBool            dst_is_local, ok;
+  ThotBool	          docModified, toUndo;
+  ThotBool            new_put_def_name;
 
   if (SavingDocument == 0)
     return;
@@ -3501,9 +3621,11 @@ void DoSaveAs (char *user_charset, char *user_mimetype)
         }
       else if (!ok)
         {
-          /* save into the temporary document file */
+          /* cannot save */
           doc = SavingDocument;
-          TtaSetStatus (doc, 1, TtaGetMessage (AMAYA, AM_CANNOT_SAVE), DocumentURLs[doc]);
+          sprintf (msg, TtaGetMessage (AMAYA, AM_CANNOT_SAVE), DocumentURLs[doc]);
+          InitConfirm (0, 0, msg);
+          //TtaSetStatus (doc, 1, TtaGetMessage (AMAYA, AM_CANNOT_SAVE), DocumentURLs[doc]);
           SavingDocument = 0;
           /* display the dialog box */
           InitSaveForm (doc, 1, documentFile);
@@ -3513,12 +3635,21 @@ void DoSaveAs (char *user_charset, char *user_mimetype)
     strcat (documentFile, SaveName);
 
   doc = SavingDocument;
+  // remove extra '/'
+  len = strlen(SaveImgsURL);
+  if (len && SaveImgsURL[len-1] == url_sep)
+    SaveImgsURL[len-1] = EOS;
+  if (!strcmp (SavePath, SaveImgsURL))
+    // same path
+    SaveImgsURL[0] = EOS;
   if (ok && dst_is_local)
     {
       /* verify that the directory exists */
       if (!TtaCheckDirectory (SavePath))
         {
-          TtaSetStatus (doc, 1, TtaGetMessage (AMAYA, AM_CANNOT_SAVE), SavePath);
+          sprintf (msg, TtaGetMessage (AMAYA, AM_CANNOT_SAVE), SavePath);
+          InitConfirm (0, 0, msg);
+          //TtaSetStatus (doc, 1, TtaGetMessage (AMAYA, AM_CANNOT_SAVE), SavePath);
           /* the user has to change the name of the images directory */
           /* display the dialog box */
           InitSaveForm (doc, 1, documentFile);
@@ -3739,6 +3870,7 @@ void DoSaveAs (char *user_charset, char *user_mimetype)
               TtaFreeMemory (DocumentURLs[doc]);
               DocumentURLs[doc] = TtaStrdup (documentFile);
               TtaSetDocumentUnmodified (doc);
+              TtaSetInitialSequence (doc);
               /* switch Amaya buttons and menus */
               DocStatusUpdate (doc, FALSE);
             }
@@ -3794,24 +3926,33 @@ void DoSaveAs (char *user_charset, char *user_mimetype)
                   DocumentMetaClear (DocumentMeta[xmlDoc]);
                 }
               TtaSetDocumentUnmodified (xmlDoc);
+              TtaSetInitialSequence (xmlDoc);
 	      
               /* switch Amaya buttons and menus */
               DocStatusUpdate (xmlDoc, FALSE);
             }
+
           if (doc != xmlDoc)
             {
               /* It's a source document. Reparse the corresponding HTML document */
               TtaExtractName (documentFile, tempdir, documentname);
               RestartParser (xmlDoc, documentFile, tempdir, documentname, TRUE);
               TtaSetDocumentUnmodified (xmlDoc);
+              TtaSetInitialSequence (xmlDoc);
               /* Synchronize selections */
               event.document = doc;
               SynchronizeSourceView (&event);
             }
           else
-            /* if it's a HTML document and the source view is open, redisplay
-               the source. */
-            RedisplaySourceFile (doc);
+            {
+              /* if it's a HTML document and the source view is open, redisplay
+                 the source. */
+              if (DocumentSource[doc])
+                // update the source charset
+                TtaSetDocumentCharset (DocumentSource[doc], charset, FALSE);
+              RedisplaySourceFile (doc);
+            }
+
           /* Sucess of the operation */
           TtaSetStatus (doc, 1, TtaGetMessage (AMAYA, AM_SAVED), documentFile);
           /* remove the previous temporary file */
@@ -3850,6 +3991,7 @@ void DoSaveAs (char *user_charset, char *user_mimetype)
           if (!docModified)
             {
               TtaSetDocumentUnmodified (doc);
+              TtaSetInitialSequence (doc);
               /* switch Amaya buttons and menus */
               DocStatusUpdate (doc, docModified);
             }

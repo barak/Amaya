@@ -115,7 +115,7 @@ static int          SpecialShiftKeys[] = {
   CMD_NextSelChar,
   CMD_NextSelLine,
   CMD_DeletePrevChar,
-  CMD_DeleteSelection,
+  CMD_CutSelection,
   CMD_PageUp,
   CMD_PageDown,
   CMD_PageTop,
@@ -665,9 +665,9 @@ gboolean CharTranslationGTK (GtkWidget *w, GdkEventKey* event, gpointer data)
   unsigned int        state, save;
   int                 status;
   int                 PicMask;
-  int                 frame;
+  intptr_t            frame;
 
-  frame = (int) data;
+  frame = (intptr_t) data;
   if (frame > MAX_FRAME)
     frame = 0;
   FrameToView (frame, &document, &view);
@@ -755,11 +755,11 @@ gboolean CharTranslationGTK (GtkWidget *w, GdkEventKey* event, gpointer data)
   ----------------------------------------------------------------------*/
 gboolean GtkLiningDown (gpointer data)
 {
-  int       frame;
+  intptr_t  frame;
   Document  doc; 
   int       view;
   
-  frame = (int) data; 
+  frame = (intptr_t) data; 
   FrameToView (frame, &doc, &view);
   TtcLineDown (doc, view);
   /* As this is a timeout function, return TRUE so that it
@@ -771,11 +771,11 @@ gboolean GtkLiningDown (gpointer data)
   ----------------------------------------------------------------------*/
 gboolean GtkLiningUp (gpointer data)
 {
-  int       frame;
+  intptr_t  frame;
   Document  doc; 
   int       view;
   
-  frame = (int) data; 
+  frame = (intptr_t) data; 
   FrameToView (frame, &doc, &view);
   TtcLineUp (doc, view);
   /* As this is a timeout function, return TRUE so that it
@@ -792,7 +792,7 @@ gboolean GtkLiningUp (gpointer data)
   ----------------------------------------------------------------------*/
 gboolean KeyScrolledGTK (GtkWidget *w, GdkEvent* event, gpointer data)
 {
-  int                 frame;
+  intptr_t            frame;
   GdkEventKey         *eventkey;
   GdkEventButton      *eventmouse;
   Document            doc; 
@@ -803,7 +803,7 @@ gboolean KeyScrolledGTK (GtkWidget *w, GdkEvent* event, gpointer data)
   GdkModifierType state;
   GtkEntry           *textzone;
 
-  frame = (int) data; 
+  frame = (intptr_t) data; 
   FrameToView (frame, &doc, &view);
   textzone = 0;
   if (timer != None)
@@ -1216,8 +1216,11 @@ int ThotInput (int frame, unsigned int value, int command, int PicMask, int key)
       /* don't accept to insert a character when there is CTRL
          or ALT active and no shortcut is found */
       if (!found &&
-          (modtype == THOT_MOD_CTRL || modtype == THOT_MOD_S_CTRL ||
-           modtype == THOT_MOD_ALT || modtype == THOT_MOD_S_ALT))
+          (modtype == THOT_MOD_CTRL || modtype == THOT_MOD_S_CTRL
+#ifndef _MACOS
+           || modtype == THOT_MOD_ALT || modtype == THOT_MOD_S_ALT
+#endif /* _MACOS */
+))
         return 0;
       
       /* Appel d'une action Thot */
@@ -1312,11 +1315,15 @@ int ThotInput (int frame, unsigned int value, int command, int PicMask, int key)
           if (TtaGetFullScreenState(frame))
             TtaToggleOnOffFullScreen(frame);
           else
-            TtaDisplayMessage (CONFIRM, TtaGetMessage (LIB, TMSG_USE_F2));
-#else /* _WX */
-          TtaDisplayMessage (CONFIRM, TtaGetMessage (LIB, TMSG_USE_F2));
 #endif /* _WX */
-          return 0;
+          if (MenuActionList[CMD_ParentElement].Call_Action)
+            {
+              (*(Proc2)MenuActionList[CMD_ParentElement].Call_Action) ((void *)document,
+                                                                       (void *)view);
+              return 2;
+            }
+          else
+            return 0;
         }
       else if (value == 8 || value == 127)
         {
@@ -1344,6 +1351,12 @@ int ThotInput (int frame, unsigned int value, int command, int PicMask, int key)
               done = TRUE;
             }
         }
+#ifdef _MACOS
+      else if ( modtype == THOT_MOD_ALT &&
+                (/* value == 230 || */ value == 37650 || value == '^' ||
+               value == '`'))
+        return 0;
+#endif /* _MACOS */
       else if (value == 9 || value >= 32)
         {
           if (LoadedDocument[document - 1] == SelectedDocument &&
@@ -1556,8 +1569,16 @@ void TtaRemoveAccessKey (Document doc, unsigned int key)
 void TtaCloseShortcutSequence ()
 {
   if (Automata_current)
-    printf ("Close the current sequence\n");
-  Automata_current = NULL;
+    Automata_current = NULL;
+}
+
+/*----------------------------------------------------------------------
+  TtaInShortcutSequence
+  Return TRUE if there is an open shortcut sequence.
+  ----------------------------------------------------------------------*/
+ThotBool TtaInShortcutSequence ()
+{
+  return (Automata_current != NULL);
 }
 
 /*----------------------------------------------------------------------
@@ -1567,12 +1588,12 @@ void TtaCloseShortcutSequence ()
 void TtaListShortcuts (Document doc, FILE *fileDescriptor)
 {
   KEY                *next, *ptr;
-  char               *s, *k1, sk1[50], *k2, sk2[50];
+  char               *s, *k1, sk1[10], *k2;
   int                 i;
 
   s = TtaGetEnvString ("ACCESSKEY_MOD");
   k1 = &sk1[0];
-  k2 = &sk2[0];
+  k2 = k1;
   if (doc)
     {
       /* display current access keys table */
@@ -1623,13 +1644,13 @@ void TtaListShortcuts (Document doc, FILE *fileDescriptor)
 
           while (next)
             {
-              strcpy (k1, KeyName (next->K_EntryCode));
+              strcpy (sk1, KeyName (next->K_EntryCode));
               ptr = next->K_Next;
               if (ptr == NULL)
                 {
                   /* display the shortcut */
                   if (MenuActionList[next->K_Command].ActionName)
-                    fprintf (fileDescriptor, " %s%s -> %s\n", s, k1,
+                    fprintf (fileDescriptor, " %s%s -> %s\n", s, sk1,
                              MenuActionList[next->K_Command].ActionName);
                 }
               else
@@ -1639,8 +1660,8 @@ void TtaListShortcuts (Document doc, FILE *fileDescriptor)
                     /* display the shortcut sequence */
                     if (MenuActionList[ptr->K_Command].ActionName)
                       {
-                        strcpy (k2, KeyName (ptr->K_EntryCode));
-                        fprintf (fileDescriptor, " %s%s %s%s -> %s\n", s, k1,
+                        k2 = KeyName (ptr->K_EntryCode);
+                        fprintf (fileDescriptor, " %s%s %s%s -> %s\n", s, sk1,
                                  s, k2,
                                  MenuActionList[ptr->K_Command].ActionName);
                       }
@@ -1670,11 +1691,16 @@ void InitTranslations (char *appliname)
   int                 mod1, mod2; /* 1er/ 2eme modifieurs : voir THOT_MOD_xx */
   int                 len, max, value;
   FILE               *file;
-  ThotBool            isSpecialKey1, isSpecialKey2, no_sequence = FALSE;
+  ThotBool            isSpecialKey1, isSpecialKey2, show_sequence = FALSE;
 
   /* clean up the access key table */
   memset(DocAccessKey, 0, sizeof(KEY *) * MAX_DOCUMENTS);
-
+#ifdef _MACOS
+  TtaSetEnvBoolean ("SHOW_SEQUENCES", FALSE, FALSE);
+#else /* _MACOS */
+  TtaSetEnvBoolean ("SHOW_SEQUENCES", TRUE, FALSE);
+#endif /* _MACOS */
+  TtaGetEnvBoolean ("SHOW_SEQUENCES", &show_sequence);
   appHome = TtaGetEnvString ("APP_HOME");
   strcpy (name, appliname);
 
@@ -1684,13 +1710,14 @@ void InitTranslations (char *appliname)
   sep = "-"; /* shortcut separator generated by WX */
 #endif /* _WX */
 #endif  /* _WINDOWS */
-#if defined(_UNIX)
-#if defined (_MACOS) && defined (_WX)
+#ifdef _UNIX
+#ifdef _MACOS
+  // change the unix choice for MacOS platforms
   strcat (name, ".kb-mac");
 #else /* _MACOS */
   strcat (name, ".keyboard");
 #endif /* _MACOS */
-#endif /* defined(_UNIX) */
+#endif  /* _UNIX */
 
   strcpy (home, appHome);
   strcat (home, DIR_STR);
@@ -1753,47 +1780,71 @@ void InitTranslations (char *appliname)
 
               /* Register the equiv string */
 #ifdef _WX
-              if ((no_sequence || !(mod1 & THOT_MOD_CTRL)) && ch[0] != ',')
+              if (show_sequence || ch[0] != ',')
                 {
 #ifdef _MACOS
-                  if (!(mod1 & THOT_MOD_CTRL) ||
-                      (transText[0] != 'c' && transText[0] != 'v'))
-#endif /* _MACOS */
-                    /* the shortcut is not a sequence */
+                  if (ch[0] != ',')
+                  /* it's not a sequence */
                     strcpy (equiv, "\t");
+                  if ((mod1 & THOT_MOD_CTRL) && (mod1 & THOT_MOD_ALT))
+                    /* specific to MacOS */
+                    strcat (equiv, "Ctrl-Alt");
+#else /* _MACOS */
+                  if (!(mod1 & THOT_MOD_CTRL))
+                    /* it's not a sequence */
+                    strcpy (equiv, "\t");
+#endif /* _MACOS */
+                  if (ch[0] == ',')
+                     strcpy (equiv, "(");
+                  if (mod1 & THOT_MOD_CTRL)
+                    strcat (equiv, "Ctrl");
+                  else if (mod1 & THOT_MOD_ALT)
+                    strcat (equiv, "Alt");
+                  if (mod1 & THOT_MOD_SHIFT)
+                    {
+                      if (mod1 != THOT_MOD_SHIFT)
+                         strcat (equiv, "-");
+                       strcat (equiv, "Shift");
+                    }
+                  if (mod1 != THOT_NO_MOD)
+                    {
+                      if (ch[0] == ',')
+                       strcat (equiv, " ");
+                      else
+                       strcat (equiv, "-");
+                    }
+                  if (ch[0] != ',' && transText[0] >= 'a' && transText[0] <= 'z')
+                    SetCapital (transText);
+                  strcat (equiv, transText);
                 }
-              if ((mod1 & THOT_MOD_CTRL) && (mod1 & THOT_MOD_ALT))
-                /* specific to MacOS */
-                strcat (equiv, "Ctrl-Alt");
-              else
-#endif /* _WX */
-                if (mod1 & THOT_MOD_CTRL)
-                  strcat (equiv, "Ctrl");
-                else if (mod1 & THOT_MOD_ALT)
-                  strcat (equiv, "Alt");
+#else /* _WX */
+              if (ch[0] == ',')
+                strcpy (equiv, "(");
+              if (mod1 & THOT_MOD_CTRL)
+                strcat (equiv, "Ctrl");
+              else if (mod1 & THOT_MOD_ALT)
+                strcat (equiv, "Alt");
               if (mod1 & THOT_MOD_SHIFT)
                 {
-#ifdef _WX
-                  if ((no_sequence || !(mod1 & THOT_MOD_CTRL)) && ch[0] != ',')
-                    strcat (equiv, "-");
+                   if (ch[0] == ',')
+                    strcat (equiv, " ");
                   else
-#endif /* _WX */
                     strcat (equiv, sep);
                   strcat (equiv, "Shift");
                 }
               if (mod1 != THOT_NO_MOD)
-#ifdef _WX
-                if ((no_sequence || !(mod1 & THOT_MOD_CTRL)) && ch[0] != ',')
-                  strcat (equiv, "-");
-                else
-#endif /* _WX */
-                  strcat (equiv, sep);
-
-              if (transText[0] >= 'a' && transText[0] <= 'z')
+                {
+                  if (ch[0] == ',')
+                    strcat (equiv, " ");
+                  else
+                    strcat (equiv, sep);
+                }
+              if (ch[0] != ',' && transText[0] >= 'a' && transText[0] <= 'z')
                 SetCapital (transText);
               strcat (equiv, transText);
+#endif /* _WX */
 
-              if (!no_sequence && ch[0] == ',')
+              if (ch[0] == ',')
                 {
                   /* the shortcut is a sequence */
                   ch[0] = EOS;
@@ -1822,23 +1873,15 @@ void InitTranslations (char *appliname)
                         transText[i] = EOS;
                     }
                   key2 = SpecialKey (transText, (mod2 & THOT_MOD_SHIFT) != 0, &isSpecialKey2);
-                  /* register the equiv string */
-                  strcat (equiv, " ");
-                  if (mod2 & THOT_MOD_CTRL)
-                    strcat (equiv, "Ctrl");
-                  else if (mod2 & THOT_MOD_ALT)
-                    strcat (equiv, "Alt");
-                  if (mod2 & THOT_MOD_SHIFT)
+                  /* register the second part of the equiv string */
+#ifdef _WX
+                  if (show_sequence)
+#endif /* _WX */
                     {
-                      strcat (equiv, sep);
-                      strcat (equiv, "Shift");
+                      strcat (equiv, " ");
+                      strcat (equiv, transText);
+                      strcat (equiv, ")");
                     }
-                  if (mod2 != THOT_NO_MOD)
-                    strcat (equiv, sep);
-                  if (transText[0] >= 'a' && transText[0] <= 'z')
-                    SetCapital (transText);
-                  strcat (equiv, transText);
-
                   /* Get the next word in the line */
                   fscanf (file, "%80s", ch);
                 }
@@ -1854,7 +1897,11 @@ void InitTranslations (char *appliname)
                   i = fgetc (file);
                 while (i != ')');
 
-              /* Selection de la bonne commande */
+              /* Locate the action name */
+#ifndef _WX
+              if (!strcmp (ch, "AmayaCloseTab"))
+                strcpy (ch, "AmayaCloseWindow");
+#endif /* _WX */
               for (i = 0; i < max; i++)
                 if (!strcmp (ch, MenuActionList[i].ActionName))
                   break;
@@ -1887,10 +1934,10 @@ void InitTranslations (char *appliname)
                 }
               else if (i < max)
                 {
-                  /* C'est une autre action Thot */
+                  /* another action */
                   MemoKey (mod1, key1, isSpecialKey1,
                            mod2, key2, isSpecialKey2, /*255+i */ 0, i);
-                  /* On met a jour l'equivalent clavier */
+                  /* display the equiv shortcut */
                   TtaFreeMemory (MenuActionList[i].ActionEquiv);
                   MenuActionList[i].ActionEquiv = TtaStrdup (equiv);
                 }
@@ -1898,9 +1945,7 @@ void InitTranslations (char *appliname)
           else
             {
               /* comment line */
-              fscanf (file, "%80s", ch);
-              if (!strcasecmp (ch, "no-sequence"))
-                no_sequence = TRUE;
+              //fscanf (file, "%80s", ch);
               /* skip this line */
               do
                 i = fgetc (file);

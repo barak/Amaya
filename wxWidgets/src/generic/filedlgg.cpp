@@ -4,7 +4,7 @@
 // Author:      Robert Roebling
 // Modified by:
 // Created:     12/12/98
-// RCS-ID:      $Id: filedlgg.cpp,v 1.1.1.1 2005/07/06 09:30:50 gully Exp $
+// RCS-ID:      $Id: filedlgg.cpp,v 1.1.1.2 2005/07/26 09:31:05 gully Exp $
 // Copyright:   (c) Robert Roebling
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -135,12 +135,10 @@ int wxCALLBACK wxFileDataTimeCompare( long data1, long data2, long data)
      return fd1->GetDateTime().IsLaterThan(fd2->GetDateTime()) ? int(data) : -int(data);
 }
 
-#if defined(__UNIX__) && !defined(__OS2__) && !defined(__CYGWIN__)
-#define IsTopMostDir(dir)   (dir == wxT("/"))
-#endif
-
 #if defined(__DOS__) || defined(__WINDOWS__) || defined (__OS2__)
 #define IsTopMostDir(dir)   (dir.empty())
+#else
+#define IsTopMostDir(dir)   (dir == wxT("/"))
 #endif
 
 // defined in src/generic/dirctrlg.cpp
@@ -263,7 +261,7 @@ wxString wxFileData::GetFileType() const
         return _("<LINK>");
     else if (IsDrive())
         return _("<DRIVE>");
-   else if (m_fileName.Find(wxT('.'), true) != wxNOT_FOUND)
+    else if (m_fileName.Find(wxT('.'), true) != wxNOT_FOUND)
         return m_fileName.AfterLast(wxT('.'));
 
     return wxEmptyString;
@@ -320,7 +318,7 @@ wxString wxFileData::GetEntry( fileListFieldType num ) const
             break;
 
         case FileList_Time:
-                if (!IsDrive())
+            if (!IsDrive())
                 s = GetModificationTime();
             break;
 
@@ -536,7 +534,7 @@ void wxFileCtrl::UpdateFiles()
 #endif // __UNIX__
             wxFileData *fd = new wxFileData(p, wxT(".."), wxFileData::is_dir, wxFileIconsTable::folder);
             if (Add(fd, item) != -1)
-            item.m_itemId++;
+                item.m_itemId++;
             else
                 delete fd;
         }
@@ -565,7 +563,7 @@ void wxFileCtrl::UpdateFiles()
             {
                 wxFileData *fd = new wxFileData(dirPrefix + f, f, wxFileData::is_dir, wxFileIconsTable::folder);
                 if (Add(fd, item) != -1)
-                item.m_itemId++;
+                    item.m_itemId++;
                 else
                     delete fd;
 
@@ -583,7 +581,7 @@ void wxFileCtrl::UpdateFiles()
                 {
                     wxFileData *fd = new wxFileData(dirPrefix + f, f, wxFileData::is_file, wxFileIconsTable::file);
                     if (Add(fd, item) != -1)
-                    item.m_itemId++;
+                        item.m_itemId++;
                     else
                         delete fd;
 

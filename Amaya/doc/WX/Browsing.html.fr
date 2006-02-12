@@ -3,9 +3,9 @@
        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
   <title>Naviguer avec Amaya</title>
-  <meta name="GENERATOR" content="amaya 9.1, see http://www.w3.org/Amaya/" />
+  <meta name="GENERATOR" content="amaya 9.3, see http://www.w3.org/Amaya/" />
   <link href="style.css" rel="stylesheet" type="text/css" />
 </head>
 
@@ -62,12 +62,24 @@ sont disponibles.</p>
 <h3 id="Activer"><a name="Activating">Activer un lien, parcourir les
 liens</a></h3>
 
-<p>Les liens sont habituellement présentés en bleu. Comme
-<strong>Amaya</strong> est un éditeur, vous devez effectuer un double-clic
-sur un lien pour l'activer. Un simple-clic place seulement le point
-d'insertion à l'intérieur du lien, pour que vous puissiez modifier le texte,
-et il affiche l'URI complète du lien dans la barre d'état en bas de la
-fenêtre.</p>
+<p>Les liens sont par défaut présentés en bleu. Comme <strong>Amaya</strong>
+est un éditeur, vous obtiendrez un résultat différent avec un simple-clic, un
+double-clic, ou un clic-droit sur un lien.</p>
+<ul>
+  <li>Un <kbd>simple-clic</kbd> place seulement le point d'insertion à
+    l'intérieur du lien, pour que vous puissiez modifier le texte, et il
+    affiche l'URI complète du lien dans la barre d'état en bas de la
+  fenêtre.</li>
+  <li>Un <kbd>double-clic</kbd> active le lien et se place sur la cible. Le
+    document cible remplace le document courant dans le même onglet.</li>
+  <li>Un <kbd>clic-droit</kbd> (ou <kbd>Cmd + simple-clic</kbd> sur MacOS X)
+    active le lien et ouvre le document cible dans un nouvel onglet ou une
+    nouvelle fenêtre. Le document origine reste ouvert dans le premier
+    onglet. Vous pouvez choisir d'ouvrir le document cible dans un nouvel
+    onglet ou une nouvelle fenêtre en mettant l'option correspondante dans
+    les Préférences de Navigation (voir le menu <strong>Editer &gt;
+    Préférences</strong>).</li>
+</ul>
 
 <p>Ce comportement par défaut peut être modifié, ainsi que d'autres
 paramètres, par l'intermédiaire du menu
@@ -82,7 +94,7 @@ sélection étendue soit déplacer le point d'insertion à l'intérieur des liens
 et les activer. La touche <kbd>Tab</kbd>, vous permet de trouver le prochain
 lien ou élément de formulaire HTML dans le document. La commande <kbd>Shift
 Tab</kbd>, vous permet de trouver le lien ou élément de formulaire HTML qui
-précède dans le document. La commande <kbd>Alt Enter</kbd> vous permet
+précède dans le document. La commande <kbd>Alt &darr;</kbd> vous permet
 d'activer le lien courant. Vous pouvez <a href="ShortCuts.html.fr">choisir
 d'autres touches</a> ou combinaisons de touches pour toutes ces commandes.</p>
 
@@ -138,8 +150,8 @@ de cible <a name="target"><img src="../images/target.gif" alt=" target "
 /></a>. Ces icônes ne font pas partie du document et peuvent être soit
 visualisées soit cachées juste en modifiant le statut <strong>Montrer les
 cibles</strong> de l'onglet courant, qui est une option du menu
-<strong>Vues</strong>. Par défaut la commande au clavier est <kbd>Ctrl v Ctrl
-t</kbd> sur Unix, <kbd>Ctrl u Ctrl t</kbd> sur Windows.</p>
+<strong>Vues</strong>. Par défaut la commande au clavier est <kbd>Ctrl u Ctrl
+t</kbd>.</p>
 
 <p>Ces icônes sont associées aux <em>éléments cibles</em>, c'est-à-dire aux
 éléments, quel que soit leur type, qui ont un attribut <code>ID</code> , ou
@@ -227,8 +239,7 @@ chargées :</p>
     <dd>Il y a des entrées dans le menu <strong>Fichier</strong> pour avancer
       (<strong>Suivant</strong>) ou reculer (<strong>Précédent</strong>) dans
       l'historique. Les raccourcis clavier sont par défaut respectivement
-      <kbd>Alt b</kbd> et <kbd>Alt f</kbd> sur Unix, <kbd>Ctrl b Ctrl b</kbd>
-      et <kbd>Ctrl b Ctrl f</kbd> sur Windows.</dd>
+      <kbd>Alt &lt;-</kbd> et <kbd>Alt -&gt;</kbd>.</dd>
   <dt>Barre des boutons</dt>
     <dd>Deux boutons : <img alt="Back "
       src="../../resources/icons/22x22/back.png" align="middle" /> et <img
@@ -243,9 +254,9 @@ chargées :</p>
 
 <p>Les documents peuvent être rechargés en utilisant l'option
 <strong>Recharger le document</strong> du menu <strong>Fichier</strong>, le
-raccourci clavier <kbd>F5</kbd> sur Unix et <kbd>Ctrl r</kbd> sur Windows, ou
-le bouton <img src="../../resources/icons/22x22/reload.png" alt="reload"
-align="middle" /> de la barre des boutons.</p>
+raccourci clavier <kbd>Ctrl r</kbd>, ou le bouton <img
+src="../../resources/icons/22x22/reload.png" alt="reload" align="middle" />
+de la barre des boutons.</p>
 
 <h3 id="Contr"><a name="Keyboard">Commandes au clavier</a></h3>
 

@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<!-- $Id: common.bkl,v 1.1.1.1 2005/07/06 09:29:57 gully Exp $ -->
+<!-- $Id: common.bkl,v 1.1.1.2 2005/07/26 09:30:48 gully Exp $ -->
 
 <makefile>
 
@@ -183,8 +183,10 @@
     </if>
 
     <set var="LIBTYPE_SUFFIX" make_var="1">
-        <if cond="FORMAT!='autoconf' and SHARED=='0'">lib</if>
-        <if cond="FORMAT!='autoconf' and SHARED=='1'">dll</if>
+        <if cond="FORMAT!='autoconf' and SHARED=='0' and PLATFORM_WIN32=='1'">lib</if>
+        <if cond="FORMAT!='autoconf' and SHARED=='1' and PLATFORM_WIN32=='1'">dll</if>
+        <if cond="FORMAT=='watcom' and SHARED=='0' and PLATFORM_WIN32=='0'">$(TOOLKIT_LOWERCASE)_lib</if>
+        <if cond="FORMAT=='watcom' and SHARED=='1' and PLATFORM_WIN32=='0'">$(TOOLKIT_LOWERCASE)_dll</if>
     </set>
 
     <set var="LIBDIRNAME" make_var="1">
@@ -236,13 +238,13 @@
     </set>
 
     <set var="RTTI_DEFINE">
-    	<if cond="USE_RTTI=='0'">wxNO_RTTI</if>
+        <if cond="USE_RTTI=='0'">wxNO_RTTI</if>
     </set>
     <set var="EXCEPTIONS_DEFINE">
-    	<if cond="USE_EXCEPTIONS=='0'">wxNO_EXCEPTIONS</if>
+        <if cond="USE_EXCEPTIONS=='0'">wxNO_EXCEPTIONS</if>
     </set>
     <set var="THREAD_DEFINE">
-    	<if cond="USE_THREADS=='0'">wxNO_THREADS</if>
+        <if cond="USE_THREADS=='0'">wxNO_THREADS</if>
     </set>
 
     <set var="DEBUG_DEFINE">
@@ -280,6 +282,10 @@
         </if>
         <define>$(NO_VC_CRTDBG)</define>
         <define>$(WIN32_WINNT)</define>
+        <if cond="FORMAT=='msevc4prj'">
+            <!-- hack to make eVC4 default project still compatible with eVC3 environment -->
+            <set var="_ldlibs">$(_ldlibs.replace('ccrtrtti.lib', ''))</set>
+        </if>
     </template>
 
     <template id="anylib">
@@ -422,8 +428,15 @@ $(TAB)copy "$(DOLLAR)(InputPath)" $(SETUPHDIR)\wx\setup.h
 
         <ldlibs>$(EXTRALIBS_FOR_BASE)</ldlibs>
 
+        <!-- system libraries on os2: -->
+        <if cond="FORMAT!='autoconf' and PLATFORM_OS2=='1'">
+            <if cond="FORMAT=='watcom'">
+                <sys-lib>upm32</sys-lib>
+            </if>
+        </if>
+
         <!-- system libraries on windows: -->
-        <if cond="FORMAT!='autoconf'">
+        <if cond="FORMAT!='autoconf' and PLATFORM_WIN32=='1'">
             <sys-lib>$(UNICOWS_LIB)</sys-lib>
             <if cond="FORMAT=='borland'">
                 <sys-lib>ole2w32</sys-lib>
@@ -520,7 +533,7 @@ $(TAB)copy "$(DOLLAR)(InputPath)" $(SETUPHDIR)\wx\setup.h
         <dllname>$(WXDLLNAME)</dllname>
         <version>$(WX_VERSION)</version>
         <so_version>$(WXSOVERSION)</so_version>
-    
+
         <!-- FIXME: until libtool scheme is implemented in bakefile -->
         <ldflags cond="FORMAT=='autoconf'">$(WXMACVERSION_CMD)</ldflags>
 

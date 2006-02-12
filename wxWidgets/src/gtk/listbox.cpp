@@ -2,7 +2,7 @@
 // Name:        listbox.cpp
 // Purpose:
 // Author:      Robert Roebling
-// Id:          $Id: listbox.cpp,v 1.1.1.1 2005/07/06 09:30:52 gully Exp $
+// Id:          $Id: listbox.cpp,v 1.1.1.2 2005/07/26 09:31:05 gully Exp $
 // Copyright:   (c) 1998 Robert Roebling
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -575,19 +575,6 @@ wxListBox::~wxListBox()
     if (m_strings)
       delete m_strings;
 }
-
-/*
-void wxListBox::SetFocus()
-{
-    if ( m_hasFocus )
-    {
-        // don't do anything if we already have focus
-        return;
-    }
-
-    gtk_widget_grab_focus( m_focusWidget );
-}
-*/
 
 // ----------------------------------------------------------------------------
 // adding items

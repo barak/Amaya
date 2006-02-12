@@ -43,6 +43,10 @@ extern void CreateMMULTISCRIPTS ( Document document,
                                   View view );
 extern void CreateMTABLE ( Document document,
                            View view );
+extern void CreateMIntegral ( Document doc,
+                              View view );
+extern void CreateMSum ( Document doc,
+                         View view );
 extern void CreateMTEXT ( Document document,
                           View view );
 extern void CreateMI ( Document document,
@@ -69,6 +73,7 @@ extern void SetMathCharFont ( Document doc,
 extern void MtextCreated ( NotifyElement *event );
 extern void MathStringModified ( NotifyOnTarget *event );
 extern void NewMathString ( NotifyElement *event );
+extern ThotBool NewMathElement ( NotifyOnValue *event );
 extern void MathElementPasted ( NotifyElement *event );
 extern ThotBool MathElementWillBeDeleted ( NotifyElement *event );
 extern void MathElementDeleted ( NotifyElement *event );
@@ -167,6 +172,10 @@ extern void CreateMMULTISCRIPTS ( Document document,
                                     View view );
 extern void CreateMTABLE ( Document document,
                              View view );
+extern void CreateMIntegral ( Document doc,
+                                View view );
+extern void CreateMSum ( Document doc,
+                           View view );
 extern void CreateMTEXT ( Document document,
                             View view );
 extern void CreateMI ( Document document,
@@ -193,6 +202,7 @@ extern void SetMathCharFont ( Document doc,
 extern void MtextCreated ( NotifyElement *event );
 extern void MathStringModified ( NotifyOnTarget *event );
 extern void NewMathString ( NotifyElement *event );
+extern ThotBool NewMathElement ( NotifyOnValue *event );
 extern void MathElementPasted ( NotifyElement *event );
 extern ThotBool MathElementWillBeDeleted ( NotifyElement *event );
 extern void MathElementDeleted ( NotifyElement *event );

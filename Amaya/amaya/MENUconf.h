@@ -53,7 +53,8 @@
 #define mDefaultName        3
 #define mSafePutRedirect    4
 #define mCharsetSelector    5
-#define MAX_PUBLISHMENU_DLG 6
+#define mExportLength       6
+#define MAX_PUBLISHMENU_DLG 7
 
 #define ColorMenu           1
 #define mFgColor            2
@@ -98,6 +99,8 @@ typedef struct Prop_General_t
   ThotBool S_Targets;
   ThotBool S_AutoSave;
   ThotBool S_Geometry;
+  ThotBool S_Shortcuts;
+  ThotBool S_Templates;
 } Prop_General;
 
 typedef struct Prop_Browse_t
@@ -123,6 +126,7 @@ typedef struct Prop_Publish_t
   ThotBool LostUpdateCheck;
   ThotBool ExportCRLF;
   ThotBool VerifyPublish;
+  int      ExportLength;
   char     SafePutRedirect[MAX_LENGTH];
   char     CharsetType[MAX_LENGTH];
 } Prop_Publish;

@@ -19,6 +19,9 @@ extern SSchema GetGenericXMLSSchemaByUri ( char *uriName,
                                            ThotBool *isnew );
 extern SSchema GetXMLSSchema ( int XMLtype,
                                Document doc );
+extern void HasNatures ( Document document,
+                         ThotBool *useMathML,
+                         ThotBool *useSVG );
 extern void MapXMLElementType ( int XMLtype,
                                 char *XMLname,
                                 ElementType *elType,
@@ -43,12 +46,15 @@ extern int MapXMLAttribute ( int XMLtype,
 extern char *GetXMLAttributeName ( AttributeType attrType,
                                    ElementType elType,
                                    Document doc );
-extern ThotBool HasADoctype ( Document doc );
+extern void HasADoctype ( Document doc,
+                          ThotBool *found,
+                          ThotBool *useMath );
 extern ThotBool MapXMLEntity ( int XMLtype,
                                char *entityName,
                                int *entityValue );
 extern void MapEntityByCode ( int entityValue,
                               Document doc,
+                              ThotBool withMath,
                               char **entityName );
 
 #else /* __STDC__ */
@@ -66,6 +72,9 @@ extern SSchema GetGenericXMLSSchemaByUri ( char *uriName,
                                              ThotBool *isnew );
 extern SSchema GetXMLSSchema ( int XMLtype,
                                  Document doc );
+extern void HasNatures ( Document document,
+                           ThotBool *useMathML,
+                           ThotBool *useSVG );
 extern void MapXMLElementType ( int XMLtype,
                                   char *XMLname,
                                   ElementType *elType,
@@ -90,12 +99,15 @@ extern int MapXMLAttribute ( int XMLtype,
 extern char *GetXMLAttributeName ( AttributeType attrType,
                                      ElementType elType,
                                      Document doc );
-extern ThotBool HasADoctype ( Document doc );
+extern void HasADoctype ( Document doc,
+                            ThotBool *found,
+                            ThotBool *useMath );
 extern ThotBool MapXMLEntity ( int XMLtype,
                                  char *entityName,
                                  int *entityValue );
 extern void MapEntityByCode ( int entityValue,
                                 Document doc,
+                                ThotBool withMath,
                                 char **entityName );
 
 #endif /* __STDC__ */

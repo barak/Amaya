@@ -2,20 +2,20 @@ APPLICATION HTML;
 
 DEFAULT
    BEGIN
-	ElemActivate.Pre -> DoubleClick;
-	ElemClick.Pre -> SimpleClick;
-	ElemRClick.Pre -> SimpleRClick;
-	ElemLClick.Pre -> SimpleLClick;
-	ElemPaste.Post -> ElementPasted;
-	ElemNew.Post -> ElementCreated;
-	ElemDelete.Post -> ElementDeleted;
-	ElemDelete.Pre -> ElementWillBeDeleted;
-	ElemSelect.Post -> SelectionChanged;
-	ElemExtendSelect.Post -> SelectionChanged;
-	AttrMenu.Pre ->    GlobalAttrInMenu;
-	PRuleCreate.Pre -> ChangePRule;
-	PRuleModify.Pre -> ChangePRule;
-	PRuleDelete.Post -> PRuleDeleted;
+   ElemActivate.Pre -> DoubleClick;
+   ElemClick.Pre -> SimpleClick;
+   ElemRClick.Pre -> SimpleRClick;
+   ElemLClick.Pre -> SimpleLClick;
+   ElemPaste.Post -> ElementPasted;
+   ElemNew.Post -> ElementCreated;
+   ElemDelete.Post -> ElementDeleted;
+   ElemDelete.Pre -> ElementWillBeDeleted;
+   ElemSelect.Post -> SelectionChanged;
+   ElemExtendSelect.Post -> SelectionChanged;
+   AttrMenu.Pre ->    GlobalAttrInMenu;
+   PRuleCreate.Pre -> ChangePRule;
+   PRuleModify.Pre -> ChangePRule;
+   PRuleDelete.Post -> PRuleDeleted;
    END;
 
 ELEMENTS
@@ -170,6 +170,7 @@ ELEMENTS
 	BEGIN
 	ElemExport.Pre -> CheckGenerator;
 	END;
+
 
 ATTRIBUTES
 
@@ -467,5 +468,10 @@ ATTRIBUTES
    EntityName:
 	BEGIN
 	AttrExport.Pre ->  CheckValidEntity;
+	END;
+
+  USEMAP:
+	BEGIN
+	AttrExport.Pre ->  CheckUSEMAP;
 	END;
 END

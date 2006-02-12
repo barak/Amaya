@@ -6,7 +6,7 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     01/02/97
-// RCS-ID:      $Id: private.h,v 1.1.1.1 2005/07/06 09:30:11 gully Exp $
+// RCS-ID:      $Id: private.h,v 1.1.1.2 2005/07/26 09:30:54 gully Exp $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -19,18 +19,22 @@
 #define INCL_GPI
 #define INCL_WINSYS
 #define INCL_SHLERRORS
+#define INCL_DOS
 #include <os2.h>
-#if defined (__EMX__) && !defined(USE_OS2_TOOLKIT_HEADERS) && !defined(HAVE_SPBCDATA)
- typedef struct _SPBCDATA {
-   ULONG     cbSize;       /*  Size of control block. */
-   ULONG     ulTextLimit;  /*  Entryfield text limit. */
-   LONG      lLowerLimit;  /*  Spin lower limit (numeric only). */
-   LONG      lUpperLimit;  /*  Spin upper limit (numeric only). */
-   ULONG     idMasterSpb;  /*  ID of the servant's master spinbutton. */
-   PVOID     pHWXCtlData;  /*  Handwriting control data structure flag. */
- } SPBCDATA;
 
- typedef SPBCDATA *PSPBCDATA;
+#if defined (__EMX__) && !defined(USE_OS2_TOOLKIT_HEADERS) && !defined(HAVE_SPBCDATA)
+
+    typedef struct _SPBCDATA {
+        ULONG     cbSize;       /*  Size of control block. */
+        ULONG     ulTextLimit;  /*  Entryfield text limit. */
+        LONG      lLowerLimit;  /*  Spin lower limit (numeric only). */
+        LONG      lUpperLimit;  /*  Spin upper limit (numeric only). */
+        ULONG     idMasterSpb;  /*  ID of the servant's master spinbutton. */
+        PVOID     pHWXCtlData;  /*  Handwriting control data structure flag. */
+    } SPBCDATA;
+
+    typedef SPBCDATA *PSPBCDATA;
+
 #endif
 
 #include "wx/fontenc.h"
@@ -146,11 +150,11 @@ typedef MRESULT (APIENTRY * WndProcCast) (HWND, ULONG, MPARAM, MPARAM);
 #define STATIC_FLAGS     (SS_TEXT|DT_LEFT|SS_LEFT|WS_VISIBLE)
 #define CHECK_CLASS      _T("BUTTON")
 #define CHECK_FLAGS      (BS_AUTOCHECKBOX|WS_TABSTOP)
-#define CHECK_IS_FAFA   FALSE
+#define CHECK_IS_FAFA    FALSE
 #define RADIO_CLASS      _T("BUTTON" )
 #define RADIO_FLAGS      (BS_AUTORADIOBUTTON|WS_VISIBLE)
 #define RADIO_SIZE       20
-#define RADIO_IS_FAFA   FALSE
+#define RADIO_IS_FAFA    FALSE
 #define PURE_WINDOWS
 /*  PM has no group box button style
 #define GROUP_CLASS      "BUTTON"
@@ -191,6 +195,34 @@ extern LONG APIENTRY wxSubclassedGenericControlProc(WXHWND hWnd, WXDWORD message
 
 #ifndef ENDSESSION_LOGOFF
     #define ENDSESSION_LOGOFF    0x80000000
+#endif
+
+#ifndef PMERR_INVALID_PARM
+    #define PMERR_INVALID_PARM 0x1303
+#endif
+
+#ifndef PMERR_INVALID_PARAMETERS
+    #define PMERR_INVALID_PARAMETERS 0x1208
+#endif
+
+#ifndef BOOKERR_INVALID_PARAMETERS
+    #define BOOKERR_INVALID_PARAMETERS -1
+#endif
+
+#ifndef DLGC_ENTRYFIELD
+    #define DLGC_ENTRYFIELD  0x0001
+#endif
+
+#ifndef DLGC_BUTTON
+    #define DLGC_BUTTON      0x0002
+#endif
+
+#ifndef DLGC_MLE
+    #define DLGC_MLE         0x0400
+#endif
+
+#ifndef DP_NORMAL
+    #define DP_NORMAL 0
 #endif
 
 // ---------------------------------------------------------------------------

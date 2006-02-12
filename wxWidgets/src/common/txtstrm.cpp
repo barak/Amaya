@@ -4,7 +4,7 @@
 // Author:      Guilhem Lavaux
 // Modified by:
 // Created:     28/06/98
-// RCS-ID:      $Id: txtstrm.cpp,v 1.1.1.1 2005/07/06 09:30:50 gully Exp $
+// RCS-ID:      $Id: txtstrm.cpp,v 1.1.1.2 2005/07/26 09:31:04 gully Exp $
 // Copyright:   (c) Guilhem Lavaux
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -132,7 +132,7 @@ wxUint32 wxTextInputStream::Read32(int base)
     if(!m_input) return 0;
 
     wxString word = ReadWord();
-    if(word.IsEmpty())
+    if(word.empty())
         return 0;
     return wxStrtoul(word.c_str(), 0, base);
 }
@@ -153,7 +153,7 @@ wxInt32 wxTextInputStream::Read32S(int base)
     if(!m_input) return 0;
 
     wxString word = ReadWord();
-    if(word.IsEmpty())
+    if(word.empty())
         return 0;
     return wxStrtol(word.c_str(), 0, base);
 }
@@ -172,7 +172,7 @@ double wxTextInputStream::ReadDouble()
 {
     if(!m_input) return 0;
     wxString word = ReadWord();
-    if(word.IsEmpty())
+    if(word.empty())
         return 0;
     return wxStrtod(word.c_str(), 0);
 }
@@ -406,7 +406,7 @@ void wxTextOutputStream::WriteString(const wxString& string)
         }
 
         out << c;
-   }
+    }
 
     // We must not write the trailing NULL here
 #if wxUSE_UNICODE

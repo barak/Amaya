@@ -22,6 +22,10 @@ extern void UpdateImageMap ( Element image,
                              Document doc,
                              int oldWidth,
                              int oldHeight );
+extern void SetAttrOnElement ( Document doc,
+                               Element el,
+                               int attrNum,
+                               int value );
 extern void DisplayImage ( Document doc,
                            Element el,
                            LoadedImageDesc *desc,
@@ -30,12 +34,12 @@ extern void DisplayImage ( Document doc,
 extern void SetContainerImageName ( char *imagefile );
 extern char *GetActiveImageInfo ( Document document,
                                   Element element );
-extern void FetchImage ( Document doc,
-                         Element el,
-                         char *imageURI,
-                         int flags,
-                         LoadedImageCallback callback,
-                         void *extra );
+extern ThotBool FetchImage ( Document doc,
+                             Element el,
+                             char *imageURI,
+                             int flags,
+                             LoadedImageCallback callback,
+                             void *extra );
 extern ThotBool FetchAndDisplayImages ( Document doc,
                                         int flags,
                                         Element elSubTree );
@@ -60,6 +64,10 @@ extern void UpdateImageMap ( Element image,
                                Document doc,
                                int oldWidth,
                                int oldHeight );
+extern void SetAttrOnElement ( Document doc,
+                                 Element el,
+                                 int attrNum,
+                                 int value );
 extern void DisplayImage ( Document doc,
                              Element el,
                              LoadedImageDesc *desc,
@@ -68,12 +76,12 @@ extern void DisplayImage ( Document doc,
 extern void SetContainerImageName ( char *imagefile );
 extern char *GetActiveImageInfo ( Document document,
                                     Element element );
-extern void FetchImage ( Document doc,
-                           Element el,
-                           char *imageURI,
-                           int flags,
-                           LoadedImageCallback callback,
-                           void *extra );
+extern ThotBool FetchImage ( Document doc,
+                               Element el,
+                               char *imageURI,
+                               int flags,
+                               LoadedImageCallback callback,
+                               void *extra );
 extern ThotBool FetchAndDisplayImages ( Document doc,
                                           int flags,
                                           Element elSubTree );

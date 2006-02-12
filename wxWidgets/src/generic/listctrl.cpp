@@ -3,7 +3,7 @@
 // Purpose:     generic implementation of wxListCtrl
 // Author:      Robert Roebling
 //              Vadim Zeitlin (virtual list control support)
-// Id:          $Id: listctrl.cpp,v 1.1.1.1 2005/07/06 09:30:50 gully Exp $
+// Id:          $Id: listctrl.cpp,v 1.1.1.2 2005/07/26 09:31:05 gully Exp $
 // Copyright:   (c) 1998 Robert Roebling
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -3716,8 +3716,8 @@ void wxListMainWindow::SetItemState( long litem, long state, long stateMask )
         return;
     }
 
-     wxCHECK_RET( litem >= 0 && (size_t)litem < GetItemCount(),
-                  _T("invalid list ctrl item index in SetItem") );
+    wxCHECK_RET( litem >= 0 && (size_t)litem < GetItemCount(),
+                 _T("invalid list ctrl item index in SetItem") );
 
     size_t oldCurrent = m_current;
     size_t item = (size_t)litem;    // safe because of the check above
@@ -5092,6 +5092,22 @@ wxColour wxGenericListCtrl::GetItemBackgroundColour( long item ) const
     info.m_itemId = item;
     m_mainWin->GetItem( info );
     return info.GetBackgroundColour();
+}
+
+void wxGenericListCtrl::SetItemFont( long item, const wxFont &f )
+{
+    wxListItem info;
+    info.m_itemId = item;
+    info.SetFont( f );
+    m_mainWin->SetItem( info );
+}
+
+wxFont wxGenericListCtrl::GetItemFont( long item ) const
+{
+    wxListItem info;
+    info.m_itemId = item;
+    m_mainWin->GetItem( info );
+    return info.GetFont();
 }
 
 int wxGenericListCtrl::GetSelectedItemCount() const

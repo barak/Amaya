@@ -4,7 +4,7 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     19.06.2003 (extracted from common/appcmn.cpp)
-// RCS-ID:      $Id: appbase.cpp,v 1.1.1.1 2005/07/06 09:30:49 gully Exp $
+// RCS-ID:      $Id: appbase.cpp,v 1.1.1.2 2005/07/26 09:31:04 gully Exp $
 // Copyright:   (c) 2003 Vadim Zeitlin <vadim@wxwindows.org>
 // License:     wxWindows license
 ///////////////////////////////////////////////////////////////////////////////
@@ -57,11 +57,8 @@
 #endif
 
 #if defined(__WXMAC__)
-    // VZ: MacTypes.h is enough under Mac OS X (where I could test it) but
-    //     I don't know which headers are needed under earlier systems so
-    //     include everything when in doubt
     #ifdef __DARWIN__
-        #include  "MacTypes.h"
+        #include  <CoreServices/CoreServices.h>
     #else
         #include  "wx/mac/private.h"  // includes mac headers
     #endif
@@ -75,6 +72,13 @@
         #endif
     #endif // wxUSE_STACKWALKER
 #endif // __WXDEBUG__
+
+// wxABI_VERSION can be defined when compiling applications but it should be
+// left undefined when compiling the library itself, it is then set to its
+// default value in version.h
+#if wxABI_VERSION != wxMAJOR_VERSION * 10000 + wxMINOR_VERSION * 100 + 99
+#error "wxABI_VERSION should not be defined when compiling the library"
+#endif
 
 // ----------------------------------------------------------------------------
 // private functions prototypes

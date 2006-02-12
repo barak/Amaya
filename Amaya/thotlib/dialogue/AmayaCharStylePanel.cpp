@@ -2,6 +2,7 @@
 
 #include "wx/wx.h"
 #include "wx/xrc/xmlres.h"              // XRC XML resouces
+#include "wx/spinctrl.h"
 
 #include "thot_gui.h"
 #include "thot_sys.h"
@@ -39,13 +40,11 @@
 
 IMPLEMENT_DYNAMIC_CLASS(AmayaCharStylePanel, AmayaSubPanel)
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaCharStylePanel
  *      Method:  AmayaCharStylePanel
  * Description:  construct a panel (bookmarks, elements, attributes, colors ...)
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaCharStylePanel::AmayaCharStylePanel( wxWindow * p_parent_window, AmayaNormalWindow * p_parent_nwindow )
   : AmayaSubPanel( p_parent_window, p_parent_nwindow, _T("wxID_PANEL_CHARSTYLE") )
 {
@@ -62,9 +61,9 @@ AmayaCharStylePanel::AmayaCharStylePanel( wxWindow * p_parent_window, AmayaNorma
 
   // fill choice selectors
   XRCCTRL(*m_pPanelContentDetach, "wxID_CHOICE_FONTFAMILY", wxChoice)->Clear();
-  XRCCTRL(*m_pPanelContentDetach, "wxID_CHOICE_FONTFAMILY", wxChoice)->Append(TtaConvMessageToWX("Times"));
-  XRCCTRL(*m_pPanelContentDetach, "wxID_CHOICE_FONTFAMILY", wxChoice)->Append(TtaConvMessageToWX("Helvetica"));
-  XRCCTRL(*m_pPanelContentDetach, "wxID_CHOICE_FONTFAMILY", wxChoice)->Append(TtaConvMessageToWX("Courier"));
+  XRCCTRL(*m_pPanelContentDetach, "wxID_CHOICE_FONTFAMILY", wxChoice)->Append(TtaConvMessageToWX("Serif"));
+  XRCCTRL(*m_pPanelContentDetach, "wxID_CHOICE_FONTFAMILY", wxChoice)->Append(TtaConvMessageToWX("Sans-serif"));
+  XRCCTRL(*m_pPanelContentDetach, "wxID_CHOICE_FONTFAMILY", wxChoice)->Append(TtaConvMessageToWX("Monospace"));
   XRCCTRL(*m_pPanelContentDetach, "wxID_CHOICE_FONTFAMILY", wxChoice)->Append(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_UNCHANGED)));
   XRCCTRL(*m_pPanelContentDetach, "wxID_CHOICE_FONTFAMILY", wxChoice)->SetStringSelection(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_UNCHANGED)));
 
@@ -89,57 +88,40 @@ AmayaCharStylePanel::AmayaCharStylePanel( wxWindow * p_parent_window, AmayaNorma
   XRCCTRL(*m_pPanelContentDetach, "wxID_CHOICE_BOLDNESS", wxChoice)->Append(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_UNCHANGED)));
   XRCCTRL(*m_pPanelContentDetach, "wxID_CHOICE_BOLDNESS", wxChoice)->SetStringSelection(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_UNCHANGED)));
   
-  XRCCTRL(*m_pPanelContentDetach,"wxID_CHOICE_BODYSIZE",wxChoice)->Clear();
-  int bodyRelatSize = 0;
-  int bodyPointSize = 0;
-  int font_size_nb = NumberOfFonts ();
-  wxString font_size_unit = TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_TYPOGRAPHIC_POINTS));
-  for (bodyRelatSize = 0; bodyRelatSize < font_size_nb; bodyRelatSize++)
-    {
-      bodyPointSize = ThotFontPointSize(bodyRelatSize);
-      XRCCTRL(*m_pPanelContentDetach,"wxID_CHOICE_BODYSIZE",wxChoice)->Append(wxString::Format(_T("%d "),bodyPointSize)+font_size_unit);
-    }
-  XRCCTRL(*m_pPanelContentDetach, "wxID_CHOICE_BODYSIZE", wxChoice)->Append(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_UNCHANGED)));
-  XRCCTRL(*m_pPanelContentDetach, "wxID_CHOICE_BODYSIZE", wxChoice)->SetStringSelection(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_UNCHANGED)));
-
+  // setup range of size
+  XRCCTRL(*m_pPanelContentDetach, "wxID_SPIN_BODYSIZE", wxSpinCtrl)->SetValue( 0 );
   ResetPresentMenus();
 
   // register myself to the manager, so I will be avertised that another panel is floating ...
   m_pManager->RegisterSubPanel( this );
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaCharStylePanel
  *      Method:  ~AmayaCharStylePanel
  * Description:  destructor
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaCharStylePanel::~AmayaCharStylePanel()
 {  
   // unregister myself to the manager, so nothing should be asked to me in future
   m_pManager->UnregisterSubPanel( this );
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaCharStylePanel
  *      Method:  GetPanelType
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 int AmayaCharStylePanel::GetPanelType()
 {
   return WXAMAYA_PANEL_CHARSTYLE;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaCharStylePanel
  *      Method:  RefreshToolTips
  * Description:  reassign the tooltips values
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaCharStylePanel::RefreshToolTips()
 {
   XRCCTRL(*m_pPanelContentDetach,"wxID_REFRESH",wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_REFRESH)));
@@ -151,35 +133,31 @@ void AmayaCharStylePanel::RefreshToolTips()
   XRCCTRL(*m_pPanelContentDetach,"wxID_APPLY_BOLDNESS",wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_APPLY)));
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaCharStylePanel
  *      Method:  SendDataToPanel
  * Description:  refresh the button widgets of the frame's panel
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaCharStylePanel::SendDataToPanel( AmayaParams& p )
 {
-  intptr_t font_family    = (intptr_t)p.param1;
-  intptr_t font_style     = (intptr_t)p.param2;
-  intptr_t font_weight    = (intptr_t)p.param3;
-  intptr_t font_underline = (intptr_t)p.param4;
-  intptr_t font_size      = (intptr_t)p.param5;
+  int font_family    = p.param1;
+  int font_underline = p.param7;
+  int font_style     = p.param8;
+  int font_weight    = p.param9;
+  int font_size      = p.param10;
 
   XRCCTRL(*m_pPanelContentDetach, "wxID_CHOICE_FONTFAMILY", wxChoice)->SetSelection(font_family);
   XRCCTRL(*m_pPanelContentDetach, "wxID_CHOICE_UNDERLINE", wxChoice)->SetSelection(font_underline);
-  XRCCTRL(*m_pPanelContentDetach, "wxID_CHOICE_BODYSIZE", wxChoice)->SetSelection(font_size);
+  XRCCTRL(*m_pPanelContentDetach, "wxID_SPIN_BODYSIZE", wxSpinCtrl)->SetValue( font_size );
   XRCCTRL(*m_pPanelContentDetach, "wxID_CHOICE_CHARSTYLE", wxChoice)->SetSelection(font_style);
   XRCCTRL(*m_pPanelContentDetach, "wxID_CHOICE_BOLDNESS", wxChoice)->SetSelection(font_weight);
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaCharStylePanel
  *      Method:  DoUpdate
  * Description:  force a refresh when the user expand or detach this panel
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaCharStylePanel::DoUpdate()
 {
   AmayaSubPanel::DoUpdate();
@@ -187,32 +165,28 @@ void AmayaCharStylePanel::DoUpdate()
   // do not refresh the panel from the current selection because the user must ask for that
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaCharStylePanel
  *      Method:  IsActive
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 bool AmayaCharStylePanel::IsActive()
 {
   return AmayaSubPanel::IsActive();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaCharStylePanel
  *      Method:  OnApply
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaCharStylePanel::OnApply( wxCommandEvent& event )
 {
-  int font_family    = XRCCTRL(*m_pPanelContentDetach,"wxID_CHOICE_FONTFAMILY",wxChoice)->GetSelection();
-  int font_style     = XRCCTRL(*m_pPanelContentDetach,"wxID_CHOICE_CHARSTYLE",wxChoice)->GetSelection();
-  int font_weight    = XRCCTRL(*m_pPanelContentDetach,"wxID_CHOICE_BOLDNESS",wxChoice)->GetSelection();
+  int font_family = XRCCTRL(*m_pPanelContentDetach,"wxID_CHOICE_FONTFAMILY",wxChoice)->GetSelection();
+  int font_style = XRCCTRL(*m_pPanelContentDetach,"wxID_CHOICE_CHARSTYLE",wxChoice)->GetSelection();
+  int font_weight = XRCCTRL(*m_pPanelContentDetach,"wxID_CHOICE_BOLDNESS",wxChoice)->GetSelection();
   int font_underline = XRCCTRL(*m_pPanelContentDetach,"wxID_CHOICE_UNDERLINE",wxChoice)->GetSelection();
-  int font_size      = XRCCTRL(*m_pPanelContentDetach,"wxID_CHOICE_BODYSIZE",wxChoice)->GetSelection();
+  int font_size = XRCCTRL(*m_pPanelContentDetach, "wxID_SPIN_BODYSIZE", wxSpinCtrl)->GetValue();
 
   ThotCallback (NumMenuCharFamily, INTEGER_DATA, (char*)font_family);
   ThotCallback (NumMenuCharFontStyle, INTEGER_DATA, (char*)font_style);
@@ -222,13 +196,11 @@ void AmayaCharStylePanel::OnApply( wxCommandEvent& event )
   ThotCallback (NumFormPresChar, INTEGER_DATA, (char*) 1);
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaCharStylePanel
  *      Method:  OnApplyFontFamily
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaCharStylePanel::OnApplyFontFamily( wxCommandEvent& event )
 {
   int font_family    = XRCCTRL(*m_pPanelContentDetach,"wxID_CHOICE_FONTFAMILY",wxChoice)->GetSelection();
@@ -236,13 +208,11 @@ void AmayaCharStylePanel::OnApplyFontFamily( wxCommandEvent& event )
   ThotCallback (NumFormPresChar, INTEGER_DATA, (char*) 2);
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaCharStylePanel
  *      Method:  OnApplyUnderline
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaCharStylePanel::OnApplyUnderline( wxCommandEvent& event )
 {
   int font_underline = XRCCTRL(*m_pPanelContentDetach,"wxID_CHOICE_UNDERLINE",wxChoice)->GetSelection();
@@ -250,27 +220,24 @@ void AmayaCharStylePanel::OnApplyUnderline( wxCommandEvent& event )
   ThotCallback (NumFormPresChar, INTEGER_DATA, (char*) 3);
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaCharStylePanel
  *      Method:  OnApplyBodySize
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaCharStylePanel::OnApplyBodySize( wxCommandEvent& event )
 {
-  int font_size      = XRCCTRL(*m_pPanelContentDetach,"wxID_CHOICE_BODYSIZE",wxChoice)->GetSelection();
-  ThotCallback (NumMenuCharFontSize, INTEGER_DATA, (char*)font_size); /* default=2 */
+  int font_size = XRCCTRL(*m_pPanelContentDetach, "wxID_SPIN_BODYSIZE", wxSpinCtrl)->GetValue( );
+  if (font_size != 0)
+    ThotCallback (NumMenuCharFontSize, INTEGER_DATA, (char*)font_size);
   ThotCallback (NumFormPresChar, INTEGER_DATA, (char*) 4);
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaCharStylePanel
  *      Method:  OnApplyCharStyle
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaCharStylePanel::OnApplyCharStyle( wxCommandEvent& event )
 {
   int font_style     = XRCCTRL(*m_pPanelContentDetach,"wxID_CHOICE_CHARSTYLE",wxChoice)->GetSelection();
@@ -279,13 +246,11 @@ void AmayaCharStylePanel::OnApplyCharStyle( wxCommandEvent& event )
 }
 
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaCharStylePanel
  *      Method:  OnApplyBoldness
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaCharStylePanel::OnApplyBoldness( wxCommandEvent& event )
 {
   int font_weight    = XRCCTRL(*m_pPanelContentDetach,"wxID_CHOICE_BOLDNESS",wxChoice)->GetSelection();
@@ -293,25 +258,21 @@ void AmayaCharStylePanel::OnApplyBoldness( wxCommandEvent& event )
   ThotCallback (NumFormPresChar, INTEGER_DATA, (char*) 6);
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaCharStylePanel
  *      Method:  OnRefresh
  * Description:  refresh the panel from current selection
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaCharStylePanel::OnRefresh( wxCommandEvent& event )
 {
   RefreshCharStylePanel();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaCharStylePanel
  *      Method:  RefreshCharStylePanel
  * Description:  refresh the panel from current selection
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaCharStylePanel::RefreshCharStylePanel()
 {
   Document doc;

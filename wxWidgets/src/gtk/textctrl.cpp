@@ -2,7 +2,7 @@
 // Name:        textctrl.cpp
 // Purpose:
 // Author:      Robert Roebling
-// Id:          $Id: textctrl.cpp,v 1.1.1.1 2005/07/06 09:30:52 gully Exp $
+// Id:          $Id: textctrl.cpp,v 1.1.1.2 2005/07/26 09:31:05 gully Exp $
 // Copyright:   (c) 1998 Robert Roebling, Vadim Zeitlin
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -1091,12 +1091,12 @@ wxString wxTextCtrl::GetLineText( long lineNo ) const
 #else
         GtkTextIter line;
         gtk_text_buffer_get_iter_at_line(m_buffer,&line,lineNo);
-        GtkTextIter end;
-        gtk_text_buffer_get_end_iter(m_buffer,&end );
+        GtkTextIter end = line;
+        gtk_text_iter_forward_to_line_end(&end);
         gchar *text = gtk_text_buffer_get_text(m_buffer,&line,&end,TRUE);
         wxString result(wxGTK_CONV_BACK(text));
         g_free(text);
-        return result.BeforeFirst(wxT('\n'));
+        return result;
 #endif
     }
     else
@@ -1510,7 +1510,7 @@ long wxTextCtrl::GetInsertionPoint() const
     else
 #endif
     {
-    return (long) GET_EDITABLE_POS(m_text);
+        return (long) GET_EDITABLE_POS(m_text);
     }
 }
 
@@ -2081,7 +2081,7 @@ void wxTextCtrl::Freeze()
             gtk_widget_set_sensitive(m_widget, false);
             g_object_ref(m_buffer);
             gtk_text_view_set_buffer(GTK_TEXT_VIEW(m_text), gtk_text_buffer_new(NULL));
-    }
+        }
 #else
         gtk_text_freeze(GTK_TEXT(m_text));
 #endif

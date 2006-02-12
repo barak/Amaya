@@ -38,13 +38,11 @@
 
 IMPLEMENT_DYNAMIC_CLASS(AmayaXMLPanel, AmayaSubPanel)
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaXMLPanel
  *      Method:  AmayaXMLPanel
  * Description:  construct a panel (bookmarks, elements, attributes, colors ...)
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaXMLPanel::AmayaXMLPanel( wxWindow * p_parent_window, AmayaNormalWindow * p_parent_nwindow )
   : AmayaSubPanel( p_parent_window, p_parent_nwindow, _T("wxID_PANEL_XML") )
     ,m_XMLRef(0)
@@ -61,38 +59,32 @@ AmayaXMLPanel::AmayaXMLPanel( wxWindow * p_parent_window, AmayaNormalWindow * p_
   //RefreshXMLPanel();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaXMLPanel
  *      Method:  ~AmayaXMLPanel
  * Description:  destructor
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaXMLPanel::~AmayaXMLPanel()
 {  
   // unregister myself to the manager, so nothing should be asked to me in future
   m_pManager->UnregisterSubPanel( this );
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaXMLPanel
  *      Method:  GetPanelType
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 int AmayaXMLPanel::GetPanelType()
 {
   return WXAMAYA_PANEL_XML;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaXMLPanel
  *      Method:  RefreshToolTips
  * Description:  reassign the tooltips values
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaXMLPanel::RefreshToolTips()
 {  
   //  XRCCTRL(*m_pPanelContentDetach,"wxID_LIST_XML",wxListBox)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_SEL)));
@@ -100,27 +92,27 @@ void AmayaXMLPanel::RefreshToolTips()
   XRCCTRL(*m_pPanelContentDetach,"wxID_APPLY",wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_APPLY)));
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaXMLPanel
  *      Method:  SendDataToPanel
  * Description:  refresh the button widgets of the frame's panel
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaXMLPanel::SendDataToPanel( AmayaParams& p )
 {
-  intptr_t nb_el            = (intptr_t)p.param1;
+  int nb_el                 = (int)p.param1;
   const char * listBuffer   = (char *)p.param2;
   const char * currentEl    = (char *)p.param3;
-  intptr_t ref              = (intptr_t)p.param4;;
+  int ref                   = (int)p.param4;;
   
   m_XMLRef = ref;
   
   /* fill the list */
   m_pXMLList->Clear();
-  intptr_t i = 0;
+  int i = 0;
   int index = 0;
-  intptr_t sel = 0;
+  int sel = 0;
+  if (nb_el == 0)
+	return;
   while (i < nb_el && listBuffer[index] != EOS)
     {
       m_pXMLList->Append( TtaConvMessageToWX( &listBuffer[index] ) );
@@ -143,13 +135,11 @@ void AmayaXMLPanel::SendDataToPanel( AmayaParams& p )
   m_pPanelContentDetach->Layout();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaXMLPanel
  *      Method:  DoUpdate
  * Description:  force a refresh when the user expand or detach this panel
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaXMLPanel::DoUpdate()
 {
   AmayaSubPanel::DoUpdate();
@@ -158,40 +148,35 @@ void AmayaXMLPanel::DoUpdate()
   Document doc;
   View view;
   TtaGetActiveView( &doc, &view );
-  TtaRefreshElementMenu( doc, view );
+  if (doc > 0)
+    TtaRefreshElementMenu( doc, view );
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaXMLPanel
  *      Method:  IsActive
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 bool AmayaXMLPanel::IsActive()
 {
   return AmayaSubPanel::IsActive();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaXMLPanel
  *      Method:  OnApply
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaXMLPanel::OnApply( wxCommandEvent& event )
 {
   ThotCallback(m_XMLRef, INTEGER_DATA, (char*) 1);
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaXMLPanel
  *      Method:  OnSelected
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaXMLPanel::OnSelected( wxCommandEvent& event )
 {
   wxString s_selected = XRCCTRL(*this, "wxID_LIST_XML", wxListBox)->GetStringSelection();
@@ -207,31 +192,28 @@ void AmayaXMLPanel::OnSelected( wxCommandEvent& event )
 
 
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaXMLPanel
  *      Method:  OnRefresh
  * Description:  refresh the panel from current selection
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaXMLPanel::OnRefresh( wxCommandEvent& event )
 {
   RefreshXMLPanel();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaXMLPanel
  *      Method:  RefreshXMLPanel
  * Description:  refresh the panel from current selection
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaXMLPanel::RefreshXMLPanel()
 {
   Document doc;
   View view;
   TtaGetActiveView( &doc, &view );
-  TtaShowElementMenu (doc, view);
+  if (doc > 0)
+    TtaRefreshElementMenu (doc, view);
 }
 
 /*----------------------------------------------------------------------

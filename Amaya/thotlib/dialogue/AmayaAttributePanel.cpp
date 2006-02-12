@@ -38,14 +38,12 @@
 
 IMPLEMENT_DYNAMIC_CLASS(AmayaAttributePanel, AmayaSubPanel)
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaAttributePanel
  *      Method:  AmayaAttributePanel
  * Description:  construct a panel (bookmarks, elements, attributes ...)
  *               TODO
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaAttributePanel::AmayaAttributePanel( wxWindow * p_parent_window, AmayaNormalWindow * p_parent_nwindow )
   : AmayaSubPanel( p_parent_window, p_parent_nwindow, _T("wxID_PANEL_ATTRIBUTE") )
   ,m_pRBEnum(NULL)
@@ -80,14 +78,12 @@ AmayaAttributePanel::AmayaAttributePanel( wxWindow * p_parent_window, AmayaNorma
   m_pManager->RegisterSubPanel( this );
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaAttributePanel
  *      Method:  ~AmayaAttributePanel
  * Description:  destructor
  *               TODO
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaAttributePanel::~AmayaAttributePanel()
 {
   // unregister myself to the manager, so nothing should be asked to me in future
@@ -95,13 +91,11 @@ AmayaAttributePanel::~AmayaAttributePanel()
 }
 
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaAttributePanel
  *      Method:  GetPanelType
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 int AmayaAttributePanel::GetPanelType()
 {
   return WXAMAYA_PANEL_ATTRIBUTE;
@@ -125,18 +119,20 @@ bool AmayaAttributePanel::IsFreezed()
   ----------------------------------------------------------------------*/
 void AmayaAttributePanel::SendDataToPanel( AmayaParams& p )
 {
-  intptr_t action_id = (intptr_t)p.param1;
+  int action_id = p.param1;
   switch ( action_id )
     {
     case wxATTR_ACTION_LISTUPDATE:
       ShowAttributValue( wxATTR_TYPE_NONE );
-      SetupListValue( (const char *)p.param2, (intptr_t)p.param3, (const int *)p.param4, (const char *)p.param5, (intptr_t)p.param6, (const int *)p.param7 );
+      SetupListValue( (const char *)p.param2, p.param8, (const int *)p.param4,
+                      (const char *)p.param5, p.param7, (const int *)p.param6 );
       break;
     case wxATTR_ACTION_SETUPLANG:
       m_CurrentAttType = wxATTR_TYPE_LANG;
       ShowAttributValue( wxATTR_TYPE_LANG );
       SetMandatoryState( p.param2 != NULL );
-      SetupLangValue( (const char *)p.param3,(const char *)p.param4, (const char *)p.param5, (intptr_t)p.param6, (intptr_t)p.param7 );
+      SetupLangValue( (const char *)p.param3,(const char *)p.param4,
+                      (const char *)p.param5, p.param7, p.param8 );
       break;
     case wxATTR_ACTION_SETUPTEXT:
       m_CurrentAttType = wxATTR_TYPE_TEXT;
@@ -148,13 +144,13 @@ void AmayaAttributePanel::SendDataToPanel( AmayaParams& p )
       m_CurrentAttType = wxATTR_TYPE_ENUM;
       ShowAttributValue( wxATTR_TYPE_ENUM );
       SetMandatoryState( p.param2 != NULL );
-      SetupEnumValue( (const char *)p.param3, (intptr_t)p.param4, (intptr_t)p.param5 );
+      SetupEnumValue( (const char *)p.param3, p.param8, p.param7 );
       break;
     case wxATTR_ACTION_SETUPNUM:
       m_CurrentAttType = wxATTR_TYPE_NUM;
       ShowAttributValue( wxATTR_TYPE_NUM );
       SetMandatoryState( p.param2 != NULL );
-      SetupNumValue( (intptr_t)p.param3 );
+      SetupNumValue( p.param8, p.param9, p.param10 );
       break;
     }
 }
@@ -372,8 +368,10 @@ void AmayaAttributePanel::ShowAttributValue( wxATTR_TYPE type )
   params:
   returns:
   ----------------------------------------------------------------------*/
-void AmayaAttributePanel::SetupListValue( const char * p_attr_list, int nb_attr, const int * p_active_attr,
-					  const char * p_attr_evt_list, int nb_attr_evt, const int * p_active_attr_evt )
+void AmayaAttributePanel::SetupListValue( const char * p_attr_list,
+                                          int nb_attr, const int * p_active_attr,
+                                          const char * p_attr_evt_list, int nb_attr_evt,
+                                          const int * p_active_attr_evt )
 {
   /* remember the selected entry */
   wxString last_entry = m_pAttrList->GetStringSelection();
@@ -458,10 +456,10 @@ void AmayaAttributePanel::SetupListValue( const char * p_attr_list, int nb_attr,
   returns:
   ----------------------------------------------------------------------*/
 void AmayaAttributePanel::SetupLangValue( const char * selected_lang, 
-					  const char * inherited_lang,
-					  const char * lang_list,
-					  int lang_list_nb,
-					  int default_lang_id )
+                                          const char * inherited_lang,
+                                          const char * lang_list,
+                                          int lang_list_nb,
+                                          int default_lang_id )
 {
   /* setup the inherited langage label */
   wxStaticText * p_stext = XRCCTRL(*m_pPanel_Lang, "wxID_ATTR_LABEL_LANG_INHER", wxStaticText);
@@ -504,6 +502,7 @@ void AmayaAttributePanel::SetupTextValue( const char * text )
   wxTextCtrl * p_text_ctrl = XRCCTRL(*m_pPanel_Text, "wxID_ATTR_TEXT_VALUE", wxTextCtrl);
   p_text_ctrl->SetValue( TtaConvMessageToWX( text ) );
   m_pPanel_Text->Refresh();
+  p_text_ctrl->SetInsertionPointEnd();
 }
 
 /*----------------------------------------------------------------------
@@ -552,9 +551,10 @@ void AmayaAttributePanel::SetupEnumValue( const char * enums, int nb_enum, int s
   params:
   returns:
   ----------------------------------------------------------------------*/
-void AmayaAttributePanel::SetupNumValue( int num )
+void AmayaAttributePanel::SetupNumValue( int num, int begin, int end )
 {
   wxSpinCtrl * p_spin_ctrl = XRCCTRL(*m_pPanel_Num, "wxID_ATTR_NUM_VALUE", wxSpinCtrl);
+  p_spin_ctrl->SetRange(begin, end);
   p_spin_ctrl->SetValue( num );
   m_pPanel_Num->Refresh();
 }
@@ -669,38 +669,32 @@ void AmayaAttributePanel::ForceAttributeUpdate()
     UpdateAttrMenu( pDoc );
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaAttributePanel
  *      Method:  DoUpdate
  * Description:  force a refresh when the user expand or detach this panel
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaAttributePanel::DoUpdate()
 {
   AmayaSubPanel::DoUpdate();
   ForceAttributeUpdate();  
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaAttributePanel
  *      Method:  IsActive
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 bool AmayaAttributePanel::IsActive()
 {
   return (AmayaSubPanel::IsActive() && !IsFreezed());
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaAttributePanel
  *      Method:  SetMandatoryState
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaAttributePanel::SetMandatoryState( bool is_mandatory )
 {
   m_CurrentAttMandatory = is_mandatory;

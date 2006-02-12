@@ -34,9 +34,6 @@ extern void InitializeNewDoc ( char *url,
                                ThotBool isXML );
 extern void RemoveDoctype ( Document document,
                             View view );
-extern void HasNatures ( Document document,
-                         ThotBool *useMathML,
-                         ThotBool *useSVG );
 extern void AddDoctype ( Document document,
                          View view );
 extern void CreateDoctypeXhtml11 ( Document document,
@@ -196,14 +193,17 @@ extern void CreateDivision ( Document document,
                              View view );
 extern void CreateNOSCRIPT ( Document document,
                              View view );
-extern void CreateObject ( Document document,
+extern void CreateIFrame ( Document document,
+                           View view );
+extern void CreateObject ( Document doc,
                            View view );
 extern void CreateParameter ( Document document,
                               View view );
-extern void CreateIFrame ( Document document,
-                           View view );
 extern void CreateOrChangeLink ( Document doc,
                                  View view );
+extern void DoDeleteAnchor ( Document doc,
+                             View view,
+                             ThotBool noCallback );
 extern void DeleteAnchor ( Document doc,
                            View view );
 extern void FlushCache ( Document doc,
@@ -301,9 +301,6 @@ extern void InitializeNewDoc ( char *url,
                                  ThotBool isXML );
 extern void RemoveDoctype ( Document document,
                               View view );
-extern void HasNatures ( Document document,
-                           ThotBool *useMathML,
-                           ThotBool *useSVG );
 extern void AddDoctype ( Document document,
                            View view );
 extern void CreateDoctypeXhtml11 ( Document document,
@@ -463,14 +460,17 @@ extern void CreateDivision ( Document document,
                                View view );
 extern void CreateNOSCRIPT ( Document document,
                                View view );
-extern void CreateObject ( Document document,
+extern void CreateIFrame ( Document document,
+                             View view );
+extern void CreateObject ( Document doc,
                              View view );
 extern void CreateParameter ( Document document,
                                 View view );
-extern void CreateIFrame ( Document document,
-                             View view );
 extern void CreateOrChangeLink ( Document doc,
                                    View view );
+extern void DoDeleteAnchor ( Document doc,
+                               View view,
+                               ThotBool noCallback );
 extern void DeleteAnchor ( Document doc,
                              View view );
 extern void FlushCache ( Document doc,

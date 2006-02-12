@@ -45,9 +45,10 @@
 #ifdef XML_GENERIC
 #include "Xmlbuilder_f.h"
 #endif /* XML_GENERIC */
-//#ifdef TEMPLATES
+#ifdef TEMPLATES
 #include "Templatebuilder_f.h"
-//#endif /* TEMPLATES */
+#include "templates_f.h"
+#endif /* TEMPLATES */
 #include "XLinkbuilder_f.h"
 #ifdef ANNOTATIONS
 #include "annotlib.h"
@@ -161,6 +162,8 @@ static int           stackLevel = 1;
 static gzFile        stream = 0;
 /* path or URL of the document */
 static char         *docURL = NULL;
+/* save the docURL for some cases of parsing errors */
+static char         *docURL2 = NULL;
 
 /* information about the Thot document under construction */
 /* Document structure schema */
@@ -395,37 +398,37 @@ static void    InitXmlParserContexts (void)
   prevCtxt = ctxt;
 
 #ifdef TEMPLATES
-   /* create and initialize a context for Templates */
-   ctxt = (XMLparserContext*)TtaGetMemory (sizeof (XMLparserContext));
-   if (prevCtxt == NULL)
-      firstParserCtxt = ctxt;
-   else
-      prevCtxt->NextParserCtxt = ctxt;
-   ctxt->NextParserCtxt = NULL;
-   ctxt->SSchemaName = (char *)TtaGetMemory (NAME_LENGTH);
-   strcpy ((char *)ctxt->SSchemaName, "Template");
-   ctxt->UriName = (char *)TtaGetMemory (MAX_URI_NAME_LENGTH);
-   strcpy ((char *)ctxt->UriName, (char *)Template_URI);
-   ctxt->XMLSSchema = NULL;
-   ctxt->XMLtype = Template_TYPE;
-   ctxt->MapAttribute = (Proc) MapTemplateAttribute;
-   ctxt->MapAttributeValue = (Proc) MapTemplateAttributeValue;
-   ctxt->CheckContext = (Proc) XmlCheckContext;
-   ctxt->CheckInsert = (Proc) XmlCheckInsert;
-   ctxt->ElementCreated = NULL;
-   ctxt->ElementComplete = (Proc) TemplateElementComplete;
-   ctxt->AttributeComplete = (Proc) TemplateAttributeComplete;
-   ctxt->GetDTDName = (Proc) TemplateGetDTDName;
-   ctxt->UnknownNameSpace = (Proc)UnknownTemplateNameSpace;
-   ctxt->DefaultLineBreak = TRUE;
-   ctxt->DefaultLeadingSpace = TRUE;   
-   ctxt->DefaultTrailingSpace = TRUE;  
-   ctxt->DefaultContiguousSpace = TRUE;
-   ctxt->PreserveLineBreak = TRUE;    
-   ctxt->PreserveLeadingSpace = FALSE;   
-   ctxt->PreserveTrailingSpace = FALSE;  
-   ctxt->PreserveContiguousSpace = FALSE;
-   prevCtxt = ctxt;
+  /* create and initialize a context for Templates */
+  ctxt = (XMLparserContext*)TtaGetMemory (sizeof (XMLparserContext));
+  if (prevCtxt == NULL)
+    firstParserCtxt = ctxt;
+  else
+    prevCtxt->NextParserCtxt = ctxt;
+  ctxt->NextParserCtxt = NULL;
+  ctxt->SSchemaName = (char *)TtaGetMemory (NAME_LENGTH);
+  strcpy ((char *)ctxt->SSchemaName, "Template");
+  ctxt->UriName = (char *)TtaGetMemory (MAX_URI_NAME_LENGTH);
+  strcpy ((char *)ctxt->UriName, (char *)Template_URI);
+  ctxt->XMLSSchema = NULL;
+  ctxt->XMLtype = Template_TYPE;
+  ctxt->MapAttribute = (Proc) MapTemplateAttribute;
+  ctxt->MapAttributeValue = (Proc) MapTemplateAttributeValue;
+  ctxt->CheckContext = (Proc) XmlCheckContext;
+  ctxt->CheckInsert = (Proc) XmlCheckInsert;
+  ctxt->ElementCreated = NULL;
+  ctxt->ElementComplete = (Proc) TemplateElementComplete;
+  ctxt->AttributeComplete = (Proc) TemplateAttributeComplete;
+  ctxt->GetDTDName = (Proc) TemplateGetDTDName;
+  ctxt->UnknownNameSpace = (Proc)UnknownTemplateNameSpace;
+  ctxt->DefaultLineBreak = TRUE;
+  ctxt->DefaultLeadingSpace = TRUE;   
+  ctxt->DefaultTrailingSpace = TRUE;  
+  ctxt->DefaultContiguousSpace = TRUE;
+  ctxt->PreserveLineBreak = TRUE;    
+  ctxt->PreserveLeadingSpace = FALSE;   
+  ctxt->PreserveTrailingSpace = FALSE;  
+  ctxt->PreserveContiguousSpace = FALSE;
+  prevCtxt = ctxt;
 #endif /* TEMPLATES */
 
   /* create and initialize a context for XLink */
@@ -540,9 +543,18 @@ void  XmlParseError (ErrorType type, unsigned char *msg, int line)
   
   if (docURL)
     {
-      fprintf (ErrFile, "*** Errors/warnings in %s\n", docURL);
+      fprintf (ErrFile, "\n*** Errors/warnings in %s\n", docURL);
       TtaFreeMemory (docURL);
       docURL = NULL;
+    }
+  else
+    {
+      if (CSSErrorsFound && docURL2)
+	{
+	  fprintf (ErrFile, "\n*** Errors/warnings in %s\n", docURL2);
+	  TtaFreeMemory (docURL2);
+	  docURL2 = NULL;
+	}
     }
   
   switch (type)
@@ -655,6 +667,16 @@ void  SetParsingTextArea (ThotBool value)
 
 {
   XMLcontext.parsingTextArea = value;
+}
+
+/*----------------------------------------------------------------------
+  SetParsingScript
+  Sets the value of ParsingScript boolean.
+  ----------------------------------------------------------------------*/
+void  SetParsingScript (ThotBool value)
+
+{
+  XMLcontext.parsingScript = value;
 }
 
 /*----------------------------------------------------------------------
@@ -1852,7 +1874,7 @@ static void   GetXmlElType (char *ns_uri, char *elementName,
       else
         {
           /* Search the element inside a supported DTD */	  
-	  elType->ElSSchema = currentParserCtxt->XMLSSchema;
+          elType->ElSSchema = currentParserCtxt->XMLSSchema;
           MapXMLElementType (currentParserCtxt->XMLtype, elementName, elType,
                              mappedName, content, level, XMLcontext.doc);
         }
@@ -1931,6 +1953,13 @@ static void StartOfXmlStartElement (char *name)
         }
       /* Look for the context associated with that namespace */
       ChangeXmlParserContextByUri (nsURI);
+      // it's a compound document
+      if (currentParserCtxt && savParserCtxt != currentParserCtxt &&
+          (!strcmp (currentParserCtxt->SSchemaName, "SVG") ||
+           !strcmp (currentParserCtxt->SSchemaName, "MathML")) &&
+          DocumentMeta[XMLcontext.doc])
+        DocumentMeta[XMLcontext.doc]->compound = TRUE;
+        
       elementName = (char *)TtaGetMemory ((strlen ((char *)ptr) + 1));
       strcpy ((char *)elementName, (char *)ptr);
     }
@@ -4656,7 +4685,7 @@ static void InitializeExpatParser (CHARSET charset)
            charset == WINDOWS_1254 || charset == WINDOWS_1255 ||
            charset == WINDOWS_1256 || charset == WINDOWS_1257 ||
            charset == ISO_2022_JP  || charset == EUC_JP       ||
-           charset == SHIFT_JIS)
+           charset == SHIFT_JIS    || charset == GB_2312)
     /* buffers will be converted to UTF-8 by Amaya */
     Parser = XML_ParserCreateNS ("UTF-8", NS_SEP);
   else
@@ -4972,15 +5001,10 @@ static Element  SetExternalElementType (Element el, Document doc,
   into the main document
   Return TRUE if the parsing of the external document doesn't detect errors.
   ---------------------------------------------------------------------------*/
-void ParseExternalDocument (char     *fileName,
-                            char     *originalName,
-                            Element   el,
-                            ThotBool  isclosed,
-                            Document  doc,
-                            Language  lang,
-                            char     *typeName)
+void ParseExternalDocument (char *fileName, char *originalName, Element el,
+                            ThotBool isclosed, Document doc, Language lang,
+                            char *typeName)
 {
-  char         *schemaName = NULL, *tempName = NULL, *ptr = NULL;
   ElementType   elType;
   Element       parent, oldel;
   Element       copy = NULL;
@@ -4989,17 +5013,18 @@ void ParseExternalDocument (char     *fileName,
   DocumentType  thotType;
   Document      externalDoc = 0;
   CHARSET       charset;
+  NotifyElement event;
   DisplayMode   dispMode;
   gzFile        infile;
   int           parsingLevel;
-  ThotBool      xmlDec, docType, isXML, isKnown;
-  ThotBool      savParsingError;
-  ThotBool      use_ref = FALSE;
-  ThotBool      oldStructureChecking;
   char          charsetname[MAX_LENGTH];
   char          type[NAME_LENGTH];
   char         *extUseUri = NULL, *extUseId = NULL, *s = NULL, *htmlURL = NULL;
-  NotifyElement event;
+  char         *schemaName = NULL, *tempName = NULL, *ptr = NULL;
+  ThotBool      xmlDec, docType, isXML, useMath, isKnown;
+  ThotBool      savParsingError;
+  ThotBool      use_ref = FALSE;
+  ThotBool      oldStructureChecking;
 
   if (fileName == NULL)
     return;
@@ -5115,14 +5140,15 @@ void ParseExternalDocument (char     *fileName,
     {
       /* Parse the file and build the external document */
       infile = TtaGZOpen (tempName);
-      if (infile != 0)
+      if (infile != NULL)
         {
           /* Check if there is an xml declaration with a charset declaration */
           if (tempName != EOS)
-            CheckDocHeader (tempName, &xmlDec, &docType, &isXML, &isKnown,
+            CheckDocHeader (tempName, &xmlDec, &docType, &isXML, &useMath, &isKnown,
                             &parsingLevel, &charset, charsetname, &thotType);
 	  
           /* Parse the external file */
+          DocumentMeta[externalDoc]->compound = FALSE;
           if (!strcmp ((char *)typeName, "HTML") && !isXML)
             {
               DocumentMeta[externalDoc]->xmlformat = FALSE;
@@ -5219,7 +5245,7 @@ void ParseExternalDocument (char     *fileName,
           event.event = TteElemPaste;
           event.document = doc;
           event.element = copy;
-          event.elementType.ElSSchema = 0;
+          event.elementType.ElSSchema = NULL;
           event.elementType.ElTypeNum = 0; /* tell UpdateURLsInSubtree not to
                                               change IDs through MaqueUniqueName */
           event.position = externalDoc;
@@ -5391,26 +5417,16 @@ ThotBool ParseXmlBuffer (char *xmlBuffer, Element el, ThotBool isclosed,
   be null
   Return TRUE if the parsing of the sub-tree has no error.
   ----------------------------------------------------------------------*/
-ThotBool ParseIncludedXml (FILE     *infile,
-                           char     *infileBuffer,
-                           int       infileBufferLength,
-                           ThotBool *infileEnd,
-                           ThotBool *infileNotToRead,
-                           char     *infilePreviousBuffer,
-                           int      *infileLastChar,
-                           char     *htmlBuffer,
-                           int      *index,
-                           int      *nbLineRead,
-                           int      *nbCharRead,
-                           char     *typeName,
-                           Document  doc,
+ThotBool ParseIncludedXml (FILE *infile, char **infileBuffer, int infileBufferLength,
+                           ThotBool *infileEnd, ThotBool *infileNotToRead,
+                           char *infilePreviousBuffer, int *infileLastChar,
+                           char *htmlBuffer, int *index,
+                           int *nbLineRead, int *nbCharRead,
+                           char *typeName, Document doc,
                            Element  *el,
                            ThotBool *isclosed,
                            Language  lang)
 {
-  ThotBool     endOfParsing = FALSE;
-  ThotBool     found;
-  int          res = 0;
   int          tmpLen = 0;
   int          offset = 0;
   int          i;
@@ -5418,6 +5434,8 @@ ThotBool ParseIncludedXml (FILE     *infile,
   char        *schemaName;
   char        *tmpBuffer = NULL;
   CHARSET      charset;
+  ThotBool     endOfParsing = FALSE;
+  ThotBool     found;
 
   if (infile == NULL && htmlBuffer == NULL)
     return TRUE;
@@ -5434,6 +5452,9 @@ ThotBool ParseIncludedXml (FILE     *infile,
   /* specific Initialization */
   XMLcontext.language = lang;
   DocumentSSchema = TtaGetDocumentSSchema (doc);
+  // it's a compound document
+  if (DocumentMeta[doc])
+    DocumentMeta[doc]->compound = TRUE;
 
   /* Initialize  counters */
   ExtraLineRead = 0;
@@ -5475,46 +5496,39 @@ ThotBool ParseIncludedXml (FILE     *infile,
 
   /* If htmlBuffer isn't null, we are parsing a XML sub-tree */
   /* included in a transformation */
-  if (htmlBuffer != NULL)
+  if (htmlBuffer)
     {
       /* parse the HTML buffer */
-      tmpLen = strlen ((char *)htmlBuffer) - *index;
-      tmpBuffer = (char *)TtaGetMemory (tmpLen);
-      for (i = 0; i < tmpLen; i++)
-        tmpBuffer[i] = htmlBuffer[*index + i];	  
+      tmpBuffer = TtaStrdup (&htmlBuffer[*index]);
+      tmpLen = strlen ((char *)tmpBuffer);
       if (!XML_Parse (Parser, tmpBuffer, tmpLen, 1))
-        {
-          if (!XMLrootClosed)
-            XmlParseError (errorNotWellFormed,
-                           (unsigned char *) XML_ErrorString (XML_GetErrorCode (Parser)), 0);
-        }
+        if (!XMLrootClosed)
+          XmlParseError (errorNotWellFormed,
+                         (unsigned char *) XML_ErrorString (XML_GetErrorCode (Parser)), 0);
     }
   else
     {
       /* read and parse the HTML file sequentialy */
       while (!endOfParsing && !XMLNotWellFormed)
         {
+          if (tmpBuffer)
+            {
+              TtaFreeMemory (tmpBuffer);
+              tmpBuffer = NULL;
+            }
           if (*index == 0)
             {
               if (*infileNotToRead)
+                // work on the previous buffer
                 *infileNotToRead = FALSE;
               else
                 {
-                  res = gzread (infile, infileBuffer, infileBufferLength);
-                  if (res < infileBufferLength)
+                  GetNextHTMLbuffer (infile, infileEnd, infileBuffer, infileLastChar);
+                  if (*infileEnd)
                     endOfParsing = TRUE;
-                  if (res <= 0)
-                    {
-                      *infileEnd = TRUE;
-                      *infileLastChar = 0;
-                    }
-                  else
-                    *infileLastChar = res - 1;
                 }
             }
 
-          if (tmpBuffer != NULL)   
-            TtaFreeMemory (tmpBuffer);   
           if (*infileNotToRead)
             {
               tmpLen = strlen ((char *)infilePreviousBuffer) - *index;
@@ -5525,12 +5539,10 @@ ThotBool ParseIncludedXml (FILE     *infile,
           else
             {
               if (endOfParsing)
-                tmpLen = res  - *index;
+                tmpLen = *infileLastChar  - *index;
               else
-                tmpLen = strlen ((char *)infileBuffer) - *index;
-              tmpBuffer = (char *)TtaGetMemory (tmpLen);
-              for (i = 0; i < tmpLen; i++)
-                tmpBuffer[i] = infileBuffer[*index + i];	  
+                tmpLen = strlen ((char *)(*infileBuffer)) - *index;
+              tmpBuffer = TtaStrdup (&(*infileBuffer)[*index]);
             }
           if (!XML_Parse (Parser, tmpBuffer, tmpLen, endOfParsing))
             {
@@ -5703,7 +5715,7 @@ static void   XmlParse (FILE *infile, CHARSET charset, ThotBool *xmlDec,
               charset == WINDOWS_1254 || charset == WINDOWS_1255 ||
               charset == WINDOWS_1256 || charset == WINDOWS_1257 ||
               charset == ISO_2022_JP  || charset == EUC_JP       ||
-              charset == SHIFT_JIS)
+              charset == SHIFT_JIS    || charset == GB_2312)
             {
               /* convert the original stream into UTF-8 */
               buffer = (char *)TtaConvertByteToMbs ((unsigned char *)&bufferRead[i], charset);
@@ -5731,7 +5743,7 @@ static void   XmlParse (FILE *infile, CHARSET charset, ThotBool *xmlDec,
 void StartXmlParser (Document doc, char *fileName,
                      char *documentName, char *documentDirectory,
                      char *pathURL, ThotBool withDec,
-                     ThotBool withDoctype, ThotBool externalDoc)
+                     ThotBool withDoctype, ThotBool useMath, ThotBool externalDoc)
 {
   Element         el, oldel;
   CHARSET         charset;  
@@ -5792,6 +5804,13 @@ void StartXmlParser (Document doc, char *fileName,
           docURL = (char *)TtaGetMemory (strlen ((char *)pathURL) + 1);
           strcpy ((char *)docURL, (char *)pathURL);
         }
+      /* Set document URL2 */
+      if (docURL)
+        {
+          docURL2 = (char *)TtaGetMemory (strlen ((char *)docURL) + 1);
+          strcpy ((char *)docURL2, (char *)docURL);
+        }
+
 
       /* Do not check the Thot abstract tree against the structure */
       /* schema while building the Thot document. */
@@ -5845,6 +5864,9 @@ void StartXmlParser (Document doc, char *fileName,
       charset = TtaGetDocumentCharset (doc);
       /* Specific initialization for Expat */
       InitializeExpatParser (charset);
+      /* load the MathML nature if it's declared plus MathML */
+      if (useMath)
+        TtaNewNature (doc, DocumentSSchema,  NULL, "MathML", "MathMLP");
       /* Parse the input file and build the Thot tree */
       XmlParse ((FILE*)stream, charset, &xmlDec, &xmlDoctype);
 
@@ -5881,24 +5903,35 @@ void StartXmlParser (Document doc, char *fileName,
           TtaFreeMemory (docURL);
           docURL = NULL;
         }
+      if (docURL2)
+        {
+          TtaFreeMemory (docURL2);
+          docURL2 = NULL;
+        }
       
       /* Display the document */
       if (!externalDoc)
         {
+          TtaSetDisplayMode (doc, DisplayImmediately);
           /* if (DocumentTypes[doc] == docHTML) */
           /* Load specific user style only for an (X)HTML document */
           /* For a generic XML document, it would create new element types
              in the structure schema, one for each type appearing in a
              selector in the User style sheet */
           LoadUserStyleSheet (doc);
-          TtaSetDisplayMode (doc, DisplayImmediately);
         }
 
       /* Check the Thot abstract tree against the structure schema. */
       TtaSetStructureChecking (TRUE, doc);
       DocumentSSchema = NULL;
     }
+#ifdef TEMPLATES
+  if (IsTemplateInstance(doc))
+    LoadInstanceOfTemplate(doc);
+#endif /* TEMPLATES */
+
   TtaSetDocumentUnmodified (doc);
+
 }
 
 /* end of module */

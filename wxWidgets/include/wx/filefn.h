@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     29/01/98
-// RCS-ID:      $Id: filefn.h,v 1.1.1.1 2005/07/06 09:30:08 gully Exp $
+// RCS-ID:      $Id: filefn.h,v 1.1.1.2 2005/07/26 09:30:53 gully Exp $
 // Copyright:   (c) 1998 Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -49,6 +49,9 @@
 // __OS2__ and __UNIX__ are defined.
     #include <process.h>
     #include "wx/os2/private.h"
+    #ifdef __WATCOMC__
+        #include <direct.h>
+    #endif
     #include <io.h>
     #ifdef __EMX__
         #include <unistd.h>

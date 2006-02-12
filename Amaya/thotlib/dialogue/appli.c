@@ -402,7 +402,7 @@ void FrameKilled (int *w, int frame, int *info)
 #ifdef _GTK
 gboolean KillFrameGTK (GtkWidget *widget, GdkEvent *event, gpointer f)
 {
-  return KillFrameCallback( (int)f );
+  return KillFrameCallback( (intptr_t)f );
 }
 #endif /* _GTK */
 
@@ -870,10 +870,10 @@ static ThotBool  FrameResizedGTKInProgress = FALSE;
 gboolean FrameResizedGTK (GtkWidget *w, GdkEventConfigure *event, gpointer data)
 {
   ViewFrame          *pFrame;
-  int            frame;
+  intptr_t            frame;
   int            width, height;
  
-  frame = (int) data;
+  frame = (intptr_t) data;
   width = event->width;
   height = event->height; 
   if (width <= 0 || height <= 0 || frame == 0 || frame > MAX_FRAME)
@@ -953,11 +953,11 @@ gboolean FrameResizedGTK (GtkWidget *w, GdkEventConfigure *event, gpointer data)
 gboolean ExposeCallbackGTK (ThotWidget widget, GdkEventExpose *event, gpointer data)
 {
   ViewFrame           *pFrame;
-  int                  frame;
+  intptr_t             frame;
   unsigned int         x, y;
   unsigned int         w, h;
 
-  frame = (int) data;
+  frame = (intptr_t) data;
   x = event->area.x;
   y = event->area.y;
   w = event->area.width;
@@ -1620,7 +1620,9 @@ void TtaRaiseView (Document document, View view)
 void DisplaySelMessage (char *text, PtrDocument pDoc)
 {
   int                 doc;
+#ifndef _WX
   int                 view;
+#endif /* _WX */
 
   if (ActiveFrame &&
       pDoc && pDoc->DocSSchema &&
@@ -1629,8 +1631,12 @@ void DisplaySelMessage (char *text, PtrDocument pDoc)
     {
       /* recupere le document concerne */
       doc = IdentDocument(pDoc);
+#ifdef _WX
+        TtaSetStatus ((Document) doc, 1, text, NULL);
+#else /* _WX */
       for (view = 1; view <= MAX_VIEW_DOC; view++)
         TtaSetStatus ((Document) doc, view, text, NULL);
+#endif /* _WX */
       /* sel old message */
       strncpy (OldMsgSelect, text, MAX_TXT_LEN);
       OldDocMsgSelect = pDoc;     
@@ -1689,9 +1695,9 @@ void TtaSetStatus (Document document, View view, char *text, char *name)
             else
               title_string = text;
             gtk_statusbar_pop (GTK_STATUSBAR(FrameTable[frame].WdStatus),
-                               (guint)gtk_object_get_data (GTK_OBJECT(FrameTable[frame].WdStatus), "MainSerie"));
+                               (intptr_t)gtk_object_get_data (GTK_OBJECT(FrameTable[frame].WdStatus), "MainSerie"));
             gtk_statusbar_push (GTK_STATUSBAR(FrameTable[frame].WdStatus),
-                                (guint)gtk_object_get_data (GTK_OBJECT(FrameTable[frame].WdStatus), "MainSerie"),
+                                (intptr_t)gtk_object_get_data (GTK_OBJECT(FrameTable[frame].WdStatus), "MainSerie"),
                                 title_string);
             gtk_widget_show_all (GTK_WIDGET(FrameTable[frame].WdStatus));
 #endif /* _GTK */
@@ -1707,7 +1713,8 @@ void TtaSetStatus (Document document, View view, char *text, char *name)
              * do not use the FrameTable[frame].WdStatus field because it's simplier
              * to update only the frame's parent window
              */
-            FrameTable[frame].WdFrame->SetStatusBarText( TtaConvMessageToWX( s ) );
+            if (FrameTable[frame].WdFrame)
+              FrameTable[frame].WdFrame->SetStatusBarText( TtaConvMessageToWX( s ) );
 #endif /* _WX */
             
             TtaFreeMemory (s);
@@ -2151,7 +2158,7 @@ LRESULT CALLBACK ClientWndProc (HWND hwnd, UINT mMsg, WPARAM wParam,
                   X_Pos = 0;
                   TtcScrollLeft (document, view);
                 }
-              LocateSelectionInView (frame, X_Pos, Y_Pos, 1);
+              LocateSelectionInView (frame, X_Pos, Y_Pos, 0);
             }
           else
             {
@@ -2163,7 +2170,7 @@ LRESULT CALLBACK ClientWndProc (HWND hwnd, UINT mMsg, WPARAM wParam,
                   if ((oldXPos <= X_Pos - 1 || oldXPos >= X_Pos + 1) ||  
                       (oldYPos <= Y_Pos - 1 || oldYPos >= Y_Pos + 1))
                     {
-                      LocateSelectionInView (frame, X_Pos, Y_Pos, 1);
+                      LocateSelectionInView (frame, X_Pos, Y_Pos, 0);
                       oldXPos = X_Pos;
                       oldYPos = Y_Pos;
                     }
@@ -2430,14 +2437,14 @@ gboolean GtkLiningSelection (gpointer data)
 {
   Document            doc; 
   ViewFrame          *pFrame;
-  int                 frame;
+  intptr_t            frame;
   int                 view;
   static int          Motion_y = 0;
   static int          Motion_x = 0;
   GdkModifierType state = (GdkModifierType)GDK_BUTTON1_MOTION_MASK;
   int x,y;
   
-  frame = (int) data;
+  frame = (intptr_t) data;
   if (frame < 1)
     return FALSE;
 
@@ -2510,7 +2517,7 @@ gboolean GtkLiningSelection (gpointer data)
       if (Selecting)
         {
           LocateSelectionInView (frame,  Motion_x, Motion_y, 0);
-          TtcCopyToClipboard (doc, view);
+          DoCopyToClipboard (doc, view, FALSE);
         }
       /* As this is a timeout function, return TRUE so that it
          continues to get called */
@@ -2536,17 +2543,14 @@ gboolean GtkLiningSelection (gpointer data)
  *   + TRUE : if the event must be forwarded to other widgets
  *   + FALSE : if the event is cought
  ----------------------------------------------------------------------*/
-ThotBool FrameButtonDownCallback( 
-                                 int frame,
-                                 int thot_button_id,
-                                 int thot_mod_mask,
-                                 int x, int y )
+ThotBool FrameButtonDownCallback (int frame, int thot_button_id,
+                                 int thot_mod_mask, int x, int y )
 {
 #ifdef _WX
-#ifndef _WINDOWS
+#if !defined (_WINDOWS) && !defined (_MACOS)
   Document   document;
   View       view;
-#endif /* _WINDOWS */
+#endif /* !_WINDOWS && ! _MACOS */
   
   /* Amaya is waiting for a click selection ? */
   if (ClickIsDone == 1)
@@ -2562,9 +2566,8 @@ ThotBool FrameButtonDownCallback(
     {
     case THOT_LEFT_BUTTON:
       {
-        /* stop any current insertion of text */
+        /* Stop any current insertion of text */
         CloseTextInsertion ();
-        
         /* Est-ce que la touche modifieur de geometrie est active ? */
         if ((thot_mod_mask & THOT_MOD_CTRL) == THOT_MOD_CTRL)
           {
@@ -2576,9 +2579,9 @@ ThotBool FrameButtonDownCallback(
             /* a selection extension */
             TtaAbortShowDialogue ();
             LocateSelectionInView (frame, x, y, 1);
-#ifndef _WINDOWS
+#if !defined (_WINDOWS) && !defined (_MACOS)
             FrameToView (frame, &document, &view);
-            TtcCopyToClipboard (document, view);
+            DoCopyToClipboard (document, view, FALSE);
 #endif /* _WINDOWS */
           }
         else
@@ -2649,11 +2652,8 @@ ThotBool FrameButtonDownCallback(
  *   + TRUE : if the event must be forwarded to other widgets
  *   + FALSE : if the event is cought
  ----------------------------------------------------------------------*/
-ThotBool FrameButtonUpCallback( 
-                               int frame,
-                               int thot_button_id,
-                               int thot_mod_mask,
-                               int x, int y )
+ThotBool FrameButtonUpCallback( int frame, int thot_button_id,
+                               int thot_mod_mask, int x, int y )
 {
 #ifdef _WX
   /* if a button release, we save the selection in the clipboard */
@@ -2667,24 +2667,21 @@ ThotBool FrameButtonUpCallback(
       gtk_timeout_remove (timer);
       timer = None;
       FrameToView (frame, &document, &view);
-      TtcCopyToClipboard (document, view);
+      DoCopyToClipboard (document, view, FALSE);
       }
       else */
-
-#ifndef _WINDOWS
+#if !defined(_WINDOWS) && !defined(_MACOS)
   Document   document;
   View       view;
-#endif /* _WINDOWS */
-
-  if ( Selecting )
+#endif /* !_WINDOWS && !_MACOS*/
+  if (Selecting)
     {
       Selecting = FALSE;
-#ifndef _WINDOWS
+#if !defined(_WINDOWS) && !defined(_MACOS)
       FrameToView (frame, &document, &view);
-      TtcCopyToClipboard (document, view);
-#endif /* _WINDOWS */
-    } 
-
+      DoCopyToClipboard (document, view, FALSE);
+#endif /* _WINDOWS && _MACOS */
+    }
   if (thot_button_id == THOT_LEFT_BUTTON)
     {
       ClickFrame = frame;
@@ -2714,17 +2711,14 @@ ThotBool FrameButtonUpCallback(
  *   + TRUE : if the event must be forwarded to other widgets
  *   + FALSE : if the event is cought
  ----------------------------------------------------------------------*/
-ThotBool FrameButtonDClickCallback( 
-                                   int frame,
-                                   int thot_button_id,
-                                   int thot_mod_mask,
-                                   int x, int y )
+ThotBool FrameButtonDClickCallback( int frame, int thot_button_id,
+                                   int thot_mod_mask, int x, int y )
 {
 #ifdef _WX
-#ifndef _WINDOWS
+#if !defined (_WINDOWS) && !defined (_MACOS)
   Document   document;
   View       view;
-#endif /* _WINDOWS */
+#endif /* !_WINDOWS && !_MACOS*/
 
   switch (thot_button_id)
     {
@@ -2734,10 +2728,10 @@ ThotBool FrameButtonDClickCallback(
         ClickX = x;
         ClickY = y;
         LocateSelectionInView (frame, ClickX, ClickY, 3);
-#ifndef _WINDOWS
+#if !defined (_WINDOWS) && !defined (_MACOS)
         /* a word is probably selected, copy it into clipboard */
         FrameToView (frame, &document, &view);
-        TtcCopyToClipboard (document, view);
+        DoCopyToClipboard (document, view, FALSE);
 #endif /* _WINDOWS */
       }
       break;
@@ -2854,9 +2848,6 @@ ThotBool FrameMotionCallback (int frame, int thot_mod_mask, int x, int y )
           if (Selecting)
             {
               LocateSelectionInView (frame,  Motion_x, Motion_y, 0);
-#ifndef _WINDOWS
-              TtcCopyToClipboard (doc, view);
-#endif /* _WINDOWS */
             }
         }      
     }
@@ -2930,17 +2921,17 @@ ThotBool FrameMouseWheelCallback(
 gboolean FrameCallbackGTK (GtkWidget *widget, GdkEventButton *event,
                            gpointer data)
 {
-  int                 frame;
+  intptr_t            frame;
   GtkEntry            *textzone;
   static int          timer = None;
   Document            document;
   View                view;
 
-  frame = (int )data;
+  frame = (intptr_t)data;
 #ifdef _GL
   GL_prepare (frame);  
 #endif /* _GL */
-  frame = (int )data;
+  frame = (intptr_t)data;
   if (FrameTable[frame].FrDoc == 0 ||
       documentDisplayMode[FrameTable[frame].FrDoc - 1] == NoComputedDisplay)
     /* don't manage a document with NoComputedDisplay mode */
@@ -3003,7 +2994,7 @@ gboolean FrameCallbackGTK (GtkWidget *widget, GdkEventButton *event,
               TtaAbortShowDialogue ();
               LocateSelectionInView (frame, (int)event->x, (int)event->y, 1);
               FrameToView (frame, &document, &view);
-              TtcCopyToClipboard (document, view);
+              DoCopyToClipboard (document, view, FALSE);
             }
           else
             {
@@ -3124,7 +3115,7 @@ gboolean FrameCallbackGTK (GtkWidget *widget, GdkEventButton *event,
           gtk_timeout_remove (timer);
           timer = None;
           FrameToView (frame, &document, &view);
-          TtcCopyToClipboard (document, view);
+          DoCopyToClipboard (document, view, FALSE);
         } 
       else if (event->button == 1)
         {
@@ -3535,7 +3526,6 @@ void ChangeSelFrame (int frame)
   Document            doc;
   View                view;
 #endif /* _WX */
-
   if (ActiveFrame != frame)
     {
       CloseTextInsertion ();
@@ -3544,6 +3534,7 @@ void ChangeSelFrame (int frame)
       FrameToView (frame, &doc, &view);
       /* update the class list */
       TtaExecuteMenuAction ("ApplyClass", doc, 1, FALSE);
+      TtaRefreshElementMenu (doc, 1);
 #endif /* _WX */
       /* the active frame changed so update the application focus */
       TtaRedirectFocus();

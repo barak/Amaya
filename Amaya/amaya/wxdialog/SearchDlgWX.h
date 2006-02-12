@@ -25,7 +25,6 @@ public:
 	       const wxString & replace,
 	       bool do_replace,
 	       bool searchAfter);
-  
   // Destructor.                  
   virtual ~SearchDlgWX();
 
@@ -35,12 +34,13 @@ private:
   void OnCancelButton( wxCommandEvent& event );
   void OnNoReplaceButton( wxCommandEvent& event );
   void OnReplaceBox( wxCommandEvent& event );
+  void OnTextChanged ( wxCommandEvent& event );
   void OnSearchAreaBox( wxCommandEvent& event );
   void OnCheckCaseBox( wxCommandEvent& event );
 
   // Any class wishing to process wxWindows events must use this macro
   DECLARE_EVENT_TABLE()
-    
+
 private:
   int   m_iarea;
   int   m_ireplace;

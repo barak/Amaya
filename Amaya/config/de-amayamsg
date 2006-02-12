@@ -1,6 +1,6 @@
 # encoding= latin1
 0 Dateien
-1 Adresse:
+1 Öffnen
 2 XHTML 1.1
 3 XHTML 1.0 Transitional
 4 XHTML 1.0 Strict
@@ -215,7 +215,7 @@
 213 Verwenden Sie 'Datei/Zeichenkodierung erzwingen'
 214 Ungültige Zeichen
 215 Dokumenttyp:
-216 Anzeigen - siehe Datei/Parserfehler anzeigen
+216 Anzeigen - siehe Datei > Parserfehler anzeigen
 217 Die Codierung dieses Dokuments wird von Amaya nicht unterstützt
 218 Durch das Bearbeiten und Speichern ändert sich der Dokumenttyp
 219 Nicht verfügbar
@@ -258,7 +258,7 @@
 256 Diese Option kann nur mit einem HTTP URI Ziel verwendet werden
 257 Fehler: ungültiger MIME-Typ
 258 Unbekannt
-259 Formatvorlagen wurden ignoriert - siehe Ansicht/Parserfehler anzeigen
+259 Formatvorlagen wurden ignoriert - siehe Datei > Parserfehler anzeigen
 260 Dieses Dokument wird bereits in einem anderen Fenster angezeigt
 261 Beim Speichern dieser Instanz des Dokuments können Änderungen in anderen Instanzen verloren gehen (lost update problem)
 262 Durch das Hinzufügen oder Ändern des Dokumententyps gehen Elemente oder Attribute verloren
@@ -362,12 +362,22 @@
 360 Datei
 361 Aktuelle Seite ersetzen
 362 In neuer Seite
-363 In neuer Seite (noch nicht verfügbar in Mac OSX)
-364 In neuem Fenster
-365 Anti-aliasing
-366 ISO-Datumsformat
-367 Ort für neue Dokumente
-368 Ort zum Öffnen
-369 Warnen, wenn mehrere Seiten geschlossen werden
-370 Die maximale Anzahl an URLs in der History ist erreicht
-371 URL-Liste löschen
+363 In neuem Fenster
+364 Anti-aliasing
+365 ISO-Datumsformat
+366 Ort für neue Dokumente
+367 Ort zum Öffnen
+368 Warnen, wenn mehrere Seiten geschlossen werden
+369 Die maximale Anzahl an URLs in der History ist erreicht
+370 URL-Liste löschen
+371 Alle Tastaturkürzel anzeigen
+372 Feste Zeilenlänge (0 = Standardwert)
+373 Vorlage
+374 Dokument speichern als...
+375 Vorlage konnte nicht gefunden werden
+376 Vorlagenumrisse anzeigen
+377 Mit "Anwenden" wird der Dialog geschlossen
+378 In diesem Dokument nicht möglich
+379 Geschütztes Element
+380 Die Auswahl darf ein solches Element nicht treffen
+381 Der aktuellen Auswahl folgen keine Titel

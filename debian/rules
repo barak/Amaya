@@ -40,7 +40,8 @@ configure-stamp:
 	# Add here commands to configure the package.
 	mkdir -p Amaya/WX
 	cd Amaya/WX && \
-	../configure --prefix=/usr --with-wx --with-dav \
+	../configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) \
+		     --prefix=/usr --with-wx --with-gl --with-dav \
 		     --enable-offical-build && \
 	cd ../..
 	# --libpng, libjpeg, libtiff (currently builtin)
@@ -58,7 +59,7 @@ build-arch-stamp: configure-stamp
 
 	# Add here commands to compile the arch part of the package.
 	cd Amaya/WX && \
-	$(MAKE) CFLAGS="$(CFLAGS)" && \
+	HOME=$(CURDIR)/Amaya/WX $(MAKE) CFLAGS="$(CFLAGS)" && \
 	cd ../..
 	touch build-arch-stamp
 
@@ -77,6 +78,10 @@ clean:
 	# Add here commands to clean up after the build process.
 	-$(MAKE) clean
 	-rm -rf Amaya/WX
+	# we also have to remove TRA, STR, PRS
+	find $(CURDIR) . -name "*.TRA" -exec rm '{}' \;
+	find $(CURDIR) . -name "*.STR" -exec rm '{}' \;
+	find $(CURDIR) . -name "*.PRS" -exec rm '{}' \;
 
 	dh_clean 
 
@@ -102,18 +107,16 @@ install-arch:
 	# Add here commands to install the arch part of the package into 
 	# debian/tmp.
 	cd Amaya/WX && \
-	$(MAKE) install prefix=$(CURDIR)/debian/amaya/usr && \
+	$(MAKE) install prefix=$(CURDIR)/debian/amaya/usr/lib && \
 	cd ..
 	install -m 0644 debian/amaya.1 debian/amaya/usr/share/man/man1
-	# find and destory any .arch-ids that have snuck it
-	-find $(CURDIR)/debian/amaya -type d -name .arch-ids -exec rm -rf '{}' \;
-	# find and destory any {arch} as well
-	-find $(CURDIR)/debian/amaya -type d -name \{arch\} -ids -exec rm -rf '{}' \;
 	# fixup symlinks in /usr/bin
 	(cd $(CURDIR)/debian/amaya/usr/bin && \
 	 rm -f amaya amaya-wx && \
-	 ln -sf /usr/lib/amaya/wx/bin/amaya amaya-wx && \
+	 ln -sf /usr/lib/Amaya-9.4/wx/bin/amaya amaya-wx && \
 	 ln -sf /usr/bin/amaya-wx amaya )
+	# remove extraneous /usr/lib/bin
+	rm -rf $(CURDIR)/debian/amaya/usr/lib/bin
 
 	dh_install -s
 # Must not depend on anything. This is to be called by

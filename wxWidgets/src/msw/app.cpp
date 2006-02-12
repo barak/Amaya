@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     04/01/98
-// RCS-ID:      $Id: app.cpp,v 1.1.1.1 2005/07/06 09:30:54 gully Exp $
+// RCS-ID:      $Id: app.cpp,v 1.1.1.2 2005/07/26 09:31:09 gully Exp $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -592,18 +592,21 @@ int wxApp::GetComCtl32Version()
         // if so, then we can check for the version
         if ( dllComCtl32.IsLoaded() )
         {
+            // check is struct used by DllGetVersion() is available in the
+            // headers and define it ourselves if it isn't
 #ifndef DLLVER_PLATFORM_WINDOWS
-			typedef struct _DllVersionInfo
+			struct DLLVERSIONINFO
 			{
 				DWORD cbSize;
 				DWORD dwMajorVersion;                   // Major version
 				DWORD dwMinorVersion;                   // Minor version
 				DWORD dwBuildNumber;                    // Build number
 				DWORD dwPlatformID;                     // DLLVER_PLATFORM_*
-			} DLLVERSIONINFO;
+			};
 			typedef HRESULT (CALLBACK* DLLGETVERSIONPROC)(DLLVERSIONINFO *);
-#endif
-            // try to use DllGetVersion() if available in _headers_
+#endif // defined(DLLVERSIONINFO)
+
+            // now check if it's available during run-time
             wxDYNLIB_FUNCTION( DLLGETVERSIONPROC, DllGetVersion, dllComCtl32 );
             if ( pfnDllGetVersion )
             {

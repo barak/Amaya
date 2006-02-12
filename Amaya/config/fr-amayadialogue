@@ -9,57 +9,57 @@
 7 &Style
 8 &Attributs
 9 A&nnotations
-10 &Signets
-11 C&oopération
-12 A&ide
-13 &Nouveau
-14 Nouveau document &XHTML...
-15 Nouveau document &XHTML 1.1...
-16 Nouveau document XHTML 1.0 &Transitional...
-17 Nouveau document XHTML 1.0 &Strict...
-18 Nouveau document XHTML 1.0 &Basic ...
-19 Nouveau document &MathML...
-20 Nouveau document &SVG...
-21 Nouvelle &feuille de style...
-22 M&odèle
-23 &Ouvrir...
-24 Ouvrir dans nou&velle fenêtre...
-25 &Recharger le document
-26 Pr&écédent
-27 S&uivant
-28 &Sauver
-29 Sauver &comme...
-30 S&ynchroniser
-31 Changer le type du &document
-32 S&upprimer le doctype
-33 &Ajouter un doctype
-34 Changer pour &XHTML 1.1
-35 Changer pour XHTML 1.0 &Transitional
-36 Changer pour XHTML 1.0 &Strict
-37 Changer pour XHTML 1.0 &Basic
-38 Changer pour &HTML 4.01 Transitional
-39 Changer pour HTML 4.01 Str&ict
-40 Forcer un code caractère
-41 Unicode (UTF-8)
-42 Occidental (ISO-8859-1)
-43 Occidental (ISO-8859-15)
-44 Occidental (Windows-1252)
-45 Europe centrale (ISO-8859-2)
-46 Europe centrale (Windows-1250)
-47 Europe du sud (ISO-8859-3)
-48 Balte (ISO-8859-4)
-49 Baltic (Windows-1257)
-50 Cyrillique (ISO-8859-5)
-51 Cyrillique (Windows-1251)
-52 Cyrillique (KOI8-R)
-53 Arabe (ISO-8859-6)
-54 Arabe (Windows-1256)
-55 Grec (ISO-8859-7)
-56 Grec (Windows-1253)
-57 Hébreu (ISO-8859-8)
-58 Hébreu (Windows-1255)
-59 Turc (ISO-8859-9)
-60 Turc (Windows-125)
+10 C&oopération
+11 A&ide
+12 &Nouveau
+13 Nouveau document &XHTML...
+14 Nouveau document &XHTML 1.1...
+15 Nouveau document XHTML 1.0 &Transitional...
+16 Nouveau document XHTML 1.0 &Strict...
+17 Nouveau document XHTML 1.0 &Basic ...
+18 Nouveau document &MathML...
+19 Nouveau document &SVG...
+20 Nouvelle &feuille de style...
+21 A partir du M&odèle...
+22 &Ouvrir...
+23 Ouvrir dans nou&velle fenêtre...
+24 &Recharger le document
+25 Pr&écédent
+26 S&uivant
+27 &Sauver
+28 Sauver &comme...
+29 S&ynchroniser
+30 Changer le type du &document
+31 S&upprimer le doctype
+32 &Ajouter un doctype
+33 Changer pour &XHTML 1.1
+34 Changer pour XHTML 1.0 &Transitional
+35 Changer pour XHTML 1.0 &Strict
+36 Changer pour XHTML 1.0 &Basic
+37 Changer pour &HTML 4.01 Transitional
+38 Changer pour HTML 4.01 Str&ict
+39 Forcer un code caractère
+40 Unicode (UTF-8)
+41 Occidental (ISO-8859-1)
+42 Occidental (ISO-8859-15)
+43 Occidental (Windows-1252)
+44 Europe centrale (ISO-8859-2)
+45 Europe centrale (Windows-1250)
+46 Europe du sud (ISO-8859-3)
+47 Balte (ISO-8859-4)
+48 Baltic (Windows-1257)
+49 Cyrillique (ISO-8859-5)
+50 Cyrillique (Windows-1251)
+51 Cyrillique (KOI8-R)
+52 Arabe (ISO-8859-6)
+53 Arabe (Windows-1256)
+54 Grec (ISO-8859-7)
+55 Grec (Windows-1253)
+56 Hébreu (ISO-8859-8)
+57 Hébreu (Windows-1255)
+58 Turc (ISO-8859-9)
+59 Turc (Windows-125)
+60 Chinois simplifié (GB-2312)
 61 Japonais (ISO-2022-JP)
 62 Japonais (EUC-JP)
 63 Japonais (Shift-JIS)
@@ -244,88 +244,86 @@
 242 Ajouter le graphique sélectionné dans la librairie
 243 Commentaire
 244 Éléments XML...
-245 &Lier la cible créée
-246 &Créer/changer lien...
-247 Créer ci&ble
-248 &Détruire ancre
-249 &Ajouter/Retirer des attributs ID...
-250 &Montrer outils
-251 &Plein écran
-252 Montrer &boutons
-253 Montrer a&dresse
-254 Montrer les &zones actives
-255 Montrer les &cibles
-256 Grossir
-257 Réduire
-258 Montrer la vue &formatée
-259 Montrer la &structure
-260 Montrer le s&ource
-261 Montrer les lie&ns
-262 Montrer la vue &alternée
-263 Montrer la table des &matières
-264 Montrer la ligne de temps
-265 Partager la vue horizontalement
-266 Partager la vue verticalement
-267 Style de &caractères...
-268 C&ouleurs...
-269 &Format...
-270 &Image de fond...
-271 Créer une &règle...
-272 A&ppliquer une classe...
-273 Montrer le style appliqué...
-274 &Ajouter...
-275 O&uvrir...
-276 &Désactiver...
-277 R&éactiver...
-278 Re&tirer...
-279 Annoter la sélection
-280 Annoter le document
-281 Déplacer sur la sélection
-282 Sauver la sélection comme &XPointer
-283 Déplacer sur le XPointer enregistré
-284 Répondre à l'annotation
-285 Enregister sur le serveur
-286 Détruire
-287 Charger annotations
-288 Personnaliser la requête...
-289 Filtrer local...
-290 Visualiser les signets
-291 Nouveau signet
-292 Nouvelle rubrique
-293 **New Separator
-294 **Move Item
-295 Verrouiller la ressource...
-296 Déverrouiller la ressource...
-297 Visualiser les propriétés de la ressource...
-298 Copier les informations du verrou...
-299 Verrouillé ?
-300 À propos de Amaya
-301 À propos de Amaya au W3C
-302 Index
-303 Navigation
-304 Vues
-305 Sélection
-306 Document
-307 Création
-308 Attributs
-309 Caratères
-310 Transformer
-311 Liens
-312 Tables
-313 Zones actives
-314 Math
-315 Graphiques
-316 Support XML
-317 Feuilles de style
-318 Chercher
-319 Corriger
-320 Publier
-321 WebDAV
-322 Imprimer
-323 Numéroter
-324 Construire un livre
-325 Annotations
-326 &Signets
-327 Configurer Amaya
-328 Raccourcis clavier
-329 Accessibilité d'Amaya
+245 Copier l'adresse
+246 Coller l'adresse
+247 Copier le lien
+248 &Lier la cible créée
+249 &Créer/changer lien...
+250 Créer ci&ble
+251 &Détruire ancre
+252 &Ajouter/Retirer des attributs ID...
+253 &Montrer outils
+254 &Plein écran
+255 Montrer &boutons
+256 Montrer a&dresse
+257 Montrer les &zones actives
+258 Montrer les &cibles
+259 Grossir
+260 Réduire
+261 Montrer la vue &formatée
+262 Montrer la &structure
+263 Montrer le s&ource
+264 Montrer les lie&ns
+265 Montrer la vue &alternée
+266 Montrer la table des &matières
+267 Montrer la ligne de temps
+268 Partager la vue horizontalement
+269 Partager la vue verticalement
+270 Style de &caractères...
+271 C&ouleurs...
+272 &Style CSS...
+273 &Format...
+274 &Image de fond...
+275 Créer une &règle...
+276 A&ppliquer une classe...
+277 Montrer le style appliqué...
+278 &Ajouter...
+279 O&uvrir...
+280 &Désactiver...
+281 R&éactiver...
+282 Re&tirer...
+283 Annoter la sélection
+284 Annoter le document
+285 Déplacer sur la sélection
+286 Sauver la sélection comme &XPointer
+287 Déplacer sur le XPointer enregistré
+288 Répondre à l'annotation
+289 Enregister sur le serveur
+290 Détruire
+291 Charger annotations
+292 Personnaliser la requête...
+293 Filtrer local...
+294 Verrouiller la ressource...
+295 Déverrouiller la ressource...
+296 Visualiser les propriétés de la ressource...
+297 Copier les informations du verrou...
+298 Verrouillé ?
+299 À propos de Amaya
+300 À propos de Amaya au W3C
+301 Index
+302 Navigation
+303 Vues
+304 Sélection
+305 Document
+306 Création
+307 Attributs
+308 Caractères
+309 Transformer
+310 Liens
+311 Tables
+312 Zones actives
+313 Math
+314 Graphiques
+315 Support XML
+316 Feuilles de style
+317 Chercher
+318 Corriger
+319 Publier
+320 WebDAV
+321 Imprimer
+322 Numéroter
+323 Construire un livre
+324 Annotations
+325 Configurer Amaya
+326 Raccourcis clavier
+327 Accessibilité d'Amaya

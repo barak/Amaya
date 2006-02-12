@@ -746,13 +746,11 @@ static int FindListSubTree (int id, Element * elem)
 static ThotBool ExportSubTree (Element subTree, Document doc)
 {
   FILE		     *inputFile = NULL;
-  struct stat        *StatBuffer;
   SSchema	      sch;
-  ElementType         elType;
-  char	              tmpfilename[MAX_PATH], *name;
-  int	              charRead;
-  int                 len;
-  int		      status;
+  ElementType     elType;
+  char	          tmpfilename[MAX_PATH], *name;
+  int	          charRead;
+  int             len;
   ThotBool	      result = FALSE;
 
   len = BUFFER_LEN - szHTML;
@@ -779,24 +777,20 @@ static ThotBool ExportSubTree (Element subTree, Document doc)
   else
     TtaExportTree (subTree, doc, tmpfilename, "XMLT");
 
-  StatBuffer = (struct stat *) TtaGetMemory (sizeof (struct stat));
-  status = stat (tmpfilename, StatBuffer);
-  if (status != -1)
-    if (StatBuffer->st_size < len)
-      inputFile = TtaReadOpen (tmpfilename);
+  if (TtaFileExist (tmpfilename))
+    inputFile = TtaReadOpen (tmpfilename);
   charRead = EOS;
-  if (inputFile != NULL)
+  if (inputFile)
     {
       charRead = getc (inputFile);
       while (charRead != EOF && szHTML < BUFFER_LEN - 1)
-	{
-	  bufHTML[szHTML++] = charRead;
-	  charRead = getc (inputFile);
-	}
+	  {
+	    bufHTML[szHTML++] = charRead;
+	    charRead = getc (inputFile);
+	  }
     }
   TtaReadClose (inputFile);  
   TtaFileUnlink (tmpfilename);
-  TtaFreeMemory (StatBuffer);
   if (charRead == EOF)
     result = TRUE;
   bufHTML[szHTML] = EOS;
@@ -862,6 +856,7 @@ static ThotBool StartFragmentParser (strMatchChildren * sMatch, Document doc)
    Language            language;
    char               *attrValue;
    int                 l;
+   DisplayMode         dispMode;
 
    res = TRUE;
    prevMatch = NULL;
@@ -937,6 +932,9 @@ static ThotBool StartFragmentParser (strMatchChildren * sMatch, Document doc)
 	  }
 	else
 	  language = TtaGetDefaultLanguage();
+  /* suspend abstract box construction */
+  dispMode = TtaGetDisplayMode (doc);
+  TtaSetDisplayMode (doc, SuspendDisplay);
 	/* Calling of the appropriate parser */
 	if (DocumentMeta[doc]->xmlformat)
 	  ParseXmlBuffer (bufHTML, myFirstSelect, isClosed, doc, language, NULL);
@@ -955,12 +953,13 @@ static ThotBool StartFragmentParser (strMatchChildren * sMatch, Document doc)
 	  }
 	TtaCloseUndoSequence (doc);
 	TtaSetStructureChecking (TRUE, doc);
-	typeEl.ElSSchema = TtaGetDocumentSSchema (doc);
-	typeEl.ElTypeNum = HTML_EL_Invalid_element;
-	invEl = NULL;
+  TtaSetDisplayMode (doc, dispMode);
 
 	/* checks if invalid elements have been generated */
 	/* (invalid transformation) */
+	typeEl.ElSSchema = TtaGetDocumentSSchema (doc);
+	typeEl.ElTypeNum = HTML_EL_Invalid_element;
+	invEl = NULL;
 	if (isClosed)
 	  {
 	     courEl = myFirstSelect;
@@ -2394,9 +2393,9 @@ static ThotBool CheckValidTransRoot (strMatch * sm, ElementType elemTypeRoot,
 void TransCallbackDialog (int ref, int typedata, char* data)
 {
   strTransDesc        *trans = NULL;
-  intptr_t             val;
+  long int             val;
 
-  val = (intptr_t) data;
+  val = (long int) data;
   switch (ref - TransBaseDialog)
     {
     case TransMenu:

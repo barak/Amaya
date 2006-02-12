@@ -19,7 +19,6 @@ BEGIN_EVENT_TABLE(SpellCheckDlgWX, AmayaDialog)
   EVT_BUTTON( XRCID("wxID_SEARCH_SKIP_BUTTON"), SpellCheckDlgWX::OnSkipWithoutButton )
   EVT_BUTTON( XRCID("wxID_SKIP_DIC_BUTTON"),    SpellCheckDlgWX::OnSkipWithButton )
   EVT_BUTTON( XRCID("wxID_REPLACE_NEXT_BUTTON"),SpellCheckDlgWX::OnReplaceWithoutButton )
-  EVT_BUTTON( XRCID("wxID_REPLACE_DIC_BUTTON"), SpellCheckDlgWX::OnReplaceWithButton )
   EVT_CHECKBOX( XRCID("wxID_IGNORE1_CHK"),      SpellCheckDlgWX::OnIgnoreCapitalsChkBox )
   EVT_CHECKBOX( XRCID("wxID_IGNORE2_CHK"),      SpellCheckDlgWX::OnIgnoreArabicsChkBox )
   EVT_CHECKBOX( XRCID("wxID_IGNORE3_CHK"),      SpellCheckDlgWX::OnIgnoreRomansChkBox )
@@ -43,25 +42,30 @@ void SpellCheckDlgWX::Set_Proposals ( )
   // selected text
   TtaGetProposal (&proposal, 0);
   XRCCTRL(*this, "wxID_SELECTED_TXT", wxButton)->SetLabel(TtaConvMessageToWX( proposal ) );
-  // default correction
-  TtaGetProposal (&proposal, 1);
-  if (strcmp (proposal, "$") != 0)
-    XRCCTRL(*this, "wxID_FIRST_PROPOSAL", wxTextCtrl)->SetValue(TtaConvMessageToWX( proposal ) );
-  // list of proposals
-  for (i = 1; i <= m_max_proposals; i++)
+  if (proposal[0] == EOS || !strcmp (proposal, " "))
+    XRCCTRL(*this, "wxID_SPELL_FINISHED", wxStaticText)->SetLabel( TtaConvMessageToWX (TtaGetMessage (LIB, TMSG_END_CHECK)));
+  else
     {
-      TtaGetProposal (&proposal, i);
+      // list of proposals
+      for (i = 1; i <= m_max_proposals; i++)
+        {
+          TtaGetProposal (&proposal, i);
+          if (strcmp (proposal, "$") != 0)
+            XRCCTRL(*this, "wxID_PROPOSALS_LIST", wxListBox)->SetString (i-1, TtaConvMessageToWX( proposal ));
+        }
+      XRCCTRL(*this, "wxID_PROPOSALS_LIST", wxListBox)->SetSelection(0);
+      // default correction
+      TtaGetProposal (&proposal, 1);
       if (strcmp (proposal, "$") != 0)
-	XRCCTRL(*this, "wxID_PROPOSALS_LIST", wxListBox)->SetString (i-1, TtaConvMessageToWX( proposal ));
+        XRCCTRL(*this, "wxID_FIRST_PROPOSAL", wxTextCtrl)->SetValue(TtaConvMessageToWX( proposal ) );
+      //checker language
+      TtaGetChkrLanguageName (&lang);
+      char buffer[100];
+      strcpy (buffer, TtaGetMessage (LIB, TMSG_LANGUAGE) );
+      strcat (buffer, ": ");
+      strcat (buffer, lang);
+      XRCCTRL(*this, "wxID_SPELL_LANGUAGE_TXT", wxStaticText)->SetLabel(TtaConvMessageToWX( buffer ));
     }
-  XRCCTRL(*this, "wxID_PROPOSALS_LIST", wxListBox)->SetSelection(0);
-  //checker language
-  TtaGetChkrLanguageName (&lang);
-  char buffer[100];
-  strcpy (buffer, TtaGetMessage (LIB, TMSG_LANGUAGE) );
-  strcat (buffer, ": ");
-  strcat (buffer, lang);
-  XRCCTRL(*this, "wxID_SPELL_LANGUAGE_TXT", wxStaticText)->SetLabel(TtaConvMessageToWX( buffer ));
 }
 
 /*----------------------------------------------------------------------
@@ -70,10 +74,8 @@ void SpellCheckDlgWX::Set_Proposals ( )
     + parent : parent window
     + ps_file : postscript file
   ----------------------------------------------------------------------*/
-SpellCheckDlgWX::SpellCheckDlgWX( int ref,
-				  int base,
-				  wxWindow* parent,
-				  int checkingArea) :
+SpellCheckDlgWX::SpellCheckDlgWX( int ref, int base, wxWindow* parent,
+                                  int checkingArea) :
   AmayaDialog( parent, ref )
 {
   m_base = base;
@@ -115,13 +117,13 @@ SpellCheckDlgWX::SpellCheckDlgWX( int ref,
   m_special_char = TtaConvMessageToWX( "@#$&+~" );
   XRCCTRL(*this, "wxID_IGNORE_CHAR", wxTextCtrl)->SetValue( m_special_char );
   XRCCTRL(*this, "wxID_SPELL_LANGUAGE_TXT", wxStaticText)->SetLabel(TtaConvMessageToWX( "" ));
+  XRCCTRL(*this, "wxID_SPELL_FINISHED", wxStaticText)->SetLabel(TtaConvMessageToWX( "" ));
 
   // buttons
-  XRCCTRL(*this, "wxID_CANCEL", wxButton)->SetLabel(TtaConvMessageToWX( TtaGetMessage(LIB, TMSG_CANCEL) ));
+  XRCCTRL(*this, "wxID_CANCEL", wxButton)->SetLabel(TtaConvMessageToWX( TtaGetMessage(LIB, TMSG_DONE) ));
   XRCCTRL(*this, "wxID_SEARCH_SKIP_BUTTON", wxButton)->SetLabel(TtaConvMessageToWX( TtaGetMessage(LIB, TMSG_Pass_Without) ));
   XRCCTRL(*this, "wxID_SKIP_DIC_BUTTON", wxButton)->SetLabel(TtaConvMessageToWX( TtaGetMessage(LIB, TMSG_Pass_With) ));
   XRCCTRL(*this, "wxID_REPLACE_NEXT_BUTTON", wxButton)->SetLabel(TtaConvMessageToWX( TtaGetMessage(LIB, TMSG_Replace_Without) ));
-  XRCCTRL(*this, "wxID_REPLACE_DIC_BUTTON", wxButton)->SetLabel(TtaConvMessageToWX( TtaGetMessage(LIB, TMSG_Replace_With) ));
 
   // Set focus - The winner is ...
   XRCCTRL(*this, "wxID_SEARCH_SKIP_BUTTON", wxButton)->SetFocus();
@@ -171,36 +173,19 @@ void SpellCheckDlgWX::OnSkipWithButton( wxCommandEvent& event )
   ----------------------------------------------------------------------*/
 void SpellCheckDlgWX::OnReplaceWithoutButton( wxCommandEvent& event )
 {
-  wxString selected_item = 
-    XRCCTRL(*this, "wxID_PROPOSALS_LIST", wxListBox)->GetStringSelection();
+  char buffer[100];
+  wxString selected_item;
+
+  selected_item = XRCCTRL(*this, "wxID_FIRST_PROPOSAL", wxTextCtrl)->GetValue();
+  //selected_item = XRCCTRL(*this, "wxID_PROPOSALS_LIST", wxListBox)->GetStringSelection();
   if ( !selected_item.IsEmpty() )
     {  
       // allocate a temporary buffer
-      char buffer[100];
       wxASSERT( selected_item.Len() < 100 );
       strcpy( buffer, (const char*)selected_item.mb_str(wxConvUTF8) );
       ThotCallback (m_base + ChkrSelectProp, STRING_DATA, buffer);
     }
   ThotCallback (m_ref, INTEGER_DATA, (char*) 3);
-  SpellCheckDlgWX::Set_Proposals ();
-}
-
-/*----------------------------------------------------------------------
-  OnReplaceWithButton called when clicking on replace+dic button
-  ----------------------------------------------------------------------*/
-void SpellCheckDlgWX::OnReplaceWithButton( wxCommandEvent& event )
-{
-  wxString selected_item = 
-    XRCCTRL(*this, "wxID_PROPOSALS_LIST", wxListBox)->GetStringSelection();
-  if ( !selected_item.IsEmpty() )
-    {  
-      // allocate a temporary buffer
-      char buffer[100];
-      wxASSERT( selected_item.Len() < 100 );
-      strcpy( buffer, (const char*)selected_item.mb_str(wxConvUTF8) );
-      ThotCallback (m_base + ChkrSelectProp, STRING_DATA, buffer);
-    }
-  ThotCallback (m_ref, INTEGER_DATA, (char*) 4);
   SpellCheckDlgWX::Set_Proposals ();
 }
 

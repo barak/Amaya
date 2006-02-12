@@ -4,7 +4,7 @@
 // Author:      Ryan Norton
 // Modified by: Stefan Csomor
 // Created:     1998-01-01
-// RCS-ID:      $Id: sound.cpp,v 1.1.1.1 2005/07/06 09:30:53 gully Exp $
+// RCS-ID:      $Id: sound.cpp,v 1.1.1.2 2005/07/26 09:31:08 gully Exp $
 // Copyright:   (c) Ryan Norton
 // Licence:       wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -45,8 +45,10 @@
 
 #ifdef __WXMAC__
 #include "wx/mac/uma.h"
+#ifndef __DARWIN__
 #include <Movies.h>
 #include <Gestalt.h>
+#endif
 #endif
 
 #if defined __WXMAC__ && defined __DARWIN__/*TARGET_CARBON*/
@@ -64,7 +66,11 @@
 #include <qtml.h>
 #endif
 
+#ifndef __DARWIN__
 #include <QuickTimeComponents.h>
+#else
+#include <QuickTime/QuickTimeComponents.h>
+#endif
 
 //Time between timer calls
 #define MOVIE_DELAY 100

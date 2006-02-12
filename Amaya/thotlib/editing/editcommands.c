@@ -349,7 +349,7 @@ static void GiveInsertPoint (PtrAbstractBox pAb, char script, int frame,
 
 /*----------------------------------------------------------------------
   CloseTextInsertionWithControl: finish the text insertion.
-  The parameter toNotify is TRUE when the fuction can notify changes
+  The parameter toNotify is TRUE when the function can notify changes
   to the external application.
   Return TRUE when current changes are notfied.
   ----------------------------------------------------------------------*/
@@ -1979,10 +1979,10 @@ static void PasteClipboard (ThotBool defaultHeight, ThotBool defaultWidth,
 }
 
 /*----------------------------------------------------------------------
-  Traite les commandes TextInserting Cut Paste Copy Oops          
-  ainsi que l'insertion des Graphiques Images et Symboles         
+  ContentEditing manages Cut, Paste, Copy, Remvoe, and Insert commands.
+  Return TRUE if a Cut command moved the selection to a next element.
   ----------------------------------------------------------------------*/
-void ContentEditing (int editType)
+ThotBool ContentEditing (int editType)
 {
   PtrBox              pBox;
   PtrBox              pSelBox;
@@ -2005,7 +2005,7 @@ void ContentEditing (int editType)
   int                 frame, doc;
   ThotBool            still, ok, textPasted;
   ThotBool            defaultWidth, defaultHeight;
-  ThotBool            show, graphEdit, open;
+  ThotBool            show, graphEdit, open, selNext = FALSE;
 
   pCell = NULL;
   textPasted = FALSE;
@@ -2018,39 +2018,38 @@ void ContentEditing (int editType)
       /* paste a structured element */
       PasteCommand ();
     }
-  /* Traitement des Commandes INSERT, CUT, PASTE, COPY, OOPS */
+  /* Traitement des Commandes INSERT, CUT, TEXT_DEL, COPY */
   else
     {
       /* recupere la fenetre active pour la selection */
       frame = ActiveFrame;
       /*-- recherche le pave concerne --*/
       if (frame <= 0)
-        return;
+        return selNext;
       else
         {
           if (editType == TEXT_PASTE || editType == TEXT_X_PASTE)
             CloseTextInsertionWithControl (FALSE);
-          else
-            {
-              if ((editType != TEXT_DEL && editType != TEXT_SUP) ||
-                  !ViewFrameTable[frame - 1].FrSelectOnePosition)
-                /* close the current text insertion */
-                CloseTextInsertion ();
-            }
-          pBox = ViewFrameTable[frame - 1].FrSelectionBegin.VsBox;
+          else if ((editType != TEXT_DEL && editType != TEXT_SUP) ||
+                   !ViewFrameTable[frame - 1].FrSelectOnePosition ||
+                   (FirstSelectedElement && FirstSelectedElement->ElVolume == 0))
+            /* close the current text insertion */
+            CloseTextInsertion ();
+
           /* verifie qu'une selection courante est visualisee */
+          pBox = ViewFrameTable[frame - 1].FrSelectionBegin.VsBox;
           if (pBox == NULL)
             {
               TtaSetFocus ();
               /* a pu ici changer de frame active pour la selection */
               frame = ActiveFrame;
               if (frame == 0)
-                return;	/* nothing to do */
+                return selNext;	/* nothing to do */
               else
                 {
                   pBox = ViewFrameTable[frame - 1].FrSelectionBegin.VsBox;
                   if (pBox == NULL)
-                    return;	/* nothing to do */
+                    return selNext;	/* nothing to do */
                   pAb = pBox->BxAbstractBox;
                 }
             }
@@ -2060,33 +2059,36 @@ void ContentEditing (int editType)
               (editType == TEXT_INSERT || editType == TEXT_PASTE))
             /* the box to be edited is read-only */
             /* can't insert or paste within a read-only char string */
-            return;
+            return selNext;
           if (editType == TEXT_DEL || editType == TEXT_CUT)
             {
               if (AbsBoxSelectedAttr)
                 {
                   if (AbsBoxSelectedAttr->AbReadOnly)
                     /* selection within a read-only attribute value */
-                    return;
+                    return selNext;
                 }
               else
                 {
-                  if (ElementIsReadOnly (FirstSelectedElement->ElParent))
+                  if (FirstSelectedElement == NULL ||
+                      ElementIsReadOnly (FirstSelectedElement->ElParent))
                     /* the parent element is read-only.
                        Don't delete anything*/
-                    return;
+                    return selNext;
                   else if (ElementIsReadOnly (FirstSelectedElement))
-                    /* the parent is not read-only */
-                    /* the selected element itself is read-only */
-                    if (FirstSelectedElement == LastSelectedElement &&
-                        FirstSelectedElement->ElTerminal &&
-                        FirstSelectedElement->ElLeafType == LtText)
-                      /* selection is within a single text element */
-                      if (FirstSelectedChar > 1 ||
-                          (LastSelectedChar > 0 &&
-                           LastSelectedChar < LastSelectedElement->ElVolume))
-                        /* the text element is not completely selected */
-                        return;
+                    {
+                      /* the parent is not read-only */
+                      /* the selected element itself is read-only */
+                      if (FirstSelectedElement == LastSelectedElement &&
+                          FirstSelectedElement->ElTerminal &&
+                          FirstSelectedElement->ElLeafType == LtText)
+                        /* selection is within a single text element */
+                        if (FirstSelectedChar > 1 ||
+                            (LastSelectedChar > 0 &&
+                             LastSelectedChar < LastSelectedElement->ElVolume))
+                          /* the text element is not completely selected */
+                          return selNext;
+                    }
                 }
             }
         }
@@ -2099,7 +2101,7 @@ void ContentEditing (int editType)
       doc = FrameTable[frame].FrDoc;
       pDoc = LoadedDocument[doc - 1];
       if (pDoc == NULL)
-        return;
+        return selNext;
       open = !pDoc->DocEditSequence;
       pViewSel = &pFrame->FrSelectionBegin;
       show = (documentDisplayMode[doc - 1] == DisplayImmediately);
@@ -2110,7 +2112,7 @@ void ContentEditing (int editType)
               pBox == ViewFrameTable[frame - 1].FrSelectionEnd.VsBox &&
               pViewSel->VsIndBox >= pBox->BxNChars &&
               pBox->BxAbstractBox->AbVolume != 0)
-            return;
+            return selNext;
         }
 
       if (editType == TEXT_INSERT && !NewInsert)
@@ -2207,7 +2209,7 @@ void ContentEditing (int editType)
                 {
                   DeleteNextChar (frame, pAb->AbElement, FALSE);
                   pFrame->FrReady = TRUE;
-                  return;
+                  return selNext;
                 }
               else
                 pAb = NULL;
@@ -2243,7 +2245,7 @@ void ContentEditing (int editType)
                     }
                   notifyAttr.attribute = NULL;
                   CallEventAttribute (&notifyAttr, FALSE);
-                  return;
+                  return selNext;
                 }
               else if (FirstSelectedElement != LastSelectedElement ||
                        pAb != pLastAb)
@@ -2282,7 +2284,7 @@ void ContentEditing (int editType)
                 }
               else if ((editType == TEXT_CUT || editType == TEXT_DEL) &&
                        pAb->AbLeafType == LtText &&
-                       pAb->AbVolume == 1 &&
+                       pAb->AbVolume == 1 && FirstSelectedChar < 1 &&
                        strcmp (pAb->AbPSchema->PsStructName, "TextFile") == 0)
                 /* we are deleting the last character of a text leaf in a
                    text file. Do not leave an empty text leaf, but remove it
@@ -2298,7 +2300,7 @@ void ContentEditing (int editType)
             {
               /* close the current text insertion */
               CloseTextInsertion ();
-              CutCommand (FALSE, editType == TEXT_SUP);	/* Cut without saving */
+              selNext = CutCommand (FALSE, editType == TEXT_SUP);	/* Cut without saving */
             }
           else if (editType == TEXT_CUT || editType == TEXT_COPY)
             {
@@ -2309,7 +2311,7 @@ void ContentEditing (int editType)
                 {
                   /* close the current text insertion */
                   CloseTextInsertion ();
-                  CutCommand (TRUE, FALSE);
+                  selNext = CutCommand (TRUE, FALSE);
                 }
               else if (editType == TEXT_COPY && !NewInsert)
                 CopyCommand ();
@@ -2365,8 +2367,8 @@ void ContentEditing (int editType)
                 }
               else
                 {
-                  /* Delete the whol polyline */
-                  CutCommand (FALSE, FALSE);
+                  /* Delete the whole polyline */
+                  selNext = CutCommand (FALSE, FALSE);
                   pAb = NULL;	/* edit is done */
                 }
             }
@@ -2578,7 +2580,7 @@ void ContentEditing (int editType)
 	  
           if (pAb->AbElement == NULL)
             /* le pave a disparu entre temps */
-            return;
+            return selNext;
 	  
           /* signale la nouvelle selection courante */
           if ((editType == TEXT_CUT || editType == TEXT_PASTE ||
@@ -2614,6 +2616,7 @@ void ContentEditing (int editType)
                               FALSE, open);
         }
     }
+  return selNext;
 }
 
 
@@ -2643,7 +2646,7 @@ void InsertChar (int frame, CHAR_T c, int keyboard)
   ThotBool            toSplit, toSplitForScript = FALSE;
   ThotBool            saveinsert, rtl;
   ThotBool            notification = FALSE;
-  ThotBool            status;
+  ThotBool            status, selprev;
 
   toDelete = (c == 127);
   script  = ' ';
@@ -2878,11 +2881,12 @@ void InsertChar (int frame, CHAR_T c, int keyboard)
                                   pSelBox->BxNChars == 1)
                                 {
                                   /* the box becomes empty */
-                                  /* update selection marks */
-                                  if (!strcmp (pAb->AbPSchema->PsStructName,
-                                               "TextFile"))
+                                  if ((pAb->AbNext || pAb->AbPrevious) &&
+                                      !strcmp (pAb->AbPSchema->PsStructName, "TextFile"))
                                     {
-                                      /* remove the current element */
+                                      selprev = (pAb->AbPrevious != NULL);
+                                       /* remove the current element if it's not
+                                         the last element in the line*/
                                       FirstSelectedChar = 1;
                                       NewContent (pAb);
                                       CutCommand (FALSE, FALSE);
@@ -2891,11 +2895,19 @@ void InsertChar (int frame, CHAR_T c, int keyboard)
                                          previous element */
                                       if (FirstSelectedElement &&
                                           FirstSelectedChar <= FirstSelectedElement->ElVolume)
-                                        /* it doesn't point at the end of the
-                                           previous text */
-                                        TtcPreviousChar (FrameTable[frame].FrDoc, FrameTable[frame].FrView);
+                                        {
+                                          /* it doesn't point at the end of the
+                                             previous text */
+                                          if (selprev)
+                                            TtcPreviousChar (FrameTable[frame].FrDoc,
+                                                           FrameTable[frame].FrView);
+                                          else
+                                            TtcNextChar (FrameTable[frame].FrDoc,
+                                                         FrameTable[frame].FrView);
+                                        }
                                       return;
                                     }
+                                  /* update selection marks */
                                   xDelta = BoxCharacterWidth (109, font);
                                   pViewSel->VsXPos = 0;
                                   pViewSel->VsIndBox = 0;
@@ -3457,6 +3469,7 @@ void PasteXClipboard (unsigned char *src, int nbytes, CHARSET charset)
             clipboard->BuContent[j++] = b;
           i++;
         }
+      TtaFreeMemory (buffer);
 
       /* Paste the last X clipboard buffer */
       if (j > 0)
@@ -3576,6 +3589,11 @@ void TtcInsertChar (Document doc, View view, CHAR_T c)
 
   if (doc != 0)
     {
+      if (TtaGetDocumentAccessMode(doc) == 0)
+        {
+          //TtaDisplaySimpleMessage (CONFIRM, LIB, TMSG_EL_RO);
+          return;
+        }
       lock = TRUE;
       /* Check if we are changing the active frame */
       frame = GetWindowNumber (doc, view);
@@ -3649,13 +3667,6 @@ void TtcInsertChar (Document doc, View view, CHAR_T c)
 
           /* just manage differed enclosing rules */
           ComputeEnclosing (frame);
-          /* compare the document encoding and the character value */
-          if (pDoc->DocCharset == US_ASCII && c > 127)
-            {
-              /* force the ISO-latin-1 */
-              pDoc->DocCharset = ISO_8859_1;
-              pDoc->DocDefaultCharset = FALSE;
-            }
           if (dispMode == DisplayImmediately)
             TtaSetDisplayMode (doc, dispMode);
         }
@@ -3680,6 +3691,11 @@ void TtcCutSelection (Document doc, View view)
 
   if (doc == 0)
     return;
+  else if (TtaGetDocumentAccessMode(doc) == 0)
+    {
+      TtaDisplaySimpleMessage (CONFIRM, LIB, TMSG_EL_RO);
+      return;
+    }
   /* avoid to redisplay step by step */
   dispMode = TtaGetDisplayMode (doc);
   if (dispMode == DisplayImmediately)
@@ -3702,12 +3718,8 @@ void TtcCutSelection (Document doc, View view)
         ActiveFrame = frame;
     }
 
-#if defined(_WX) && (defined (_WINDOWS) || defined(_MACOS))
   TtcCopyToClipboard (doc, view);
-#endif /*  defined(_WX) && (defined(_WINDOWS) || defined(_MACOS))*/
 #ifdef _WINGUI
-  TtcCopyToClipboard (doc, view);
-
   if (!OpenClipboard (FrRef[frame]))
     WinErrorBox (FrRef [frame], "TtcCutSelection (1)");
   else
@@ -3745,15 +3757,20 @@ void TtcDeletePreviousChar (Document doc, View view)
 {
   ViewSelection      *pViewSel;
   DisplayMode         dispMode;
-  int                 frame;
   PtrDocument         pDoc;
   PtrElement          firstEl, lastEl;
+  int                 frame;
   int                 firstChar, lastChar;
-  ThotBool            delPrev, moveAfter;
+  ThotBool            delPrev, moveAfter, nextSelected;
   ThotBool            lock = TRUE;
 
   if (doc != 0)
     {
+      if (TtaGetDocumentAccessMode(doc) == 0)
+        {
+          //TtaDisplaySimpleMessage (CONFIRM, LIB, TMSG_EL_RO);
+          return;
+        }
       frame = GetWindowNumber (doc, view);
       if (frame != ActiveFrame)
         {
@@ -3797,6 +3814,7 @@ void TtcDeletePreviousChar (Document doc, View view)
 
       /* avoid to redisplay step by step */
       dispMode = TtaGetDisplayMode (doc);
+      nextSelected = FALSE;
       if (dispMode == DisplayImmediately)
         TtaSetDisplayMode (doc, DeferredDisplay);
       /* lock tables formatting */
@@ -3819,17 +3837,21 @@ void TtcDeletePreviousChar (Document doc, View view)
         {
           /* delete the current selection instead of the previous char */
           CloseTextInsertion ();
-          /* by default doen't change the selection after the delete */
+          /* by default doesn't change the selection after the delete */
           moveAfter = FALSE;
-          if (pViewSel->VsBox != NULL)
+          if (pViewSel->VsBox )
             {
+              // Move after if the element will be removed and there is
+              // a next element
               moveAfter = (pViewSel->VsBox->BxAbstractBox->AbLeafType != LtText ||
                            pViewSel->VsBox->BxAbstractBox->AbVolume == 0);
-              ContentEditing (TEXT_DEL);
+              nextSelected = ContentEditing (TEXT_DEL);
             }
           pViewSel = &ViewFrameTable[frame - 1].FrSelectionEnd;
-          if (moveAfter &&
-              pViewSel->VsBox && pViewSel->VsIndBox < pViewSel->VsBox->BxNChars)
+          if (moveAfter && nextSelected &&
+              pViewSel->VsBox &&
+              (pViewSel->VsIndBox < pViewSel->VsBox->BxNChars ||
+               pViewSel->VsBox->BxNChars == 0))
             TtcPreviousChar (doc, view);
           if (pDoc->DocEditSequence)
             /* close the new open undo sequence */
@@ -3858,6 +3880,11 @@ void TtcDeleteSelection (Document doc, View view)
 
   if (doc == 0)
     return;
+  else if (TtaGetDocumentAccessMode(doc) == 0)
+    {
+      TtaDisplaySimpleMessage (CONFIRM, LIB, TMSG_EL_RO);
+      return;
+    }
   /* avoid to redisplay step by step */
   dispMode = TtaGetDisplayMode (doc);
   if (dispMode == DisplayImmediately)
@@ -3894,6 +3921,11 @@ void TtcInclude (Document doc, View view)
 
   if (ThotLocalActions[T_insertpaste] != NULL && doc != 0)
     {
+      if (TtaGetDocumentAccessMode(doc) == 0)
+        {
+          TtaDisplaySimpleMessage (CONFIRM, LIB, TMSG_EL_RO);
+          return;
+        }
       /* avoid to redisplay step by step */
       dispMode = TtaGetDisplayMode (doc);
       if (dispMode == DisplayImmediately)
@@ -3922,7 +3954,16 @@ void TtcInclude (Document doc, View view)
 }
 
 /*----------------------------------------------------------------------
-  TtcPastefromX
+  TtcPasteFormBuffer pastes at the current insert position the content
+  of the buffer.
+  ----------------------------------------------------------------------*/
+void TtaPasteFromBuffer (unsigned char *src, int length, CHARSET charset)
+{
+  PasteXClipboard (src, length, charset);
+}
+
+/*----------------------------------------------------------------------
+  TtcPasteFromClipboard
   ----------------------------------------------------------------------*/
 void TtcPasteFromClipboard (Document doc, View view)
 {
@@ -3934,7 +3975,6 @@ void TtcPasteFromClipboard (Document doc, View view)
     }
   
   wxTextDataObject data;
-  
   if (wxTheClipboard->IsSupported( data.GetFormat() ))
     {
       TTALOGDEBUG_0( TTA_LOG_CLIPBOARD, _T("Clipboard supports requested format.") );
@@ -3945,12 +3985,9 @@ void TtcPasteFromClipboard (Document doc, View view)
           TTALOGDEBUG_0( TTA_LOG_CLIPBOARD, _T("Successfully retrieved data from the clipboard.") );
           TTALOGDEBUG_0( TTA_LOG_CLIPBOARD, _T("Text pasted from the clipboard : ") + text );
           /* if ClipboardLength is not zero, the last Xbuffer comes from Thot */
-          if (Xbuffer && ClipboardLength == 0)
-            {
-              /* remove the old Xbuffer sent by the X server */
-              TtaFreeMemory (Xbuffer);
-              Xbuffer = NULL;
-            }
+          if (Xbuffer)
+            TtcClearClipboard ();
+
           if (Xbuffer == NULL)
             {
               int len = strlen((const char *)text.mb_str(wxConvUTF8));
@@ -3962,14 +3999,10 @@ void TtcPasteFromClipboard (Document doc, View view)
           PasteXClipboard (Xbuffer, strlen((char *)Xbuffer), UTF_8);
         }
       else
-        {
-          TTALOGDEBUG_0( TTA_LOG_CLIPBOARD, _T("Error getting data from the clipboard.") );
-        }
-    }
+        TTALOGDEBUG_0( TTA_LOG_CLIPBOARD, _T("Error getting data from the clipboard.") );
+     }
   else
-    {
-      TTALOGDEBUG_0( TTA_LOG_CLIPBOARD, _T("Clipboard doesn't support requested format.") );
-    }
+    TTALOGDEBUG_0( TTA_LOG_CLIPBOARD, _T("Clipboard doesn't support requested format.") );
   
   wxTheClipboard->Close();
   TTALOGDEBUG_0( TTA_LOG_CLIPBOARD, _T("Closed the clipboard.\n") );
@@ -4045,10 +4078,8 @@ void TtcCopySelection (Document doc, View view)
         /* use the right frame */
         ActiveFrame = frame;
     }
-
-#if defined(_WX) && (defined(_WINDOWS) || defined(_MACOS))
-  TtcCopyToClipboard (doc, view);
-#endif /*  defined(_WX) && (defined(_WINDOWS) || defined(_MACOS))*/
+  if (SelPosition)
+    return;
 #ifdef _WINGUI
   activeWnd = GetFocus ();
   if (activeWnd == FrRef [frame])
@@ -4071,6 +4102,8 @@ void TtcCopySelection (Document doc, View view)
             }
         } 
     }
+#else /* _WINGUI */
+  TtcCopyToClipboard (doc, view);
 #endif /* _WINGUI */
   ContentEditing (TEXT_COPY);
 }
@@ -4095,6 +4128,11 @@ void TtcPaste (Document doc, View view)
 
   if (doc > 0)
     {
+      if (TtaGetDocumentAccessMode(doc) == 0)
+        {
+          TtaDisplaySimpleMessage (CONFIRM, LIB, TMSG_EL_RO);
+          return;
+        }
       frame = GetWindowNumber (doc, view);
       if (frame != ActiveFrame)
         {
@@ -4172,15 +4210,13 @@ void TtcPaste (Document doc, View view)
           CloseClipboard ();
 #endif /* _WINGUI */
 
-#if defined(_WX) && (defined (_WINDOWS) || defined(_MACOS))
+#ifdef _WX
           if (wxTheClipboard->Open())
             {
               wxTextDataObject data;
-  
               if (wxTheClipboard->IsSupported( data.GetFormat() ))
                 {
                   TTALOGDEBUG_0( TTA_LOG_CLIPBOARD, _T("Clipboard supports requested format.") );
-      
                   if (wxTheClipboard->GetData( data ))
                     {
                       wxString text = data.GetText();
@@ -4217,16 +4253,16 @@ void TtcPaste (Document doc, View view)
               TTALOGDEBUG_0( TTA_LOG_CLIPBOARD, _T("Can't open clipboard.") );
               ContentEditing (TEXT_PASTE);
             }
-#endif /* defined(_WX) && (defined (_WINDOWS) || defined(_MACOS)) */
+#endif /* _WX */
 
-#if defined(_UNIX) && !defined(_MACOS)
+#ifdef _GTK
           if (FirstSelectedElement == NULL && FirstSavedElement)
             {
               /* TODO: paste only the text */
             }
           else
             ContentEditing (TEXT_PASTE);
-#endif /* _UNIX && !_MACOS */
+#endif /*  _GTK*/
     
           if (!lock)
             /* unlock table formatting */

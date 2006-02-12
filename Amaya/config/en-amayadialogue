@@ -9,57 +9,57 @@
 7 &Style
 8 &Attributes
 9 A&nnotations
-10 &Bookmarks
-11 C&ooperation
-12 &Help
-13 &New
-14 New &XHTML document...
-15 New &XHTML 1.1 document...
-16 New XHTML 1.0 &Transitional document...
-17 New XHTML 1.0 St&rict document...
-18 New XHTML 1.0 &Basic document...
-19 New &MathML document...
-20 New &SVG document...
-21 New &CSS style sheet...
-22 From t&emplate
-23 &Open document...
-24 Open in new &window...
-25 &Reload document
-26 &Back
-27 &Forward
-28 &Save
-29 Save &as...
-30 S&ynchronize
-31 Change the &Document Type
-32 &Remove the doctype
-33 &Add a doctype
-34 Change to &XHTML 1.1
-35 Change to XHTML 1.0 &Transitional
-36 Change to XHTML 1.0 &Strict
-37 Change to XHTML 1.0 &Basic
-38 Change to &HTML 4.01 Transitional
-39 Change to HTML 4.01 Str&ict
-40 Force a Character Coding
-41 Unicode (UTF-8)
-42 Western (ISO-8859-1)
-43 Western (ISO-8859-15)
-44 Western (Windows-1252)
-45 Central Europe (ISO-8859-2)
-46 Central Europe (Windows-1250)
-47 South Europe (ISO-8859-3)
-48 Baltic (ISO-8859-4)
-49 Baltic (Windows-1257)
-50 Cyrillic (ISO-8859-5)
-51 Cyrillic (Windows-1251)
-52 Cyrillic (KOI8-R)
-53 Arabic (ISO-8859-6)
-54 Arabic (Windows-1256)
-55 Greek (ISO-8859-7)
-56 Greek (Windows-1253)
-57 Hebrew (ISO-8859-8)
-58 Hebrew (Windows-1255)
-59 Turkish (ISO-8859-9)
-60 Turkish (Windows-1254)
+10 C&ooperation
+11 &Help
+12 &New
+13 New &XHTML document...
+14 New &XHTML 1.1 document...
+15 New XHTML 1.0 &Transitional document...
+16 New XHTML 1.0 St&rict document...
+17 New XHTML 1.0 &Basic document...
+18 New &MathML document...
+19 New &SVG document...
+20 New &CSS style sheet...
+21 From t&emplate...
+22 &Open document...
+23 Open in new &window...
+24 &Reload document
+25 &Back
+26 &Forward
+27 &Save
+28 Save &as...
+29 S&ynchronize
+30 Change the &Document Type
+31 &Remove the doctype
+32 &Add a doctype
+33 Change to &XHTML 1.1
+34 Change to XHTML 1.0 &Transitional
+35 Change to XHTML 1.0 &Strict
+36 Change to XHTML 1.0 &Basic
+37 Change to &HTML 4.01 Transitional
+38 Change to HTML 4.01 Str&ict
+39 Force a Character Coding
+40 Unicode (UTF-8)
+41 Western (ISO-8859-1)
+42 Western (ISO-8859-15)
+43 Western (Windows-1252)
+44 Central Europe (ISO-8859-2)
+45 Central Europe (Windows-1250)
+46 South Europe (ISO-8859-3)
+47 Baltic (ISO-8859-4)
+48 Baltic (Windows-1257)
+49 Cyrillic (ISO-8859-5)
+50 Cyrillic (Windows-1251)
+51 Cyrillic (KOI8-R)
+52 Arabic (ISO-8859-6)
+53 Arabic (Windows-1256)
+54 Greek (ISO-8859-7)
+55 Greek (Windows-1253)
+56 Hebrew (ISO-8859-8)
+57 Hebrew (Windows-1255)
+58 Turkish (ISO-8859-9)
+59 Turkish (Windows-1254)
+60 Chinese Simplified (GB-2312)
 61 Japanese (ISO-2022-JP)
 62 Japanese (EUC-JP)
 63 Japanese (Shift-JIS)
@@ -244,88 +244,86 @@
 242 Add the selected graphics in the library
 243 Comment
 244 XML elements...
-245 &Link to previous target
-246 &Create or change link...
-247 Create &target
-248 &Delete anchor
-249 &Add/Remove IDs...
-250 Show &tools
-251 &Fullscreen
-252 Show &button bar
-253 Show a&ddress
-254 Show &map areas
-255 Show &targets
-256 Zoom in
-257 Zoom out
-258 Show &formatted view
-259 Show &structure
-260 Show so&urce
-261 Show lin&ks
-262 Show &alternate
-263 Show table &of contents
-264 Show timeline
-265 Split view horizontally
-266 Split view vertically
-267 C&haracter style...
-268 C&olors...
-269 &Format...
-270 &Background image...
-271 Create &rule...
-272 Apply &class...
-273 Show applied style...
-274 Lin&k...
-275 Ope&n...
-276 &Disable...
-277 &Enable...
-278 Remo&ve...
-279 Annotate selection
-280 Annotate document
-281 Move to selection
-282 Store selection as &XPointer
-283 Move to stored XPointer
-284 Reply to annotation
-285 Post to server
-286 Delete
-287 Load
-288 Customize query...
-289 Local filter...
-290 View Bookmarks
-291 New Bookmark
-292 New Topic
-293 New Separator
-294 Move Item
-295 Lock resource...
-296 Unlock resource...
-297 View resource properties...
-298 Copy lock information...
-299 Locked?
-300 About Amaya
-301 About Amaya at W3C
-302 Index
-303 Browsing
-304 Views
-305 Selecting
-306 Document
-307 Creating elements
-308 Attributes
-309 Characters
-310 Restructuring
-311 Links
-312 Tables
-313 Image maps
-314 Math
-315 Graphics
-316 XML support
-317 Style sheets
-318 Searching
-319 Spell Checking
-320 Publishing
-321 WebDAV
-322 Printing
-323 Numbering
-324 Making books
-325 Annotations
-326 &Bookmarks
-327 Configuring Amaya
-328 ShortCuts
-329 Accessibility in Amaya
+245 Copy location
+246 Paste location
+247 Copy link
+248 &Link to previous target
+249 &Create or change link...
+250 Create &target
+251 &Delete anchor
+252 &Add/Remove IDs...
+253 Show &tools
+254 &Fullscreen
+255 Show &button bar
+256 Show a&ddress
+257 Show &map areas
+258 Show &targets
+259 Zoom in
+260 Zoom out
+261 Show &formatted view
+262 Show &structure
+263 Show so&urce
+264 Show lin&ks
+265 Show &alternate
+266 Show table &of contents
+267 Show timeline
+268 Split view horizontally
+269 Split view vertically
+270 C&haracter style...
+271 C&olors...
+272 CSS &Style...
+273 &Format...
+274 &Background image...
+275 Create &rule...
+276 Apply &class...
+277 Show applied style...
+278 Lin&k...
+279 Ope&n...
+280 &Disable...
+281 &Enable...
+282 Remo&ve...
+283 Annotate selection
+284 Annotate document
+285 Move to selection
+286 Store selection as &XPointer
+287 Move to stored XPointer
+288 Reply to annotation
+289 Post to server
+290 Delete
+291 Load
+292 Customize query...
+293 Local filter...
+294 Lock resource...
+295 Unlock resource...
+296 View resource properties...
+297 Copy lock information...
+298 Locked?
+299 About Amaya
+300 About Amaya at W3C
+301 Index
+302 Browsing
+303 Views
+304 Selecting
+305 Document
+306 Creating elements
+307 Attributes
+308 Characters
+309 Restructuring
+310 Links
+311 Tables
+312 Image maps
+313 Math
+314 Graphics
+315 XML support
+316 Style sheets
+317 Searching
+318 Spell Checking
+319 Publishing
+320 WebDAV
+321 Printing
+322 Numbering
+323 Making books
+324 Annotations
+325 Configuring Amaya
+326 ShortCuts
+327 Accessibility in Amaya

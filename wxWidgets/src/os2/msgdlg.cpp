@@ -4,7 +4,7 @@
 // Author:      David Webster
 // Modified by:
 // Created:     10/10/99
-// RCS-ID:      $Id: msgdlg.cpp,v 1.1.1.1 2005/07/06 09:30:55 gully Exp $
+// RCS-ID:      $Id: msgdlg.cpp,v 1.1.1.2 2005/07/26 09:31:10 gully Exp $
 // Copyright:   (c) David Webster
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -36,13 +36,11 @@
 
 IMPLEMENT_CLASS(wxMessageDialog, wxDialog)
 
-wxMessageDialog::wxMessageDialog(
-  wxWindow*                         pParent
-, const wxString&                   rsMessage
-, const wxString&                   rsCaption
-, long                              lStyle
-, const wxPoint&                    pPos
-)
+wxMessageDialog::wxMessageDialog( wxWindow*       WXUNUSED(pParent),
+                                  const wxString& rsMessage,
+                                  const wxString& rsCaption,
+                                  long            lStyle,
+                                  const wxPoint&  WXUNUSED(pPos) )
 {
     m_sCaption     = rsCaption;
     m_sMessage     = rsMessage;
@@ -138,4 +136,3 @@ int wxMessageDialog::ShowModal()
     }
     return nAns;
 } // end of wxMessageDialog::ShowModal
-

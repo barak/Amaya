@@ -215,7 +215,7 @@
 213 Próbálja a 'Fájl/Kényszerített karakter kódolás' menüt
 214 Érvénytelen karakterek
 215 Dokumentum profile:
-216 Néhány elem/attribútum figyelmen kívül hagyva - see Fájl/Elemzési hibák mutatása
+216 Néhány elem/attribútum figyelmen kívül hagyva - see Fájl > Elemzési hibák mutatása
 217 Ezen dokumentum kódolását az Amaya nem támogatja
 218 Ezen dokumentum szerkesztése és mentés megváltoztatja a dokumentum típusát
 219 Nem elérhető
@@ -258,7 +258,7 @@
 256 A célpont HTTP URL kell legyen
 257 Hiba: érvénytelen MIME típus
 258 Ismeretlen
-259 A stílusok figyelmen kívül hagyva - lásd: Nézet/Elemzési hibák mutatása
+259 A stílusok figyelmen kívül hagyva - lásd: Fájl > Elemzési hibák mutatása
 260 Ez a dokumentum már be van töltve egy másik ablakban.
 261 Annak a példánynak a mentése frissítési problémákat okozhat
 262 A doctype hozzáadása vagy megváltoztatása néhány elem és attribútum elvesztésével jár
@@ -362,12 +362,22 @@
 360 Fájl
 361 Jelenlegi cseréje
 362 Új lapon
-363 Új lapon
-364 Új ablakban
-365 Élsimítás
-366 Dátum ISO formátuma
-367 Dokumentumok új helye
-368 Hely megnyitása
-369 **Warn when closing multiple tabs
-370 **Max url number in history
-371 **Clear url list
+363 Új ablakban
+364 Élsimítás
+365 Dátum ISO formátuma
+366 Dokumentumok új helye
+367 Hely megnyitása
+368 Több lap bezárásakor figyelmeztetés
+369 URL-ek legnagyobb száma az előzménylistában
+370 URL lista törlése
+371 Minden gyorsbillentyű mutatása
+372 Rögzített sorhossz (0 = alapérték)
+373 Sablon
+374 Dokumentum mentése másként...
+375 A sablon nem található
+376 A sablon dobozainak mutatása
+377 Az Alkalmaz gomb bezárja a párbeszédablakot
+378 Ebben a dokumentumban nem engedélyezett
+379 Védett elem
+380 A kijelölés nem érinthet ilyen típusú elemet
+381 No heading found after the selection

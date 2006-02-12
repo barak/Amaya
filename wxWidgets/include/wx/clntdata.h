@@ -4,7 +4,7 @@
 // Author:      Robin Dunn
 // Modified by:
 // Created:     9-Oct-2001
-// RCS-ID:      $Id: clntdata.h,v 1.1.1.1 2005/07/06 09:30:08 gully Exp $
+// RCS-ID:      $Id: clntdata.h,v 1.1.1.2 2005/07/26 09:30:53 gully Exp $
 // Copyright:   (c) wxWidgets team
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -20,9 +20,19 @@
 #include "wx/string.h"
 #include "wx/hashmap.h"
 
+#if wxABI_VERSION >= 20602
+
 typedef int (*wxShadowObjectMethod)(void*, void*);
-WX_DECLARE_STRING_HASH_MAP( wxShadowObjectMethod, wxShadowObjectMethods );
-WX_DECLARE_STRING_HASH_MAP( void*, wxShadowObjectFields );
+WX_DECLARE_STRING_HASH_MAP_WITH_DECL(
+    wxShadowObjectMethod,
+    wxShadowObjectMethods,
+    class WXDLLIMPEXP_BASE
+);
+WX_DECLARE_STRING_HASH_MAP_WITH_DECL(
+    void *,
+    wxShadowObjectFields,
+    class WXDLLIMPEXP_BASE
+);
 
 class WXDLLIMPEXP_BASE wxShadowObject
 {
@@ -79,6 +89,8 @@ private:
     wxShadowObjectMethods   m_methods;
     wxShadowObjectFields    m_fields;
 };
+
+#endif // wxABI_VERSION
 
 // ----------------------------------------------------------------------------
 

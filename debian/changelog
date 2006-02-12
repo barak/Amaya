@@ -1,3 +1,20 @@
+amaya (9.4-1) unstable; urgency=low
+
+  * New upstream release
+  * Apply patch from Regis Boudin to build correctly in odd-ball chroots
+  (Closes: #336014)
+  * Don't Build-Depend on xlibs-dev anymore buy remember to Build-Depend on
+  freetype though. (Closes: #346632, #340289)
+  * Use the system libGLU (Closes: #348705, #348706, #189668)
+  * Don't include an rpath (Closes: #341424)
+  * Allow into testing (Closes: #336150)
+  * Use the Debian host / build types rather than having configure guess
+  * Allow Amaya to upload Amaya
+  * Set maintainer to be Regis Boudin
+  * Miscelaneous fixes to install things in the right place
+
+ -- Anand Kumria <wildfire@progsoc.org>  Mon, 13 Feb 2006 01:05:57 +1100
+
 amaya (9.2.1-6) unstable; urgency=low
 
   * Apply patch from Frank Lichtenheld so that amaya can build on 64 bit

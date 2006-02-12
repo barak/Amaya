@@ -38,13 +38,11 @@
 
 IMPLEMENT_DYNAMIC_CLASS(AmayaApplyClassPanel, AmayaSubPanel)
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApplyClassPanel
  *      Method:  AmayaApplyClassPanel
  * Description:  construct a panel (bookmarks, elements, attributes, colors ...)
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaApplyClassPanel::AmayaApplyClassPanel( wxWindow * p_parent_window, AmayaNormalWindow * p_parent_nwindow )
   : AmayaSubPanel( p_parent_window, p_parent_nwindow, _T("wxID_PANEL_APPLYCLASS") )
     ,m_ApplyClassRef(0)
@@ -76,38 +74,32 @@ AmayaApplyClassPanel::AmayaApplyClassPanel( wxWindow * p_parent_window, AmayaNor
   RefreshApplyClassPanel();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApplyClassPanel
  *      Method:  ~AmayaApplyClassPanel
  * Description:  destructor
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaApplyClassPanel::~AmayaApplyClassPanel()
 {  
   // unregister myself to the manager, so nothing should be asked to me in future
   m_pManager->UnregisterSubPanel( this );
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApplyClassPanel
  *      Method:  GetPanelType
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 int AmayaApplyClassPanel::GetPanelType()
 {
   return WXAMAYA_PANEL_APPLYCLASS;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApplyClassPanel
  *      Method:  RefreshToolTips
  * Description:  reassign the tooltips values
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaApplyClassPanel::RefreshToolTips()
 {  
   XRCCTRL(*m_pPanelContentDetach,"wxID_LIST_APPLYCLASS",wxListBox)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_SEL_CLASS)));
@@ -115,25 +107,23 @@ void AmayaApplyClassPanel::RefreshToolTips()
   XRCCTRL(*m_pPanelContentDetach,"wxID_APPLY",wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_APPLY)));
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApplyClassPanel
  *      Method:  SendDataToPanel
  * Description:  refresh the button widgets of the frame's panel
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaApplyClassPanel::SendDataToPanel( AmayaParams& p )
 {
-  intptr_t nb_class         = (intptr_t)p.param1;
-  const char * listBuffer   = (char *)p.param2;
-  const char * currentClass = (char *)p.param3;
-  intptr_t ref              = (intptr_t)p.param4;;
+  int          nb_class = p.param1;
+  const char  *listBuffer = (char *)p.param2;
+  const char  *currentClass = (char *)p.param3;
+  int          ref = (long int)p.param4;
   
   m_ApplyClassRef = ref;
   
   /* fill the list */
   m_pClassList->Clear();
-  intptr_t i = 0;
+  int i = 0;
   int index = 0;
   while (i < nb_class && listBuffer[index] != EOS)
     {
@@ -143,7 +133,8 @@ void AmayaApplyClassPanel::SendDataToPanel( AmayaParams& p )
     }
 
   /* select the wanted item */
-  m_pClassList->SetStringSelection(TtaConvMessageToWX(currentClass));
+  if (currentClass && currentClass[0] != EOS)
+    m_pClassList->SetStringSelection(TtaConvMessageToWX(currentClass));
 
   /* recalculate layout */
   GetParent()->GetParent()->Layout();
@@ -152,49 +143,41 @@ void AmayaApplyClassPanel::SendDataToPanel( AmayaParams& p )
   m_pPanelContentDetach->Layout();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApplyClassPanel
  *      Method:  DoUpdate
  * Description:  force a refresh when the user expand or detach this panel
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaApplyClassPanel::DoUpdate()
 {
   AmayaSubPanel::DoUpdate();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApplyClassPanel
  *      Method:  IsActive
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 bool AmayaApplyClassPanel::IsActive()
 {
   return AmayaSubPanel::IsActive();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApplyClassPanel
  *      Method:  OnApply
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaApplyClassPanel::OnApply( wxCommandEvent& event )
 {
   ThotCallback(m_ApplyClassRef, INTEGER_DATA, (char*) 1);
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApplyClassPanel
  *      Method:  OnSelected
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaApplyClassPanel::OnSelected( wxCommandEvent& event )
 {
   wxString s_selected = XRCCTRL(*this, "wxID_LIST_APPLYCLASS", wxListBox)->GetStringSelection();
@@ -210,25 +193,21 @@ void AmayaApplyClassPanel::OnSelected( wxCommandEvent& event )
 
 
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApplyClassPanel
  *      Method:  OnRefresh
  * Description:  refresh the panel from current selection
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaApplyClassPanel::OnRefresh( wxCommandEvent& event )
 {
   RefreshApplyClassPanel();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaApplyClassPanel
  *      Method:  RefreshApplyClassPanel
  * Description:  refresh the panel from current selection
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaApplyClassPanel::RefreshApplyClassPanel()
 {
   Document doc;
@@ -236,7 +215,8 @@ void AmayaApplyClassPanel::RefreshApplyClassPanel()
 
   TtaGiveActiveView( &doc, &view );
   /* force the refresh */
-  TtaExecuteMenuAction ("ApplyClass", doc, view, TRUE);
+  if (doc > 0)
+    TtaExecuteMenuAction ("ApplyClass", doc, view, TRUE);
 }
 
 /*----------------------------------------------------------------------

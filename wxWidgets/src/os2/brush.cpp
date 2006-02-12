@@ -4,7 +4,7 @@
 // Author:      David Webster
 // Modified by:
 // Created:     10/13/99
-// RCS-ID:      $Id: brush.cpp,v 1.1.1.1 2005/07/06 09:30:55 gully Exp $
+// RCS-ID:      $Id: brush.cpp,v 1.1.1.2 2005/07/26 09:31:10 gully Exp $
 // Copyright:   (c) David Webster
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -102,9 +102,9 @@ wxBrush::wxBrush(
 
 bool wxBrush::RealizeResource()
 {
-    BOOL                            bOk;
-    ERRORID                         vError;
-    wxString                        sError;
+    bool     bOk;
+    ERRORID  vError;
+    wxString sError;
 
     if (M_BRUSHDATA && M_BRUSHDATA->m_hBrush == 0L)
     {
@@ -144,7 +144,7 @@ bool wxBrush::RealizeResource()
 
         if (M_BRUSHDATA->m_nStyle==wxTRANSPARENT)
         {
-            return TRUE;
+            return true;
         }
         COLORREF                    vPmColour = 0L;
 
@@ -209,13 +209,13 @@ bool wxBrush::RealizeResource()
         M_BRUSHDATA->m_vBundle.usMixMode     = FM_OVERPAINT;
         M_BRUSHDATA->m_vBundle.usBackMixMode = BM_OVERPAINT;
 
-        bOk = ::GpiSetAttrs( M_BRUSHDATA->m_hBrush
-                            ,PRIM_AREA
-                            ,ABB_COLOR | ABB_BACK_COLOR | ABB_MIX_MODE | ABB_BACK_MIX_MODE |
-                             ABB_SET | ABB_SYMBOL
-                            ,ABB_REF_POINT
-                            ,&M_BRUSHDATA->m_vBundle
-                           );
+        bOk = (bool)::GpiSetAttrs( M_BRUSHDATA->m_hBrush
+                                  ,PRIM_AREA
+                                  ,ABB_COLOR | ABB_BACK_COLOR | ABB_MIX_MODE | ABB_BACK_MIX_MODE |
+                                   ABB_SET | ABB_SYMBOL
+                                  ,ABB_REF_POINT
+                                  ,&M_BRUSHDATA->m_vBundle
+                                 );
         if (!bOk)
         {
             vError = ::WinGetLastError(vHabmain);
@@ -234,14 +234,12 @@ WXHANDLE wxBrush::GetResourceHandle()
     return (WXHANDLE)M_BRUSHDATA->m_hBrush;
 } // end of wxBrush::GetResourceHandle
 
-bool wxBrush::FreeResource(
-  bool                              WXUNUSED(bForce)
-)
+bool wxBrush::FreeResource( bool WXUNUSED(bForce) )
 {
     if (M_BRUSHDATA && (M_BRUSHDATA->m_hBrush != 0))
     {
         M_BRUSHDATA->m_hBrush = 0;
-        return TRUE;
+        return true;
     }
     else return FALSE;
 } // end of wxBrush::FreeResource
@@ -319,4 +317,3 @@ void wxBrush::SetPS(
     M_BRUSHDATA->m_hBrush = hPS;
     RealizeResource();
 } // end of WxWinGdi_CPen::SetPS
-

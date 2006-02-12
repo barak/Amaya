@@ -35,14 +35,12 @@
 
 IMPLEMENT_DYNAMIC_CLASS(AmayaXHTMLPanel, AmayaSubPanel)
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaXHTMLPanel
  *      Method:  AmayaXHTMLPanel
  * Description:  construct a panel (bookmarks, elements, attributes ...)
  *               TODO
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaXHTMLPanel::AmayaXHTMLPanel( wxWindow * p_parent_window, AmayaNormalWindow * p_parent_nwindow )
   : AmayaSubPanel( p_parent_window, p_parent_nwindow, _T("wxID_PANEL_XHTML") )
 {
@@ -57,44 +55,39 @@ AmayaXHTMLPanel::AmayaXHTMLPanel( wxWindow * p_parent_window, AmayaNormalWindow 
   m_pManager->RegisterSubPanel( this );
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaXHTMLPanel
  *      Method:  ~AmayaXHTMLPanel
  * Description:  destructor
  *               TODO
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaXHTMLPanel::~AmayaXHTMLPanel()
 {
   // unregister myself to the manager, so nothing should be asked to me in future
   m_pManager->UnregisterSubPanel( this );  
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaXHTMLPanel
  *      Method:  GetPanelType
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 int AmayaXHTMLPanel::GetPanelType()
 {
   return WXAMAYA_PANEL_XHTML;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaXHTMLPanel
  *      Method:  RefreshToolTips
  * Description:  reassign the tooltips values
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaXHTMLPanel::RefreshToolTips()
 {
   XRCCTRL(*this,"wxID_PANEL_XHTML_STRONG", wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_BUTTON_BOLD)));
   XRCCTRL(*this,"wxID_PANEL_XHTML_EMPH",   wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_BUTTON_ITALICS))); 
   XRCCTRL(*this,"wxID_PANEL_XHTML_CODE",   wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_BUTTON_CODE)));
+  XRCCTRL(*this,"wxID_PANEL_XHTML_DIV",   wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_BUTTON_DIV)));
   XRCCTRL(*this,"wxID_PANEL_XHTML_H1",     wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_BUTTON_H1)));
   XRCCTRL(*this,"wxID_PANEL_XHTML_H2",     wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_BUTTON_H2)));
   XRCCTRL(*this,"wxID_PANEL_XHTML_H3",     wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_BUTTON_H3)));
@@ -102,17 +95,16 @@ void AmayaXHTMLPanel::RefreshToolTips()
   XRCCTRL(*this,"wxID_PANEL_XHTML_NL",     wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_BUTTON_OL)));
   XRCCTRL(*this,"wxID_PANEL_XHTML_DL",     wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_BUTTON_DL)));
   XRCCTRL(*this,"wxID_PANEL_XHTML_IMG",    wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_BUTTON_IMG)));
+  XRCCTRL(*this,"wxID_PANEL_XHTML_TARGET",   wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_BUTTON_TARGET)));
   XRCCTRL(*this,"wxID_PANEL_XHTML_LINK",   wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_BUTTON_LINK)));
   XRCCTRL(*this,"wxID_PANEL_XHTML_TABLE",  wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_BUTTON_TABLE)));
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaPanel
  *      Method:  OnButton
  * Description:  this method is called when the user click on a tool
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaXHTMLPanel::OnButton( wxCommandEvent& event )
 {
   int id = event.GetId();
@@ -120,13 +112,15 @@ void AmayaXHTMLPanel::OnButton( wxCommandEvent& event )
   Document doc;
   View view;
   FrameToView (TtaGiveActiveFrame(), &doc, &view);
-
+  
   if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_XHTML_STRONG")) )
     TtaExecuteMenuAction ("SetOnOffStrong", doc, view, FALSE);
   else if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_XHTML_EMPH")) )
     TtaExecuteMenuAction ("SetOnOffEmphasis", doc, view, FALSE);
   else if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_XHTML_CODE")) )
     TtaExecuteMenuAction ("SetOnOffCode", doc, view, FALSE);
+  else if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_XHTML_DIV")) )
+    TtaExecuteMenuAction ("CreateDivision", doc, view, FALSE);
   else if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_XHTML_H1")) )
     TtaExecuteMenuAction ("CreateHeading1", doc, view, FALSE);
   else if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_XHTML_H2")) )
@@ -145,18 +139,18 @@ void AmayaXHTMLPanel::OnButton( wxCommandEvent& event )
     TtaExecuteMenuAction ("CreateOrChangeLink", doc, view, FALSE);
   else if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_XHTML_TABLE")) )
     TtaExecuteMenuAction ("CreateTable", doc, view, FALSE);
+  else if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_XHTML_TARGET")) )
+    TtaExecuteMenuAction ("CreateTarget", doc, view, FALSE);
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaXHTMLPanel
  *      Method:  SendDataToPanel
  * Description:  refresh the button widgets of the frame's panel
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaXHTMLPanel::SendDataToPanel( AmayaParams& p )
 {
-  bool * p_checked_array = (bool *)p.param1;
+  bool * p_checked_array = (bool *)p.param2;
 
   if (p_checked_array[WXAMAYA_PANEL_XHTML_STRONG])
     XRCCTRL(*this, "wxID_PANEL_XHTML_STRONG", wxBitmapButton)->SetBackgroundColour( m_OnColour );
@@ -177,13 +171,11 @@ void AmayaXHTMLPanel::SendDataToPanel( AmayaParams& p )
   Layout();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaXHTMLPanel
  *      Method:  DoUpdate
  * Description:  force a refresh when the user expand or detach this panel
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaXHTMLPanel::DoUpdate()
 {
   AmayaSubPanel::DoUpdate();
@@ -196,13 +188,11 @@ void AmayaXHTMLPanel::DoUpdate()
 }
 
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaXHTMLPanel
  *      Method:  IsActive
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 bool AmayaXHTMLPanel::IsActive()
 {
   return AmayaSubPanel::IsActive();
@@ -225,6 +215,8 @@ BEGIN_EVENT_TABLE(AmayaXHTMLPanel, AmayaSubPanel)
   EVT_BUTTON( XRCID("wxID_PANEL_XHTML_IMG"),    AmayaXHTMLPanel::OnButton ) 
   EVT_BUTTON( XRCID("wxID_PANEL_XHTML_LINK"),   AmayaXHTMLPanel::OnButton ) 
   EVT_BUTTON( XRCID("wxID_PANEL_XHTML_TABLE"),  AmayaXHTMLPanel::OnButton ) 
+  EVT_BUTTON( XRCID("wxID_PANEL_XHTML_DIV"),  AmayaXHTMLPanel::OnButton ) 
+  EVT_BUTTON( XRCID("wxID_PANEL_XHTML_TARGET"),  AmayaXHTMLPanel::OnButton ) 
 END_EVENT_TABLE()
 
 #endif /* #ifdef _WX */

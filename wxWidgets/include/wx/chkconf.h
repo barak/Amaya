@@ -4,7 +4,7 @@
  * Author:      Vadim Zeitlin
  * Modified by:
  * Created:     09.08.00
- * RCS-ID:      $Id: chkconf.h,v 1.1.1.1 2005/07/06 09:30:08 gully Exp $
+ * RCS-ID:      $Id: chkconf.h,v 1.1.1.2 2005/07/26 09:30:53 gully Exp $
  * Copyright:   (c) 2000 Vadim Zeitlin <vadim@wxwidgets.org>
  * Licence:     wxWindows licence
  */
@@ -1513,7 +1513,7 @@
 
 #   if !wxUSE_DOC_VIEW_ARCHITECTURE
 #        ifdef wxABORT_ON_CONFIG_ERROR
-#            error "MDI requires wxUSE_DOC_VIEW_ARCHITECTURE"
+#            error "wxUSE_MDI_ARCHITECTURE requires wxUSE_DOC_VIEW_ARCHITECTURE"
 #        else
 #            undef wxUSE_DOC_VIEW_ARCHITECTURE
 #            define wxUSE_DOC_VIEW_ARCHITECTURE 1
@@ -1524,7 +1524,7 @@
 #if !wxUSE_FILEDLG
 #   if wxUSE_DOC_VIEW_ARCHITECTURE || wxUSE_WXHTML_HELP
 #       ifdef wxABORT_ON_CONFIG_ERROR
-#           error "wxFileDialog must be compiled as well"
+#           error "wxUSE_FILEDLG is required by wxUSE_DOC_VIEW_ARCHITECTURE and wxUSE_WXHTML_HELP!"
 #       else
 #           undef wxUSE_FILEDLG
 #           define wxUSE_FILEDLG 1
@@ -1684,4 +1684,3 @@
 #endif /* wxUSE_SOCKETS */
 
 #endif /* wxUSE_GUI */
-

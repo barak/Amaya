@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     29/01/98
-// RCS-ID:      $Id: utilscmn.cpp,v 1.1.1.1 2005/07/06 09:30:50 gully Exp $
+// RCS-ID:      $Id: utilscmn.cpp,v 1.1.1.2 2005/07/26 09:31:04 gully Exp $
 // Copyright:   (c) 1998 Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -604,7 +604,7 @@ bool wxLaunchDefaultBrowser(const wxString& url)
             (LPShellExecute) ::GetProcAddress(hShellDll,
             wxString::Format(wxT("ShellExecute%s"),
 
-#ifdef __WXUNICODE__
+#if wxUSE_UNICODE
             wxT("W")
 #else
             wxT("A")

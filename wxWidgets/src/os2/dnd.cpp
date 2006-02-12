@@ -4,7 +4,7 @@
 // Author:      David Webster
 // Modified by:
 // Created:     10/21/99
-// RCS-ID:      $Id: dnd.cpp,v 1.1.1.1 2005/07/06 09:30:55 gully Exp $
+// RCS-ID:      $Id: dnd.cpp,v 1.1.1.2 2005/07/26 09:31:10 gully Exp $
 // Copyright:   (c) 1998 AUTHOR
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -12,6 +12,11 @@
 #ifdef __GNUG__
 #pragma implementation "dnd.h"
 #endif
+
+// For compilers that support precompilation, includes "wx.h".
+#include "wx/wxprec.h"
+
+#if wxUSE_DRAG_AND_DROP
 
 #include "wx/window.h"
 #include "wx/app.h"
@@ -21,8 +26,6 @@
 #define INCL_PM
 #define INCL_DOS
 #include <os2.h>
-
-#if wxUSE_DRAG_AND_DROP
 
 // ----------------------------------------------------------------------------
 // global

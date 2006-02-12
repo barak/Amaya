@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     04/01/98
-// RCS-ID:      $Id: colrdlgg.cpp,v 1.1.1.1 2005/07/06 09:30:50 gully Exp $
+// RCS-ID:      $Id: colrdlgg.cpp,v 1.1.1.2 2005/07/26 09:31:05 gully Exp $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -211,15 +211,17 @@ void wxGenericColourDialog::OnMouseEvent(wxMouseEvent& event)
 void wxGenericColourDialog::OnPaint(wxPaintEvent& event)
 {
 #if !defined(__WXMOTIF__) && !defined(__WXPM__) && !defined(__WXCOCOA__)
-  wxDialog::OnPaint(event);
+    wxDialog::OnPaint(event);
+#else
+    wxUnusedVar(event);
 #endif
 
-  wxPaintDC dc(this);
+    wxPaintDC dc(this);
 
-  PaintBasicColours(dc);
-  PaintCustomColours(dc);
-  PaintCustomColour(dc);
-  PaintHighlight(dc, true);
+    PaintBasicColours(dc);
+    PaintCustomColours(dc);
+    PaintCustomColour(dc);
+    PaintHighlight(dc, true);
 }
 
 void wxGenericColourDialog::CalculateMeasurements()
@@ -597,4 +599,3 @@ void wxGenericColourDialog::OnBlueSlider(wxCommandEvent& WXUNUSED(event))
 #endif // wxUSE_SLIDER
 
 #endif // wxUSE_COLOURDLG && !defined(__WXGTK20__)
-

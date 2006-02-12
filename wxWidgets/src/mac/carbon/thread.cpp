@@ -4,7 +4,7 @@
 // Author:	Original from Wolfram Gloger/Guilhem Lavaux/Vadim Zeitlin
 // Modified by: Aj Lavin, Stefan Csomor
 // Created:	04/22/98
-// RCS-ID:	$Id: thread.cpp,v 1.1.1.1 2005/07/06 09:30:53 gully Exp $
+// RCS-ID:	$Id: thread.cpp,v 1.1.1.2 2005/07/26 09:31:08 gully Exp $
 // Copyright:	(c) Wolfram Gloger (1996, 1997); Guilhem Lavaux (1998),
 //		    Vadim Zeitlin (1999) , Stefan Csomor (2000)
 // Licence:	wxWindows licence
@@ -35,7 +35,7 @@
 #include "wx/thread.h"
 
 #ifdef __WXMAC__
-#if TARGET_API_MAC_OSX
+#ifdef __DARWIN__
 #include <CoreServices/CoreServices.h>
 #else
 #include <DriverServices.h>

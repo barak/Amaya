@@ -42,6 +42,7 @@
 #include "AmayaFrame.h"
 #include "AmayaCanvas.h"
 #include "AmayaResizingBoxEvtHandler.h"
+static int      Waiting = 0;
 
 IMPLEMENT_DYNAMIC_CLASS(AmayaResizingBoxEvtHandler, wxEvtHandler)
 
@@ -65,10 +66,14 @@ BEGIN_EVENT_TABLE(AmayaResizingBoxEvtHandler, wxEvtHandler)
   EVT_MOUSEWHEEL(	AmayaResizingBoxEvtHandler::OnMouseWheel) // Process a wxEVT_MOUSEWHEEL event. 
 END_EVENT_TABLE()
 
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
 AmayaResizingBoxEvtHandler::AmayaResizingBoxEvtHandler() : wxEvtHandler()
 {
 }
 
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
 AmayaResizingBoxEvtHandler::AmayaResizingBoxEvtHandler( AmayaFrame * p_frame,
                                                         int *x, int *y, int *width, int *height,
                                                         PtrBox box, int xmin, int xmax, int ymin, int ymax,
@@ -101,8 +106,11 @@ AmayaResizingBoxEvtHandler::AmayaResizingBoxEvtHandler( AmayaFrame * p_frame,
       
       // assign a cross mouse cursor
       m_pFrame->GetCanvas()->SetCursor( wxCursor(wxCURSOR_CROSS) );
-      
+#ifndef _MACOS
       m_pFrame->GetCanvas()->CaptureMouse();
+#endif /* _MACOS */
+      // waiting for a release
+      Waiting = 1;
     }
 
   // check if this box contains an ellipse
@@ -182,6 +190,8 @@ AmayaResizingBoxEvtHandler::AmayaResizingBoxEvtHandler( AmayaFrame * p_frame,
     BoxGeometry (m_FrameId, *m_pX, *m_pY, *m_pWidth, *m_pHeight, *m_pX + m_Xref, *m_pY + m_Yref);
 }
 
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
 AmayaResizingBoxEvtHandler::~AmayaResizingBoxEvtHandler()
 {
   TTALOGDEBUG_0( TTA_LOG_SVGEDIT, _T("AmayaResizingBoxEvtHandler::~AmayaResizingBoxEvtHandler") );
@@ -194,65 +204,67 @@ AmayaResizingBoxEvtHandler::~AmayaResizingBoxEvtHandler()
       
       // restore the default cursor
       m_pFrame->GetCanvas()->SetCursor( wxNullCursor );
-      
-      m_pFrame->GetCanvas()->ReleaseMouse();
+      if (Waiting)
+        {
+          // should we release
+#ifndef _MACOS
+          m_pFrame->GetCanvas()->ReleaseMouse();
+#endif /* _MACOS */
+          Waiting = 0;
+        }
     }
 }
 
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
 bool AmayaResizingBoxEvtHandler::IsFinish()
 {
   return m_IsFinish;
 }
 
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
 void AmayaResizingBoxEvtHandler::OnChar( wxKeyEvent& event )
 {
   m_IsFinish = true;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaResizingBoxEvtHandler
  *      Method:  OnMouseDown
  * Description:  handle mouse button down events
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaResizingBoxEvtHandler::OnMouseDown( wxMouseEvent& event )
 {
   //  TTALOGDEBUG_0( TTA_LOG_SVGEDIT, _T("AmayaResizingBoxEvtHandler::OnMouseDown") );
   //  event.Skip();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaResizingBoxEvtHandler
  *      Method:  OnMouseUp
  * Description:  handle mouse button up events
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaResizingBoxEvtHandler::OnMouseUp( wxMouseEvent& event )
 {
   m_IsFinish = true;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaResizingBoxEvtHandler
  *      Method:  OnMouseDbClick
  * Description:  handle mouse dbclick events
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaResizingBoxEvtHandler::OnMouseDbClick( wxMouseEvent& event )
 {
   //  m_IsFinish = true;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaResizingBoxEvtHandler
  *      Method:  OnMouseMove
  * Description:  handle mouse move events
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaResizingBoxEvtHandler::OnMouseMove( wxMouseEvent& event )
 {
   if (IsFinish())
@@ -487,13 +499,11 @@ void AmayaResizingBoxEvtHandler::OnMouseMove( wxMouseEvent& event )
     } 
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaResizingBoxEvtHandler
  *      Method:  OnMouseWheel
  * Description:  handle mouse wheel events
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaResizingBoxEvtHandler::OnMouseWheel( wxMouseEvent& event )
 {
   //  TTALOGDEBUG_0( TTA_LOG_SVGEDIT, _T("AmayaResizingBoxEvtHandler::OnMouseWheel") );

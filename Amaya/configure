@@ -864,7 +864,7 @@ Optional Features:
   --disable-redland       disable the redland RDF library
   --enable-system-redland try the redland RDF system library
   --enable-bookmarks      enables experimental bookmark support
-  --enable-templates      enables experimental templates support
+  --disable-templates     disables experimental templates support
   --disable-generic-xml   remove Generic XML support
 
 Optional Packages:
@@ -872,8 +872,8 @@ Optional Packages:
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-gl               enable Opengl canvas (experimental)
   --with-gtk              use GTK GUI toolkit
+  --with-wx               use wxWidgets GUI toolkit
   --with-mesa             enable canvas with software OpenGL implementation (Mesa)
-  --with-wx               use wxWidgets GUI toolkit (experimental)
   --with-nogui            do not use GUI toolkit (not maintained)
   --with-wxdebug          compiles wxWidgets with debuging options
   --with-wxsrcdir=...     compiles Amaya with a specific wxWidgets sources path
@@ -13401,9 +13401,33 @@ fi;
 if test "$with_gtk" = "yes" -o "$enable_gtk" = "yes" ; then
   if test "$withval" = "no" ; then
     with_gtk="no"
+    with_wx="yes"
   else
     with_gtk="yes"
+    with_wx="no"
   fi
+fi
+
+# check if wxWidgets gui should be used
+
+# Check whether --with-wx or --without-wx was given.
+if test "${with_wx+set}" = set; then
+  withval="$with_wx"
+
+fi;
+if test "$with_wx" = "yes" -o "$enable_wx" = "yes" ; then
+  if test "$withval" = "no" ; then
+    with_wx="no"
+  else
+    with_wx="yes"
+    with_gtk="no"
+  fi
+fi
+
+if test "$with_gtk" = "" -o "$with_wx=" = "" ; then
+  # Nothing is enable so force the default GUI toolkit (WX)
+  with_gtk="no"
+  with_wx="yes"
 fi
 
 # check for mesa library (OpenGL)
@@ -13422,32 +13446,18 @@ if test "$with_mesa" = "" ; then
   fi
 fi
 
-# check if wxWidgets gui should be used
-
-# Check whether --with-wx or --without-wx was given.
-if test "${with_wx+set}" = set; then
-  withval="$with_wx"
-
-fi;
-if test "$with_wx" = "yes" -o "$enable_wx" = "yes" ; then
-  if test "$withval" = "no" ; then
-    with_wx="no"
-  else
-    with_wx="yes"
-  fi
-fi
 
 # Check if at least one GUI toolkit is enabled
-if test "$with_wx" = "no" -o "$with_wx" = "" ; then
-  if test "$with_gtk" = "no" -o "$with_gtk" = "" ; then
-    # Nothing is enable so force the default GUI toolkit (GTK)
-    with_wx="no"
-    with_gtk="yes"
+if test "$with_wx" = "no" ; then
+  if test "$with_gtk" = "no" ; then
+    # Nothing is enable so force the default GUI toolkit (WX)
+    with_wx="yes"
+    with_gtk="no"
   fi
 fi
 
 # mesa (software) gl implementation is default with wx (hardware gl implem can be choosen with --with-gl option)
-if test "$with_wx" = "yes" ; then
+if test "$with_wx" = "yes" -o "$with_wx" = "" ; then
  if test "$AMAYAOS" = "MACOSX" ; then
     with_mesa="no"
     with_gl="yes"
@@ -13642,7 +13652,7 @@ echo "$as_me: error: Mesa library sources not found (opengl). Please download Me
   # this is the flags used to build amaya with OpenGL
   GL_OPTIONS="-D_GL"
   GL_INCLUDES="-I${GL_BUILDDIR}/include"
-  GL_LIBRARIES="-Wl,-rpath,${GL_BUILDDIR}/lib -L${GL_BUILDDIR}/lib -lGL -lGLU"
+  GL_LIBRARIES="-L${GL_BUILDDIR}/lib -lGL -lGLU"
 
 
 
@@ -13703,7 +13713,7 @@ echo "$as_me: error: wxWidgets library sources not found. Please download wxWidg
     #   --enable-unicode        compile wxString with Unicode support
     #   --with-gtk              use GTK+
     #   --with-opengl           use OpenGL (or Mesa)
-    WXCONFIGURE_OPTION="--with-opengl --with-gtk --enable-gtk2 --enable-unicode --enable-ipc --disable-shared  --with-libpng=builtin --with-libjpeg=builtin --with-libtiff=builtin $WXCONFIGURE_TUNNING_OPTION"
+    WXCONFIGURE_OPTION="--with-opengl --with-gtk --enable-gtk2 --enable-unicode --enable-ipc --disable-shared  --with-libpng=builtin --with-libjpeg=builtin --with-libtiff=builtin $WXCONFIGURE_TUNNING_OPTION --disable-rpath"
   fi
   if test "$AMAYAOS" = "MACOSX" ; then
     # MACOSX
@@ -13872,13 +13882,13 @@ fi # with_wx = no
 
 # the wx version
 AMAYAWX_MAJVER=9
-AMAYAWX_MINVER=2
-AMAYAWX_SUBVER=1
+AMAYAWX_MINVER=4
+AMAYAWX_SUBVER=0
 
 #the old version (to remove when switching on wx)
 AMAYA_MAJVER=8
 AMAYA_MINVER=8
-AMAYA_SUBVER=1
+AMAYA_SUBVER=4
 
 if test "$with_wx" = "yes" ; then
   APP_MAJVER=$AMAYAWX_MAJVER
@@ -14354,11 +14364,16 @@ echo "$as_me: WARNING: Disabling opengl build !" >&2;}
          /Developer/SDKs/MacOSX10.3.9.sdk/usr/X11R6/include/  \
          /Developer/SDKs/MacOSX10.3.9.sdk/usr/X11R6/include/freetype2/  \
          /Developer/SDKs/MacOSX10.4.0.sdk/usr/X11R6/include/  \
-         ; \
+         /opt/local/include/  \
+         /opt/local/include/freetype2/  \
+         /usr/X11R6/include/freetype2/freetype/  \
+        ; \
          do
          if test -r "$ac_dir/ft2build.h"; then
             FREETYPE_INCLUDES="${FREETYPE_INCLUDES} -I$ac_dir"
-            break
+         fi
+         if test -r "$ac_dir/freetype/config/ftheader.h"; then
+            FREETYPE_INCLUDES="${FREETYPE_INCLUDES} -I$ac_dir"
          fi
      done
      # ** search for binary (libfreetype.a)
@@ -14368,10 +14383,12 @@ echo "$as_me: WARNING: Disabling opengl build !" >&2;}
          /Developer/SDKs/MacOSX10.3.0.sdk/usr/X11R6/lib/  \
          /Developer/SDKs/MacOSX10.3.9.sdk/usr/X11R6/lib/  \
          /Developer/SDKs/MacOSX10.4.0.sdk/usr/X11R6/lib/  \
+         /opt/local/lib/  \
+         /usr/X11R6/lib/  \
          ; \
          do
          if test -r "$ac_dir/libfreetype.a"; then
-            FREETYPE_LIBRARIES="$ac_dir"
+            FREETYPE_LIBRARIES="$ac_dir/libfreetype.a"
             break
          fi
      done
@@ -14599,31 +14616,34 @@ else
     with_bookmarks="no"
 fi
 
-if test "$with_templates" = "" ; then
-   if test "$with_wx" = "yes"; then
-       if test "$enable_templates" = "yes" ; then
-	  with_templates="yes"
-       else
-          with_templates="no"
-       fi
-   else
+if test "$with_templates" = "no " -o "$enable_templates" = "no"; then
+      with_templates="no"
+else
+  if test "$with_wx" = "no"; then
       { echo "$as_me:$LINENO: WARNING: Templates are only available in WX version !!" >&5
 echo "$as_me: WARNING: Templates are only available in WX version !!" >&2;}
       { echo "$as_me:$LINENO: WARNING: Disabling templates" >&5
 echo "$as_me: WARNING: Disabling templates" >&2;}
       with_templates="no"
+   else
+      with_templates="yes"
    fi
-else
-    with_templates="no"
 fi
+
+if test "$with_templates" = "yes" -o "$with_templates" = "" ; then
+    TEMPLATES_OPTIONS="-DTEMPLATES"
+else
+    TEMPLATES_OPTIONS=""
+fi
+
 
 if test "$with_generic_xml" = "" ; then
     if test "$enable_generic_xml" = "no" ; then
-	with_generic_xml="no"
-	GENERIC_XML_OPTIONS=
+	    with_generic_xml="no"
+	    GENERIC_XML_OPTIONS=
     else
-	with_generic_xml="yes"
-	GENERIC_XML_OPTIONS=-DXML_GENERIC
+	    with_generic_xml="yes"
+	    GENERIC_XML_OPTIONS=-DXML_GENERIC
     fi
 fi
 
@@ -14783,22 +14803,18 @@ echo "$as_me: WARNING: Disabling bookmarks build as redland is disabled !" >&2;}
        with_bookmarks="no"
     fi
     if test "$with_bookmarks" = "yes" ; then
-	ANNOTLIB_COMPILE_BM=
-	AMAYA_ANNOT_OPTIONS="$AMAYA_ANNOT_OPTIONS -DBOOKMARKS"
+    	ANNOTLIB_COMPILE_BM=
+      	AMAYA_ANNOT_OPTIONS="$AMAYA_ANNOT_OPTIONS -DBOOKMARKS"
     else
-	ANNOTLIB_COMPILE_BM='#'
-    fi
-
-    if test "$with_templates" = "yes" ; then
-	TEMPLATES_OPTIONS=
+    	ANNOTLIB_COMPILE_BM='#'
     fi
 
     if test "$with_plugin" = "yes" ; then
         { echo "$as_me:$LINENO: WARNING: The plugin library isn't supported anymore in Amaya !!" >&5
 echo "$as_me: WARNING: The plugin library isn't supported anymore in Amaya !!" >&2;}
-	{ echo "$as_me:$LINENO: WARNING: Disabling plugin build !" >&5
+        { echo "$as_me:$LINENO: WARNING: Disabling plugin build !" >&5
 echo "$as_me: WARNING: Disabling plugin build !" >&2;}
-	with_plugin="no"
+        with_plugin="no"
     fi
 
 
@@ -14981,7 +14997,11 @@ make_output="Makefile Options.orig:Options.in tools/Makefile \
        libjpeg/Makefile libpng/Makefile libpng/zlib/Makefile \
        tools/mkdep/Makefile \
        tools/cextract-1.7/Makefile thotlib/Makefile \
-       thotlib/include/Makefile batch/Makefile"
+       thotlib/include/Makefile batch/Makefile \
+       script_install:../batch/script_install.in \
+       script_install_gnomekde:../batch/script_install_gnomekde.in \
+       script_install_macosxbundle:../batch/script_install_macosxbundle.in \
+       script_uninstall:../batch/script_uninstall.in"
 
 if test "$build_amaya" = "yes" ; then
 
@@ -16342,6 +16362,18 @@ if test -f Options ; then
        exit 1
    fi
 fi
+if test -f script_install ; then
+   chmod a+x script_install
+fi
+if test -f script_install_gnomekde ; then
+   chmod a+x script_install_gnomekde
+fi
+if test -f script_install_macosxbundle ; then
+   chmod a+x script_install_macosxbundle
+fi
+if test -f script_uninstall ; then
+   chmod a+x script_uninstall
+fi
  ;;
   esac
 done
@@ -16409,9 +16441,9 @@ if test "$build_amaya" = "yes" ; then
 	echo Amaya configured with templates support \(experimental\)
     fi
     if test "$with_generic_xml" = "yes" ; then
-	echo Amaya configured with generic XML suppport
+	echo Amaya configured with generic XML support
     fi
-    echo Amaya configured with internationalization suppport
+    echo Amaya configured with internationalization support
     if test "$with_gl" = "yes" ; then
 	echo Amaya configured with OpenGL Canvas Rendering \(System library\) \(experimental\)
     fi

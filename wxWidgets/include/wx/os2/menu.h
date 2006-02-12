@@ -4,7 +4,7 @@
 // Author:      David Webster
 // Modified by:
 // Created:     10/10/99
-// RCS-ID:      $Id: menu.h,v 1.1.1.1 2005/07/06 09:30:10 gully Exp $
+// RCS-ID:      $Id: menu.h,v 1.1.1.2 2005/07/26 09:30:54 gully Exp $
 // Copyright:   (c) David Webster
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -17,7 +17,7 @@
     #include "wx/list.h"        // for "template" list classes
     #include "wx/dynarray.h"
 
-    WX_DEFINE_EXPORTED_ARRAY(wxAcceleratorEntry *, wxAcceleratorArray);
+    WX_DEFINE_EXPORTED_ARRAY_PTR(wxAcceleratorEntry *, wxAcceleratorArray);
 #endif // wxUSE_ACCEL
 
 class WXDLLEXPORT wxFrame;
@@ -139,9 +139,9 @@ private:
     void EndRadioGroup(void);
 
     //
-    // If TRUE, insert a breal before appending the next item
+    // If true, insert a breal before appending the next item
     //
-    bool                            m_bDoBreak;
+    bool m_bDoBreak;
 
     //
     // The menu handle of this menu

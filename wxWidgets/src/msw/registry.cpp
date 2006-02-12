@@ -4,7 +4,7 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     03.04.98
-// RCS-ID:      $Id: registry.cpp,v 1.1.1.1 2005/07/06 09:30:55 gully Exp $
+// RCS-ID:      $Id: registry.cpp,v 1.1.1.2 2005/07/26 09:31:10 gully Exp $
 // Copyright:   (c) 1998 Vadim Zeitlin <zeitlin@dptmaths.ens-cachan.fr>
 // Licence:     wxWindows licence
 // TODO:        - parsing of registry key names
@@ -710,20 +710,21 @@ bool wxRegKey::DeleteKey(const wxChar *szKey)
 
 bool wxRegKey::DeleteValue(const wxChar *szValue)
 {
-  if ( !Open() )
-    return false;
+    if ( !Open() )
+        return false;
 
     m_dwLastError = RegDeleteValue((HKEY) m_hKey, WXSTRINGCAST szValue);
 
     // deleting a value which doesn't exist is not considered an error
     if ( (m_dwLastError != ERROR_SUCCESS) &&
-         (m_dwLastError != ERROR_FILE_NOT_FOUND) ) {
-      wxLogSysError(m_dwLastError, _("Can't delete value '%s' from key '%s'"),
-                    szValue, GetName().c_str());
-      return false;
+         (m_dwLastError != ERROR_FILE_NOT_FOUND) )
+    {
+        wxLogSysError(m_dwLastError, _("Can't delete value '%s' from key '%s'"),
+                      szValue, GetName().c_str());
+        return false;
     }
 
-  return true;
+    return true;
 }
 
 // ----------------------------------------------------------------------------
@@ -733,8 +734,8 @@ bool wxRegKey::DeleteValue(const wxChar *szValue)
 // return true if value exists
 bool wxRegKey::HasValue(const wxChar *szValue) const
 {
-  // this function should be silent, so suppress possible messages from Open()
-  wxLogNull nolog;
+    // this function should be silent, so suppress possible messages from Open()
+    wxLogNull nolog;
 
     if ( !CONST_CAST Open(Read) )
         return false;
@@ -858,7 +859,7 @@ bool wxRegKey::SetValue(const wxChar *szValue,const wxMemoryBuffer& buffer)
 
 bool wxRegKey::QueryValue(const wxChar *szValue, wxMemoryBuffer& buffer) const
 {
-  if ( CONST_CAST Open() ) {
+  if ( CONST_CAST Open(Read) ) {
     // first get the type and size of the data
     DWORD dwType, dwSize;
     m_dwLastError = RegQueryValueEx((HKEY) m_hKey, WXSTRINGCAST szValue, RESERVED,

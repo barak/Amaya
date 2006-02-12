@@ -4,7 +4,7 @@
 // Author:      Stefan Csomor
 // Modified by:
 // Created:     1998-01-01
-// RCS-ID:      $Id: app.cpp,v 1.1.1.1 2005/07/06 09:30:53 gully Exp $
+// RCS-ID:      $Id: app.cpp,v 1.1.1.2 2005/07/26 09:31:07 gully Exp $
 // Copyright:   (c) Stefan Csomor
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -1443,7 +1443,7 @@ bool wxApp::MacSendKeyDownEvent( wxWindow* focus , long keymessage , long modifi
                      event.SetEventObject(def);
                      def->Command(event);
                      return true ;
-                }
+                 }
             }
             /* generate wxID_CANCEL if command-. or <esc> has been pressed (typically in dialogs) */
             else if (keyval == WXK_ESCAPE || (keyval == '.' && modifiers & cmdKey ) )

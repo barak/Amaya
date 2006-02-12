@@ -4,7 +4,7 @@
 // Author:      David Webster
 // Modified by:
 // Created:     10/05/99
-// RCS-ID:      $Id: filedlg.cpp,v 1.1.1.1 2005/07/06 09:30:55 gully Exp $
+// RCS-ID:      $Id: filedlg.cpp,v 1.1.1.2 2005/07/26 09:31:10 gully Exp $
 // Copyright:   (c) David Webster
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -15,6 +15,8 @@
 #ifdef __BORLANDC__
     #pragma hdrstop
 #endif
+
+#if wxUSE_FILEDLG
 
 #ifndef WX_PRECOMP
     #include "wx/utils.h"
@@ -55,6 +57,7 @@
 #ifndef MAXEXT
 # define MAXEXT                         5
 #endif
+
 IMPLEMENT_CLASS(wxFileDialog, wxFileDialogBase)
 
 // ----------------------------------------------------------------------------
@@ -207,7 +210,7 @@ int wxFileDialog::ShowModal()
     }
     if (nCount == 0)
         sDir += m_fileName;
-    if (sDir.IsEmpty())
+    if (sDir.empty())
         sDir = wxT("*.*");
     wxStrcpy((wxChar*)vFileDlg.szFullFile, sDir);
     sFilterBuffer = sDir;
@@ -253,7 +256,7 @@ int wxFileDialog::ShowModal()
                         ,&m_fileName
                         ,&sExt
                        );
-            if (zFileNameBuffer[nIdx] == wxT('.') || sExt.IsEmpty())
+            if (zFileNameBuffer[nIdx] == wxT('.') || sExt.empty())
             {
                 zFileNameBuffer[nIdx] = wxT('\0');
 
@@ -321,3 +324,4 @@ int wxFileDialog::ShowModal()
     return wxID_CANCEL;
 } // end of wxFileDialog::ShowModal
 
+#endif // wxUSE_FILEDLG

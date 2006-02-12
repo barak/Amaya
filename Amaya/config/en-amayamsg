@@ -215,7 +215,7 @@
 213 Try the 'File/Force a Character Coding' entry
 214 Invalid characters
 215 Document profile:
-216 Errors detected - see File/Show parsing errors
+216 Errors detected - see File > Show parsing errors
 217 The encoding of this document is not supported by Amaya
 218 Editing and saving this document will change its type
 219 Not available
@@ -258,7 +258,7 @@
 256 The target must be an HTTP URL to use this option
 257 Error: invalid MIME type
 258 Unknown
-259 Styles are ignored - see Views/Show parsing errors
+259 Styles are ignored - see File > Show parsing errors
 260 This document is already loaded in another Window
 261 Saving that instance may cause a lost update problem
 262 Adding or changing the doctype will remove some elements or attributes
@@ -271,13 +271,13 @@
 269 Document %s is locked!
 270 Document %s is locked by %s (timeout %s)
 271 Overwrite lock information?
-272 Copy the lock information? 
+272 Copy the lock information?
 273 Try to unlock the document before...
 274 Unlock succeed!
 275 Unlock failed!
 276 Unlocking %s...
 277 Document %s is unlocked!
-278 Unlock the document? 
+278 Unlock the document?
 279 Document properties
 280 Document properties are not available
 281 Document properties are temporarily unavailable. Try again later...
@@ -288,7 +288,7 @@
 286 Sorry, this operation is not allowed for %s
 287 Request failed! Reason: Failed Dependency
 288 Request failed! Reason: %s
-289 Try again? 
+289 Try again?
 290 WebDAV
 291 User's Personal Reference (URL)
 292 User's WebDAV Resource List (URL URL)
@@ -362,12 +362,22 @@
 360 File
 361 Replace current
 362 In new tab
-363 In new tab (not yet available on Mac OSX)
-364 In new Window
-365 Anti-aliasing
-366 ISO format for date
-367 New documents location
-368 Opening location
-369 Warn when closing multiple tabs
-370 Max url number in history
-371 Clear url list
+363 In new Window
+364 Anti-aliasing
+365 ISO format for date
+366 New documents location
+367 Opening location
+368 Warn when closing multiple tabs
+369 Max url number in history
+370 Clear url list
+371 Display all shortcuts
+372 Fixed line length (0 = default value)
+373 Template
+374 Save the document as...
+375 Template not found
+376 Show template's boxes
+377 Apply closes the dialogue
+378 Not allowed in this document
+379 Protected element
+380 The selection should not cross an element of this type
+381 No heading found after the selection

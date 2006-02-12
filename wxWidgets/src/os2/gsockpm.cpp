@@ -3,10 +3,13 @@
  * Name:    gsockpm.c
  * Purpose: GSocket: PM part
  * Licence: The wxWindows licence
- * CVSID:   $Id: gsockpm.cpp,v 1.1.1.1 2005/07/06 09:30:55 gully Exp $
+ * CVSID:   $Id: gsockpm.cpp,v 1.1.1.2 2005/07/26 09:31:10 gully Exp $
  * ------------------------------------------------------------------------- */
 
-#include "wx/setup.h"
+// For compilers that support precompilation, includes "wx.h".
+#include "wx/wxprec.h"
+
+#include "wx/defs.h"
 
 #if wxUSE_SOCKETS
 
@@ -96,11 +99,11 @@ void GSocketGUIFunctionsTableConcrete::Uninstall_Callback(GSocket *socket, GSock
     int c;
     switch (event)
     {
-	case GSOCK_LOST:       /* fall-through */
-	case GSOCK_INPUT:      c = 0; break;
-	case GSOCK_OUTPUT:     c = 1; break;
-	case GSOCK_CONNECTION: c = ((socket->m_server) ? 0 : 1); break;
-	default: return;
+        case GSOCK_LOST:       /* fall-through */
+        case GSOCK_INPUT:      c = 0; break;
+        case GSOCK_OUTPUT:     c = 1; break;
+        case GSOCK_CONNECTION: c = ((socket->m_server) ? 0 : 1); break;
+        default: return;
     }
     if (m_id[c] != -1)
         wxTheApp->RemoveSocketHandler(m_id[c]);
