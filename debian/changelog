@@ -1,3 +1,25 @@
+amaya (9.4-2) unstable; urgency=low
+
+  * Builds with G++ 4.1. (Closes: #357117)
+  * Build-depend on libglu1-mesa-dev instead of libglu1-xorg-dev. The later
+    will be deprecated with Xorg 7.0.
+  * Make more use of debhelper scripts instead of moving files by hand.
+  * Don't build-depend on automake-1.7 anymore. We don't use it.
+  * Use quilt for patches management. There are too many of them, it will help
+    tracking them.
+  * ptr_to_int_casts.diff : Fixes FTBFS on 64 bits machines (Closes: #355090).
+    Thanks to Yann Muller for his help solving this.
+  * Call script_install_gnomekde after install, which generates the
+    amaya.desktop file (Closes: #355063).
+  * redland.diff : fixes the use of system redland library. Now it works, pass
+    --enable-system-redland and build-depend on librdf0-dev.
+  * enable-system-wx.diff : cutom patch to link against system wxWidgets. Pass
+    --enable-system-wx and build-depend on libwxgtk2.6-dev.
+  * cascade_hbt.diff : reuse the values of host, build, and target when
+    calling the configure scripts for other projects.
+
+ -- Regis Boudin <regis@boudin.name>  Fri,  3 Mar 2006 19:46:10 +0000
+
 amaya (9.4-1) unstable; urgency=low
 
   * New upstream release

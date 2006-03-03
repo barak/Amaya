@@ -33,17 +33,31 @@ ifneq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
 	INSTALLER_PROGRAM += -s
 endif
 
+BUILD_DIR=Amaya/WX
+
+apply-patches:
+	QUILT_PATCHES="debian/patches" quilt push -a
+	cp -a /usr/share/misc/config.* Amaya
+	cd Amaya && autoconf && cd ..
 
 configure: configure-stamp
 configure-stamp:
 	dh_testdir
 	# Add here commands to configure the package.
-	mkdir -p Amaya/WX
-	cd Amaya/WX && \
+	mkdir -p $(BUILD_DIR)
+	cd $(BUILD_DIR) && \
 	../configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) \
-		     --prefix=/usr --with-wx --with-gl --with-dav \
+		     --prefix=/usr/lib --bindir=/usr/bin \
+		     --with-wx --with-gl --with-dav \
+		     --enable-system-redland \
+		     --enable-system-wx \
 		     --enable-offical-build && \
 	cd ../..
+
+	# Fix execution rights on some files
+	chmod -x Amaya/templates/en/*
+	chmod -x Amaya/templates/fr/*
+	
 	# --libpng, libjpeg, libtiff (currently builtin)
 	# --gnomeprint
 	# --enable-plugins
@@ -52,23 +66,12 @@ configure-stamp:
 
 
 #Architecture 
-build: build-arch build-indep
-
-build-arch: build-arch-stamp
-build-arch-stamp: configure-stamp 
+build: build-stamp
+build-stamp: configure-stamp 
 
 	# Add here commands to compile the arch part of the package.
-	cd Amaya/WX && \
-	HOME=$(CURDIR)/Amaya/WX $(MAKE) CFLAGS="$(CFLAGS)" && \
-	cd ../..
+	HOME=$(CURDIR)/$(BUILD_DIR) $(MAKE) CFLAGS="$(CFLAGS)" -C $(BUILD_DIR)
 	touch build-arch-stamp
-
-build-indep: build-indep-stamp
-build-indep-stamp: configure-stamp 
-
-	# Add here commands to compile the indep part of the package.
-	#$(MAKE) doc
-	touch build-indep-stamp
 
 clean:
 	dh_testdir
@@ -76,49 +79,31 @@ clean:
 	rm -f build-arch-stamp build-indep-stamp configure-stamp
 
 	# Add here commands to clean up after the build process.
-	-$(MAKE) clean
-	-rm -rf Amaya/WX
+	-rm -rf $(BUILD_DIR)
 	# we also have to remove TRA, STR, PRS
-	find $(CURDIR) . -name "*.TRA" -exec rm '{}' \;
-	find $(CURDIR) . -name "*.STR" -exec rm '{}' \;
-	find $(CURDIR) . -name "*.PRS" -exec rm '{}' \;
+	find Amaya -name "*.TRA" -exec rm -f '{}' \;
+	find Amaya -name "*.STR" -exec rm -f '{}' \;
+	find Amaya -name "*.PRS" -exec rm -f '{}' \;
+	rm -f Amaya/batch/*.LST
+	rm -f Amaya/batch/{APP,PRESEN,STRUCT,TRANS}.h
+	rm -rf .pc
 
 	dh_clean 
 
-install: install-indep install-arch
-install-indep:
+install:
 	dh_testdir
 	dh_testroot
-	dh_clean -k -i 
-	dh_installdirs -i
-
-	# Add here commands to install the indep part of the package into
-	# debian/<package>-doc.
-	#INSTALLDOC#
-
-	dh_install -i
-
-install-arch:
-	dh_testdir
-	dh_testroot
-	dh_clean -k -s 
-	dh_installdirs -s
+	dh_clean -k -A 
+	dh_installdirs -A
 
 	# Add here commands to install the arch part of the package into 
 	# debian/tmp.
-	cd Amaya/WX && \
-	$(MAKE) install prefix=$(CURDIR)/debian/amaya/usr/lib && \
-	cd ..
-	install -m 0644 debian/amaya.1 debian/amaya/usr/share/man/man1
-	# fixup symlinks in /usr/bin
-	(cd $(CURDIR)/debian/amaya/usr/bin && \
-	 rm -f amaya amaya-wx && \
-	 ln -sf /usr/lib/Amaya-9.4/wx/bin/amaya amaya-wx && \
-	 ln -sf /usr/bin/amaya-wx amaya )
-	# remove extraneous /usr/lib/bin
-	rm -rf $(CURDIR)/debian/amaya/usr/lib/bin
+	mkdir -p $(CURDIR)/debian/tmp/usr/{bin,lib,share}
+	$(MAKE) -C $(BUILD_DIR) install DESTDIR=$(CURDIR)/debian/tmp
+	$(BUILD_DIR)/script_install_gnomekde $(CURDIR)/$(BUILD_DIR)/bin $(CURDIR)/debian/tmp/usr/share /usr/lib
 
-	dh_install -s
+	dh_install -A --sourcedir=debian/tmp
+
 # Must not depend on anything. This is to be called by
 # binary-arch/binary-indep
 # in another 'make' thread.
@@ -151,11 +136,11 @@ binary-common:
 	dh_md5sums
 	dh_builddeb
 # Build architecture independant packages using the common target.
-binary-indep: build-indep install-indep
+binary-indep: build install
 	$(MAKE) -f debian/rules DH_OPTIONS=-i binary-common
 
 # Build architecture dependant packages using the common target.
-binary-arch: build-arch install-arch
+binary-arch: build install
 	$(MAKE) -f debian/rules DH_OPTIONS=-a binary-common
 
 #binary: binary-arch binary-indep

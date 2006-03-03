@@ -1,0 +1,55 @@
+--- amaya-9.4.orig/Amaya/annotlib/AHTrdf2annot.c
++++ amaya-9.4/Amaya/annotlib/AHTrdf2annot.c
+@@ -32,7 +32,7 @@
+ #include "ANNOTtools_f.h"
+ 
+ /* RDF parser */
+-#include "librdf.h"
++#include "redland.h"
+ #include "raptor.h"
+ 
+ /* Amaya includes */
+--- amaya-9.4.orig/Amaya/annotlib/ANNOTevent.c
++++ amaya-9.4/Amaya/annotlib/ANNOTevent.c
+@@ -47,7 +47,7 @@
+ /* RDF parser */
+ #ifdef AM_REDLAND
+ #ifndef BOOKMARKS
+-#include "librdf.h"
++#include "redland.h"
+ #include "raptor.h"
+ #endif /* BOOKMARKS */
+ #endif /* AM_REDLAND */
+--- amaya-9.4.orig/Amaya/annotlib/ANNOTschemas.c
++++ amaya-9.4/Amaya/annotlib/ANNOTschemas.c
+@@ -39,7 +39,7 @@
+ #include "ANNOTevent_f.h"
+ 
+ /* RDF parser */
+-#include "librdf.h"
++#include "redland.h"
+ #include "raptor.h"
+ 
+ /* amaya includes */
+--- amaya-9.4.orig/Amaya/Makefile.in
++++ amaya-9.4/Amaya/Makefile.in
+@@ -368,6 +368,7 @@
+ 			--disable-shared \
+ 			--without-bdb \
+ 	 		--enable-parsers=raptor \
++			--with-raptor=internal \
+ 			--with-xml-parser=expat \
+ 			--with-www=none \
+ 			--without-libwww \
+--- amaya-9.4.orig/Amaya/configure.in
++++ amaya-9.4/Amaya/configure.in
+@@ -1231,7 +1231,7 @@
+     fi
+ 
+     if test "$with_redland" = "yes" ; then
+-       AMAYA_ANNOT_OPTIONS="$AMAYA_ANNOT_OPTIONS -DLIBRDF_INTERNAL=1 -DAM_REDLAND -DRAPTOR_RDF_PARSER"
++       AMAYA_ANNOT_OPTIONS="$AMAYA_ANNOT_OPTIONS -DAM_REDLAND -DRAPTOR_RDF_PARSER"
+        if test "$redland_compile_source" = "yes" ; then
+          AMAYA_RAPTOR_SRC="amaya_comp_redland"
+          AMAYA_ANNOT_OPTIONS="$AMAYA_ANNOT_OPTIONS -I\$(THOTDIR)/../redland/librdf -I\$(THOTDIR)/../redland/raptor"
+

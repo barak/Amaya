@@ -1,0 +1,7 @@
+usr/share/amaya/config usr/lib/amaya/config
+usr/share/amaya/dicopar usr/lib/amaya/dicopar
+usr/share/amaya/doc usr/lib/amaya/doc
+usr/share/amaya/fonts usr/lib/amaya/fonts
+usr/share/amaya/resources usr/lib/amaya/resources
+usr/share/amaya/templates usr/lib/amaya/templates
+usr/lib/amaya/wx/bin/amaya usr/bin/amaya

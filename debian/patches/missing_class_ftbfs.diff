@@ -1,0 +1,13 @@
+
+Patch submitted and applied upstream by Anand Kumria
+
+--- amaya-9.4.orig/Amaya/thotlib/internals/h/AmayaSubPanel.h
++++ amaya-9.4/Amaya/thotlib/internals/h/AmayaSubPanel.h
+@@ -10,6 +10,7 @@
+ 
+ class AmayaFloatingPanel;
+ class AmayaNormalWindow;
++class AmayaSubPanelManager;
+ 
+ /*
+  *  Description:  - AmayaSubPanel contains a sub-panel (xhtml, ...)

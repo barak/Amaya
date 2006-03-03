@@ -1,0 +1,65 @@
+Index: amaya-9.4/Amaya/Options.in
+===================================================================
+--- amaya-9.4.orig/Amaya/Options.in	2005-06-02 12:07:06.000000000 +0100
++++ amaya-9.4/Amaya/Options.in	2006-03-13 21:50:00.689988032 +0000
+@@ -47,7 +47,7 @@
+ EXPAT_LIBRARIES=
+ EXPAT_OPTIONS=-DXML_DTD -DXML_NS
+ 
+-AMAYA_INSTALLDIR=Amaya-@APP_VER@
++AMAYA_INSTALLDIR=amaya
+ 
+ # used to identify amaya gui/os when 'make install' is called.
+ AMAYAGUI=@AMAYAGUI@
+Index: amaya-9.4/Amaya/batch/script_install.in
+===================================================================
+--- amaya-9.4.orig/Amaya/batch/script_install.in	2005-12-27 11:28:40.000000000 +0000
++++ amaya-9.4/Amaya/batch/script_install.in	2006-03-13 21:50:26.589050776 +0000
+@@ -35,7 +35,7 @@
+ 
+ INSTALL_DATA="@INSTALL@ -m 444"
+ INSTALL_BIN="@INSTALL@ -m 755"
+-AMAYA_INSTALLDIR="Amaya-@APP_VER@"
++AMAYA_INSTALLDIR="amaya"
+ AMAYAGUI="@AMAYAGUI@"
+ AMAYAOS="@AMAYAOS@"
+ 
+Index: amaya-9.4/Amaya/batch/script_install_gnomekde.in
+===================================================================
+--- amaya-9.4.orig/Amaya/batch/script_install_gnomekde.in	2005-07-20 17:11:51.000000000 +0100
++++ amaya-9.4/Amaya/batch/script_install_gnomekde.in	2006-03-13 21:50:47.403886440 +0000
+@@ -30,7 +30,7 @@
+ 
+ INSTALL_DATA="@INSTALL@ -m 444"
+ INSTALL_BIN="@INSTALL@ -m 755"
+-AMAYA_INSTALLDIR="Amaya-@APP_VER@"
++AMAYA_INSTALLDIR="amaya"
+ AMAYAGUI="@AMAYAGUI@"
+ AMAYAOS="@AMAYAOS@"
+ 
+Index: amaya-9.4/Amaya/batch/script_install_macosxbundle.in
+===================================================================
+--- amaya-9.4.orig/Amaya/batch/script_install_macosxbundle.in	2005-07-20 15:52:18.000000000 +0100
++++ amaya-9.4/Amaya/batch/script_install_macosxbundle.in	2006-03-13 21:51:05.737099368 +0000
+@@ -30,7 +30,7 @@
+ 
+ INSTALL_DATA="@INSTALL@ -m 444"
+ INSTALL_BIN="@INSTALL@ -m 755"
+-AMAYA_INSTALLDIR="Amaya-@APP_VER@"
++AMAYA_INSTALLDIR="amaya"
+ AMAYAGUI="@AMAYAGUI@"
+ AMAYAOS="@AMAYAOS@"
+ 
+Index: amaya-9.4/Amaya/batch/script_uninstall.in
+===================================================================
+--- amaya-9.4.orig/Amaya/batch/script_uninstall.in	2005-07-20 15:52:18.000000000 +0100
++++ amaya-9.4/Amaya/batch/script_uninstall.in	2006-03-13 21:51:21.561693664 +0000
+@@ -23,7 +23,7 @@
+   BINDIR=$2
+ fi
+ 
+-AMAYA_INSTALLDIR="Amaya-@APP_VER@"
++AMAYA_INSTALLDIR="amaya"
+ AMAYAGUI="@AMAYAGUI@"
+ AMAYAOS="@AMAYAOS@"
+ 

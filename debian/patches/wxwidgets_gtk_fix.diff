@@ -1,0 +1,14 @@
+--- amaya-9.4.orig/wxWidgets/src/gtk/window.cpp
++++ amaya-9.4/wxWidgets/src/gtk/window.cpp
+@@ -4282,10 +4282,7 @@
+ 
+ PangoContext *wxWindowGTK::GtkGetPangoX11Context()
+ {
+-    if (!m_x11Context)
+-        m_x11Context = pango_x_get_context( gdk_display );
+-
+-    return m_x11Context;
++    return gtk_widget_get_pango_context( m_widget );
+ }
+ #endif
+ 
