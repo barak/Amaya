@@ -1,3 +1,9 @@
+amaya (9.4-3) unstable; urgency=medium
+
+  * Respin build
+
+ -- Anand Kumria <wildfire@progsoc.org>  Wed,  5 Apr 2006 11:16:19 +1000
+
 amaya (9.4-2) unstable; urgency=low
 
   * Builds with G++ 4.1. (Closes: #357117)
