@@ -113,7 +113,7 @@ extern BOOL HTLog_addText (HTLog * log, const char * fmt, ...);
 
 
 
-@(#) $Id: HTLog.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+@(#) $Id: HTLog.html,v 1.1.1.1 1998/08/14 21:54:37 cvs Exp $
 
 
 */

@@ -448,7 +448,24 @@ ThotBool IsCSSLink (Element el, Document doc)
       /* get a buffer for the attribute value */
       length = MAX_LENGTH;
       TtaGiveTextAttributeValue (attr, buffer, &length);
-      if (strncasecmp (buffer, "stylesheet", 10) == 0 ||
+      /* remove trailing spaces */
+      while (buffer[length-1] == SPACE || buffer[length-1] == TAB)
+        {
+          buffer[length-1] = EOS;
+          length--;
+        }
+      /* Check alternate style sheets (see section 14.3.2 of the HTML 4.01
+         spec.) but note that Firefox accepts "stylesheet alternative" and
+         possibly other non-standard values. */
+      if (strncasecmp (buffer, "alternate", 9) == 0)
+        /* it's probably an alternate style sheet (check that the next word
+           is "stylesheet") */
+        {
+          /* @@@@@ just ignore it. But we should accept it and handle it as an
+             alternate style sheet */
+          return FALSE;
+        }
+      else if (strcasecmp (buffer, "stylesheet") == 0 ||
           strcasecmp (buffer, "style") == 0)
         {
           /* now check the type of the stylesheet */
@@ -641,7 +658,7 @@ static ThotBool FollowTheLink (Element anchor, Element elSource,
               readonly = (TtaGetAccessRight (root) == ReadOnly);
               /* Load the new document */
               targetDocument = GetAmayaDoc (pathname, NULL, reldoc, doc, 
-                                            (ClickEvent)method, history, 
+                                            method, history, 
                                             (void (*)(int, int, char*, char*, const AHTHeaders*, void*)) FollowTheLink_callback,
                                             (void *) ctx);
               if (readonly)
@@ -728,7 +745,7 @@ void CheckRefresh (Document doc)
 			      
                               /* Load the new document */
                               doc = GetAmayaDoc (pathname, NULL, doc, doc, 
-                                                 (ClickEvent)CE_RELATIVE, FALSE, 
+                                                 CE_RELATIVE, FALSE, 
                                                  NULL, NULL);
                               el = NULL;
                             }
@@ -2573,7 +2590,7 @@ void ResetHighlightedElement ()
   ----------------------------------------------------------------------*/
 void SynchronizeSourceView (NotifyElement *event)
 {
-  Element             firstSel, el, child, otherEl;
+  Element             firstSel, el, child, otherEl, root;
   ElementType         elType;
   AttributeType       attrType;
   Attribute	      attr;
@@ -2635,11 +2652,12 @@ void SynchronizeSourceView (NotifyElement *event)
             return;
           /* look for an element with the same line number in the other doc */
           /* line numbers are increasing in document order */
-          el = TtaGetMainRoot (otherDoc);
+          root = TtaGetMainRoot (otherDoc);
+          el = root;
           elType = TtaGetElementType (el);
           do
             {
-              if (TtaGetElementLineNumber (el) >= line)
+              if (el != root && TtaGetElementLineNumber (el) >= line)
                 /* that's the right element */
                 otherEl = el;
               else
@@ -2927,8 +2945,8 @@ static ThotBool ShowTextLine (Element el, Document doc)
               if (otherEl)
                 {
                   TtaFreeMemory (utf8value);
-                  len = TtaGetTextLength (otherEl);
-                  utf8value = (char *)TtaGetMemory (len + 1);
+                  len = TtaGetTextLength (otherEl) + 1;
+                  utf8value = (char *)TtaGetMemory (len);
                   TtaGiveTextContent (otherEl, (unsigned char *)utf8value,
                                       &len, &lang);
                   ptr = strstr (utf8value, " in ");
@@ -3134,7 +3152,7 @@ static void ResetFontOrPhrase (Document doc, Element elem)
 void SetCharFontOrPhrase (int doc, int elemtype)
 {
   Element             firstSel, lastSel, el, parent;
-  ElementType         elType;
+  ElementType         elType, parentType;
   DisplayMode         dispMode;
   int                 firstSelectedChar, lastSelectedChar, i;
   ThotBool            remove;
@@ -3165,8 +3183,24 @@ void SetCharFontOrPhrase (int doc, int elemtype)
     }
   else
     elType.ElSSchema = TtaGetSSchema ("HTML", doc);
+
   if (parent == NULL)
     {
+      if ( TtaIsSelectionEmpty ())
+        {
+          // check if the user wants to close the current element
+          parent = TtaGetParent (firstSel);
+          parentType = TtaGetElementType (parent);
+          i =  TtaGetElementVolume (firstSel);
+          if (parentType.ElSSchema == elType.ElSSchema &&
+              parentType.ElTypeNum == elemtype &&
+              elType.ElTypeNum == HTML_EL_TEXT_UNIT && lastSelectedChar >= i &&
+              firstSel == TtaGetLastChild (parent))
+            {
+              TtcCreateElement (doc, 1);
+              return;
+            }
+        }
       elType.ElTypeNum = elemtype;
       parent = TtaGetTypedAncestor (firstSel, elType);
       // check if the whole selection is included by the same parent
@@ -3215,6 +3249,63 @@ void SetCharFontOrPhrase (int doc, int elemtype)
   ----------------------------------------------------------------------*/
 void CopyLocation (Document doc, View view)
 {
+#ifdef _WX
+  Element        el;
+  ElementType    elType;
+  AttributeType  attrType;
+  Attribute      attr;
+  int            firstSelectedChar, lastSelectedChar, length;
+  char           msgBuffer[MaxMsgLength], *name;
+
+  strcpy (msgBuffer, DocumentURLs[doc]);
+  TtaGiveFirstSelectedElement (doc, &el, &firstSelectedChar,
+                               &lastSelectedChar);
+  if (el)
+    {
+      // add the current  ID/name */
+      elType = TtaGetElementType (el);
+      if (elType.ElTypeNum == HTML_EL_TEXT_UNIT)
+        el = TtaGetParent (el);
+      name = TtaGetSSchemaName (elType.ElSSchema);
+      attrType.AttrSSchema = elType.ElSSchema;
+      if (!strcmp (name, "HTML"))
+        attrType.AttrTypeNum = HTML_ATTR_ID;
+      else if (!strcmp (name, "SVG"))
+        attrType.AttrTypeNum = SVG_ATTR_xmlid;
+      else if (!strcmp (name, "MathML"))
+        attrType.AttrTypeNum = MathML_ATTR_id;
+      else if (!strcmp (name, "XLink"))
+        attrType.AttrTypeNum = XLink_ATTR_id;
+      else
+        attrType.AttrTypeNum = XML_ATTR_xmlid;
+      attr = TtaGetAttribute (el, attrType);
+      if (attr)
+        {
+          length = TtaGetTextAttributeLength (attr) + 1;
+          name = (char *)TtaGetMemory (length);
+          TtaGiveTextAttributeValue (attr, name, &length);
+          strcat (msgBuffer, "#");
+          strcat (msgBuffer, name);
+          TtaFreeMemory (name);
+        }
+      else if (!strcmp (name, "HTML"))
+        {
+          attrType.AttrTypeNum = HTML_ATTR_NAME;
+          attr = TtaGetAttribute (el, attrType);
+          if (attr)
+            {
+              length = TtaGetTextAttributeLength (attr) + 1;
+              name = (char *)TtaGetMemory (length);
+              TtaGiveTextAttributeValue (attr, name, &length);
+              strcat (msgBuffer, "#");
+              strcat (msgBuffer, name);
+              TtaFreeMemory (name);
+            }
+        }
+    }
+
+  TtaStringToClipboard ((unsigned char *)msgBuffer, UTF_8);
+#endif /* _WX */
 }
 
 /*----------------------------------------------------------------------

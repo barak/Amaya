@@ -65,6 +65,6 @@ This stream can encode / decode gzipped content.
 
   
 
-  @(#) $Id: WWWZip.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+  @(#) $Id: WWWZip.html,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
 
 */

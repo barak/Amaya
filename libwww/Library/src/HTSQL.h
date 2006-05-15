@@ -182,6 +182,6 @@ extern BOOL HTSQL_freeResult (MYSQL_RES * me);
 
   
 
-  @(#) $Id: HTSQL.h,v 1.1.1.1 1998/08/14 21:54:41 cvs Exp $
+  @(#) $Id: HTSQL.html,v 1.1.1.1 1998/08/14 21:54:39 cvs Exp $
 
 */

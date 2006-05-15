@@ -49,7 +49,7 @@ extern HTStream * HTTee (HTStream * s1, HTStream * s2, HTComparer * resolver);
 
 
 
-@(#) $Id: HTTee.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+@(#) $Id: HTTee.html,v 1.1.1.1 1998/08/14 21:54:39 cvs Exp $
 
 
 */

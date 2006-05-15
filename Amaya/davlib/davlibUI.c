@@ -12,9 +12,13 @@
 **
 ** Date : May / 2002
 **
-** $Id: davlibUI.c,v 1.26 2006/01/06 14:01:52 vatton Exp $
-** $Date: 2006/01/06 14:01:52 $
+** $Id: davlibUI.c,v 1.27 2006/04/06 08:38:30 vatton Exp $
+** $Date: 2006/04/06 08:38:30 $
 ** $Log: davlibUI.c,v $
+** Revision 1.27  2006/04/06 08:38:30  vatton
+** Improve the creation of in-line elements.
+** Irene
+**
 ** Revision 1.26  2006/01/06 14:01:52  vatton
 ** Prevent compiling troubles.
 **
@@ -189,7 +193,7 @@ void DAVDisplayMessage (char *msg, char *arg)
     {
       if (arg && *arg) 
         {
-          char label[MAX_LENGTH];
+          char label[2*MAX_LENGTH];
           sprintf (label, msg, arg);
           InitInfo (" ", label);
         }

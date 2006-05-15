@@ -1,3 +1,5 @@
+Install to /usr/lib/amaya instead of /usr/lib/Amaya-$APP_VER
+
 Index: amaya-9.4/Amaya/Options.in
 ===================================================================
 --- amaya-9.4.orig/Amaya/Options.in	2005-06-02 12:07:06.000000000 +0100

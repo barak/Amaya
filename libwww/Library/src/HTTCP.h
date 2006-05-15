@@ -99,6 +99,6 @@ extern int HTDoClose (HTNet * net);
 
   
 
-  @(#) $Id: HTTCP.h,v 1.1.1.2 2005/07/06 10:27:39 gully Exp $
+  @(#) $Id: HTTCP.html,v 1.1.1.2 2005/07/06 09:34:02 gully Exp $
 
 */

@@ -99,7 +99,7 @@ extern void HTFTP_setControlMode (FTPControlMode mode);
 
 
 
-@(#) $Id: HTFTP.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+@(#) $Id: HTFTP.html,v 1.1.1.1 1998/08/14 21:54:37 cvs Exp $
 
 
 */

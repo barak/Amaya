@@ -134,6 +134,6 @@ extern BOOL HTMuxProtocol_delete (HTMuxChannel * muxch, HTProtocolId pid);
 
   
 
-  @(#) $Id: HTMuxCh.h,v 1.1.1.2 2005/07/06 10:27:39 gully Exp $
+  @(#) $Id: HTMuxCh.html,v 1.1.1.2 2005/07/06 09:34:02 gully Exp $
 
 */

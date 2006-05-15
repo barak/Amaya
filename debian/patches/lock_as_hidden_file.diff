@@ -1,0 +1,13 @@
+Index: amaya-9.51/Amaya/thotlib/base/AmayaAppInstance.cpp
+===================================================================
+--- amaya-9.51.orig/Amaya/thotlib/base/AmayaAppInstance.cpp	2006-05-15 19:44:21.055598288 +0100
++++ amaya-9.51/Amaya/thotlib/base/AmayaAppInstance.cpp	2006-05-15 19:44:57.399073240 +0100
+@@ -21,7 +21,7 @@
+ {
+   // check the environment variable
+   TtaGetEnvBoolean ("AMAYA_MULTIPLE_INSTANCES", &A_multiple);
+-  m_InstanceName = wxString::Format(m_pAmayaApp->GetAppName()+_T("-%s"), wxGetUserId().c_str());
++  m_InstanceName = wxString::Format(_T(".")+m_pAmayaApp->GetAppName()+_T("-%s"), wxGetUserId().c_str());
+   if (!A_multiple)
+     m_pSingleInstance_Checker = new wxSingleInstanceChecker(m_InstanceName);
+   m_ServicePort = _T("4242");

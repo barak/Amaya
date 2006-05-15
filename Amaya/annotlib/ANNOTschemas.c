@@ -23,7 +23,7 @@
  *    will be used.
  *
  * Author: Ralph R. Swick (W3C/MIT)
- * $Revision: 1.37 $
+ * $Revision: 1.38 $
  *
  */
 

@@ -2368,7 +2368,7 @@ static void GetPublishConf (void)
   TtaGetEnvBoolean ("ENABLE_LOST_UPDATE_CHECK", &(GProp_Publish.LostUpdateCheck));
   TtaGetEnvBoolean ("VERIFY_PUBLISH", &(GProp_Publish.VerifyPublish));
   TtaGetEnvBoolean ("EXPORT_CRLF", &(GProp_Publish.ExportCRLF));
-  TtaGetEnvInt ("EXPORT_LENGHT", &(GProp_Publish.ExportLength));
+  TtaGetEnvInt ("EXPORT_LENGTH", &(GProp_Publish.ExportLength));
   GetEnvString ("DEFAULTNAME", GProp_Publish.DefaultName);
   GetEnvString ("SAFE_PUT_REDIRECT", GProp_Publish.SafePutRedirect);
   GetEnvString ("DOCUMENT_CHARSET", GProp_Publish.CharsetType);
@@ -2385,7 +2385,7 @@ static void SetPublishConf (void)
   TtaSetEnvBoolean ("ENABLE_LOST_UPDATE_CHECK", GProp_Publish.LostUpdateCheck, TRUE);
   TtaSetEnvBoolean ("VERIFY_PUBLISH", GProp_Publish.VerifyPublish, TRUE);
   TtaSetEnvBoolean ("EXPORT_CRLF", GProp_Publish.ExportCRLF, TRUE);
-  TtaSetEnvInt ("EXPORT_LENGHT", GProp_Publish.ExportLength, TRUE);
+  TtaSetEnvInt ("EXPORT_LENGTH", GProp_Publish.ExportLength, TRUE);
   TtaSetEnvString ("DEFAULTNAME", GProp_Publish.DefaultName, TRUE);
   TtaSetEnvString ("SAFE_PUT_REDIRECT", GProp_Publish.SafePutRedirect, TRUE);
   TtaSetEnvString ("DOCUMENT_CHARSET", GProp_Publish.CharsetType, TRUE);
@@ -2407,7 +2407,7 @@ static void GetDefaultPublishConf ()
                    PublishBase + mTogglePublish, 2);
   GetDefEnvToggle ("EXPORT_CRLF", &(GProp_Publish.ExportCRLF),
                    PublishBase + mTogglePublish, 3);
-  TtaGetDefEnvInt ("EXPORT_LENGHT", &(GProp_Publish.ExportLength));
+  TtaGetDefEnvInt ("EXPORT_LENGTH", &(GProp_Publish.ExportLength));
   GetDefEnvString ("DEFAULTNAME", GProp_Publish.DefaultName);
   GetDefEnvString ("SAFE_PUT_REDIRECT", GProp_Publish.SafePutRedirect);
   GetDefEnvString ("DOCUMENT_CHARSET", GProp_Publish.CharsetType);
@@ -3467,7 +3467,7 @@ LRESULT CALLBACK WIN_ColorDlgProc (HWND hwnDlg, UINT msg, WPARAM wParam,
   ----------------------------------------------------------------------*/
 static void ColorCallbackDialog (int ref, int typedata, char *data)
 {
-  long int val;
+  intptr_t val;
 
   if (ref == -1)
     {
@@ -3477,7 +3477,7 @@ static void ColorCallbackDialog (int ref, int typedata, char *data)
   else
     {
       /* has the user changed the options? */
-      val = (long int) data;
+      val = (intptr_t) data;
       switch (ref - ColorBase)
         {
         case ColorMenu:
@@ -3670,18 +3670,19 @@ static void SetEnvGeom (const char *view_name, Document doc)
   
   /* get current geometry */
   if (!TtaGetViewMaximized(doc, view))
-    TtaSetEnvBoolean("WINDOW_MAXIMIZED", FALSE, TRUE);
+    {
+      TtaSetEnvBoolean("WINDOW_MAXIMIZED", FALSE, TRUE);
+      if (!TtaGetViewIconized(doc, view) && !TtaGetViewFullscreen(doc, view))
+        {
+          // do not save the window size if the window is maximized, iconized or fullscreen
+          // because this is a separated state
+          TtaGetViewXYWH (doc, view, &x, &y, &w, &h);
+          sprintf(s, "%d %d %d %d", x, y, w, h);
+          TtaSetEnvString((char *)view_name, s, TRUE);
+        }
+    }
   else
     TtaSetEnvBoolean("WINDOW_MAXIMIZED", TRUE, TRUE);      
-
-  if (!TtaGetViewMaximized(doc, view) && !TtaGetViewIconized(doc, view) && !TtaGetViewFullscreen(doc, view))
-    {
-      // do not save the window size if the window is maximized, iconized or fullscreen
-      // because this is a separated state
-      TtaGetViewXYWH (doc, view, &x, &y, &w, &h);
-      sprintf(s, "%d %d %d %d", x, y, w, h);
-      TtaSetEnvString((char *)view_name, s, TRUE);
-    }
 }
 
 /*----------------------------------------------------------------------
@@ -4644,14 +4645,14 @@ void PreferenceMenu (Document document, View view)
 static void PreferenceCallbackDialog (int ref, int typedata, char *data)
 {
 #ifdef _WX
-  intptr_t val;
+  int val;
 
   if (ref == -1)
     TtaDestroyDialogue (PreferenceBase);
   else
     {
       /* has the user changed the options? */
-      val = (intptr_t) data;
+      val = (int) data;
       switch (ref - PreferenceBase)
         {
         case 0:

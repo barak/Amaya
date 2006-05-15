@@ -37,6 +37,9 @@ Alt <Key>Left:                     GotoPreviousHTML()
 Alt <Key>Right:                    GotoNextHTML() 
 <Key>Tab:                          NextLinkOrFormElement()
 Shift <Key>Tab:                    PreviousLinkOrFormElement()
+Ctrl <Key>[:           TtcInsertChar("\253")
+Ctrl <Key>]:           TtcInsertChar("\273")
+Ctrl <Key>-:           TtcInsertChar("&#173")
 
 #Structure navigation
 <Key>F2:                           TtcParentElement()
@@ -133,6 +136,7 @@ Ctrl <Key>i , Ctrl <Key>z:         SetOnOffBDO()
 
 #Links and SvgLibrary
 Ctrl <Key>l , Ctrl <Key>a:         AddNewModelIntoLibrary()
+Ctrl <Key>l , Ctrl <Key>c:         CopyLocation()
 Ctrl <Key>l , Ctrl <Key>d:         DeleteAnchor() 
 Ctrl <Key>l , Ctrl <Key>f:	   AddNewModelIntoLibraryForm()
 Ctrl <Key>l , Ctrl <Key>l:         CreateOrChangeLink() 

@@ -128,6 +128,6 @@ extern int HTSQLLog_accessCount (HTSQLLog * me);
 
   
 
-  @(#) $Id: HTSQLLog.h,v 1.1.1.1 1998/08/14 21:54:41 cvs Exp $
+  @(#) $Id: HTSQLLog.html,v 1.1.1.1 1998/08/14 21:54:39 cvs Exp $
 
 */

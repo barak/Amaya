@@ -2,7 +2,7 @@
 // Name:        gtk/window.cpp
 // Purpose:
 // Author:      Robert Roebling
-// Id:          $Id: window.cpp,v 1.1.1.2 2005/07/26 09:31:05 gully Exp $
+// Id:          $Id: window.cpp,v 1.2 2006/03/21 17:27:14 vatton Exp $
 // Copyright:   (c) 1998 Robert Roebling, Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -4282,7 +4282,10 @@ PangoContext *wxWindowGTK::GtkGetPangoDefaultContext()
 
 PangoContext *wxWindowGTK::GtkGetPangoX11Context()
 {
-    return gtk_widget_get_pango_context( m_widget );
+  //if (!m_x11Context)
+  //     m_x11Context = pango_x_get_context( gdk_display );
+  // return m_x11Context;
+   return gtk_widget_get_pango_context( m_widget );
 }
 #endif
 

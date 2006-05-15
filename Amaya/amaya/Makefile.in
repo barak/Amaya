@@ -14,6 +14,8 @@ OBJDIRS = wxdialog
 
 include ../Options
 
+top_builddir=..
+
 INCLUDES= -DHAVE_CONFIG_H $(AMAYA_INCLUDES) $(EXPAT_INCLUDES) $(GUI_INCLUDES) $(EXTRA_INCLUDES) $(GL_INCLUDES) $(GTK_GL_INCLUDES) $(FREETYPE_INCLUDES) $(XFT_INCLUDES)
 LIBS	=  $(AMAYA_PLUGIN_LIBS) $(AMAYA_ANNOT_LIBS) $(AMAYA_DAV_LIBS) \
 	   @AMAYA_RAPTOR_LIBS@ \
@@ -223,6 +225,7 @@ AMAYA_OBJ = \
 	wxdialog/ListDlgWX.o \
 	wxdialog/ListEditDlgWX.o \
 	wxdialog/NewTemplateDocDlgWX.o \
+	wxdialog/MakeIdDlgWX.o \
 	wxdialog/NumDlgWX.o \
 	wxdialog/ObjectDlgWX.o \
 	wxdialog/OpenDocDlgWX.o \
@@ -501,7 +504,7 @@ EDITORAPP.c : @srcdir@/EDITOR.A
 # amaya application
 ../bin/amaya : $(AMAYA_OBJ) $(AMAYA_OPTION_OBJ) $(AMAYA_LIBS)
 	@(if test ! -d ../bin ; then $(MKDIR) ../bin ; fi)
-	$(LD) $(LDFLAGS) -o ../bin/amaya $(AMAYA_OBJ) $(AMAYA_OPTION_OBJ) libCSS.a $(LIBS)
+	$(LIBTOOL) --mode=link $(CXX) $(LDFLAGS) -o ../bin/amaya $(AMAYA_OBJ) $(AMAYA_OPTION_OBJ) libCSS.a $(LIBS)
 	@$(ECHO) "====>" amaya is done
 
 @NOPRINT@../bin/print :

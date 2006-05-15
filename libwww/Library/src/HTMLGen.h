@@ -55,7 +55,7 @@ extern HTConverter HTPlainToHTML;
 
 
 
-@(#) $Id: HTMLGen.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+@(#) $Id: HTMLGen.html,v 1.1.1.1 1998/08/14 21:54:38 cvs Exp $
 
 
 */

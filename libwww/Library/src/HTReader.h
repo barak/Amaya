@@ -68,6 +68,6 @@ extern HTInput_new HTReader_new;
 
   
 
-  @(#) $Id: HTReader.h,v 1.1.1.1 1998/08/14 21:54:41 cvs Exp $
+  @(#) $Id: HTReader.html,v 1.1.1.1 1998/08/14 21:54:38 cvs Exp $
 
 */

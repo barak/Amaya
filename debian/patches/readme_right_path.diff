@@ -1,0 +1,11 @@
+Index: amaya-9.51/Amaya/README
+===================================================================
+--- amaya-9.51.orig/Amaya/README	2006-05-15 19:40:56.985621640 +0100
++++ amaya-9.51/Amaya/README	2006-05-15 19:42:17.993306600 +0100
+@@ -7,4 +7,5 @@
+ Currently the open-source program using the Thot Library is Amaya
+ (http://www.w3.org/Amaya).
+ For more information about Amaya. see the README.amaya file
+-and the documentation located in doc/amaya.
++located in /usr/share/doc/amaya
++and the documentation located in /usr/share/amaya/doc/WX.

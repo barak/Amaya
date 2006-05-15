@@ -13,6 +13,8 @@
 #include "message_wx.h"
 #include "thot_sys.h"
 static int      Waiting = 0;
+static int      MyRef = 0;
+
 
 //-----------------------------------------------------------------------------
 // Event table: connect the events to the handler functions to process them
@@ -57,6 +59,7 @@ OpenDocDlgWX::OpenDocDlgWX( int ref, wxWindow* parent, const wxString & title,
   wxXmlResource::Get()->LoadDialog(this, parent, wxT("OpenDocDlgWX"));
   // waiting for a return
   Waiting = 1;
+  MyRef = ref;
 
   // update dialog labels with given ones
   SetTitle( title );
@@ -104,6 +107,8 @@ OpenDocDlgWX::OpenDocDlgWX( int ref, wxWindow* parent, const wxString & title,
   // setup combobox values
   XRCCTRL(*this, "wxID_COMBOBOX", wxComboBox)->Append( urlList );
   XRCCTRL(*this, "wxID_COMBOBOX", wxComboBox)->SetValue( urlToOpen );
+  // set te cursor to the end
+  XRCCTRL(*this, "wxID_COMBOBOX", wxComboBox)->SetInsertionPointEnd();
   UpdateDirAndFilenameFromString( urlToOpen );
 
   // dir separator
@@ -123,7 +128,10 @@ OpenDocDlgWX::~OpenDocDlgWX()
   /* when the dialog is destroyed, It's important to cleanup context */
   if (Waiting)
     // no return done
-    ThotCallback (m_Ref, INTEGER_DATA, (char*) 0);
+    ThotCallback (MyRef, INTEGER_DATA, (char*) 0);
+  else
+    // clean up the dialog context
+    TtaDestroyDialogue (MyRef);
 }
 
 /*----------------------------------------------------------------------
@@ -270,10 +278,10 @@ void OpenDocDlgWX::OnOpenButton( wxCommandEvent& event )
   // return done
   Waiting = 0;
   // create or load the new document
-  ThotCallback (m_Ref, INTEGER_DATA, (char*)1);
+  ThotCallback (MyRef, INTEGER_DATA, (char*)1);
 
   /* The dialogue is no longer destroyed in the callback to prevent a crash on Mac */
-  TtaDestroyDialogue (m_Ref);
+  TtaDestroyDialogue (MyRef);
 }
 
 /*----------------------------------------------------------------------
@@ -297,7 +305,7 @@ void OpenDocDlgWX::OnCancelButton( wxCommandEvent& event )
 {
   // return done
   Waiting = 0;
-  ThotCallback (m_Ref, INTEGER_DATA, (char*) 0);
+  ThotCallback (MyRef, INTEGER_DATA, (char*) 0);
 }
 
 /*----------------------------------------------------------------------

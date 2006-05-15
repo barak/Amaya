@@ -1104,105 +1104,25 @@ ThotBool IsBlockElement (Element el)
   return ret;
 }
 
+ 
 /*----------------------------------------------------------------------
   TextToDocument  Put the content of input buffer in the document.
   ----------------------------------------------------------------------*/
 static void TextToDocument ()
 {
-  ElementType      elType, lastType;
-  Element          elText, parent, ancestor, prev;
+  ElementType      elType;
+  Element          elText;
   int              i;
   ThotBool         ignoreLeadingSpaces;
-#ifdef _OLD_
-  ElementType      prevType;
-  Element          last;
-#endif /* _OLD_ */
+  ThotBool         insSibling;
 
   CloseBuffer ();
-  if (HTMLcontext.lastElement != NULL)
+  if (HTMLcontext.lastElement)
     {
       i = 0;
-      if (InsertSibling ())
-        /* There is a previous sibling */
-        /* (HTMLcontext.lastElement) for the new Text element */
-        {
-          ignoreLeadingSpaces = TRUE;
-          parent = TtaGetParent (HTMLcontext.lastElement);
-          if (parent == NULL)
-            parent = HTMLcontext.lastElement;
-          elType = TtaGetElementType (parent);
-          if (IsCharacterLevelElement (HTMLcontext.lastElement))
-            {
-              if (elType.ElTypeNum != HTML_EL_Option_Menu &&
-                  elType.ElTypeNum != HTML_EL_OptGroup)
-                {
-                  ignoreLeadingSpaces = FALSE;
-                  elType = TtaGetElementType (HTMLcontext.lastElement);
-                  if (elType.ElTypeNum == HTML_EL_BR)
-                    ignoreLeadingSpaces = TRUE;
-                }
-            }
-          else
-            {
-              lastType = TtaGetElementType (HTMLcontext.lastElement);
-              if ((strcmp (TtaGetSSchemaName (elType.ElSSchema), "HTML") == 0) &&
-                  elType.ElTypeNum != HTML_EL_HEAD &&
-                  (strcmp (TtaGetSSchemaName (lastType.ElSSchema), "HTML") == 0) &&
-                  (lastType.ElTypeNum == HTML_EL_Comment_ ||
-                   lastType.ElTypeNum == HTML_EL_XMLPI))
-                {
-#ifdef _OLD_
-                  /* Search the last significant sibling prior to a comment or a Pi */
-                  /* except for a comment or a Pi within the HEAD section */
-                  last = HTMLcontext.lastElement;
-                  TtaPreviousSibling (&last);
-                  while (last != NULL && ignoreLeadingSpaces)
-                    {
-                      prevType = TtaGetElementType (last);
-                      if ((strcmp (TtaGetSSchemaName (prevType.ElSSchema), "HTML") == 0) &&
-                          (prevType.ElTypeNum != HTML_EL_Comment_) &&
-                          (prevType.ElTypeNum != HTML_EL_XMLPI) &&
-                          (prevType.ElTypeNum != HTML_EL_DOCTYPE))
-                        ignoreLeadingSpaces = FALSE;
-                      TtaPreviousSibling (&last);
-                    }
-#else /* _OLD_ */
-                  ignoreLeadingSpaces = XhtmlCannotContainText (elType);
-#endif /* _OLD_ */
-                }
-	       
-              if (ignoreLeadingSpaces)
-                {
-                  if ((strcmp (TtaGetSSchemaName (lastType.ElSSchema), "MathML") == 0) &&
-                      (lastType.ElTypeNum == MathML_EL_MathML))
-                    ignoreLeadingSpaces = FALSE;
-                }
-            }
-        }
-      else
-        /* the new Text element should be the first child of the latest
-           element encountered */
-        {
-          parent = HTMLcontext.lastElement;
-          ignoreLeadingSpaces = TRUE;
-          elType = TtaGetElementType (HTMLcontext.lastElement);
-          if (elType.ElTypeNum != HTML_EL_Option_Menu &&
-              elType.ElTypeNum != HTML_EL_OptGroup)
-            {
-              ancestor = parent;
-              while (ancestor && 
-                     ignoreLeadingSpaces && IsCharacterLevelElement (ancestor))
-                {
-                  prev = ancestor;
-                  TtaPreviousSibling (&prev);
-                  if (prev == NULL)
-                    ancestor = TtaGetParent (ancestor);
-                  else
-                    ignoreLeadingSpaces = FALSE;
-                }
-            }
-        }
-       
+      insSibling = InsertSibling ();
+      ignoreLeadingSpaces = IsLeadingSpaceUseless (HTMLcontext.lastElement,
+                                                  HTMLcontext.doc, insSibling, FALSE);
       if (ignoreLeadingSpaces &&
           !Within (HTML_EL_Preformatted, DocumentSSchema) &&
           !Within (HTML_EL_STYLE_, DocumentSSchema) &&
@@ -1533,7 +1453,7 @@ static void ProcessOptionElement (Element option, Element el,
   ----------------------------------------------------------------------*/
 void OnlyOneOptionSelected (Element el, Document doc, ThotBool parsing)
 {
-  ElementType      elType;
+  ElementType      elType, opType;
   Element          option, menu, child, firstOption;
   AttributeType    attrType, attrshowMeType;
   Attribute        attr, showMeAttr;
@@ -1621,6 +1541,8 @@ void OnlyOneOptionSelected (Element el, Document doc, ThotBool parsing)
           if (parsing || !multiple)
             {
               option = TtaGetFirstChild (menu);
+              opType = TtaGetElementType (menu);
+              opType.ElTypeNum = HTML_EL_Option;
               while (option)
                 {
                   elType = TtaGetElementType (option);
@@ -1631,20 +1553,16 @@ void OnlyOneOptionSelected (Element el, Document doc, ThotBool parsing)
                       if (!firstOption)
                         firstOption = option;
                     }
-                  else if (elType.ElTypeNum == HTML_EL_OptGroup)
+                  else 
                     {
-                      child = TtaGetFirstChild (option);
+                      child = TtaSearchTypedElement (opType, SearchInTree, option);
                       while (child)
                         {
-                          elType = TtaGetElementType (child);
-                          if (elType.ElTypeNum == HTML_EL_Option)
-                            {
-                              ProcessOptionElement (child, el, doc, multiple,
-                                                    parsing);
-                              if (!firstOption)
-                                firstOption = option;
-                            }
-                          TtaNextSibling (&child);
+                          ProcessOptionElement (child, el, doc, multiple, parsing);
+                          if (!firstOption)
+                            firstOption = option;
+                          // look for the next option
+                          child = TtaSearchTypedElementInTree (opType, SearchForward, option, child);
                         }
                     }
                   TtaNextSibling (&option);
@@ -2740,6 +2658,8 @@ static void EndOfEndTag (char c)
             }
         }
 
+      //if (!strcasecmp ((char *)inputBuffer, "font"))
+      //             printf ("font element\n");
       profile = TtaGetDocumentProfile(HTMLcontext.doc);
       if (!ok)
         {
@@ -3582,7 +3502,6 @@ static void         StartOfComment (char c)
   elComment = TtaNewElement (HTMLcontext.doc, elType);
   TtaSetElementLineNumber (elComment, NumberOfLinesRead);
   InsertElement (&elComment);
-  HTMLcontext.lastElementClosed = TRUE;
   /* create a Comment_line element as the first child of */
   /* element Comment */
   if (elComment != NULL)
@@ -3663,6 +3582,7 @@ static void         EndOfComment (char c)
                               HTMLcontext.doc);
     }
   CommentText = NULL;
+  HTMLcontext.lastElementClosed = TRUE;
   InitBuffer ();
 }
 
@@ -6641,6 +6561,7 @@ static void InitializeHTMLParser (Element lastelem, ThotBool isclosed,
   HTMLcontext.language = TtaGetDefaultLanguage ();
   HTMLcontext.parsingTextArea = FALSE;
   HTMLcontext.parsingScript = FALSE;
+  HTMLcontext.parsingCSS = FALSE;
   if (lastelem != NULL && doc != 0)
     {
       /* initialize the stack with ancestors of lastelem */

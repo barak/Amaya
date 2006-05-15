@@ -344,22 +344,50 @@ ThotBool CheckMandatory (NotifyAttribute *event)
   GenerateInlinechildren generates the newType inline element as children
   of block elements.
   -----------------------------------------------------------------------*/
-static void GenerateInlinechildren (Element el, ElementType newType, Document doc)
+static Element GenerateInlinechildren (Element el, ElementType newType, Document doc)
 {
-  ElementType	    elType;
-  Element         child, added, next, last, in_line;
+  ElementType	    elType, childType;
+  Element         child, added, next, last, in_line, prev;
 
   /* generate a strong, etc. into the block element? */
   elType = TtaGetElementType (el);
   if (!strcmp (TtaGetSSchemaName (elType.ElSSchema), "HTML"))
     {
       child = TtaGetFirstChild (el);
-      elType = TtaGetElementType (child);
+      childType = TtaGetElementType (child);
       last = TtaGetLastChild (el);
-      if (child && IsCharacterLevelElement (child) &&
-          (last != child ||
-           elType.ElSSchema != newType.ElSSchema ||
-           elType.ElTypeNum != newType.ElTypeNum))
+      if (child == NULL)
+        {
+          /* create a in_line element */
+          in_line = TtaNewElement (doc, newType);
+          prev = NULL;
+          if (elType.ElTypeNum == HTML_EL_Basic_Elem ||
+              elType.ElTypeNum == HTML_EL_Element)
+            {
+              // this is a temporary element
+              child = el;
+              el = TtaGetParent (child);
+              prev = child;
+              TtaPreviousSibling (&prev);
+              TtaRegisterElementDelete (child, doc);
+              TtaDeleteTree (child, doc);
+            }
+          // generate a text
+          newType.ElTypeNum = HTML_EL_TEXT_UNIT;
+          child = TtaNewElement (doc, newType);
+          TtaInsertFirstChild (&child, in_line, doc);
+          if (prev)
+            TtaInsertSibling (in_line, prev, FALSE, doc);
+          else
+            TtaInsertFirstChild (&in_line, el, doc);
+          TtaRegisterElementCreate (in_line, doc);
+          // the HTML_EL_Basic_Elem was replaced by in_line
+          el = in_line;
+        }
+      else if (child && IsCharacterLevelElement (child) &&
+               (last != child ||
+                childType.ElSSchema != newType.ElSSchema ||
+                childType.ElTypeNum != newType.ElTypeNum))
         {
           /* create a in_line element */
           in_line = TtaNewElement (doc, newType);
@@ -395,6 +423,7 @@ static void GenerateInlinechildren (Element el, ElementType newType, Document do
             }
         }
     }
+  return el;
 }
 
 /*----------------------------------------------------------------------
@@ -418,7 +447,8 @@ void GenerateInlineElement (int eType, int aType, char * data)
   Language        lang;
   CHAR_T         *buffer;
   DisplayMode     dispMode;
-  ThotBool	      doit, split, before, charlevel, lastChanged, parse, open, selpos;
+  ThotBool	      doit, split, before, charlevel, inside;
+  ThotBool        lastChanged, parse, open, selpos;
 
   doc = TtaGetSelectedDocument();
   if (doc)
@@ -474,7 +504,7 @@ void GenerateInlineElement (int eType, int aType, char * data)
                 attrType.AttrTypeNum = SVG_ATTR_style_;
             }
 #endif /* _SVG */
-          else if (!strcmp(name, "SVG"))
+          else if (!strcmp(name, "MathML"))
             {
               newType.ElSSchema = elType.ElSSchema;
               newType.ElTypeNum = 0;
@@ -508,20 +538,84 @@ void GenerateInlineElement (int eType, int aType, char * data)
               TtaSetDisplayMode (doc, NoComputedDisplay);
               in_line = NULL;
               el = firstSel;
-
+              parent = NULL;
+              // don't insert inside the current selection by default
+              inside = FALSE;
               // check the last selected element first
               elType = TtaGetElementType (lastSel);
               name = TtaGetSSchemaName (elType.ElSSchema);
               lg =  TtaGetElementVolume (lastSel);
               lastChanged = FALSE;
               selpos = TtaIsSelectionEmpty ();
-              if (firstSel != lastSel &&
-                  elType.ElTypeNum == HTML_EL_TEXT_UNIT &&
-                  (lastchar == 0 || lastchar >= lg))
+              if ((selpos || firstSel == lastSel) &&
+                  (aType == HTML_ATTR_ID || aType == HTML_ATTR_Language ||
+                   aType == HTML_ATTR_Class || aType == HTML_ATTR_Style_) &&
+                  !strcmp(name, "HTML") &&
+                  (elType.ElTypeNum == HTML_EL_Basic_Elem ||
+                   elType.ElTypeNum == HTML_EL_Element))
                 {
-                  // the whole first element is included
+                  // this is a temporary element
+                  // attach the attribute to the parent element
                   parent = TtaGetParent (lastSel);
-                  parentType = TtaGetElementType (parent);
+                  el = parent;
+                }
+              else if ((selpos || firstSel == lastSel) &&
+                       !strcmp(name, "HTML") &&
+                       elType.ElTypeNum == HTML_EL_Element)
+                {
+                  // this is a temporary element
+                  // generate an enclosing paragraph
+                  elType.ElTypeNum = HTML_EL_Paragraph;
+                  el = TtaNewElement (doc, elType);
+                  TtaInsertFirstChild (&el, firstSel, doc);
+                  TtaRegisterElementCreate (el, doc);
+                  parent = el;
+                  inside = TRUE;
+                }
+              else if (aType == 0 &&
+                       !strcmp(name, "HTML") &&
+                       !IsCharacterLevelElement (el))
+                {
+                  // a block level is selected and a in-line element is required
+                  elType = TtaGetElementType (el);
+                  if (firstSel == lastSel &&
+                      (elType.ElTypeNum == HTML_EL_Paragraph ||
+                       elType.ElTypeNum == HTML_EL_Pseudo_paragraph))
+                    {
+                      parent = el;
+                      // select the block content
+                      firstSel = TtaGetFirstChild (parent);
+                      if (firstSel)
+                        {
+                          lastSel = TtaGetLastChild (parent);
+                          el = firstSel;
+                          elType = TtaGetElementType (el);
+                          firstchar = 1;
+                          i = TtaGetElementVolume (el)+1;
+                        }
+                      else
+                        {
+                          // empty paragraph
+                          firstSel = lastSel = el;
+                          firstchar = 1;
+                          i = TtaGetElementVolume (el)+1;
+                          inside = TRUE;
+                        }
+                    }
+                  else
+                    {
+                      // cannot generate an in-line element here
+                      el = NULL;
+                      TtaDisplaySimpleMessage (CONFIRM, AMAYA, AM_INVALID_SELECTION);
+                    }
+                }
+
+              if (el && firstSel != lastSel &&
+                  elType.ElTypeNum == HTML_EL_TEXT_UNIT &&
+                  (lastchar == 0 || lastchar > lg))
+                {
+                  // the whole last element is included
+                  parent = TtaGetParent (lastSel);
                   if (!strcmp (name, "HTML") &&
                       IsCharacterLevelElement (parent) &&
                       lastSel == TtaGetFirstChild (parent) &&
@@ -537,9 +631,11 @@ void GenerateInlineElement (int eType, int aType, char * data)
                   elType = TtaGetElementType (el);
                   name = TtaGetSSchemaName (elType.ElSSchema);
                   lg =  TtaGetElementVolume (el);
-                  split = ((el == firstSel || el == lastSel) && !strcmp(name, "HTML") &&
+                  split = ((el == firstSel || el == lastSel) &&
+                           !strcmp(name, "HTML") &&
                            elType.ElTypeNum == HTML_EL_TEXT_UNIT &&
-                           (firstchar > 1 || (i != 0 && i < lg)));
+                           ((firstchar > 1 && firstchar <= lg) ||
+                            (i > 0 && i <= lg && i >= firstchar)));
                   // check the next selected element
                   if (el == lastSel)
                     // only one element selected
@@ -554,7 +650,6 @@ void GenerateInlineElement (int eType, int aType, char * data)
                       if (el == firstSel && TtaIsLeaf (elType))
                         {
                           parent = TtaGetParent (el);
-                          parentType = TtaGetElementType (parent);
                           if (!strcmp (name, "HTML") &&
                               IsCharacterLevelElement (parent) &&
                               el == TtaGetFirstChild (parent) &&
@@ -562,7 +657,7 @@ void GenerateInlineElement (int eType, int aType, char * data)
                             {
                               el = parent;
                               firstSel = el;
-                              elType.ElTypeNum = parentType.ElTypeNum;
+                              elType = TtaGetElementType (parent);
                             }
                         }
                     }
@@ -576,20 +671,28 @@ void GenerateInlineElement (int eType, int aType, char * data)
                         {
                           // the whole first element is included
                           parent = TtaGetParent (el);
-                          parentType = TtaGetElementType (parent);
-                          if (!strcmp (name, "HTML") &&
-                              el == TtaGetFirstChild (parent) &&
-                              el == TtaGetLastChild (parent))
+                          if (IsCharacterLevelElement (parent))
                             {
-                              el = parent;
-                              firstSel = el;
-                              elType.ElTypeNum = parentType.ElTypeNum;
+                              // the parent is a in-line element
+                              if (!strcmp (name, "HTML") &&
+                                  el == TtaGetFirstChild (parent) &&
+                                  el == TtaGetLastChild (parent))
+                                {
+                                  // include the parent in-line
+                                  el = parent;
+                                  firstSel = el;
+                                  elType = TtaGetElementType (parent);
+                                }
                             }
                         }
+
                       if (!strcmp(name, "HTML"))
                         charlevel = IsCharacterLevelElement (el);
                       else
                         charlevel = TtaIsLeaf (elType);
+                      if (!charlevel)
+                      // the element is probably a parent element
+                        parent = el;
 
                       if (split && in_line == NULL)
                         doit = TRUE;
@@ -602,7 +705,8 @@ void GenerateInlineElement (int eType, int aType, char * data)
                           charlevel = FALSE;
                         }
                       else if (in_line == NULL && !strcmp(name, "HTML"))
-                        doit = charlevel;
+                        // if a strong, em is requested it should be created
+                        doit = (charlevel || aType == 0);
                       else
                         doit = FALSE;
 
@@ -621,8 +725,8 @@ void GenerateInlineElement (int eType, int aType, char * data)
                               buffer = (CHAR_T *)TtaGetMemory ((lg+1) * sizeof(CHAR_T) );
                               TtaGiveBufferContent (el, buffer, lg, &lang);
                               if (i == 0)
-                                i = lg;
-                              if (el == lastSel && i < lg)
+                                i = lg + 1;
+                              if (el == lastSel && i <= lg)
                                 {
                                   min = firstchar;
                                   if (selpos)
@@ -739,10 +843,14 @@ void GenerateInlineElement (int eType, int aType, char * data)
                         }
                       else if (doit && in_line)
                         {
-                          if (selpos)
+                          if (selpos || inside)
                             {
-                              // empty selection -> generate a text
-                              sibling = el;
+                              // empty selection or block selection
+                              // -> generate a text within the new in-line element
+                              if (charlevel)
+                                sibling = el;
+                              else
+                                sibling = NULL;
                               if (elType.ElTypeNum == HTML_EL_PICTURE_UNIT)
                                 before = (firstchar == 0);
                               else if (elType.ElTypeNum == HTML_EL_TEXT_UNIT)
@@ -779,6 +887,8 @@ void GenerateInlineElement (int eType, int aType, char * data)
                         {
                           if (sibling)
                             TtaInsertSibling (in_line, sibling, before, doc);
+                          else if (parent)
+                            TtaInsertFirstChild (&in_line, parent, doc);
                           /* generate the attribute */
                           if (attrType.AttrTypeNum != 0)
                             {
@@ -823,8 +933,9 @@ void GenerateInlineElement (int eType, int aType, char * data)
                               // apply the style to the enclosing element
                               el = in_line;
                             }
-                          else if (eType != HTML_EL_Anchor && eType != HTML_EL_Span)
-                            GenerateInlinechildren (el, newType, doc);
+                          else if ((eType != HTML_EL_Anchor || aType == HTML_ATTR_HREF_) &&
+                                   eType != HTML_EL_Span)
+                            el = GenerateInlinechildren (el, newType, doc);
 
                           if (el && attrType.AttrTypeNum != 0)
                             {
@@ -1810,6 +1921,7 @@ void CreateAnchor (Document doc, View view, ThotBool createLink)
                 {
                   if (createLink &&
                       elType.ElTypeNum != HTML_EL_TEXT_UNIT &&
+                      elType.ElTypeNum != HTML_EL_Basic_Elem &&
                       elType.ElTypeNum != HTML_EL_Teletype_text &&
                       elType.ElTypeNum != HTML_EL_Italic_text &&
                       elType.ElTypeNum != HTML_EL_Bold_text &&
@@ -2101,8 +2213,8 @@ ThotBool MakeUniqueName (Element el, Document doc, ThotBool doIt,
         /* the element has a xml:id attribute. Check it too */
         checkXMLID = TRUE;
     }
-  else
 #endif /* TEMPLATES */
+  else
 #ifdef XML_GENERIC
     attrType.AttrTypeNum = XML_ATTR_xmlid;
 #else /* XML_GENERIC */
@@ -2407,18 +2519,22 @@ void CreateRemoveIDAttribute (char *elName, Document doc, ThotBool createID,
     {
       /* does the element have an ID attribute already? */
       attr = TtaGetAttribute (el, attrType);
-      if (!attr && createID) /* add it */
-        {
-          /* we reuse an existing Amaya function */
-          CreateTargetAnchor (doc, el, TRUE, TRUE);
-          i++;
-        }
-      else if (attr && !createID) /* delete it */
-        {
-          TtaRegisterAttributeDelete (attr, el, doc);
-          TtaRemoveAttribute (el, attr, doc);
-          i++;
-        }
+	  if (!TtaIsReadOnly (el))
+		{
+          /* the selected element is not read-only */
+          if (!attr && createID) /* add it */
+		  {
+            /* we reuse an existing Amaya function */
+            CreateTargetAnchor (doc, el, TRUE, TRUE);
+            i++;
+		  }
+          else if (attr && !createID) /* delete it */
+		  {
+            TtaRegisterAttributeDelete (attr, el, doc);
+            TtaRemoveAttribute (el, attr, doc);
+            i++;
+		  }
+	  }
       /* get the next element */
       el = SearchTypedElementForward (elType, el, lastEl);
     }
@@ -2432,6 +2548,9 @@ void CreateRemoveIDAttribute (char *elName, Document doc, ThotBool createID,
   if (dispMode == DisplayImmediately)
     TtaSetDisplayMode (doc, dispMode);
   sprintf (IdStatus, "%d elements changed", i);
+#ifdef _WX
+  //InitInfo ("", IdStatus);
+#endif /* _WX */
 }
 
 /*----------------------------------------------------------------------
@@ -2454,6 +2573,11 @@ void CheckPseudoParagraph (Element el, Document doc)
   htmlSchema = TtaGetSSchema ("HTML", doc);
   if (!htmlSchema || elType.ElSSchema != htmlSchema)
     /* it's not an HTML element */
+    return;
+
+  if (elType.ElTypeNum == HTML_EL_Comment_ ||
+      elType.ElTypeNum == HTML_EL_XMLPI)
+    /* the new element is a comment or a PI. No need to change anything */
     return;
 
   if (elType.ElTypeNum == HTML_EL_Pseudo_paragraph)
@@ -2550,7 +2674,7 @@ void CheckPseudoParagraph (Element el, Document doc)
   if (next && elType.ElSSchema == htmlSchema &&
       elType.ElTypeNum == HTML_EL_Pseudo_paragraph)
     /* the next element is a Pseudo-paragraph */
-    /* turn it into an ordinary paragraph */
+    /* turns it into an ordinary paragraph */
     {
       TtaChangeTypeOfElement (next, doc, HTML_EL_Paragraph);
       TtaRegisterElementTypeChange (next, elType.ElTypeNum, doc);

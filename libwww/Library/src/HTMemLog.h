@@ -51,6 +51,6 @@ extern HTTraceDataCallback HTMemLog_callback;
 
   
 
-  @(#) $Id: HTMemLog.h,v 1.1.1.1 1998/08/14 21:54:41 cvs Exp $
+  @(#) $Id: HTMemLog.html,v 1.1.1.1 1998/08/14 21:54:38 cvs Exp $
 
 */

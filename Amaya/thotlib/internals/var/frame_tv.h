@@ -20,9 +20,11 @@
 THOT_EXPORT Frame_Ctl FrameTable[MAX_FRAME+1];
 
 #ifdef _WX
-/* each Window can contains several documents
- * */
+/* each Window can contains several documents */
 THOT_EXPORT Window_Ctl WindowTable[MAX_WINDOW+1];
+/* Status of scroll bars */
+THOT_EXPORT ThotBool VscrollShown[MAX_FRAME+1];
+THOT_EXPORT ThotBool HscrollShown[MAX_FRAME+1];
 #endif /* _WX */
 
 #ifdef _GTK
@@ -128,12 +130,13 @@ THOT_EXPORT ThotCursor HVCurs;	/* vertical+horizontal resizing cursor   */
 
 THOT_EXPORT int            ActiveFrame;	      /* Active frame            */
 THOT_EXPORT int            ClickFrame;	      /* Clicked frame           */
-THOT_EXPORT int            ClickX;	      /* Clicked X position      */
-THOT_EXPORT int            ClickY;	      /* Clicked Y position      */
+THOT_EXPORT int            ClickX;	          /* Clicked X position      */
+THOT_EXPORT int            ClickY;	          /* Clicked Y position      */
 THOT_EXPORT int            ClickIsDone;	      /* Click done              */
-THOT_EXPORT unsigned char *Xbuffer;	      /* Clipboard buffer        */
-THOT_EXPORT int		   ClipboardLength;
-THOT_EXPORT Proc	   CurrentCallbackAPI;
+THOT_EXPORT unsigned char *Xbuffer;	          /* Clipboard buffer        */
+THOT_EXPORT int		         ClipboardLength;
+THOT_EXPORT ThotBool       ClipboardURI;      /* an URI in the Clipboard */
+THOT_EXPORT Proc	         CurrentCallbackAPI;
 
 #ifdef _WINGUI
   #include <windows.h>

@@ -69,6 +69,6 @@ extern HTProtCallback HTLoadWAIS;
 
   
 
-  @(#) $Id: HTWAIS.h,v 1.1.1.1 1998/08/14 21:54:41 cvs Exp $
+  @(#) $Id: HTWAIS.html,v 1.1.1.1 1998/08/14 21:54:39 cvs Exp $
 
 */

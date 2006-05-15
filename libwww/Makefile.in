@@ -17,7 +17,7 @@
 # Process this file with Automake to create Makefile.in.
 # (c) COPYRIGHT MIT 1995.
 # Please first read the full copyright statement in the file COPYRIGH.
-# @(#) $Id: Makefile.in,v 1.1.1.2 2005/07/06 10:27:38 gully Exp $
+# @(#) $Id: Makefile.am,v 1.1.1.2 2005/07/06 09:34:01 gully Exp $
 
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
@@ -46,6 +46,7 @@ AMDEP_FALSE = @AMDEP_FALSE@
 AMDEP_TRUE = @AMDEP_TRUE@
 AMTAR = @AMTAR@
 AR = @AR@
+AS = @AS@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
@@ -61,16 +62,23 @@ CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CVS = @CVS@
 CVS2SQL = @CVS2SQL@
+CXX = @CXX@
+CXXCPP = @CXXCPP@
+CXXDEPMODE = @CXXDEPMODE@
+CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DAVSAMPLE = @DAVSAMPLE@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DLLTOOL = @DLLTOOL@
 ECHO = @ECHO@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
+F77 = @F77@
+FFLAGS = @FFLAGS@
 HTLIBXML = @HTLIBXML@
 HTSQL = @HTSQL@
 HTSQLLOG = @HTSQLLOG@
@@ -104,6 +112,7 @@ LWWWZIP = @LWWWZIP@
 MAKEINFO = @MAKEINFO@
 MKDIR = @MKDIR@
 MYEXT = @MYEXT@
+OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
@@ -134,11 +143,19 @@ WWWSSLEX = @WWWSSLEX@
 WWWWAIS = @WWWWAIS@
 WWWXML = @WWWXML@
 WWWZIP = @WWWZIP@
+ac_ct_AR = @ac_ct_AR@
+ac_ct_AS = @ac_ct_AS@
 ac_ct_CC = @ac_ct_CC@
+ac_ct_CXX = @ac_ct_CXX@
+ac_ct_DLLTOOL = @ac_ct_DLLTOOL@
+ac_ct_F77 = @ac_ct_F77@
+ac_ct_OBJDUMP = @ac_ct_OBJDUMP@
 ac_ct_RANLIB = @ac_ct_RANLIB@
 ac_ct_STRIP = @ac_ct_STRIP@
 am__fastdepCC_FALSE = @am__fastdepCC_FALSE@
 am__fastdepCC_TRUE = @am__fastdepCC_TRUE@
+am__fastdepCXX_FALSE = @am__fastdepCXX_FALSE@
+am__fastdepCXX_TRUE = @am__fastdepCXX_TRUE@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@

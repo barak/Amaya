@@ -97,6 +97,6 @@ extern BOOL HTFile_fileSuffixBinding (void);
 
   
 
-  @(#) $Id: HTFile.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+  @(#) $Id: HTFile.html,v 1.1.1.1 1998/08/14 21:54:37 cvs Exp $
 
 */

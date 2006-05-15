@@ -230,6 +230,6 @@ extern int HTSetTraceMessageMask (const char * shortnames);
 
   
 
-  @(#) $Id: HTHome.h,v 1.1.1.2 2005/07/06 10:27:39 gully Exp $
+  @(#) $Id: HTHome.html,v 1.1.1.2 2005/07/06 09:34:02 gully Exp $
 
 */

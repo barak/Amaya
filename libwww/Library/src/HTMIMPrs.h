@@ -107,6 +107,6 @@ extern int HTMIMEParseSet_dispatch (HTMIMEParseSet * me, HTRequest * request,
 
   
 
-  @(#) $Id: HTMIMPrs.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+  @(#) $Id: HTMIMPrs.html,v 1.1.1.1 1998/08/14 21:54:38 cvs Exp $
 
 */

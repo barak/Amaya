@@ -77,6 +77,6 @@ End of FTP module
 
   
 
-  @(#) $Id: WWWFTP.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+  @(#) $Id: WWWFTP.html,v 1.1.1.1 1998/08/14 21:54:39 cvs Exp $
 
 */

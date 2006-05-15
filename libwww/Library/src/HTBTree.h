@@ -105,7 +105,7 @@ extern HTBTElement * HTBTree_next (HTBTree * tree, HTBTElement * element);
 
 
 
-@(#) $Id: HTBTree.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+@(#) $Id: HTBTree.html,v 1.1.1.1 1998/08/14 21:54:37 cvs Exp $
 
 
 */

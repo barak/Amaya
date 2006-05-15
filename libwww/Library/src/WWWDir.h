@@ -87,7 +87,7 @@ listings that contain a description field (if enabled by the
 Directory browsing module.
 */
 
-//#include "HTDescpt.h"
+#include "HTDescpt.h"
 
 /*
 
@@ -104,6 +104,6 @@ End of DIR module
 
   
 
-  @(#) $Id: WWWDir.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+  @(#) $Id: WWWDir.html,v 1.1.1.1 1998/08/14 21:54:39 cvs Exp $
 
 */

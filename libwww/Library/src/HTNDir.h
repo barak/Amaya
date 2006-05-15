@@ -115,6 +115,6 @@ extern BOOL HTNewsDir_free (HTNewsDir * dir);
 
   
 
-  @(#) $Id: HTNDir.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+  @(#) $Id: HTNDir.html,v 1.1.1.1 1998/08/14 21:54:38 cvs Exp $
 
 */

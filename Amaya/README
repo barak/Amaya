@@ -7,4 +7,5 @@ used for building interactive system as well as automatic processors.
 Currently the open-source program using the Thot Library is Amaya
 (http://www.w3.org/Amaya).
 For more information about Amaya. see the README.amaya file
-and the documentation located in doc/amaya.
+located in /usr/share/doc/amaya
+and the documentation located in /usr/share/amaya/doc/WX.

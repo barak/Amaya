@@ -347,6 +347,7 @@ THOT_EXPORT char       LastURLImage[MAX_LENGTH];
 THOT_EXPORT char       ImageName[MAX_LENGTH];
 THOT_EXPORT char       ImgAlt[MAX_LENGTH];
 THOT_EXPORT char      *LastURLName;	/* last URL requested               */
+THOT_EXPORT char      *Error_DocURL; /* The parsed file */
 THOT_EXPORT char      *DirectoryName;	/* local path of the document       */
 THOT_EXPORT char      *DocumentName;	/* document name                    */
 THOT_EXPORT char      *SavePath;	/* saving path                      */
@@ -501,8 +502,9 @@ typedef struct _DocumentMetaDataElement
   char      *content_length;   /* content length returned by the server */
   char      *content_location; /* simplified content location returned by the server */
   char      *full_content_location; /* full content location returned by the server */
+  char      *reason;           /* http_headers reason*/
 
-  ClickEvent method;           /* method used to send this data */
+  int        method;           /* method used to send this data */
   ThotBool   xmlformat;        /* the document should be exported in xml format */
   ThotBool   compound;        /* the document is a compound document */
 #ifdef ANNOTATIONS
@@ -533,6 +535,10 @@ THOT_EXPORT ThotBool                 SButtons[DocumentTableLength];
 THOT_EXPORT ThotBool                 SAddress[DocumentTableLength];
 /* Document that shows map areas */
 THOT_EXPORT ThotBool                 MapAreas[DocumentTableLength];
+/* Document splitted horizontally */
+THOT_EXPORT ThotBool                 HSplit[DocumentTableLength];
+/* Document splitted vertically */
+THOT_EXPORT ThotBool                 VSplit[DocumentTableLength];
 /* identifier of the document displaying the source code */
 THOT_EXPORT Document                 DocumentSource[DocumentTableLength];
 /* The whole document is loaded when the corresponding entry in FilesLoading is 0 */

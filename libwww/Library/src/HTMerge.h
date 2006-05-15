@@ -40,6 +40,6 @@ extern HTStream * HTMerge (HTStream * target, int feeds);
 
   
 
-  @(#) $Id: HTMerge.h,v 1.1.1.1 1998/08/14 21:54:41 cvs Exp $
+  @(#) $Id: HTMerge.html,v 1.1.1.1 1998/08/14 21:54:38 cvs Exp $
 
 */

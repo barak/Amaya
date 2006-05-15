@@ -37,8 +37,10 @@ BUILD_DIR=Amaya/WX
 
 apply-patches:
 	QUILT_PATCHES="debian/patches" quilt push -a
-	cp -a /usr/share/misc/config.* Amaya
-	cd Amaya && autoconf && cd ..
+	#cp -a /usr/share/misc/config.* Amaya
+	cd Amaya && \
+		aclocal && libtoolize -c --force && autoconf && \
+	cd ..
 
 configure: configure-stamp
 configure-stamp:
@@ -51,6 +53,7 @@ configure-stamp:
 		     --with-wx --with-gl --with-dav \
 		     --enable-system-redland \
 		     --enable-system-wx \
+		     --enable-system-libwww \
 		     --enable-offical-build && \
 	cd ../..
 
@@ -86,7 +89,6 @@ clean:
 	find Amaya -name "*.PRS" -exec rm -f '{}' \;
 	rm -f Amaya/batch/*.LST
 	rm -f Amaya/batch/{APP,PRESEN,STRUCT,TRANS}.h
-	rm -rf .pc
 
 	dh_clean 
 

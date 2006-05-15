@@ -3,20 +3,22 @@
 amaya \- WYSIWYG HTML editor
 .SH SYNOPSIS
 .B amaya
-[file]
+[ -display host ] [ document ]
 
 .SH "DESCRIPTION"
 .B amaya
-is a WYWIWYG HTML editor from w3.org.   It also doubles a web browser.
+is a WYSIWYG HTML editor from w3.org. It also doubles a web browser.
 .PP
-This manual page was written for the Debian GNU/Linux distribution
-because the original program does not have a manual page, and Debian
-requires one.
+This manual page was written for the Debian distribution
+because the original program does not have a manual page.
 .SH SEE ALSO
- For a pointer to documentation on how to use amaya, run
-the program with no arguments.
+A more complete documentation in HTML of Amaya is available in the
+/usr/share/doc/amaya/WX directory.
 .SH OPTIONS
-The only argument this program takes is the name of a HTML file
-to load.
+.TP
+.B \-display host
+Defines the remote X-Window host screen where Amaya should display Web pages,
+provided this feature is available.
 .SH AUTHOR
-This manual page was written by Steve Dunham <dunham@debian.org>.
+This manual page was written by Steve Dunham <dunham@debian.org> and updated
+by Regis Boudin <regis@boudin.name>.

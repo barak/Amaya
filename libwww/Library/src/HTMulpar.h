@@ -81,7 +81,7 @@ stream. This is to avoid incompatible pointer warnings
 
 
 
-@(#) $Id: HTMulpar.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+@(#) $Id: HTMulpar.html,v 1.1.1.1 1998/08/14 21:54:38 cvs Exp $
 
 
 */

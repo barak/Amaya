@@ -123,6 +123,6 @@ End of MIME modules
 
   
 
-  @(#) $Id: WWWMIME.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+  @(#) $Id: WWWMIME.html,v 1.1.1.1 1998/08/14 21:54:39 cvs Exp $
 
 */

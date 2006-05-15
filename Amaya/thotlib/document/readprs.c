@@ -1508,47 +1508,56 @@ PtrPSchema      ReadPresentationSchema (char *fileName, PtrSSchema pSS)
 
 	  /* lit les variables de presentation */
 	  if (!error)
-	    for (i = 0; i < pPSch->PsNVariables; i++)
-	      {
-		pVar = &pPSch->PsVariable[i];
-		error = !TtaReadShort (file, &pVar->PvNItems);
-		if (!error)
-		  for (j = 0; j < pVar->PvNItems; j++)
-		    {
-		      pVarItem = &pVar->PvItem[j];
-		      pVarItem->ViType = ReadVariableType (file);
-		      switch (pVarItem->ViType)
-			{
-			case VarText:
-			  TtaReadShort (file, &pVarItem->ViConstant);
-			  break;
-			case VarCounter:
-			  TtaReadShort (file, &pVarItem->ViCounter);
-			  pVarItem->ViStyle = ReadCounterStyle (file);
-			  pVarItem->ViCounterVal = ReadCounterValue (file);
-			  break;
-			case VarAttrValue:
-			  TtaReadShort (file, &pVarItem->ViAttr);
-			  pVarItem->ViStyle = ReadCounterStyle (file);
-			  break;
-			case VarPageNumber:
-			  TtaReadShort (file, &pVarItem->ViView);
-			  pVarItem->ViStyle = ReadCounterStyle (file);
-			  break;
-			default:
-			  break;
-			}
-		    }
-	      }
-	  /* lit les boites de presentation et de mise en page */
-	  if (!error)
+      {
+	      pPSch->PsVariable = (PresVarTable*) malloc (pPSch->PsNVariables * sizeof (PtrPresVariable));
+        memset (pPSch->PsVariable, 0, pPSch->PsNVariables * sizeof (PtrPresVariable));
+	      pPSch->PsVariableTableSize = pPSch->PsNVariables;
+        for (i = 0; i < pPSch->PsNVariables && !error; i++)
+          {
+            pVar = (PtrPresVariable) malloc (sizeof (PresVariable));
+            memset (pVar, 0, sizeof (PresVariable));
+            pPSch->PsVariable->PresVar[i] = pVar;
+            error = !TtaReadShort (file, &pVar->PvNItems);
+            if (!error)
+              for (j = 0; j < pVar->PvNItems; j++)
+                {
+                  pVarItem = &pVar->PvItem[j];
+                  pVarItem->ViType = ReadVariableType (file);
+                  switch (pVarItem->ViType)
+                    {
+                    case VarText:
+                      TtaReadShort (file, &pVarItem->ViConstant);
+                      break;
+                    case VarCounter:
+                      TtaReadShort (file, &pVarItem->ViCounter);
+                      pVarItem->ViStyle = ReadCounterStyle (file);
+                      pVarItem->ViCounterVal = ReadCounterValue (file);
+                      break;
+                    case VarAttrValue:
+                      TtaReadShort (file, &pVarItem->ViAttr);
+                      pVarItem->ViStyle = ReadCounterStyle (file);
+                      break;
+                    case VarPageNumber:
+                      TtaReadShort (file, &pVarItem->ViView);
+                      pVarItem->ViStyle = ReadCounterStyle (file);
+                      break;
+                    default:
+                      break;
+                    }
+                }
+          }
+      }
+    /* lit les boites de presentation et de mise en page */
+    if (!error)
 	    {
 	      pPSch->PsPresentBox = (PresBoxTable*) malloc (pPSch->PsNPresentBoxes * sizeof (PtrPresentationBox));
+        memset (pPSch->PsPresentBox, 0, pPSch->PsNPresentBoxes * sizeof (PtrPresentationBox));
 	      pPSch->PsPresentBoxTableSize = pPSch->PsNPresentBoxes;
 	    }
 	  for (i = 0; i < pPSch->PsNPresentBoxes && !error; i++)
 	    {
-	      pBox = (PtrPresentationBox) malloc (sizeof (PresentationBox));
+        pBox = (PtrPresentationBox) malloc (sizeof (PresentationBox));
+        memset (pBox, 0, sizeof (PresentationBox));
 	      pPSch->PsPresentBox->PresBox[i] = pBox;
 	      TtaReadName (file, (unsigned char *)pBox->PbName);
 	      pBox->PbFirstPRule = ReadPRulePtr (file, &pNextPRule);
@@ -1560,23 +1569,26 @@ PtrPSchema      ReadPresentationSchema (char *fileName, PtrSSchema pSS)
 	      TtaReadShort (file, &pBox->PbPageCounter);
 	      pBox->PbContent = ReadContentType (file);
 	      if (!error)
-		switch (pBox->PbContent)
-		  {
-		  case ContVariable:
-		    TtaReadShort (file, &pBox->PbContVariable);
-		    break;
-		  case ContConst:
-		    TtaReadShort (file, &pBox->PbContConstant);
-		    break;
-		  default:
-		    break;
-		  }
+          switch (pBox->PbContent)
+            {
+            case ContVariable:
+              TtaReadShort (file, &pBox->PbContVariable);
+              break;
+            case ContConst:
+              TtaReadShort (file, &pBox->PbContConstant);
+              break;
+            default:
+              break;
+            }
 	    }
 	  /* lit les presentations des attributs */
 	  if (!error)
 	    {
 	      pPSch->PsAttrPRule = (AttrPresTable*) malloc (pSS->SsAttrTableSize * sizeof (PtrAttributePres));
 	      pPSch->PsNAttrPRule = (NumberTable*) malloc (pSS->SsAttrTableSize * sizeof (int));
+        memset (pPSch->PsAttrPRule, 0, pSS->SsAttrTableSize * sizeof (PtrAttributePres));
+	      memset (pPSch->PsAttrPRule, 0, pSS->SsAttrTableSize * sizeof (int));
+
 	      for (i = 0; i < pSS->SsNAttributes && !error; i++)
 		{
 		  /* lecture du nombre de paquet de regles differentes */

@@ -11,6 +11,7 @@
 
 #include "InitConfirmDlgWX.h"
 static int      Waiting = 0;
+static int      MyRef = 0;
 
 //-----------------------------------------------------------------------------
 // Event table: connect the events to the handler functions to process them
@@ -32,20 +33,17 @@ END_EVENT_TABLE()
     + label : the message to show at dialog center
   returns:
   ----------------------------------------------------------------------*/
-InitConfirmDlgWX::InitConfirmDlgWX( int ref,
-				    wxWindow* parent,
-				    const wxString & title,
-				    const wxString & extrabutton,
-				    const wxString & confirmbutton,
-				    const wxString & label,
-				    const wxString & label2,
-				    const wxString & label3 ) :
+InitConfirmDlgWX::InitConfirmDlgWX( int ref, wxWindow* parent,
+                                    const wxString & title, const wxString & extrabutton,
+                                    const wxString & confirmbutton, const wxString & label,
+                                    const wxString & label2, const wxString & label3 ) :
   AmayaDialog( parent, ref )
 {
 wxString cancelbutton;
 
   // waiting for a return
   Waiting = 1;
+  MyRef = ref;
 
   wxXmlResource::Get()->LoadDialog(this, parent, wxT("InitConfirmDlgWX"));
   // update dialog labels with given ones
@@ -69,16 +67,21 @@ wxString cancelbutton;
     p_sizer->Show(XRCCTRL(*this, "wxID_EXTRABUTTON", wxButton), false);
   else
     XRCCTRL(*this, "wxID_EXTRABUTTON", wxButton)->SetLabel( extrabutton );
+
   if (confirmbutton.IsEmpty())
     {
     p_sizer->Show(XRCCTRL(*this, "wxID_OK", wxButton), false);
-    cancelbutton = TtaConvMessageToWX(TtaGetMessage(LIB, TMSG_LIB_CONFIRM));
+    if (extrabutton.IsEmpty())
+      cancelbutton = TtaConvMessageToWX(TtaGetMessage(LIB, TMSG_LIB_CONFIRM));
+else
+  cancelbutton = TtaConvMessageToWX(TtaGetMessage(LIB, TMSG_DISCARD));
     }
   else
     {
     XRCCTRL(*this, "wxID_OK", wxButton)->SetLabel( confirmbutton );
     cancelbutton = TtaConvMessageToWX(TtaGetMessage(LIB, TMSG_CANCEL));
     }
+
   if (cancelbutton.IsEmpty())
     p_sizer->Show(XRCCTRL(*this, "wxID_CANCELBUTTON", wxButton), false);
   else
@@ -97,8 +100,6 @@ wxString cancelbutton;
 
   Fit();
   Refresh();
-  
-
   SetAutoLayout( TRUE );
 }
 
@@ -107,6 +108,10 @@ wxString cancelbutton;
   ----------------------------------------------------------------------*/
 InitConfirmDlgWX::~InitConfirmDlgWX()
 {
+  if (Waiting)
+    {
+      TtaDestroyDialogue (MyRef);
+    }
 }
 
 /*----------------------------------------------------------------------
@@ -114,7 +119,7 @@ InitConfirmDlgWX::~InitConfirmDlgWX()
   ----------------------------------------------------------------------*/
 void InitConfirmDlgWX::OnExtraButton( wxCommandEvent& event )
 {
-  ThotCallback (m_Ref, INTEGER_DATA, (char*) 2);
+  ThotCallback (MyRef, INTEGER_DATA, (char*) 2);
 }
 
 /*----------------------------------------------------------------------
@@ -123,8 +128,10 @@ void InitConfirmDlgWX::OnExtraButton( wxCommandEvent& event )
 void InitConfirmDlgWX::OnConfirmButton( wxCommandEvent& event )
 {
  if (Waiting)
-   ThotCallback (m_Ref, INTEGER_DATA, (char*) 1);
- Waiting = 0;
+   {
+     Waiting = 0;
+     ThotCallback (MyRef, INTEGER_DATA, (char*) 1);
+   }
  }
 
 /*----------------------------------------------------------------------
@@ -133,7 +140,10 @@ void InitConfirmDlgWX::OnConfirmButton( wxCommandEvent& event )
 void InitConfirmDlgWX::OnCancelButton( wxCommandEvent& event )
 {
  if (Waiting)
-   ThotCallback (m_Ref, INTEGER_DATA, (char*) 0); 
+   {
+     Waiting = 0;
+     ThotCallback (MyRef, INTEGER_DATA, (char*) 0);
+   }
 }
 
 /*----------------------------------------------------------------------
@@ -145,7 +155,7 @@ void InitConfirmDlgWX::OnCancelButton( wxCommandEvent& event )
 void InitConfirmDlgWX::OnClose(wxCloseEvent& event)
 {
  if (Waiting)
-   ThotCallback (m_Ref, INTEGER_DATA, (char*) 0); 
+   ThotCallback (MyRef, INTEGER_DATA, (char*) 0); 
 }
 
 #endif /* _WX */

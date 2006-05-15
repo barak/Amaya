@@ -1,3 +1,5 @@
+Trivial patch correctly setting the Exec parameter
+
 --- amaya-9.4.orig/Amaya/batch/script_install_gnomekde.in
 +++ amaya-9.4/Amaya/batch/script_install_gnomekde.in
 @@ -64,7 +64,7 @@

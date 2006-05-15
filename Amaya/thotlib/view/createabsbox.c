@@ -913,6 +913,193 @@ void ApplDelayedRule (PtrElement pEl, PtrDocument pDoc)
 }
 
 /*----------------------------------------------------------------------
+  ElemHasCondAttribute
+  Check whether element pEl has an attribute that satisfies condition pCond.
+  ----------------------------------------------------------------------*/
+static ThotBool ElemHasCondAttribute (PtrElement pEl, PtrCondition pCond,
+                                      PtrSSchema pSS)
+{
+  PtrAttribute        pA;
+  unsigned char       attrVal[MAX_TXT_LEN];
+  int                 i, j;
+  ThotBool            found;
+
+  pA = pEl->ElFirstAttr;
+  found = FALSE;
+  while (pA)
+    /* check all attributes of the element */
+    {
+      if (pA->AeAttrNum != pCond->CoTypeAttr ||
+          !strcmp (pA->AeAttrSSchema->SsName, pSS->SsName) == 0)
+        /* that's not the attribute we are looking for */
+        /* check next attribute of that ancestor */
+        pA = pA->AeNext; 
+      else
+        /* that's the attribute we are looking for */
+        {
+          if (!pCond->CoTestAttrValue)
+            /* we don't care about the attribute value */
+            found = TRUE;
+          else
+            /* check the attribute value */
+            {
+              if (pA->AeAttrType != AtTextAttr)
+                /* compare integer values */
+                found = (pCond->CoAttrValue == pA->AeAttrValue);
+              else
+                /* it's a text attribute. Compare strings */
+                {
+                  if (!pA->AeAttrText)
+                    /* empty attribute */
+                    found = (pCond->CoAttrTextValue == NULL ||
+                             pCond->CoAttrTextValue[0] == EOS);
+                  else
+                    {
+                      CopyBuffer2MBs (pA->AeAttrText, 0, attrVal,
+                                      MAX_TXT_LEN);
+                      /* test the attribute value */
+                      j = 0; i = 0;
+                      found = FALSE;
+                      if (pCond->CoTextMatch == CoSubstring)
+                        /* compare strings up to an hyphen */
+                        {
+                          while (pCond->CoAttrTextValue[i] != EOS &&
+                                 attrVal[i] != EOS &&
+                                 attrVal[i] == pCond->CoAttrTextValue[i])
+                            i++;
+                          found = (pCond->CoAttrTextValue[i] == EOS &&
+                                   (attrVal[i] == '-' ||
+                                    attrVal[i] == EOS));
+                        }
+                      else
+                        {
+                          while (!found && attrVal[j] != EOS)
+                            {
+                              i = 0;
+                              while (pCond->CoAttrTextValue[i] != EOS &&
+                                     attrVal[j + i] == pCond->CoAttrTextValue[i])
+                                i++;
+                              found = (pCond->CoAttrTextValue[i] == EOS);
+                              if (found)
+                                {
+                                  if (pCond->CoTextMatch == CoWord)
+                                    {
+                                      /* check if a word matches */
+                                      i += j;
+                                      found = (j == 0 || attrVal[j - 1] == SPACE) &&
+                                        (attrVal[i] == EOS || attrVal[i] == SPACE);
+                                    }
+                                  else if (pCond->CoTextMatch == CoMatch)
+                                    /* the whole attribute value must be equal */
+                                    found = attrVal[j + i] == EOS;
+                                }
+                              /* prepare next search */
+                              j++;
+                            }
+                        }
+                    }
+                }
+            }
+          /* don't check other attributes for this element */
+          pA = NULL;
+        }
+    }
+  return found;
+}
+
+
+/*----------------------------------------------------------------------
+  ElemDoesNotCount
+  return TRUE if element pEl is a Page break, a Comment, a PI, a text string
+  or a hidden element that contains only such elements. 
+  ----------------------------------------------------------------------*/
+ThotBool ElemDoesNotCount (PtrElement pEl, ThotBool previous)
+{
+  ThotBool    ignore = FALSE;
+  PtrElement  pChild;
+
+  if (pEl->ElTypeNumber == PageBreak + 1)
+    /* ignore a page break */
+    ignore = TRUE;
+  else if (pEl->ElTerminal && (pEl->ElLeafType == LtText))
+    /* ignore a text leaf */
+    ignore = TRUE;
+  else if (TypeHasException (ExcNotAnElementNode, pEl->ElTypeNumber,
+                             pEl->ElStructSchema))
+    /* ignore a PI or a comment */
+    ignore = TRUE;
+  else if (TypeHasException (ExcHidden, pEl->ElTypeNumber,
+                             pEl->ElStructSchema))
+    /* hidden elements do not count, but their children count */
+    {
+      if (pEl->ElParent &&
+          TypeHasException (ExcNotAnElementNode, pEl->ElParent->ElTypeNumber,
+                            pEl->ElParent->ElStructSchema))
+        /* it's a line within a comment or a PI. It counts: the P schema
+           puts a "<-- " in front of the first line */
+        ignore = FALSE;
+      else
+        /* check the children */
+        if (pEl->ElTerminal || !pEl->ElFirstChild)
+          /* no child. Ignore */
+          ignore = TRUE;
+        else
+          {
+            pChild = pEl->ElFirstChild;
+            if (previous)
+              /* get the last child */
+              {
+                while (pChild->ElNext)
+                  pChild = pChild->ElNext;
+              }
+            do
+              {
+                ignore = ElemDoesNotCount (pChild, previous);
+                if (previous)
+                  pChild = pChild->ElPrevious;
+                else
+                  pChild = pChild->ElNext;
+              }
+            while (pChild && ignore);
+          }
+    }
+  return ignore;
+}
+
+/*----------------------------------------------------------------------
+  SiblingElement return the element node which is the previous or next
+  (it depends on parameter previous) sibling of element pEl.
+  Page breaks, Comments, PIs, text strings etc. are ignored.
+  ----------------------------------------------------------------------*/
+PtrElement SiblingElement (PtrElement pEl, ThotBool previous)
+{
+  PtrElement    pSibling;
+  ThotBool      stop;
+
+  if (!pEl)
+    return NULL;
+  if (previous)
+    pSibling = pEl->ElPrevious;
+  else
+    pSibling = pEl->ElNext;
+  stop = FALSE;
+  do
+    if (pSibling == NULL)
+      stop = TRUE;
+    else if (ElemDoesNotCount (pSibling, previous))
+      {
+        if (previous)
+          pSibling = pSibling->ElPrevious;
+        else
+          pSibling = pSibling->ElNext;
+      }
+    else
+      stop = TRUE;
+  while (!stop);
+  return pSibling;
+}
+
+/*----------------------------------------------------------------------
   CondPresentation evalue les conditions d'application d'une regle de    
   presentation qui s'applique a` l'element pEl ou a l'attribut pAttr
   pour la vue de numero View.                              
@@ -925,19 +1112,17 @@ void ApplDelayedRule (PtrElement pEl, PtrDocument pDoc)
   ----------------------------------------------------------------------*/
 ThotBool CondPresentation (PtrCondition pCond, PtrElement pEl,
                            PtrAttribute pAttr, PtrElement pElAttr,
-			   PtrPRule pRule, int view, PtrSSchema pSS,
+                           PtrPRule pRule, int view, PtrSSchema pSS,
                            PtrDocument pDoc)
 {
   PtrPSchema          pSchP = NULL;
-  PtrElement          pElSibling, pAsc, pElem, pRoot;
+  PtrElement          pAsc, pElem, pRoot;
   PtrReference        pRef;
-  PtrAttribute        pA;
   PtrCondition        firstCondLevel;
-  unsigned char       attrVal[MAX_TXT_LEN];
   int                 valcompt, valmaxi, valmini;
-  int                 i = 0, j;
+  int                 i = 0;
   PtrSRule            pRe1;
-  ThotBool            ok, found, stop, equal;
+  ThotBool            ok, found, equal;
 
   /* a priori les conditions sont satisfaites */
   firstCondLevel = NULL;
@@ -982,33 +1167,11 @@ ThotBool CondPresentation (PtrCondition pCond, PtrElement pEl,
         switch (pCond->CoCondition)
           {
           case PcFirst:
-            /* on saute les marques de page precedentes */
-            pElSibling = pElem->ElPrevious;
-            stop = FALSE;
-            do
-              if (pElSibling == NULL)
-                stop = TRUE;
-              else if (pElSibling->ElTypeNumber == PageBreak + 1)
-                pElSibling = pElSibling->ElPrevious;
-              else
-                stop = TRUE;
-            while (!stop);
-            found = pElSibling == NULL;
+            found = (SiblingElement (pElem, TRUE) == NULL);
             break;
 
           case PcLast:
-            /* on saute les marques de page suivantes */
-            pElSibling = pElem->ElNext;
-            stop = FALSE;
-            do
-              if (pElSibling == NULL)
-                stop = TRUE;
-              else if (pElSibling->ElTypeNumber == PageBreak + 1)
-                pElSibling = pElSibling->ElNext;
-              else
-                stop = TRUE;
-            while (!stop);
-            found = pElSibling == NULL;
+            found = (SiblingElement (pElem, FALSE) == NULL);
             break;
        
           case PcReferred:
@@ -1331,86 +1494,10 @@ ThotBool CondPresentation (PtrCondition pCond, PtrElement pEl,
             found = FALSE;
             while (pAsc)
               {
-                pA = pAsc->ElFirstAttr;
-                while (pA)
-                  /* boucle sur les attributs de l'element */
-                  {
-                    if (pA->AeAttrNum != pCond->CoTypeAttr ||
-                        !strcmp (pA->AeAttrSSchema->SsName, pSS->SsName) == 0)
-                      /* that's not the attribute we are looking for */
-                      /* check next attribute of that ancestor */
-                      pA = pA->AeNext; 
-                    else
-                      /* that's the attribute we are looking for */
-                      {
-                        if (!pCond->CoTestAttrValue)
-                          /* we don't care about the attribute value */
-                          found = TRUE;
-                        else
-                          /* check the attribute value */
-                          {
-                            if (pA->AeAttrType == AtTextAttr)
-                              /* it's a text attribute. Compare strings */
-                              {
-                                if (!pA->AeAttrText)
-                                  found = (pCond->CoAttrTextValue == NULL ||
-                                           pCond->CoAttrTextValue[0] == EOS);
-                                else
-                                  {
-                                    CopyBuffer2MBs (pA->AeAttrText, 0, attrVal,
-                                                    MAX_TXT_LEN);
-                                    /* test the attribute value */
-                                    j = 0;
-                                    found = FALSE;
-                                    if (pCond->CoTextMatch == CoSubstring)
-                                      /* compare strings up to an hyphen */
-                                      {
-                                        while (pCond->CoAttrTextValue[i] != EOS &&
-                                               attrVal[i] != EOS &&
-                                               attrVal[i] == pCond->CoAttrTextValue[i])
-                                          i++;
-                                        found = (pCond->CoAttrTextValue[i] == EOS &&
-                                                 (attrVal[i] == '-' ||
-                                                  attrVal[i] == EOS));
-                                      }
-                                    else
-                                      {
-                                        while (!found && attrVal[j] != EOS)
-                                          {
-                                            i = 0;
-                                            while (pCond->CoAttrTextValue[i] != EOS &&
-                                                   attrVal[j + i] == pCond->CoAttrTextValue[i])
-                                              i++;
-                                            found = (pCond->CoAttrTextValue[i] == EOS);
-                                            if (found)
-                                              {
-                                                if (pCond->CoTextMatch == CoWord)
-                                                  {
-                                                    /* check if a word matches */
-                                                    i += j;
-                                                    found = (j == 0 || attrVal[j - 1] == SPACE) &&
-                                                      (attrVal[i] == EOS || attrVal[i] == SPACE);
-                                                  }
-                                                else if (pCond->CoTextMatch == CoMatch)
-                                                  /* the whole attribute value must be equal */
-                                                  found = attrVal[j + i] == EOS;
-                                              }
-                                            /* prepare next search */
-                                            j++;
-                                          }
-                                      }
-                                  }
-                              }
-                            else
-                              found = (pCond->CoAttrValue == pA->AeAttrValue);
-                          }
-                        /* don't check other attributes for this element */
-                        pA = NULL;
-                        if (found)
-                          /* don't look further */
-                          pAsc = NULL;
-                      }
-                  }
+                found = ElemHasCondAttribute (pAsc, pCond, pSS);
+                if (found)
+                  /* don't look further */
+                  pAsc = NULL;
                 /* if the attribute has not been encountered yet, check next
                    ancestor */
                 if (pAsc)
@@ -1420,42 +1507,7 @@ ThotBool CondPresentation (PtrCondition pCond, PtrElement pEl,
 
           case PcAttribute:
             /* verifie si l'element possede cet attribut */
-            pA = pElem->ElFirstAttr;
-            found = FALSE;
-            while (pA != NULL && !found)
-              /* boucle sur les attributs de l'element */
-              {
-                if (pA->AeAttrNum == pCond->CoTypeAttr &&
-                    strcmp (pA->AeAttrSSchema->SsName, pSS->SsName) == 0)
-                  /* that's the attribute we are looking for */
-                  {
-                    if (!pCond->CoTestAttrValue)
-                      /* we don't care about the attribute value */
-                      found = TRUE;
-                    else
-                      /* test the attribute value */
-                      {
-                        if (pA->AeAttrType == AtTextAttr)
-                          /* it's a text attribute. Compare strings */
-                          {
-                            if (!pA->AeAttrText)
-                              found = (pCond->CoAttrTextValue ||
-                                       pCond->CoAttrTextValue[0] == EOS);
-                            else
-                              {
-                                CopyBuffer2MBs (pA->AeAttrText, 0, attrVal,
-                                                MAX_TXT_LEN);
-                                found = !strcmp ((const char *)pCond->CoAttrTextValue, (const char *)attrVal);
-                              }
-                          }
-                        else
-                          found = (pCond->CoAttrValue == pA->AeAttrValue);
-                      } 
-                    pA = NULL;
-                  }
-                else
-                  pA = pA->AeNext;		/* attribut suivant */
-              }
+            found = ElemHasCondAttribute (pElem, pCond, pSS);
             /* as it's impossible to set an attribute to the PAGE */
             if (!found && pElem->ElTypeNumber == PageBreak + 1)
               {
@@ -1482,41 +1534,7 @@ ThotBool CondPresentation (PtrCondition pCond, PtrElement pEl,
                         pAsc = pAsc->ElParent;
                       }
                   }
-                pA = pRoot->ElFirstAttr;
-                /* check the list of attributes of the root element */
-                while (pA != NULL && !found)
-                  /* boucle sur les attributs de l'element */
-                  {
-                    if (pA->AeAttrNum == pCond->CoTypeAttr)
-                      {
-                        if (!pCond->CoTestAttrValue)
-                          /* we don't care about the attribute value */
-                          found = TRUE;
-                        else
-                          /* test the attribute value */
-                          {
-                            if (pA->AeAttrType == AtTextAttr)
-                              /* it's a text attribute. Compare strings */
-                              {
-                                if (!pA->AeAttrText)
-                                  found = (pCond->CoAttrTextValue ||
-                                           pCond->CoAttrTextValue[0] == EOS);
-                                else
-                                  {
-                                    CopyBuffer2MBs (pA->AeAttrText, 0, attrVal,
-                                                    MAX_TXT_LEN);
-                                    found = !strcmp ((const char *)pCond->CoAttrTextValue,
-                                                     (const char *)attrVal);
-                                  }
-                              }
-                            else
-                              found = (pCond->CoAttrValue == pA->AeAttrValue);
-                          } 
-                        pA = NULL;
-                      }
-                    else
-                      pA = pA->AeNext;	/* attribut suivant */
-                  }
+                found = ElemHasCondAttribute (pRoot, pCond, pSS);
               }
             break;
 
@@ -2196,7 +2214,7 @@ PtrAbstractBox CrAbsBoxesPres (PtrElement pEl, PtrDocument pDoc,
   ThotPictInfo       *image;
   int                 view, vis;
   int                 viewSch, viewIndex;
-  PresVariable       *pVar;
+  PtrPresVariable     pVar;
   PresVarItem        *pItem;
   PresConstant       *pConst;
   ThotBool            ok, stop, volok, done;
@@ -2789,7 +2807,7 @@ PtrAbstractBox CrAbsBoxesPres (PtrElement pEl, PtrDocument pDoc,
                    pRCre->PrPresBox refers to the variable to be generated */
                 {
                   done = FALSE;
-                  pVar = &pSchP->PsVariable[pRCre->PrPresBox[0] - 1];
+                  pVar = pSchP->PsVariable->PresVar[pRCre->PrPresBox[0] - 1];
                   if (pVar->PvNItems == 1)
                     /* there is 1 and only 1 item in this variable */
                     {
@@ -3650,8 +3668,9 @@ PtrAbstractBox TruncateOrCompleteAbsBox (PtrAbstractBox pAb, ThotBool truncate,
                           pSchPattr = pSchP;
                         pSSattr = pAttr->AeAttrSSchema;
                         if (pHd && /* this is a P schema extension */
-                            /* if it's an ID ou class attribute, take P schema
-                               extensions associated with the document S schema */
+                            /* if it's an ID, class or pseudo-class attribute,
+                               take P schema extensions associated with the
+                               document S schema */
                             (AttrHasException (ExcCssClass, pAttr->AeAttrNum,
                                                pAttr->AeAttrSSchema) ||
                              AttrHasException (ExcCssId, pAttr->AeAttrNum,
@@ -4656,7 +4675,7 @@ static void GetRulesFromInheritedAttributes (PtrElement pEl,
           pSSattr = pAttr->AeAttrSSchema;
           if (pDoc->DocView[viewNb-1].DvPSchemaView == 1 && extens &&
               /* it's a P schema extension */
-              /* if it's an ID ou class attribute, take P schema
+              /* if it's an ID, class or pseudo-class attribute, take P schema
                  extensions associated with the document S schema*/
               (AttrHasException (ExcCssClass, pAttr->AeAttrNum,
                                  pAttr->AeAttrSSchema) ||
@@ -4708,7 +4727,8 @@ static void GetRulesFromInheritedAttributes (PtrElement pEl,
           while (valNum > 0);
 
           /* look for more ancestors having this attribute only if it's a
-             P schema extension and if the attribute is id or class */
+             P schema extension and if the attribute is id, class or
+             pseudo-class */
           if (pDoc->DocView[viewNb-1].DvPSchemaView != 1 || !extens ||
               !(AttrHasException (ExcCssClass, pAttr->AeAttrNum,
                                   pAttr->AeAttrSSchema) ||
@@ -4756,29 +4776,6 @@ void ApplyPresRules (PtrElement pEl, PtrDocument pDoc,
   else
     casc = (Cascade*)CSScasc;
   memset (casc, 0, sizeof (Cascade));
-#ifdef IV
-  casc->ContentRuleBefore = NULL;
-  casc->schemaOfContentRuleBefore = NULL;
-  casc->attrOfContentRuleBefore = NULL;
-  casc->ContentRuleAfter = NULL;
-  casc->schemaOfContentRuleAfter = NULL;
-  casc->attrOfContentRuleAfter = NULL;
-  for (i = 0; i < PtPictInfo; i++)
-    {
-      casc->MainElement.selectedRule[i] = NULL;
-      casc->MainElement.schemaOfSelectedRule[i] = NULL;
-      casc->MainElement.attrOfSelectedRule[i] = NULL;
-      casc->MainElement.attrBlockOfSelectedRule[i] = NULL;
-      casc->BeforePseudoEl.selectedRule[i] = NULL;
-      casc->BeforePseudoEl.schemaOfSelectedRule[i] = NULL;
-      casc->BeforePseudoEl.attrOfSelectedRule[i] = NULL;
-      casc->BeforePseudoEl.attrBlockOfSelectedRule[i] = NULL;
-      casc->AfterPseudoEl.selectedRule[i] = NULL;
-      casc->AfterPseudoEl.schemaOfSelectedRule[i] = NULL;
-      casc->AfterPseudoEl.attrOfSelectedRule[i] = NULL;
-      casc->AfterPseudoEl.attrBlockOfSelectedRule[i] = NULL;
-    }
-#endif
   /* get all rules associated with the element type in the main presentation */
   /* schema (default stylesheet of the user agent in CSS terms) */
   pRuleView = NULL;
@@ -4991,8 +4988,9 @@ void ApplyPresRules (PtrElement pEl, PtrDocument pDoc,
                   pSSattr = pAttr->AeAttrSSchema;
                   if (pDoc->DocView[viewNb - 1].DvPSchemaView == 1 && pHd &&
                       /* this is a P schema extension */
-                      /* if it's an ID ou class attribute, take P schema
-                         extensions associated with the document S schema */
+                      /* if it's an ID, class or pseudo-class attribute, take
+                         P schema extensions associated with the document
+                         S schema */
                       (AttrHasException (ExcCssClass, pAttr->AeAttrNum,
                                          pAttr->AeAttrSSchema) ||
                        AttrHasException (ExcCssId, pAttr->AeAttrNum,
@@ -5481,7 +5479,7 @@ PtrAbstractBox AbsBoxesCreate (PtrElement pEl, PtrDocument pDoc,
   ThotBool            stop, ok, crAbsBox, truncate;
   ThotBool            notBreakable, ignoreDescent;
   ThotBool            Creation, ApplyRules;
-  ThotBool            PcFirst, PcLast;
+  ThotBool            pFirst, pLast;
 
   pAbReturn = NULL;
   lqueue = 0;
@@ -5895,27 +5893,27 @@ PtrAbstractBox AbsBoxesCreate (PtrElement pEl, PtrDocument pDoc,
                         pAbReturn = pAbChild;
                     if (forward)
                       {
-                        PcLast = (pElChild->ElNext == NULL);
+                        pLast = (pElChild->ElNext == NULL);
                         if (ApplyRules)
-                          PcFirst = (pElChild->ElPrevious == NULL);
+                          pFirst = (pElChild->ElPrevious == NULL);
                         else
-                          PcFirst = FALSE;
+                          pFirst = FALSE;
                       }
                     else
                       {
-                        PcFirst = (pElChild->ElPrevious == NULL);
+                        pFirst = (pElChild->ElPrevious == NULL);
                         if (ApplyRules)
-                          PcLast = (pElChild->ElNext == NULL);
+                          pLast = (pElChild->ElNext == NULL);
                         else
-                          PcLast = FALSE;
+                          pLast = FALSE;
                       }
                     pAsc = pElChild->ElParent;
                     while (pAsc != pEl)
                       {
-                        if (PcFirst)
-                          PcFirst = (pAsc->ElPrevious == NULL);
-                        if (PcLast)
-                          PcLast = (pAsc->ElNext == NULL);
+                        if (pFirst)
+                          pFirst = (pAsc->ElPrevious == NULL);
+                        if (pLast)
+                          pLast = (pAsc->ElNext == NULL);
                         pAsc = pAsc->ElParent;
                       }
 		       
@@ -5981,7 +5979,7 @@ PtrAbstractBox AbsBoxesCreate (PtrElement pEl, PtrDocument pDoc,
                             }
                         while (!stop);
                       }
-                    if (PcLast || PcFirst)
+                    if (pLast || pFirst)
                       /* on a cree' les paves du premier (ou dernier) fils */
                       /* de pEl, le pave englobant des fils de pEl est  */
                       /* complete si le pave du premier (ou dernier) fils est */
@@ -6020,7 +6018,7 @@ PtrAbstractBox AbsBoxesCreate (PtrElement pEl, PtrDocument pDoc,
                               {
                                 pAbChild = pAb->AbFirstEnclosed;
                                 pAbPres = NULL;
-                                if (PcLast)
+                                if (pLast)
                                   {
                                     if (pAbChild == NULL)
                                       /* tous les descendants ont une visibilite' */
@@ -6047,7 +6045,7 @@ PtrAbstractBox AbsBoxesCreate (PtrElement pEl, PtrDocument pDoc,
                                     if (forward && !truncate)
                                       *complete = TRUE;
                                   }
-                                if (PcFirst)
+                                if (pFirst)
                                   {
                                     pAbChild = pAb->AbFirstEnclosed;
                                     if (pAbChild == NULL)

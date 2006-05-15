@@ -1,3 +1,5 @@
+This passes the build, host and target parameters to the other built projects
+
 Index: amaya-9.4/Amaya/Makefile.in
 ===================================================================
 --- amaya-9.4.orig/Amaya/Makefile.in	2006-03-12 20:10:37.959334400 +0000

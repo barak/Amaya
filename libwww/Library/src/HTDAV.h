@@ -378,7 +378,7 @@ extern BOOL HTMOVERelative (HTRequest * request, const char * relative,
 
 
 
-  $Id: HTDAV.h,v 1.1.1.1 2005/07/06 10:27:39 gully Exp $
+  $Id: HTDAV.html,v 1.1.1.1 2005/07/06 09:34:01 gully Exp $
 
 
 

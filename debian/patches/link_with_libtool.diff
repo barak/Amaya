@@ -1,0 +1,81 @@
+Use libtool for linking. Together with the Debian libtool, this removes the long
+list of unneeded dependencies
+
+Index: amaya-9.5/Amaya/Options.in
+===================================================================
+--- amaya-9.5.orig/Amaya/Options.in	2006-04-12 20:04:59.293253757 +0100
++++ amaya-9.5/Amaya/Options.in	2006-04-12 20:05:55.019325402 +0100
+@@ -26,6 +26,7 @@
+ RANLIB	= @RANLIB@
+ DIFF	= @DIFF@
+ INSTALL	= @INSTALL@
++LIBTOOL	= @LIBTOOL@
+ 
+ INSTALL_DATA= $(INSTALL) -m 444
+ INSTALL_BIN= $(INSTALL) -m 755
+Index: amaya-9.5/Amaya/configure.in
+===================================================================
+--- amaya-9.5.orig/Amaya/configure.in	2006-04-12 20:05:31.777797926 +0100
++++ amaya-9.5/Amaya/configure.in	2006-04-12 20:05:55.032324019 +0100
+@@ -56,7 +56,7 @@
+ AC_PROG_INSTALL
+ AC_PROG_LN_S
+ AC_PROG_MAKE_SET
+-AC_PROG_RANLIB
++AC_PROG_LIBTOOL
+ AC_PATH_PROG(CP, cp, /bin/cp, $PATH:/bin:/usr/bin:/usr/ucb/bin)
+ AC_PATH_PROG(MV, mv, /bin/mv, $PATH:/bin:/usr/bin:/usr/ucb/bin)
+ AC_PATH_PROG(RM, rm, /bin/rm, $PATH:/bin:/usr/bin:/usr/ucb/bin)
+@@ -1258,7 +1258,7 @@
+          MAKEREDLAND=['#']
+ 	 AMAYA_RAPTOR_SRC=
+ 	 redland_includes=`$REDLAND_CONFIG --cflags`
+-	 redland_libs=`$REDLAND_CONFIG --libs`
++	 redland_libs=`$REDLAND_CONFIG --libtool-libs`
+          AMAYA_ANNOT_OPTIONS="$AMAYA_ANNOT_OPTIONS"
+          AMAYA_ANNOT_INCLUDES="$redland_includes -I\$(THOTDIR)/thotlib/include"
+          AMAYA_ANNOT_EXTRA_LIBS="$redland_libs"
+Index: amaya-9.5/Amaya/amaya/Makefile.in
+===================================================================
+--- amaya-9.5.orig/Amaya/amaya/Makefile.in	2006-04-10 15:30:35.000000000 +0100
++++ amaya-9.5/Amaya/amaya/Makefile.in	2006-04-12 20:05:55.039323274 +0100
+@@ -14,6 +14,8 @@
+ 
+ include ../Options
+ 
++top_builddir=..
++
+ INCLUDES= -DHAVE_CONFIG_H $(AMAYA_INCLUDES) $(EXPAT_INCLUDES) $(GUI_INCLUDES) $(EXTRA_INCLUDES) $(GL_INCLUDES) $(GTK_GL_INCLUDES) $(FREETYPE_INCLUDES) $(XFT_INCLUDES)
+ LIBS	=  $(AMAYA_PLUGIN_LIBS) $(AMAYA_ANNOT_LIBS) $(AMAYA_DAV_LIBS) \
+ 	   @AMAYA_RAPTOR_LIBS@ \
+@@ -502,7 +504,7 @@
+ # amaya application
+ ../bin/amaya : $(AMAYA_OBJ) $(AMAYA_OPTION_OBJ) $(AMAYA_LIBS)
+ 	@(if test ! -d ../bin ; then $(MKDIR) ../bin ; fi)
+-	$(LD) $(LDFLAGS) -o ../bin/amaya $(AMAYA_OBJ) $(AMAYA_OPTION_OBJ) libCSS.a $(LIBS)
++	$(LIBTOOL) --mode=link $(CXX) $(LDFLAGS) -o ../bin/amaya $(AMAYA_OBJ) $(AMAYA_OPTION_OBJ) libCSS.a $(LIBS)
+ 	@$(ECHO) "====>" amaya is done
+ 
+ @NOPRINT@../bin/print :
+Index: amaya-9.5/Amaya/thotlib/Makefile.in
+===================================================================
+--- amaya-9.5.orig/Amaya/thotlib/Makefile.in	2005-07-05 16:01:41.000000000 +0100
++++ amaya-9.5/Amaya/thotlib/Makefile.in	2006-04-12 20:05:55.044322743 +0100
+@@ -12,6 +12,8 @@
+ 
+ include ../Options
+ 
++top_builddir=..
++
+ INCLUDES= -DHAVE_CONFIG_H -I.. -I@top_srcdir@/amaya/xpm ${THOTINCLUDES} $(GUI_INCLUDES) $(GL_INCLUDES) $(GTK_GL_INCLUDES) $(XFT_INCLUDES) $(FREETYPE_INCLUDES) ${EXTRA_INCLUDES}
+ LIBS	= -L. -L.. @LIBS@ $(IMGLIBS) $(EXTRA_LIBS) $(GL_LIBRARIES) $(GTK_GL_LIBRARIES) $(XFT_LIBRARIES) $(FREETYPE_LIBRARIES) $(GTK_LIBRARIES) $(WX_LIBRARIES)
+ 
+@@ -330,7 +332,7 @@
+ 
+ ../bin/print : $(THOTK_OBJ) $(DISPLAY_OBJ) $(PRINT_OBJ) \
+         ../amaya/libCSS.a
+-	$(CXX) $(LDFLAGS) -o $@ $(THOTK_OBJ) $(DISPLAY_OBJ) $(PRINT_OBJ) ../amaya/libCSS.a $(LIBS)
++	$(LIBTOOL) --mode=link $(CXX) $(LDFLAGS) -o $@ $(THOTK_OBJ) $(DISPLAY_OBJ) $(PRINT_OBJ) ../amaya/libCSS.a $(LIBS)
+ 	@$(ECHO) "====>" print is done
+ 
+ CEXTRACT= ../bin/cextract

@@ -40,7 +40,7 @@ extern HTStream * HTFTPDir_new (HTRequest *	request,
 
 
 
-@(#) $Id: HTFTPDir.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+@(#) $Id: HTFTPDir.html,v 1.1.1.1 1998/08/14 21:54:37 cvs Exp $
 
 
 */

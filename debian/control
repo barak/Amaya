@@ -3,12 +3,12 @@ Section: web
 Priority: optional
 Maintainer: Regis Boudin <regis@boudin.name>
 Uploaders: Amaya Rodrigo Sastre <amaya@debian.org>, Anand Kumria <wildfire@progsoc.org>
-Build-Depends: debhelper (>= 4.0.0), libpng12-dev, libjpeg62-dev, libglu1-mesa-dev | libglu-dev, libxt-dev, libxxf86vm-dev, libfreetype6-dev, xutils, libwxgtk2.6-dev, librdf0-dev
-Standards-Version: 3.6.2.1
+Build-Depends: debhelper (>= 4.0.0), libpng12-dev, libjpeg62-dev, libglu1-mesa-dev | libglu-dev, libfreetype6-dev, libwxgtk2.6-dev, librdf0-dev, libx11-dev
+Standards-Version: 3.7.2
 
 Package: amaya
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ttf-freefont, ${shlibs:Depends}, ${misc:Depends}
 Provides: www-browser
 Description: Web Browser, HTML Editor and Testbed for Draft W3C standards
  Amaya is a WYSIWYG HTML Editor and browser with support for many 
@@ -20,5 +20,5 @@ Description: Web Browser, HTML Editor and Testbed for Draft W3C standards
         - Resource Description Framework (RDF)
         - XML Link (XLink)
         - XML Pointer Language (XPointer)
-        - Collaborative annoations
+        - Collaborative annotations
 

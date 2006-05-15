@@ -1,3 +1,24 @@
+amaya (9.51-1) unstable; urgency=low
+
+  * New upstream release
+    + Fixes two buffer overflows, CVE-2006-1900. (Closes: #362575)
+  * use_debian_fonts.diff : Stop shipping Freefonts, depend on ttf-freefonts
+    instead.
+  * link_with_libtool.diff : use libtool for linking. Since we use the Debian
+    version, it will remove lots of unnecessary dependencies.
+  * Fix typo in debian/control. Thanks Simon Waters (Closes: #362723)
+  * Update manpage to actually list the options and reference the
+    documentation. (Closes: #366600)
+  * Correctly document where the documentation is (Closes: #366597)
+  * Use $HOME/.amaya-$USER as a lock file instead of $HOME/amaya-$USER
+    (Closes: #367300)
+  * Remove patch to use the system libWWW until it works for sure.
+  * Stop providing freefonts. A patch has been submitted and merged
+    upstream to use the Debian-provided ones. Depend on ttf-freefont so
+    we actually have some fonts to display.
+
+ -- Regis Boudin <regis@boudin.name>  Mon, 15 May 2006 19:42:54 +0100
+
 amaya (9.4-3) unstable; urgency=medium
 
   * Respin build

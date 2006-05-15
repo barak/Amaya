@@ -1091,38 +1091,6 @@ static ThotBool ReapplRef (PtrAbstractBox pRef, PtrAbstractBox pAb,
 }
 
 /*----------------------------------------------------------------------
-  FunctionRule retourne le pointeur sur la premiere regle        
-  de fonction de presentation associee a l'element pEl.   
-  Rend dans pSchP un pointeur sur le schema de            
-  presentation auquel appartient la regle.                
-  Retourne NULL s'il n'y a pas de regle de creation pour  
-  cet element                                             
-  ----------------------------------------------------------------------*/
-PtrPRule FunctionRule (PtrElement pEl, PtrPSchema * pSchP, PtrDocument pDoc)
-{
-  PtrPRule            pRule;
-  int                 index;
-  PtrSSchema          pSchS;
-
-  pRule = NULL;
-  SearchPresSchema (pEl, pSchP, &index, &pSchS, pDoc);
-  if (*pSchP != NULL)
-    {
-      /* pRule : premiere regle de presentation specifique a ce type */
-      /* d'element */
-      pRule = (*pSchP)->PsElemPRule->ElemPres[index - 1];
-      if (pRule != NULL)
-        {
-          while (pRule->PrType < PtFunction && pRule->PrNextPRule != NULL)
-            pRule = pRule->PrNextPRule;
-          if (pRule->PrType != PtFunction)
-            pRule = NULL;
-        }
-    }
-  return pRule;
-}
-
-/*----------------------------------------------------------------------
   SetDeadAbsBox marque Mort le pave pointe par pAb et met a jour       
   le volume des paves englobants. Le pave mort sera       
   detruit par la procedure AbstractImageUpdated, apres traitement     
@@ -1338,8 +1306,10 @@ static PtrAbstractBox AbsBoxPresType (PtrAbstractBox pAbb, PtrPRule pRPres,
   int                 boxType;
   PtrAbstractBox      pAbbPres;
 
-
-  boxType = pRPres->PrPresBox[0];	/* numero de type de la boite cherchee */
+  if (pRPres->PrPresFunction == FnContent)
+    boxType = 1;
+  else
+    boxType = pRPres->PrPresBox[0];	/* numero de type de la boite cherchee */
   /* Cas particulier des paves de presentation de la racine */
   /* TO DO ? */
   pAb = pAbb;
@@ -1367,10 +1337,14 @@ static PtrAbstractBox AbsBoxPresType (PtrAbstractBox pAbb, PtrPRule pRPres,
     /* on a trouve' le pave principal */
     {
       /* positionne pAb sur le 1er pave a tester selon la regle de creation */
-      if (pRPres->PrPresFunction == FnCreateFirst || pRPres->PrPresFunction == FnCreateLast)
+      if (pRPres->PrPresFunction == FnCreateFirst ||
+          pRPres->PrPresFunction == FnCreateLast ||
+          pRPres->PrPresFunction == FnContent)
         {
           pAb = pAbbMain->AbFirstEnclosed;	/* 1er descendant */
-          if (pRPres->PrPresFunction == FnCreateLast)
+          if (pRPres->PrPresFunction == FnCreateLast ||
+              (pRPres->PrPresFunction == FnContent &&
+               pRPres->PrBoxType == BtAfter))
             /* cherche le dernier descendant du pave principal */
             if (pAb != NULL)
               while (pAb->AbNext != NULL)
@@ -1378,7 +1352,8 @@ static PtrAbstractBox AbsBoxPresType (PtrAbstractBox pAbb, PtrPRule pRPres,
         }
       else if (pRPres->PrPresFunction == FnCreateBefore)
         pAb = pAbbMain->AbPrevious;
-      else if (pRPres->PrPresFunction == FnCreateAfter || pRPres->PrPresFunction == FnCreateWith)
+      else if (pRPres->PrPresFunction == FnCreateAfter ||
+               pRPres->PrPresFunction == FnCreateWith)
         pAb = pAbbMain->AbNext;
       else
         pAb = NULL;
@@ -1389,13 +1364,15 @@ static PtrAbstractBox AbsBoxPresType (PtrAbstractBox pAbb, PtrPRule pRPres,
           pAb = NULL;
         else
           /* ce pave' appartient a l'element */
-          if (pAb->AbPresentationBox && pAb->AbTypeNum == boxType
-              && pAb->AbPSchema == pSchP)
+          if (pAb->AbPresentationBox && pAb->AbTypeNum == boxType &&
+              pAb->AbPSchema == pSchP)
             found = TRUE;	/* pave' du type cherche': on a trouve' */
           else
             /* passe au suivant dans la bonne direction */
             if (pRPres->PrPresFunction == FnCreateFirst ||
-                pRPres->PrPresFunction == FnCreateAfter)
+                pRPres->PrPresFunction == FnCreateAfter ||
+                (pRPres->PrPresFunction == FnContent &&
+                 pRPres->PrBoxType == BtBefore))
               pAb = pAb->AbNext;
             else
               pAb = pAb->AbPrevious;
@@ -1432,6 +1409,7 @@ static void ApplFunctionPresRules (PtrPRule pRule, PtrPSchema pSchP,
           if (pRe1->PrPresFunction == FnCreateBefore
               || pRe1->PrPresFunction == FnCreateWith
               || pRe1->PrPresFunction == FnCreateFirst
+              || pRe1->PrPresFunction == FnContent
               || pRe1->PrPresFunction == FnCreateLast
               || pRe1->PrPresFunction == FnCreateAfter)
             /* c'est une regle de creation */
@@ -1561,63 +1539,109 @@ void ChangeFirstLast (PtrElement pEl, PtrDocument pDoc, ThotBool first,
                       ThotBool change)
 {
   PtrPRule            pRPres;
-  PtrPSchema          pSchP, pSP;
+  PtrPSchema          pSP;
   PtrHandlePSchema    pHd;
   PtrAttribute        pAttr;
   int                 valNum;
   InheritAttrTable   *inheritTable;
   PtrAttributePres    attrBlock;
 
-  if (pEl != NULL)
+  if (pEl && pDoc)
     {
-      /* cherche la 1ere fonction de presentation associee au type de */
-      /* l'element */
-      pRPres = FunctionRule (pEl, &pSchP, pDoc);
-      if (pSchP != NULL)
+      /* get the main P Schema */
+      pSP = PresentationSchema (pEl->ElStructSchema, pDoc);
+      /*check the main P Schema and its additional schemas (CSS style sheets)*/
+      pHd = NULL;
+      while (pSP)
         {
-          /* traite les regles de creation associees au type de l'element */
-          pAttr = NULL;
-          ApplFunctionPresRules (pRPres, pSchP, pAttr, pDoc, pEl, change,
-                                 first);
+          /* cherche la 1ere fonction de presentation associee au type */
+          /* de l'element */
+
+          pRPres = pSP->PsElemPRule->ElemPres[pEl->ElTypeNumber - 1];
+          /* premiere regle de presentation specifique a ce type d'element */
+          if (pRPres)
+            {
+             while (pRPres->PrType < PtFunction && pRPres->PrNextPRule != NULL)
+               pRPres = pRPres->PrNextPRule;
+             if (pRPres->PrType != PtFunction)
+               pRPres = NULL;
+            }
+
+          /* traite les regles de creation associees au type de l'element*/
+          ApplFunctionPresRules (pRPres, pSP, NULL, pDoc, pEl, change, first);
           /* l'element herite-t-il d'attributs qui ont des fonctions de */
           /* presentation */
-          pSP = PresentationSchema (pEl->ElStructSchema, pDoc);
+          if (pSP->PsNInheritedAttrs->Num[pEl->ElTypeNumber - 1])
+            {
+              /* il y a heritage possible */
+              if ((inheritTable =
+                   pSP->PsInheritedAttr->ElInherit[pEl->ElTypeNumber - 1]) == NULL)
+                {
+                  /* cette table n'existe pas on la genere */
+                  CreateInheritedAttrTable (pEl->ElTypeNumber,
+                                            pEl->ElStructSchema, pSP, pDoc);
+                  inheritTable = pSP->PsInheritedAttr->ElInherit[pEl->ElTypeNumber - 1];
+                }
+              ApplInheritedCreationRules (pEl, pDoc, inheritTable,
+                                          first, change);
+            }
+          if (pEl->ElTypeNumber > MAX_BASIC_TYPE &&
+              pSP->PsNInheritedAttrs->Num[AnyType])
+            {
+              /* il y a heritage possible */
+              if ((inheritTable =
+                   pSP->PsInheritedAttr->ElInherit[AnyType]) == NULL)
+                {
+                  /* cette table n'existe pas on la genere */
+                  CreateInheritedAttrTable (AnyType+1, pEl->ElStructSchema,
+                                            pSP, pDoc);
+                  inheritTable = pSP->PsInheritedAttr->ElInherit[AnyType];
+                }
+              ApplInheritedCreationRules (pEl, pDoc, inheritTable,
+                                          first, change);
+            }
+          if (pHd == NULL)
+            /* extension schemas have not been checked yet */
+            /* get the first extension schema */
+            pHd = FirstPSchemaExtension (pEl->ElStructSchema, pDoc, pEl);
+          else
+            /* get the next extension schema */
+            pHd = pHd->HdNextPSchema;
+          if (pHd == NULL)
+            /* no more extension schemas. Stop */
+            pSP = NULL;
+          else
+            pSP = pHd->HdPSchema;
+        }
+
+      /* l'element a-t-il des attributs qui ont des fonctions de */
+      /* presentation ? */
+      pAttr = pEl->ElFirstAttr;	/* 1er attribut de l'element */
+      /* boucle sur les attributs de l'element */
+      while (pAttr != NULL)
+        {
+          pSP = PresentationSchema (pAttr->AeAttrSSchema, pDoc);
           pHd = NULL;
           while (pSP)
             {
-              if (pSP->PsNInheritedAttrs->Num[pEl->ElTypeNumber - 1])
+              /* cherche le debut des regles de presentation associees a */
+              /* l'attribut */
+              /* process all values of the attribute, in case of a text
+                 attribute with multiple values */
+              valNum = 1;
+              do
                 {
-                  /* il y a heritage possible */
-                  if ((inheritTable =
-                       pSP->PsInheritedAttr->ElInherit[pEl->ElTypeNumber - 1]) == NULL)
-                    {
-                      /* cette table n'existe pas on la genere */
-                      CreateInheritedAttrTable (pEl->ElTypeNumber,
-                                                pEl->ElStructSchema, pSP, pDoc);
-                      inheritTable = pSP->PsInheritedAttr->ElInherit[pEl->ElTypeNumber - 1];
-                    }
-                  ApplInheritedCreationRules (pEl, pDoc, inheritTable,
-                                              first, change);
+                  pRPres = AttrPresRule (pAttr, pEl, FALSE, NULL, pSP,
+                                         &valNum, &attrBlock);
+                  /* traite les regles de creation associees a l'attribut */
+                  ApplFunctionPresRules (pRPres, pSP, pAttr, pDoc, pEl,
+                                         change, first);
                 }
-              if (pEl->ElTypeNumber > MAX_BASIC_TYPE &&
-                  pSP->PsNInheritedAttrs->Num[AnyType])
-                {
-                  /* il y a heritage possible */
-                  if ((inheritTable =
-                       pSP->PsInheritedAttr->ElInherit[AnyType]) == NULL)
-                    {
-                      /* cette table n'existe pas on la genere */
-                      CreateInheritedAttrTable (AnyType+1, pEl->ElStructSchema,
-                                                pSP, pDoc);
-                      inheritTable = pSP->PsInheritedAttr->ElInherit[AnyType];
-                    }
-                  ApplInheritedCreationRules (pEl, pDoc, inheritTable,
-                                              first, change);
-                }
+              while (valNum > 0);
               if (pHd == NULL)
                 /* extension schemas have not been checked yet */
                 /* get the first extension schema */
-                pHd = FirstPSchemaExtension (pEl->ElStructSchema, pDoc, pEl);
+                pHd = FirstPSchemaExtension (pAttr->AeAttrSSchema, pDoc, pEl);
               else
                 /* get the next extension schema */
                 pHd = pHd->HdNextPSchema;
@@ -1627,31 +1651,8 @@ void ChangeFirstLast (PtrElement pEl, PtrDocument pDoc, ThotBool first,
               else
                 pSP = pHd->HdPSchema;
             }
-
-          /* l'element a-t-il des attributs qui ont des fonctions de */
-          /* presentation ? */
-          pAttr = pEl->ElFirstAttr;	/* 1er attribut de l'element */
-          /* boucle sur les attributs de l'element */
-          while (pAttr != NULL)
-            {
-              pSchP = PresentationSchema (pAttr->AeAttrSSchema, pDoc);
-              /* cherche le debut des regles de presentation associees a */
-              /* l'attribut */
-              /* process all values of the attribute, in case of a text
-                 attribute with multiple values */
-              valNum = 1;
-              do
-                {
-                  pRPres = AttrPresRule (pAttr, pEl, FALSE, NULL, pSchP,
-                                         &valNum, &attrBlock);
-                  /* traite les regles de creation associees a l'attribut */
-                  ApplFunctionPresRules (pRPres, pSchP, pAttr, pDoc, pEl,
-                                         change, first);
-                }
-              while (valNum > 0);
-              /* passe a l'attribut suivant de l'element */
-              pAttr = pAttr->AeNext;
-            }
+          /* passe a l'attribut suivant de l'element */
+          pAttr = pAttr->AeNext;
         }
     }
 }
@@ -1994,7 +1995,7 @@ void DestroyAbsBoxesView (PtrElement pEl, PtrDocument pDoc, ThotBool verify,
                           int view)
 {
   PtrAbstractBox      pAb, pAbbReDisp, pAbbR, pAbb, pElAscent;
-  PtrAbstractBox      PcFirst, PcLast, pNext;
+  PtrAbstractBox      pFirst, pLast, pNext;
   PtrElement          pElChild;
 
   pAb = pEl->ElAbstractBox[view - 1];
@@ -2023,8 +2024,8 @@ void DestroyAbsBoxesView (PtrElement pEl, PtrDocument pDoc, ThotBool verify,
           pAb->AbEnclosing->AbElement == pAb->AbElement)
         pAb = pAb->AbEnclosing;
 
-      PcFirst = NULL;
-      PcLast = NULL;
+      pFirst = NULL;
+      pLast = NULL;
       pAbbReDisp = pAb;	/* on reaffichera ce pave */
       /* traite tous les paves correspondant a cet element */
       /* les marque d'abord tous 'morts' en verifiant si leur */
@@ -2077,9 +2078,9 @@ void DestroyAbsBoxesView (PtrElement pEl, PtrDocument pDoc, ThotBool verify,
               SetDeadAbsBox (pAb);
               if (pAb == AbsBoxSelectedAttr)
                 CancelSelection ();
-              if (PcFirst == NULL)
-                PcFirst = pAb;
-              PcLast = pAb;
+              if (pFirst == NULL)
+                pFirst = pAb;
+              pLast = pAb;
               /* passe au pave suivant du meme element */
               pAb = pAb->AbNext;
             }
@@ -2097,14 +2098,14 @@ void DestroyAbsBoxesView (PtrElement pEl, PtrDocument pDoc, ThotBool verify,
         }
       while (pAb != NULL);
 
-      if (PcFirst == NULL)
+      if (pFirst == NULL)
         return;
-      else if (PcFirst != PcLast)
+      else if (pFirst != pLast)
         /* il y a plusieurs paves pour cet element, on reaffichera */
         /* le pave englobant */
-        pAbbReDisp = Enclosing (pAbbReDisp, PcFirst->AbEnclosing);
+        pAbbReDisp = Enclosing (pAbbReDisp, pFirst->AbEnclosing);
 
-      pAb = PcFirst;
+      pAb = pFirst;
       do
         {
           /* cherche tous les paves qui font reference au pave a */
@@ -2113,7 +2114,7 @@ void DestroyAbsBoxesView (PtrElement pEl, PtrDocument pDoc, ThotBool verify,
           ApplyRefAbsBoxSupp (pAb, &pAbbR, pDoc);
           pAbbReDisp = Enclosing (pAbbReDisp, pAbbR);
           /* passe au pave mort suivant */
-          if (pAb == PcLast)
+          if (pAb == pLast)
             pAb = NULL;
           else
             pAb = pAb->AbNext;
@@ -2609,6 +2610,7 @@ static void ComputeCrPresBoxes (int boxType, int nv, PtrPSchema pSchP,
                     && (pRe1->PrPresFunction == FnCreateBefore
                         || pRe1->PrPresFunction == FnCreateAfter
                         || pRe1->PrPresFunction == FnCreateFirst
+                        || pRe1->PrPresFunction == FnContent
                         || pRe1->PrPresFunction == FnCreateLast))
                   found = TRUE;
                 else
@@ -2740,6 +2742,7 @@ static void ComputeCreation (int boxType, ThotBool presBox, int counter,
                         || pRe1->PrPresFunction == FnCreateWith
                         || pRe1->PrPresFunction == FnCreateAfter
                         || pRe1->PrPresFunction == FnCreateFirst
+                        || pRe1->PrPresFunction == FnContent
                         || pRe1->PrPresFunction == FnCreateLast))
                   /* c'est une regle de creation pour cette vue */
                   /* la creation depend-elle du compteur counter ? */
@@ -2764,6 +2767,7 @@ static void ComputeCreation (int boxType, ThotBool presBox, int counter,
                         {
                           isCreated = FALSE;
                           if (page || pRe1->PrPresFunction == FnCreateFirst
+                              || pRe1->PrPresFunction == FnContent
                               || pRe1->PrPresFunction == FnCreateLast)
                             {
                               pAbb = pAb->AbFirstEnclosed;
@@ -3066,7 +3070,8 @@ static void UpdateListItemNumber (PtrElement pElBegin, PtrElement pElModif,
           pAb = pAbbBegin[view - 1];
           while (pAb)
             {
-              if (pAb->AbPresentationBox && pAb->AbTypeNum == 0 &&
+              if (pAb->AbListStyleImage != 'Y' &&
+                  pAb->AbPresentationBox && pAb->AbTypeNum == 0 &&
                   (pAb->AbListStyleType == '1' ||
                    pAb->AbListStyleType == 'Z' ||
                    pAb->AbListStyleType == 'i' ||
@@ -3762,7 +3767,7 @@ void UpdatePresAttr (PtrElement pEl, PtrAttribute pAttr,
                       if (typeRule != PtFunction ||
                           (func != FnCreateBefore && func != FnCreateFirst &&
                            func != FnCreateWith && func == FnCreateLast &&
-                           func != FnCreateAfter))
+                           func != FnContent && func != FnCreateAfter))
                         /* it's not a creation rule, look for a rule of the same
                            type and specific to that view */
                         {
@@ -3858,7 +3863,7 @@ void UpdatePresAttr (PtrElement pEl, PtrAttribute pAttr,
                           typeRule == PtFunction &&
                           (func == FnCreateBefore || func == FnCreateAfter ||
                            func == FnCreateWith || func == FnCreateFirst ||
-                           func == FnCreateLast) &&
+                           func == FnContent || func == FnCreateLast) &&
                           !remove)
                         /* il faut creer un pave de presentation */
                         {
@@ -3998,7 +4003,7 @@ void UpdatePresAttr (PtrElement pEl, PtrAttribute pAttr,
                       if (pEl->ElAbstractBox[view - 1] != NULL
                           && typeRule == PtFunction
                           && (func == FnCreateBefore || func == FnCreateAfter
-                              || func == FnCreateWith
+                              || func == FnCreateWith || func == FnContent
                               || func == FnCreateFirst || func == FnCreateLast)
                           && remove)
                         /* on supprime un attribut qui portait une regle de */
@@ -4031,6 +4036,15 @@ void UpdatePresAttr (PtrElement pEl, PtrAttribute pAttr,
                               if (pAb != NULL)
                                 while (pAb->AbNext != NULL)
                                   pAb = pAb->AbNext;
+                              break;
+                            case FnContent:
+                              pAb = pAb->AbFirstEnclosed;
+                              if (pR->PrBoxType == BtAfter)
+                                {
+                                  if (pAb != NULL)
+                                    while (pAb->AbNext != NULL)
+                                      pAb = pAb->AbNext;
+                                }
                               break;
                             default:
                               break;
@@ -4069,7 +4083,9 @@ void UpdatePresAttr (PtrElement pEl, PtrAttribute pAttr,
                                   /* passe au pave voisin */
                                   {
                                     if (func == FnCreateBefore ||
-                                        func == FnCreateLast)
+                                        func == FnCreateLast ||
+                                        (func == FnContent &&
+                                         pR->PrBoxType == BtAfter))
                                       pAb = pAb->AbPrevious;
                                     else
                                       pAb = pAb->AbNext;
@@ -4155,7 +4171,7 @@ void UpdatePresAttr (PtrElement pEl, PtrAttribute pAttr,
                                       pEl->ElAbstractBox[view - 1] &&
                                       (func == FnCreateBefore || func == FnCreateAfter ||
                                        func == FnCreateWith || func == FnCreateFirst ||
-                                       func == FnCreateLast))
+                                       func == FnCreateLast || func == FnContent))
                                     /* the view is open, the element has at least 1 box in
                                        this view, and it is a rule that creates a presentation
                                        box */
@@ -4247,10 +4263,10 @@ void UpdatePresAttr (PtrElement pEl, PtrAttribute pAttr,
 ThotBool IsIdenticalTextType (PtrElement pEl, PtrDocument pDoc,
                               PtrElement * pLib)
 {
-  PtrElement          pEl2, pEVoisin;
+  PtrElement          pEl2;
   PtrAbstractBox      pAb;
   int                 view, dvol;
-  ThotBool            equal, stop;
+  ThotBool            equal;
 
   equal = FALSE;
   if (pEl != NULL)
@@ -4274,24 +4290,12 @@ ThotBool IsIdenticalTextType (PtrElement pEl, PtrDocument pDoc,
           if (pEl->ElStructSchema == NULL)
             /* pEl a ete libere' par l'application */
             return equal;
-          /* teste si pEl est le dernier fils de son pere, */
-          /* abstraction faite des marques de page */
+          /* teste si pEl est le dernier fils de son pere, abstraction faite
+             des marques de page et autres elements a ignorer */
           /* fusionne les deux elements de texte */
-          pEVoisin = pEl->ElNext;
-          stop = FALSE;
-          do
-            if (pEVoisin == NULL)
-              /* pEl devient le dernier fils de son pere */
-              {
-                ChangeFirstLast (pEl, pDoc, FALSE, FALSE);
-                stop = TRUE;
-              }
-            else if (!pEVoisin->ElTerminal
-                     || pEVoisin->ElLeafType != LtPageColBreak)
-              stop = TRUE;
-            else
-              pEVoisin = pEVoisin->ElNext;
-          while (!stop);
+          if (SiblingElement (pEl, FALSE) == NULL)
+            /* pEl devient le dernier fils de son pere */
+            ChangeFirstLast (pEl, pDoc, FALSE, FALSE);
           /* met a jour le volume des paves correspondants */
           for (view = 1; view <= MAX_VIEW_DOC; view++)
             {

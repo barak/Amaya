@@ -178,7 +178,7 @@
 176 Apply class
 177 Select a class or a pseudo-class
 178 Select
-179 Use F2 key to select the parent element
+179 Discard
 180 Maths
 181 Misc
 182 Binary relations
@@ -197,7 +197,7 @@
 195 Home
 196 Emphasis
 197 Strong
-198 Fixed font
+198 Code
 199 Insert image
 200 Heading level 1
 201 Heading level 2

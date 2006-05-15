@@ -12,6 +12,8 @@ THOTINCLUDES=@THOTINCLUDES@
 
 include ../Options
 
+top_builddir=..
+
 INCLUDES= -DHAVE_CONFIG_H -I.. -I@top_srcdir@/amaya/xpm ${THOTINCLUDES} $(GUI_INCLUDES) $(GL_INCLUDES) $(GTK_GL_INCLUDES) $(XFT_INCLUDES) $(FREETYPE_INCLUDES) ${EXTRA_INCLUDES}
 LIBS	= -L. -L.. @LIBS@ $(IMGLIBS) $(EXTRA_LIBS) $(GL_LIBRARIES) $(GTK_GL_LIBRARIES) $(XFT_LIBRARIES) $(FREETYPE_LIBRARIES) $(GTK_LIBRARIES) $(WX_LIBRARIES)
 
@@ -330,7 +332,7 @@ print : ../bin ../bin/print
 
 ../bin/print : $(THOTK_OBJ) $(DISPLAY_OBJ) $(PRINT_OBJ) \
         ../amaya/libCSS.a
-	$(CXX) $(LDFLAGS) -o $@ $(THOTK_OBJ) $(DISPLAY_OBJ) $(PRINT_OBJ) ../amaya/libCSS.a $(LIBS)
+	$(LIBTOOL) --mode=link $(CXX) $(LDFLAGS) -o $@ $(THOTK_OBJ) $(DISPLAY_OBJ) $(PRINT_OBJ) ../amaya/libCSS.a $(LIBS)
 	@$(ECHO) "====>" print is done
 
 CEXTRACT= ../bin/cextract

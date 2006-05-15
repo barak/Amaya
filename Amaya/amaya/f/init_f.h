@@ -87,7 +87,7 @@ extern Document InitDocAndView ( Document oldDoc,
                                  Document sourceOfDoc,
                                  ThotBool readOnly,
                                  int profile,
-                                 ClickEvent method );
+                                 int method );
 extern void ReparseAs ( Document doc,
                         View view,
                         ThotBool asHTML,
@@ -103,7 +103,8 @@ extern Document LoadDocument ( Document doc,
                                char *documentname,
                                AHTHeaders *http_headers,
                                ThotBool history,
-                               ThotBool *inNewWindow );
+                               ThotBool *inNewWindow,
+                               char *realdocname );
 extern void Reload_callback ( int doc,
                               int status,
                               char *urlName,
@@ -142,7 +143,7 @@ extern Document GetAmayaDoc ( char *urlname,
                               char *form_data,
                               Document doc,
                               Document baseDoc,
-                              ClickEvent method,
+                              int method,
                               ThotBool history,
                               TTcbf *cbf,
                               void *ctx_cbf );
@@ -165,6 +166,14 @@ extern void SplitHorizontally ( Document doc,
                                 View view );
 extern void SplitVertically ( Document doc,
                               View view );
+extern void ShowHSplitToggle ( Document doc,
+                               View view );
+extern void ShowVSplitToggle ( Document doc,
+                               View view );
+extern void HideHSplitToggle ( Document doc,
+                               View view );
+extern void HideVSplitToggle ( Document doc,
+                               View view );
 extern void ShowMapAreas ( Document doc,
                            View view );
 extern void ShowButtons ( Document doc,
@@ -281,7 +290,7 @@ extern Document InitDocAndView ( Document oldDoc,
                                    Document sourceOfDoc,
                                    ThotBool readOnly,
                                    int profile,
-                                   ClickEvent method );
+                                   int method );
 extern void ReparseAs ( Document doc,
                           View view,
                           ThotBool asHTML,
@@ -297,7 +306,8 @@ extern Document LoadDocument ( Document doc,
                                  char *documentname,
                                  AHTHeaders *http_headers,
                                  ThotBool history,
-                                 ThotBool *inNewWindow );
+                                 ThotBool *inNewWindow,
+                                 char *realdocname );
 extern void Reload_callback ( int doc,
                                 int status,
                                 char *urlName,
@@ -336,7 +346,7 @@ extern Document GetAmayaDoc ( char *urlname,
                                 char *form_data,
                                 Document doc,
                                 Document baseDoc,
-                                ClickEvent method,
+                                int method,
                                 ThotBool history,
                                 TTcbf *cbf,
                                 void *ctx_cbf );
@@ -359,6 +369,14 @@ extern void SplitHorizontally ( Document doc,
                                   View view );
 extern void SplitVertically ( Document doc,
                                 View view );
+extern void ShowHSplitToggle ( Document doc,
+                                 View view );
+extern void ShowVSplitToggle ( Document doc,
+                                 View view );
+extern void HideHSplitToggle ( Document doc,
+                                 View view );
+extern void HideVSplitToggle ( Document doc,
+                                 View view );
 extern void ShowMapAreas ( Document doc,
                              View view );
 extern void ShowButtons ( Document doc,

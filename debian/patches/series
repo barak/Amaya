@@ -1,8 +1,6 @@
 lib_amaya.diff
-wxwidgets_gtk_fix.diff -p1
-missing_class_ftbfs.diff -p1
-ptr_to_int_casts.diff -p1
-redland.diff -p1
 cascade_hbt.diff
-add_destdir_to_Makefile.diff -p1
-enable-system-wx.diff -p1
+enable-system-wx.diff 
+link_with_libtool.diff
+readme_right_path.diff
+lock_as_hidden_file.diff

@@ -84,6 +84,6 @@ on whether it is information about the request or the resource returned.
 
   
 
-  @(#) $Id: WWWSQL.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+  @(#) $Id: WWWSQL.html,v 1.1.1.1 1998/08/14 21:54:39 cvs Exp $
 
 */
