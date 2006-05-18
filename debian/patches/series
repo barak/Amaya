@@ -4,3 +4,6 @@ enable-system-wx.diff
 link_with_libtool.diff
 readme_right_path.diff
 lock_as_hidden_file.diff
+fix_ftbfs.diff
+fix_warnings.diff
+enable_system_libwww.diff

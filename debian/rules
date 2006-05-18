@@ -50,7 +50,7 @@ configure-stamp:
 	cd $(BUILD_DIR) && \
 	../configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) \
 		     --prefix=/usr/lib --bindir=/usr/bin \
-		     --with-wx --with-gl --with-dav \
+		     --with-wx --with-gl --without-dav \
 		     --enable-system-redland \
 		     --enable-system-wx \
 		     --enable-system-libwww \

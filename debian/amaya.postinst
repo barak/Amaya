@@ -1,21 +1,9 @@
 #!/bin/bash
 
-if [ "$1" == "configure" ]
-then
-    # Disable alternatives so amaya doesn't disappear
-    if [ -f /var/lib/dpkg/alternatives/amaya ]
-    then
-        rm /var/lib/dpkg/alternatives/amaya /etc/alternatives/amaya
-        ln -sf ../lib/Amaya/applis/bin/amaya /usr/bin/amaya
-    fi
-fi
-
-if [ "$1" = "configure" -o "$1" = "abort-upgrade" ] ; then
-    update-alternatives --install /usr/bin/x-www-browser \
-        x-www-browser /usr/bin/amaya 20 \
-        --slave /usr/share/man/man1/x-www-browser.1.gz \
-        x-www-browser.1.gz /usr/share/man/man1/amaya.1.gz
-fi
+update-alternatives --install /usr/bin/x-www-browser \
+	x-www-browser /usr/bin/amaya 20 \
+	--slave /usr/share/man/man1/x-www-browser.1.gz \
+	x-www-browser.1.gz /usr/share/man/man1/amaya.1.gz
 
 #DEBHELPER#
 

@@ -1,9 +1,10 @@
 Use the system wxWidgets instead of building it and linking statically
+Merged upstream
 
-Index: amaya-9.5/Amaya/thotlib/base/AmayaApp.cpp
+Index: amaya-9.51/Amaya/thotlib/base/AmayaApp.cpp
 ===================================================================
---- amaya-9.5.orig/Amaya/thotlib/base/AmayaApp.cpp	2006-04-10 15:13:16.000000000 +0100
-+++ amaya-9.5/Amaya/thotlib/base/AmayaApp.cpp	2006-04-12 20:05:31.761799628 +0100
+--- amaya-9.51.orig/Amaya/thotlib/base/AmayaApp.cpp	2006-04-10 15:13:16.000000000 +0100
++++ amaya-9.51/Amaya/thotlib/base/AmayaApp.cpp	2006-05-21 14:55:35.586232960 +0100
 @@ -76,7 +76,9 @@
    WX_GL_MIN_ALPHA, 0, /* don't change the position of this entry (8) */
    WX_GL_STENCIL_SIZE, 1,
@@ -30,10 +31,10 @@ Index: amaya-9.5/Amaya/thotlib/base/AmayaApp.cpp
    return AttrList;
  }
  #endif /* _GL */
-Index: amaya-9.5/Amaya/Makefile.in
+Index: amaya-9.51/Amaya/Makefile.in
 ===================================================================
---- amaya-9.5.orig/Amaya/Makefile.in	2006-03-21 16:42:18.000000000 +0000
-+++ amaya-9.5/Amaya/Makefile.in	2006-04-12 20:05:31.766799096 +0100
+--- amaya-9.51.orig/Amaya/Makefile.in	2006-05-21 14:55:35.537240408 +0100
++++ amaya-9.51/Amaya/Makefile.in	2006-05-21 15:17:58.312107600 +0100
 @@ -28,7 +28,7 @@
  
  srcdir	= $(THOTDIR)
@@ -43,10 +44,10 @@ Index: amaya-9.5/Amaya/Makefile.in
  
  amaya : amaya_prog tools thotlib @PRINTIFNOTGL@
  
-Index: amaya-9.5/Amaya/configure.in
+Index: amaya-9.51/Amaya/configure.in
 ===================================================================
---- amaya-9.5.orig/Amaya/configure.in	2006-04-05 14:03:26.000000000 +0100
-+++ amaya-9.5/Amaya/configure.in	2006-04-12 20:05:31.777797926 +0100
+--- amaya-9.51.orig/Amaya/configure.in	2006-05-21 14:55:35.555237672 +0100
++++ amaya-9.51/Amaya/configure.in	2006-05-21 15:19:23.126213896 +0100
 @@ -243,6 +243,7 @@
      with_gtk="no"
    fi
@@ -65,7 +66,7 @@ Index: amaya-9.5/Amaya/configure.in
 +      enable_system_wx="no"
 +    fi
 +  fi
-+  
++
 +  if test "$enable_system_wx" != "yes"; then
 +
    # WX_SRCDIR is better to understand the code than with_wxsrcdir variable
@@ -92,7 +93,20 @@ Index: amaya-9.5/Amaya/configure.in
      fi
  
 -    if test "$with_wx" = "yes" ; then
-+    if test "$with_wx" = "yes" -a "enable_system_wx" = "yes" ; then
++    if test "$with_wx" = "yes" -a "$enable_system_wx" != "yes" ; then
         EXTRA_MAKEFILE_IN="$EXTRA_MAKEFILE_IN $WX_SRCDIR/Makefile.in $WX_SRCDIR/configure.in"
      fi
+ 
+@@ -1611,7 +1628,11 @@
+   if test "$with_wxdebug" = "yes" ; then
+     echo "Amaya configured with wxWidgets {srcdir=$WX_SRCDIR} (debug)"
+   else
+-    echo "Amaya configured with wxWidgets {srcdir=$WX_SRCDIR}"
++    if test "$enable_system_wx" != "yes" ; then
++        echo "Amaya configured with wxWidgets {srcdir=$WX_SRCDIR}"
++    else
++        echo "Amaya configured with wxWidgets (system)"
++    fi
+   fi
+ fi
  

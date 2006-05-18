@@ -50,9 +50,11 @@ static char  s[MAX_LENGTH]; /* general purpose buffer */
  ** Local custom query variables
  ************************************************************/
 
+#ifdef _GTK
 static int     CustomQueryBase;
 static ThotBool CustomQueryFlag;
 static char  *AlgaeText;
+#endif
 
 /************************************************************
  ** Local annotation filter variables
@@ -79,6 +81,7 @@ typedef struct _typeSelector
 } TypeSelector;
 
 #ifndef _WINGUI
+#ifdef _GTK
 /*----------------------------------------------------------------------
   CustomQueryCallbackDialog
   callback of the annot custom query menu
@@ -159,6 +162,7 @@ static void CustomQueryCallbackDialog (int ref, int typedata, char *data)
         }
     }
 }
+#endif /* !_GTK */
 #endif /* !_WINGUI */
 
 /*----------------------------------------------------------------------

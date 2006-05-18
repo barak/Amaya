@@ -102,7 +102,7 @@ void AmayaXMLPanel::SendDataToPanel( AmayaParams& p )
   int nb_el                 = (int)p.param1;
   const char * listBuffer   = (char *)p.param2;
   const char * currentEl    = (char *)p.param3;
-  int ref                   = (int)p.param4;;
+  intptr_t ref              = (intptr_t)p.param4;;
   
   m_XMLRef = ref;
   

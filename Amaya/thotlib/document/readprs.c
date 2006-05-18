@@ -241,6 +241,7 @@ static PRuleType    ReadrdTypeRegle (BinFile file)
 	       return PtVisibility;
 	       break;
 	 }
+	return PtVisibility;
 }
 
 /*----------------------------------------------------------------------
@@ -271,6 +272,7 @@ static PresMode     ReadPresMode (BinFile file)
 	       return PresImmediate;
 	       break;
 	 }
+	return PresImmediate;
 }
 
 /*----------------------------------------------------------------------
@@ -347,6 +349,7 @@ static InheritMode  ReadInheritMode (BinFile file)
 	       return InheritParent;
 	       break;
 	 }
+	return InheritParent;
 }
 
 /*----------------------------------------------------------------------

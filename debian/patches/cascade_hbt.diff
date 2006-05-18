@@ -1,4 +1,5 @@
 This passes the build, host and target parameters to the other built projects
+Merged upstream
 
 Index: amaya-9.4/Amaya/Makefile.in
 ===================================================================

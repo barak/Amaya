@@ -191,6 +191,7 @@ ThotBool TtaFileRename( const char * oldname, const char * newname )
 #endif /* _WX */
 }
 
+#ifndef _WX
 /*----------------------------------------------------------------------
    TtaFileOpen returns: ThotFile_BADHANDLE: error handle:		
   ----------------------------------------------------------------------*/
@@ -249,6 +250,7 @@ static int TtaFileClose (ThotFileHandle handle)
 #endif /* _WINGUI */
   return ret;
 }
+#endif
 
 /*----------------------------------------------------------------------
    TtaGetFileSize

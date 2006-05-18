@@ -1,3 +1,16 @@
+amaya (9.51-2) unstable; urgency=low
+
+  * Bump Standards-Version to 3.7.2
+  * New patches :
+    + fix_ftbfs.diff : Fixes FTBFS on 64 bits arches (Closes: #367642, #373591)
+    + fix_warnings : Fixes a few warnings. Patch submitted upstream.
+    + enable_system_libwww.diff : link against the system libwww instead of
+      building it and linking statically. At this point, the content of the
+      Amaya/ directory is enough to build the package. The Debian libwww does
+      not have WebDAV support yet, don't use --with-dav option.
+
+ -- Regis Boudin <regis@boudin.name>  Thu, 18 May 2006 19:53:15 +0100
+
 amaya (9.51-1) unstable; urgency=low
 
   * New upstream release
