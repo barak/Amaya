@@ -1,0 +1,23 @@
+Fix FTBFS on 64 bit arches; lost precision.
+
+Index: amaya-9.51/Amaya/MENUconf.c
+===================================================================
+--- Amaya/amaya/MENUconf.c.orig	2006-07-21 20:18:31.000000000 -0400
++++ Amaya/amaya/MENUconf.c	2006-07-21 20:19:03.000000000 -0400
+@@ -4645,14 +4645,14 @@
+ static void PreferenceCallbackDialog (int ref, int typedata, char *data)
+ {
+ #ifdef _WX
+-  int val;
++  long val;
+ 
+   if (ref == -1)
+     TtaDestroyDialogue (PreferenceBase);
+   else
+     {
+       /* has the user changed the options? */
+-      val = (int) data;
++      val = (long) data;
+       switch (ref - PreferenceBase)
+         {
+         case 0:

@@ -1,3 +1,10 @@
+amaya (9.51-2.1) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * Fix FTBFS on 64 bit arches due to lost precision (Closes: #375105)
+
+ -- Robert S. Edmonds <edmonds@debian.org>  Fri, 21 Jul 2006 20:23:41 -0400
+
 amaya (9.51-2) unstable; urgency=low
 
   * Bump Standards-Version to 3.7.2

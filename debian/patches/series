@@ -7,3 +7,4 @@ lock_as_hidden_file.diff
 fix_ftbfs.diff
 fix_warnings.diff
 enable_system_libwww.diff
+fix_ftbfs_64bit_lost_precision.diff
