@@ -33,14 +33,16 @@ ifneq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
 	INSTALLER_PROGRAM += -s
 endif
 
-BUILD_DIR=Amaya/WX
+BUILD_DIR=WX
+
+prune-non-free:
+	rm fonts/ESSTIX*
+	rm -r tools/cextract*
 
 apply-patches:
 	QUILT_PATCHES="debian/patches" quilt push -a
-	#cp -a /usr/share/misc/config.* Amaya
-	cd Amaya && \
-		aclocal && libtoolize -c --force && autoconf && \
-	cd ..
+	cp -a /usr/share/misc/config.* .
+	autoconf
 
 configure: configure-stamp
 configure-stamp:
@@ -51,15 +53,16 @@ configure-stamp:
 	../configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) \
 		     --prefix=/usr/lib --bindir=/usr/bin \
 		     --with-wx --with-gl --without-dav \
+		     --enable-system-raptor\
 		     --enable-system-redland \
 		     --enable-system-wx \
 		     --enable-system-libwww \
 		     --enable-offical-build && \
-	cd ../..
+	cd -
 
 	# Fix execution rights on some files
-	chmod -x Amaya/templates/en/*
-	chmod -x Amaya/templates/fr/*
+	chmod -x templates/en/*
+	chmod -x templates/fr/*
 	
 	# --libpng, libjpeg, libtiff (currently builtin)
 	# --gnomeprint
@@ -84,11 +87,11 @@ clean:
 	# Add here commands to clean up after the build process.
 	-rm -rf $(BUILD_DIR)
 	# we also have to remove TRA, STR, PRS
-	find Amaya -name "*.TRA" -exec rm -f '{}' \;
-	find Amaya -name "*.STR" -exec rm -f '{}' \;
-	find Amaya -name "*.PRS" -exec rm -f '{}' \;
-	rm -f Amaya/batch/*.LST
-	rm -f Amaya/batch/{APP,PRESEN,STRUCT,TRANS}.h
+	find -name "*.TRA" -exec rm -f '{}' \;
+	find -name "*.STR" -exec rm -f '{}' \;
+	find -name "*.PRS" -exec rm -f '{}' \;
+	rm -f batch/*.LST
+	rm -f batch/{APP,PRESEN,STRUCT,TRANS}.h
 
 	dh_clean 
 

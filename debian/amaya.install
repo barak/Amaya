@@ -5,7 +5,6 @@ usr/lib/amaya/dicopar usr/share/amaya/
 usr/lib/amaya/fonts/*.list usr/share/amaya/fonts/
 usr/lib/amaya/fonts/*.dir usr/share/amaya/fonts/
 usr/lib/amaya/fonts/icones* usr/share/amaya/fonts/
-usr/lib/amaya/fonts/ESSTIX* usr/share/amaya/fonts/
 usr/lib/amaya/resources usr/share/amaya/
 usr/lib/amaya/templates usr/share/amaya/
 usr/lib/amaya/doc usr/share/amaya/

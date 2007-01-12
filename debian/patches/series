@@ -1,10 +1,8 @@
-lib_amaya.diff
-cascade_hbt.diff
-enable-system-wx.diff 
-link_with_libtool.diff
 readme_right_path.diff
-lock_as_hidden_file.diff
-fix_ftbfs.diff
-fix_warnings.diff
+installdir_amaya.diff
+rdf_conf_in_conf.diff
+raptor_split.diff
 enable_system_libwww.diff
-fix_ftbfs_64bit_lost_precision.diff
+fix_ftbfs64.diff
+no_cextract.diff
+no_esstix.diff

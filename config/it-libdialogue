@@ -1,0 +1,229 @@
+# encoding= latin1
+0 Errore X11: %s\n
+1 Conferma
+2 Il file dell'alfabeto è inesistente
+3 La nuova vista non può rimpiazzare la vecchia
+4 Schemi incompatibili. Ricompila %s
+5 Errore fatale: fonti non trovate
+6 Memoria esaurita
+7 Errore fatale: impossibile connettersi a X
+8 Vista modificata prima della creazione
+9 Tabella delle regole piena.
+10 File non corretto: %s.STR
+11 File non corretto: %s.PRS
+12 Il documento %s è stato stampato
+13 Scala (%)
+14 1 pagina per foglio
+15 2 pagine per foglio
+16 4 pagine per foglio
+17 %s
+18 Memoria insufficiente
+19 *** Amaya: Errore non recuperabile ***
+20 i documenti modificati, se ve ne sono, saranno salvati
+21 File .TRA incorretto: %s
+22 %s non è un fratello valido per %s (%s)
+23 %s non è un figlio valido per %s (%s)
+24 %s, pagina %d
+25 Lingua
+26 Attributi
+27 Presentazione standard
+28 Applica
+29 Caratteri
+30 Sottolineatura
+31 Grafica
+32 Formattazione
+33 Predefinito
+34 Allineamento
+35 Indentazione
+36 Stampa in corso
+37 Stampa
+38 Alimentazione manuale
+39 Opzioni
+40 A4
+41 US
+42 Formato della carta
+43 Chiudi
+44 Directory
+45 Il documento %s esiste già. Vuoi sovrascriverlo?
+46 Il pulsante sinistro cambia il colore del testo
+47 Il pulsante centrale e quello destro cambiano il colore dello sfondo
+48 Famiglia
+49 Normale
+50 Grassetto
+51 Italico
+52 Obliquo
+53 Normale
+54 Grassetto
+55 Normale
+56 Sottolineato
+57 Sbarrato
+58 Dimensione (pt)
+59 Indentazione (pt)
+60 Interlinea (pt)
+61 Interlinea
+62 Salva il documento
+63 Chiudi, non salvare
+64 Stile dei caratteri
+65 Colori
+66 XHTML
+67 Cancella
+68 Destinazione
+69 File PostScript
+70 Stampante
+71 Cerca
+72 Ignori il caso
+73 Rimpiazza con
+74 Rimpiazza
+75 Non rimpiazzare
+76 Rimpiazza su richiesta
+77 Rimpiazzamento automatico
+78 Dove cercare
+79 Prima della selezione
+80 Nella selezione
+81 Dopo la selezione
+82 L\'intero documento
+83 Non rimpiazzare
+84 Colori di default
+85 prima di chiuderlo
+86 Chiudi un documento
+87 Simboli matematici
+88 Grafica
+89 Alfabeto latino
+90 Alfabeto greco
+91 Salva
+92 Testo
+93 Grafica
+94 Simbolo
+95 Immagine
+96 Tipo di elemento XML
+97 dopo
+98 prima
+99 intorno
+100 Includi
+101 Incolla
+102 da creare
+103 Inserisci
+104 Salto pagina
+105 Lingua dell'elemento
+106 Lingua ereditata:
+107 Non trovato
+108 Cerca in
+109 Cerca
+110 Elemento a sola lettura
+111 Nulla da rimpiazzare
+112 Caratteri standard
+113 Grafica standard
+114 Formato standard
+115 Geometria standard
+116 pt
+117 Stile delle linee
+118 Spessore delle linee
+119 Motivo di riempimento
+120 Dividi
+121 Tipo di oggetto
+122 Vai a pagina numero:
+123 Any
+124 Attributo da cercare
+125 Tipo da cercare
+126 Nature
+127 Valore dell\'attributo
+128 Attributo sconosciuto
+129 Annulla
+130 Errore nella traduzione in PostScript
+131 Comando rifiutato dallo spooler "%s"
+132 Impossibile creare "%s"
+133 Soprassegnato
+134 Formato del documento
+135 Eventi
+136 Rimuovi l\'attributo
+137 Il tasto di sinistra setta il colore della selezione
+138 l tasto centrale o di destra setta il colore del cursore
+139 Encora ...
+140 Usa colori
+141 Colore
+142 Colore di sfondo
+143 Colore per il testo
+144 Scambia colori
+145 Scegli una struttura XML generica
+146 Controlla
+147 Cerca
+148 Sostituisci (+ diz)
+149 Sostituisci e continua
+150 Altra lingua
+151 Aggiungi
+152 parole contenenti:
+153 Controllo ortografico...
+154 numerali romani
+155 Ignora
+156 parole tutte maiuscole
+157 parole contenenti cifre
+158 Errore nel file dei parametri
+159 Il file della tastiera non esiste
+160 Impossibile salvare il dizionario del documento
+161 Parola scorretta "%s" rifiutata in questo dizionario
+162 Parola "%s" aggiunta nel dizionario del documento
+163 Fine controllo ortografico
+164 Controllo ortografico interrotto
+165 Seleziona un documento
+166 Dizionario del documento salvato: %s
+167 Non disponibile in questa versione
+168 Abilita/Disabilita la paletta colori
+169 Strumenti
+170 Attributo obbligatorio, non si pu rimuovere
+171 Aggiorna
+172 Sinistra
+173 Destra
+174 Centro
+175 Giustifica
+176 Applica la classe
+177 Seleziona una classe o una pseudoclasse
+178 Seleziona
+179 Elimina
+180 Formule matematiche
+181 Varie
+182 Relazioni binarie
+183 Relazioni binarie di negazione
+184 Operatori
+185 Alfabeto greco (maiuscolo)
+186 Frecce
+187 Caratteri speciali
+188 Interrompi trasferimento
+189 Documento precedente
+190 Documento successivo
+191 Ricarica
+192 Salvare
+193 Stampa
+194 Cerca
+195 Home
+196 Enfasi
+197 Forte
+198 Codice
+199 Inserisci immagine
+200 Intestazione di livello 1
+201 Intestazione di livello 2
+202 Intestazione di livello 3
+203 Lista puntata
+204 Lista numerata
+205 Lista di definizioni
+206 Collegamento
+207 Tabella
+208 Stai per chiudere %d tab aperti. Vuoi proprio proseguire?
+209 Avvisami quando cerco di chiudere pi tab
+210 Chiudi tab
+211 Nessun errore trovato
+212 Mostra le errore
+213 Box
+214 Divisione
+215 Obiettivo
+216 Inserzione
+217 Cancellazione
+218 Pedice
+219 Indice
+220 Termine
+221 Definizione
+222 Oggetto
+223 CSS Style
+224 Files
+225 Dividi la vista in orizzontale
+226 Dividi la vista in verticale
+227 Mostra strumenti

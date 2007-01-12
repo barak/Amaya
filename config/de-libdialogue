@@ -1,0 +1,229 @@
+# encoding= latin1
+0 X11 Fehler: %s\n
+1 OK
+2 Keine Alphabetdatei
+3 Neue Ansicht kann bisherige nicht ersetzen
+4 Inkompatible Schemen. Kompiliere %s neu
+5 Fataler Fehler: Schriften nicht gefunden
+6 Arbeitsspeicher erschöpft
+7 Fataler Fehler: kein Zugriff zum X-Server
+8 Ansicht wird vor der Erzeugung modifiziert
+9 Regeltabelle voll.
+10 Fehlerhafte Datei: %s.STR
+11 Fehlerhafte Datei: %s.PRS
+12 Dokument %s wird gedruckt
+13 Einteilung (%)
+14 1 Seite/Blatt
+15 2 Seiten/Blatt
+16 4 Seiten/Blatt
+17 %s
+18 Nicht genügend Arbeitsspeicher
+19 *** Amaya: Nicht behebbarer Fehler ***
+20 Geänderte Dokumente werden gespeichert
+21 Fehlerhafte Datei %s.TRA
+22 %s ist kein gültiges Geschwister von %s (%s)
+23 %s ist kein gültiges Kind von %s (%s)
+24 %s, Seite %d
+25 Sprache
+26 Attribut
+27 Standarddarstellung
+28 Übernehmen
+29 Schrift
+30 Darstellung
+31 Grafiken
+32 Ausrichtung
+33 Fehlwert
+34 Ausrichten
+35 Einrücken
+36 Druckvorgang läuft
+37 Drucken
+38 manueller Papiereinzug
+39 Optionen
+40 A4
+41 US
+42 Papierformat
+43 Registerkarte
+44 Verzeichnisse
+45 %s existiert bereits. Überschreiben?
+46 Maustaste 1 setzt die Textfarbe
+47 Maustaste 2 oder 3 setzt die Hintergrundfarbe
+48 Familie
+49 Normal
+50 Fett
+51 Kursiv
+52 Geneigt
+53 Normal
+54 Stärke
+55 Normal
+56 Unterstrichen
+57 Durchgestrichen
+58 Größe (pt)
+59 Einrücken (pt)
+60 Zeilenabstand (pt)
+61 Zeilenabstand
+62 Speichern
+63 Nicht Speichern
+64 Schräge
+65 Farbe
+66 XHTML
+67 Löschen
+68 Ausgabe
+69 PostScript-Datei
+70 Drucker
+71 Suchen nach
+72 Buchstabenlage ignorieren
+73 Ersetzen durch
+74 Modus
+75 Nicht ersetzen
+76 Bestätigen
+77 Alle ersetzen
+78 Suchraum
+79 Oberhalb der Markierung
+80 Innerhalb der Markierung
+81 Unterhalb der Markierung
+82 Im gesamten Dokument
+83 Überspringen
+84 Standardfarbe
+85 vorher speichern?
+86 Dokument schließen
+87 Formelsatz
+88 Grafik
+89 Lateinisches Alphabet
+90 Griechiches Alphabet
+91 Speichern
+92 Text
+93 Zeichnung
+94 Symbol
+95 Bild
+96 Art des XML Elements
+97 nach
+98 vor
+99 um
+100 Einfügen
+101 Einfügen
+102 Erzeugen
+103 Einfügen
+104 Seitenumbruch
+105 Sprache des Elements
+106 Sprachvoreinstellung:
+107 Suche beendet
+108 Suche in
+109 Suche
+110 Schreibgeschütztes Dokument
+111 Suche beendet
+112 Standardzeichensatz
+113 Standardgrafik
+114 Standardformat
+115 Standardgeometrie
+116 pt
+117 Linienart
+118 Linienstärke
+119 Füllmuster
+120 Teilen
+121 Objekttyp
+122 Gehe zu Seite Nr.:
+123 egal
+124 Attribut suchen
+125 Suche nach Typ
+126 Dokumenttyp
+127 Wert des Attributs
+128 Unbekanntes Attribut
+129 Abbrechen
+130 Fehler in der PostScript-Erkennung
+131 Auftrag vom Druckspooler "%s" zurückgewiesen
+132 Kann "%s" nicht erzeugen
+133 Überstrichen
+134 Format
+135 Ereignisse (Events)
+136 Löschen
+137 Linke Maustaste: Farbe für markierten Text
+138 Mittlere oder rechte Maustaste: Cursorfarbe
+139 Weiter ...
+140 Holen
+141 Farbe
+142 Hintergrundfarbe
+143 Vordergrundfarbe
+144 Farben wechseln
+145 Wählen Sie eine generische XML-Struktur
+146 Überprüfe
+147 Suchen
+148 Ersetzen (PW)
+149 Ersetzen
+150 Sprache
+151 Lernen
+152 Worte mit
+153 Rechtschreibprüfung
+154 Römische Zahlen
+155 Ignorieren
+156 Worte in Großbuchstaben
+157 Worte mit Ziffern
+158 Fehler in der Parameterdatei
+159 Tastaturdatei fehlt
+160 Kann das Dokumentwörterbuch nicht speichern
+161 Fehlerhaftes Wort "%s" im Wörterbuch zurückgewiesen
+162 Wort "%s" zum Dokumentwörterbuch hinzugefügt
+163 Rechtschreibprüfung beendet
+164 Rechtschreibprüfung abgebrochen
+165 Bitte ein Dokument auswählen
+166 Dokumentwörterbuch unter %s gespeichert
+167 In dieser Version nicht verfügbar
+168 Palette aktivieren/deaktivieren
+169 Hilfsmittel
+170 Obligatorisches Attribut, kann nicht entfernt werden
+171 Erneuern
+172 Links
+173 Rechts
+174 Zentrieren
+175 Ausrichten
+176 Klasse übernehnem
+177 Klasse oder Pseudoklasse wählen
+178 Auswählen
+179 Verwerfen
+180 Formel
+181 Verschiedene
+182 Binäre Relationen
+183 Binäre negierte Relationen
+184 Operatoren
+185 Griechisches Alphabet (Großbuchstaben)
+186 Pfeile
+187 Sonderzeichen
+188 Stop
+189 Zurück
+190 Vorwärts
+191 Aktualisieren
+192 Speichern
+193 Drucken
+194 Suchen/Ersetzen
+195 Startseite
+196 Betont
+197 Hervorgehoben
+198 Code
+199 Bild
+200 Überschrift Ebene 1
+201 Überschrift Ebene 2
+202 Überschrift Ebene 3
+203 Ungeordnete Liste
+204 Geordnete Liste
+205 Definitionsliste
+206 Verweis
+207 Tabelle
+208 Sie sind dabei, %d geöffnete Seiten zu schließen. Sind Sie sicher, dass Sie fortfahren möchten?
+209 Warnung anzeigen, wenn mehrere Seiten geschlossen werden sollen
+210 Seiten schließen
+211 Kein Fehler gefunden
+212 Parserfehler anzeigen
+213 Umrisse
+214 Ábschnitt
+215 Erzeugen
+216 Eingefügter Text
+217 Gelöschter Text
+218 Tiefgestellt
+219 Hochgestellt
+220 Begriff
+221 Definition
+222 Objekt
+223 CSS Stil
+224 Durchsuchen
+225 Ansicht horizontal teilen
+226 Ansicht vertikal teilen
+227 Hilfsmittel anzeigen

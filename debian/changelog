@@ -1,3 +1,43 @@
+amaya (9.53~dfsg.0-1) unstable; urgency=low
+
+  * The "Amaya on a diet" release.
+  * Nobody complained with the stripped-down
+    package using shared WxWidgets, libWWW and libGL, switch to the lighter
+    version of the tarball containing only the Amaya source code.
+  * Strip non-free bits and reroll upstream tarball :
+    + Remove ESSTIX fonts. Running strings against a file shows "Changes are
+      not permitted without consent of Elsevier Science BV."
+    + Remove the cextract source code, used by upstream to generate header
+      files. The license claims that "The code is freely distributable and
+      there are no restrictions other than the fact that it not be used for
+      monetary gain and that copyright notices must be kept intact."
+    + Add a couple of patches to be sure things still build fine :
+      no_esstix.diff and no_cextract.diff.
+  * New upstream release. The following patches have been merged upstream :
+    + fix_ftbfs.diff
+    + fix_ftbfs_64bit_lost_precision.diff (Closes: #375105). Thanks Robert
+      S. Edmonds for the NMU.
+    + cascade_hbt.diff
+    + enable-system-wx.diff
+    + lock_as_hidden_file.diff
+    + fix_warnings.diff
+    + Also fixes data corruption with the HTTP headers (Closes: #390270).
+      Thanks Georg Colle for reporting it.
+  * Drop desktop_binpath.diff patch. It works fine without it.
+  * Patches updated to fit with the new release :
+    + rdf_conf_in_conf.diff
+    + raptor_split.diff
+    + enable_system_libwww.diff
+    + lib_amaya.diff changed to installdir_amaya.diff and cleaned up, a better
+      way of doing it has been merged upstream.
+  * A few other patches came in and got included upstream.
+  * Stop linking against redland, which is only needed when the bookmarks are
+    enabled. Only link against libraptor, and build-depend against
+    libraptor1-dev instead of librdf0-dev.
+  * Add fix_ftbfs64.diff to fix build error on amd64.
+
+ -- Regis Boudin <regis@boudin.name>  Fri, 12 Jan 2007 23:43:00 +0000
+
 amaya (9.51-2.1) unstable; urgency=low
 
   * Non-maintainer upload.

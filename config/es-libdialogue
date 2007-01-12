@@ -1,0 +1,229 @@
+# encoding= latin1
+0 Error de X11 : %s\n
+1 Confirmar
+2 No hay archivo de alfabeto
+3 La nueva vista no puede sustituir la anterior
+4 Esquemas incompatibles. Recompile %s
+5 Error Fatal: Fuentes no encontradas
+6 Memoria agotada
+7 Error Fatal: No puedo conectar a X
+8 La vista se modifica antes de la creación
+9 Tabla de reglas completa
+10 Archivo incorrecto: %s.STR
+11 Archivo incorrecto: %s.PRS
+12 Documento %s impreso
+13 Disposición
+14 1 página/hoja
+15 2 páginas/hoja
+16 4 páginas/hoja
+17 %s
+18 Memoria insuficiente
+19 *** Amaya: Error Irrecuperable ***
+20 si hay documentos modificados, se guardarán
+21 Archivo .TRA incorrecto: %s
+22 %s no es un hermano válido para %s (%s)
+23 %s no es un hijo válido para %s (%s)
+24 %s, página %d
+25 Idioma
+26 Atributos
+27 Presentación estándar
+28 Aplicar
+29 Carácter
+30 Decoración
+31 Gráficos
+32 Párrafo
+33 Por omisión
+34 Alineación
+35 Sangría
+36 Imprimiendo
+37 Configurar e imprimir
+38 Alimentación manual
+39 Opciones
+40 A4
+41 US
+42 Formato de papel
+43 Cerrar
+44 Directorios
+45 El documento %s ya existe. ¿Quiere sobreescribirlo?
+46 El botón izquierdo fija el color del texto
+47 El botón derecho o el central fijan el color del fondo
+48 Familia de fuente
+49 Normal
+50 Negrita
+51 Cursiva
+52 Oblicua
+53 Normal
+54 Grosor
+55 Normal
+56 Subrayado
+57 Tachado
+58 Tamaño del cuerpo (pt)
+59 Sangría (pt):
+60 Interlineado (pt):
+61 Interlineado
+62 Guardar documento
+63 Cerrar, no guardar
+64 Estilo de carácter
+65 Colores
+66 XHTML
+67 Borrar
+68 Salida
+69 Archivo PostScript
+70 Impresora
+71 Buscar:
+72 Ignorar mayúsculas/minúsculas
+73 Reemplazar por:
+74 Reemplazar
+75 No reemplazar
+76 Solicitar confirmación
+77 Reemplazar automáticamente
+78 Dónde buscar
+79 Antes de la selección
+80 En la selección
+81 Tras la selección
+82 En todo el documento
+83 No reemplazar
+84 Colores por omisión
+85 antes de cerrarlo
+86 Cerrar un documento
+87 Símbolos matemáticos
+88 Gráficos
+89 Alfabeto latino
+90 Alfabeto griego
+91 Guardar
+92 Texto
+93 Gráfico
+94 Símbolo
+95 Imagen
+96 Tipo de elemento XML
+97 después
+98 antes
+99 alrededor
+100 Incluir
+101 Pegar
+102 para crear
+103 Insertar
+104 Salto de página
+105 Idioma del elemento
+106 Idioma heredado:
+107 No encontrado
+108 Buscar en
+109 Buscar
+110 Elemento de sólo lectura
+111 Nada que sustituir
+112 Caracteres estándar
+113 Gráficos estándar
+114 Formato estándar
+115 Geometría estándar
+116 pt
+117 Estilo de línea
+118 Grosor de línea
+119 Patrón de relleno
+120 Dividir
+121 Tipo de objeto
+122 Ir a página número:
+123 Cualquiera
+124 Atributo a buscar
+125 Tipo a buscar
+126 Natures
+127 Valores de atributo
+128 Atributo desconocido
+129 Cancelar
+130 Error en traducción PostScript
+131 Orden rechazada por el spooler "%s"
+132 No puedo crear "%s"
+133 Suprarayado
+134 Formato de documento
+135 Eventos
+136 Eliminar atributo
+137 El botón izquierdo fija el color del texto de la selección
+138 El botón derecho o el central fijan el color del fondo de la selección
+139 Más ...
+140 Obtener
+141 Color
+142 Color del fondo
+143 Color del texto
+144 Intercambiar colores
+145 Seleccione una estructura genérica
+146 Comprobar
+147 Buscar/Saltar
+148 Reemplazar (+ dic)
+149 Reemplazar y siguiente
+150 Otro idioma
+151 Agregar
+152 Palabras que contengan:
+153 Revisar ortografía:
+154 Números romanos
+155 Ignorar
+156 Palabras en mayúsculas
+157 Palabras con dígitos
+158 Error en archivo de parámetro
+159 No hay archivo de teclado
+160 No puedo guardar el diccionario del documento
+161 Palabra incorrecta "%s" rechazada en este diccionario
+162 Palabra "%s" añadida al diccionario del documento
+163 Fin de la corrección ortográfica
+164 Corrección ortográfica abortada
+165 Por favor, seleccione un documento
+166 Diccionario del documento guardado: %s
+167 No disponible en esta versión
+168 Activar/Desactivar paleta
+169 Herramientas
+170 Atributo obligatorio, no puede eliminarse
+171 Actualizar
+172 Izquierda
+173 Derecha
+174 Centrado
+175 Justificado
+176 Aplicar clase
+177 Seleccionar una clase o seudo-clase
+178 Seleccionar
+179 Descartar
+180 MathML
+181 Miscelánea
+182 Relaciones binarias
+183 Relaciones de negación binarias
+184 Operadores
+185 Alfabeto griego (mayúsculas)
+186 Flechas
+187 Caracteres especiales
+188 Detener
+189 Atrás
+190 Adelante
+191 Actualizar
+192 Guardar
+193 Imprimir
+194 Buscar
+195 Inicio
+196 Énfasis (em)
+197 Enérgico (strong)
+198 Código (code)
+199 Imagen
+200 Cabecera nivel 1 (h1)
+201 Cabecera nivel 2 (h2)
+202 Cabecera nivel 3 (h3)
+203 Lista no ordenada (ul)
+204 Lista ordenada (ol)
+205 Lista de definición (dl)
+206 Enlace
+207 Tabla
+208 Va a cerrar %d pestañas abiertas. ¿Seguro que desea continuar?
+209 Avisarme cuando intente cerrar múltiples pestañas
+210 Cerrar pestañas
+211 Ningún error detectado
+212 Mostrar errores sintácticos
+213 Cajas
+214 División
+215 Destino
+216 Inserción
+217 Borrado
+218 Subíndice
+219 Superíndice
+220 Término
+221 Definición
+222 Objeto
+223 Estilo CSS
+224 Archivos
+225 Dividir horizontalmente
+226 Dividir vista verticalmente
+227 Ventana de herramientas

@@ -1,0 +1,22 @@
+extension
+
+presentation
+
+ TemplateP:  Standard presentation
+
+export
+
+ TemplateT: XML
+
+translation
+
+C_CR: \0
+TEXT_UNIT: \0
+folder: \0
+includeAt: include
+integerVal: integer
+listVal : list
+useAt: use
+defaultAt : default
+useEl: use
+useSimple: use

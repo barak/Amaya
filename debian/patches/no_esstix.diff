@@ -1,0 +1,13 @@
+Index: amaya-9.53/batch/script_install.in
+===================================================================
+--- amaya-9.53.orig/batch/script_install.in	2007-01-12 23:36:50.000000000 +0000
++++ amaya-9.53/batch/script_install.in	2007-01-12 23:38:24.000000000 +0000
+@@ -83,7 +83,7 @@
+ DICOFILES="*.ptn *.dic alphabet clavier"
+ RESOURCE_XRC_FILES="*.xrc"
+ RESOURCE_ICONS_FILES="*.png *.ico *.gif"
+-FONTSFILES="Families.list fonts.dir icones* *.ttf *.TTF"
++FONTSFILES="Families.list fonts.dir icones* *.ttf"
+ 
+ $ECHO "--> Installing data in $PREFIX/$AMAYA_INSTALLDIR/amaya"
+ cd $AMAYA_SOURCEBINDIR/../../amaya
