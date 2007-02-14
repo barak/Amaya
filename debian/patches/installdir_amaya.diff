@@ -1,11 +1,11 @@
 Install into "amaya" directory instead of "Amaya-$APP_VER", to make packaging
 easier.
 
-Index: amaya-9.52.0.debian.1/configure.in
+Index: amaya-9.54~dfsg.0/configure.in
 ===================================================================
---- amaya-9.52.0.debian.1.orig/configure.in	2006-10-18 21:20:38.381389000 +0100
-+++ amaya-9.52.0.debian.1/configure.in	2006-10-18 21:20:47.721972750 +0100
-@@ -1426,7 +1426,7 @@
+--- amaya-9.54~dfsg.0.orig/configure.in	2007-01-22 16:47:42.000000000 +0000
++++ amaya-9.54~dfsg.0/configure.in	2007-02-14 19:09:43.000000000 +0000
+@@ -1325,7 +1325,7 @@
  	VPATHOPT="VPATH"
  fi
  

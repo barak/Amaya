@@ -56,7 +56,7 @@ extern void SRuleForSibling ( PtrDocument pDoc,
                               ThotBool before,
                               int distance,
                               int *typeNum,
-                              PtrSSchema * pSS,
+                              PtrSSchema *pSS,
                               ThotBool * list,
                               ThotBool * optional );
 extern void ReferredType ( PtrElement pRefEl,
@@ -93,7 +93,8 @@ extern PtrElement CreateDescendant ( int typeNum,
                                      PtrDocument pDoc,
                                      PtrElement *pLeaf,
                                      int descTypeNum,
-                                     PtrSSchema pDescSS );
+                                     PtrSSchema pDescSS,
+                                     PtrElement pParent );
 extern SSchema TtaGetSchemaExtension ( Document document,
                                        char *NomExtension );
 extern SRule *ExtensionRule ( PtrSSchema pSS,
@@ -168,7 +169,7 @@ extern void SRuleForSibling ( PtrDocument pDoc,
                                 ThotBool before,
                                 int distance,
                                 int *typeNum,
-                                PtrSSchema * pSS,
+                                PtrSSchema *pSS,
                                 ThotBool * list,
                                 ThotBool * optional );
 extern void ReferredType ( PtrElement pRefEl,
@@ -205,7 +206,8 @@ extern PtrElement CreateDescendant ( int typeNum,
                                        PtrDocument pDoc,
                                        PtrElement *pLeaf,
                                        int descTypeNum,
-                                       PtrSSchema pDescSS );
+                                       PtrSSchema pDescSS,
+                                       PtrElement pParent );
 extern SSchema TtaGetSchemaExtension ( Document document,
                                          char *NomExtension );
 extern SRule *ExtensionRule ( PtrSSchema pSS,

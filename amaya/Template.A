@@ -6,6 +6,9 @@ DEFAULT
 	  ElemClick.Pre -> SimpleClick;
 	  ElemRClick.Pre -> SimpleRClick;
 	  ElemLClick.Pre -> SimpleLClick;
+	  ElemNew.Pre -> TemplateElementWillBeCreated;
+	  ElemDelete.Pre -> TemplateElementWillBeDeleted;
+    AttrMenu.Pre ->    TemplateAttrInMenu;
    END;
    
 ELEMENTS
@@ -20,6 +23,7 @@ ELEMENTS
       BEGIN
          ElemNew.Pre -> UseToBeCreated;
          ElemNew.Post -> UseCreated;
+         ElemLClick.Pre -> UseSimpleButtonClicked;
       END;
    repeat :
       BEGIN
@@ -29,5 +33,15 @@ ELEMENTS
       BEGIN
          ElemLClick.Pre -> OptionButtonClicked;
       END;
-      
+
+
+   TEXT_UNIT:
+        ElemTextModify.Post -> CheckNewLines;
+
+ATTRIBUTES
+   currentType :
+      BEGIN
+         AttrExport.Pre -> CurrentTypeWillBeExported;
+      END;
+   
 END

@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -1295,6 +1295,9 @@ static void TranslateLeaf (PtrElement pEl, ThotBool transChar,
                       case 'h':
                         c = 0x00AF; /* overline */
                         break;
+                      case 'H':
+                        c = 0x0302; /* hat */
+                        break;
                       case 'i':
                         c = 0x222B; /* integral */
                         break;
@@ -1328,6 +1331,9 @@ static void TranslateLeaf (PtrElement pEl, ThotBool transChar,
                       case 'S':
                         c = 0x2211; /* n-ary summation */
                         break;
+                      case 't':
+                        c = 0x222D; /* triple integral */
+                        break;
                       case 'U':
                         c = 0x22C3; /* n-ary union */
                         break;
@@ -1338,10 +1344,10 @@ static void TranslateLeaf (PtrElement pEl, ThotBool transChar,
                         c = 0x2191; /* upwards arrow */
                         break;
                       case '<':
-                        c = 0x27E8; /* mathematical left angle bracket */
+                        c = 0x2329; /* mathematical left angle bracket */
                         break;
                       case '>':
-                        c = 0x27E9; /* mathematical right angle bracket */
+                        c = 0x232A; /* mathematical right angle bracket */
                         break;
                       case '|':
                         c = 0x2223; /* divides */

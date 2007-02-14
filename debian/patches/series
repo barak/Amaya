@@ -3,6 +3,7 @@ installdir_amaya.diff
 rdf_conf_in_conf.diff
 raptor_split.diff
 enable_system_libwww.diff
-fix_ftbfs64.diff
 no_cextract.diff
 no_esstix.diff
+no_libpng_libjpeg.diff
+fix_ftbs64.diff

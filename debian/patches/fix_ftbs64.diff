@@ -1,0 +1,25 @@
+Index: amaya-9.54~dfsg.0/thotlib/base/containers.c
+===================================================================
+--- amaya-9.54~dfsg.0.orig/thotlib/base/containers.c	2007-02-19 22:35:29.000000000 +0000
++++ amaya-9.54~dfsg.0/thotlib/base/containers.c	2007-02-19 22:47:03.000000000 +0000
+@@ -457,7 +457,7 @@
+  */
+ static int HashMap_SimpleCompareKey(HashMapKey key1, HashMapKey key2)
+ {
+-  return (int)key1-(int)key2;
++  return (int)((intptr_t)key1-(intptr_t)key2);
+ }
+   
+ /**
+@@ -723,9 +723,9 @@
+  * Pointer hash map
+  *----------------------------------------------------------------------------*/
+ 
+-static int PointerHashMap_HashFunction(void* key)
++static intptr_t PointerHashMap_HashFunction(void* key)
+ {
+-  return (int) key; 
++  return (intptr_t) key;
+ }
+ 
+ HashMap PointerHashMap_Create(Container_DestroyElementFunction destroy,

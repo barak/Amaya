@@ -1,5 +1,5 @@
       { Structure Schema for XTiger Templates
-	  Francesc Campoy Flores     31/03/2006 }
+        Francesc Campoy Flores & I. Vatton    January 2007 }
 
 	
 STRUCTURE Template;
@@ -26,22 +26,19 @@ STRUCT
       attribute;
     END;
 
-  head = LIST OF ( 
-    Declaration = CASE OF
+  head ( ATTR version = TEXT; templateVersion = TEXT ) = 
+    LIST OF ( Declaration = CASE OF
       component;
       union;
       import;
     END
    );
 
-  component ( ATTR name = TEXT; title = TEXT ) = ANY - ( head, union, import );
-  union ( ATTR name; includeAt = TEXT; exclude = TEXT; title ) = CONSTANT C_CR; {It is always empty}
+  component ( ATTR name = TEXT ) = ANY - ( head, union, import );
+  union ( ATTR name; includeAt = TEXT; exclude = TEXT ) = CONSTANT C_CR; {It is always empty}
   import ( ATTR src = TEXT ) = CONSTANT C_CR; {It is always empty}
 
-  folder = ANY - ( head, union, import, component );
-
-  repeat ( ATTR id = TEXT; minOccurs = TEXT; maxOccurs = TEXT; currentOccurs =
-  	TEXT; title ) =
+  repeat ( ATTR title = TEXT; minOccurs = TEXT; maxOccurs = TEXT; currentOccurs = TEXT ) =
   	LIST OF ( Repetition =
 		  CASE OF
 		    useEl;
@@ -49,37 +46,43 @@ STRUCT
 	    	option;
 		    repeat;
 		    bag;
-		    folder;
 		    END);
 
 
-  option ( ATTR id )
+  option ( ATTR title )
   	= ANY - ( head, union, import, component );
   
-  useEl ( ATTR id; types = TEXT; currentType = TEXT; title )
+  useEl ( ATTR title; types = TEXT; currentType = TEXT )
      = ANY - ( head, union, import, component );
 
-  useSimple ( ATTR id; types; currentType; title )
+  useSimple ( ATTR title; types )
      = ANY - ( head, union, import, component );
 
-  bag ( ATTR id; types ) 
-     =  ANY - ( head, union, import, component );
+  bag ( ATTR title; types ) 
+     =  LIST OF (ANY) - ( head, union, import, component );
 
   attribute ( ATTR 
-    name; 
+    ref_name = TEXT; 
     type = integerVal, decimal, string, listVal; 
     useAt = TEXT; 
     defaultAt = TEXT; 
     fixed = TEXT; 
     values = TEXT;
-    title ) = CONSTANT C_CR; {It is always empty}
+    ) = CONSTANT C_CR; {It is always empty}
 
 EXCEPT
-  repeat: NoReplicate;
-  option: NoReplicate;
+  useEl:              NoReplicate, NoBreakByReturn;
+  useSimple:          NoReplicate, NoBreakByReturn;
+  repeat:             NoReplicate, NoBreakByReturn, NoCreate;
+  option:             NoReplicate, NoBreakByReturn, NoCreate;
+  bag:                NoReplicate, NoBreakByReturn, NoCreate, ParagraphBreak;
   {Hiding unkown and language attributes}
-	Unknown_attribute	: Invisible;
-	Language :          Invisible;
+	Unknown_attribute:  Invisible;
+	Language:           Invisible;
   types :             DuplicateAttr;
+  currentType:        Invisible;
+  title:              GiveName;
+  ref_name:		        GiveName;
+  name:			          GiveName;
 	
 END

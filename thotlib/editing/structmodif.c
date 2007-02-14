@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -507,7 +507,6 @@ void TtcHolophrast (Document document, View view)
       /* met a jour les menus qui dependent de la selection dans toutes */
       /* les vues ouvertes */
       PrepareSelectionMenu ();
-      BuildSelectionMessage ();
       if (ThotLocalActions[T_chselect] != NULL)
         (*(Proc1)ThotLocalActions[T_chselect]) ((void *)pDoc);
       if (ThotLocalActions[T_chattr] != NULL)
@@ -882,12 +881,12 @@ ThotBool BreakElement (PtrElement pElReplicate, PtrElement pSplitEl,
   if (!pDoc->DocReadOnly)
     {
       doc = IdentDocument (pDoc);
-      if (pSplitEl != NULL)
+      if (pSplitEl)
         {
           firstSel = pSplitEl;
           firstChar = splitIndex;
         }
-      if (pElReplicate != NULL)
+      if (pElReplicate)
         {
           if (pElReplicate->ElTypeNumber == pElReplicate->ElStructSchema->SsRootElem)
             /* that's the root element. Don't duplicate it */
@@ -968,7 +967,7 @@ ThotBool BreakElement (PtrElement pElReplicate, PtrElement pSplitEl,
                         /* modifie le volume des paves contenant la 1ere
                            partie du texte */
                         for (view = 0; view < MAX_VIEW_DOC; view++)
-                          if (pNext->ElTextLength > 0)
+                          if (pNext && pNext->ElTextLength > 0)
                             UpdateAbsBoxVolume (pEl, view, pDoc);
                       pPrev = pEl;
                       nextChar = 1;

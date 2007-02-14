@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -593,7 +593,9 @@ static int GetGhostSize (PtrBox pBox, ThotBool horizontal, PtrBox pBlock)
                         dim += pChild->AbBox->BxHeight;
                     }
                   if (!pChild->AbPresentationBox &&
-                      ((horizontal && pParent->AbBox->BxType == BoFloatBlock) ||
+                      ((horizontal &&
+                        (pParent->AbBox->BxType == BoFloatBlock ||
+                         pParent->AbBox->BxType == BoCellBlock)) ||
                        (!horizontal && pParent->AbBox->BxType == BoBlock)))
                     /* the first child gives the size */
                     return dim;
@@ -780,6 +782,7 @@ void ComputeMBP (PtrAbstractBox pAb, int frame, ThotBool horizRef,
               pParent && evalAuto &&
               pParent->BxType != BoBlock &&
               pParent->BxType != BoFloatBlock &&
+              pParent->BxType != BoCellBlock &&
               pParent->BxType != BoGhost &&
               pParent->BxType != BoFloatGhost &&
               pParent->BxW >= dim)
@@ -1227,8 +1230,7 @@ void ComputePosRelation (AbPosition *rule, PtrBox pBox, int frame,
       return;
     }
   else if (pRefAb && pRefAb->AbBox &&
-           (pRefAb->AbBox->BxType == BoGhost ||
-            pRefAb->AbBox->BxType == BoFloatGhost))
+           pRefAb->AbBox->BxType == BoGhost)
     {
       /* the box position is computed by the line formatter */
       if (horizRef)
@@ -1236,6 +1238,23 @@ void ComputePosRelation (AbPosition *rule, PtrBox pBox, int frame,
       else
         pAb->AbVertPosChange = FALSE;
       return;
+    }
+  else if (pRefAb && pRefAb->AbBox &&
+           (pRefAb->AbBox->BxType == BoFloatGhost ||
+            pRefAb->AbBox->BxType == BoGhost))
+    {
+      // get a valid child
+      while (pRefAb && pRefAb->AbBox &&
+             pRefAb->AbBox->BxType == BoFloatGhost)
+        {
+          pRefAb = pRefAb->AbFirstEnclosed;
+          if (rule->PosRefEdge == Right || rule->PosRefEdge == Bottom)
+            {
+              // look for the last sibling
+              while (pRefAb && pRefAb->AbNext)
+                pRefAb = pRefAb->AbNext;
+            }
+        }
     }
 
   if (horizRef)
@@ -1282,7 +1301,7 @@ void ComputePosRelation (AbPosition *rule, PtrBox pBox, int frame,
               /* there is an enclosing box */
               pRefAb = GetPosRelativeAb (pAb, horizRef);
               /* Si oui -> A droite de sa boite */
-              if (pRefAb != NULL && rule->PosUnit != UnPercent)
+              if (pRefAb && rule->PosUnit != UnPercent)
                 {
                   /* At the right of the previous */
                   sibling = TRUE;
@@ -1582,6 +1601,7 @@ void ComputePosRelation (AbPosition *rule, PtrBox pBox, int frame,
         {
 #ifdef _GL
           if (pRefAb &&
+              !pRefAb->AbPresentationBox &&
               pRefAb->AbElement &&
               pRefAb->AbElement->ElSystemOrigin && 
               pRefAb->AbNext != pAb &&
@@ -2088,7 +2108,10 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
   zoom = ViewFrameTable[frame - 1].FrMagnification;
   pParentAb = pAb->AbEnclosing;
   dx = dy = 0;
-  pos = pAb->AbPositioning;
+  if (pAb->AbLeafType == LtCompound)
+    pos = pAb->AbPositioning;
+  else
+    pos = NULL;
   if (pParentAb)
     parent = pParentAb->AbElement;
   else
@@ -2381,6 +2404,7 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
                   (pParentAb->AbBox &&
                    (pParentAb->AbBox->BxType == BoBlock ||
                     pParentAb->AbBox->BxType == BoFloatBlock ||
+                    pParentAb->AbBox->BxType == BoCellBlock ||
                     pParentAb->AbBox->BxType == BoGhost)))
                 {
                   /* all child heights depend on the parent height */
@@ -2494,6 +2518,7 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
                          (pParentAb->AbBox &&
                           (pParentAb->AbBox->BxType == BoBlock ||
                            pParentAb->AbBox->BxType == BoFloatBlock ||
+                           pParentAb->AbBox->BxType == BoCellBlock ||
                            pParentAb->AbBox->BxType == BoGhost ||
                            pParentAb->AbBox->BxType == BoFloatGhost))));
               if (horizRef)
@@ -3325,7 +3350,8 @@ void ComputeAxisRelation (AbPosition rule, PtrBox pBox, int frame, ThotBool hori
       pBox->BxType == BoGhost ||
       pBox->BxType == BoFloatGhost ||
       pBox->BxType == BoBlock ||
-      pBox->BxType == BoFloatBlock)
+      pBox->BxType == BoFloatBlock ||
+      pBox->BxType == BoCellBlock)
     {
       GetExtraMargins (pBox, NULL, frame, &t, &b, &l, &r);
       x = pBox->BxLMargin + pBox->BxLBorder + pBox->BxLPadding + l;

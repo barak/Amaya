@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -1755,7 +1755,6 @@ void SelectStringInAttr (PtrDocument pDoc, PtrAbstractBox pAb, int firstChar,
             }
         }
       PrepareSelectionMenu ();
-      BuildSelectionMessage ();
       if (ThotLocalActions[T_chselect] != NULL)
         (*(Proc1)ThotLocalActions[T_chselect]) ((void *)pDoc);
       if (ThotLocalActions[T_chattr] != NULL)
@@ -1864,7 +1863,6 @@ static void SelectStringOrPosition (PtrDocument pDoc, PtrElement pEl,
           if (SelectionUpdatesMenus && oldFirstSelEl != FirstSelectedElement)
             {
               PrepareSelectionMenu ();
-              BuildSelectionMessage ();
               if (ThotLocalActions[T_chselect] != NULL)
                 (*(Proc1)ThotLocalActions[T_chselect]) ((void *)pDoc);
               if (ThotLocalActions[T_chattr] != NULL)
@@ -2083,7 +2081,6 @@ void SelectElement (PtrDocument pDoc, PtrElement pEl, ThotBool begin, ThotBool c
       if (SelectionUpdatesMenus)
         {
           PrepareSelectionMenu ();
-          BuildSelectionMessage ();
           if (ThotLocalActions[T_chselect] != NULL)
             (*(Proc1)ThotLocalActions[T_chselect]) ((void *)pDoc);
           if (ThotLocalActions[T_chattr] != NULL)
@@ -2488,7 +2485,6 @@ static void DoExtendSelection (PtrElement pEl, int rank, ThotBool fixed,
                oldLastEl != LastSelectedElement))
             {
               PrepareSelectionMenu ();
-              BuildSelectionMessage ();
               if (ThotLocalActions[T_chselect] != NULL)
                 (*(Proc1)ThotLocalActions[T_chselect]) (
                                                         (void *)SelectedDocument);
@@ -2730,7 +2726,7 @@ void SelectElementWithEvent (PtrDocument pDoc, PtrElement pEl,
   Document            doc;
   int                 pos;
 
-  if (pDoc != NULL && pEl != NULL)
+  if (pDoc && pEl)
     {
       pos = 0;
       SelectableAncestor (&pEl, &pos);
@@ -3507,8 +3503,6 @@ static void SelColumn (PtrElement column)
     }
   WholeColumnSelected = TRUE;
   SelectedColumn = column;
-  /* update the selection message */
-  BuildSelectionMessage ();
 }
 
 /*----------------------------------------------------------------------

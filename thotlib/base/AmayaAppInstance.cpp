@@ -11,7 +11,6 @@
 #include "fileaccess.h"
 
 #include <wx/filename.h>
-
 static ThotBool A_multiple = FALSE;
 
 /*----------------------------------------------------------------------

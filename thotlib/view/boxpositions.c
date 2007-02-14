@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -556,9 +556,9 @@ ThotBool SetPageBreakPosition (PtrAbstractBox pAb, int *page)
 
   /* look at if there is a table ancestor */
   if (pAb->AbBox->BxType == BoTable)
-    table = SearchEnclosingType (pAb->AbEnclosing, BoTable, BoFloatBlock);
+    table = SearchEnclosingType (pAb->AbEnclosing, BoTable, BoFloatBlock, BoCellBlock);
   else
-    table = SearchEnclosingType (pAb, BoTable, BoFloatBlock);
+    table = SearchEnclosingType (pAb, BoTable, BoFloatBlock, BoCellBlock);
   /* Tant que la limite de page change on recalcule */
   /* quelles sont les boites coupees */
   while (result)
@@ -665,7 +665,8 @@ void AddBoxTranslations (PtrAbstractBox pAb, int visibility, int frame,
               {
                 if (pChildBox->BxHorizFlex &&
                     (pChildBox->BxType == BoBlock ||
-                     pChildBox->BxType == BoFloatBlock))
+                     pChildBox->BxType == BoFloatBlock ||
+                     pChildBox->BxType == BoCellBlock))
                   /* need to recheck the parent height */
                   checkHeight = TRUE;
 
@@ -739,7 +740,12 @@ void AddBoxTranslations (PtrAbstractBox pAb, int visibility, int frame,
                     y_move = FALSE;
                     newY = FALSE;
                   }
-		
+#ifdef IV
+if (!strcmp (pChildAb->AbElement->ElLabel, "L169"))
+  printf ("AddBoxTranslations L169 x=%d + %d\n",pChildBox->BxXOrg,x);
+if (!strcmp (pChildAb->AbElement->ElLabel, "L170"))
+  printf ("AddBoxTranslations L170 x=%d + %d\n",pChildBox->BxXOrg,x);
+#endif
                 /* decale la boite positionnee en X dans l'englobante */
                 if (horizRef && newX)
                   {

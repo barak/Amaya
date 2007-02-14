@@ -1,13 +1,3 @@
 usr/lib/amaya/amaya
 usr/lib/amaya/annotlib
-usr/lib/amaya/config usr/share/amaya/
-usr/lib/amaya/dicopar usr/share/amaya/
-usr/lib/amaya/fonts/*.list usr/share/amaya/fonts/
-usr/lib/amaya/fonts/*.dir usr/share/amaya/fonts/
-usr/lib/amaya/fonts/icones* usr/share/amaya/fonts/
-usr/lib/amaya/resources usr/share/amaya/
-usr/lib/amaya/templates usr/share/amaya/
-usr/lib/amaya/doc usr/share/amaya/
-usr/share/pixmaps
-usr/share/applications
 usr/lib/amaya/wx

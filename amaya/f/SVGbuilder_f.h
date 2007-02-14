@@ -44,6 +44,8 @@ extern void SetTextAnchor ( Attribute attr,
                             ThotBool delete_ );
 extern void CreateCSSRules ( Element el,
                              Document doc );
+extern void SVGElementCreated ( Element el,
+                                Document doc );
 extern void SVGElementComplete ( ParserData *context,
                                  Element el,
                                  int *error );
@@ -82,10 +84,6 @@ extern void ParseBaselineShiftAttribute ( Attribute attr,
 extern void ParsePointsAttribute ( Attribute attr,
                                    Element el,
                                    Document doc );
-extern void ParseviewBoxAttribute ( Attribute attr,
-                                    Element el,
-                                    Document doc,
-                                    ThotBool delete_ );
 extern void ParseTransformAttribute ( Attribute attr,
                                       Element el,
                                       Document doc,
@@ -147,6 +145,8 @@ extern void SetTextAnchor ( Attribute attr,
                               ThotBool delete_ );
 extern void CreateCSSRules ( Element el,
                                Document doc );
+extern void SVGElementCreated ( Element el,
+                                  Document doc );
 extern void SVGElementComplete ( ParserData *context,
                                    Element el,
                                    int *error );
@@ -185,10 +185,6 @@ extern void ParseBaselineShiftAttribute ( Attribute attr,
 extern void ParsePointsAttribute ( Attribute attr,
                                      Element el,
                                      Document doc );
-extern void ParseviewBoxAttribute ( Attribute attr,
-                                      Element el,
-                                      Document doc,
-                                      ThotBool delete_ );
 extern void ParseTransformAttribute ( Attribute attr,
                                         Element el,
                                         Document doc,

@@ -38,6 +38,7 @@ BUILD_DIR=WX
 prune-non-free:
 	rm fonts/ESSTIX*
 	rm -r tools/cextract*
+	rm -r libjpeg libpng
 
 apply-patches:
 	QUILT_PATCHES="debian/patches" quilt push -a
@@ -60,10 +61,6 @@ configure-stamp:
 		     --enable-offical-build && \
 	cd -
 
-	# Fix execution rights on some files
-	chmod -x templates/en/*
-	chmod -x templates/fr/*
-	
 	# --libpng, libjpeg, libtiff (currently builtin)
 	# --gnomeprint
 	# --enable-plugins
@@ -148,6 +145,6 @@ binary-indep: build install
 binary-arch: build install
 	$(MAKE) -f debian/rules DH_OPTIONS=-a binary-common
 
-#binary: binary-arch binary-indep
-binary: binary-arch
+binary: binary-arch binary-indep
+#binary: binary-arch
 .PHONY: build clean binary-indep binary-arch binary install install-indep install-arch configure

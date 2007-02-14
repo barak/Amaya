@@ -233,6 +233,9 @@ AMAYA_OBJ = \
 	wxdialog/PrintDlgWX.o \
 	wxdialog/SaveAsDlgWX.o \
 	wxdialog/SearchDlgWX.o \
+	wxdialog/SelectOperatorDlgWX.o \
+	wxdialog/SelectFenceAttributesDlgWX.o \
+	wxdialog/SelectIntegralDlgWX.o \
 	wxdialog/SpellCheckDlgWX.o \
 	wxdialog/StyleDlgWX.o \
 	wxdialog/TextDlgWX.o \
@@ -258,6 +261,7 @@ AMAYA_OBJ = \
 	HTMLtable.o \
 	html2thot.o \
 	init.o \
+	insertelem.o \
 	libmanag.o \
 	MENUconf.o \
 	XLinkbuilder.o \

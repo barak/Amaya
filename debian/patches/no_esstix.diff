@@ -1,8 +1,8 @@
-Index: amaya-9.53/batch/script_install.in
+Index: amaya-9.54~dfsg.0/batch/script_install.in
 ===================================================================
---- amaya-9.53.orig/batch/script_install.in	2007-01-12 23:36:50.000000000 +0000
-+++ amaya-9.53/batch/script_install.in	2007-01-12 23:38:24.000000000 +0000
-@@ -83,7 +83,7 @@
+--- amaya-9.54~dfsg.0.orig/batch/script_install.in	2007-02-05 14:03:04.000000000 +0000
++++ amaya-9.54~dfsg.0/batch/script_install.in	2007-02-14 19:10:17.000000000 +0000
+@@ -82,7 +82,7 @@
  DICOFILES="*.ptn *.dic alphabet clavier"
  RESOURCE_XRC_FILES="*.xrc"
  RESOURCE_ICONS_FILES="*.png *.ico *.gif"

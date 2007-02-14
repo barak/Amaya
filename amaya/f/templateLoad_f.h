@@ -16,12 +16,15 @@ extern void AddImportedLibrary ( XTigerTemplate t,
                                  Element el );
 extern void CheckTypesAttribute ( XTigerTemplate t,
                                   Element el );
+extern void AddHeadParameters ( XTigerTemplate t,
+                                Element el );
 extern void ParseDeclarations ( XTigerTemplate t,
                                 Element el );
 extern void LoadTemplate_callback ( int newdoc,
                                     int status,
                                     char *urlName,
                                     char *outputfile,
+                                    char* proxyName,
                                     AHTHeaders *http_headers,
                                     void * context );
 extern void LoadTemplate ( Document doc,
@@ -39,12 +42,15 @@ extern void AddImportedLibrary ( XTigerTemplate t,
                                    Element el );
 extern void CheckTypesAttribute ( XTigerTemplate t,
                                     Element el );
+extern void AddHeadParameters ( XTigerTemplate t,
+                                  Element el );
 extern void ParseDeclarations ( XTigerTemplate t,
                                   Element el );
 extern void LoadTemplate_callback ( int newdoc,
                                       int status,
                                       char *urlName,
                                       char *outputfile,
+                                      char* proxyName,
                                       AHTHeaders *http_headers,
                                       void * context );
 extern void LoadTemplate ( Document doc,

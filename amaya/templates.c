@@ -1,6 +1,6 @@
 /*
  *
- *  COPYRIGHT INRIA and W3C, 1996-2005
+ *  COPYRIGHT INRIA and W3C, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -14,10 +14,18 @@
 #include "amaya.h"
 #include "document.h"
 
+#include "undo.h"
+
+#include "containers.h"
+#include "Elemlist.h"
+#include "templates.h"
+
+
 #ifdef TEMPLATES
 #include "Template.h"
-#include "templates.h"
 #include "templateDeclarations.h"
+#include "templates_f.h"
+#include "templateUtils_f.h"
 
 #include "mydictionary_f.h"
 #include "templateLoad_f.h"
@@ -30,13 +38,47 @@
 
 #endif /* TEMPLATES */
 
+
+#include "fetchXMLname_f.h"
 #include "MENUconf.h"
+
 
 /* Paths from which looking for templates.*/
 static Prop_Templates_Path *TemplateRepositoryPaths;
 
+
 /*----------------------------------------------------------------------
-  AllocTemplateRepositoryListElement: alloc an element for the list of template repositories.
+  IsTemplateInstanceDocument: Test if a document is a template instance
+  doc : Document to test
+  return : TRUE if the document is a template instance
+  ----------------------------------------------------------------------*/
+ThotBool IsTemplateInstanceDocument(Document doc)
+{
+#ifdef TEMPLATES
+  return (DocumentMeta[doc]!=NULL) && (DocumentMeta[doc]->template_url!=NULL);
+#else  /* TEMPLATES */
+  return FALSE;
+#endif /* TEMPLATES */
+}
+
+/*----------------------------------------------------------------------
+  IsTemplateDocument: Test if a document is a template (not an instance)
+  doc : Document to test
+  return : TRUE if the document is an instance
+  ----------------------------------------------------------------------*/
+ThotBool IsTemplateDocument(Document doc)
+{
+#ifdef TEMPLATES
+  return (DocumentMeta[doc]!=NULL) && (DocumentMeta[doc]->template_url==NULL);
+#else  /* TEMPLATES */
+  return FALSE;
+#endif /* TEMPLATES */
+}
+
+
+/*----------------------------------------------------------------------
+  AllocTemplateRepositoryListElement: allocates an element for the list
+  of template repositories.
   path : path of the new element
   return : address of the new element
   ----------------------------------------------------------------------*/
@@ -77,11 +119,12 @@ void FreeTemplateRepositoryList (void* list)
   src : address of the list (address of the first element).
   dst : address where copy the list
   ----------------------------------------------------------------------*/
-static void CopyTemplateRepositoryList (const Prop_Templates_Path** src, Prop_Templates_Path** dst)
+static void CopyTemplateRepositoryList (const Prop_Templates_Path** src,
+                                        Prop_Templates_Path** dst)
 {
   Prop_Templates_Path *element=NULL, *current=NULL;
   
-  if(*src!=NULL)
+  if (*src!=NULL)
   {
     *dst = (Prop_Templates_Path*) TtaGetMemory (sizeof(Prop_Templates_Path));
     (*dst)->NextPath = NULL;
@@ -91,13 +134,14 @@ static void CopyTemplateRepositoryList (const Prop_Templates_Path** src, Prop_Te
     current = *dst;
   }
 
-  while (element){
+  while (element)
+    {
     current->NextPath = (Prop_Templates_Path*) TtaGetMemory (sizeof(Prop_Templates_Path));
     current = current->NextPath; 
     current->NextPath = NULL;
     strcpy(current->Path, element->Path);
     element = element->NextPath;
-  }
+    }
 }
 
 /*----------------------------------------------------------------------
@@ -117,14 +161,14 @@ static int LoadTemplateRepositoryList (Prop_Templates_Path** list)
   
   path = (char *) TtaGetMemory (MAX_LENGTH);
   homePath       = TtaGetEnvString ("APP_HOME");
-  sprintf (path, "%s%ctemplate-repositories.dat", homePath, DIR_SEP);
+  sprintf (path, "%s%ctemplates.dat", homePath, DIR_SEP);
   
   file = TtaReadOpen ((char *)path);
   if (!file)
   {
     /* The config file dont exist, create it. */
     file = TtaWriteOpen ((char *)path);
-    fprintf(file, "%s%ctemplates%cen\n", homePath, DIR_SEP, DIR_SEP);
+    fprintf (file, "http://www.w3.org/Amaya/Templates/cv.xtd\n");
     TtaWriteClose (file);
     /* Retry to open it.*/
     file = TtaReadOpen ((char *)path);
@@ -188,7 +232,7 @@ static void SaveTemplateRepositoryList (const Prop_Templates_Path** list)
 
   path = (char *) TtaGetMemory (MAX_LENGTH);
   homePath       = TtaGetEnvString ("APP_HOME");
-  sprintf (path, "%s%ctemplate-repositories.dat", homePath, DIR_SEP);
+  sprintf (path, "%s%ctemplates.dat", homePath, DIR_SEP);
 
   file = TtaWriteOpen ((char *)path);
   c = (unsigned char*)path;
@@ -237,7 +281,6 @@ void InitTemplates ()
 }
 
 
-
 /*----------------------------------------------------------------------
   NewTemplate: Create the "new document from template" dialog
   ----------------------------------------------------------------------*/
@@ -279,19 +322,57 @@ void CreateInstanceOfTemplate (Document doc, char *templatename, char *docname)
                                 strlen (TtaGetMessage (AMAYA, AM_OVERWRITE_CHECK)) + 2);
       sprintf (s, TtaGetMessage (AMAYA, AM_OVERWRITE_CHECK), docname);
       InitConfirm (0, 0, s);
-      TtaFreeMemory (s);      
+      TtaFreeMemory (s);
       if (!UserAnswer)
         return;
-    }    
+    }
 
   LoadTemplate (0, templatename);
   DontReplaceOldDoc = dontReplace;
   CreateInstance (templatename, docname);
-  
+#endif /* TEMPLATES */
+}
+
+
+
+/*----------------------------------------------------------------------
+  PreventReloadingTemplate
+  Prevent reloading a template.
+  You must call AllowReloadingTemplate when finish.
+  Usefull for reload an instance without reloading the template.
+  ----------------------------------------------------------------------*/
+void PreventReloadingTemplate(char* template_url)
+{
+#ifdef TEMPLATES
+  XTigerTemplate t = (XTigerTemplate) Dictionary_Get (Templates_Dic, template_url);
+  if (t)
+    t->users++;
 #endif /* TEMPLATES */
 }
 
 /*----------------------------------------------------------------------
+  AllowReloadingTemplate
+  Allow reloading a template.
+  You must call it after each PreventReloadingTemplate call.
+  ----------------------------------------------------------------------*/
+void AllowReloadingTemplate(char* template_url)
+{
+#ifdef TEMPLATES
+  XTigerTemplate t = (XTigerTemplate) Dictionary_Get (Templates_Dic, template_url);
+  if (t)
+    t->users--;  
+#endif /* TEMPLATES */  
+}
+
+
+/*----------------------------------------------------------------------
+  giveItems : Lists type items from string
+  example : "one two three" is extracted to {one, two, three}
+  note : item type are setted to SimpleTypeNat
+  text : text from which list items
+  size : size of text in characters
+  items : address of exctracted item list
+  nbitems : items number in items list
   ----------------------------------------------------------------------*/
 void giveItems (char *text, int size, struct menuType **items, int *nbitems)
 {
@@ -374,13 +455,17 @@ static char *createMenuString (const struct menuType* items, const int nbItems)
 ThotBool UseToBeCreated (NotifyElement *event)
 {
 #ifdef TEMPLATES
-  Element        el;
-	Document       doc;
-
-  el = event->element;
-  doc = event->document;
-  /* is there a limit to the number of elements in the xt:repeat ? */
-  /* @@@@@ */
+  ElementType   parentType;
+  SSchema       templateSSchema = TtaGetSSchema (TEMPLATE_SSHEMA_NAME, event->document);  
+  if(templateSSchema)
+  {
+    parentType = TtaGetElementType(event->element);
+    if(parentType.ElSSchema==templateSSchema && parentType.ElTypeNum==Template_EL_repeat)
+    {
+      return !Template_CanInsertRepeatChild(event->element);
+    }
+    return TemplateElementWillBeCreated(event);
+  }
 #endif /* TEMPLATES */
   return FALSE; /* let Thot perform normal operation */
 }
@@ -393,21 +478,427 @@ ThotBool UseToBeCreated (NotifyElement *event)
 void UseCreated (NotifyElement *event)
 {
 #ifdef TEMPLATES
-	Document         doc;
-	Element          el;
-  XTigerTemplate   t;
+	Document        doc = event->document;
+	Element         el = event->element;
+  Element         parent;
+  Element         first;
+  ElementType     parentType;
+  XTigerTemplate  t;
+  SSchema         templateSSchema;
+  char*           types;
+  
+  if (!TtaGetDocumentAccessMode(doc))
+    return;
 
-	doc = event->document;
-  el = event->element;
   if (TtaGetFirstChild (el))
     /* this Use element has already some content. It has already been
        instanciated */
     return;
-  t = (XTigerTemplate) Get (Templates_Dic, DocumentMeta[doc]->template_url);
+
+  t = (XTigerTemplate) Dictionary_Get (Templates_Dic, DocumentMeta[doc]->template_url);
   if (!t)
     return; // no template ?!?!
+
+  templateSSchema = TtaGetSSchema (TEMPLATE_SSHEMA_NAME, doc);
+  parent = TtaGetParent(el);
+  parentType = TtaGetElementType(parent);
+  
+  if(parentType.ElSSchema==templateSSchema && parentType.ElTypeNum==Template_EL_repeat)
+  {
+    first = TtaGetFirstChild(parent);
+    if(first)
+    {
+      types = GetAttributeStringValueFromNum(first, Template_ATTR_types, NULL);
+      if(types)
+      {
+        SetAttributeStringValueWithUndo(el, Template_ATTR_types, types);
+        TtaFreeMemory(types);
+      }
+    }
+  }
+
   InstantiateUse (t, el, doc, TRUE);
 #endif /* TEMPLATES */
+}
+
+/*----------------------------------------------------------------------
+  Template_IncrementRepeatOccurNumber
+  Increment the number of occurs of a xt:repeat
+  @param el element (xt:repeat)
+  ----------------------------------------------------------------------*/
+void Template_IncrementRepeatOccurNumber(Element el)
+{
+#ifdef TEMPLATES
+  char* current;
+  char  newVal[8];
+  int curVal;
+  
+  current = GetAttributeStringValueFromNum(el, Template_ATTR_currentOccurs, NULL);
+  if (current)
+  {
+    curVal = atoi(current);
+    curVal++;
+    TtaFreeMemory(current);
+    sprintf(newVal, "%d", curVal);
+    SetAttributeStringValue(el, Template_ATTR_currentOccurs, newVal);
+  }
+#endif /* TEMPLATES */
+}
+
+/*----------------------------------------------------------------------
+  Template_DecrementRepeatOccurNumber
+  Decrement the number of occurs of a xt:repeat
+  @param el element (xt:repeat)
+  ----------------------------------------------------------------------*/
+void Template_DecrementRepeatOccurNumber(Element el)
+{
+#ifdef TEMPLATES
+  char* current;
+  char  newVal[8];
+  int curVal;
+  
+  current = GetAttributeStringValueFromNum(el, Template_ATTR_currentOccurs, NULL);
+  if (current)
+  {
+    curVal = atoi(current);
+    curVal--;
+    TtaFreeMemory(current);
+    sprintf(newVal, "%d", curVal);
+    SetAttributeStringValue(el, Template_ATTR_currentOccurs, newVal);
+  }
+#endif /* TEMPLATES */
+}
+
+
+/*----------------------------------------------------------------------
+  Template_CanInsertRepeatChild
+  Test if a xt:repeat child can be inserted (number between params min and max).
+  @param el element (xt:repeat) to test
+  @return True if an element can be inserted.
+  ----------------------------------------------------------------------*/
+ThotBool Template_CanInsertRepeatChild(Element el)
+{
+#ifdef TEMPLATES
+  char* max;
+  char* current;
+  int maxVal, curVal;
+  Element child;
+  
+  max = GetAttributeStringValueFromNum(el, Template_ATTR_maxOccurs, NULL);
+  if (max)
+  {
+    if (!strcmp(max, "*"))
+      {
+        TtaFreeMemory(max);
+        return TRUE;
+      }
+    maxVal = atoi (max);
+    TtaFreeMemory (max);
+
+    current = GetAttributeStringValueFromNum(el, Template_ATTR_currentOccurs, NULL);
+    if (current)
+    {
+      curVal = atoi (current);
+      TtaFreeMemory (current);
+    }
+    else
+    {
+      curVal = 0;
+      for (child = TtaGetFirstChild(el); child; TtaNextSibling(&child))
+      {
+        curVal++;
+      }
+    }
+  
+    return curVal<maxVal;
+  }
+  else
+    return TRUE;
+#endif /* TEMPLATES */
+  return FALSE;
+}
+
+
+/*----------------------------------------------------------------------
+  Template_InsertRepeatChildAfter
+  Insert a child to a xt:repeat
+  The decl parameter must be valid and will not be verified. It must be a
+    direct child element or the "use in the use" for union elements.
+  @param el element (xt:repeat) in which insert a new element
+  @param decl Template declaration of the element to insert
+  @param elPrev Element (xt:use) after which insert the new elem, NULL if first.
+  @return The inserted element 
+  ----------------------------------------------------------------------*/
+Element Template_InsertRepeatChildAfter(Document doc, Element el, Declaration decl, Element elPrev)
+{
+#ifdef TEMPLATES
+  Element useFirst; /* First xt:use of the repeat.*/
+  Element use;      /* xt:use to insert.*/
+  ElementType useType;  /* type of xt:use.*/
+  
+  if (!TtaGetDocumentAccessMode(doc))
+    return NULL;
+
+  /* Copy xt:use with xt:types param */
+  useFirst = TtaGetFirstChild(el);
+  useType = TtaGetElementType(useFirst);
+  use = TtaCopyElement(useFirst, doc, doc, el);
+
+  Template_InsertUseChildren(doc, use, decl);
+
+  /* insert it */
+  if (elPrev)
+  {
+    TtaInsertSibling(use, elPrev, FALSE, doc);
+  }
+  else
+  {
+    TtaInsertSibling(use, useFirst, TRUE, doc);
+  }
+
+  TtaRegisterElementCreate(use, doc);
+  
+  Template_IncrementRepeatOccurNumber(el);
+  
+  return use;
+  
+#else /* TEMPLATES */
+  return NULL;
+#endif /* TEMPLATES */
+}
+
+/*----------------------------------------------------------------------
+  Template_InsertRepeatChild
+  Insert a child to a xt:repeat
+  The decl parameter must be valid and will not be verified. It must be a
+    direct child element or the "use in the use" for union elements.
+  @param el element (repeat) in which insert a new element
+  @param decl Template declaration of the element to insert
+  @param pos Position of insertion (0 before all, 1 after first ... -1 after all)
+  @return The inserted element
+  ----------------------------------------------------------------------*/
+Element Template_InsertRepeatChild(Document doc, Element el, Declaration decl, int pos)
+{
+#ifdef TEMPLATES
+  if (!TtaGetDocumentAccessMode(doc) || !decl)
+    return NULL;
+  
+  if (pos==0)
+  {
+    return Template_InsertRepeatChildAfter(doc, el, decl, NULL);
+  }
+  else if (pos==-1)
+  {
+    return Template_InsertRepeatChildAfter(doc, el, decl, TtaGetLastChild(el));
+  }
+  else
+  {
+    Element elem = TtaGetFirstChild(el);
+    pos--;
+    while (pos>0)
+    {
+      TtaNextSibling(&elem);
+      pos--;
+    }
+    return Template_InsertRepeatChildAfter(doc, el, decl, elem);
+  }
+#else /* TEMPLATES */
+  return NULL;
+#endif /* TEMPLATES */
+}
+
+
+/*----------------------------------------------------------------------
+  Template_InsertBagChild
+  Insert a child to a xt:bag at the current insertion point.
+  The decl parameter must be valid and will not be verified.
+  @param el element (xt:bag) in which insert a new element
+  @param decl Template declaration of the element to insert
+  @return The inserted element
+  ----------------------------------------------------------------------*/
+Element Template_InsertBagChild(Document doc, Element el, Declaration decl)
+{
+#ifdef TEMPLATES
+  Element sel;
+  ElementType newElType, selType;
+  int start, end;
+
+  if (!TtaGetDocumentAccessMode(doc) || !decl)
+    return NULL;
+  
+  TtaGiveFirstSelectedElement(doc, &sel, &start, &end);
+  
+  if (TtaIsAncestor(sel, el))
+  {
+    newElType.ElSSchema = TtaGetSSchema (TEMPLATE_SSHEMA_NAME, doc);
+    if(decl->nature==UnionNat)
+      newElType.ElTypeNum = Template_EL_useEl;
+    else
+      newElType.ElTypeNum = Template_EL_useSimple;
+    
+    TtaInsertElement(newElType, doc);
+    TtaGiveFirstSelectedElement(doc, &sel, &start, &end);
+    if(sel)
+    {
+      selType = TtaGetElementType(sel);
+      
+      TtaUnselect(doc);
+      
+      if(selType.ElSSchema==newElType.ElSSchema && selType.ElTypeNum==Template_EL_useSimple)
+      {
+        SetAttributeStringValueWithUndo(sel, Template_ATTR_types, decl->name);
+        SetAttributeStringValueWithUndo(sel, Template_ATTR_title, decl->name);
+        Template_InsertUseChildren(doc, sel, decl);
+      }
+      
+      return sel;
+    }
+    
+  }
+#endif /* TEMPLATES */
+  return NULL;
+}
+
+
+#ifdef TEMPLATES
+/*----------------------------------------------------------------------
+  QueryStringFromMenu
+  Show a context menu to query a choice.
+  @param items space-separated choice list string.
+  @return The choosed item string or NULL if none.
+  ----------------------------------------------------------------------*/
+static char* QueryStringFromMenu(Document doc, char* items)
+{
+  int nbitems, size;
+  struct menuType *itemlist;
+  char *menuString;
+  char *result = NULL;
+  
+  if (!TtaGetDocumentAccessMode(doc))
+    return NULL;
+  if (items == NULL)
+    return NULL;
+  size = strlen(items);
+  giveItems (items, size, &itemlist, &nbitems);
+  menuString = createMenuString (itemlist, nbitems);
+  TtaNewScrollPopup (BaseDialog + OptionMenu, TtaGetViewFrame (doc, 1), NULL, 
+                     nbitems, menuString , NULL, false, 'L');
+  TtaFreeMemory (menuString);
+  ReturnOption = -1;
+  TtaShowDialogue (BaseDialog + OptionMenu, FALSE);
+  TtaWaitShowProcDialogue ();
+  TtaDestroyDialogue (BaseDialog + OptionMenu);
+  
+  if (ReturnOption!=-1)
+  {
+    result = TtaStrdup(itemlist[ReturnOption].label);
+  }
+  
+  TtaFreeMemory (itemlist);
+  return result;
+}
+#endif /* TEMPLATES */
+
+/*----------------------------------------------------------------------
+  RepeatButtonClicked
+  Called when a repeat button is clicked.
+  Can be called for useEl, useSimple or repeat.
+  If called for useEl or useSimple, the new element must be added after.
+  If called for repeat, the element must be added before all.
+   
+  Shows a menu with all the types that can be used in a use element.
+  ----------------------------------------------------------------------*/
+ThotBool RepeatButtonClicked (NotifyElement *event)
+{
+#ifdef TEMPLATES
+  Document        doc = event->document;
+  Element         el = event->element;
+  ElementType     elType;
+  XTigerTemplate  t;
+  Declaration     decl;
+  Element         repeatEl = el;
+  Element         firstEl;
+  Element         newEl = NULL;
+  char*           types;
+  ThotBool        oldStructureChecking;
+  View            view;
+  char*           listtypes = NULL;
+  char*           result = NULL;
+
+  if (!TtaGetDocumentAccessMode(doc))
+    return TRUE;
+  
+  TtaGetActiveView (&doc, &view);
+  if (view != 1)
+    return FALSE; /* let Thot perform normal operation */
+
+  TtaCancelSelection(doc);
+  
+  t = (XTigerTemplate) Dictionary_Get (Templates_Dic, DocumentMeta[doc]->template_url);
+  elType = TtaGetElementType(el);
+  while (elType.ElTypeNum!=Template_EL_repeat)
+  {
+    repeatEl = TtaGetParent(repeatEl);
+    if (repeatEl==NULL)
+      break;
+    elType = TtaGetElementType(repeatEl);
+  }
+  if (repeatEl)
+  {
+    if (Template_CanInsertRepeatChild(repeatEl))
+    {
+      firstEl = TtaGetFirstChild(repeatEl);
+      types = GetAttributeStringValueFromNum(firstEl, Template_ATTR_types, NULL);
+      if (types)
+      {
+        listtypes = Template_ExpandTypes(t, types);
+        result = QueryStringFromMenu(doc, listtypes);
+        if (result)
+        {
+          decl = Template_GetDeclaration(t, result);
+          if (decl)
+          {
+            /* Prepare insertion.*/          
+            oldStructureChecking = TtaGetStructureChecking (doc);
+            TtaSetStructureChecking (FALSE, doc);
+            TtaOpenUndoSequence(doc, NULL, NULL, 0, 0);
+            /* Insert. */
+            if (el==repeatEl)
+              newEl = Template_InsertRepeatChildAfter(doc, repeatEl, decl, NULL);
+            else
+              newEl = Template_InsertRepeatChildAfter(doc, repeatEl, decl, el);
+              
+            /* Finish insertion.*/
+            TtaCloseUndoSequence(doc);
+            TtaSetDocumentModified (doc);
+            TtaSetStructureChecking (oldStructureChecking, doc);
+            
+            firstEl = GetFirstEditableElement(newEl);
+            if (firstEl)
+            {
+              TtaSelectElement (doc, firstEl);
+              TtaSetStatusSelectedElement(doc, view, firstEl);
+            }
+            else
+            {
+              TtaSelectElement (doc, newEl);
+              TtaSetStatusSelectedElement(doc, view, newEl);
+            }
+          }
+        }
+      }
+      TtaFreeMemory(types);
+      TtaFreeMemory(listtypes);
+      TtaFreeMemory(result);
+    }
+    else /* if (Template_CanInsertRepeatChild(repeatEl)) */
+    {
+      TtaSetStatus(doc, view, TtaGetMessage (AMAYA, AM_NUMBER_OCCUR_HAVE_MAX), NULL);
+    }
+  }
+  return TRUE; /* don't let Thot perform normal operation */
+#endif /* TEMPLATES */
+  return TRUE;
 }
 
 /*----------------------------------------------------------------------
@@ -417,135 +908,114 @@ void UseCreated (NotifyElement *event)
 ThotBool UseButtonClicked (NotifyElement *event)
 {
 #ifdef TEMPLATES
-	Document         doc;
-	Element          el, comp;
-	ElementType      elType;
-	Attribute        att;
-	AttributeType    attributeType;
-  XTigerTemplate   t;
-  Declaration      dec;
-  Record           rec, first;
-	int              nbitems, size;
-	struct menuType *items;
-  char            *types, *menuString;
+  Document        doc = event->document;
+  Element         el = event->element;
+  Element         child;
+  ElementType     elType;
+  XTigerTemplate  t;
+  Declaration     decl;
+  Element         firstEl;
+  Element         newEl = NULL;
+  char*           types;
+  ThotBool        oldStructureChecking;
   View            view;
+  char*           listtypes;
+  char*           result;
 
+  if (!TtaGetDocumentAccessMode(doc))
+    return TRUE;
+    
   TtaGetActiveView (&doc, &view);
   if (view != 1)
     return FALSE; /* let Thot perform normal operation */
-
-	doc = event->document;
-  t = (XTigerTemplate) Get (Templates_Dic, DocumentMeta[doc]->template_url);
+  
+  TtaCancelSelection(doc);
+  
+  t = (XTigerTemplate) Dictionary_Get (Templates_Dic, DocumentMeta[doc]->template_url);
   if (!t)
     return FALSE; /* let Thot perform normal operation */
+  elType = TtaGetElementType(el);
 
-	el = event->element;
-  if (TtaGetFirstChild (el))
-    /* this Use element has already some content. Do not do anything */
-    return FALSE; /* let Thot perform normal operation */
-
-	elType = TtaGetElementType (el);
-  // give the list of possible items
-	attributeType.AttrSSchema = elType.ElSSchema;
-	attributeType.AttrTypeNum = Template_ATTR_types;
-	att = TtaGetAttribute (el, attributeType);
-	size = TtaGetTextAttributeLength (att);
-	types = (char *) TtaGetMemory (size+1);	
-	TtaGiveTextAttributeValue (att, types, &size);
-	giveItems (types, size, &items, &nbitems);
-	TtaFreeMemory (types);
-
-  if (nbitems == 1)
+  firstEl = TtaGetFirstChild(el);
+  if (firstEl)
+  {
+    RepeatButtonClicked(event);
+  }
+  else
+  {
+    types = GetAttributeStringValueFromNum(el, Template_ATTR_types, NULL);
+    if (types)
     {
-      dec = GetDeclaration (t, items[0].label);
-      /* if it's a union, display the menu of this union */
-      if (dec)
-        switch (dec->nature)
-          {
-          case SimpleTypeNat :
-            nbitems = 0;
-            break;
-          case XmlElementNat :
-            nbitems = 0;
-            break;
-          case ComponentNat :
-            nbitems = 0;
-            break;
-          case UnionNat :
-            first = dec->unionType.include->first;
-            rec = first;
-            /* count the number of elements in the union */
-            nbitems = 0;
-            while (rec)
-              {
-                nbitems++;
-                rec = rec->next;
-              }
-            if (nbitems > 0)
-              {
-                items = (menuType*) TtaGetMemory (sizeof (struct menuType)* nbitems);
-                rec = first;
-                nbitems = 0;
-                while (rec)
-                  {
-                    items[nbitems].label = (char *) TtaStrdup (rec->key);
-                    items[nbitems].type = SimpleTypeNat;  /* @@@@@ ???? @@@@@ */
-                    nbitems++;
-                    rec = rec->next;
-                  }
-              }
-            break;
-          default :
-            //Impossible
-            break;   
-          }
-    }
-  if (nbitems > 0)
-    {
-      TtaCancelSelection (doc);
-      menuString = createMenuString (items, nbitems);
-      TtaNewScrollPopup (BaseDialog + OptionMenu, TtaGetViewFrame (doc, 1),
-                         NULL, nbitems, menuString , NULL, false, 'L');
-      TtaFreeMemory (menuString);
-      ReturnOption = -1; // no selection yet
-      TtaShowDialogue (BaseDialog + OptionMenu, FALSE);
-      TtaWaitShowProcDialogue ();
-      TtaDestroyDialogue (BaseDialog + OptionMenu);
-      if (ReturnOption != -1)
-        dec = GetDeclaration (t, items[ReturnOption].label);
-      TtaFreeMemory (items);
-      if (ReturnOption == -1)
-        return FALSE;
-      if (dec)
+      listtypes = Template_ExpandTypes(t, types);
+      result = QueryStringFromMenu(doc, listtypes);
+      if (result)
+      {
+        decl = Template_GetDeclaration(t, result);
+        if (decl)
         {
-          switch (dec->nature)
-            {
-            case SimpleTypeNat :
-              /* @@@@@ */
-              break;
-            case XmlElementNat :
-              /* @@@@@ */
-              break;
-            case ComponentNat :
-              /* copy element dec->componentType.content */
-              comp = TtaCopyTree (dec->componentType.content, doc, doc, el);
-              TtaInsertFirstChild (&comp, el, doc);
-              el = comp;
-              /* @@@@@ */
-              break;
-            case UnionNat :
-              /* @@@@@ */
-              break;
-            default :
-              //Impossible
-              break;   
-            }
+          /* Prepare insertion.*/
+          oldStructureChecking = TtaGetStructureChecking (doc);
+          TtaSetStructureChecking (FALSE, doc);
+          TtaOpenUndoSequence(doc, NULL, NULL, 0, 0);
+          
+          /* Insert */
+          newEl = Template_InsertUseChildren(doc, el, decl);
+          
+          for(child = TtaGetFirstChild(newEl); child; TtaNextSibling(&child))
+          {
+            TtaRegisterElementCreate(child, doc);
+          }
+          
+          TtaChangeTypeOfElement(el, doc, Template_EL_useSimple);
+          TtaRegisterElementTypeChange(el, Template_EL_useEl, doc);
+          
+          /* xt:currentType attribute.*/
+          SetAttributeStringValueWithUndo(el, Template_ATTR_currentType, result);
+          
+          /* Finish insertion. */
+          TtaCloseUndoSequence(doc);
+          TtaSetDocumentModified (doc);
+          TtaSetStructureChecking (oldStructureChecking, doc);
+          
+          firstEl = GetFirstEditableElement(newEl);
+          if (firstEl)
+          {
+            TtaSelectElement (doc, firstEl);
+            TtaSetStatusSelectedElement(doc, view, firstEl);
+          }
+          else
+          {
+            TtaSelectElement (doc, newEl);
+            TtaSetStatusSelectedElement(doc, view, newEl);
+          }
         }
+      }
     }
-  TtaSelectElement (doc, el);
+    TtaFreeMemory(types);
+    TtaFreeMemory(listtypes);
+    TtaFreeMemory(result);
+  }
+  
   return TRUE;
 #endif /* TEMPLATES */
 	return TRUE;
+}
+
+
+/*----------------------------------------------------------------------
+  UseSimpleButtonClicked
+  ----------------------------------------------------------------------*/
+ThotBool UseSimpleButtonClicked (NotifyElement *event)
+{
+#ifdef TEMPLATES
+  if (!TtaGetDocumentAccessMode(event->document))
+    return TRUE;
+
+  ElementType parentType = TtaGetElementType(TtaGetParent(event->element));
+  if (parentType.ElTypeNum == Template_EL_repeat)
+    return RepeatButtonClicked(event);
+#endif /* TEMPLATES */  
+  return FALSE;
 }
 
 /*----------------------------------------------------------------------
@@ -560,9 +1030,13 @@ ThotBool OptionButtonClicked (NotifyElement *event)
   XTigerTemplate  t;
   View            view;
 
+  if (!TtaGetDocumentAccessMode(event->document))
+    return TRUE;
+
   TtaGetActiveView (&doc, &view);
   if (view != 1)
     return FALSE; /* let Thot perform normal operation */
+
   doc = event->document;
   child = TtaGetFirstChild (event->element);
   if (!child)
@@ -579,7 +1053,7 @@ ThotBool OptionButtonClicked (NotifyElement *event)
   if (!grandChild)
     /* the "use" element is empty. Instantiate it */
     {
-      t = (XTigerTemplate) Get (Templates_Dic, DocumentMeta[doc]->template_url);
+      t = (XTigerTemplate) Dictionary_Get (Templates_Dic, DocumentMeta[doc]->template_url);
       if (!t)
         return FALSE; // no template ?!?!
       InstantiateUse (t, child, doc, TRUE);
@@ -599,94 +1073,37 @@ ThotBool OptionButtonClicked (NotifyElement *event)
   TtaSelectElement (doc, event->element);
   return TRUE; /* don't let Thot perform normal operation */
 #endif /* TEMPLATES */
-	return TRUE;
+  return TRUE;
 }
 
 /*----------------------------------------------------------------------
-  RepeatButtonClicked
-  Shows a menu with all the types that can be used in a use element.
+  CheckTemplate checks if the template of the instance is loaded
+  Return TRUE if the template is loaded
   ----------------------------------------------------------------------*/
-ThotBool RepeatButtonClicked (NotifyElement *event)
+void CheckTemplate (Document doc)
 {
 #ifdef TEMPLATES
-  XTigerTemplate   t;
-	Document         doc;
-  Element          el, child, newEl;
-  ElementType      elt, elt1;
-	int              nbitems, size;
-	struct menuType *items;
-  char            *types, *menuString;
-  ThotBool          oldStructureChecking;
-  View            view;
-
-  TtaGetActiveView (&doc, &view);
-  if (view != 1)
-    return FALSE; /* let Thot perform normal operation */
-  doc = event->document;
-  t = (XTigerTemplate) Get (Templates_Dic, DocumentMeta[doc]->template_url);
-  if (!t)
-    return FALSE; // no template ?!?!
-
-  TtaCancelSelection (doc);
-	types = "begining end";	
-	size = strlen (types);
-	giveItems (types, size, &items, &nbitems);
-	menuString = createMenuString (items, nbitems);
-	TtaNewScrollPopup (BaseDialog + OptionMenu, TtaGetViewFrame (doc, 1), NULL, 
-                     nbitems, menuString , NULL, false, 'L');
-	TtaFreeMemory (menuString);
-  ReturnOption = -1; // no selection yet
-	TtaShowDialogue (BaseDialog + OptionMenu, FALSE);
-	TtaWaitShowProcDialogue ();
-	TtaDestroyDialogue (BaseDialog + OptionMenu);
-  TtaFreeMemory (items);
-  el = event->element;
-  if (ReturnOption == 0 || ReturnOption == 1)
+  if (DocumentMeta[doc] && DocumentMeta[doc]->template_url &&
+      !Dictionary_Get (Templates_Dic, DocumentMeta[doc]->template_url))
     {
-      child = TtaGetFirstChild (el);
-      if (child)
-        {
-          elt = TtaGetElementType (el);
-          elt1 = TtaGetElementType (child);
-          if (elt.ElSSchema == elt1.ElSSchema)
-            {
-              if (elt1.ElTypeNum == Template_EL_useEl ||
-                  elt1.ElTypeNum == Template_EL_useSimple)
-                newEl = InstantiateUse (t, child, doc, FALSE);
-              else if (elt1.ElTypeNum == Template_EL_folder)
-                newEl = TtaCopyTree (child, doc, doc, el);
-              else
-                newEl = NULL;
-              if (newEl)
-                {
-                  oldStructureChecking = TtaGetStructureChecking (doc);
-                  TtaSetStructureChecking (FALSE, doc);
-                  if (ReturnOption == 0)
-                    TtaInsertFirstChild (&newEl, el, doc);
-                  else
-                    {
-                      child = TtaGetLastChild (el);
-                      TtaInsertSibling (newEl, child, FALSE, doc);
-                      el = newEl;
-                    }
-                  TtaSetStructureChecking (oldStructureChecking, doc);
-                }
-            }
-        }
+      // the template cannot be loaded
+      InitConfirm (doc, 1, TtaGetMessage (AMAYA, AM_BAD_TEMPLATE));
+      TtaSetAccessRight (TtaGetRootElement (doc), ReadOnly, doc);
+      TtaSetDocumentAccessMode (doc, 0); // document readonly
     }
-  TtaSelectElement (doc, el);
-  return TRUE; /* don't let Thot perform normal operation */
 #endif /* TEMPLATES */
-	return TRUE;
 }
 
 /*----------------------------------------------------------------------
+  OpeningInstance checks if it is a template instance needs.
+  If it's an instance and the template is not loaded, load it into a
+  temporary file
   ----------------------------------------------------------------------*/
 void OpeningInstance (char *fileName, Document doc)
 {
 #ifdef TEMPLATES
   XTigerTemplate   t;
-  char            *content, *ptr;
+  char            *content, *ptr, *begin;
   gzFile           stream;
   char             buffer[2000];
   int              res;
@@ -698,34 +1115,59 @@ void OpeningInstance (char *fileName, Document doc)
       if (res >= 0)
         {
           buffer[res] = EOS;
-          ptr = strstr (buffer, "<?xtiger");
-          if (ptr)
-            ptr = strstr (ptr, "template");
-          if (ptr)
-            ptr = strstr (ptr, "=");
-          if (ptr)
-            ptr = strstr (ptr, "\"");
-          if (ptr)
-            {
-              // template URI
-              content = &ptr[1];
-              ptr = strstr (content, "\"");
-            }
-          if (ptr)
-            {
-              *ptr = EOS;
-              //Get now the template URI
-              DocumentMeta[doc]->template_url = TtaStrdup (content);
-              if (Templates_Dic == NULL)
-                InitializeTemplateEnvironment ();
-              t = (XTigerTemplate) Get (Templates_Dic, content);
-              if (!t)
-                {
-                  LoadTemplate (0, content);
-                  t = (XTigerTemplate) Get (Templates_Dic, content);
-                }
-              AddUser (t);
-            }
+          begin = strstr (buffer, "<?xtiger");
+          
+          if (begin)
+          {
+            // Search for template version
+            ptr = strstr (begin, "templateVersion");
+            if (ptr)
+              ptr = strstr (ptr, "=");
+            if (ptr)
+              ptr = strstr (ptr, "\"");
+            if (ptr)
+              {
+                // template URI
+                content = &ptr[1];
+                ptr = strstr (content, "\"");
+              }
+            if (ptr)
+              {
+                *ptr = EOS;
+                //Get now the template URI
+                DocumentMeta[doc]->template_version = TtaStrdup (content);
+                *ptr = '"';
+              }
+           
+            // Search for template uri
+            ptr = strstr (begin, "template");
+            if (ptr && ptr[8] != 'V')
+              ptr = strstr (ptr, "=");
+            if (ptr)
+              ptr = strstr (ptr, "\"");
+            if (ptr)
+              {
+                // template URI
+                content = &ptr[1];
+                ptr = strstr (content, "\"");
+              }
+            if (ptr)
+              {
+                *ptr = EOS;
+                //Get now the template URI
+                DocumentMeta[doc]->template_url = TtaStrdup (content);
+                if (Templates_Dic == NULL)
+                  InitializeTemplateEnvironment ();
+                t = (XTigerTemplate) Dictionary_Get (Templates_Dic, content);
+                if (!t)
+                  {
+                    LoadTemplate (doc, content);
+                    t = (XTigerTemplate) Dictionary_Get (Templates_Dic, content);
+                  }
+                AddUser (t);
+                *ptr = '"';
+              }
+          }
         }
     }
   TtaGZClose (stream);
@@ -745,12 +1187,243 @@ ThotBool ClosingInstance(NotifyDialog* dialog)
 
   char *turl = DocumentMeta[dialog->document]->template_url;
   if (turl)
-    {
-      XTigerTemplate t = (XTigerTemplate) Get (Templates_Dic, turl);
-      if (t)
-        RemoveUser (t);
-      TtaFreeMemory (turl);
-    }
+  {
+    XTigerTemplate t = (XTigerTemplate) Dictionary_Get (Templates_Dic, turl);
+    if (t)
+      RemoveUser (t);
+    TtaFreeMemory (turl);
+    DocumentMeta[dialog->document]->template_url = NULL;
+  }
+  
+  if (DocumentMeta[dialog->document]->template_version)
+  {
+    TtaFreeMemory(DocumentMeta[dialog->document]->template_version);
+    DocumentMeta[dialog->document]->template_version = NULL;
+  }
 #endif /* TEMPLATES */
   return FALSE;
 }
+
+
+/*----------------------------------------------------------------------
+  IsTemplateElement
+  Test if an element is template.
+  ----------------------------------------------------------------------*/
+ThotBool IsTemplateElement(Element elem)
+{
+#ifdef TEMPLATES
+  return strcmp(TtaGetSSchemaName(TtaGetElementType(elem).ElSSchema)
+                                                    , TEMPLATE_SSHEMA_NAME)==0;
+#else
+  return FALSE;
+#endif /* TEMPLATES */
+}
+
+
+/*----------------------------------------------------------------------
+  GetFirstTemplateParentElement
+  Return the first element wich has "Template" as SShema name or null if none.
+  ----------------------------------------------------------------------*/
+Element GetFirstTemplateParentElement(Element elem)
+{
+#ifdef TEMPLATES
+  elem = TtaGetParent(elem);
+  while (elem!=NULL && strcmp(TtaGetSSchemaName(TtaGetElementType(elem).ElSSchema)
+                                                    , TEMPLATE_SSHEMA_NAME)!=0)
+  {
+    elem = TtaGetParent(elem);
+  }
+  return elem;
+#else
+  return NULL;
+#endif /* TEMPLATES */
+}
+
+
+/*----------------------------------------------------------------------
+  TemplateElementWillBeCreated
+  Processed when an element will be created in a template context.
+  ----------------------------------------------------------------------*/
+ThotBool TemplateElementWillBeCreated (NotifyElement *event)
+{
+#ifdef TEMPLATES
+  ElementType elType = event->elementType;
+  Element     parent = event->element;
+  ElementType parentType = TtaGetElementType(parent);
+  Element     ancestor;
+  ElementType ancestorType;
+  SSchema     templateSSchema;
+  char*       types;
+  ThotBool    b;
+
+  if(event->info==1)
+    return FALSE;
+
+  if (!TtaGetDocumentAccessMode(event->document))
+    return TRUE;
+
+  templateSSchema = TtaGetSSchema (TEMPLATE_SSHEMA_NAME, event->document);
+  if (templateSSchema == NULL)
+    return FALSE; // let Thot do the job
+
+  // Fisrt, test if in a xt:bag or in a base-element xt:use
+  if(parentType.ElSSchema==templateSSchema)
+    ancestor = parent;
+  else
+    ancestor = GetFirstTemplateParentElement(parent);
+
+  if(ancestor)
+  {
+    ancestorType = TtaGetElementType(ancestor);
+
+    if(ancestorType.ElTypeNum==Template_EL_bag)
+    {
+      if(elType.ElSSchema==templateSSchema &&
+          (elType.ElTypeNum==Template_EL_useSimple || elType.ElTypeNum==Template_EL_useEl))
+        return FALSE;
+      return !Template_CanInsertElementInBagElement(event->document, elType, ancestor);      
+    }
+    else if(ancestorType.ElTypeNum==Template_EL_useSimple ||
+            ancestorType.ElTypeNum==Template_EL_useEl)
+    {
+      // only check the use child
+      if (ancestor != parent)
+        return  FALSE; // let Thot do the job
+      types = GetAttributeStringValueFromNum(ancestor, Template_ATTR_currentType, NULL);
+      b = Template_CanInsertElementInUse(event->document, elType, types, parent, event->position);
+      TtaFreeMemory(types);
+      return !b;
+      
+    }
+  }
+  
+  if(elType.ElSSchema==templateSSchema && elType.ElTypeNum==Template_EL_TEXT_UNIT)
+  {
+    return FALSE;
+  }
+  
+  // Can not insert.
+  return TRUE;
+#endif /* TEMPLATES*/
+  return FALSE;
+}
+
+/*----------------------------------------------------------------------
+  TemplateElementWillBeDeleted
+  Processed when an element will be deleted in a template context.
+  ----------------------------------------------------------------------*/
+ThotBool TemplateElementWillBeDeleted (NotifyElement *event)
+{
+#ifdef TEMPLATES
+  Document       doc = event->document;
+  Element        elem = event->element;
+  Element        xtElem, parent;
+  Element        sibling;
+  ElementType    xtType, elType;
+  char*          type;
+  Declaration    dec;
+  SSchema        templateSSchema;
+  XTigerTemplate t;
+
+  if(event->info==1)
+    return FALSE;
+
+  if (!TtaGetDocumentAccessMode(event->document))
+    return TRUE;
+
+  templateSSchema = TtaGetSSchema (TEMPLATE_SSHEMA_NAME, event->document);
+  if (templateSSchema == NULL)
+    return FALSE; // let Thot do the job
+
+  xtElem = GetFirstTemplateParentElement(elem);
+  if (xtElem)
+  {
+    xtType = TtaGetElementType(xtElem);
+    
+    t = (XTigerTemplate) Dictionary_Get (Templates_Dic, DocumentMeta[doc]->template_url);
+
+    if (xtType.ElTypeNum==Template_EL_bag)
+    {
+      elType = TtaGetElementType(elem);
+      if(elType.ElSSchema==templateSSchema &&
+        (elType.ElTypeNum==Template_EL_useSimple || elType.ElTypeNum==Template_EL_useEl))
+      {
+        // Remove element manually.
+        TtaOpenUndoSequence(doc, elem, elem, 0, 0);
+        TtaRegisterElementDelete(elem, doc);
+        TtaDeleteTree(elem, doc);
+        TtaCloseUndoSequence(doc);
+        return TRUE;
+      }
+      else
+        return FALSE; // xt:bag always allow remove children.
+    }
+    else if (xtType.ElTypeNum==Template_EL_useSimple || xtType.ElTypeNum==Template_EL_useEl)
+    {
+      parent = TtaGetParent(elem);
+      if (xtElem!=parent)
+      {
+        type = GetAttributeStringValueFromNum(xtElem, Template_ATTR_currentType, NULL);
+        dec = Template_GetDeclaration(t, type);
+        TtaFreeMemory(type);
+        
+        if (dec && dec->nature == XmlElementNat)
+          return FALSE; // Can remove element only if in xt:use current type is base language element. 
+        else
+          return TRUE;
+      }
+    }
+    else if (xtType.ElTypeNum==Template_EL_repeat)
+    {
+      sibling = TtaGetSuccessor(elem);
+      TtaRegisterElementDelete(elem, doc);
+      TtaDeleteTree(elem, doc);
+      Template_DecrementRepeatOccurNumber(xtElem);
+      InstantiateRepeat(t, xtElem, doc, TRUE);
+      TtaSelectElement(doc, sibling);
+      return TRUE;
+    }
+  }
+  
+  //TODO Test if current element is use or repeat.
+  // Because if an element is delete and it is the unique child of its parent,
+  // the parent intends to destroy itself. 
+  
+  return TRUE;
+#else /* TEMPLATES */
+  return FALSE;
+#endif /* TEMPLATES */
+}
+
+/*----------------------------------------------------------------------
+  CurrentTypeWillBeExported
+  Check if the xt:currentType attribute can be exported
+  ----------------------------------------------------------------------*/
+ThotBool CurrentTypeWillBeExported (NotifyAttribute *event)
+{
+#ifdef TEMPLATES
+
+  if (!TtaGetDocumentAccessMode(event->document))
+    return TRUE;
+
+  if (IsTemplateDocument(event->document))
+    return TRUE;
+#endif /* TEMPLATES */
+  return FALSE;
+}
+
+/*----------------------------------------------------------------------
+  TemplateAttrInMenu
+  Called by Thot when building the Attributes menu for template elements.
+  ----------------------------------------------------------------------*/
+ThotBool TemplateAttrInMenu (NotifyAttribute * event)
+{
+#ifdef TEMPLATES
+  // Prevent from showing attributes for template instance but not templates.
+  if(IsTemplateInstanceDocument(event->document))
+    return TRUE;
+  else
+#endif /* TEMPLATES */
+    return FALSE;
+}
+

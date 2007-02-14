@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1999-2005
+ *  (c) COPYRIGHT INRIA and W3C, 1999-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -57,7 +57,11 @@
 #include "davlibUI_f.h"
 #endif /* DAV */
 
+
 #ifdef TEMPLATES
+#include "templates.h"
+#include "containers.h"
+#include "Elemlist.h"
 #include "templates_f.h"
 #endif  /* TEMPLATES */
 
@@ -171,7 +175,6 @@ static Prop_Browse GProp_Browse;
 static int         CurrentScreen;
 #endif /* _WX */
 static int         InitOpeningLocation;
-static ThotBool    InitWarnCTab;
 static ThotBool    InitLoadImages;
 static ThotBool    InitLoadObjects;
 static ThotBool    InitLoadCss;
@@ -410,7 +413,6 @@ void InitAmayaDefEnv (void)
   TtaSetDefEnvString ("LOAD_OBJECTS", "yes", FALSE);
   TtaSetDefEnvString ("LOAD_CSS", "yes", FALSE);
   TtaSetDefEnvString ("VERIFY_PUBLISH", "no", FALSE);
-  TtaSetDefEnvString ("ENABLE_LOST_UPDATE_CHECK", "yes", FALSE);
   TtaSetDefEnvString ("DEFAULTNAME", "Overview.html", FALSE);
   TtaSetDefEnvString ("FontMenuSize", "12", FALSE);
   TtaSetDefEnvString ("ENABLE_DOUBLECLICK", "yes", FALSE);
@@ -424,7 +426,7 @@ void InitAmayaDefEnv (void)
   /* network configuration */
   TtaSetDefEnvString ("ENABLE_XHTML_MIMETYPE", "no", FALSE);
   TtaSetDefEnvString ("SAFE_PUT_REDIRECT", "", FALSE);
-  TtaSetDefEnvString ("ENABLE_LOST_UPDATE_CHECK", "yes", FALSE);
+  TtaSetDefEnvString ("ENABLE_LOST_UPDATE_CHECK", "no", FALSE);
   TtaSetDefEnvString ("ENABLE_PIPELINING", "yes", FALSE);
   TtaSetDefEnvString ("NET_EVENT_TIMEOUT", "60000", FALSE);
   TtaSetDefEnvString ("PERSIST_CX_TIMEOUT", "60", FALSE);
@@ -1582,6 +1584,7 @@ void GetGeneralConf (void)
   TtaGetEnvBoolean ("SHOW_TARGET", &(GProp_General.S_Targets));
   TtaGetEnvBoolean ("INSERT_NBSP", &(GProp_General.S_NBSP));
   TtaGetEnvBoolean ("SHOW_SEQUENCES", &(GProp_General.S_Shortcuts));
+  TtaGetEnvBoolean ("SHOW_CONFIRM_CLOSE_TAB", &(GProp_General.WarnCTab));
   GetEnvString ("HOME_PAGE", GProp_General.HomePage);
   GetEnvString ("LANG", GProp_General.DialogueLang);
   GetEnvString ("ACCESSKEY_MOD", ptr);
@@ -1828,6 +1831,7 @@ void SetGeneralConf (void)
     }
   TtaSetEnvBoolean ("PASTE_LINE_BY_LINE", GProp_General.PasteLineByLine, TRUE);
 #ifdef _WX
+  TtaSetEnvBoolean ("SHOW_CONFIRM_CLOSE_TAB", GProp_General.WarnCTab, TRUE);
   /* wx use its own callbacks and use only the boolean value : S_AutoSave */
   if (GProp_General.S_AutoSave)
     AutoSave_Interval = DEF_SAVE_INTVL;
@@ -1859,11 +1863,6 @@ void SetGeneralConf (void)
 
   TtaSetEnvBoolean ("SHOW_SEQUENCES", GProp_General.S_Shortcuts, TRUE);
 
-//  TtaGetEnvBoolean ("SHOW_TEMPLATES", &old);
-//  TtaSetEnvBoolean ("SHOW_TEMPLATES", GProp_General.S_Templates, TRUE);
-//  if (old != GProp_General.S_Templates)
-//    UpdateShowTemplates ();
-  
   TtaSetEnvBoolean ("FONT_ALIASING", GProp_General.S_NoAliasing, TRUE);
   TtaSetEnvBoolean ("ISO_DATE", GProp_General.S_DATE, TRUE);
 
@@ -1925,7 +1924,7 @@ void GetDefaultGeneralConf ()
 #else /* _MACOS */
   GProp_General.S_Shortcuts = TRUE;
 #endif /* _MACOS */
-  GProp_General.S_Templates = TRUE;
+  TtaGetDefEnvBoolean ("SHOW_CONFIRM_CLOSE_TAB", &(GProp_General.WarnCTab));
 #endif /* _WX */
   GetDefEnvString ("HOME_PAGE", GProp_General.HomePage);
   GetDefEnvString ("LANG", GProp_General.DialogueLang);
@@ -2106,7 +2105,6 @@ static void RefreshGeneralMenu ()
   TtaSetToggleMenu (GeneralBase + mToggleGeneral, 6, GProp_General.S_DATE);
   TtaSetToggleMenu (GeneralBase + mToggleGeneral, 7, GProp_General.S_NoAliasing);
   TtaSetToggleMenu (GeneralBase + mToggleGeneral, 8, GProp_General.S_Shortcuts);
-  TtaSetToggleMenu (GeneralBase + mToggleGeneral, 9, GProp_General.S_Templates);
 #endif /* _WX */
   TtaSetTextForm (GeneralBase + mHomePage, GProp_General.HomePage);
   TtaSetTextForm (GeneralBase + mDialogueLang, GProp_General.DialogueLang);
@@ -2200,8 +2198,6 @@ static void GeneralCallbackDialog (int ref, int typedata, char *data)
             case 8:
               GProp_General.S_Shortcuts = !(GProp_General.S_Shortcuts);
               break;
-            case 9:
-              GProp_General.S_Templates = !(GProp_General.S_Templates);
             }
           break;
 
@@ -2343,6 +2339,7 @@ static void GetPublishConf (void)
   TtaGetEnvBoolean ("ENABLE_LOST_UPDATE_CHECK", &(GProp_Publish.LostUpdateCheck));
   TtaGetEnvBoolean ("VERIFY_PUBLISH", &(GProp_Publish.VerifyPublish));
   TtaGetEnvBoolean ("EXPORT_CRLF", &(GProp_Publish.ExportCRLF));
+  TtaGetEnvBoolean ("GENERATE_MATHPI", &(GProp_Publish.GenerateMathPI));
   TtaGetEnvInt ("EXPORT_LENGTH", &(GProp_Publish.ExportLength));
   GetEnvString ("DEFAULTNAME", GProp_Publish.DefaultName);
   GetEnvString ("SAFE_PUT_REDIRECT", GProp_Publish.SafePutRedirect);
@@ -2360,6 +2357,7 @@ static void SetPublishConf (void)
   TtaSetEnvBoolean ("ENABLE_LOST_UPDATE_CHECK", GProp_Publish.LostUpdateCheck, TRUE);
   TtaSetEnvBoolean ("VERIFY_PUBLISH", GProp_Publish.VerifyPublish, TRUE);
   TtaSetEnvBoolean ("EXPORT_CRLF", GProp_Publish.ExportCRLF, TRUE);
+  TtaSetEnvBoolean ("GENERATE_MATHPI", GProp_Publish.GenerateMathPI, TRUE);
   TtaSetEnvInt ("EXPORT_LENGTH", GProp_Publish.ExportLength, TRUE);
   TtaSetEnvString ("DEFAULTNAME", GProp_Publish.DefaultName, TRUE);
   TtaSetEnvString ("SAFE_PUT_REDIRECT", GProp_Publish.SafePutRedirect, TRUE);
@@ -2376,12 +2374,12 @@ static void GetDefaultPublishConf ()
 {
   GetDefEnvToggle ("ENABLE_XHTML_MIMETYPE", &(GProp_Publish.UseXHTMLMimeType), 
                    PublishBase + mTogglePublish, 0);
-  GetDefEnvToggle ("ENABLE_LOST_UPDATE_CHECK", &(GProp_Publish.LostUpdateCheck), 
-                   PublishBase + mTogglePublish, 1);
-  GetDefEnvToggle ("VERIFY_PUBLISH", &(GProp_Publish.VerifyPublish),
-                   PublishBase + mTogglePublish, 2);
+  GProp_Publish.LostUpdateCheck = FALSE;
+  GProp_Publish.VerifyPublish = FALSE;
   GetDefEnvToggle ("EXPORT_CRLF", &(GProp_Publish.ExportCRLF),
                    PublishBase + mTogglePublish, 3);
+  GProp_Publish.GenerateMathPI = FALSE;
+  TtaSetEnvBoolean ("GENERATE_MATHPI", GProp_Publish.GenerateMathPI, TRUE);
   TtaGetDefEnvInt ("EXPORT_LENGTH", &(GProp_Publish.ExportLength));
   GetDefEnvString ("DEFAULTNAME", GProp_Publish.DefaultName);
   GetDefEnvString ("SAFE_PUT_REDIRECT", GProp_Publish.SafePutRedirect);
@@ -2786,10 +2784,13 @@ void GetBrowseConf (void)
   TtaGetEnvBoolean ("ENABLE_BG_IMAGES", &(GProp_Browse.BgImages));
   TtaGetEnvBoolean ("LOAD_CSS", &(GProp_Browse.LoadCss));
   TtaGetEnvBoolean ("ENABLE_DOUBLECLICK", &(GProp_Browse.DoubleClick));
-  TtaGetEnvBoolean ("SHOW_CONFIRM_CLOSE_TAB", &(GProp_Browse.WarnCTab));
+  TtaGetEnvBoolean ("CHECK_READ_IDS", &(GProp_Browse.WarnIDs));
   TtaGetEnvBoolean ("ENABLE_FTP", &val);
   AHTFTPURL_flag_set (val);
   GetEnvString ("SCREEN_TYPE", GProp_Browse.ScreenType);
+  if (GProp_Browse.ScreenType[0] == EOS)
+    // no current selection
+    strcpy (GProp_Browse.ScreenType, "screen");
   TtaGetEnvInt ("DOUBLECLICKDELAY", &(GProp_Browse.DoubleClickDelay));
   GetEnvString ("ACCEPT_LANGUAGES", GProp_Browse.LanNeg);
   TtaGetEnvInt ("MAX_URL_LIST", &(GProp_Browse.MaxURL));
@@ -2811,7 +2812,7 @@ void SetBrowseConf (void)
   /* @@@ */
   TtaGetEnvBoolean ("ENABLE_DOUBLECLICK", &(GProp_Browse.DoubleClick));
   /* @@@ */
-  TtaSetEnvBoolean ("SHOW_CONFIRM_CLOSE_TAB", GProp_Browse.WarnCTab, TRUE);
+  TtaSetEnvBoolean ("CHECK_READ_IDS", GProp_Browse.WarnIDs, TRUE);
   TtaSetEnvString ("SCREEN_TYPE", GProp_Browse.ScreenType, TRUE);
   TtaSetEnvString ("ACCEPT_LANGUAGES", GProp_Browse.LanNeg, TRUE);
   /* change the current settings */
@@ -2863,7 +2864,7 @@ void GetDefaultBrowseConf ()
   GetDefEnvString ("SCREEN_TYPE", GProp_Browse.ScreenType);
   TtaGetDefEnvInt ("DOUBLECLICKDELAY", &(GProp_Browse.DoubleClickDelay));
   GetDefEnvString ("ACCEPT_LANGUAGES", GProp_Browse.LanNeg);
-  TtaGetDefEnvBoolean ("SHOW_CONFIRM_CLOSE_TAB", &(GProp_Browse.WarnCTab));
+  TtaGetDefEnvBoolean ("CHECK_READ_IDS", &(GProp_Browse.WarnIDs));
   GProp_Browse.OpeningLocation = 1;
   TtaGetDefEnvInt ("MAX_URL_LIST", &(GProp_Browse.MaxURL));
 }
@@ -2969,7 +2970,6 @@ LRESULT CALLBACK WIN_BrowseDlgProc (HWND hwnDlg, UINT msg, WPARAM wParam,
           /* action buttons */
         case ID_APPLY:
           if (strcmp (GProp_Browse.ScreenType, InitScreen) ||
-              InitWarnCTab != GProp_Browse.WarnCTab ||
               InitOpeningLocation != GProp_Browse.OpeningLocation ||
               InitLoadImages != GProp_Browse.LoadImages ||
               InitLoadObjects != GProp_Browse.LoadObjects ||	      
@@ -2982,7 +2982,6 @@ LRESULT CALLBACK WIN_BrowseDlgProc (HWND hwnDlg, UINT msg, WPARAM wParam,
               InitLoadImages = GProp_Browse.LoadImages;
               InitLoadObjects = GProp_Browse.LoadObjects;	      
               InitLoadCss = GProp_Browse.LoadCss;
-              InitWarnCTab = GProp_Browse.WarnCTab;
             }
           else
             SetBrowseConf ();
@@ -3091,7 +3090,6 @@ static void BrowseCallbackDialog (int ref, int typedata, char *data)
 
             case 1:
               if (strcmp (GProp_Browse.ScreenType, InitScreen) ||
-                  InitWarnCTab != GProp_Browse.WarnCTab ||
                   InitOpeningLocation != GProp_Browse.OpeningLocation ||
                   InitLoadImages != GProp_Browse.LoadImages ||
                   InitLoadObjects != GProp_Browse.LoadObjects ||
@@ -3107,12 +3105,12 @@ static void BrowseCallbackDialog (int ref, int typedata, char *data)
                     {
                       /* redisplay documents after these changes */
                       strcpy (InitScreen, GProp_Browse.ScreenType);
+                      TtaSetEnvString ("SCREEN_TYPE", InitScreen, TRUE);
                       SetBrowseConf ();
                       ApplyConfigurationChanges ();
                     }
                   else
                     SetBrowseConf ();
-                  InitWarnCTab = GProp_Browse.WarnCTab;
                   InitOpeningLocation = GProp_Browse.OpeningLocation;
                   InitLoadImages = GProp_Browse.LoadImages;
                   InitLoadObjects = GProp_Browse.LoadObjects;
@@ -3200,7 +3198,6 @@ void BrowseConfMenu (Document document, View view)
   InitLoadObjects = GProp_Browse.LoadObjects;
   InitBgImages = GProp_Browse.BgImages;
   InitLoadCss = GProp_Browse.LoadCss;
-  InitWarnCTab = GProp_Browse.WarnCTab;
   strcpy (InitScreen, GProp_Browse.ScreenType);
 #ifdef _GTK
   /* Create the dialogue form */
@@ -4324,7 +4321,8 @@ static void UpdateShowTemplates ()
   GetTemplateConf
   Makes a copy of the current registry templates values
   ----------------------------------------------------------------------*/
-void GetTemplatesConf (void){
+void GetTemplatesConf (void)
+{
 #ifdef TEMPLATES
   TtaGetEnvBoolean ("SHOW_TEMPLATES", &(GProp_Templates.S_Templates));  
   GetTemplateRepositoryList(&(GProp_Templates.FirstPath));
@@ -4336,7 +4334,8 @@ void GetTemplatesConf (void){
   Updates the registry Templates values and calls the General functions
   to take into account the changes
   ----------------------------------------------------------------------*/
-void SetTemplatesConf (void){
+void SetTemplatesConf (void)
+{
 #ifdef TEMPLATES
   ThotBool    old;
   TtaGetEnvBoolean ("SHOW_TEMPLATES", &old);
@@ -4369,39 +4368,40 @@ void GetDefaultTemplatesConf ()
   ----------------------------------------------------------------------*/
 static void TemplatesCallbackDialog (int ref, int typedata, char *data)
 {
-    printf("TemplatesCallbackDialog : %d %d (%d)\n", ref, ref-TemplatesBase, (uintptr_t)data);
-
-    uintptr_t val;
-    if (ref==-1)
+  intptr_t  val;
+#ifdef AMAYA_DEBUG
+  printf("TemplatesCallbackDialog : %d %d (%d)\n", ref, ref-TemplatesBase,
+         (intptr_t)data);
+#endif /* AMAYA_DEBUG */
+  if (ref==-1)
     {
     }
-    else
+  else
     {
-        val = (uintptr_t) data;
-        switch (ref - TemplatesBase)
+      val = (intptr_t) data;
+      switch (ref - TemplatesBase)
         {
-            case TemplatesMenu:
-                switch (val)
-                {
-                    case 0: /* CANCEL */
-                        TtaDestroyDialogue (ref);
-                        break;
-                    case 1: /* OK */
-                        SetTemplatesConf();
-                        TtaDestroyDialogue (ref);
-                        break;
-                    case 2: /* DEFAULT */
-                        GetDefaultTemplatesConf();
-                        break;
-                    default:
-                        break;
-                }
-                break;
+        case TemplatesMenu:
+          switch (val)
+            {
+            case 0: /* CANCEL */
+              TtaDestroyDialogue (ref);
+              break;
+            case 1: /* OK */
+              SetTemplatesConf();
+              TtaDestroyDialogue (ref);
+              break;
+            case 2: /* DEFAULT */
+              GetDefaultTemplatesConf();
+              break;
             default:
-                break;
+              break;
+            }
+          break;
+        default:
+          break;
         }
     }
-
 }
 #endif /* _WX */
 #endif /* TEMPLATES */
@@ -4770,7 +4770,6 @@ void PreferenceMenu (Document document, View view)
   InitLoadObjects =GProp_Browse. LoadObjects;
   InitBgImages = GProp_Browse.BgImages;
   InitLoadCss = GProp_Browse.LoadCss;
-  InitWarnCTab = GProp_Browse.WarnCTab;
 
   /* ---> Publish Tab */
   GetPublishConf ();

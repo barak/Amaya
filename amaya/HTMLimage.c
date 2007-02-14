@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2005
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -543,7 +543,7 @@ void UpdateImageMap (Element image, Document doc, int oldWidth, int oldHeight)
   int attrNum	: the attribut identifier
   int value	: the attribut value
   ----------------------------------------------------------------------*/
-void SetAttrOnElement ( Document doc, Element el, int attrNum, int value )
+static void SetAttrOnElement ( Document doc, Element el, int attrNum, int value )
 {
   AttributeType attrType;
   Attribute	attr;
@@ -561,7 +561,7 @@ void SetAttrOnElement ( Document doc, Element el, int attrNum, int value )
       TtaAttachAttribute (el, attr, doc);
     }
   else
-    /* changee the attribute value */
+    /* change the attribute value */
     TtaSetAttributeValue (attr, value, el, doc);
 
   if (!docModified)
@@ -580,9 +580,10 @@ void SetAttrOnElement ( Document doc, Element el, int attrNum, int value )
 void DisplayImage (Document doc, Element el, LoadedImageDesc *desc,
                        char *localfile, char *mime_type)
 {
-  ElementType         elType;
-  ElementType         parentType;
+  ElementType         elType, parentType;
   Element             parent;
+  AttributeType       attrType;
+  Attribute           attr;
   int                 i;
   DocumentType        thotType;
   PicType             picType;
@@ -678,12 +679,12 @@ void DisplayImage (Document doc, Element el, LoadedImageDesc *desc,
             }
         }
  
-      /* If image load failed show the alt text*/
+      /* If image load failed show the alternate text or content */
+      parent = TtaGetParent (el);
+      parentType = TtaGetElementType (parent);
       if ((desc && desc->status == IMAGE_NOT_LOADED) ||
           (desc == NULL && !TtaFileExist (originalName)))
         {
-          parent = TtaGetParent (el);
-          parentType = TtaGetElementType (parent);
           if (parentType.ElTypeNum == HTML_EL_Object ||
               parentType.ElTypeNum == HTML_EL_Embed_)
             /* it's an image into an object -> display object content */
@@ -694,6 +695,17 @@ void DisplayImage (Document doc, Element el, LoadedImageDesc *desc,
             /* it's an image -> display image alt text */
             SetAttrOnElement (doc, parent, HTML_ATTR_NoImages, 1);
         }
+      else
+        /* image successfuly loaded */
+        if (parentType.ElTypeNum == HTML_EL_Object)
+          /* remove attribute NoObjects from the Object element */
+          {
+            attrType.AttrSSchema = parentType.ElSSchema;
+            attrType.AttrTypeNum = HTML_ATTR_NoObjects;
+            attr = TtaGetAttribute (parent, attrType);
+            if (attr)
+              TtaRemoveAttribute (parent, attr, doc);
+          }
 
       if (is_svg)
         {
@@ -787,10 +799,8 @@ void SetContainerImageName (char *imagefile)
   HandleImageLoaded is the callback procedure when the image is loaded	
   from the web.						
   ----------------------------------------------------------------------*/
-static void HandleImageLoaded (int doc, int status, char *urlName,
-                               char *outputfile,
-                               AHTHeaders *http_headers,
-                               void * context)
+static void HandleImageLoaded (int doc, int status, char *urlName, char *outputfile,
+                               char *proxyname, AHTHeaders *http_headers, void * context)
 {
   FetchImage_context *FetchImage_ctx;
   LoadedImageDesc    *desc;
@@ -937,9 +947,8 @@ static void HandleImageLoaded (int doc, int status, char *urlName,
   libWWWImageLoaded is the libWWW callback procedure when the image
   is loaded from the web.
   ----------------------------------------------------------------------*/
-static void libWWWImageLoaded (int doc, int status, char *urlName,
-                               char *outputfile, AHTHeaders *http_headers,
-                               void * context)
+static void libWWWImageLoaded (int doc, int status, char *urlName, char *outputfile,
+			       char *proxyname, AHTHeaders *http_headers, void * context)
 {
   if (doc == 0 || DocumentURLs[doc])
     {
@@ -954,8 +963,7 @@ static void libWWWImageLoaded (int doc, int status, char *urlName,
 #endif /* _GL */
       
       /* rename the local file of the image */
-      HandleImageLoaded (doc, status, urlName, outputfile, http_headers,
-                         context);
+      HandleImageLoaded (doc, status, urlName, outputfile, NULL, http_headers, context);
     }
 }
 
@@ -1015,10 +1023,10 @@ ThotBool FetchImage (Document doc, Element el, char *imageURI, int flags,
 
   pathname[0] = EOS;
   tempfile[0] = EOS;
+  utf8pathname = NULL;
   imageName = NULL;
   attr = NULL;
   FetchImage_ctx = NULL;
-
   update = FALSE;
   ret = TRUE;
   if (el || extra)
@@ -1135,7 +1143,7 @@ ThotBool FetchImage (Document doc, Element el, char *imageURI, int flags,
                                                           TtaGetDefaultCharset ());
               i = GetObjectWWW (doc, doc, utf8pathname, NULL, tempfile,
                                 newflags, NULL, NULL,
-                                (void (*)(int, int, char*, char*, const AHTHeaders*, void*)) libWWWImageLoaded,
+                                (void (*)(int, int, char*, char*, char*, const AHTHeaders*, void*)) libWWWImageLoaded,
                                 (void *) FetchImage_ctx, NO, NULL);
               if (i != -1) 
                 desc->status = IMAGE_LOADED;
@@ -1263,7 +1271,6 @@ static void FetchImages (Document doc, int flags, Element elSubTree,
         {
           /* search the next element having an attribute SRC */
           elNext = el;
-          // if (elSubTree == NULL)
           TtaSearchAttributes (attrType1, attrType2,
                                SearchForward, elNext, &elFound, &attrFound);
           if (elSubTree && elFound && !TtaIsAncestor (elFound, elSubTree))
@@ -1333,13 +1340,21 @@ static void FetchImages (Document doc, int flags, Element elSubTree,
                    {
                      // manage the included PICTURE element
                      elType.ElTypeNum = HTML_EL_PICTURE_UNIT;
+                     pic = NULL;
                      pic = TtaSearchTypedElement (elType, SearchInTree, el);
-                     FetchImage (doc, pic, NULL, flags, NULL, NULL);
+                     if (pic)
+                       {
+                         if (pic == elFound)
+                           // look for th next image
+                           TtaSearchAttributes (attrType1, attrType2, SearchForward,
+                                                pic, &elFound, &attrFound);
+                         FetchImage (doc, pic, NULL, flags, NULL, NULL);
+                       }
                    }
                }
              else
                {
-                 /* this element is an IMAGE */
+                 /* this element is an PICTURE UNIT */
                  if (loadImages)
                    FetchImage (doc, el, NULL, flags, NULL, NULL);
                }

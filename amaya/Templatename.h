@@ -27,16 +27,19 @@ static AttributeMapping TemplateAttributeMappingTable[] =
    {"default", "", 'A', Template_ATTR_defaultAt, L_OtherValue},   
    {"exclude", "", 'A', Template_ATTR_exclude, L_OtherValue},
    {"fixed", "", 'A', Template_ATTR_fixed, L_OtherValue},
-   {"id", "", 'A', Template_ATTR_id, L_OtherValue},
    {"include", "", 'A', Template_ATTR_includeAt, L_OtherValue},
+   {"label", "", 'A', Template_ATTR_title, L_OtherValue},
    {"maxOccurs", "", 'A', Template_ATTR_maxOccurs, L_OtherValue},
    {"minOccurs", "", 'A', Template_ATTR_minOccurs, L_OtherValue}, 
-   {"name", "", 'A', Template_ATTR_name, L_OtherValue},   
+   {"name", "attribute", 'A', Template_ATTR_ref_name, L_OtherValue},   
+   {"name", "component", 'A', Template_ATTR_name, L_OtherValue},   
+   {"name", "union", 'A', Template_ATTR_name, L_OtherValue},
    {"src", "", 'A', Template_ATTR_src, L_OtherValue},
-   {"title", "", 'A', Template_ATTR_title, L_OtherValue},   
+   {"templateVersion", "head", 'A', Template_ATTR_templateVersion, L_OtherValue},
    {"type", "", 'A', Template_ATTR_type, L_OtherValue},   
    {"types", "", 'A', Template_ATTR_types, L_OtherValue},
    {"use", "", 'A', Template_ATTR_useAt, L_OtherValue},
+   {"version", "head", 'A', Template_ATTR_version, L_OtherValue},
    {"", "", EOS, 0, L_OtherValue}	  /* Last entry. Mandatory */
 };
 

@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2005 *
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -30,17 +30,16 @@
 #include "profiles.h"
 #include "MENUconf.h"
 
+
+#include "containers.h"
+#include "insertelem_f.h"
+
 #ifdef TEMPLATES
 #include "templates.h"
+#include "templates_f.h"
 #include "templateDeclarations_f.h"
 #endif /* TEMPLATES */
 
-/*
-* A VIRER SUREMENT PAR LA SUITE
-*
-*
-*
-**/
 #ifdef _GTK
   #include "gtkdialogapi.h"
   extern char      LostPicturePath [MAX_LENGTH];
@@ -228,6 +227,7 @@ extern int       menu_item;
 #include "HTMLedit_f.h"
 #include "HTMLhistory_f.h"
 #include "HTMLimage_f.h"
+#include "HTMLpresentation_f.h"
 #include "HTMLsave_f.h"
 #include "HTMLtable_f.h"
 #include "html2thot_f.h"
@@ -1693,7 +1693,7 @@ static void TextURL (Document doc, View view, char *text)
   ThotBool          change, updated;
 
   updated = FALSE;
-  if (text)
+  if (text && text[0] != EOS)
     {
       /* remove any trailing '\n' chars that may have gotten there
          after a cut and paste */
@@ -2397,11 +2397,15 @@ void OpenNew (Document document, View view, int docType, int docProfile)
   Answer_text[0] = EOS;
   if (NewDocType == docHTML)
     {
-      /* will scan html documents */
-      strcpy (ScanFilter, "*.*htm*");
 #ifdef _WX
-      InitOpenDocForm (document, view, "New.html",
-                       TtaGetMessage (AMAYA, AM_NEW_HTML), docHTML);
+      char *s = TtaGetEnvString ("XHTML_Profile");
+      char *compound = TtaGetMessage (AMAYA, AM_COMPOUND_DOCUMENT);
+      if (s && compound && !strcmp (s, compound))
+        InitOpenDocForm (document, view, "New.xml",
+                         TtaGetMessage (AMAYA, AM_NEW_HTML), docHTML);
+      else
+        InitOpenDocForm (document, view, "New.html",
+                         TtaGetMessage (AMAYA, AM_NEW_HTML), docHTML);
 #else /* _WX */
       if (docProfile == L_Basic)
         InitOpenDocForm (document, view, "New.html",
@@ -2416,6 +2420,8 @@ void OpenNew (Document document, View view, int docType, int docProfile)
         InitOpenDocForm (document, view, "New.html",
                          TtaGetMessage (AMAYA, AM_NEW_HTML11), docHTML);
 #endif /* _WX */
+      /* will scan html documents */
+      strcpy (ScanFilter, "*.*htm*");
     }
   else if (NewDocType == docMath)
     {
@@ -2944,15 +2950,23 @@ Document InitDocAndView (Document oldDoc, ThotBool replaceOldDoc,
       DocumentTypes[doc] = docType;
       /* open the main view */
       if (docType == docLog)
-        /* without menu bar */
-        mainView = TtaOpenMainView (doc, DocumentTypeNames[docType], x, y, w, h, FALSE, FALSE,
-                                    window_id, page_id, page_position);
+        {
+          /* without menu bar */
+          mainView = TtaOpenMainView (doc, DocumentTypeNames[docType], x, y,
+                                      w, h, FALSE, FALSE,
+                                      window_id, page_id, page_position);
+          if (docType == docLog)
+            // apply style attached to log files
+            SetStyleOfLog (doc);
+        }
       else if (docType == docLibrary && method == CE_RELATIVE)
         /* without menu bar */
-        mainView = TtaOpenMainView (doc, DocumentTypeNames[docType], x, y, w, h, FALSE, TRUE,
+        mainView = TtaOpenMainView (doc, DocumentTypeNames[docType], x, y,
+                                    w, h, FALSE, TRUE,
                                     window_id, page_id, page_position);
       else
-        mainView = TtaOpenMainView (doc, DocumentTypeNames[docType], x, y, w, h, TRUE, TRUE,
+        mainView = TtaOpenMainView (doc, DocumentTypeNames[docType], x, y,
+                                    w, h, TRUE, TRUE,
                                     window_id, page_id, page_position);
       if (mainView == 0)
         {
@@ -3736,7 +3750,7 @@ Document LoadDocument (Document doc, char *pathname,
       if (isXML)
         {
           /* it seems to be a XML document */
-          if (DocumentTypes[doc] == docLibrary)
+          if (DocumentTypes[doc] == docLibrary && thotType == docHTML)
             docType = docLibrary;
           else
             docType = thotType;
@@ -4124,10 +4138,10 @@ Document LoadDocument (Document doc, char *pathname,
             }
         }
       else
-	  {
-		DocumentTypes[doc] = docType;
-        newdoc = doc;
-	  }
+        {
+          DocumentTypes[doc] = docType;
+          newdoc = doc;
+        }
 
       if (docType == docImage)
         /* create an HTML container */
@@ -4215,7 +4229,7 @@ Document LoadDocument (Document doc, char *pathname,
       if (realdocname)
         s = TtaStrdup (realdocname);
       else
-      s = TtaStrdup (pathname);
+        s = TtaStrdup (pathname);
       if (DocumentURLs[newdoc] != NULL)
         {
           TtaFreeMemory (DocumentURLs[newdoc]);
@@ -4245,6 +4259,10 @@ Document LoadDocument (Document doc, char *pathname,
       DocumentMeta[newdoc]->xmlformat = isXML;
       DocumentMeta[newdoc]->compound = FALSE;
 
+      /* Clear the current status path */
+      if (docType != docLog)
+        TtaSetStatusSelectedElement (newdoc, 1, NULL);
+
       /* Set character encoding */
       DocumentMeta[newdoc]->charset = NULL;
       charEncoding = HTTP_headers (http_headers, AM_HTTP_CHARSET);
@@ -4271,6 +4289,11 @@ Document LoadDocument (Document doc, char *pathname,
         }
       else if (charsetname[0] != EOS)
         DocumentMeta[newdoc]->charset = TtaStrdup (charsetname);
+      else if (docType == docCSS || docType == docText)
+        {
+          TtaSetDocumentCharset (newdoc, ISO_8859_1, FALSE);
+          DocumentMeta[newdoc]->charset = TtaStrdup ("iso-8859-1");
+        }
 
       /*
       ** copy some HTTP headers to the metadata 
@@ -4395,11 +4418,11 @@ Document LoadDocument (Document doc, char *pathname,
   Reload_callback
   The urlName is encoded with the default charset.
   ----------------------------------------------------------------------*/
-void Reload_callback (int doc, int status, char *urlName,
-                      char *outputfile, AHTHeaders *http_headers,
-                      void * context)
+void Reload_callback (int doc, int status, char *urlName, char *outputfile, 
+                      char *proxyName, AHTHeaders *http_headers, void * context)
+                     
 {
-  Document          newdoc;
+  Document           newdoc;
   char              *tempfile;
   char              *documentname;
   char              *form_data;
@@ -4639,11 +4662,11 @@ void Reload (Document doc, View view)
       /* load the document from the Web */
       toparse = GetObjectWWW (doc, 0, pathname, form_data, tempfile, 
                               mode,
-                              NULL, NULL, (void (*)(int, int, char*, char*, const AHTHeaders*, void*)) Reload_callback, 
+                              NULL, NULL, (void (*)(int, int, char*, char*, char*, const AHTHeaders*, void*)) Reload_callback, 
                               (void *) ctx, YES, NULL);
     }
   else if (TtaFileExist (pathname))
-    Reload_callback (doc, 0, pathname, tempfile, NULL, (void *) ctx);
+    Reload_callback (doc, 0, pathname, tempfile, NULL, NULL, (void *) ctx);
 
   TtaFreeMemory (tempfile);
   TtaFreeMemory (pathname);
@@ -4768,6 +4791,8 @@ void ShowSource (Document doc, View view)
       DocumentTypes[doc] != docLibrary &&
       DocumentTypes[doc] != docMath)
     /* it's not an HTML or an XML document */
+    return;
+  if (!strcmp (DocumentURLs[doc], "empty"))
     return;
   if (DocumentSource[doc])
     /* the source code of this document is already shown */
@@ -4949,6 +4974,8 @@ void ShowStructure (Document doc, View view)
   int                 x, y, w, h;
   char                structureName[30];
 
+  if (!strcmp (DocumentURLs[doc], "empty"))
+    return;
   if (DocumentTypes[doc] == docSource)
     /* work on the formatted document */
     doc = GetDocFromSource (doc);
@@ -4984,6 +5011,8 @@ void ShowAlternate (Document doc, View view)
   View                altView;
   int                 x, y, w, h;
 
+  if (!strcmp (DocumentURLs[doc], "empty"))
+    return;
   if (DocumentTypes[doc] == docSource)
     /* work on the formatted document */
     doc = GetDocFromSource (doc);
@@ -5021,6 +5050,8 @@ void ShowLinks (Document doc, View view)
   View                linksView;
   int                 x, y, w, h;
 
+  if (!strcmp (DocumentURLs[doc], "empty"))
+    return;
   if (DocumentTypes[doc] == docSource)
     /* work on the formatted document */
     doc = GetDocFromSource (doc);
@@ -5058,6 +5089,8 @@ void ShowToC (Document doc, View view)
   View                tocView;
   int                 x, y, w, h;
 
+  if (!strcmp (DocumentURLs[doc], "empty"))
+    return;
   if (DocumentTypes[doc] == docSource)
     /* work on the formatted document */
     doc = GetDocFromSource (doc);
@@ -5157,9 +5190,8 @@ ThotBool ViewToClose (NotifyDialog *event)
 /*----------------------------------------------------------------------
   The urlName is encoded with the default charset.
   ----------------------------------------------------------------------*/
-void GetAmayaDoc_callback (int newdoc, int status, char *urlName,
-                           char *outputfile, AHTHeaders *http_headers,
-                           void * context)
+void GetAmayaDoc_callback (int newdoc, int status, char *urlName, char *outputfile,
+                           char *proxyName, AHTHeaders *http_headers, void * context)
 {
   Element             elFound;
   Document            doc;
@@ -5169,6 +5201,7 @@ void GetAmayaDoc_callback (int newdoc, int status, char *urlName,
   int                 method;
   void               *ctx_cbf;
   char                tempdocument[MAX_LENGTH];
+  char                proxymsg[MAX_LENGTH];
   char               *tempfile;
   char               *target;
   char               *pathname;
@@ -5275,6 +5308,9 @@ void GetAmayaDoc_callback (int newdoc, int status, char *urlName,
             CleanUpParsingErrors ();
           else
             CheckParsingErrors (newdoc);
+#ifdef TEMPLATES
+          CheckTemplate (newdoc);
+#endif /* TEMPLATES */
         }
       else
         {
@@ -5318,7 +5354,14 @@ void GetAmayaDoc_callback (int newdoc, int status, char *urlName,
               if (!s)
                 s = "";
               sprintf (tempdocument, TtaGetMessage (AMAYA, AM_CANNOT_LOAD), pathname);
-              InitConfirm3L (newdoc, 1, tempdocument, s, NULL, FALSE);
+              if (proxyName != NULL)
+		{
+		  strcpy (proxymsg, "Used proxy: ");
+		  strcat (proxymsg, proxyName);
+		  InitConfirm3L (newdoc, 1, tempdocument, s, proxymsg, FALSE);
+		}
+	      else
+		InitConfirm3L (newdoc, 1, tempdocument, s, NULL, FALSE);
             }
         }
 
@@ -5354,7 +5397,7 @@ void GetAmayaDoc_callback (int newdoc, int status, char *urlName,
 
   /*** if stopped_flag == true, how to deal with cbf? */
   if (cbf)
-    (*cbf) (newdoc, status, pathname, tempfile, NULL, ctx_cbf);
+    (*cbf) (newdoc, status, pathname, tempfile, NULL, NULL, ctx_cbf);
 
 
 #ifdef DAV
@@ -5455,17 +5498,19 @@ Document GetAmayaDoc (char *urlname, char *form_data,
     docType = docSVG;
   else if (IsCSSName (documentname))
     docType = docCSS;
-  else if (IsTextName (documentname))
-    docType = docText;
-#ifdef XML_GENERIC
+#ifdef TEMPLATES
+  else if (IsXTiger (documentname))
+    // @@@@ by default it's a HTML document
+    docType = docHTML;
+#endif /* TEMPLATES */
   else if (IsXMLName (documentname))
-  {
-    docType = docXml;
-	//TODO Check that urlname is a valid URL
-    CheckDocHeader(urlname, &xmlDec, &withDoctype, &isXML, &useMath, &isKnown,
-                   &parsingLevel, &doc_charset, charsetname, (DocumentType*)&docType);
-  }
-#endif /* XML_GENERIC */
+    {
+      docType = docXml;
+      //TODO Check that urlname is a valid URL
+      if (!IsW3Path (urlname))
+        CheckDocHeader(urlname, &xmlDec, &withDoctype, &isXML, &useMath, &isKnown,
+                       &parsingLevel, &doc_charset, charsetname, (DocumentType*)&docType);
+    }
 #ifdef _SVG
   else if (IsLibraryName (documentname))
     docType = docLibrary;
@@ -5474,6 +5519,8 @@ Document GetAmayaDoc (char *urlname, char *form_data,
     docType = docCSS;
   else if (method == CE_LOG)
     docType = docLog;
+  else if (IsTextName (documentname))
+    docType = docText;
   else
     docType = docHTML;
   
@@ -5680,7 +5727,7 @@ Document GetAmayaDoc (char *urlname, char *form_data,
               if ((css == NULL) || (css != NULL && newdoc == doc))
                 toparse =  GetObjectWWW (newdoc, refdoc, initial_url, form_data,
                                          tempfile, mode, NULL, NULL,
-                                         (void (*)(int, int, char*, char*, const AHTHeaders*, void*)) GetAmayaDoc_callback,
+                                         (void (*)(int, int, char*, char*, char*, const AHTHeaders*, void*)) GetAmayaDoc_callback,
                                          (void *) ctx, YES, content_type);
               else
                 {
@@ -5689,8 +5736,8 @@ Document GetAmayaDoc (char *urlname, char *form_data,
                                 TtaGetMessage (AMAYA, AM_DOCUMENT_LOADED), NULL);
                   /* just take a copy of the local temporary file */
                   strcpy (tempfile, css->localName);
-                  GetAmayaDoc_callback (newdoc, 0, initial_url,
-                                        tempfile, NULL, (void *) ctx);
+                  GetAmayaDoc_callback (newdoc, 0, initial_url, tempfile,
+                                        NULL, NULL, (void *) ctx);
                   TtaHandlePendingEvents ();
                 }
             }
@@ -5701,7 +5748,7 @@ Document GetAmayaDoc (char *urlname, char *form_data,
                             TtaGetMessage (AMAYA, AM_DOCUMENT_LOADED),
                             NULL);
               GetAmayaDoc_callback (newdoc, 0, initial_url, tempfile,
-                                    NULL, (void *) ctx);
+                                    NULL, NULL, (void *) ctx);
               TtaHandlePendingEvents ();
             }
         }
@@ -5711,7 +5758,7 @@ Document GetAmayaDoc (char *urlname, char *form_data,
       /* following a local link */
       TtaSetStatus (newdoc, 1, TtaGetMessage (AMAYA, AM_DOCUMENT_LOADED), NULL);
       ctx->local_link = 1;
-      GetAmayaDoc_callback (newdoc, 0, initial_url, tempfile, NULL, (void *) ctx);
+      GetAmayaDoc_callback (newdoc, 0, initial_url, tempfile, NULL, NULL, (void *) ctx);
       TtaHandlePendingEvents ();
     }
   
@@ -5725,7 +5772,7 @@ Document GetAmayaDoc (char *urlname, char *form_data,
       if (ctx)
         TtaFreeMemory (ctx);
       if (cbf)
-        (*cbf) (newdoc, -1, initial_url, tempfile, NULL, ctx_cbf);
+        (*cbf) (newdoc, -1, initial_url, tempfile, NULL, NULL, ctx_cbf);
       /* Free the memory associated with the context */
       TtaFreeMemory (target);
       TtaFreeMemory (documentname);
@@ -6148,18 +6195,24 @@ void CallbackDialogue (int ref, int typedata, char *data)
       /* only used by WX version to get back the new profile */
       if (NewDocType == docHTML)
         {
-          if (!strstr (data, "XHTML"))
-            NewXML = FALSE;
-          if (strstr (data, "Strict"))
-            NewDocProfile = L_Strict;
-          else if (strstr (data, "Basic"))
-            NewDocProfile = L_Basic;
-          else if (strstr (data, "Transitional"))
-            NewDocProfile = L_Transitional;
-          else if (NewXML)
-            NewDocProfile = L_Xhtml11;
+          char *compound = TtaGetMessage (AMAYA, AM_COMPOUND_DOCUMENT);
+          if (data && compound && !strcmp (data, compound))
+            NewDocProfile = L_Other;
           else
-            NewDocProfile = L_Transitional;	    
+            {
+              if (!strstr (data, "XHTML"))
+                NewXML = FALSE;
+              if (strstr (data, "Strict"))
+                NewDocProfile = L_Strict;
+              else if (strstr (data, "Basic"))
+                NewDocProfile = L_Basic;
+              else if (strstr (data, "Transitional"))
+                NewDocProfile = L_Transitional;
+              else if (NewXML)
+                NewDocProfile = L_Xhtml11;
+              else
+                NewDocProfile = L_Transitional;
+            }
         }
       break;
     case URLName:
@@ -7627,6 +7680,7 @@ void InitAmaya (NotifyEvent * event)
   TtaSetEnvBoolean ("LOAD_CSS", TRUE, FALSE);
   TtaSetEnvBoolean ("SEND_REFERER", FALSE, FALSE);
   TtaSetEnvBoolean ("INSERT_NBSP", FALSE, FALSE);
+  TtaSetEnvBoolean ("GENERATE_MATHPI", TRUE, FALSE);
 #ifdef _WX
   TtaSetEnvBoolean ("CLOSE_WHEN_APPLY", TRUE, FALSE);
 #endif /* _WX */
@@ -7660,8 +7714,8 @@ void InitAmaya (NotifyEvent * event)
   SavedDocumentURL = NULL;
   /* set path on current directory */
 #ifdef _WX
-  wxString homedir = TtaGetHomeDir();
-  strcpy(DirectoryName, (const char *)homedir.mb_str(wxConvUTF8));
+  wxString homedir = TtaGetHomeDir ();
+  strcpy (DirectoryName, (const char *)homedir.mb_str(wxConvUTF8));
 #else /* _WX */
 #ifdef _WINDOWS
   s = getenv ("HOMEDRIVE");
@@ -7771,6 +7825,8 @@ void InitAmaya (NotifyEvent * event)
 #ifdef TEMPLATES
   InitTemplates();
 #endif
+
+  InsertableElement_Init();
 
   URL_list = NULL;
   URL_list_len = 0;
@@ -8301,6 +8357,87 @@ void AmayaCloseTab (Document doc, View view)
 }
 
 /*----------------------------------------------------------------------
+  CloseOtherTabs close all tabs but selected
+  ----------------------------------------------------------------------*/
+void CloseOtherTabs( Document doc, View view)
+{
+#ifdef _WX
+  int page_id       = -1;
+  int page_position = 0;
+  int window_id     = 0;
+  
+  window_id = TtaGetDocumentWindowId( doc, view );
+  /* Get the window id and page id of current document and
+     close the corresponding page */
+  TtaGetDocumentPageId (doc, view, &page_id, &page_position);
+  TtaCloseAllPageButThis (window_id, page_id);
+#endif /* _WX */
+}
+
+/*----------------------------------------------------------------------
+  NewTab open a new tab with an empty page
+  ----------------------------------------------------------------------*/
+void NewTab (Document doc, View view)
+{
+#ifdef _WX
+  char  *s = (char *)TtaGetMemory (MAX_LENGTH);
+#ifdef _WINDOWS
+  sprintf (s, "%s\\empty", TtaGetEnvString ("THOTDIR"));
+#else /* _WINDOWS */
+  sprintf (s, "%s/empty", TtaGetEnvString ("THOTDIR"));
+#endif /* _WINDOWS */
+  /* load an empty document */
+  ThotCallback (BaseDialog + URLName,  STRING_DATA, s);
+  DontReplaceOldDoc = TRUE;
+  InNewWindow       = FALSE;
+  ThotCallback (BaseDialog + OpenForm, INTEGER_DATA, (char*)1);
+  TtaFreeMemory (s);
+#endif /* _WX */
+}
+
+/*----------------------------------------------------------------------
+  RefreshTab force the page to refresh
+  ----------------------------------------------------------------------*/
+void RefreshTab (Document doc, View view)
+{
+  DisplayMode         dispMode;
+
+  dispMode = TtaGetDisplayMode (doc);
+  if (dispMode == DisplayImmediately)
+    {
+      TtaSetDisplayMode (doc, NoComputedDisplay);
+      RedisplayDoc (doc);
+      TtaSetDisplayMode (doc, dispMode);
+      //TtaPlay (doc, 1);
+    }
+}
+
+/*----------------------------------------------------------------------
+  RefreshAllTabs force all pages to refresh
+  ----------------------------------------------------------------------*/
+void RefreshAllTabs (Document doc, View view)
+{
+#ifdef _WX
+  int      i;
+  int      ref_id = 0, window_id;
+  
+  ref_id = TtaGetDocumentWindowId (doc, view);
+  if (ref_id == 0)
+    return;
+  for (i = 1; i < MAX_DOCUMENTS; i++)
+    {
+      if (DocumentURLs[i])
+        {
+          window_id = TtaGetDocumentWindowId (i, 1);
+          if (window_id == ref_id)
+            RefreshTab (i, 1);
+        }
+    }
+#endif /* _WX */
+}
+
+
+/*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
 void AmayaCloseWindow (Document doc, View view)
 {
@@ -8373,8 +8510,8 @@ void AmayaClose (Document document, View view)
   ----------------------------------------------------------------------*/
 void AddURLInCombobox (char *pathname, char *form_data, ThotBool keep)
 {
-  char          *urlstring, *app_home, *ptr, *url;
-  int            i, j, len, nb, end;
+  char          *urlstring, *app_home, *old_list, *url;
+  int            i, j, len, nb, end, max;
   FILE          *file = NULL;
   unsigned char *localname;
   CHARSET        encoding;
@@ -8400,7 +8537,7 @@ void AddURLInCombobox (char *pathname, char *form_data, ThotBool keep)
   encoding = TtaGetLocaleCharset();
 #endif /* _WX */
   /* keep the previous list */
-  ptr = URL_list;
+  old_list = URL_list;
   /* create a new list */
   len = strlen (url) + 1;
   i = 0;
@@ -8410,10 +8547,14 @@ void AddURLInCombobox (char *pathname, char *form_data, ThotBool keep)
   URL_list = (char *)TtaGetMemory (URL_list_len);  
   if (keep)
     file = TtaWriteOpen (urlstring);
+
   *urlstring = EOS;
   if (!keep || file)
     {
       /* put the new url */
+      if (!strcmp (url, "empty"))
+        // empty is a keyword to display an empty document    
+        keep = FALSE; // never keep an empty file
       strcpy (URL_list, url);
       if (keep)
         {
@@ -8426,27 +8567,29 @@ void AddURLInCombobox (char *pathname, char *form_data, ThotBool keep)
           else
             fprintf (file, "\"%s\"\n", url);
         }
-      if (ptr && *ptr != EOS)
+
+      max = GetMaxURLList();
+      if (old_list && old_list[i] != EOS)
         {
           /* now write other urls */
-          while (ptr[i] != EOS && nb < GetMaxURLList())
+          while (old_list[i] != EOS && nb < max)
             {
-              end = strlen (&ptr[i]) + 1;
+              end = strlen (&old_list[i]) + 1;
               if ((URL_list_keep || i != 0) &&
-                  (end != len || strncmp (url, &ptr[i], len)))
+                  (end != len || strncmp (url, &old_list[i], len)))
                 {
                   /* add the newline between two urls */
-                  strcpy (&URL_list[j], &ptr[i]);
+                  strcpy (&URL_list[j], &old_list[i]);
                   if (keep)
                     {
                       if (encoding != UTF_8)
                         {
-                          localname = TtaConvertMbsToByte ((unsigned char *)&ptr[i], encoding);
+                          localname = TtaConvertMbsToByte ((unsigned char *)&old_list[i], encoding);
                           fprintf (file, "\"%s\"\n", localname);
                           TtaFreeMemory (localname);
                         }
                       else
-                        fprintf (file, "\"%s\"\n", &ptr[i]);
+                        fprintf (file, "\"%s\"\n", &old_list[i]);
                     }
                   j += end;
                   nb++;
@@ -8460,7 +8603,7 @@ void AddURLInCombobox (char *pathname, char *form_data, ThotBool keep)
       if (keep)
         TtaWriteClose (file);
     }
-  TtaFreeMemory (ptr);
+  TtaFreeMemory (old_list);
   TtaFreeMemory (urlstring);
   TtaFreeMemory (url);
 }

@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2005
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -24,6 +24,7 @@
 #include "fetchHTMLname.h"
 #include "document.h"
 
+#include "AHTURLTools_f.h"
 #include "HTMLactions_f.h"
 #include "HTMLedit_f.h"
 #include "HTMLimage_f.h"
@@ -44,8 +45,13 @@
 #ifdef XML_GENERIC
 #include "Xmlbuilder_f.h"
 #endif /* XML_GENERIC */
+
+#include "Elemlist.h"
+
 #ifdef TEMPLATES
 #include "MENUconf.h"
+#include "templates.h"
+#include "Elemlist.h"
 #include "Templatebuilder_f.h"
 #include "templates_f.h"
 #endif /* TEMPLATES */
@@ -383,7 +389,7 @@ static void    InitXmlParserContexts (void)
   ctxt->MapAttributeValue = (Proc) MapSVGAttributeValue;
   ctxt->CheckContext = (Proc) XmlCheckContext;
   ctxt->CheckInsert = (Proc) XmlCheckInsert;
-  ctxt->ElementCreated = NULL;
+  ctxt->ElementCreated =  (Proc) SVGElementCreated;
   ctxt->ElementComplete = (Proc) SVGElementComplete;
   ctxt->AttributeComplete = (Proc) SVGAttributeComplete;
   ctxt->GetDTDName = (Proc) SVGGetDTDName;
@@ -1031,11 +1037,18 @@ static void  XhtmlCheckInsert (Element *el, Element  parent,
       /* Search the ancestor that is not a character level element */
       ancestor = parent;
       ancestorType = TtaGetElementType (ancestor);
-      if (strcmp (TtaGetSSchemaName (ancestorType.ElSSchema), "HTML") != 0)
+      while (ancestor &&
+             !strcmp (TtaGetSSchemaName (ancestorType.ElSSchema), "Template"))
+        {
+          // skip template ancestors
+          ancestor =  TtaGetParent (ancestor);
+          ancestorType = TtaGetElementType (ancestor);
+        }
+      if (strcmp (TtaGetSSchemaName (ancestorType.ElSSchema), "HTML"))
         /* parent is not a HTML element */
         return;
 
-      while (ancestor != NULL &&
+      while (ancestor &&
              IsXMLElementInline (ancestorType, doc))
         {
           ancestor = TtaGetParent (ancestor);
@@ -2406,6 +2419,11 @@ ThotBool  IsLeadingSpaceUseless (Element lastEl, Document doc,
                     elType.ElTypeNum == SVG_EL_tspan))
             removeLeadingSpaces = FALSE;
 #endif /* _SVG */
+          else if (!strcmp (name, "Template") &&
+                   lastElType.ElTypeNum == HTML_EL_TEXT_UNIT)
+            {
+            removeLeadingSpaces = FALSE;
+            }
         }
     }
   else
@@ -5382,8 +5400,9 @@ void ParseExternalDocument (char *fileName, char *originalName, Element el,
     {
       /* Fetch and display the recursive images */
       /* modify the net status */
-      /* DocNetworkStatus[doc] = AMAYA_NET_ACTIVE; */
+      DocNetworkStatus[doc] = AMAYA_NET_ACTIVE;
       FetchAndDisplayImages (doc, AMAYA_LOAD_IMAGE, extEl);
+      DocNetworkStatus[doc] = AMAYA_NET_INACTIVE;
       /* Make the external element not editable */
       TtaSetAccessRight (extEl, ReadOnly, doc);
     }
@@ -5982,7 +6001,7 @@ void StartXmlParser (Document doc, char *fileName,
       /* Check the Thot abstract tree for XHTML documents */
       if (isXHTML)
         {
-          CheckAbstractTree (XMLcontext.doc);
+          CheckAbstractTree (XMLcontext.doc, IsXTiger (documentName));
           if (MapAreas[doc])
             ChangeAttrOnRoot (doc, HTML_ATTR_ShowAreas);
         }

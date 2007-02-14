@@ -1,14 +1,12 @@
-Index: Amaya/Makefile.in
+Index: amaya-9.54~dfsg.0/Makefile.in
 ===================================================================
---- Amaya.orig/Makefile.in	2006-12-05 20:59:04.000000000 +0000
-+++ Amaya/Makefile.in	2006-12-05 21:26:10.000000000 +0000
-@@ -12,13 +12,12 @@
+--- amaya-9.54~dfsg.0.orig/Makefile.in	2007-01-22 16:47:41.000000000 +0000
++++ amaya-9.54~dfsg.0/Makefile.in	2007-02-14 19:09:52.000000000 +0000
+@@ -12,11 +12,10 @@
  include Options
  
  LIBWWW	   = libwww
 -REDLAND    = redland
- LIBJPEG	   = libjpeg
- LIBPNG	   = libpng
  
  #MKP: adding davlib
  SUBDIRS	= @SUBDIRS@ tools thotlib batch drawlib indexlib annotlib amaya thot @DAVDIR@
@@ -17,7 +15,7 @@ Index: Amaya/Makefile.in
  
  prefix = @prefix@
  exec_prefix = @exec_prefix@
-@@ -27,7 +26,7 @@
+@@ -25,7 +24,7 @@
  
  srcdir	= $(THOTDIR)
  
@@ -26,7 +24,7 @@ Index: Amaya/Makefile.in
  
  amaya : amaya_prog tools thotlib print_prog
  
-@@ -295,53 +294,8 @@
+@@ -293,53 +292,8 @@
  #
  # Rules to build the redland RDF library
  #
@@ -82,10 +80,10 @@ Index: Amaya/Makefile.in
  	@($(ECHO) "redland is installed")
  
  #
-Index: Amaya/configure.in
+Index: amaya-9.54~dfsg.0/configure.in
 ===================================================================
---- Amaya.orig/configure.in	2006-12-05 20:59:09.000000000 +0000
-+++ Amaya/configure.in	2006-12-05 21:26:09.000000000 +0000
+--- amaya-9.54~dfsg.0.orig/configure.in	2007-02-14 19:09:43.000000000 +0000
++++ amaya-9.54~dfsg.0/configure.in	2007-02-14 19:09:52.000000000 +0000
 @@ -690,13 +690,6 @@
  fi
  
@@ -160,10 +158,10 @@ Index: Amaya/configure.in
  AC_SUBST(AMAYA_RAPTOR_LIBS)
  AC_SUBST(AMAYA_RAPTOR_INCLUDES)
  AC_SUBST(MAKE_LIBWWW_RDF_PARSER)
-Index: Amaya/amaya/Makefile.in
+Index: amaya-9.54~dfsg.0/amaya/Makefile.in
 ===================================================================
---- Amaya.orig/amaya/Makefile.in	2006-12-05 21:06:24.000000000 +0000
-+++ Amaya/amaya/Makefile.in	2006-12-05 21:26:10.000000000 +0000
+--- amaya-9.54~dfsg.0.orig/amaya/Makefile.in	2007-02-14 19:07:23.000000000 +0000
++++ amaya-9.54~dfsg.0/amaya/Makefile.in	2007-02-14 19:09:52.000000000 +0000
 @@ -91,8 +91,8 @@
  
  ../redland/librdf/.libs/librdf.a \

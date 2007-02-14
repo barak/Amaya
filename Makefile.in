@@ -12,8 +12,6 @@ LIBZ = @LIBZ@
 include Options
 
 LIBWWW	   = libwww
-LIBJPEG	   = libjpeg
-LIBPNG	   = libpng
 
 #MKP: adding davlib
 SUBDIRS	= @SUBDIRS@ tools thotlib batch drawlib indexlib annotlib amaya thot @DAVDIR@
@@ -227,11 +225,7 @@ $(THOTDIR)/Options.in \
 $(THOTDIR)/configure.in \
 $(THOTDIR)/Makefile.in \
 $(THOTDIR)/amaya/Makefile.in \
-$(THOTDIR)/libjpeg/Makefile.in \
 $(THOTDIR)/batch/Makefile.in \
-$(THOTDIR)/libjpeg/Makefile.in \
-$(THOTDIR)/libpng/Makefile.in \
-$(THOTDIR)/libpng/zlib/Makefile.in \
 $(THOTDIR)/thotlib/Makefile.in \
 $(THOTDIR)/thotlib/include/Makefile.in \
 $(THOTDIR)/tools/Makefile.in \

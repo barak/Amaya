@@ -72,6 +72,7 @@ class AmayaNormalWindow : public AmayaWindow
   virtual bool           AttachPage( int position, AmayaPage * p_page );
   virtual bool           DetachPage( int position );
   virtual bool           ClosePage( int position );
+  virtual bool           CloseAllButPage( int position );
   virtual AmayaPage *    GetPage( int position ) const;
   virtual int            GetPageCount() const;
 
@@ -103,6 +104,7 @@ class AmayaNormalWindow : public AmayaWindow
   void OnSplitterDClick( wxSplitterEvent& event );
   void OnSplitterPosChanged( wxSplitterEvent& event );
   void OnSplitPanelButton( wxCommandEvent& event );
+  void OnNotebookPageChanged( wxNotebookEvent& event );
 
   AmayaPanel *      m_pPanel;     // current selected panel
   AmayaNotebook *   m_pNotebook;         // tabs container

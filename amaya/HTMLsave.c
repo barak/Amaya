@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2005
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -63,6 +63,9 @@ extern HINSTANCE    hInstance;
 #include "wxdialogapi_f.h"
 #include "appdialogue_wx.h"
 #endif /* _WX */
+#ifdef TEMPLATES
+#include "Template.h"
+#endif /* TEMPLATES */
 
 #define StdDefaultName "Overview.html"
 static char        *DefaultName;
@@ -72,6 +75,7 @@ static ThotBool     TextFormat;
 static AttSearch    URL_attr_tab[] = {
   {HTML_ATTR_HREF_, XHTML_TYPE},
   {HTML_ATTR_codebase, XHTML_TYPE},
+  {HTML_ATTR_script_src, XHTML_TYPE},
   {HTML_ATTR_Script_URL, XHTML_TYPE},
   {HTML_ATTR_SRC, XHTML_TYPE},
   {HTML_ATTR_data, XHTML_TYPE},
@@ -390,13 +394,17 @@ ThotBool CheckValidID (NotifyAttribute *event)
 
 
 /*----------------------------------------------------------------------
-  SetRelativeURLs: try to make relative URLs within an HTML document.
+  SetRelativeURLs updates all URLs of the current document according to
+  the new path. If possible, new URLs will be relative to this new path.
   ----------------------------------------------------------------------*/
 void SetRelativeURLs (Document doc, char *newpath)
 {
   SSchema             XHTMLSSchema, MathSSchema, SVGSSchema, XLinkSSchema;
+#ifdef TEMPLATES
+  SSchema             TemplateSSchema = TtaGetSSchema ("Template", doc);
+#endif /* TEMPLATES */
   Element             el, root, content, next;
-  ElementType         elType;
+  ElementType         elType, contentType;
   Attribute           attr;
   AttributeType       attrType;
   Language            lang;
@@ -416,7 +424,7 @@ void SetRelativeURLs (Document doc, char *newpath)
   XLinkSSchema = TtaGetSSchema ("XLink", doc);
   root = TtaGetMainRoot (doc);
 
-  /* handle style elements */
+  /* Handle style elements */
   elType = TtaGetElementType (root);
   if (elType.ElSSchema == XHTMLSSchema || elType.ElSSchema == SVGSSchema)
     {
@@ -430,23 +438,55 @@ void SetRelativeURLs (Document doc, char *newpath)
     el = NULL;
   while (el)
     {
-      if (elType.ElTypeNum == HTML_EL_STYLE_)
-        content = TtaGetFirstChild (el);
-      else
-        content = NULL;
-      if (content != NULL)
+      /* this is a style element */
+      content = TtaGetFirstChild (el);
+      if (content)
+        {
+          contentType = TtaGetElementType (content);
+#ifdef TEMPLATES
+          if ((elType.ElTypeNum == Template_EL_useEl ||
+               elType.ElTypeNum == Template_EL_useSimple) &&
+              elType.ElSSchema == TemplateSSchema)
+            {
+              // Go inside the template use element
+              content = TtaGetFirstChild (content);
+              contentType = TtaGetElementType (content);
+            }
+#endif /* TEMPLATES */
+        }
+      if (content)
         {
           len = MAX_CSS_LENGTH;
-          TtaGiveTextContent (content, (unsigned char *)CSSbuffer, &len, &lang);
-          CSSbuffer[MAX_CSS_LENGTH] = EOS;
-          new_url = UpdateCSSBackgroundImage (DocumentURLs[doc], newpath,
-                                              NULL, CSSbuffer);
-          if (new_url != NULL)
+          if (contentType.ElTypeNum == HTML_EL_TEXT_UNIT)
+            // the style content is not inside a comment
+            next = content;
+          else
             {
-              /* register the modification to be able to undo it */
-              TtaRegisterElementReplace (content, doc);
-              TtaSetTextContent (content, (unsigned char *)new_url, lang, doc);
-              TtaFreeMemory (new_url);
+              // manange text units inside the comment
+              contentType.ElTypeNum = HTML_EL_TEXT_UNIT;
+              next = TtaSearchTypedElementInTree (contentType, SearchForward, next,
+                                                  content);
+            }
+
+          while (next)
+            {
+              TtaGiveTextContent (next, (unsigned char *)CSSbuffer, &len, &lang);
+              CSSbuffer[MAX_CSS_LENGTH] = EOS;
+              new_url = UpdateCSSBackgroundImage (DocumentURLs[doc], newpath,
+                                                  NULL, CSSbuffer);
+              if (new_url)
+                {
+                  /* register the modification to be able to undo it */
+                  TtaRegisterElementReplace (next, doc);
+                  TtaSetTextContent (next, (unsigned char *)new_url, lang, doc);
+                  TtaFreeMemory (new_url);
+                }
+              if (next == content)
+                next = NULL;
+              else
+                // next text unit
+                next = TtaSearchTypedElementInTree (contentType, SearchForward, next,
+                                                    content);
             }
         }
 
@@ -461,7 +501,7 @@ void SetRelativeURLs (Document doc, char *newpath)
         el = NULL;
     }
 
-  /* manage URLs and SRCs attributes */
+  /* Manage URLs and SRCs attributes */
   max = sizeof (URL_attr_tab) / sizeof (AttSearch);
   for (index = 0; index < max; index++)
     {
@@ -1049,7 +1089,7 @@ void SetNamespacesAndDTD (Document doc)
   char          buffer[300];
   char         *attrText;
   int           length, profile, pi_type;
-  ThotBool      useMathML, useSVG, useHTML, useXML, mathPI;
+  ThotBool      useMathML, useSVG, useHTML, useXML, mathPI, useXLink;
   ThotBool      xmlDecl, xhtml_mimetype, insertMeta;
 
   insertMeta = FALSE;
@@ -1057,6 +1097,7 @@ void SetNamespacesAndDTD (Document doc)
   useHTML = FALSE;
   useSVG = FALSE;
   useXML = FALSE;
+  useXLink = FALSE;
   nature = NULL;
   doctype = NULL; /* no DOCTYPE */
   elDecl = NULL;
@@ -1094,6 +1135,8 @@ void SetNamespacesAndDTD (Document doc)
                   useXML = TRUE;
                 else if (!strcmp (ptr, "HTML"))
                   useHTML = TRUE;
+                else if (!strcmp (ptr, "XLink"))
+                  useXLink = TRUE;
               }
           }
       }
@@ -1103,6 +1146,9 @@ void SetNamespacesAndDTD (Document doc)
   /* a PI is generated when the XHTML document includes math elements and
      doesn't include a DOCTYPE */
   mathPI = useMathML && DocumentMeta[doc]->xmlformat;
+  if (mathPI)
+    // check if the user wants to generate this mathPI
+    TtaGetEnvBoolean ("GENERATE_MATHPI", &mathPI);
 
   /* check if the document has a DOCTYPE declaration */
 #ifdef ANNOTATIONS
@@ -1143,7 +1189,7 @@ void SetNamespacesAndDTD (Document doc)
       if (DocumentTypes[doc] == docHTML && doctype)
         {
           /* Create a XHTML + MathML + SVG doctype */
-          if ((useMathML || useSVG) && !useXML && profile == L_Xhtml11)
+          if ((useMathML || useSVG) && !useXML && !useXLink && profile == L_Xhtml11)
             {
               CreateDoctype (doc, doctype, L_Xhtml11, useMathML, useSVG);
               /* it's not necessary to generate the math PI */
@@ -1157,8 +1203,8 @@ void SetNamespacesAndDTD (Document doc)
             CreateDoctype (doc, doctype, profile, useMathML, useSVG);
         }
       else if (doctype &&
-               ((useSVG && (useMathML || useHTML || useXML)) ||
-                (useXML && (useMathML || useHTML || useSVG))))
+               ((useSVG && (useMathML || useHTML || useXML || useXLink)) ||
+                (useXML && (useMathML || useHTML || useSVG || useXLink))))
         /* several namespaces: remove the current doctype */
         TtaDeleteTree (doctype, doc);
     }
@@ -1485,7 +1531,6 @@ ThotBool ParseWithNewDoctype (Document doc, char *localFile, char *tempdir,
   charsetname[0] = EOS;
   CheckDocHeader (localFile, &xmlDec, &withDoctype, &isXML, &useMath, &isKnown,
                   &parsingLevel, &charset, charsetname, &thotType);
-  
   /* Store the new document type */
   TtaSetDocumentProfile (ext_doc, new_doctype);
 
@@ -1529,6 +1574,13 @@ ThotBool ParseWithNewDoctype (Document doc, char *localFile, char *tempdir,
       /* Remove the previous doctype if it exists */
       docEl = TtaGetMainRoot (ext_doc);
       elType = TtaGetElementType (docEl);
+      if (xmlDec && !xml_doctype && DocumentTypes[doc] == docHTML)
+        {
+          // remove the xml declaration
+          elType.ElTypeNum = HTML_EL_XMLPI;
+          eltype = TtaSearchTypedElement (elType, SearchInTree, docEl);
+          TtaDeleteTree (eltype, ext_doc);
+        }
       /* Search the doctype declaration according to the main schema */
       if (new_doctype == L_Basic || new_doctype == L_Strict ||
           new_doctype == L_Xhtml11 || new_doctype == L_Transitional)

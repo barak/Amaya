@@ -1,3 +1,16 @@
+amaya (9.54~dfsg.0-1) unstable; urgency=low
+
+  * New upstream release.
+  * Drop fix_ftbfs64.diff, merged upstream.
+  * Update other patches to fit into the updated files.
+  * Split the package, with amaya-data and amaya-doc containing the
+    arch-independent data and the documentation respectively.
+  * Remove the source of the libpng and libjpeg library, which are never used
+    when building amaya 9.x. Add no_libpng_libjpeg.diff so things still build.
+  * Yet another new fix_ftbfs64.diff patch, fixing the build on amd64...
+
+ -- Regis Boudin <regis@boudin.name>  Wed, 14 Feb 2007 21:02:08 +0000
+
 amaya (9.53~dfsg.0-1) unstable; urgency=low
 
   * The "Amaya on a diet" release.

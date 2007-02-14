@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -108,7 +108,8 @@ void IsXYPosComplete (PtrBox pBox, ThotBool *horizRef, ThotBool *vertRef)
     }
 
   if (pBox->BxYToCompute &&
-      (pBox->BxType == BoBlock || pBox->BxType == BoFloatBlock))
+      (pBox->BxType == BoBlock ||
+       pBox->BxType == BoFloatBlock || pBox->BxType == BoCellBlock))
     /* It's too early to compute the vertical position of lines */
     *vertRef = FALSE;
 }
@@ -1161,6 +1162,10 @@ void XMoveAllEnclosed (PtrBox pBox, int delta, int frame)
         }
       else if (pAb)
         {
+          //if (!strcmp (pAb->AbElement->ElLabel, "L169"))
+          //  printf ("XMoveAll L169 x=%d + %d\n",pBox->BxXOrg,delta);
+          //if (!strcmp (pAb->AbElement->ElLabel, "L170"))
+          //  printf ("XMoveAll L170 x=%d + %d\n",pBox->BxXOrg,delta);
 #ifdef _GL
           pBox->VisibleModification = TRUE;
 #endif /* _GL */
@@ -1223,6 +1228,7 @@ void XMoveAllEnclosed (PtrBox pBox, int delta, int frame)
 
 #ifdef _GL 
               if (pBox->BxXOrg && FrameTable[frame].FrView == 1 &&
+                  !pAb->AbPresentationBox &&
                   pAb->AbElement->ElSystemOrigin)
                 delta = 0;
 #endif /* _GL */
@@ -1231,7 +1237,8 @@ void XMoveAllEnclosed (PtrBox pBox, int delta, int frame)
               pChildAb = pAb->AbFirstEnclosed;
               /* Traite le niveau inferieur */
               toHorizPack = FALSE;
-              if (pBox->BxType == BoBlock || pBox->BxType == BoFloatBlock)
+              if (pBox->BxType == BoBlock ||
+                  pBox->BxType == BoFloatBlock || pBox->BxType == BoCellBlock)
                 // update included floated boxes
                 ShiftFloatingBoxes (pBox, delta, frame);
               while (pChildAb)
@@ -1370,6 +1377,7 @@ void YMoveAllEnclosed (PtrBox pBox, int delta, int frame)
 
 #ifdef _GL 
               if (pBox->BxYOrg && FrameTable[frame].FrView == 1 &&
+                  !pAb->AbPresentationBox &&
                   pAb->AbElement->ElSystemOrigin)
                 delta = 0;
 #endif /* _GL */
@@ -1575,10 +1583,12 @@ void MoveVertRef (PtrBox pBox, PtrBox pFromBox, int delta, int frame)
                       /* Move inclosing boxes */
                       pNextBox = NULL;
                       if (IsXPosComplete (pBox) &&
-                          (pBox->BxType != BoBlock && pBox->BxType != BoFloatBlock))
+                          pBox->BxType != BoBlock &&
+                          pBox->BxType != BoFloatBlock &&
+                          pBox->BxType != BoCellBlock)
                         {
                           pAb = pCurrentAb->AbFirstEnclosed;
-                          while (pAb != NULL)
+                          while (pAb)
                             {
                               if (!pAb->AbDead
                                   && pAb->AbHorizPos.PosAbRef == pCurrentAb
@@ -1590,7 +1600,7 @@ void MoveVertRef (PtrBox pBox, PtrBox pFromBox, int delta, int frame)
                               pAb = pAb->AbNext;
                             }
 			   
-                          if (pNextBox != NULL && Propagate == ToAll)
+                          if (pNextBox && Propagate == ToAll)
                             /* check the inclusion */
                             WidthPack (pCurrentAb, pRefBox, frame);
                         }
@@ -1607,6 +1617,7 @@ void MoveVertRef (PtrBox pBox, PtrBox pFromBox, int delta, int frame)
                     }
                   else if (pAb->AbBox->BxType != BoBlock &&
                            pAb->AbBox->BxType != BoFloatBlock &&
+                           pAb->AbBox->BxType != BoCellBlock &&
                            pAb->AbBox->BxType != BoGhost &&
                            pAb->AbBox->BxType != BoFloatGhost &&
                            pAb->AbBox->BxType != BoCell &&
@@ -1781,10 +1792,11 @@ void MoveHorizRef (PtrBox pBox, PtrBox pFromBox, int delta, int frame)
                       pNextBox = NULL;
                       if (IsYPosComplete (pBox) &&
                           pBox->BxType != BoBlock &&
-                          pBox->BxType != BoFloatBlock)
+                          pBox->BxType != BoFloatBlock &&
+                          pBox->BxType != BoCellBlock)
                         {
                           pAb = pCurrentAb->AbFirstEnclosed;
-                          while (pAb != NULL)
+                          while (pAb)
                             {
                               if (!pAb->AbDead
                                   && pAb->AbVertPos.PosAbRef == pCurrentAb
@@ -1796,7 +1808,7 @@ void MoveHorizRef (PtrBox pBox, PtrBox pFromBox, int delta, int frame)
                               pAb = pAb->AbNext;
                             }
 			  
-                          if (pNextBox != NULL && Propagate == ToAll)
+                          if (pNextBox && Propagate == ToAll)
                             /* check the inclusion */
                             HeightPack (pCurrentAb, pRefBox, frame);
                         }
@@ -1813,6 +1825,7 @@ void MoveHorizRef (PtrBox pBox, PtrBox pFromBox, int delta, int frame)
                     }
                   else if (pAb->AbBox->BxType == BoBlock ||
                            pAb->AbBox->BxType == BoFloatBlock ||
+                           pAb->AbBox->BxType == BoCellBlock ||
                            pAb->AbBox->BxType == BoGhost ||
                            pAb->AbBox->BxType == BoFloatGhost)
                     {
@@ -1922,13 +1935,15 @@ void GetExtraMargins (PtrBox pBox, PtrAbstractBox pFrom, int frame,
                     }
                   else
                     {
-                      if (pParent->AbBox->BxType == BoFloatBlock || first)
+                      if (pParent->AbBox->BxType == BoFloatBlock ||
+                          pParent->AbBox->BxType == BoCellBlock || first)
                         {
                           *l += box->BxLMargin;
                           if (pFrom != pAb)
                             *l += box->BxLBorder + box->BxLPadding;
                         }
-                      if (pParent->AbBox->BxType == BoFloatBlock || last)
+                      if (pParent->AbBox->BxType == BoFloatBlock ||
+                          pParent->AbBox->BxType == BoCellBlock || last)
                         {
                           *r += box->BxRMargin;
                           if (pFrom != pAb)
@@ -2054,7 +2069,8 @@ void ResizeWidth (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox, int delta,
           if (pCurrentAb->AbEnclosing && pCurrentAb->AbEnclosing->AbBox)
             toMove = (pCurrentAb->AbEnclosing->AbBox->BxType != BoGhost &&
                       pCurrentAb->AbEnclosing->AbBox->BxType != BoBlock &&
-                      pCurrentAb->AbEnclosing->AbBox->BxType != BoFloatBlock);
+                      pCurrentAb->AbEnclosing->AbBox->BxType != BoFloatBlock &&
+                      pCurrentAb->AbEnclosing->AbBox->BxType != BoCellBlock);
           position = IsFlow (pBox, frame);
           /* check positionning constraints */
           if ((!toMove && !position) ||
@@ -2112,6 +2128,10 @@ void ResizeWidth (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox, int delta,
             pBox->BxRuleWidth = pBox->BxW;
           /* outside width */
           pBox->BxWidth = pBox->BxWidth + delta + diff;
+          //if (!strcmp (pCurrentAb->AbElement->ElLabel, "L169"))
+          //  printf ("ResizeWidth L169 x=%d + %d delta=%d\n",pBox->BxXOrg,orgTrans,delta);
+          //if (!strcmp (pCurrentAb->AbElement->ElLabel, "L170"))
+          //  printf ("ResizeWidth L170 x=%d + %d delta=%d\n",pBox->BxXOrg,orgTrans,delta);
           pBox->BxXOrg += orgTrans;
 
           if (pBox->BxType == BoPicture || pCurrentAb->AbLeafType == LtGraphics)
@@ -2254,7 +2274,8 @@ void ResizeWidth (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox, int delta,
           if (pCurrentAb->AbLeafType == LtCompound &&
               !pCurrentAb->AbNew && /* children are not already created */
               (!pBox->BxContentWidth || /* a fraction by example */
-               (pBox->BxType != BoBlock && pBox->BxType != BoFloatBlock)) &&
+               (pBox->BxType != BoBlock &&
+                pBox->BxType != BoFloatBlock && pBox->BxType != BoCellBlock)) &&
               (absoluteMove ||
                pCurrentAb->AbWidth.DimAbRef ||
                pCurrentAb->AbWidth.DimValue >= 0))
@@ -2264,7 +2285,8 @@ void ResizeWidth (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox, int delta,
             /* or it's within a unnested box */
             /* or it doesn't inherit the size from its contents */
             {
-              if (pBox->BxType == BoBlock || pBox->BxType == BoFloatBlock)
+              if (pBox->BxType == BoBlock ||
+                  pBox->BxType == BoFloatBlock || pBox->BxType == BoCellBlock)
                 {
                   if (!shrink)
                     // the block update is not due to a shrink operation
@@ -2360,7 +2382,8 @@ void ResizeWidth (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox, int delta,
                 {
                   box = pDimRel->DimRTable[i];
                   pAb = box->BxAbstractBox;
-                  if ((pBox->BxType == BoBlock || pBox->BxType == BoFloatBlock ||
+                  if ((pBox->BxType == BoBlock ||
+                       pBox->BxType == BoFloatBlock || pBox->BxType == BoCellBlock ||
                        shrink) &&
                       IsParentBox (pBox, box))
                     /* update managed by ComputeLines or should not occur */
@@ -2444,7 +2467,8 @@ void ResizeWidth (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox, int delta,
               /* look for the enclosing block of lines  */
               while (pAb &&
                      pAb->AbBox->BxType != BoBlock &&
-                     pAb->AbBox->BxType != BoFloatBlock)
+                     pAb->AbBox->BxType != BoFloatBlock &&
+                     pAb->AbBox->BxType != BoCellBlock)
                 pAb = pAb->AbEnclosing;
             }
 	  
@@ -2474,7 +2498,8 @@ void ResizeWidth (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox, int delta,
                   if (pAb->AbBox != pSourceBox &&
                       !pAb->AbNew && /* not created yet */
                       (pAb->AbBox->BxType == BoBlock ||
-                       pAb->AbBox->BxType == BoFloatBlock))
+                       pAb->AbBox->BxType == BoFloatBlock ||
+                       pAb->AbBox->BxType == BoCellBlock))
                     {
                       pViewSel = &ViewFrameTable[frame - 1].FrSelectionBegin;
                       if (pBox == pViewSel->VsBox)
@@ -2502,14 +2527,15 @@ void ResizeWidth (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox, int delta,
                             WidthPack (pAb, pSourceBox, frame);
                         }
                     }
-                  else if (pAb->AbBox->BxType == BoTable)
+                  else if (pAb->AbBox && pAb->AbBox->BxType == BoTable)
                     RecordEnclosing (pAb->AbBox, TRUE);
                 }
               else if (!pCurrentAb->AbNew &&
                        Propagate == ToSiblings &&
                        pCurrentAb->AbLeafType == LtCompound &&
                        !pBox->BxYToCompute &&
-                       (pBox->BxType == BoBlock || pBox->BxType == BoFloatBlock))
+                       (pBox->BxType == BoBlock ||
+                        pBox->BxType == BoFloatBlock || pBox->BxType == BoCellBlock))
                 {
                   /* the width of the block of lines could change its height
                      -> check vertical enclosing */
@@ -2624,7 +2650,8 @@ void ResizeHeight (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox,
             toMove = (pCurrentAb->AbEnclosing->AbBox->BxType != BoGhost &&
                       pCurrentAb->AbEnclosing->AbBox->BxType != BoFloatGhost &&
                       pCurrentAb->AbEnclosing->AbBox->BxType != BoBlock &&
-                      pCurrentAb->AbEnclosing->AbBox->BxType != BoFloatBlock);
+                      pCurrentAb->AbEnclosing->AbBox->BxType != BoFloatBlock &&
+                      pCurrentAb->AbEnclosing->AbBox->BxType != BoCellBlock);
 
           /* check positionning constraints */
           if (!toMove || pBox->BxVertEdge == Top ||
@@ -2812,7 +2839,8 @@ void ResizeHeight (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox,
             }
           /* Moving included boxes? */
           if (absoluteMove &&
-              (pBox->BxType == BoBlock || pBox->BxType == BoFloatBlock))
+              (pBox->BxType == BoBlock ||
+               pBox->BxType == BoFloatBlock || pBox->BxType == BoCellBlock))
             {
               /* manage stretched block of lines */
               /* which are already processed     */
@@ -2933,6 +2961,7 @@ void ResizeHeight (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox,
                                 {
                                   if (pBox->BxType == BoBlock ||
                                       pBox->BxType == BoFloatBlock ||
+                                      pBox->BxType == BoCellBlock ||
                                       pBox->BxType == BoGhost ||
                                       pBox->BxType == BoFloatGhost)
                                     {
@@ -3002,7 +3031,8 @@ void ResizeHeight (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox,
               /* look for the enclosing block of lines  */
               while (pAb &&
                      pAb->AbBox->BxType != BoBlock &&
-                     pAb->AbBox->BxType != BoFloatBlock)
+                     pAb->AbBox->BxType != BoFloatBlock &&
+                     pAb->AbBox->BxType != BoCellBlock)
                 pAb = pAb->AbEnclosing;
             }
 	  
@@ -3028,7 +3058,8 @@ void ResizeHeight (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox,
                        !IsSiblingBox (pBox, pSourceBox))
                 {
                   if (pAb->AbBox->BxType == BoBlock ||
-                      pAb->AbBox->BxType == BoFloatBlock)
+                      pAb->AbBox->BxType == BoFloatBlock ||
+                      pAb->AbBox->BxType == BoCellBlock)
                     {
                       if (pCurrentAb->AbHeight.DimAbRef != pAb)
                         /* Within a block of line */
@@ -3049,10 +3080,12 @@ void ResizeHeight (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox,
                     RecordEnclosing (pAb->AbBox, FALSE);
                 }
               else if ((pBox->BxType == BoBlock ||
-                        pBox->BxType == BoFloatBlock) &&
+                        pBox->BxType == BoFloatBlock ||
+                        pBox->BxType == BoCellBlock) &&
                        (pAb->AbBox->BxType == BoBlock ||
                         pAb->AbBox->BxType == BoGhost ||
-                        pAb->AbBox->BxType == BoFloatBlock))
+                        pAb->AbBox->BxType == BoFloatBlock ||
+                        pAb->AbBox->BxType == BoCellBlock))
                 /* Within a block of line */
                 EncloseInLine (pBox, frame, pAb);
               else if (pCurrentAb->AbFloat == 'N' &&
@@ -3080,6 +3113,11 @@ void ResizeHeight (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox,
               if (i == 0)
                 i = BoxCharacterWidth (0xf3, font)
                   + BoxCharacterWidth (0xf3, font) / 2;
+              ResizeWidth (pBox, NULL, NULL, i - pBox->BxW, 0, 0, 0, frame, FALSE);
+              break;		
+            case 't':	/* triple integral */
+              if (i == 0)
+                i = BoxCharacterWidth (0xf3, font) * 2;
               ResizeWidth (pBox, NULL, NULL, i - pBox->BxW, 0, 0, 0, frame, FALSE);
               break;		
             case 'i':	/* integral */
@@ -3198,6 +3236,10 @@ void XMove (PtrBox pBox, PtrBox pFromBox, int delta, int frame)
         }
       else
         {
+          //if (!strcmp (pCurrentAb->AbElement->ElLabel, "L169"))
+          // printf ("XMove L169 x=%d + %d\n",pBox->BxXOrg,delta);
+          //if (!strcmp (pCurrentAb->AbElement->ElLabel, "L170"))
+          //  printf ("XMove L170 x=%d + %d\n",pBox->BxXOrg,delta);
           pBox->BxXOrg += delta;
           if (pBox->BxType == BoMulScript &&
               (pCurrentAb->AbNotInLine || !SearchLine (pBox, frame)))
@@ -3222,7 +3264,8 @@ void XMove (PtrBox pBox, PtrBox pFromBox, int delta, int frame)
           (pCurrentAb->AbEnclosing->AbBox->BxType == BoGhost ||
            pCurrentAb->AbEnclosing->AbBox->BxType == BoFloatGhost ||
            pCurrentAb->AbEnclosing->AbBox->BxType == BoBlock ||
-           pCurrentAb->AbEnclosing->AbBox->BxType == BoFloatBlock))
+           pCurrentAb->AbEnclosing->AbBox->BxType == BoFloatBlock ||
+           pCurrentAb->AbEnclosing->AbBox->BxType == BoCellBlock))
         checkParent = FALSE;
       else
         {
@@ -3444,7 +3487,8 @@ void YMove (PtrBox pBox, PtrBox pFromBox, int delta, int frame)
           (pCurrentAb->AbEnclosing->AbBox->BxType == BoGhost ||
            pCurrentAb->AbEnclosing->AbBox->BxType == BoFloatGhost ||
            pCurrentAb->AbEnclosing->AbBox->BxType == BoBlock ||
-           pCurrentAb->AbEnclosing->AbBox->BxType == BoFloatBlock))
+           pCurrentAb->AbEnclosing->AbBox->BxType == BoFloatBlock ||
+           pCurrentAb->AbEnclosing->AbBox->BxType == BoCellBlock))
         checkParent = FALSE;
       else
         {
@@ -3617,7 +3661,8 @@ void WidthPack (PtrAbstractBox pAb, PtrBox pSourceBox, int frame)
     return;
 
   pDimAb = &pAb->AbWidth;
-  if (pBox->BxType == BoBlock || pBox->BxType == BoFloatBlock)
+  if (pBox->BxType == BoBlock ||
+      pBox->BxType == BoFloatBlock || pBox->BxType == BoCellBlock)
     /* don't pack a block or a cell but transmit to enclosing box */
     WidthPack (pAb->AbEnclosing, pSourceBox, frame);
   else if (pBox->BxType == BoCell || pBox->BxType == BoTable ||
@@ -3712,7 +3757,8 @@ void WidthPack (PtrAbstractBox pAb, PtrBox pSourceBox, int frame)
                           i = pChildBox->BxXOrg + pChildBox->BxWidth;
                       }
                     else if (pChildBox->BxXOrg < x ||
-                             pChildAb->AbHorizPos.PosDistance < 0)
+                             (pChildAb->AbHorizPos.PosDistance < 0 &&
+                              pChildAb->AbHorizPos.PosRefEdge == Left))
                       /* don't take into account negative origins */
                       i = x + pChildBox->BxWidth;
                     else
@@ -3723,7 +3769,8 @@ void WidthPack (PtrAbstractBox pAb, PtrBox pSourceBox, int frame)
             }
           else if (pChildBox &&
                    (pChildBox->BxType == BoBlock ||
-                    pChildBox->BxType == BoFloatBlock) &&
+                    pChildBox->BxType == BoFloatBlock ||
+                    pChildBox->BxType == BoCellBlock) &&
                    !ExtraFlow (pChildBox, frame) &&
                    width < pChildBox->BxXOrg + pChildBox->BxMinWidth)
             // apply the rule ob minimum
@@ -3814,6 +3861,7 @@ void WidthPack (PtrAbstractBox pAb, PtrBox pSourceBox, int frame)
             }
           else if (pAb->AbEnclosing->AbBox->BxType != BoBlock &&
                    pAb->AbEnclosing->AbBox->BxType != BoFloatBlock &&
+                   pAb->AbEnclosing->AbBox->BxType != BoCellBlock &&
                    pAb->AbEnclosing->AbBox->BxType != BoGhost &&
                    pAb->AbEnclosing->AbBox->BxType != BoFloatGhost &&
                    !isExtra /* doesn't check enclosing of a positioned box */)
@@ -3862,7 +3910,8 @@ void HeightPack (PtrAbstractBox pAb, PtrBox pSourceBox, int frame)
   if (pBox == NULL)
     return;
   pDimAb = &pAb->AbHeight;
-  if (pBox->BxType == BoBlock || pBox->BxType == BoFloatBlock)
+  if (pBox->BxType == BoBlock ||
+      pBox->BxType == BoFloatBlock || pBox->BxType == BoCellBlock)
     /* don't pack a block or a cell but transmit to enclosing box */
     HeightPack (pAb->AbEnclosing, pSourceBox, frame);
   else if (pBox->BxType == BoGhost || pBox->BxType == BoFloatGhost)
@@ -4048,7 +4097,8 @@ void HeightPack (PtrAbstractBox pAb, PtrBox pSourceBox, int frame)
           else if (pAb->AbEnclosing->AbBox->BxType == BoGhost ||
                    pAb->AbEnclosing->AbBox->BxType == BoFloatGhost ||
                    pAb->AbEnclosing->AbBox->BxType == BoBlock ||
-                   pAb->AbEnclosing->AbBox->BxType == BoFloatBlock)
+                   pAb->AbEnclosing->AbBox->BxType == BoFloatBlock ||
+                   pAb->AbEnclosing->AbBox->BxType == BoCellBlock)
             {
               /* Il faut remonter au pave de mise en lignes */
               while (pAb->AbEnclosing->AbBox->BxType == BoGhost ||

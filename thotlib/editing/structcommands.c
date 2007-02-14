@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA 1996-2005
+ *  (c) COPYRIGHT INRIA 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -3469,6 +3469,9 @@ void TtaInsertAnyElement (Document document, ThotBool before)
         return;
       else if (pSelDoc->DocReadOnly)
         /* the document can not be modified */
+        return;
+      else if (firstSel && ElementIsReadOnly (firstSel->ElParent))
+        /* the parent can not be modified */
         return;
       else
         {

@@ -98,7 +98,12 @@ MENUS
 	File button:BCloseWindow -> AmayaCloseWindow;
 	File button:BExit -> AmayaClose icon:exit.png;
 
-	Context_ button:BOpenDoc -> OpenDoc icon:open.png;
+	Context_ button:BNewTab -> NewTab icon:open.png;
+	Context_ Separator;
+	Context_ button:BRefreshTab -> RefreshTab icon:reload.png;
+	Context_ button:BRefreshAllTabs -> RefreshAllTabs icon:reload.png;
+	Context_ button:BCloseOtherTabs -> CloseOtherTabs icon:close_tab.png;
+	Context_ Separator;
 	Context_ button:BCloseTab -> AmayaCloseTab icon:close_tab.png;
 
 	Edit_ button:BUndo -> TtcUndo icon:undo.png;
@@ -442,13 +447,13 @@ FUNCTIONS
   CreateMDETERMINANT,
   CreateMDETERMINANT2,
   CreateMDIAGONALINTERSECTION,
+  CreateMDIFF3,
   CreateMDIFF2,
   CreateMDIFF,
   CreateMDIRECTSUM,
   CreateMDIVERGENCE,
   CreateMDIVIDE,
   CreateMDOMAIN,
-  CreateMCLASSICALFUNCTIONS,
   CreateMEMPTYSET,
   CreateMEQ,  CreateMLEQBINARY,
   CreateMEQUIVALENT,
@@ -485,6 +490,7 @@ FUNCTIONS
   CreateMINTERSECT,
   CreateMINTERSECTBINARY,
   CreateMINTERSECTUNDER,
+  CreateMINTERVAL,
   CreateMINTUNDER,
   CreateMINVERSE,
   CreateMINVERSE,
@@ -528,6 +534,7 @@ FUNCTIONS
   CreateMPARTIALDIFF2,
   CreateMPI,
   CreateMPIECEWISE,
+  CreateMVERTICALBRACE,
   CreateMPLUS,
   CreateMPOWER,
   CreateMPOWERSET,
@@ -579,5 +586,36 @@ FUNCTIONS
   CreateMQUATERNIONS,
   CreateMOVERFROWN,
   CreateMROW,
-  CreateMXORBINARY;
+  CreateMXORBINARY,
+  CreateMOVERBRACE,
+  CreateMUNDERBRACE,
+  CreateMPHANTOM,
+  CreateMENCLOSE2,
+  CreateMARCCOS,
+  CreateMARCCOSH,
+  CreateMARCCOT,
+  CreateMARCCOTH,
+  CreateMARCCSC,
+  CreateMARCCSCH,
+  CreateMARCSEC,
+  CreateMARCSECH,
+  CreateMARCSIN,
+  CreateMARCSINH,
+  CreateMARCTAN,
+  CreateMARCTANH,
+  CreateMCOS,
+  CreateMCOSH,
+  CreateMCOT,
+  CreateMCOTH,
+  CreateMCSC,
+  CreateMCSCH,
+  CreateMEXP,
+  CreateMLN,
+  CreateMLOG,
+  CreateMSEC,
+  CreateMSECH,
+  CreateMSIN,
+  CreateMSINH,
+  CreateMTAN,
+  CreateMTANH;
 END

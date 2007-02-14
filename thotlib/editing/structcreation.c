@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -692,7 +692,7 @@ PtrAbstractBox CreateALeaf (PtrAbstractBox pAB, int *frame, LeafType leafType,
                   else
                     pE = CreateDescendant (pEl->ElTypeNumber,
                                            pEl->ElStructSchema, pDoc, &pLeaf,
-                                           lType, pEl->ElStructSchema);
+                                           lType, pEl->ElStructSchema, pEl);
                   if (pE != NULL)
                     {
                       CancelSelection ();

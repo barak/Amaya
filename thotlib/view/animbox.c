@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 2003-2005
+ *  (c) COPYRIGHT INRIA, 2003-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -82,8 +82,8 @@
 static int Animated_Frame = 0;
 static float Clipx, Clipy, ClipxMax, ClipyMax;
 
-#define Min(number, min) (number = ( (number < 0) ? min : (((number - min) < 0.00001) ? number : min)) )
-#define Max(number, max) (number = ( (number < 0) ? max : (((number - max) > 0.00001) ? number : max)) )
+#define Min(number, min) (number = ((number < 0) ? min : (((number - min) < 0.00001) ? number : min)) )
+#define Max(number, max) (number = ((number < 0) ? max : (((number - max) > 0.00001) ? number : max)) )
 #endif /* _GL */
 
 /*----------------------------------------------------------------------
@@ -217,6 +217,7 @@ void populate_values_proportion (void *anim_info)
   ComputePropandAngle ((AnimPath *) animated->from);
 #endif /* _GL */
 }
+
 /*----------------------------------------------------------------------
   populate_fromto_proportion : interpolate proportion of each point over
   total values list
@@ -230,7 +231,6 @@ void populate_fromto_proportion (void *anim_info)
   ComputePropandAngle ((AnimPath *) animated->from);
 #endif /* _GL */
 }
-
 
 #ifdef _GL
 /*----------------------------------------------------------------------
@@ -351,7 +351,7 @@ static void ApplyStrokeColorToAllBoxes (PtrAbstractBox pAb, int result)
   ----------------------------------------------------------------------*/
 static void ApplyFillColorToAllBoxes (PtrAbstractBox pAb, int result)
 {
-  while (pAb != NULL)
+  while (pAb)
     {      
       pAb->AbBox->VisibleModification = TRUE;
       pAb->AbBackground = result; 
@@ -365,13 +365,13 @@ static void ApplyFillColorToAllBoxes (PtrAbstractBox pAb, int result)
   ----------------------------------------------------------------------*/
 static void ApplyOpacityToAllBoxes (PtrAbstractBox pAb, int result)
 {
-  while (pAb != NULL)
+  while (pAb)
     {      
       pAb->AbBox->VisibleModification = TRUE;
       pAb->AbOpacity = result;
-
       /* test if it's a group*/
-      if (! TypeHasException (ExcIsGroup, pAb->AbElement->ElTypeNumber,
+      if (!pAb->AbPresentationBox &&
+          !TypeHasException (ExcIsGroup, pAb->AbElement->ElTypeNumber,
                               pAb->AbElement->ElStructSchema))
         ApplyOpacityToAllBoxes (pAb->AbFirstEnclosed, result);
       pAb = pAb->AbNext;
@@ -388,7 +388,7 @@ static void ApplyXToAllBoxes (PtrAbstractBox pAb, float result)
   PtrTransform  Trans = NULL;
   int           doc, view;
 
-  while (pAb != NULL)
+  while (pAb)
     {
       pBox = pAb->AbBox;
       pBox->VisibleModification = TRUE;
@@ -399,7 +399,7 @@ static void ApplyXToAllBoxes (PtrAbstractBox pAb, float result)
             Trans = GetTransformation (El->ElTransform, PtElTranslate); 	  
           if (Trans == NULL)
             {
-              Trans = (PtrTransform)TtaNewTransformTranslate (result, 0, FALSE);
+              Trans = (PtrTransform)TtaNewTransformTranslate (result, 0);
               FrameToView (Animated_Frame, &doc, &view);
               TtaReplaceTransform ((Element) El, Trans, doc); 
             }  
@@ -424,7 +424,7 @@ static void ApplyYToAllBoxes (PtrAbstractBox pAb, float result)
   PtrTransform  Trans = NULL;
   int           doc, view;
 
-  while (pAb != NULL)
+  while (pAb)
     {   
       pBox = pAb->AbBox;
       pBox->VisibleModification = TRUE;
@@ -435,7 +435,7 @@ static void ApplyYToAllBoxes (PtrAbstractBox pAb, float result)
             Trans = GetTransformation (El->ElTransform, PtElTranslate); 	  
           if (Trans == NULL)
             {
-              Trans = (PtrTransform)TtaNewTransformTranslate (0, result, FALSE);
+              Trans = (PtrTransform)TtaNewTransformTranslate (0, result);
               FrameToView (Animated_Frame, &doc, &view);
               TtaReplaceTransform ((Element) El, Trans, doc); 
             }  
@@ -457,7 +457,7 @@ static void ApplyYToAllBoxes (PtrAbstractBox pAb, float result)
   ----------------------------------------------------------------------*/
 static void ApplyWidthToAllBoxes (PtrAbstractBox pAb, float result)
 {
-  while (pAb != NULL)
+  while (pAb)
     {      
       pAb->AbBox->VisibleModification = TRUE;
       pAb->AbBox->BxW = (int)result;     
@@ -471,7 +471,7 @@ static void ApplyWidthToAllBoxes (PtrAbstractBox pAb, float result)
   ----------------------------------------------------------------------*/
 static void ApplyHeightToAllBoxes (PtrAbstractBox pAb, float result)
 {
-  while (pAb != NULL)
+  while (pAb)
     {      
       pAb->AbBox->VisibleModification = TRUE;
       pAb->AbBox->BxH = (int)result;
@@ -486,7 +486,7 @@ static void ApplyHeightToAllBoxes (PtrAbstractBox pAb, float result)
 static void ApplyFontSizeToAllBoxes (PtrAbstractBox pAb, int result)
 {
 
-  while (pAb != NULL)
+  while (pAb)
     {      
       pAb->AbBox->VisibleModification = TRUE;
       ChangeFontsetSize ((int) result, pAb->AbBox, Animated_Frame);
@@ -525,16 +525,15 @@ static void animate_box_color (PtrElement El,
     result = TtaGetThotColor (tored, togreen, toblue);
   FrameToView (Animated_Frame, &doc, &view);
   pAb = El->ElAbstractBox[view - 1];
-  if (pAb)
-    if (pAb->AbFirstEnclosed)
+  if (pAb && pAb->AbFirstEnclosed)
       {	    
         if (animated->AttrName)
           {
             if (strlen (animated->AttrName) == 4 &&
-                strcasecmp (animated->AttrName, "fill") == 0)
+                !strcasecmp (animated->AttrName, "fill"))
               ApplyFillColorToAllBoxes (pAb->AbFirstEnclosed, result);
             else if (strlen (animated->AttrName) == 6 &&
-                     strcasecmp (animated->AttrName, "stroke") == 0)
+                     !strcasecmp (animated->AttrName, "stroke"))
               ApplyStrokeColorToAllBoxes (pAb->AbFirstEnclosed, result);
           }
         else
@@ -556,23 +555,22 @@ static void animate_box_set (PtrElement El,
   if (animated->AttrName == NULL)
     return;
   
-  if (strcasecmp (animated->AttrName, "opacity") == 0)
-    {
-      
+  if (!strcasecmp (animated->AttrName, "opacity"))
+    {  
       FrameToView (Animated_Frame, &doc, &view);
       pAb = El->ElAbstractBox[view - 1];
-      if (pAb)
-        if (pAb->AbFirstEnclosed)
-          {	  
-            result = 1000 * T_atof ((char *) animated->to);
-            pAb->AbOpacity = (int)result;
-            /*If it's an opaque group manage the opacity*/
-            if (!TypeHasException (ExcIsGroup, pAb->AbElement->ElTypeNumber,
-                                   pAb->AbElement->ElStructSchema))
-              ApplyOpacityToAllBoxes (pAb->AbFirstEnclosed, (int) (result));
-          }      
+      if (pAb && pAb->AbFirstEnclosed)
+        {	  
+          result = 1000 * T_atof ((char *) animated->to);
+          pAb->AbOpacity = (int)result;
+          /*If it's an opaque group manage the opacity*/
+          if (!pAb->AbPresentationBox &&
+              !TypeHasException (ExcIsGroup, pAb->AbElement->ElTypeNumber,
+                                 pAb->AbElement->ElStructSchema))
+            ApplyOpacityToAllBoxes (pAb->AbFirstEnclosed, (int) (result));
+          }
     }
-  else if (strcasecmp (animated->AttrName, "x") == 0)
+  else if (!strcasecmp (animated->AttrName, "x"))
     {
       FrameToView (Animated_Frame, &doc, &view);
       pAb = El->ElAbstractBox[view - 1];
@@ -584,7 +582,7 @@ static void animate_box_set (PtrElement El,
           }
       
     }
-  else if (strcasecmp (animated->AttrName, "y") == 0)
+  else if (!strcasecmp (animated->AttrName, "y"))
     {
       FrameToView (Animated_Frame, &doc, &view);
       pAb = El->ElAbstractBox[view - 1];
@@ -596,7 +594,7 @@ static void animate_box_set (PtrElement El,
           }
       
     }
-  else if (strcasecmp (animated->AttrName, "width") == 0)
+  else if (!strcasecmp (animated->AttrName, "width"))
     {
       FrameToView (Animated_Frame, &doc, &view);
       pAb = El->ElAbstractBox[view - 1];
@@ -607,7 +605,7 @@ static void animate_box_set (PtrElement El,
             ApplyWidthToAllBoxes (pAb->AbFirstEnclosed, (float) result);
           }
     }
-  else if (strcasecmp (animated->AttrName, "height") == 0)
+  else if (!strcasecmp (animated->AttrName, "height"))
     {
       FrameToView (Animated_Frame, &doc, &view);
       pAb = El->ElAbstractBox[view - 1];
@@ -619,22 +617,17 @@ static void animate_box_set (PtrElement El,
           }
       
     }
-  else if (strcasecmp (animated->AttrName, "font-size") == 0)
+  else if (!strcasecmp (animated->AttrName, "font-size"))
     {
       FrameToView (Animated_Frame, &doc, &view);
       pAb = El->ElAbstractBox[view - 1];
-      if (pAb)
-        if (pAb->AbFirstEnclosed)
-          {
-            result = T_atof ((char *) animated->to);
-          }
+      if (pAb && pAb->AbFirstEnclosed)
+        result = T_atof ((char *) animated->to);
       
     }
-  else if (strcasecmp (animated->AttrName, "fill") == 0 || 
-           strcasecmp (animated->AttrName, "stroke") == 0)
-    {
-      animate_box_color (El, animated, current_time);    
-    }
+  else if (!strcasecmp (animated->AttrName, "fill") || 
+           !strcasecmp (animated->AttrName, "stroke"))
+    animate_box_color (El, animated, current_time);    
 }
 
 /*----------------------------------------------------------------------
@@ -804,7 +797,7 @@ static void animate_box_transformation (PtrElement El,
       
       if (Trans == NULL)
         {
-          Trans = (PtrTransform)TtaNewTransformTranslate (tx, ty, FALSE);
+          Trans = (PtrTransform)TtaNewTransformTranslate (tx, ty);
           TtaReplaceTransform ((Element) El, Trans, doc); 
         }
       Trans->XScale = tx;
@@ -845,7 +838,7 @@ static void animate_box_transformation (PtrElement El,
       
       if (Trans == NULL)
         {
-          Trans = (PtrTransform)TtaNewTransformScale (tx, ty, FALSE);
+          Trans = (PtrTransform)TtaNewTransformScale (tx, ty);
           TtaReplaceTransform ((Element) El, Trans, doc); 
         }
 

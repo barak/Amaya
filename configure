@@ -14042,12 +14042,12 @@ fi # with_wx = no
 
 # the wx version
 AMAYAWX_MAJVER=9
-AMAYAWX_MINVER=53
+AMAYAWX_MINVER=54
 AMAYAWX_SUBVER=0
 
 #the old version (to remove when switching on wx)
 AMAYA_MAJVER=8
-AMAYA_MINVER=53
+AMAYA_MINVER=54
 AMAYA_SUBVER=0
 
 if test "$with_wx" = "yes" ; then
@@ -15451,7 +15451,6 @@ fi
 
 EXTRA_MAKEFILE_IN=
 make_output="Makefile Options.orig:Options.in tools/Makefile \
-       libjpeg/Makefile libpng/Makefile libpng/zlib/Makefile \
        tools/mkdep/Makefile \
        thotlib/Makefile \
        thotlib/include/Makefile batch/Makefile \

@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1998-2005
+ *  (c) COPYRIGHT INRIA and W3C, 1998-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -21,6 +21,11 @@
 #include "parser.h"
 #include "registry.h"
 #include "style.h"
+
+#include "containers.h"
+#include "insertelem_f.h"
+
+
 #include "templates.h"
 #include "templateDeclarations.h"
 
@@ -95,6 +100,7 @@ void TemplateEntityCreated (unsigned char *entityValue, Language lang,
 
 /*----------------------------------------------------------------------
   NeedAMenu returns TRUE is a menu must be generated
+  and add the currentType is only one type is possible
   ----------------------------------------------------------------------*/
 ThotBool NeedAMenu (Element el, Document doc)
 {
@@ -108,9 +114,14 @@ ThotBool NeedAMenu (Element el, Document doc)
   char            *types, *ptr;
   ThotBool         res = FALSE;
 
+  if(!TtaGetDocumentAccessMode(doc))
+    return FALSE;
+
+  // look for the list of types
   elType = TtaGetElementType (el);
   attributeType.AttrSSchema = elType.ElSSchema;
   if (elType.ElTypeNum == Template_EL_component)
+    // use the name of the component as a type
     attributeType.AttrTypeNum = Template_ATTR_name;
   else
     attributeType.AttrTypeNum = Template_ATTR_types;
@@ -120,20 +131,36 @@ ThotBool NeedAMenu (Element el, Document doc)
   TtaGiveTextAttributeValue (att, types, &size);
   ptr = strstr (types, " ");
   if (ptr)
+    // there are several types
     res = TRUE;
   else
     {
-      t = (XTigerTemplate) Get (Templates_Dic, DocumentMeta[doc]->template_url);
+      t = (XTigerTemplate) Dictionary_Get (Templates_Dic, DocumentMeta[doc]->template_url);
       if (t)
         {
-          dec = GetDeclaration (t, types);
+          dec = Template_GetDeclaration (t, types);
           if (dec && dec->nature == UnionNat)
             {
               rec = dec->unionType.include->first;
-              if (rec->next)
+              if (rec && rec->next)
                 res = TRUE;
             }
         }
+    }
+  // When only one type is possible add the currentType attribute
+  if (!res &&
+      (elType.ElTypeNum == Template_EL_useEl ||
+       elType.ElTypeNum == Template_EL_useSimple))
+    {
+      attributeType.AttrTypeNum = Template_ATTR_currentType;
+      att = TtaGetAttribute (el, attributeType);
+      if (!att)
+        {
+          // create this attribute
+          att = TtaNewAttribute (attributeType);
+          TtaAttachAttribute (el, att, doc);
+        }
+      TtaSetAttributeText(att, types, el, doc);
     }
   TtaFreeMemory (types);
   return res;
@@ -147,13 +174,14 @@ void TemplateElementComplete (ParserData *context, Element el, int *error)
 {
   Document		     doc;
   ElementType	     elType, childType;
-  Element		     child, folder, next, prev;
+  Element		     child;
 
   doc = context->doc;
   elType = TtaGetElementType (el);
   switch  (elType.ElTypeNum)
     {
     case Template_EL_head:
+      CheckMandatoryAttribute (el, doc, Template_ATTR_version);
       break;
 
     case Template_EL_component:
@@ -175,58 +203,44 @@ void TemplateElementComplete (ParserData *context, Element el, int *error)
           if (!NeedAMenu (el, doc))
             TtaChangeTypeOfElement (el, doc, Template_EL_useSimple);
         }
-      //CheckMandatoryAttribute (el, doc, Template_ATTR_id);
       CheckMandatoryAttribute (el, doc, Template_ATTR_types);
+      CheckMandatoryAttribute (el, doc, Template_ATTR_title);
       // unlock children
       TtaSetAccessRight (el, ReadWrite, doc);
       break;
 
     case Template_EL_bag:
-      //CheckMandatoryAttribute (el, doc, Template_ATTR_id);
       CheckMandatoryAttribute (el, doc, Template_ATTR_types);
+      CheckMandatoryAttribute (el, doc, Template_ATTR_title);
       // unlock children
       TtaSetAccessRight (el, ReadWrite, doc);
       break;
 
     case Template_EL_attribute:
-      CheckMandatoryAttribute (el, doc, Template_ATTR_name);
+      CheckMandatoryAttribute (el, doc, Template_ATTR_ref_name);
       break;
 
     case Template_EL_option :
       // unlock children
+      CheckMandatoryAttribute (el, doc, Template_ATTR_title);
       TtaSetAccessRight (el, ReadWrite, doc);
       break;
 
     case Template_EL_repeat :
-      //If the content is not a XTiger element, we fold it in a folder
+      // children must be use elements
+      CheckMandatoryAttribute (el, doc, Template_ATTR_title);
       child = TtaGetFirstChild (el);
       if (child)
         {
           childType = TtaGetElementType (child);
-          if (strcmp (TtaGetSSchemaName (childType.ElSSchema),"Template"))
-            // the first child of element "repeat" is not a XTiger element
-            {
-              elType.ElTypeNum = Template_EL_folder;
-              folder = TtaNewElement (doc, elType);
-              TtaInsertFirstChild (&folder, el, doc);
-              prev = NULL;
-              do
-                {
-                  next = child;
-                  TtaNextSibling (&next);
-                  TtaRemoveTree (child, doc);
-                  if (prev)
-                    TtaInsertSibling (child, prev, FALSE, doc);
-                  else
-                    TtaInsertFirstChild (&child, folder, doc);
-                  prev = child;
-                  child = next;
-                }
-              while (child);
-            }
+          if (!strcmp (TtaGetSSchemaName (childType.ElSSchema),"Template"))
+            // the first child of element "repeat" is a XTiger element
+            // unlock children
+            TtaSetAccessRight (el, ReadWrite, doc);
         }
-      // unlock children
-      TtaSetAccessRight (el, ReadWrite, doc);
+      else
+        // unlock children
+        TtaSetAccessRight (el, ReadWrite, doc);
       break;
     default:
       break;
@@ -248,23 +262,22 @@ void UnknownTemplateNameSpace (ParserData *context, Element *unknownEl,
   ----------------------------------------------------------------------*/
 void TemplateAttributeComplete (Attribute attr, Element el, Document doc)
 {
-	//TODO : The attribute attribute name is not unique!!
-	/*
-    AttributeType	attrType;
-    int            attrKind;
-    TtaGiveAttributeType  (attr, &attrType, &attrKind);
-    switch (attrType.AttrTypeNum)
+  AttributeType	attrType;
+  int            attrKind;
+
+  TtaGiveAttributeType  (attr, &attrType, &attrKind);
+  switch (attrType.AttrTypeNum)
     {
-    case Template_ATTR_id:
-    CheckUniqueName (el, doc, attr, attrType);
-    break;
     case Template_ATTR_name:
-    CheckUniqueName (el, doc, attr, attrType);
-    break;
+      CheckUniqueName (el, doc, attr, attrType);
+      break;
+    case Template_ATTR_title:
+      break;
+    case Template_ATTR_ref_name:
+      break;
     default:
-    break;
+      break;
     }
-  */
 }
 
 

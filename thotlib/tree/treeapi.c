@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -194,7 +194,7 @@ Element TtaNewTree (Document document, ElementType elementType, char* label)
     {
       element = NewSubtree (elementType.ElTypeNum, (PtrSSchema) (elementType.ElSSchema),
                             LoadedDocument[document - 1], TRUE, TRUE, TRUE,
-                            (ThotBool)(*label == EOS));
+                            (ThotBool)(label == NULL || *label == EOS));
       if (element->ElStructSchema->SsRule->SrElem[element->ElTypeNumber - 1]->SrConstruct == CsPairedElement)
         if (!element->ElStructSchema->SsRule->SrElem[element->ElTypeNumber - 1]->SrFirstOfPair)
           element->ElPairIdent = 0;
@@ -553,7 +553,7 @@ static Element CreateDescent (Document document, Element element,
           firstCreated = CreateDescendant (pEl->ElTypeNumber, pEl->ElStructSchema,
                                            LoadedDocument[document - 1], &lastCreated,
                                            elementType.ElTypeNum,
-                                           (PtrSSchema) (elementType.ElSSchema));
+                                           (PtrSSchema) (elementType.ElSSchema), pEl);
       if (firstCreated != NULL)
         {
           if (firstCreated->ElNext != NULL &&
@@ -1268,7 +1268,9 @@ void TtaSetAccessRight (Element element, AccessRight right, Document document)
                 RedisplayNewElement (document, (PtrElement) element, NULL, TRUE, FALSE);
               else
                 {
+                  // make the management of loaded objects too long
                   SaveDisplayMode = TtaGetDisplayMode (document);
+#ifdef IV
                   if (SaveDisplayMode != NoComputedDisplay
                       && (newAccessRight == ReadOnly ||
                           newAccessRight == ReadWrite))
@@ -1286,9 +1288,10 @@ void TtaSetAccessRight (Element element, AccessRight right, Document document)
                       if (SaveDisplayMode != DeferredDisplay)
                         TtaSetDisplayMode (document, SaveDisplayMode);
                     }
+#endif /* IV */
                 }
             }
-#endif
+#endif /* NODISPLAY */
         }
     }
 }
