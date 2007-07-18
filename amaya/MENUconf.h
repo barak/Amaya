@@ -89,6 +89,16 @@
 #define mToggleTemplatesFrame      2
 #define MAX_TEMPLATEMENU_DLG       3
 
+#define EmailsMenu               1
+#define mEmailsServerAddress     2
+#define mEmailsServerPort        3
+#define mEmailsFromAddress       4
+#define MAX_EMAILSMENU_DLG       5
+
+#define PasswordsMenu              1
+#define mTogglePasswordsFrame      2
+#define MAX_PASSWORDMENU_DLG       3
+
 
 typedef struct Prop_General_t
 {
@@ -189,11 +199,10 @@ typedef struct Prop_DAV_t
   ThotBool toggleAwareness2;
 } Prop_DAV;
 
-
 typedef struct Prop_Templates_Path_t {
   char Path[MAX_LENGTH];
   struct Prop_Templates_Path_t* NextPath;
-}Prop_Templates_Path;
+} Prop_Templates_Path;
 
 typedef struct Prop_Templates_t
 {
@@ -201,6 +210,21 @@ typedef struct Prop_Templates_t
   Prop_Templates_Path* FirstPath;
 } Prop_Templates;
 
+typedef struct Prop_Emails_t
+{
+  char serverAddress[MAX_LENGTH];
+  int  serverPort;
+  char fromAddress[MAX_LENGTH];
+} Prop_Emails;
 
+typedef struct Prop_Passwords_Site_t {
+  char Site[MAX_LENGTH];
+  struct Prop_Passwords_Site_t* NextSite;
+} Prop_Passwords_Site;
+
+typedef struct Prop_Passwords_t
+{
+  ThotBool S_Passwords;
+} Prop_Passwords;
 
 #endif /* _MENUCONF.h */

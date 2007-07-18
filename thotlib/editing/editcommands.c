@@ -106,6 +106,15 @@ static ThotBool     NewInsert;
 #ifdef _GL
 #include "glwindowdisplay.h"
 #endif /*_GL*/
+
+/*----------------------------------------------------------------------
+  TtaIsTextInserting returns the TextInserting status
+  ----------------------------------------------------------------------*/
+ThotBool TtaIsTextInserting ()
+{
+  return TextInserting;
+}
+
 /*----------------------------------------------------------------------
   CopyString computes the width of the source text and copies it into the
   target buffer if target parameter is not NULL.
@@ -979,7 +988,7 @@ static void NewTextLanguage (PtrAbstractBox pAb, int charIndex, Language lang)
             ChangeLanguage (pDoc, pEl, lang, TRUE);
             AbstractImageUpdated (pDoc);
             RedisplayDocViews (pDoc);
-            SelectElement (pDoc, pEl, FALSE, FALSE);
+            SelectElement (pDoc, pEl, FALSE, FALSE, TRUE);
           }
       }
 }
@@ -2248,7 +2257,7 @@ ThotBool ContentEditing (int editType)
                       TtaRemoveAttribute ((Element) pEl, (Attribute) pAttr,
                                           doc);
                       CloseHistorySequence (pDoc);
-                      SelectElement (pDoc, pEl, FALSE, FALSE);
+                      SelectElement (pDoc, pEl, FALSE, FALSE, TRUE);
                     }
                   notifyAttr.attribute = NULL;
                   CallEventAttribute (&notifyAttr, FALSE);
@@ -3626,11 +3635,18 @@ void TtcInsertChar (Document doc, View view, CHAR_T c)
     {
       /* start the undo sequence */
       GetCurrentSelection (&pDoc, &firstEl, &lastEl, &firstChar, &lastChar);
-      if (pDoc && pDoc->DocReadOnly)
-        {
-          //TtaDisplaySimpleMessage (CONFIRM, LIB, TMSG_EL_RO);
-          return;
-        }
+      if ((pDoc && pDoc->DocReadOnly) || firstEl == NULL)
+        return;
+      else if (ElementIsReadOnly (firstEl) && 
+               (firstEl != lastEl || firstChar != lastChar + 1 ||
+                (lastChar > 1 && lastChar < firstEl->ElVolume) ||
+                ElementIsReadOnly (firstEl->ElParent)))
+        return;
+      else if (firstEl != lastEl && firstEl->ElParent &&
+               (ElementIsReadOnly (lastEl) ||
+                ElementIsReadOnly (firstEl->ElParent)))
+        return;
+
       lock = TRUE;
       /* Check if we are changing the active frame */
       frame = GetWindowNumber (doc, view);
@@ -3710,7 +3726,7 @@ void TtcInsertChar (Document doc, View view, CHAR_T c)
                          !strcmp (firstEl->ElStructSchema->SsName, "Template"));
                   if (firstEl)
                     {
-                      SelectElement (pDoc, firstEl, TRUE, FALSE);
+                      SelectElement (pDoc, firstEl, TRUE, FALSE, TRUE);
                       pEl = firstEl->ElNext;
                       if (pEl)
                         {
@@ -4160,7 +4176,7 @@ void TtcCopySelection (Document doc, View view)
         /* use the right frame */
         ActiveFrame = frame;
     }
-  if (SelPosition)
+  if (SelPosition && FirstSelectedElement->ElTerminal)
     return;
 #ifdef _WINGUI
   activeWnd = GetFocus ();

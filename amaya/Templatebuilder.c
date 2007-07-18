@@ -37,7 +37,6 @@
 #include "html2thot_f.h"
 #include "HTMLactions_f.h"
 #include "css_f.h"
-#include "mydictionary_f.h"
 #include "templateDeclarations_f.h"
 #include "Xml2thot_f.h"
 #include "XHTMLbuilder_f.h"
@@ -105,14 +104,14 @@ void TemplateEntityCreated (unsigned char *entityValue, Language lang,
 ThotBool NeedAMenu (Element el, Document doc)
 {
   ElementType	     elType;
-	Attribute        att;
-	AttributeType    attributeType;
+  Attribute        att;
+  AttributeType    attributeType;
   XTigerTemplate   t;
   Declaration      dec;
-  Record           rec;
-	int              size;
+  int              size;
   char            *types, *ptr;
   ThotBool         res = FALSE;
+  ForwardIterator  iter;
 
   if(!TtaGetDocumentAccessMode(doc))
     return FALSE;
@@ -135,15 +134,17 @@ ThotBool NeedAMenu (Element el, Document doc)
     res = TRUE;
   else
     {
-      t = (XTigerTemplate) Dictionary_Get (Templates_Dic, DocumentMeta[doc]->template_url);
+      t = GetXTigerTemplate (DocumentMeta[doc]->template_url);
       if (t)
         {
           dec = Template_GetDeclaration (t, types);
           if (dec && dec->nature == UnionNat)
             {
-              rec = dec->unionType.include->first;
-              if (rec && rec->next)
+              /* TODO utiliser la liste étendue plutot que la liste d'inclusion.*/ 
+              iter = HashMap_GetForwardIterator(dec->unionType.include);
+              if(ForwardIterator_GetCount(iter)>1)
                 res = TRUE;
+              TtaFreeMemory(iter);
             }
         }
     }
@@ -173,8 +174,7 @@ ThotBool NeedAMenu (Element el, Document doc)
 void TemplateElementComplete (ParserData *context, Element el, int *error)
 {
   Document		     doc;
-  ElementType	     elType, childType;
-  Element		     child;
+  ElementType	     elType;
 
   doc = context->doc;
   elType = TtaGetElementType (el);
@@ -182,6 +182,7 @@ void TemplateElementComplete (ParserData *context, Element el, int *error)
     {
     case Template_EL_head:
       CheckMandatoryAttribute (el, doc, Template_ATTR_version);
+      DocumentMeta[doc]->isTemplate = TRUE;
       break;
 
     case Template_EL_component:
@@ -205,15 +206,11 @@ void TemplateElementComplete (ParserData *context, Element el, int *error)
         }
       CheckMandatoryAttribute (el, doc, Template_ATTR_types);
       CheckMandatoryAttribute (el, doc, Template_ATTR_title);
-      // unlock children
-      TtaSetAccessRight (el, ReadWrite, doc);
       break;
 
     case Template_EL_bag:
       CheckMandatoryAttribute (el, doc, Template_ATTR_types);
       CheckMandatoryAttribute (el, doc, Template_ATTR_title);
-      // unlock children
-      TtaSetAccessRight (el, ReadWrite, doc);
       break;
 
     case Template_EL_attribute:
@@ -221,26 +218,12 @@ void TemplateElementComplete (ParserData *context, Element el, int *error)
       break;
 
     case Template_EL_option :
-      // unlock children
       CheckMandatoryAttribute (el, doc, Template_ATTR_title);
-      TtaSetAccessRight (el, ReadWrite, doc);
       break;
 
     case Template_EL_repeat :
       // children must be use elements
       CheckMandatoryAttribute (el, doc, Template_ATTR_title);
-      child = TtaGetFirstChild (el);
-      if (child)
-        {
-          childType = TtaGetElementType (child);
-          if (!strcmp (TtaGetSSchemaName (childType.ElSSchema),"Template"))
-            // the first child of element "repeat" is a XTiger element
-            // unlock children
-            TtaSetAccessRight (el, ReadWrite, doc);
-        }
-      else
-        // unlock children
-        TtaSetAccessRight (el, ReadWrite, doc);
       break;
     default:
       break;

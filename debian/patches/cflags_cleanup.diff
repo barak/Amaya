@@ -1,0 +1,39 @@
+Index: amaya-9.55~dfsg.0/configure.in
+===================================================================
+--- amaya-9.55~dfsg.0.orig/configure.in	2007-05-20 13:40:43.000000000 +0100
++++ amaya-9.55~dfsg.0/configure.in	2007-05-20 13:51:33.000000000 +0100
+@@ -666,18 +666,8 @@
+ 
+ # Check if debug is enable
+ AC_ARG_WITH(debug,              [  --with-debug            compiles Amaya with debuging options (-g) ])
+-if test "$with_debug" = "yes" ; then
+-  with_debug="yes"
+-  CFLAGS="-g"
+-  CXXFLAGS="-g"
+-else
+-  with_debug="no"
+-  CFLAGS="-O2"
+-  CXXFLAGS="-O2"
+-fi
+ 
+ if test "${CC}" = "gcc" ; then
+- CFLAGS="${CFLAGS} -Wall"
+   case "${host}" in
+       *-*-irix5* | *-*irix6* )
+          CFLAGS="${CFLAGS} -fsigned-char"
+@@ -689,13 +679,8 @@
+   CFLAGS="${CFLAGS} -DCONST= "
+ fi
+ 
+-
+-# force C mode (-x c)
+-CFLAGS="${CFLAGS} -x c"
+-
+-# C++ options (-x c++)
+-CXX_OPTIONS="-D__cplusplus"
+-CXXFLAGS="${CXXFLAGS} -Wall -x c++ ${CXX_OPTIONS}"
++CFLAGS="${CFLAGS} -Wall"
++CXXFLAGS="${CXXFLAGS} -Wall"
+ 
+ # setup LDFLAGS
+ # on macosx, specific flags must be set to avoid conflicts with allready installed libwww

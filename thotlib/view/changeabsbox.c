@@ -3430,6 +3430,7 @@ static void ApplyInheritPresRule (PtrAbstractBox pAb, PRuleType typeRule,
       || typeRule == PtSize
       || typeRule == PtStyle
       || typeRule == PtWeight
+      || typeRule == PtVariant
       || typeRule == PtFont
       || typeRule == PtUnderline
       || typeRule == PtThickness
@@ -3747,7 +3748,7 @@ void UpdatePresAttr (PtrElement pEl, PtrAttribute pAttr,
   PtrAttribute        pAttrib;
   PtrHandlePSchema    pHd;
   TypeUnit            unit;
-  int                 view, viewSch, val, valNum, index, vol;
+  int                 view, viewSch, val = 0, valNum, index, vol;
   PtrAttributePres    attrBlock;
   ThotBool            appl, stop, sameType, found;
   ThotBool            existingView;

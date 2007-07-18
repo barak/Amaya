@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -43,6 +43,11 @@
 #include "AmayaSubPanelManager.h"
 #include "wxinclude.h"
 #endif /* _WX */
+
+// __EK__
+#include "containers.h"
+#include "attrmenu.h"
+// __EK__
 
 #undef THOT_EXPORT
 #define THOT_EXPORT extern
@@ -138,6 +143,9 @@ extern UINT      subMenuID[MAX_FRAME];
 #include "dialogapi_f.h"
 #include "thotmsg_f.h"
 
+
+static ThotBool GetValidatedCurrentSelection (PtrDocument *pDoc,
+    PtrElement *firstSel, PtrElement*lastSel, int *firstChar,int *lastChar);
 
 /*----------------------------------------------------------------------
   TtaSetAttributeChangeFunction registers the attribute creation function
@@ -550,13 +558,19 @@ LRESULT CALLBACK InitNumAttrDialogWndProc (ThotWindow hwnd, UINT iMsg,
   by the pAttr rule.
   required specifies if it's a required attribute
   currAttr gives the current value of the attribute
-  isRequiredDlg is true if the function must build a popup dlg for mandatory attributs (WX version)
+  isRequiredDlg is true if the function must build a popup dlg for
+  mandatory attributs (WX version)
   ----------------------------------------------------------------------*/
-static void MenuValues (TtAttribute * pAttr, ThotBool required,
-                        PtrAttribute currAttr, PtrDocument pDoc, int view,
+static void MenuValues (TtAttribute *pAttr, ThotBool required,
+                        PtrAttribute currAttr, PtrElement pEl,
+                        PtrDocument pDoc, int view,
                         ThotBool isRequiredDlg)
 {
   Document          doc;
+#ifdef _WX
+  ElementType       elType;
+  char              full_title[MAX_TXT_LEN];
+#endif /* _WX */
   char             *tmp;
   char              bufMenu[MAX_TXT_LEN];
   char             *title = NULL;
@@ -592,7 +606,6 @@ static void MenuValues (TtAttribute * pAttr, ThotBool required,
                TtaGetMessage (LIB, TMSG_ATTR), buttons, bufMenu, FALSE, 2,
                'L', D_DONE);
 #endif /* _GTK */
-
   title = (char *)TtaGetMemory (strlen (pAttr->AttrName) + 2);
   strcpy (title, pAttr->AttrName);
   switch (pAttr->AttrType)
@@ -653,10 +666,19 @@ static void MenuValues (TtAttribute * pAttr, ThotBool required,
           }
         else
           {
+            full_title[0] = EOS;
+            if (pEl)
+              {
+                // display element type + attribute name
+                elType = TtaGetElementType(Element(pEl));
+                strcpy (full_title, TtaGetElementTypeName (elType));
+                strcat (full_title, " - ");
+              }
+            strcat (full_title, title);
             CreateNumDlgWX( NumMenuAttrRequired, NumMenuAttrNumNeeded,
                             TtaGetViewFrame(doc, view),
                             TtaGetMessage(LIB, TMSG_ATTR),
-                            title,
+                            full_title,
                             i);
           }
 #endif /* _WX */
@@ -693,11 +715,20 @@ static void MenuValues (TtAttribute * pAttr, ThotBool required,
           }
         else
           {
+            full_title[0] = EOS;
+            if (pEl)
+              {
+                // display element type + attribute name
+                elType = TtaGetElementType(Element(pEl));
+                strcpy (full_title, TtaGetElementTypeName (elType));
+                strcat (full_title, " - ");
+              }
+            strcat (full_title, title);
             /* create a dialogue to ask the mandatory attribut value (text type) */
             CreateTextDlgWX ( NumMenuAttrRequired, NumMenuAttrTextNeeded, /* references */
                               TtaGetViewFrame (doc, view), /* parent */
                               TtaGetMessage(LIB, TMSG_ATTR), /* title */
-                              title, /* label : attribut name */
+                              full_title, /* label : attribut name */
                               TextAttrValue /* initial value */ );
           }
 #endif /* _WX */
@@ -783,10 +814,19 @@ static void MenuValues (TtAttribute * pAttr, ThotBool required,
           }
         else
           {
+            full_title[0] = EOS;
+            if (pEl)
+              {
+                // display element type + attribute name
+                elType = TtaGetElementType(Element(pEl));
+                strcpy (full_title, TtaGetElementTypeName (elType));
+                strcat (full_title, " - ");
+              }
+            strcat (full_title, title);
             CreateEnumListDlgWX( NumMenuAttrRequired, NumMenuAttrEnumNeeded,
                                  TtaGetViewFrame(doc, view),
                                  TtaGetMessage(LIB, TMSG_ATTR),
-                                 title, val, bufMenu, i);
+                                 full_title, val, bufMenu, i);
           }
 #endif /* _WX */
 
@@ -888,7 +928,7 @@ void CallbackReqAttrMenu (int ref, int val, char *txt)
   builds the form for capturing the value of the required
   attribute as defined by the pRuleAttr rule.
   ----------------------------------------------------------------------*/
-void BuildReqAttrMenu (PtrAttribute pAttr, PtrDocument pDoc)
+void BuildReqAttrMenu (PtrAttribute pAttr, PtrDocument pDoc, PtrElement pEl)
 {
   PtrTtAttribute        pRuleAttr;
 
@@ -896,11 +936,11 @@ void BuildReqAttrMenu (PtrAttribute pAttr, PtrDocument pDoc)
   PtrDocOfReqAttr = pDoc;
   pRuleAttr = pAttr->AeAttrSSchema->SsAttribute->TtAttr[pAttr->AeAttrNum - 1];
   /* toujours lie a la vue 1 du document */
-  MenuValues (pRuleAttr, TRUE, NULL, pDoc, 1, TRUE);
+  MenuValues (pRuleAttr, TRUE, NULL, pEl, pDoc, 1, TRUE);
 #if defined(_GTK) || defined(_WX)
   TtaShowDialogue (NumMenuAttrRequired, FALSE);
   TtaWaitShowDialogue ();
-#endif /* #if defined(_GTK) || defined(_WX) */
+#endif /* _GTK || _WX */
 }
 
 /*----------------------------------------------------------------------
@@ -927,6 +967,184 @@ static ThotBool TteItemMenuAttr (PtrSSchema pSS, int att, PtrElement pEl,
   return OK;
 }
 
+
+/*----------------------------------------------------------------------
+  CompareAttrList
+  Sorting helper for a list of PtrAttrListElem elements.
+  ----------------------------------------------------------------------*/
+static int CompareAttrList(PtrAttrListElem elem1, PtrAttrListElem elem2)
+{
+  if(elem1 && elem2)
+    {
+      if(elem1->categ!=elem2->categ)
+        {
+          return elem1->categ-elem2->categ;
+        }
+      else
+        {
+          return strcmp(AttrListElem_GetName(elem1), AttrListElem_GetName(elem2));
+        }
+    }
+  return 0;
+}
+
+
+/*----------------------------------------------------------------------
+  BuildAttrList
+  builds an attribute list with types and values.
+  ----------------------------------------------------------------------*/
+// __EK__
+static DLList BuildAttrList(PtrDocument pDoc, PtrElement firstSel)
+{
+  DLList          list = DLList_Create();
+  ForwardIterator iter = DLList_GetForwardIterator(list);
+  DLListNode      node;
+  PtrSSchema      pSS, pSchExt;
+  PtrSRule        pRe1;
+  int             num, nbOfEntries = 0;
+  PtrAttrListElem attrElem;
+  PtrAttribute    pAttr;
+  AttributeType   type;
+  ThotBool        isNew;
+  
+  list->destroyElement = (Container_DestroyElementFunction)TtaFreeMemory;
+  
+  /* cherche les attributs globaux definis dans le schema de structure */
+  /* du premier element selectionne' et dans les extrensions de ce schema*/
+  pSS = firstSel->ElStructSchema;/* schema de struct de l'element courant*/
+  while(pSS)
+    {
+      for (num=1; num<=pSS->SsNAttributes; num++)
+        {
+          /* skip local attributes */
+          if (pSS->SsAttribute->TtAttr[num-1]->AttrGlobal &&
+              /* and invisible attributes */
+              !AttrHasException (ExcInvisible, num, pSS))
+            /* skip the attribute Language execpt the first time */
+            if (nbOfEntries == 0 || num != 1)
+              if (TteItemMenuAttr (pSS, num, firstSel, pDoc))
+                {
+                  /* conserve le schema de structure et le numero */
+                  /* d'attribut de cette nouvelle entree du menu */
+                  attrElem = (PtrAttrListElem)TtaGetMemory(sizeof(AttrListElem));
+                  attrElem->pSS   = pSS;
+                  attrElem->num   = num;
+                  attrElem->flags = attr_normal;
+                  if(AttrHasException (ExcEventAttr, num, pSS))
+                    attrElem->categ = attr_event;
+                  else
+                    attrElem->categ = attr_global;
+                  type.AttrSSchema = (SSchema) pSS;
+                  type.AttrTypeNum = num;
+                  attrElem->val   = (PtrAttribute)TtaGetAttribute((Element)firstSel, type);
+                  DLList_Append(list, attrElem);
+                }
+        }
+      /* next extension schema */
+      pSS = pSS->SsNextExtens;
+    }
+
+
+  /* cherche les attributs locaux du premier element selectionne' */
+  pSS = firstSel->ElStructSchema;
+  if (pSS != NULL)
+    {
+      pRe1 = pSS->SsRule->SrElem[firstSel->ElTypeNumber - 1];
+      pSchExt = pDoc->DocSSchema;
+      do
+        {
+          if (pRe1 != NULL)
+            /* prend les attributs locaux definis dans cette regle */
+            for (num = 0; num < pRe1->SrNLocalAttrs; num++)
+              if (!pSS->SsAttribute->TtAttr[pRe1->SrLocalAttr->Num[num] - 1]->AttrGlobal)
+                if (!AttrHasException (ExcInvisible,
+                                       pRe1->SrLocalAttr->Num[num], pSS) &&
+                    TteItemMenuAttr (pSS, pRe1->SrLocalAttr->Num[num],
+                                     firstSel, pDoc))
+                  {
+                    /* conserve le schema de structure et le numero */
+                    /* d'attribut de cette nouvelle entree du menu */
+                    attrElem = (PtrAttrListElem)TtaGetMemory(sizeof(AttrListElem));
+                    attrElem->pSS   = pSS;
+                    attrElem->num   = pRe1->SrLocalAttr->Num[num];
+                    attrElem->flags = attr_normal;
+                    if(pRe1->SrRequiredAttr->Bln[num])
+                      attrElem->flags |= attr_mandatory;
+                    if(AttrHasException (ExcEventAttr, 
+                        pRe1->SrLocalAttr->Num[num], pSS))
+                      attrElem->categ = attr_event;
+                    else
+                      attrElem->categ = attr_local;
+                    type.AttrSSchema = (SSchema) pSS;
+                    type.AttrTypeNum = attrElem->num;
+                    attrElem->val   = (PtrAttribute)TtaGetAttribute((Element)firstSel, type);
+                    DLList_Append(list, attrElem);
+                  }
+          /* passe a l'extension suivante du schema du document */
+          pSchExt = pSchExt->SsNextExtens;
+          /* cherche dans cette extension de schema la regle d'extension */
+          /* pour le premier element selectionne' */
+          if (pSchExt)
+            {
+              pSS = pSchExt;
+              pRe1 = ExtensionRule (firstSel->ElStructSchema,
+                                    firstSel->ElTypeNumber, pSchExt);
+            }
+        }
+      while (pSchExt);
+    }
+  /* la table contient tous les attributs applicables aux elements */
+  /* selectionnes */
+
+
+  /* add attributes attached to the element that are not yet in
+     the table */
+  pAttr = firstSel->ElFirstAttr;
+  while (pAttr)
+    {
+      isNew = TRUE;
+      ITERATOR_FOREACH(iter, DLListNode, node)
+      {
+        attrElem = (PtrAttrListElem)node->elem;
+        if (attrElem->num==pAttr->AeAttrNum &&
+            attrElem->pSS==pAttr->AeAttrSSchema)
+          {
+            isNew = FALSE;
+            break;
+          }
+      }
+      if (isNew)
+        {
+          if (!AttrHasException (ExcInvisible, pAttr->AeAttrNum,
+                                 pAttr->AeAttrSSchema) &&
+              TteItemMenuAttr (pAttr->AeAttrSSchema, pAttr->AeAttrNum,
+                               firstSel, pDoc))
+            {
+              /* conserve le schema de structure et le numero */
+              /* d'attribut de cette nouvelle entree du menu */
+              attrElem = (PtrAttrListElem)TtaGetMemory(sizeof(AttrListElem));
+              attrElem->pSS   = pAttr->AeAttrSSchema;
+              attrElem->num   = pAttr->AeAttrNum;
+              attrElem->flags = attr_normal;
+              if(AttrHasException (ExcEventAttr, 
+                  pAttr->AeAttrNum, pAttr->AeAttrSSchema))
+                attrElem->categ = attr_event;
+              else
+                attrElem->categ = attr_other;
+              type.AttrSSchema = (SSchema) attrElem->pSS;
+              type.AttrTypeNum = attrElem->num;
+              attrElem->val   = (PtrAttribute)TtaGetAttribute((Element)firstSel, type);
+              DLList_Append(list, attrElem);
+            }
+        }
+      pAttr = pAttr->AeNext;
+    }
+
+  DLList_Sort(list, (Container_CompareFunction) CompareAttrList);
+  TtaFreeMemory(iter);
+  return list;
+}
+// __EK__
 
 /*----------------------------------------------------------------------
   BuildAttrMenu
@@ -997,6 +1215,7 @@ static int BuildAttrMenu (char *bufMenu, PtrDocument pDoc, PtrElement firstSel,
                           if (AttrEvent[nbOfEntries])
                             (*nbEvent)++;
                           nbOfEntries++;
+                          
                         }
                 }
             }
@@ -1103,11 +1322,15 @@ static int BuildAttrMenu (char *bufMenu, PtrDocument pDoc, PtrElement firstSel,
           pAttr->AeAttrSSchema = AttrStruct[att];
           pAttr->AeAttrNum = AttrNumber[att];
           pAttr->AeDefAttr = FALSE;
+#ifndef _WX
           if (pAt->AttrType == AtEnumAttr && pAt->AttrNEnumValues == 1)
             /* attribut enumere' a une seule valeur (attribut booleen) */
             sprintf (tempBuffer, "T%s", pAt->AttrName);
           else
             sprintf (tempBuffer, "T%s...", pAt->AttrName);
+#else  /* _WX */
+          sprintf (tempBuffer, "T%s", pAt->AttrName);
+#endif /* _WX */
           i = strlen (tempBuffer) + 1;
           if (AttrEvent[att])
             {
@@ -1125,103 +1348,103 @@ static int BuildAttrMenu (char *bufMenu, PtrDocument pDoc, PtrElement firstSel,
           else
             {
               if (lgmenu + i < MAX_TXT_LEN)
-		{
-		/* compare that name with all element names already known */
-		cur = 0;
-		previous = FALSE;
-		for (ind = 0; ind < j && !previous; ind++)
-		  {
-		    len = strlen (&bufMenu[cur]) + 1;
-		    previous = (tempBuffer[1] < bufMenu[cur+1]);
-		    if (!previous)
-		      {
- 			j2 = 1;
-			while (tempBuffer[j2] == bufMenu[cur+j2])
-			  j2++;
-			previous = (tempBuffer[j2] < bufMenu[cur+j2]);
-		      }
-		    if (!previous)
-		      cur += len;
-		  }
-		if (previous && ind <= nbOfEntries)
-		  {
-		    // move the tail of the current list
-		    for (ind2 = lgmenu; ind2 >= cur; ind2--)
-		      bufMenu[ind2+i] = bufMenu[ind2];
-		    /* add this new element name at the current position */
-		    strcpy (&bufMenu[cur], tempBuffer);
-		  }
-		else
-		  {
-		    /* add this new element name at the end */
-		    strcpy (bufMenu + lgmenu, tempBuffer);
-		  }
-		/* mark an active entry */
-		if (AttributeValue (firstSel, pAttr) != NULL)
-		  {
-		    ActiveName[active] = TtaStrdup (tempBuffer);
-		    active++;
-		  }
-		/* make a correspondance entry */
-		CorrName[j] = TtaStrdup (tempBuffer);
-
-		/* next */
-		  lgmenu += i;
-		  j++;
-		}
+                {
+                /* compare that name with all element names already known */
+                cur = 0;
+                previous = FALSE;
+                for (ind = 0; ind < j && !previous; ind++)
+                  {
+                    len = strlen (&bufMenu[cur]) + 1;
+                    previous = (tempBuffer[1] < bufMenu[cur+1]);
+                    if (!previous)
+                      {
+                        j2 = 1;
+                        while (tempBuffer[j2] == bufMenu[cur+j2])
+                          j2++;
+                        previous = (tempBuffer[j2] < bufMenu[cur+j2]);
+                      }
+                    if (!previous)
+                      cur += len;
+                  }
+                if (previous && ind <= nbOfEntries)
+                  {
+                    // move the tail of the current list
+                    for (ind2 = lgmenu; ind2 >= cur; ind2--)
+                      bufMenu[ind2+i] = bufMenu[ind2];
+                    /* add this new element name at the current position */
+                    strcpy (&bufMenu[cur], tempBuffer);
+                  }
+                else
+                  {
+                    /* add this new element name at the end */
+                    strcpy (bufMenu + lgmenu, tempBuffer);
+                  }
+                /* mark an active entry */
+                if (AttributeValue (firstSel, pAttr) != NULL)
+                  {
+                    ActiveName[active] = TtaStrdup (tempBuffer);
+                    active++;
+                  }
+                /* make a correspondance entry */
+                CorrName[j] = TtaStrdup (tempBuffer);
+                
+                /* next */
+                  lgmenu += i;
+                  j++;
+                }
             }
         }
 
       /* mark all active entries */
       cur = 0;
       for (ind = 0; ind < j && cur < MAX_TXT_LEN; ind++)
-	{
-	  ActiveAttr[ind] = 0;
-	  for (ind2 = 0; ind2 < active && ActiveAttr[ind] == 0; ind2++)
-	    {
-	      if (&bufMenu[cur] && ActiveName[ind2] &&
-		  !strcmp (&bufMenu[cur], ActiveName[ind2]))
-		ActiveAttr[ind] = 1;	    
-	    }
-	  len = strlen (&bufMenu[cur]) + 1;
-	  cur += len;
-	}
-      for (ind2 = 0; ind2 < active; ind2++)
-	{
-	  if (ActiveName[ind2])
-	    {
-	      TtaFreeMemory (ActiveName[ind2]);
-	      ActiveName[ind2] = NULL;
-	    }
-	}
+        {
+          ActiveAttr[ind] = 0;
+          for (ind2 = 0; ind2 < active && ActiveAttr[ind] == 0; ind2++)
+            {
+              if (&bufMenu[cur] && ActiveName[ind2] &&
+                !strcmp (&bufMenu[cur], ActiveName[ind2]))
+                ActiveAttr[ind] = 1;	    
+            }
+          len = strlen (&bufMenu[cur]) + 1;
+          cur += len;
+        }
+            for (ind2 = 0; ind2 < active; ind2++)
+        {
+          if (ActiveName[ind2])
+            {
+              TtaFreeMemory (ActiveName[ind2]);
+              ActiveName[ind2] = NULL;
+            }
+        }
 
   /* make correspondance with the attributes table */      
       for (ind = 0; ind < nbOfEntries; ind++)
-	AttrCorr[ind] = -1;
+        AttrCorr[ind] = -1;
       
       cur = 0;
       for (ind = 0; ind < j && cur < MAX_TXT_LEN; ind++)
-	{
-	  for (ind2 = 0; ind2 < j; ind2++)
-	    {
-	      if (&bufMenu[cur] && CorrName[ind2] &&
-		  !strcmp (&bufMenu[cur], CorrName[ind2]))
-		{
-		  AttrCorr[ind] = ind2;	    
-		  ind2 = j;
-		}
-	    }
-	  len = strlen (&bufMenu[cur]) + 1;
-	  cur += len;
-	}
+        {
+          for (ind2 = 0; ind2 < j; ind2++)
+            {
+              if (&bufMenu[cur] && CorrName[ind2] &&
+                !strcmp (&bufMenu[cur], CorrName[ind2]))
+                {
+                  AttrCorr[ind] = ind2;	    
+                  ind2 = j;
+                }
+            }
+          len = strlen (&bufMenu[cur]) + 1;
+          cur += len;
+        }
       for (ind2 = 0; ind2 < j; ind2++)
-	{
-	  if (CorrName[ind2])
-	    {
-	      TtaFreeMemory (CorrName[ind2]);
-	      CorrName[ind2] = NULL;
-	    }
-	}
+        {
+          if (CorrName[ind2])
+            {
+              TtaFreeMemory (CorrName[ind2]);
+              CorrName[ind2] = NULL;
+            }
+        }
     }
 
   DeleteAttribute (NULL, pAttr);
@@ -1252,16 +1475,18 @@ void UpdateAttrMenu (PtrDocument pDoc, ThotBool force)
   ThotBool            selectionOK;
   PtrElement          firstSel, lastSel, parent;
   int                 firstChar, lastChar;
-  char                bufMenuAttr[MAX_TXT_LEN];
-  char                bufEventAttr[MAX_TXT_LEN];
-#ifndef _WX
+  int                 nbItemAttr, nbEvent;
+#ifdef _WX
+  DLList              list;
+  AmayaParams         params;
+#else /* _WX */
   Document            document;
   Menu_Ctl           *pMenu;
   int                 view, menu, menuID;
   int                 frame, ref;
   int                 i, max;
+  char bufMenuAttr[512], bufEventAttr[512];
 #endif /* _WX */
-  int                 nbItemAttr, nbEvent;
 #ifdef _WINGUI
   int                 nbOldItems;
 #endif /* _WINGUI */
@@ -1308,12 +1533,25 @@ void UpdateAttrMenu (PtrDocument pDoc, ThotBool force)
               firstSel->ElFirstAttr != NULL ||
               PrevElAttr)
             {
+#ifdef _WX
+              list = BuildAttrList(pDoc, firstSel);
+              params.param1 = (int)AmayaAttributePanel::wxATTR_ACTION_LISTUPDATE;
+              params.param2 = (void*)list;
+              params.param5 = (void*)firstSel;
+              params.param6 = (void*)lastSel;
+              params.param7 = firstChar;
+              params.param8 = lastChar;
+              
+              AmayaSubPanelManager::GetInstance()->SendDataToPanel( WXAMAYA_PANEL_ATTRIBUTE, params );
+              return;
+#else /* _WX */
               nbItemAttr = BuildAttrMenu (bufMenuAttr, pDoc, firstSel,
                                           &nbEvent, bufEventAttr);
               PrevDoc = pDoc;
               PrevStructSchema = firstSel->ElStructSchema;
               PrevElTypeNumber = firstSel->ElTypeNumber;
               PrevElAttr = (firstSel->ElFirstAttr != NULL);
+#endif /* _WX */
             }
           else
             return;
@@ -1327,20 +1565,18 @@ void UpdateAttrMenu (PtrDocument pDoc, ThotBool force)
       PrevStructSchema = NULL;
       PrevElTypeNumber = 0;
       PrevElAttr = FALSE;
-    }
-
 #ifdef _WX
-  /* update the attribute dialog */
-  AmayaParams p;
-  p.param1 = (int)AmayaAttributePanel::wxATTR_ACTION_LISTUPDATE;
-  p.param2 = (void*)bufMenuAttr;
-  p.param4 = (void*)ActiveAttr;
-  p.param5 = (void*)bufEventAttr;
-  p.param6 = ActiveEventAttr;
-  p.param7 = nbEvent;
-  p.param8 = nbItemAttr;
-  AmayaSubPanelManager::GetInstance()->SendDataToPanel( WXAMAYA_PANEL_ATTRIBUTE, p );
+      params.param1 = (int)AmayaAttributePanel::wxATTR_ACTION_LISTUPDATE;
+      params.param2 = NULL;
+      params.param5 = NULL;
+      params.param6 = NULL;
+      params.param7 = 0;
+      params.param8 = 0;
+              
+      AmayaSubPanelManager::GetInstance()->SendDataToPanel( WXAMAYA_PANEL_ATTRIBUTE, params );
+              return;
 #endif /* _WX */
+    }
 
 #ifndef _WX
   /* Now update the menu widget */
@@ -1699,7 +1935,7 @@ void CallbackValAttrMenu (int ref, int valmenu, char *valtext)
             pAttrNew->AeAttrNum = NumCurrentAttr;
             pAttrNew->AeDefAttr = FALSE;
             pAttrNew->AeAttrType = SchCurrentAttr->SsAttribute->TtAttr[NumCurrentAttr - 1]->AttrType;
-	      
+
             switch (pAttrNew->AeAttrType)
               {
               case AtNumAttr:
@@ -1738,6 +1974,7 @@ void CallbackValAttrMenu (int ref, int valmenu, char *valtext)
                     if (isID)
                       TtaIsValidID ((Attribute)pAttrNew, TRUE);
                   }
+
                 if (isSpan && firstSel != lastSel &&
                     AttributeChangeFunction)
                   {
@@ -1754,10 +1991,10 @@ void CallbackValAttrMenu (int ref, int valmenu, char *valtext)
                   TtaExecuteMenuAction ("ApplyClass", doc, 1, TRUE);
 #endif /* _WX */
                 break;
-		  
-              case AtReferenceAttr:		    
+
+              case AtReferenceAttr:
                 break;
-		  
+
               case AtEnumAttr:
                 if (act == 2)
                   /* suppression de l'attribut */
@@ -1771,7 +2008,7 @@ void CallbackValAttrMenu (int ref, int valmenu, char *valtext)
                 AttachAttrToRange (pAttrNew, lastChar, firstChar, lastSel,
                                    firstSel, pDoc, TRUE);
                 break;
-		  
+
               default:
                 break;
               }
@@ -1787,6 +2024,263 @@ void CallbackValAttrMenu (int ref, int valmenu, char *valtext)
           }
       }
     }
+}
+
+/*----------------------------------------------------------------------
+  SetAttrValueToRange
+  Set a new value for the specified attr for the currently selected range.
+  \param value char* is the attr is text and int if num or enum.
+  ----------------------------------------------------------------------*/
+void SetAttrValueToRange(PtrAttrListElem elem, void* value)
+{
+  PtrDocument         pDoc;
+  PtrElement          firstSel, lastSel;
+  PtrAttribute        pAttrNew;
+  DisplayMode         dispMode = DeferredDisplay;
+  Document            doc = 0;
+  char               *tmp;
+  int                 firstChar, lastChar;
+  ThotBool            lock = TRUE;
+  ThotBool            isID = FALSE, isACCESS = FALSE;
+  ThotBool            isCLASS = FALSE, isSpan = FALSE;
+
+  if(!elem || !elem->pSS)
+    return;
+
+  /* demande quelle est la selection courante */
+  if (!GetValidatedCurrentSelection (&pDoc, &firstSel, &lastSel,
+                                                        &firstChar, &lastChar))
+    {
+      /* no selection. quit */
+      TtaDisplaySimpleMessage (CONFIRM, LIB, TMSG_NO_SELECT);
+      return;
+    }
+
+  tmp = AttrListElem_GetName(elem);
+  isACCESS = (!strcmp (tmp, "accesskey") &&
+              !strcmp (elem->pSS->SsName, "HTML"));
+  isID = (!strcmp (tmp, "id") ||
+          !strcmp (tmp, "xml:id") ||
+          (!strcmp (tmp, "name") &&
+           !strcmp (elem->pSS->SsName, "HTML")));
+  isCLASS = !strcmp (tmp, "class");
+  isSpan = ((isID || isCLASS ||
+             !strcmp (tmp, "style") || !strcmp (tmp, "lang")) &&
+              !strcmp (elem->pSS->SsName, "HTML"));
+
+  /* on ne fait rien si le document ou` se trouve la selection
+     n'utilise pas le schema de structure qui definit l'attribut */
+  if (GetSSchemaForDoc (elem->pSS->SsName, pDoc))
+    {
+      /* lock tables formatting */
+      TtaGiveTableFormattingLock (&lock);
+      if (!lock)
+        {
+          doc = IdentDocument (pDoc);
+          dispMode = TtaGetDisplayMode (doc);
+          if (dispMode == DisplayImmediately)
+            TtaSetDisplayMode (doc, DeferredDisplay);
+          /* table formatting is not locked, lock it now */
+          TtaLockTableFormatting ();
+        }
+
+      GetAttribute (&pAttrNew);
+      if (elem->num == 1)
+        pAttrNew->AeAttrSSchema = firstSel->ElStructSchema;
+      else
+        pAttrNew->AeAttrSSchema = elem->pSS;
+      pAttrNew->AeAttrNum = elem->num;
+      pAttrNew->AeDefAttr = FALSE;
+      pAttrNew->AeAttrType = elem->pSS->SsAttribute->TtAttr[elem->num - 1]->AttrType;
+
+      switch (pAttrNew->AeAttrType)
+        {
+        case AtEnumAttr:
+        case AtNumAttr:
+          pAttrNew->AeAttrValue = (intptr_t)value;
+          /* applique les attributs a la partie selectionnee */
+          AttachAttrToRange (pAttrNew, lastChar, firstChar, lastSel,
+                             firstSel, pDoc, TRUE);
+          break;
+  
+        case AtTextAttr:
+            /* la valeur saisie devient la valeur courante */
+            if (pAttrNew->AeAttrText == NULL)
+              GetTextBuffer (&(pAttrNew->AeAttrText));
+            else
+              ClearText (pAttrNew->AeAttrText);
+            /* special treatment for accesskey attributes */
+
+            tmp = (char *)TtaConvertByteToMbs ((unsigned char *)value, TtaGetDefaultCharset ());
+            CopyMBs2Buffer ((unsigned char *)tmp, pAttrNew->AeAttrText, 0, strlen (tmp));
+            TtaFreeMemory (tmp);
+            /* special treatments for id, name and accesskey attributes */
+            tmp = elem->pSS->SsAttribute->TtAttr[elem->num - 1]->AttrName;
+            if (isID)
+              TtaIsValidID ((Attribute)pAttrNew, TRUE);
+
+          if (isSpan && firstSel != lastSel &&
+              AttributeChangeFunction)
+            {
+              // should generate a span
+              (*(Proc2)AttributeChangeFunction) ((void *)pAttrNew->AeAttrNum,
+                                                 (void *)value);
+            }
+          else
+            /* apply the attribute to each sub-element */
+            AttachAttrToRange (pAttrNew, lastChar, firstChar, lastSel,
+                             firstSel, pDoc, TRUE);
+          if (isCLASS)
+            TtaExecuteMenuAction ("ApplyClass", doc, 1, TRUE);
+          break;
+
+        case AtReferenceAttr:
+          break;
+        default:
+          break;
+        }
+
+      if (!lock)
+        {
+          /* unlock table formatting */
+          TtaUnlockTableFormatting ();
+          if (dispMode == DisplayImmediately)
+            TtaSetDisplayMode (doc, DisplayImmediately);
+        }
+      UpdateAttrMenu (pDoc, FALSE);
+      DeleteAttribute (NULL, pAttrNew);
+    }
+}
+
+/*----------------------------------------------------------------------
+  GetValidatedCurrentSelection 
+  Get the current selection but validate it with selecting the IMG element if
+  element is a picture.
+  ----------------------------------------------------------------------*/
+static ThotBool GetValidatedCurrentSelection (PtrDocument *pDoc,
+    PtrElement *firstSel, PtrElement*lastSel, int *firstChar,int *lastChar)
+{
+  PtrElement parent;
+  
+  if(!GetCurrentSelection (pDoc, firstSel, lastSel, firstChar, lastChar))
+    return FALSE;
+  else
+    {
+      /* when the PICTURE element of an IMG is selected display
+         attributes of the parent element */
+      parent = (*firstSel)->ElParent;
+      if ((*firstSel)->ElTerminal && (*firstSel)->ElLeafType == LtPicture && parent &&
+          TypeHasException (ExcIsImg, parent->ElTypeNumber, parent->ElStructSchema))
+        *firstSel = parent;
+      return TRUE;
+    }
+}
+
+
+/*----------------------------------------------------------------------
+  CallbackEditRefAttribute
+  Handle the edition of reference attribute.
+  ----------------------------------------------------------------------*/
+void CallbackEditRefAttribute(PtrAttrListElem pAttrElem, int frame)
+{
+#ifdef _WX
+  PtrTtAttribute      pAttr;
+  PtrAttribute        pAttrNew;
+  PtrDocument         pDoc;
+  PtrElement          firstSel, lastSel;
+  PtrReference        Ref;
+  Document            doc;
+  View                view;
+  int                 firstChar, lastChar;
+
+  pAttr = AttrListElem_GetTtAttribute(pAttrElem);
+  FrameToView (frame, &doc, &view);
+  
+  if(pAttr && pAttr->AttrType == AtReferenceAttr &&
+      GetValidatedCurrentSelection (&pDoc, &firstSel, &lastSel, &firstChar,
+                                                                    &lastChar))
+    {
+      GetAttribute (&pAttrNew);
+      pAttrNew->AeAttrSSchema = pAttrElem->pSS;
+      pAttrNew->AeAttrNum = pAttrElem->num;
+      pAttrNew->AeDefAttr = FALSE;
+      pAttrNew->AeAttrType = pAttr->AttrType;
+
+      /* attache un bloc reference a l'attribut */
+      GetReference (&Ref);
+      pAttrNew->AeAttrReference = Ref;
+      pAttrNew->AeAttrReference->RdElement = NULL;
+      pAttrNew->AeAttrReference->RdAttribute = pAttrNew;
+      /* applique l'attribut a la partie selectionnee */
+      AttachAttrToRange (pAttrNew, lastChar, firstChar, lastSel,
+                         firstSel, pDoc, TRUE);
+      /* re-affiche la liste des attributs.*/
+      UpdateAttrMenu (pDoc, FALSE);
+    }
+#endif /* _WX */
+}
+
+/*----------------------------------------------------------------------
+  CallbackEditAttribute 
+  handles the callbacks of the "Attributes" panel
+  choose the right subpanel for editing it.
+  ----------------------------------------------------------------------*/
+void CallbackEditAttribute(PtrAttrListElem pAttrElem, int frame)
+{
+#ifdef _WX
+  PtrTtAttribute      pAttr;
+  PtrAttribute        pAttrNew, currAttr;
+  PtrDocument         pDoc;
+  PtrElement          firstSel, lastSel;
+  PtrReference        Ref;
+  Document            doc;
+  View                view;
+  int                 firstChar, lastChar;
+  
+  pAttr = AttrListElem_GetTtAttribute(pAttrElem);
+  FrameToView (frame, &doc, &view);
+
+  if(pAttr && GetValidatedCurrentSelection (&pDoc, &firstSel, &lastSel,
+              &firstChar, &lastChar))
+    {
+      
+      GetAttribute (&pAttrNew);
+      pAttrNew->AeAttrSSchema = pAttrElem->pSS;
+      pAttrNew->AeAttrNum = pAttrElem->num;
+      pAttrNew->AeDefAttr = FALSE;
+      pAttrNew->AeAttrType = pAttr->AttrType;
+
+      if (pAttr->AttrType == AtReferenceAttr)
+        {
+          /* attache un bloc reference a l'attribut */
+          GetReference (&Ref);
+          pAttrNew->AeAttrReference = Ref;
+          pAttrNew->AeAttrReference->RdElement = NULL;
+          pAttrNew->AeAttrReference->RdAttribute = pAttrNew;
+          /* applique l'attribut a la partie selectionnee */
+          AttachAttrToRange (pAttrNew, lastChar, firstChar, lastSel,
+                             firstSel, pDoc, TRUE);
+          /* re-affiche la liste des attributs.*/
+          UpdateAttrMenu (pDoc, FALSE);
+        }
+      else
+        {
+          /* cherche la valeur de cet attribut pour le premier element */
+          /* selectionne' */
+          currAttr = AttributeValue (firstSel, pAttrNew);
+          if (pAttrNew->AeAttrNum == 1)
+            /* that's the language attribute */
+            {
+              InitFormLanguage (doc, view, firstSel, currAttr);
+              /* memorise l'attribut concerne' par le formulaire */
+              SchCurrentAttr = pAttrNew->AeAttrSSchema;
+              NumCurrentAttr = 1;
+              DocCurrentAttr = LoadedDocument[doc - 1];
+            }
+        }
+      DeleteAttribute (NULL, pAttrNew);
+    }
+#endif /* _WX */
 }
 
 /*----------------------------------------------------------------------
@@ -1847,6 +2341,7 @@ void CallbackAttrMenu (int refmenu, int attMenu, int frame)
         if (firstSel->ElTerminal && firstSel->ElLeafType == LtPicture && parent &&
             TypeHasException (ExcIsImg, parent->ElTypeNumber, parent->ElStructSchema))
           firstSel = parent;
+
         GetAttribute (&pAttrNew);
         pAttrNew->AeAttrSSchema = AttrStruct[att];
         pAttrNew->AeAttrNum = AttrNumber[att];
@@ -1925,7 +2420,7 @@ void CallbackAttrMenu (int refmenu, int attMenu, int frame)
                 DocCurrentAttr = LoadedDocument[doc - 1];
                 /* register the current attribut */
                 CurrentAttr = att;
-                MenuValues (pAttr, mandatory, currAttr, pDoc, view, FALSE);
+                MenuValues (pAttr, mandatory, currAttr, firstSel, pDoc, view, FALSE);
 #else /* _WX */
                 if (currAttr == NULL)
                   /* le premier element selectionne' n'a pas cet */
@@ -1970,7 +2465,7 @@ void CallbackAttrMenu (int refmenu, int attMenu, int frame)
                 DocCurrentAttr = LoadedDocument[doc - 1];
                 /* register the current attribut */
                 CurrentAttr = att;
-                MenuValues (pAttr, mandatory, currAttr, pDoc, view, FALSE);
+                MenuValues (pAttr, mandatory, currAttr, firstSel, pDoc, view, FALSE);
                 /* restore the toggle state */
 #if defined(_GTK)
                 if (ActiveAttr[att] == 0)

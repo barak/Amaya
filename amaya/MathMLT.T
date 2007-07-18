@@ -821,7 +821,7 @@ ATTRIBUTES
 	create SAN;
 	create 'mathvariant="bold-script"';
 	end;
-  mathvariant = fraktur:
+  mathvariant = fraktur_:
 	begin
 	create SAN;
 	create 'mathvariant="fraktur"';
@@ -1572,12 +1572,6 @@ TextTRANSLATE
 	'\46' -> '&amp;';	{ ampersand, U+0026 ISOnum }
 	'\74' -> '&lt;';	{ less-than sign, U+003C ISOnum }
 	'\76' -> '&gt;'; 	{ greater-than sign, U+003E ISOnum }
-	END;
-
-
-GRAPHTRANSLATE
-	BEGIN
-	'v'	-> '|';
 	END;
 
 END

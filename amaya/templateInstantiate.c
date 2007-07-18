@@ -12,11 +12,12 @@
 
 #include "Elemlist.h"
 
+#include "AHTURLTools_f.h"
 #include "EDITimage_f.h"
 #include "HTMLactions_f.h"
 #include "HTMLsave_f.h"
+#include "HTMLtable_f.h"
 #include "init_f.h"
-#include "mydictionary_f.h"
 #include "templates_f.h"
 #include "templateDeclarations_f.h"
 #include "templateInstantiate_f.h"
@@ -30,45 +31,48 @@
 
 typedef struct _InstantiateCtxt
 {
-	char *			templatePath;
-	char *			instancePath;
-	char *			schemaName;
-	DocumentType	docType;
-	ThotBool		dontReplace;
+  char         *templatePath;
+  char         *instancePath;
+  char         *schemaName;
+  Document      doc;
+  DocumentType  docType;
+  ThotBool      dontReplace;
 } InstantiateCtxt;
 #endif /* TEMPLATES */
 
 
 /*----------------------------------------------------------------------
   CreateInstance
+  basedoc is the displayed doc that launchs the creation of instance
   ----------------------------------------------------------------------*/
-void  CreateInstance(char *templatePath, char *instancePath)
+void  CreateInstance(char *templatePath, char *instancePath, int basedoc)
 {
 #ifdef TEMPLATES
-  Document     doc = 0;
-  DocumentType docType;
-  ElementType  elType;
-  Element      root, title, text;
-  char        *s;
-  int          alreadyOnDoc = 0;
-  ThotBool     alreadyViewing = FALSE;
+  Document          doc = 0, newdoc = 0;
+  DocumentType      docType;
+  ElementType       elType;
+  Element           root, title, text;
+  char             *localFile, *s;
 
-  XTigerTemplate t = (XTigerTemplate)Dictionary_Get (Templates_Dic, templatePath);
+  XTigerTemplate t = GetXTigerTemplate(templatePath);
   if (t == NULL)
     {
       // the template cannot be loaded
       InitConfirm (doc, 1, TtaGetMessage (AMAYA, AM_BAD_TEMPLATE));
       return;
     }
-
+  // the template document
   doc = GetTemplateDocument (t);
-  while (alreadyOnDoc < DocumentTableLength-1 && !alreadyViewing)
-    {
-      alreadyOnDoc++;
-      if (DocumentURLs[alreadyOnDoc])
-        alreadyViewing = !strcmp (DocumentURLs[alreadyOnDoc],instancePath);
-    }
-
+  // localize the new created document
+  if (DontReplaceOldDoc)
+    newdoc = TtaGetNextDocumentIndex ();
+  else
+    newdoc = basedoc;
+#ifndef IV
+  localFile = GetLocalPath (newdoc, instancePath);
+#else
+  localFile = TtaStrdup (instancePath);
+#endif
   if (!TtaPrepareUndo (doc))
     {
       TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
@@ -84,16 +88,19 @@ void  CreateInstance(char *templatePath, char *instancePath)
         docType = docMath;
       else
         docType = docXml;
+      // update all links
+      SetRelativeURLs (doc, instancePath, "", FALSE, FALSE, FALSE);
 
-      SetRelativeURLs (doc, instancePath);
-      
+      // prepare the new document view
+      TtaExtractName (instancePath, DirectoryName, DocumentName);
+      // save in the local path
       switch (docType)
         {
         case docSVG:
-          TtaExportDocumentWithNewLineNumbers (doc, instancePath, "SVGT");
+          TtaExportDocumentWithNewLineNumbers (doc, localFile, "SVGT");
           break;
         case docMath:
-          TtaExportDocumentWithNewLineNumbers (doc, instancePath, "MathMLT");
+          TtaExportDocumentWithNewLineNumbers (doc, localFile, "MathMLT");
           break;
         case docHTML:
           // Initialize the document title
@@ -118,45 +125,46 @@ void  CreateInstance(char *templatePath, char *instancePath)
                 // Look for the first text child
                 TtaNextSibling (&text);
             }
-          if (TtaGetDocumentProfile(doc)==L_Xhtml11 || TtaGetDocumentProfile(doc)==L_Basic)
-            TtaExportDocumentWithNewLineNumbers (doc, instancePath, "HTMLT11");
+          if (TtaGetDocumentProfile(doc) == L_Xhtml11 ||
+              TtaGetDocumentProfile(doc) == L_Basic)
+            TtaExportDocumentWithNewLineNumbers (doc, localFile, "HTMLT11");
           else
-            TtaExportDocumentWithNewLineNumbers (doc, instancePath, "HTMLTX");
+            TtaExportDocumentWithNewLineNumbers (doc, localFile, "HTMLTX");
           break;
         default:
-          TtaExportDocumentWithNewLineNumbers (doc, instancePath, NULL);
+          TtaExportDocumentWithNewLineNumbers (doc, localFile, NULL);
           break;
         }
-      
+
       TtaCloseUndoSequence (doc);
       TtaUndoNoRedo (doc);
       TtaClearUndoHistory (doc);
-    }
+      RemoveParsingErrors (doc);
 
-  if (!alreadyViewing)
-    {
-      // Open the instance
-      TtaExtractName (instancePath, DirectoryName, DocumentName);
+#ifndef IV
+      GetAmayaDoc (instancePath, NULL, basedoc, basedoc, CE_INSTANCE,
+                   !DontReplaceOldDoc, NULL, NULL);
+      TtaSetDocumentModified (newdoc);
+#else
       CallbackDialogue (BaseDialog + OpenForm, INTEGER_DATA, (char *) 1);
+#endif
     }
-  else
-    {
-      // Reload on the existing view
-      Reload (alreadyOnDoc, 0);
-    }
+  TtaFreeMemory (localFile);
 #endif /* TEMPLATES */
 }
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-void InstantiateTemplate_callback (int newdoc, int status,  char *urlName, char *outputfile,
-				   char *proxyName, AHTHeaders *http_headers, void * context)
+void InstantiateTemplate_callback (int newdoc, int status,  char *urlName,
+                                   char *outputfile,
+                                   char *proxyName, AHTHeaders *http_headers,
+                                   void * context)
 {
 #ifdef TEMPLATES
-	InstantiateCtxt *ctx = (InstantiateCtxt*)context;
+  InstantiateCtxt *ctx = (InstantiateCtxt*)context;
 
-	DoInstanceTemplate (ctx->templatePath);
-  CreateInstance (ctx->templatePath, ctx->instancePath);
+  DoInstanceTemplate (ctx->templatePath);
+  CreateInstance (ctx->templatePath, ctx->instancePath, ctx->doc);
   TtaFreeMemory (ctx->templatePath);
   TtaFreeMemory (ctx->instancePath);
   TtaFreeMemory (ctx);
@@ -169,23 +177,25 @@ void InstantiateTemplate (Document doc, char *templatename, char *docname,
                           DocumentType docType, ThotBool loaded)
 {
 #ifdef TEMPLATES
-	if (!loaded)
+  if (!loaded)
     {
       // Create the callback context
       InstantiateCtxt *ctx = (InstantiateCtxt *)TtaGetMemory (sizeof (InstantiateCtxt));
       ctx->templatePath	= TtaStrdup (templatename);
       ctx->instancePath	= TtaStrdup (docname);
       ctx->schemaName = GetSchemaFromDocType(docType);
+      ctx->doc = doc;
       ctx->docType = docType;
-		
+
       GetAmayaDoc (templatename, NULL, doc, doc, CE_MAKEBOOK, FALSE, 
-                   (void (*)(int, int, char*, char*, char*, const AHTHeaders*, void*)) InstantiateTemplate_callback,
+                   (void (*)(int, int, char*, char*, char*,
+                             const AHTHeaders*, void*)) InstantiateTemplate_callback,
                    (void *) ctx);
     }
-	else
+  else
     {
       DoInstanceTemplate (templatename);
-      CreateInstance (templatename, docname);
+      CreateInstance (templatename, docname, doc);
     }  
 #endif /* TEMPLATES */
 }
@@ -308,7 +318,7 @@ Element Template_GetNewSimpleTypeInstance(Document doc, Element parent, Declarat
   ElementType       elType;
   char             *empty = " ";
 
-  elType.ElSSchema = TtaGetSSchema(TEMPLATE_SSHEMA_NAME, doc);
+  elType.ElSSchema = TtaGetSSchema("Template", doc);
   elType.ElTypeNum = Template_EL_TEXT_UNIT;
   newEl = TtaNewElement (doc, elType);
   TtaSetTextContent (newEl, (unsigned char*) empty, 0, doc);
@@ -340,6 +350,51 @@ Element Template_GetNewXmlElementInstance(Document doc, Element parent, Declarat
   return newEl;
 }
 
+
+/*----------------------------------------------------------------------
+  InsertWithNotify applies pre and post functions when inserting the new
+  element el after child (if not NULL) or as first child of parent.
+  ----------------------------------------------------------------------*/
+Element InsertWithNotify (Element el, Element child, Element parent, Document doc)
+{
+  ElementType      elType;
+  NotifyElement    event;
+  char            *name;
+  ThotBool         isRow = FALSE, isCell = FALSE;
+
+  elType = TtaGetElementType (el);
+  name = TtaGetSSchemaName (elType.ElSSchema);
+  isCell = ((!strcmp (name,"HTML") &&
+             elType.ElTypeNum == HTML_EL_Data_cell ||
+             elType.ElTypeNum == HTML_EL_Heading_cell) ||
+            (!strcmp (name,"MathML") && elType.ElTypeNum == MathML_EL_MTD));
+  isRow = ((!strcmp (name,"HTML") && elType.ElTypeNum == HTML_EL_Table_row) ||
+           (!strcmp (name,"MathML") &&
+            (elType.ElTypeNum == MathML_EL_MTR ||
+             elType.ElTypeNum == MathML_EL_MLABELEDTR)));
+  if (child)
+    TtaInsertSibling (el, child, FALSE, doc);
+  else
+    TtaInsertFirstChild (&el, parent, doc);
+
+  if (isCell)
+    {
+      // a cell is created
+      NewCell (el, doc, TRUE, TRUE, TRUE);
+    }
+  else if (isRow)
+    {
+      // a row is created
+      event.element = el;
+      event.document = doc;
+      RowPasted (&event);
+    }
+  //else
+  // TtaNotifySubTree (TteElemNew, doc, el, FALSE);
+  return el;
+}
+
+
 /*----------------------------------------------------------------------
   Template_InsertUseChildren
   Insert children to a xt:use
@@ -351,10 +406,10 @@ Element Template_GetNewXmlElementInstance(Document doc, Element parent, Declarat
   ----------------------------------------------------------------------*/
 Element Template_InsertUseChildren(Document doc, Element el, Declaration dec)
 {
-  Element     newEl   = NULL;
+  Element     newEl = NULL;
 #ifdef TEMPLATES
   Element     current = NULL;
-  Element     child   = NULL;
+  Element     child = NULL;
   //char       *attrCurrentTypeValue;
   //ElementType elType;
   
@@ -364,24 +419,20 @@ Element Template_InsertUseChildren(Document doc, Element el, Declaration dec)
     {
       case SimpleTypeNat:
         newEl = Template_GetNewSimpleTypeInstance(doc, el, dec);
-        TtaInsertFirstChild (&newEl, el, doc);
+        newEl = InsertWithNotify (newEl, NULL, el, doc);
         break;
       case XmlElementNat:
         newEl = Template_GetNewXmlElementInstance(doc, el, dec);
-        TtaInsertFirstChild (&newEl, el, doc);
+        newEl = InsertWithNotify (newEl, NULL, el, doc);
         break;
       case ComponentNat:
         newEl = TtaCopyTree(dec->componentType.content, doc, doc, el);
-        ProcessAttr (dec->declaredIn, newEl, doc);
-        
+        ProcessAttr (dec->usedIn, newEl, doc);        
         /* Copy elements from new use to existing use. */
-        while((child = TtaGetFirstChild(newEl)))
+        while ((child = TtaGetFirstChild(newEl)))
         {
           TtaRemoveTree (child, doc);
-          if (current)
-            TtaInsertSibling (child, current, FALSE, doc);
-          else
-            TtaInsertFirstChild (&child, el, doc);      
+          child = InsertWithNotify (child, current, el, doc);
           current = child; 
         }
         
@@ -411,9 +462,91 @@ Element Template_InsertUseChildren(Document doc, Element el, Declaration dec)
         //Impossible
         break;   
     }
+    Template_FixAccessRight (dec->usedIn, el, doc);
+    TtaUpdateAccessRightInViews (doc, el);    
   }  
 #endif /* TEMPLATES */
   return newEl;
+}
+
+
+/*----------------------------------------------------------------------
+  Fix access rights.
+  ----------------------------------------------------------------------*/
+void Template_FixAccessRight (XTigerTemplate t, Element el, Document doc)
+{
+#ifdef TEMPLATES
+  ElementType elType;
+  Element     child;
+  char        currentType[MAX_LENGTH];
+  Declaration decl;
+  
+  if (t && el && doc)
+    {
+      elType = TtaGetElementType(el);
+      if (elType.ElSSchema == TtaGetSSchema ("Template", doc))
+        {
+          switch (elType.ElTypeNum)
+            {
+            case Template_EL_TEXT_UNIT:
+              //TtaSetAccessRight( el, ReadWrite, doc);
+              return;
+            case Template_EL_useEl:
+            case Template_EL_useSimple:
+              GiveAttributeStringValueFromNum(el, Template_ATTR_currentType,
+                                              (char*)currentType, NULL);
+              decl = Template_GetDeclaration(t, currentType);
+              if (decl)
+                {
+                  switch (decl->nature)
+                    {
+                      case SimpleTypeNat:
+                      case XmlElementNat:
+                        TtaSetAccessRight (el, ReadWrite, doc);
+                        return;
+                      default:
+                        TtaSetAccessRight (el, ReadOnly, doc);
+                         break;
+                    }
+                }
+              break;
+            case Template_EL_bag:
+            case Template_EL_repeat:
+              TtaSetAccessRight(el, ReadWrite, doc);
+              break;
+            default:
+              TtaSetAccessRight(el, ReadOnly, doc);
+              break;
+            }
+        }
+
+      child = TtaGetFirstChild (el);
+      // fix access right to children
+      while (child)
+        {
+          Template_FixAccessRight (t, child, doc);
+          TtaNextSibling (&child);
+        }
+    }
+#endif /* TEMPLATES */
+}
+
+/*----------------------------------------------------------------------
+  AddPromptIndicator
+  ----------------------------------------------------------------------*/
+void AddPromptIndicator (Element el, Document doc)
+{
+#ifdef TEMPLATES
+  ElementType         elType;
+  AttributeType       attrType;
+  Attribute           att;
+
+  elType = TtaGetElementType (el);
+  attrType.AttrSSchema = elType.ElSSchema;
+  attrType.AttrTypeNum = Template_ATTR_prompt;
+  att = TtaNewAttribute (attrType);
+  TtaAttachAttribute (el, att, doc);
+#endif /* TEMPLATES */
 }
 
 /*----------------------------------------------------------------------
@@ -423,12 +556,12 @@ Element InstantiateUse (XTigerTemplate t, Element el, Document doc,
                         ThotBool registerUndo)
 {
 #ifdef TEMPLATES
-	Element          cont = NULL;
+  Element          cont = NULL;
   ElementType      elType;
   Declaration      dec;
   int              size, nbitems, i;
   struct menuType  *items;
-  char             *types;
+  char             *types, *text = NULL;
   ThotBool          oldStructureChecking;
 
   if (!t)
@@ -437,9 +570,13 @@ Element InstantiateUse (XTigerTemplate t, Element el, Document doc,
   /* get the value of the "types" attribute */
   cont = NULL;
   elType = TtaGetElementType (el);
-  types = GetAttributeStringValueFromNum(el, Template_ATTR_types, &size);
-  if (!types)
-    return NULL;
+  AddPromptIndicator (el, doc);
+  types = GetAttributeStringValueFromNum (el, Template_ATTR_types, &size);
+  if (!types || types[0] == EOS)
+    {
+      TtaFreeMemory (types);
+      return NULL;
+    }
   giveItems (types, size, &items, &nbitems);
   // No structure checking
   oldStructureChecking = TtaGetStructureChecking (doc);
@@ -451,23 +588,26 @@ Element InstantiateUse (XTigerTemplate t, Element el, Document doc,
       dec = Template_GetDeclaration (t, items[0].label);
       if (dec)
       {
-        cont = Template_InsertUseChildren(doc, el, dec);
-        if(cont)
+        cont = Template_InsertUseChildren (doc, el, dec);
+        if (cont)
         {
           TtaChangeTypeOfElement (el, doc, Template_EL_useSimple);
-          if(registerUndo)
-            TtaRegisterElementTypeChange(el, Template_EL_useEl, doc);
+          if (registerUndo)
+            TtaRegisterElementTypeChange (el, Template_EL_useEl, doc);
         }
       }
     }
-
-  TtaFreeMemory(types);
+  TtaFreeMemory (text);
+  TtaFreeMemory (types);
   
-  
-  for(i=0; i<nbitems; i++)
+  for (i = 0; i < nbitems; i++)
     TtaFreeMemory(items[i].label);
   TtaFreeMemory(items);
   TtaSetStructureChecking (oldStructureChecking, doc);
+  
+  Template_FixAccessRight (t, el, doc);
+  TtaUpdateAccessRightInViews (doc, el);
+  
   return cont;
 #else /* TEMPLATES */
   return NULL;
@@ -479,13 +619,17 @@ Element InstantiateUse (XTigerTemplate t, Element el, Document doc,
   Check for min and max param and validate xt:repeat element content.
   @param registerUndo True to register undo creation sequences.
   ----------------------------------------------------------------------*/
-void InstantiateRepeat (XTigerTemplate t, Element el, Document doc, ThotBool registerUndo)
+void InstantiateRepeat (XTigerTemplate t, Element el, Document doc,
+                        ThotBool registerUndo)
 {
 #ifdef TEMPLATES
-  int            curVal,  minVal,  maxVal;
+  Element        child, newChild;
   Attribute      curAtt,  minAtt,  maxAtt;
   AttributeType  curType, minType, maxType;
-  char           *text, *types = NULL, *title=NULL;
+  char           *text, *types = NULL, *title = NULL;
+  int            curVal,  minVal,  maxVal;
+  int            childrenCount;
+
 
   if (!t)
     return;
@@ -552,48 +696,43 @@ void InstantiateRepeat (XTigerTemplate t, Element el, Document doc, ThotBool reg
     curVal = minVal;
 
   text = (char*)TtaGetMemory(MAX_LENGTH);
-
   //Create non existing attributes
   if (!minAtt)
     {      
-      minAtt = TtaNewAttribute(minType);
-      sprintf(text,"%d",minVal);
-      TtaAttachAttribute(el, minAtt, doc);
-      TtaSetAttributeText(minAtt, text, el, doc);
+      minAtt = TtaNewAttribute (minType);
+      sprintf (text, "%d", minVal);
+      TtaAttachAttribute (el, minAtt, doc);
+      TtaSetAttributeText (minAtt, text, el, doc);
       if (registerUndo)
-        TtaRegisterAttributeCreate(minAtt, el, doc);
+        TtaRegisterAttributeCreate (minAtt, el, doc);
     }
 
   if (!maxAtt)
     {  
-      maxAtt = TtaNewAttribute(maxType);
-      if (maxVal<INT_MAX)
-        sprintf(text,"%d",maxVal);
+      maxAtt = TtaNewAttribute (maxType);
+      if (maxVal < INT_MAX)
+        sprintf(text, "%d", maxVal);
       else
-        sprintf(text,"*");
-      TtaAttachAttribute(el, maxAtt, doc);      
-      TtaSetAttributeText(maxAtt, text, el, doc);
+        sprintf (text, "*");
+      TtaAttachAttribute (el, maxAtt, doc);      
+      TtaSetAttributeText (maxAtt, text, el, doc);
       if (registerUndo)
-        TtaRegisterAttributeCreate(maxAtt, el, doc);
+        TtaRegisterAttributeCreate (maxAtt, el, doc);
     }
 
   if (!curAtt)
     {
-      curAtt = TtaNewAttribute(curType);
-      sprintf(text,"%d",curVal);
-      TtaAttachAttribute(el, curAtt, doc);
-      TtaSetAttributeText(curAtt, text, el, doc);
+      curAtt = TtaNewAttribute (curType);
+      sprintf (text,"%d",curVal);
+      TtaAttachAttribute (el, curAtt, doc);
+      TtaSetAttributeText (curAtt, text, el, doc);
       if (registerUndo)
-        TtaRegisterAttributeCreate(curAtt, el, doc);
+        TtaRegisterAttributeCreate (curAtt, el, doc);
     }
-
   if (text)
     TtaFreeMemory(text);
 
   //We must have currentOccurs children
-  Element  child, newChild;
-  int      childrenCount;
-
   child = TtaGetFirstChild(el);
   if (!child)
     //Error : a repeat must have at least one child which will be the model
@@ -610,32 +749,32 @@ void InstantiateRepeat (XTigerTemplate t, Element el, Document doc, ThotBool reg
     return;  
 
   child = TtaGetLastChild(el);
-  types = GetAttributeStringValueFromNum(child, Template_ATTR_types, NULL);
-  title = GetAttributeStringValueFromNum(child, Template_ATTR_title, NULL);
-  
-
-  while(childrenCount < curVal)
+  types = GetAttributeStringValueFromNum (child, Template_ATTR_types, NULL);
+  title = GetAttributeStringValueFromNum (child, Template_ATTR_title, NULL);
+  while (childrenCount < curVal)
     {
       ElementType newElType;
       newElType.ElSSchema = TtaGetSSchema (TEMPLATE_SCHEMA_NAME, doc);
       newElType.ElTypeNum = Template_EL_useEl;
-      newChild = TtaNewElement(doc, newElType);
+      newChild = TtaNewElement (doc, newElType);
       
       // Insert it
-      TtaInsertSibling(newChild, child, FALSE, doc);
-      SetAttributeStringValueWithUndo(newChild, Template_ATTR_types, types);
-      SetAttributeStringValueWithUndo(newChild, Template_ATTR_title, title);
-      
-      InstantiateUse(t, newChild, doc, TRUE);
+      TtaInsertSibling (newChild, child, FALSE, doc);
+      SetAttributeStringValueWithUndo (newChild, Template_ATTR_types, types);
+      SetAttributeStringValueWithUndo (newChild, Template_ATTR_title, title);
+      InstantiateUse (t, newChild, doc, TRUE);
       
       if (registerUndo)
-        TtaRegisterElementCreate(newChild, doc);
+        TtaRegisterElementCreate (newChild, doc);
       child = newChild;
       childrenCount++;
     }
     
-    TtaFreeMemory(types);
-    TtaFreeMemory(title);
+  Template_FixAccessRight (t, el, doc);
+  TtaUpdateAccessRightInViews (doc, el);
+  
+  TtaFreeMemory (types);
+  TtaFreeMemory (title);
 #endif /* TEMPLATES */
 }
 
@@ -646,17 +785,17 @@ static void ParseTemplate (XTigerTemplate t, Element el, Document doc,
                            ThotBool loading)
 {
 #ifdef TEMPLATES
-	AttributeType attType;
-	Attribute     att;
-	Element       aux, child; //Needed when deleting trees
-	char         *name;
-	ElementType   elType = TtaGetElementType (el);
-	
-  if (!t)
+  AttributeType attType;
+  Attribute     att;
+  Element       aux, child; //Needed when deleting trees
+  char         *name;
+  ElementType   elType = TtaGetElementType (el);
+
+  if (!t || !el)
     return;
   
   name = TtaGetSSchemaName (elType.ElSSchema);
-	if (!strcmp (name, "Template"))
+  if (!strcmp (name, "Template"))
     {
       switch(elType.ElTypeNum)
         {
@@ -709,6 +848,10 @@ static void ParseTemplate (XTigerTemplate t, Element el, Document doc,
           /* if this use element is not empty, don't do anything: it is
              supposed to contain a valid instance. This should be
              checked, though */
+          if (DocumentMeta[doc] && DocumentMeta[doc]->isTemplate)
+            // add the initial indicator
+            AddPromptIndicator (el, doc);
+            
           if (!TtaGetFirstChild (el))
             InstantiateUse (t, el, doc, FALSE);
           break;
@@ -723,9 +866,9 @@ static void ParseTemplate (XTigerTemplate t, Element el, Document doc,
           break;
         }
     }
-	
-	child = TtaGetFirstChild (el);
-	while (child)
+
+  child = TtaGetFirstChild (el);
+  while (child)
     {
       aux = child;
       TtaNextSibling (&aux);
@@ -740,21 +883,21 @@ static void ParseTemplate (XTigerTemplate t, Element el, Document doc,
 void DoInstanceTemplate (char *templatename)
 {
 #ifdef TEMPLATES
-	XTigerTemplate	t;
-	ElementType		  elType;
-	Element			    root, piElem, doctype, elFound, text;
-	char		        *s, *charsetname = NULL, buffer[MAX_LENGTH];
+  XTigerTemplate  t;
+  ElementType     elType;
+  Element         root, piElem, doctype, elFound, text;
+  char           *s, *charsetname = NULL, buffer[MAX_LENGTH];
   int             pi_type;
   Document        doc;
 
-	//Instantiate all elements
-	t = (XTigerTemplate) Dictionary_Get (Templates_Dic, templatename);
+  //Instantiate all elements
+  t = GetXTigerTemplate(templatename);
   if (!t)
     return;
-  
+
   doc = GetTemplateDocument (t);
-	root =	TtaGetMainRoot (doc);
-	ParseTemplate (t, root, doc, FALSE);
+  root =	TtaGetMainRoot (doc);
+  ParseTemplate (t, root, doc, FALSE);
 
   //Look for PIs
   /* check if the document has a DOCTYPE declaration */
@@ -812,7 +955,7 @@ void DoInstanceTemplate (char *templatename)
   TtaSetStructureChecking (FALSE, doc);
   elType.ElTypeNum = pi_type;
   piElem = TtaNewTree (doc, elType, "");
-  TtaInsertSibling(piElem, doctype, FALSE, doc);
+  TtaInsertSibling (piElem, doctype, FALSE, doc);
   elFound = TtaGetFirstChild (piElem);
   text = TtaGetFirstChild (elFound);
   strcpy (buffer, "xtiger template=\"");
@@ -833,7 +976,7 @@ void DoInstanceTemplate (char *templatename)
   TtaSetStructureChecking (TRUE, doc);
 
   // update the document title
-	if (!strcmp (s, "HTML"))
+  if (!strcmp (s, "HTML"))
     {
       elType.ElTypeNum = HTML_EL_TITLE;
       elFound = TtaSearchTypedElement (elType, SearchInTree, root);
@@ -848,22 +991,25 @@ void DoInstanceTemplate (char *templatename)
 }
 
 /*----------------------------------------------------------------------
-  PreInstantiateComponents: Instantiates all components in order to improve
-  editing.
+  Template_PreInstantiateComponents: Instantiates all components in 
+  order to improve editing.
   ----------------------------------------------------------------------*/
-void PreInstantiateComponents (XTigerTemplate t)
+void Template_PreInstantiateComponents (XTigerTemplate t)
 {
 #ifdef TEMPLATES 
   if (!t)
     return;
 
-  DicDictionary components = GetComponents(t);
-  Declaration comp;
+  HashMap         components = GetComponents(t);
+  ForwardIterator iter = HashMap_GetForwardIterator(components);
+  Declaration     comp;
+  HashMapNode     node;
 
-  for(Dictionary_First(components);!Dictionary_IsDone(components);Dictionary_Next(components))
+  ITERATOR_FOREACH(iter, HashMapNode, node)
     {
-      comp = (Declaration) Dictionary_CurrentElement(components);
+      comp = (Declaration) node->elem;
       ParseTemplate(t, GetComponentContent(comp), GetTemplateDocument(t), TRUE);
     }
+  TtaFreeMemory(iter);
 #endif /* TEMPLATES */
 }

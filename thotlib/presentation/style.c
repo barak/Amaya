@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -777,6 +777,9 @@ static PtrPRule *FirstPresAttrRuleSearch (PtrPSchema tsch, int attrType,
               else if (attrVal == NULL &&
                        attrs->ApString == NULL)
                 ppRule = &(attrs->ApTextFirstPRule);
+              else if (attrVal == NULL)
+                /* this new rule is less specific and should be added before */
+                return (ppRule);
               break;
             case AtReferenceAttr:
               ppRule = &(attrs->ApRefFirstPRule);
@@ -938,7 +941,9 @@ static int TstRuleContext (PtrPRule rule, GenericContext ctxt,
     /* the rule is associated to an attribute */
     {
       nbCtxtCond += ctxt->nbElem;
-      if (ctxt->name[0] > AnyType + 1)
+      if (ctxt->name[0] > AnyType + 1 ||
+          (firstCond && firstCond->CoCondition == PcElemType &&
+           firstCond->CoTypeElem == ctxt->name[0]))
         nbCtxtCond++;
       /* count the number of conditions in the context */
       for (i = 1; i <= MAX_ANCESTORS && ctxt->attrType[i]; i++)
@@ -1436,6 +1441,29 @@ static void PresentationValueToPRule (PresentationValue val, int type,
           break;
         case WeightBold:
           rule->PrChrValue = 'B';
+          break;
+        default:
+          rule->PrChrValue = 'N';
+          break;	   
+        }
+      break;
+    case PtVariant:
+      switch (value)
+        {
+        case VariantNormal:
+          rule->PrChrValue = 'N';
+          break;
+        case VariantSmallCaps:
+          rule->PrChrValue = 'C';
+          break;
+        case VariantDoubleStruck:
+          rule->PrChrValue = 'D';
+          break;
+        case VariantFraktur:
+          rule->PrChrValue = 'F';
+          break;
+        case VariantScript:
+          rule->PrChrValue = 'S';
           break;
         default:
           rule->PrChrValue = 'N';
@@ -2154,6 +2182,30 @@ static PresentationValue PRuleToPresentationValue (PtrPRule rule)
         }
       break;
 
+    case PtVariant:
+      switch (rule->PrChrValue)
+        {
+        case 'N':
+          value = VariantNormal;
+          break;
+        case 'C':
+          value = VariantSmallCaps;
+          break;
+        case 'D':
+          value = VariantDoubleStruck;
+          break;
+        case 'F':
+          value = VariantFraktur;
+          break;
+        case 'S':
+          value = VariantScript;
+          break;
+        default:
+          value = VariantNormal;
+          break;
+        }
+      break;
+
     case PtUnderline:
       switch (rule->PrChrValue)
         {
@@ -2737,6 +2789,9 @@ static void TypeToPresentation (unsigned int type, PRuleType *intRule,
     case PRWeight:
       *intRule = PtWeight;
       break;
+    case PRVariant:
+      *intRule = PtVariant;
+      break;
     case PRFont:
       *intRule = PtFont;
       break;
@@ -3173,6 +3228,9 @@ void PRuleToPresentationSetting (PtrPRule rule, PresentationSetting setting,
       break;
     case PtWeight:
       setting->type = PRWeight;
+      break;
+    case PtVariant:
+      setting->type = PRVariant;
       break;
     case PtUnderline:
       setting->type = PRUnderline;
@@ -3845,6 +3903,26 @@ void TtaPToCss (PresentationSetting settings, char *buffer, int len,
           break;
         case WeightNormal:
           strcpy (buffer, "font-weight: normal");
+          break;
+        }
+      break;
+    case PRVariant:
+      switch (settings->value.typed_data.value)
+        {
+        case VariantNormal:
+          strcpy (buffer, "font-variant: normal");
+          break;
+        case VariantSmallCaps:
+          strcpy (buffer, "font-variant: small-caps");
+          break;
+        case VariantDoubleStruck:
+          strcpy (buffer, "font-variant: double-struck");
+          break;
+        case VariantFraktur:
+          strcpy (buffer, "font-variant: fraktur");
+          break;
+        case VariantScript:
+          strcpy (buffer, "font-variant: script");
           break;
         }
       break;

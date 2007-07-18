@@ -57,7 +57,8 @@ static ThotBool IsLargeOp (CHAR_T character, char script)
       character == 0x2297 || /* CircleTimes */
       character == 0x2210 || /* Coproduct */
       character == 0x220F || /* Product */
-      character == 0x22C2 ) /* Intersection */
+      character == 0x22C2 || /* Intersection */
+      character == 0x2299 )  /* CircleDot */
     /* it's a large operator */
     return TRUE;
   else
@@ -74,8 +75,10 @@ static ThotBool IsStretchyFence (CHAR_T character, char script)
   if (((character == '(' || character == ')' ||
         character == '[' || character == ']' ||
         character == '{' || character == '}' ||
-        character == '|'))  ||   /* strangely enough, appendix F.5 does not
-                                    consider this character as a fence */
+        character == '|' || character == 0x2223  ||
+        character == 0x2956))  ||
+      /* strangely enough, appendix F.5 does not
+         consider this character as a fence */
       (
        (character == 0x2329 || /* LeftAngleBracket */
         character == 0x27E8 || /* MathematicalLeftAngleBracket */
@@ -973,21 +976,154 @@ void SetSingleIntHorizStretchAttr (Element el, Document doc, Element* selEl)
                           len = 2;
                           TtaGiveBufferContent (textEl, text, len, &lang);
                           script = TtaGetScript (lang);
-                          if (text[0] == '-' || text[0] == '_' || text[0] == 0xAF ||
-                              text[0] == 0x0332 || text[0] == 0x2212)
-                            /* a horizontal line in the middle of the box */
-                            c = 'h'; 
-                          else if (text[0] == 0x302)
-                            c = 'H'; /* Hat */
-                          else  if (text[0] == 0x2190)
-                            c = 'L';  /* arrow left */
-                          else if (text[0] == 0x2192)
-                            c = 'R';  /* arrow right */
-                          else if (text[0] == 0xFE37)
-                            c = 'o';  /* Over brace */
-                          else if (text[0] == 0xFE38)
-                            c = 'u';  /* Under brace */
-                          if (c != EOS)
+                          switch(text[0])
+                            {
+                            case 0x2500: /* HorizontalLine */
+                              c = 8; 
+                            break;
+                            case 0x0332: /* UnderBar */
+                              c = 9;
+                            break;
+                            case 0xAF: /* OverBar */
+                              c = 10;
+                            break;
+                            case 0x302:
+                              c = 'H'; /* Hat */
+                            break;
+                            case 0x2C7:
+                              c = 'k'; /* Hacek */
+                            break;
+                            case 0x2DC:
+                              c = 'T'; /* Diacritical Tilde */
+                            break;
+                            case 0xFE37:
+                              c = 'o';  /* Over brace */
+                            break;
+                            case 0xFE38:
+                              c = 'u';  /* Under brace */
+                            break;
+                            case 0xFE35:
+                              c = 'p';  /* Over parenthesis */
+                            break;
+                            case 0xFE36:
+                              c = 'q';  /* Under parenthesis */
+                            break;
+                            case 0x23B4:
+                              c = 'b';  /* Over bracket */
+                            break;
+                            case 0x23B5:
+                              c = 'B';  /* Under bracket */
+                            break;
+
+                            case 0x2190: /* LeftArrow */
+                              c = 'L';
+                            break;
+                            case 0x2192: /* RightArrow */
+                              c = 'R';
+                            break;
+                            case 0x2194: /* LeftRightArrow */
+                              c = 'A';
+                            break;
+                            case 0x21A4: /* LeftTeeArrow */
+                              c = 160;
+                            break;
+                            case 0x21A6: /* RightTeeArrow */
+                              c = 162;
+                            break;
+                            case 0x21BC: /* LeftVector */
+                              c = 164;
+                            break;
+                            case 0x21BD: /* DownLeftVector */
+                              c = 165;
+                            break;
+                            case 0x21C0: /* RightVector */
+                              c = 168;
+                            break;
+                            case 0x21C1: /* DownRightVector */
+                              c = 169;
+                            break;
+                            case 0x21C4: /* RightArrowLeftArrow */
+                              c = 172;
+                            break;
+                            case 0x21C6: /* LeftArrowRightArrow */
+                              c = 174;
+                            break;
+                            case 0x21D0: /* DoubleLeftArrow */
+                              c = 175;
+                            break;
+                            case 0x21D2: /* DoubleRightArrow */
+                              c = 177;
+                            break;
+                            case 0x21D4: /* DoubleLeftRightArrow */
+                              c = 179;
+                            break;
+                            case 0x21E4: /* LeftArrowBar */
+                              c = 181;
+                            break;
+                            case 0x21E5: /* RightArrowBar */
+                              c = 182;
+                            break;
+                            case 0x27F5: /* LongLeftArrow */
+                              c = 184;
+                            break;
+                            case 0x27F6: /* LongRightArrow */
+                              c = 185;
+                            break;
+                            case 0x27F7: /* LongLeftRightArrow */
+                              c = 186;
+                            break;
+                            case 0x27F8: /* DoubleLongLeftArrow */
+                              c = 187;
+                            break;
+                            case 0x27F9: /* DoubleLongRightArrow */
+                              c = 188;
+                            break;
+                            case 0x27FA: /* DoubleLongLeftRightArrow */
+                              c = 189;
+                            break;
+                            case 0x294E : /* LeftRightVector */
+                              c = 192;
+                            break;
+                            case 0x2950: /* DownLeftRightVector */
+                              c = 194;
+                            break;
+                            case 0x2952: /* LeftVectorBar */
+                              c = 196;
+                            break;
+                            case 0x2953: /* RightVectorBar */
+                              c = 197;
+                            break;
+                            case 0x2956: /* DownLeftVectorBar */
+                              c = 200;
+                            break;
+                            case 0x2957: /* DownRightVectorBar */
+                              c = 201;
+                            break;
+                            case 0x295A: /* LeftTeeVector */
+                              c = 204;
+                            break;
+                            case 0x295B: /* RightTeeVector */
+                              c = 205;
+                            break;
+                            case 0x295E: /* DownLeftTeeVector */
+                              c = 208;
+                            break;
+                            case 0x295F: /* DownRightTeeVector */
+                              c = 209;
+                            break;
+                            case 0x21CC: /* Equilibrium */
+                              c = 214;
+                            break;
+                            case 0x21CB: /* ReverseEquilibrium */
+                              c = 215;
+                            break;
+
+                            default:
+                            break;
+                            }
+
+                          if (c != EOS ||
+                              (text[0] >= 0x2196 && text[0] <= 0x2199)) /* diagonal arrows */
                             doit = TRUE;
                         }
                     }
@@ -1178,12 +1314,40 @@ void SetIntVertStretchAttr (Element el, Document doc, int base, Element* selEl)
                   script = TtaGetScript (lang);
                   stretchable = TRUE;
                   for (i = 0; i < len; i++)
-                    if ((text[i] < 0x222B || text[i] > 0x2233) &&
-                        text[i] != 0x2191 && text[i] != 0x2193 &&
-                        text[i] != 0x2195 &&
-                        text[i] != 0x21D1 && text[i] != 0x21D3 &&
-                        text[i] != 0x21D5)
-                      /* accept only symbols like simple integral, double or
+                    if (!(
+                       (text[i] >= 0x222B && text[i] <= 0x2233) || /* Integrals */
+                       text[i] == 0x2191  || /* UpArrow */
+                       text[i] == 0x2193  || /* DownArrow */
+                       text[i] == 0x2195 || /* UpDownArrow */
+                       (text[i] >= 0x2196 && text[i] <= 0x2199) || /* diagonal arrows */
+                       text[i] == 0x21A5 || /* UpTeeArrow */
+                       text[i] == 0x21A7 || /* DownTeeArrow */
+                       text[i] == 0x21BE || /* RightUpVector */
+                       text[i] == 0x21BF || /* LeftUpVector */
+                       text[i] == 0x21C2 || /* RightDownVector */
+                       text[i] == 0x21C3 || /* LeftDownVector */
+                       text[i] == 0x21C5 || /* UpArrowDownArrow */
+                       text[i] == 0x21D1 || /* DoubleUpArrow */
+                       text[i] == 0x21D3 || /* DoubleDownArrow */
+                       text[i] == 0x21D5 || /* DoubleUpDownArrow */
+                       text[i] == 0x21F5 || /* DownArrowUpArrow */
+                       text[i] == 0x2912 || /* UpArrowBar */
+                       text[i] == 0x2913 || /* DownArrowBar */
+                       text[i] == 0x294F || /* RightUpDownVector */
+                       text[i] == 0x2951 || /* LeftUpDownVector */
+                       text[i] == 0x2954 || /* RightUpVectorBar */
+                       text[i] == 0x2955 || /* RightDownVectorBar */
+                       text[i] == 0x2958 || /* LeftUpVectorBar */
+                       text[i] == 0x2959 || /* LeftDownVectorBar */
+                       text[i] == 0x295C || /* RightUpTeeVector */
+                       text[i] == 0x295D || /* RightDownTeeVector */
+                       text[i] == 0x2960 || /* LeftUpTeeVector */
+                       text[i] == 0x2961 || /* LeftDownTeeVector */
+                       text[i] == 0x296E || /* UpEquilibrium */
+                       text[i] == 0x296F || /* ReverseUpEquilibrium */
+                       text[i] == 0x2758 || /* VerticalSeparator */
+                       text[i] == 0x2223    /* VerticalSeparator */
+                       ))/* accept only symbols like simple integral, double or
                          triple integral, contour integral, etc. or vertical
                          arrows (add more arrows *****) */
                       stretchable = FALSE;
@@ -1201,19 +1365,145 @@ void SetIntVertStretchAttr (Element el, Document doc, int base, Element* selEl)
                           elType.ElTypeNum = MathML_EL_SYMBOL_UNIT;
                           for (i = 0; i < len; i++)
                             {
-                              c = (unsigned char) text[i];
-                              if (text[i] == 0x222B)
-                                c = 'i';
-                              else if (text[i] == 0x222C)
-                                c = 'd';
-                              else if (text[i] == 0x222D)
-                                c = 't';
-                              else if (text[i] == 0x222E)
-                                c = 'c';
-                              else if (text[i] == 0x2191)
-                                c = '^';
-                              else if (text[i] == 0x2193)
-                                c = 'V';
+                              switch(text[i])
+                                {
+                                case 0x222B: /* integral */
+                                  c = 'i';
+                                break;
+                                case 0x222C: /* double integral */
+                                  c = 'd';
+                                break;
+                                case 0x222D: /* triple integral */
+                                  c = 't';
+                                break;
+                                case 0x222E: /* contour integral */
+                                  c = 'c';
+                                break;
+                                case 0x222F: /* double contour integral */
+                                  c = 'e';
+                                break;
+                                case 0x2230: /* triple contour integral */
+                                  c = 'f';
+                                break;
+                                case 0x2231: /* Clockwise Integral */
+                                  c = '1';
+                                break;
+                                case 0x2232: /* Clockwise Contour Integral */
+                                  c = '2';
+                                break;
+                                case 0x2233: /* Counter Clockwise Contour Integral */
+                                  c = '3';
+                                break;
+
+                                case 0x2191: /* UpArrow */
+                                  c = '^';
+                                break;
+                                case 0x2193: /* DownArrow */
+                                  c = 'V';
+                                break;
+                                case 0x2195: /* UpDownArrow */
+                                  c = 155;
+                                break;
+                                case 0x2196: /* UpperLeftArrow */
+                                  c = 156;
+                                break;
+                                case 0x2197: /* UpperRightArrow */
+                                  c = 157;
+                                break;
+                                case 0x2198: /* LowerRightArrow */
+                                  c = 158;
+                                break;
+                                case 0x2199: /* LowerLeftArrow */
+                                  c = 159;
+                                break;
+                                case 0x21A5: /* UpTeeArrow */
+                                  c = 161;
+                                break;
+                                case 0x21A7: /* DownTeeArrow */
+                                  c = 163;
+                                break;
+                                case 0x21BE: /* RightUpVector */
+                                  c = 166;
+                                break;
+                                case 0x21BF: /* LeftUpVector */
+                                  c = 167;
+                                break;
+                                case 0x21C2: /* RightDownVector */
+                                  c = 170;
+                                break;
+                                case 0x21C3: /* LeftDownVector */
+                                  c = 171;
+                                break;
+                                case 0x21C5: /* UpArrowDownArrow */
+                                  c = 173;
+                                break;
+                                case 0x21D1: /* DoubleUpArrow */
+                                  c = 176;
+                                break;
+                                case 0x21D3: /* DoubleDownArrow */
+                                  c = 178;
+                                break;
+                                case 0x21D5: /* DoubleUpDownArrow */
+                                  c = 180;
+                                break;
+                                case 0x21F5: /* DownArrowUpArrow */
+                                  c = 183;
+                                break;
+                                case 0x2912: /* UpArrowBar */
+                                  c = 190;
+                                break;
+                                case 0x2913 : /* DownArrowBar */
+                                  c = 191;
+                                break;
+                                case 0x294F: /* RightUpDownVector */
+                                  c = 193;
+                                break;
+                                case 0x2951: /* LeftUpDownVector */
+                                  c = 195;
+                                break;
+                                case 0x2954: /* RightUpVectorBar */
+                                  c = 198;
+                                break;
+                                case 0x2955: /* RightDownVectorBar */
+                                  c = 199;
+                                break;
+                                case 0x2958: /* LeftUpVectorBar */
+                                  c = 202;
+                                break;
+                                case 0x2959: /* LeftDownVectorBar */
+                                  c = 203;
+                                break;
+                                case 0x295C: /* RightUpTeeVector */
+                                  c = 206;
+                                break;
+                                case 0x295D: /* RightDownTeeVector */
+                                  c = 207;
+                                break;
+                                case 0x2960: /* LeftUpTeeVector */
+                                  c = 210;
+                                break;
+                                case 0x2961: /* LeftDownTeeVector */
+                                  c = 211;
+                                break;
+                                case 0x296E: /* UpEquilibrium */
+                                  c = 212;
+                                break;
+                                case 0x296F: /* ReverseUpEquilibrium */
+                                  c = 213;
+                                break;
+                                case 0x2758: /* VerticalSeparator */
+                                  c = 7;
+                                case 0x2223: /* VerticalBar */
+                                  c = 11;
+                                break;
+                                case 0x2956: /* DoubleVerticalBar */
+                                  c = 12;
+                                break;
+
+                                default:
+                                  c = (unsigned char) text[i];
+                                break;
+                                }
                               symbolEl = TtaNewElement (doc, elType);
                               TtaSetGraphicsShape (symbolEl, c, doc);
                               TtaInsertSibling (symbolEl, textEl, TRUE,doc);
@@ -1251,6 +1541,8 @@ void SetIntVertStretchAttr (Element el, Document doc, int base, Element* selEl)
                                           text[0] != 0x222C &&
                                           text[0] != 0x222D &&
                                           text[0] != 0x222E &&
+                                          text[0] != 0x222F &&
+                                          text[0] != 0x2230 &&
                                           text[0] != 0x2191 &&
                                           text[0] != 0x2193)
                                         /* not a stretchable symbol */
@@ -1986,6 +2278,7 @@ void SetIntAddSpaceAttr (Element el, Document doc)
                     (int)text[0] == 0x2209 || /* Not an element of */
                     (int)text[0] == 0x2220 || /* Angle */
                     (int)text[0] == 0x2207 || /* Nabla */
+                    (int)text[0] == 0x2223 || /* Vertical bar */
                     (int)text[0] == 0x2227 || /* and */
                     (int)text[0] == 0x2228 || /* or */
                     (int)text[0] == 0x2190 || /* left arrow */
@@ -2111,10 +2404,22 @@ void      CheckFence (Element el, Document doc)
                             }
                           /* create a new content for the MF element */
                           elType.ElTypeNum = MathML_EL_SYMBOL_UNIT;
-                          if (text[0] == 9002)
-                            c = '>';    /* RightAngleBracket */
-                          else if (text[0] == 9001)
+                          if (text[0] == 0x2329)
                             c = '<';    /* LeftAngleBracket */
+                          else if (text[0] == 0x232a)
+                            c = '>';    /* RightAngleBracket */
+                          else if (text[0] == 0x301a)
+                            c = 1;    /* LeftDoubleBracket */
+                          else if (text[0] == 0x301b)
+                            c = 2;    /* RightDoubleBracket */
+                          else if (text[0] == 0x2308)
+                            c = 3;    /* LeftCeiling */
+                          else if (text[0] == 0x2309)
+                            c = 4;    /* RightCeiling */
+                          else if (text[0] == 0x230a)
+                            c = 5;    /* LeftFloor */
+                          else if (text[0] == 0x230b)
+                            c = 6;    /* RightFloor */
                           else
                             c = (char) text[0];
                           content = TtaNewElement (doc, elType);
@@ -2154,7 +2459,7 @@ void CreateFencedSeparators (Element fencedExpression, Document doc, ThotBool re
   elType = TtaGetElementType (fencedExpression);
   attrType.AttrSSchema = elType.ElSSchema;
   attrType.AttrTypeNum = MathML_ATTR_separators;
-  text[0] = ',';	/* default value is  sparators=","  */
+  text[0] = ',';	/* default value is  separators=","  */
   text[1] = EOS;
   length = 1;
   attr = TtaGetAttribute (mfenced, attrType);
@@ -2228,8 +2533,9 @@ static void  CreateOpeningOrClosingFence (Element fencedExpression,
   Element       leaf, fence;
   AttributeType attrType;
   Attribute     attr;
-  int           length;
-  char          text[32];
+  int           length, value;
+  char          text[32], *s;
+  CHAR_T        val[2];
 
   elType = TtaGetElementType (el);
   attrType.AttrSSchema = elType.ElSSchema;
@@ -2238,23 +2544,42 @@ static void  CreateOpeningOrClosingFence (Element fencedExpression,
       text[0] = '(';    /* default value of attribute 'open' */
       attrType.AttrTypeNum = MathML_ATTR_open;
       elType.ElTypeNum = MathML_EL_OpeningFence;
+      length = 1;
     }
   else
     {
       text[0] = ')';    /* default value of attribute 'close' */
       attrType.AttrTypeNum = MathML_ATTR_close;
       elType.ElTypeNum = MathML_EL_ClosingFence;
+      length = 1;
     }
   attr = TtaGetAttribute (el, attrType);
   if (attr != NULL)
     {
       length = 31;
       TtaGiveTextAttributeValue (attr, text, &length);
-      if (length != 1)
+      if (length == 0)
         /* content of attribute open or close should be a single character */
-        text[0] = '?';
+        text[0] = SPACE;
+      else if (text[0] == START_ENTITY)
+        {
+          text[0] = '&';
+          text[length-1] = EOS;
+          if (MapXMLEntity (MATH_TYPE, &text[1], &value))
+            {
+              // convert the entity
+              val[0] = (CHAR_T) value;
+              val[1] = EOS;
+              s = (char *)TtaConvertWCToByte ((CHAR_T *)val, UTF_8);
+              strcpy (text, s);
+              TtaFreeMemory (s);
+              length = strlen (text);
+            }
+          else
+            text[length-1] = ';';
+        }
     }
-  text[1] = EOS;
+  text[length] = EOS;
   fence = TtaNewElement (doc, elType);
   TtaInsertSibling (fence, fencedExpression, open, doc);
   elType.ElTypeNum = MathML_EL_TEXT_UNIT;
@@ -3974,6 +4299,7 @@ void      MathMLElementComplete (ParserData *context, Element el, int *error)
             /* empty <mtext>. It will have to be parsed when the user enters
                some content */
             SetAttrParseMe (el, doc);
+          break;
         case MathML_EL_MI:
           if (TtaGetFirstChild (el) == NULL)
             /* empty <mi> Replace it by an empty Construct */
@@ -4235,7 +4561,7 @@ void SetFontfamily (Document doc, Element el, char *value)
   char           css_command[buflen+20];
  
   sprintf (css_command, "font-family: %s", value);
-  ParseHTMLSpecificStyle (el, css_command, doc, 0, FALSE);
+  ParseHTMLSpecificStyle (el, css_command, doc, 2000, FALSE);
 }
 
 /*----------------------------------------------------------------------
@@ -4255,7 +4581,7 @@ void MathMLlinethickness (Document doc, Element el, char *value)
   else if (strcmp (value, "thick") == 0)
     strcpy (value, "2pt");
   sprintf (css_command, "stroke-width: %s", value);
-  ParseHTMLSpecificStyle (el, css_command, doc, 0, FALSE);
+  ParseHTMLSpecificStyle (el, css_command, doc, 2000, FALSE);
 }
 
 /*----------------------------------------------------------------------
@@ -4305,7 +4631,7 @@ void MathMLAttrToStyleProperty (Document doc, Element el, char *value,
         }
       break;
     }
-  ParseHTMLSpecificStyle (el, css_command, doc, 0, FALSE);
+  ParseHTMLSpecificStyle (el, css_command, doc, 2000, FALSE);
 }
 
 /*----------------------------------------------------------------------
@@ -4626,10 +4952,10 @@ void MathMLAttributeComplete (Attribute attr, Element el, Document doc)
               depAttrType.AttrSSchema = attrType.AttrSSchema ;
               depAttrType.AttrTypeNum = MathML_ATTR_mathcolor;
               if (!TtaGetAttribute (el, depAttrType))
-                HTMLSetForegroundColor (doc, el, 0, value);
+                HTMLSetForegroundColor (doc, el, 2000, value);
               break;
             case MathML_ATTR_mathcolor:
-              HTMLSetForegroundColor (doc, el, 0, value);
+              HTMLSetForegroundColor (doc, el, 2000, value);
               break;
             case MathML_ATTR_background_:
               /* deprecated attribute */
@@ -4638,10 +4964,10 @@ void MathMLAttributeComplete (Attribute attr, Element el, Document doc)
               depAttrType.AttrSSchema = attrType.AttrSSchema;
               depAttrType.AttrTypeNum = MathML_ATTR_mathbackground;
               if (!TtaGetAttribute (el, depAttrType))
-                HTMLSetBackgroundColor (doc, el, 0, value);
+                HTMLSetBackgroundColor (doc, el, 2000, value);
               break;
             case MathML_ATTR_mathbackground:
-              HTMLSetBackgroundColor (doc, el, 0, value);
+              HTMLSetBackgroundColor (doc, el, 2000, value);
               break;
             case MathML_ATTR_fontfamily:
               SetFontfamily (doc, el, value);

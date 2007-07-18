@@ -1,9 +1,7 @@
-readme_right_path.diff
-installdir_amaya.diff
+cflags_cleanup.diff
 rdf_conf_in_conf.diff
-raptor_split.diff
+raptor.diff
 enable_system_libwww.diff
-no_cextract.diff
-no_esstix.diff
-no_libpng_libjpeg.diff
-fix_ftbs64.diff
+security_fix.diff
+fix_ftbfs64_again.diff
+xdg_comply.diff

@@ -85,6 +85,7 @@ static ThotBool TtAppVersion_IsInit = FALSE;
 #include "appdialogue_tv.h"
 #include "platform_tv.h"
 #include "thotcolor_tv.h"
+#include "attrmenu.h"
 
 #ifdef _WX
 #include "AmayaWindow.h"
@@ -103,6 +104,7 @@ static ThotBool TtAppVersion_IsInit = FALSE;
 #include "absboxes_f.h"
 #include "appdialogue_f.h"
 #include "applicationapi_f.h"
+#include "attrmenu_f.h"
 #include "boxlocate_f.h"
 #include "boxparams_f.h"
 #include "boxselection_f.h"
@@ -1715,8 +1717,9 @@ void TtaSetStatus (Document document, View view, char *text, char *name)
 void TtaSetStatusSelectedElement(Document document, View view, Element elem)
 {
 #ifdef _WX
-  AmayaWindow  *window;
-  int           frame;
+  AmayaWindow    *window;
+  AmayaStatusBar *statusbar;
+  int             frame;
   
   frame = GetWindowNumber (document, view);
   if (frame == 0)
@@ -1727,7 +1730,11 @@ void TtaSetStatusSelectedElement(Document document, View view, Element elem)
     {
       window = wxDynamicCast(wxGetTopLevelParent(FrameTable[frame].WdFrame), AmayaWindow);
       if (window)
-        ((AmayaStatusBar*)window->GetStatusBar())->SetSelectedElement( elem );
+        {
+          statusbar = wxDynamicCast(window->GetStatusBar(), AmayaStatusBar);
+          if (statusbar)
+            statusbar->SetSelectedElement (elem);
+        }
     }
 #else  /* _WX */
   if (elem)
@@ -2668,20 +2675,6 @@ ThotBool FrameButtonUpCallback( int frame, int thot_button_id,
                                int thot_mod_mask, int x, int y )
 {
 #ifdef _WX
-  /* if a button release, we save the selection in the clipboard */
-  /* drag is finished */
-  /* we stop the callback calling timer */
-  /*  Selecting = FALSE;
-      if (timer != None)
-      {
-      Document   document;
-      View       view;
-      gtk_timeout_remove (timer);
-      timer = None;
-      FrameToView (frame, &document, &view);
-      DoCopyToClipboard (document, view, FALSE);
-      }
-      else */
 #if !defined(_WINDOWS) && !defined(_MACOS)
   Document   document;
   View       view;
@@ -3535,22 +3528,29 @@ void ChangeFrameTitle (int frame, unsigned char *text, CHARSET encoding)
   ----------------------------------------------------------------------*/
 void ChangeSelFrame (int frame)
 {
-  Document            doc;
+  Document            doc, olddoc;
   View                view;
+  int                 oldframe;
+
   if (ActiveFrame != frame)
     {
       CloseTextInsertion ();
+      oldframe = ActiveFrame;
+      FrameToView (oldframe, &olddoc, &view);
       ActiveFrame = frame;
       FrameToView (frame, &doc, &view);
       // set the new focus
       if (ChangeFocusFunction &&
           doc && LoadedDocument[doc-1]->DocTypeName &&
-          strcmp (LoadedDocument[doc-1]->DocTypeName, "log"))
+          strcmp (LoadedDocument[doc-1]->DocTypeName, "log") &&
+          olddoc && LoadedDocument[olddoc-1]->DocTypeName &&
+          strcmp (LoadedDocument[olddoc-1]->DocTypeName, "log"))
         (*(Proc1)ChangeFocusFunction) ((void *) doc);
 #ifdef _WX
       /* update the class list */
       TtaExecuteMenuAction ("ApplyClass", doc, 1, FALSE);
       TtaRefreshElementMenu (doc, 1);
+      UpdateAttrMenu (LoadedDocument[doc-1], TRUE);
 #endif /* _WX */
       /* the active frame changed so update the application focus */
       TtaRedirectFocus();

@@ -1,8 +1,7 @@
-usr/lib/amaya/config usr/share/amaya/
-usr/lib/amaya/dicopar usr/share/amaya/
-usr/lib/amaya/fonts/*.list usr/share/amaya/fonts/
-usr/lib/amaya/fonts/*.dir usr/share/amaya/fonts/
-usr/lib/amaya/fonts/icones* usr/share/amaya/fonts/
-usr/lib/amaya/resources usr/share/amaya/
+usr/lib/Amaya/config usr/share/Amaya/
+usr/lib/Amaya/dicopar usr/share/Amaya/
+usr/lib/Amaya/fonts/*.list usr/share/Amaya/fonts/
+usr/lib/Amaya/fonts/*.dir usr/share/Amaya/fonts/
+usr/lib/Amaya/fonts/icones* usr/share/Amaya/fonts/
+usr/lib/Amaya/resources usr/share/Amaya/
 usr/share/pixmaps
-usr/share/applications

@@ -75,6 +75,7 @@ accesskey="n"><img alt="next" src="../../resources/icons/misc/right.png" />
           <li><a href="#Vider">Vider le cache</a></li>
         </ul>
       </li>
+      <li><a href="#Password">Préférences des mots de passe</a></li>
       <li><a href="#L599">Préférences du proxy</a></li>
       <li><a href="#Proxy1">Proxy HTTP</a></li>
       <li><a href="#Liste">Liste du domaine proxy</a></li>
@@ -225,7 +226,9 @@ différentes architectures :</p>
       </td>
       <td valign="top"
       style="border-top:none;border-left:   none;border-bottom:solid .5pt;border-right:solid .5pt;   padding:0in 5.4pt 0in 5.4pt"><p
-        class="TableText"><code><code>~/.amaya</code></code></p>
+        class="TableText"><code><code>~/Library/Application Support/amaya<code>  <br
+        />
+        </code></code></code></p>
       </td>
     </tr>
   </tbody>
@@ -506,7 +509,7 @@ Elle est désactivé par défaut pour cette version d'Amaya car à l'heure
 actuelle, tous les serveurs ne gèrent pas ce type MIME. Cette option ne
 modifie pas le type MIME des anciens documents: le type MIME qui est reçu est
 celui qui sera utilisé pour publier le document, sauf si vous utilisez la
-commande <strong>Sauver comme</strong>. Il est à noter que cette option
+commande <strong>Enregistrer sous</strong>. Il est à noter que cette option
 nécessite aussi de modifier la configuration de votre serveur si celui-ci
 n'enregistre pas les méta-données associées à chaque document.</p>
 
@@ -591,6 +594,31 @@ cache.</p>
 <h5 id="Vider">Vider le cache</h5>
 
 <p>Ce bouton vous permet de vider le cache courant.</p>
+
+<h4 id="L5991"><a name="Password" id="Password">Préférences des mots de
+passe</a></h4>
+
+<p>Amaya vous permet d'enregistrer les données saisies lors du dialogue
+d'authentification. Ces données sont le <strong>nom de l'utilisateur et le
+mot de passe</strong> associés à une paire <strong>nom de serveur/nom de
+domaine</strong>.</p>
+
+<h5 id="Vider1">Enregistrer les mots de passe</h5>
+
+<p>Ce bouton, s'il est activé, permet de demander à l'utilisateur s'il
+souhaite qu'Amaya enregistre les informations de connexion saisies lors du
+dialogue d'authentification. S'il est désactivé (option par défaut),
+l'utilisateur n'aura pas la possibilité d'enregistrer ces données.</p>
+
+<h5 id="Vider11">Tout effacer</h5>
+
+<p>Cette option vous permet d'effacer toutes les données d'authentification
+enregistrées dans Amaya.</p>
+
+<h5 id="Vider111">Sites</h5>
+
+<p>Cette liste permet d'effacer les données d'authentification correspondant
+à une paire <strong>nom de serveur/nom de domaine</strong>.</p>
 
 <h4 id="L599"><a name="Proxy">Préférences du proxy</a></h4>
 
@@ -692,12 +720,13 @@ effectif quand vous ouvrirez une nouvelle fenêtre de document.</p>
 
 <h4 id="rences1"><a name="HTML">Les préférences de géométrie</a></h4>
 
-<p><strong>Sauver la géométrie en quittant</strong>. La géométrie courante
-des fenêtres sera automatiquement sauvegardée en quittant l'application.</p>
+<p><strong>Enregistrer la géométrie en quittant</strong>. La géométrie
+courante des fenêtres sera automatiquement sauvegardée en quittant
+l'application.</p>
 
 <p>Deux boutons vous permettent</p>
 <ul>
-  <li>de sauver la taille et la position de la fenêtre courante,</li>
+  <li>d'enregistrer la taille et la position de la fenêtre courante,</li>
   <li>ou de restaurer les valeurs par défaut.</li>
 </ul>
 

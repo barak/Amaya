@@ -21,7 +21,9 @@ extern void InitMapping ( void );
 extern void HTMLParseError ( Document doc,
                              char* msg,
                              int lineNumber );
+extern ThotBool IsCharacterLevelType ( ElementType elType );
 extern ThotBool IsCharacterLevelElement ( Element el );
+extern ThotBool IsBlockElementType ( ElementType elType );
 extern ThotBool IsBlockElement ( Element el );
 extern void BlockInCharLevelElem ( Element el );
 extern void OnlyOneOptionSelected ( Element el,
@@ -72,6 +74,7 @@ extern void ParseExternalHTMLDoc ( Document doc,
                                    FILE * infile,
                                    CHARSET charset,
                                    char *extDocURL );
+extern void ClearHTMLParser ( void );
 extern void StartParser ( Document doc,
                           char *fileName,
                           char *documentName,
@@ -97,7 +100,9 @@ extern void InitMapping ( void );
 extern void HTMLParseError ( Document doc,
                                char* msg,
                                int lineNumber );
+extern ThotBool IsCharacterLevelType ( ElementType elType );
 extern ThotBool IsCharacterLevelElement ( Element el );
+extern ThotBool IsBlockElementType ( ElementType elType );
 extern ThotBool IsBlockElement ( Element el );
 extern void BlockInCharLevelElem ( Element el );
 extern void OnlyOneOptionSelected ( Element el,
@@ -148,6 +153,7 @@ extern void ParseExternalHTMLDoc ( Document doc,
                                      FILE * infile,
                                      CHARSET charset,
                                      char *extDocURL );
+extern void ClearHTMLParser ( void );
 extern void StartParser ( Document doc,
                             char *fileName,
                             char *documentName,

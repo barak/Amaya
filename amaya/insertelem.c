@@ -23,7 +23,6 @@
 #include "templates_f.h"
 #include "templateDeclarations.h"
 
-#include "mydictionary_f.h"
 #include "templateLoad_f.h"
 #include "templateDeclarations_f.h"
 #include "templateInstantiate_f.h"
@@ -110,6 +109,7 @@ static void FillUnionResolvedPossibleElement(XTigerTemplate t, const char* name,
   Declaration dec = Template_GetDeclaration (t, name);
   if (dec == NULL)
     return;
+    
   if (dec->declaredIn->isPredefined)
   {
 //    DLList_Append(list, ElemListElement_CreateComponent(level, dec->name,
@@ -122,16 +122,16 @@ static void FillUnionResolvedPossibleElement(XTigerTemplate t, const char* name,
   }
   else if (dec->nature==UnionNat)
   {
-    DLList tempList = ElemList_Create();
-    
-    Record first = dec->unionType.include->first;
-    Record rec = first;
-    
+    DLList          tempList = ElemList_Create();
+    ForwardIterator iter = HashMap_GetForwardIterator(dec->unionType.include);
+    HashMapNode     mapnode;
+    DLListNode      listnode;
+
     int len1 = 0 , len2 = strlen(dec->name);
     if (resolvedPath!=NULL)
       len1 = strlen(resolvedPath);
     char* newPath = (char*)TtaGetMemory(len1+len2+2);
-    if (len1>0)
+    if (len1 > 0)
     {
       strcpy(newPath, resolvedPath);
       newPath[len1] = '/';
@@ -142,19 +142,20 @@ static void FillUnionResolvedPossibleElement(XTigerTemplate t, const char* name,
       strcpy(newPath, dec->name);
     }
     
-    while(rec)
-    {
-      FillUnionResolvedPossibleElement(t, rec->key, elem, newPath, tempList, level);
-      rec = rec->next;
-    }
+    ITERATOR_FOREACH(iter, HashMapNode, mapnode)
+      {
+        FillUnionResolvedPossibleElement(t, (char*)mapnode->key, elem, newPath, tempList, level);
+      }
+    TtaFreeMemory(iter);
     
-    ForwardIterator iter = DLList_GetForwardIterator(tempList);
-    DLListNode node = (DLListNode) ForwardIterator_GetFirst(iter);
-    while(node)
-    {
-      DLList_Append(list, node->elem);
-      node = (DLListNode) ForwardIterator_GetNext(iter);
-    }
+    iter = DLList_GetForwardIterator(tempList);
+    
+    
+    listnode = (DLListNode) ForwardIterator_GetFirst(iter);
+	ITERATOR_FOREACH(iter, DLListNode, listnode)
+      DLList_Append(list, listnode->elem);
+    TtaFreeMemory(iter);
+
     tempList->destroyElement = NULL;
     DLList_Destroy(tempList);
     
@@ -164,7 +165,8 @@ static void FillUnionResolvedPossibleElement(XTigerTemplate t, const char* name,
   }
   else if (dec->nature==SimpleTypeNat)
   {
-    DLList_Append(list, ElemListElement_CreateBaseType(level, dec->name, resolvedPath, elem));
+    DLList_Append(list, ElemListElement_CreateBaseType(level, dec->name, resolvedPath,
+                                                       elem));
     /* Do nothing. */
   }
   else
@@ -181,7 +183,8 @@ static void FillUnionResolvedPossibleElement(XTigerTemplate t, const char* name,
                         &checkProfile, TtaGetDocument(elem));
       if (elType.ElTypeNum!=0)
       {
-        DLList_Append(list, ElemListElement_CreateLanguageElement(level, elType, resolvedPath, elem));
+        DLList_Append(list, ElemListElement_CreateLanguageElement(level, elType,
+                                                                  resolvedPath, elem));
         break;
       }
     }
@@ -189,46 +192,12 @@ static void FillUnionResolvedPossibleElement(XTigerTemplate t, const char* name,
 }
 
 /*----------------------------------------------------------------------
-  FillInsertableTemplateElementFromStringList
-  Fill an element list with all possible elements extracted from a stringlist.
-    ----------------------------------------------------------------------*/
-static void FillInsertableTemplateElementFromStringList(XTigerTemplate t,
-                                                        Element refelem, const char* strlist,
-                                                        DLList list, int level)
-{
-  int             pos = 0,
-                  offset = 0;
-  int size = strlen(strlist);
-  char* types = strdup(strlist);
-  while(pos<size)
-  {
-    if (isEOSorWhiteSpace(types[pos]))
-    {
-      if (pos>offset)
-      {
-        types[pos] = 0;
-        FillUnionResolvedPossibleElement(t, types+offset, refelem, NULL, list, level);
-      }
-      offset = pos+1;
-    }
-    pos++;
-  } 
-  if (pos>offset)
-  {
-    types[pos] = 0;
-    FillUnionResolvedPossibleElement(t, types+offset, refelem, NULL, list, level);
-  }
-  TtaFreeMemory(types);
-}
-
-
-/*----------------------------------------------------------------------
   FillInsertableElementFromElemAttribute
   Fill an element list with all possible elements from an attribute list.
   ----------------------------------------------------------------------*/
-static void FillInsertableElementFromElemAttribute(XTigerTemplate t,
-                                                   Element elem, Element refelem,
-                                                   int attrib, DLList list, int level)
+static void FillInsertableElementFromElemAttribute (XTigerTemplate t,
+                                                    Element elem, Element refelem,
+                                                    int attrib, DLList list, int level)
 {
   ElementType     type = TtaGetElementType(elem);
   AttributeType   attributeType = {type.ElSSchema, attrib};
@@ -237,7 +206,20 @@ static void FillInsertableElementFromElemAttribute(XTigerTemplate t,
   char*           types = (char *) TtaGetMemory (size+1); 
 
   TtaGiveTextAttributeValue (att, types, &size);
-  FillInsertableTemplateElementFromStringList (t, refelem, types, list, level);
+
+  HashMap         basemap = KeywordHashMap_CreateFromList(NULL, -1, types);
+  HashMap         map     = Template_ExpandHashMapTypes(t, basemap);
+  ForwardIterator iter;
+  HashMapNode     node;
+   
+  iter = HashMap_GetForwardIterator(map);
+  ITERATOR_FOREACH(iter, HashMapNode, node)
+    {
+      FillUnionResolvedPossibleElement(t, (const char*)node->key, refelem, NULL, list, level);
+    }
+  HashMap_Destroy (map);
+  HashMap_Destroy (basemap);
+  
   TtaFreeMemory (types);
 }
 #endif/* TEMPLATES */
@@ -247,34 +229,53 @@ static void FillInsertableElementFromElemAttribute(XTigerTemplate t,
   Fill an element list with all insertable elements (base element or
   XTiger comonent).
   ----------------------------------------------------------------------*/
-static void FillInsertableElemList(Document doc, Element elem, DLList list)
+static void FillInsertableElemList (Document doc, Element elem, DLList list)
 {
   ElementType      type;
+  Element          parent;
 #ifdef TEMPLATES
   Element          child;
   ElementType      childType;
   XTigerTemplate   t;
+  ThotBool         haveAncestorBag = FALSE;
 #endif/* TEMPLATES */
   int level;
-  ThotBool cont;
+  ThotBool cont = TRUE;
 
-  if (elem){
+  if (elem)
+  {
     if (doc==0)
       doc = TtaGetDocument(elem);
 
 #ifdef TEMPLATES
-    t = (XTigerTemplate) Dictionary_Get (Templates_Dic, DocumentMeta[doc]->template_url);
-#endif/* TEMPLATES */
+    t = GetXTigerTemplate(DocumentMeta[doc]->template_url);
+
+
+    if (!IsTemplateElement(elem))
+      elem = GetFirstTemplateParentElement(elem);
+
+    // Search for first xt:bag ancestor.
+    parent = elem;
+    while (parent!= NULL && cont)
+      {
+        type = TtaGetElementType(parent);
+        if (type.ElTypeNum == Template_EL_bag)
+          {
+            haveAncestorBag = TRUE;
+            cont = FALSE;
+          }
+        parent = GetFirstTemplateParentElement(parent);
+      }
 
     level = 0;
     cont = TRUE;
-    
-    while(elem!=NULL && cont)
+
+    // Process for each ancestor.
+    while (elem!=NULL && cont)
     {
       type = TtaGetElementType(elem);
       switch(type.ElTypeNum)
-      {
-#ifdef TEMPLATES
+        {
         case Template_EL_repeat:
           child = TtaGetFirstChild(elem);
           childType = TtaGetElementType(child);
@@ -295,30 +296,27 @@ static void FillInsertableElemList(Document doc, Element elem, DLList list)
             default:
               break;
           }
-          cont = TRUE;
+          cont = haveAncestorBag;
           break;
         case Template_EL_useEl:
           // Fill for xt:use only if have no child.
           if (TtaGetFirstChild(elem)==NULL){
             FillInsertableElementFromElemAttribute(t, elem, elem,
                                                    Template_ATTR_types, list, level);
-            cont = TRUE;
+            cont = haveAncestorBag;
           }
           break;
         case Template_EL_bag:
           FillInsertableElementFromElemAttribute(t, elem, elem,
                                                  Template_ATTR_types, list, level);
-          cont = TRUE;
+          cont = FALSE;
           break;
-#endif /*TEMPLATES */
-        default:
-          break;
-      }
-      
-      elem = TtaGetParent(elem);
+        }
+      elem = GetFirstTemplateParentElement(elem);
       level ++;
-    }    
-  }  
+    }
+#endif/* TEMPLATES */
+  }
 }
 
 /*----------------------------------------------------------------------
@@ -329,7 +327,9 @@ static void FillInsertableElemList(Document doc, Element elem, DLList list)
   ----------------------------------------------------------------------*/
 DLList InsertableElement_GetList(Document doc)
 {
-  InsertableElementList list = (InsertableElementList) HashMap_Get(InsertableElementMap, (void*)doc);
+  InsertableElementList list;
+
+  list = (InsertableElementList) HashMap_Get(InsertableElementMap, (void*)doc);
   if (list)
     return list->list;
   else
@@ -347,17 +347,18 @@ DLList InsertableElement_GetList(Document doc)
 DLList InsertableElement_Update(Document doc, Element el)
 {
   InsertableElementList list;
-  if (doc==0)
-    doc= TtaGetDocument(el);
-  list = (InsertableElementList) HashMap_Get(InsertableElementMap, (void*)doc);
-  if (list==NULL)
+
+  if (doc == 0)
+    doc= TtaGetDocument (el);
+  list = (InsertableElementList) HashMap_Get (InsertableElementMap, (void*)doc);
+  if (list == NULL)
   {
-    list = InsertableElementList_Create(0, DLList_Create());
-    HashMap_Set(InsertableElementMap, (void*)doc, list);
+    list = InsertableElementList_Create (0, DLList_Create());
+    HashMap_Set (InsertableElementMap, (void*)doc, list);
   }
   
-  DLList_Empty(list->list);
-  FillInsertableElemList(doc, el, list->list);
+  DLList_Empty (list->list);
+  FillInsertableElemList (doc, el, list->list);
   list->elem = el;
 
   return list->list;
@@ -368,31 +369,35 @@ DLList InsertableElement_Update(Document doc, Element el)
   Insert the specified element.
   @param el Element to insert (ElemListElement)
   ----------------------------------------------------------------------*/
-void InsertableElement_DoInsertElement(void* el)
+void InsertableElement_DoInsertElement (void* el)
 {
-  ElemListElement elem = (ElemListElement)el;
-  Element ref = elem->refElem;
-  ElementType refType = TtaGetElementType(ref);
-  Document doc = TtaGetDocument(ref);
-  Element   newEl = NULL;
-  SSchema   templateSSchema;
+  ElemListElement elem = (ElemListElement) el;
+  Element         ref = elem->refElem;
+  ElementType     refType = TtaGetElementType (ref);
+  Document        doc = TtaGetDocument (ref);
+  Element         newEl = NULL;
+  SSchema         templateSSchema;
 
 #ifdef AMAYA_DEBUG
-  printf("insert %s into %s\n", ElemListElement_GetName(elem), TtaGetElementTypeName(refType));
+  printf("insert %s into %s\n", ElemListElement_GetName(elem),
+         TtaGetElementTypeName (refType));
 #endif /* AMAYA_DEBUG */
 
 #ifdef TEMPLATES
-  templateSSchema = TtaGetSSchema("Template", doc);
-  if(templateSSchema && refType.ElSSchema==templateSSchema)
+  templateSSchema = TtaGetSSchema ("Template", doc);
+  if (templateSSchema && refType.ElSSchema == templateSSchema)
   {
     switch(refType.ElTypeNum)
     {
       case Template_EL_repeat:
         if (elem->typeClass==DefinedComponent)
-          newEl = Template_InsertRepeatChild(doc, ref, (Declaration)elem->elem.component.declaration, -1);
+          newEl = Template_InsertRepeatChild (doc, ref,
+                                              (Declaration)elem->elem.component.declaration,
+                                              -1);
         break;
       case Template_EL_bag:
-        newEl = Template_InsertBagChild(doc, ref, (Declaration)elem->elem.component.declaration);
+        newEl = Template_InsertBagChild (doc, ref,
+                                         (Declaration)elem->elem.component.declaration);
         break;
       default:
         break;
@@ -400,9 +405,6 @@ void InsertableElement_DoInsertElement(void* el)
   }
 #endif /* TEMPLATES */
 
-  if(newEl)
-  {
-    TtaSelectElement(doc, newEl);
-    TtaSetStatusSelectedElement(doc, 1, newEl);
-  }
+  if (newEl)
+    TtaSelectElement (doc, newEl);
 }

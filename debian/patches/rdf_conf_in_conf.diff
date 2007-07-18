@@ -1,7 +1,7 @@
-Index: amaya-9.54~dfsg.0/Makefile.in
+Index: Documents/Makefile.in
 ===================================================================
---- amaya-9.54~dfsg.0.orig/Makefile.in	2007-01-22 16:47:41.000000000 +0000
-+++ amaya-9.54~dfsg.0/Makefile.in	2007-02-14 19:09:52.000000000 +0000
+--- Documents.orig/Makefile.in
++++ Documents/Makefile.in
 @@ -12,11 +12,10 @@
  include Options
  
@@ -9,9 +9,9 @@ Index: amaya-9.54~dfsg.0/Makefile.in
 -REDLAND    = redland
  
  #MKP: adding davlib
- SUBDIRS	= @SUBDIRS@ tools thotlib batch drawlib indexlib annotlib amaya thot @DAVDIR@
--EXTRA_SUBDIRS= misc $(REDLAND) $(LIBWWW) $(WX_BUILDDIR) $(GL_BUILDDIR)
-+EXTRA_SUBDIRS= misc redland $(LIBWWW) $(WX_BUILDDIR) $(GL_BUILDDIR)
+ SUBDIRS	= @SUBDIRS@ tools thotlib batch annotlib @DAVDIR@ amaya
+-EXTRA_SUBDIRS= $(LIBWWW) $(REDLAND) $(WX_BUILDDIR) $(GL_BUILDDIR)
++EXTRA_SUBDIRS= redland $(LIBWWW) $(WX_BUILDDIR) $(GL_BUILDDIR)
  
  prefix = @prefix@
  exec_prefix = @exec_prefix@
@@ -22,9 +22,9 @@ Index: amaya-9.54~dfsg.0/Makefile.in
 -default : tools gl @BUILDWXWIDGETS@ thotlib batch amaya_prog print_prog
 +default : tools gl @BUILDWXWIDGETS@ @BUILDREDLAND@ thotlib batch amaya_prog print_prog
  
- amaya : amaya_prog tools thotlib print_prog
+ amaya : tools thotlib amaya_prog print_prog
  
-@@ -293,53 +292,8 @@
+@@ -256,53 +255,8 @@
  #
  # Rules to build the redland RDF library
  #
@@ -80,25 +80,11 @@ Index: amaya-9.54~dfsg.0/Makefile.in
  	@($(ECHO) "redland is installed")
  
  #
-Index: amaya-9.54~dfsg.0/configure.in
+Index: Documents/configure.in
 ===================================================================
---- amaya-9.54~dfsg.0.orig/configure.in	2007-02-14 19:09:43.000000000 +0000
-+++ amaya-9.54~dfsg.0/configure.in	2007-02-14 19:09:52.000000000 +0000
-@@ -690,13 +690,6 @@
- fi
- 
- 
--# force C mode (-x c)
--CFLAGS="${CFLAGS} -x c"
--
--# C++ options (-x c++)
--CXX_OPTIONS="-D__cplusplus"
--CXXFLAGS="${CXXFLAGS} -Wall -x c++ ${CXX_OPTIONS}"
--
- # setup LDFLAGS
- # on macosx, specific flags must be set to avoid conflicts with allready installed libwww
- # for exemple it's possible to install libwww with fink (fink install libwww)
-@@ -1107,7 +1100,6 @@
+--- Documents.orig/configure.in
++++ Documents/configure.in
+@@ -1066,7 +1066,6 @@
  	-a ! -d "$srcdir/../redland" ; then
  	AC_MSG_WARN(Redland source dir not found !!)
  	AC_MSG_WARN(Disabling redland build !)
@@ -106,7 +92,7 @@ Index: amaya-9.54~dfsg.0/configure.in
  	with_redland="no"
  fi
  
-@@ -1117,13 +1109,29 @@
+@@ -1076,13 +1075,36 @@
  if test "$with_redland" = "yes" ; then
  	AMAYA_ANNOT_OPTIONS="$AMAYA_ANNOT_OPTIONS -DAM_REDLAND"
  	if test "$with_system_redland" != "yes" ; then
@@ -118,6 +104,7 @@ Index: amaya-9.54~dfsg.0/configure.in
 +		CURRENTPATH="`pwd`"
 +		mkdir $BUILDREDLAND
 +		cd $BUILDREDLAND &&
++			CC="$CC" CXX="$CXX" \
 +			CPPFLAGS="-I$CURRENTPATH/../../libwww/modules/expat/lib" \
 +			LDFLAGS="-L$CURRENTPATH/libwww/modules/expat -L$CURRENTPATH/libwww/modules/expat/.libs" \
 +			../../../redland/configure \
@@ -132,6 +119,12 @@ Index: amaya-9.54~dfsg.0/configure.in
 +			--without-openssl-digests \
 +			--without-mysql
 +			$ECHO "redland is configured"
++			$ECHO "Patching the raptor_config.h file to avoid including glib2-0"
++			$CP raptor/raptor_config.h raptor/raptor_config.h.orig
++			$SED "s/\(\#define HAVE_G_UTF8_NORMALIZE 1\)/\/* \1 *\//" \
++				raptor/raptor_config.h.orig > raptor/raptor_config.h
++			$RM raptor/raptor_config.h.orig
++			$ECHO "Raptor is patched"
 +		cd ..
  	else
 -		MAKEREDLAND=['#']
@@ -139,30 +132,30 @@ Index: amaya-9.54~dfsg.0/configure.in
  		redland_includes=`$REDLAND_CONFIG --cflags`
  	  redland_libs=`$REDLAND_CONFIG --libs`
   		AMAYA_ANNOT_OPTIONS="$AMAYA_ANNOT_OPTIONS"
-@@ -1144,6 +1152,8 @@
- 	ANNOTLIB_COMPILE_BM=['#']
- fi
+@@ -1096,6 +1118,8 @@
+ 
+ ANNOTLIB_COMPILE_BM=['#']
  
 +AC_SUBST(BUILDREDLAND)
 +
- ###################End of Annotations and Bookmarks Support####################
+ ###################End of Annotations Support####################
  
  
-@@ -1358,9 +1368,7 @@
- AC_SUBST(WITHDAV)
- AC_SUBST(WWWDAV)
+@@ -1312,9 +1336,7 @@
  
+ AC_SUBST(MAKE_LIBWWW_RDF_PARSER)
+ AC_SUBST(LIBWWW_RDF_PARSER)
 -AC_SUBST(MAKEREDLAND)
- AC_SUBST(ANNOTLIB_COMPILE_BM)
+ #AC_SUBST(ANNOTLIB_COMPILE_BM)
 -AC_SUBST(AMAYA_RAPTOR_SRC)
  AC_SUBST(AMAYA_RAPTOR_LIBS)
  AC_SUBST(AMAYA_RAPTOR_INCLUDES)
- AC_SUBST(MAKE_LIBWWW_RDF_PARSER)
-Index: amaya-9.54~dfsg.0/amaya/Makefile.in
+ 
+Index: Documents/amaya/Makefile.in
 ===================================================================
---- amaya-9.54~dfsg.0.orig/amaya/Makefile.in	2007-02-14 19:07:23.000000000 +0000
-+++ amaya-9.54~dfsg.0/amaya/Makefile.in	2007-02-14 19:09:52.000000000 +0000
-@@ -91,8 +91,8 @@
+--- Documents.orig/amaya/Makefile.in
++++ Documents/amaya/Makefile.in
+@@ -92,8 +92,8 @@
  
  ../redland/librdf/.libs/librdf.a \
  ../redland/raptor/.libs/libraptor.a \
@@ -173,12 +166,12 @@ Index: amaya-9.54~dfsg.0/amaya/Makefile.in
  
  .depends depend : ../tools/mkdep/mkdep
  	../tools/mkdep/mkdep -relative -vpath $(VPATH) $(INCLUDES) $(VPATH)/*.c > .depends
-@@ -144,7 +144,7 @@
+@@ -145,7 +145,7 @@
           $(AMAYA_ANNOT_OBJ) $(AMAYA_DAV_OBJ) $(AMAYA_TEMPLATES_OBJ)
  
  AMAYA_SRC= \
 -         $(AMAYA_LIBWWW_SRC) @AMAYA_RAPTOR_SRC@ \
-+         $(AMAYA_LIBWWW_SRC) @BUILDREDLAND@ \
++         $(AMAYA_LIBWWW_SRC) \
  	 $(AMAYA_MATH_SRC) $(AMAYA_SVG_SRC) \
           $(AMAYA_ANNOT_SRC) $(AMAYA_DAV_SRC) $(AMAYA_TEMPLATES_SRC)
  

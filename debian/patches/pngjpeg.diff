@@ -1,0 +1,26 @@
+Index: amaya-9.55~dfsg.0/Makefile.in
+===================================================================
+--- amaya-9.55~dfsg.0.orig/Makefile.in	2007-03-31 13:51:48.000000000 +0100
++++ amaya-9.55~dfsg.0/Makefile.in	2007-03-31 13:51:55.000000000 +0100
+@@ -189,9 +189,6 @@
+ $(THOTDIR)/Makefile.in \
+ $(THOTDIR)/amaya/Makefile.in \
+ $(THOTDIR)/batch/Makefile.in \
+-$(THOTDIR)/libjpeg/Makefile.in \
+-$(THOTDIR)/libpng/Makefile.in \
+-$(THOTDIR)/libpng/zlib/Makefile.in \
+ $(THOTDIR)/thotlib/Makefile.in \
+ $(THOTDIR)/thotlib/include/Makefile.in \
+ $(THOTDIR)/tools/Makefile.in \
+Index: amaya-9.55~dfsg.0/configure.in
+===================================================================
+--- amaya-9.55~dfsg.0.orig/configure.in	2007-03-31 13:51:48.000000000 +0100
++++ amaya-9.55~dfsg.0/configure.in	2007-03-31 13:51:55.000000000 +0100
+@@ -1431,7 +1431,6 @@
+ 
+ EXTRA_MAKEFILE_IN=
+ make_output="Makefile Options.orig:Options.in tools/Makefile \
+-       libjpeg/Makefile libpng/Makefile libpng/zlib/Makefile \
+        tools/mkdep/Makefile \
+        thotlib/Makefile \
+        thotlib/include/Makefile batch/Makefile \

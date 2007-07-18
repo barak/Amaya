@@ -315,7 +315,8 @@ static char *SkipProperty (char *ptr, ThotBool reportError)
     }
   /* print the skipped property */
   c = *ptr;
-  *ptr = EOS;
+  if (*ptr != EOS)
+    *ptr = EOS;
   if (DoDialog)
     DisplayStyleValue ("", deb, ptr);
   else if (reportError && *deb != EOS &&
@@ -335,10 +336,6 @@ static char *SkipProperty (char *ptr, ThotBool reportError)
            strncasecmp (deb, "font-strech", 11) &&
            strncasecmp (deb, "letter-spacing", 14) &&
            strncasecmp (deb, "marker-offset", 12) &&
-           strncasecmp (deb, "max-height", 10) &&
-           strncasecmp (deb, "max-width", 9) &&
-           strncasecmp (deb, "min-height", 10) &&
-           strncasecmp (deb, "min-width", 9) &&
            strncasecmp (deb, "orphans", 7) &&
            strncasecmp (deb, "outline-color", 13) &&
            strncasecmp (deb, "outline-style", 13) &&
@@ -364,7 +361,8 @@ static char *SkipProperty (char *ptr, ThotBool reportError)
            strncasecmp (deb, "volume", 6) &&
            strncasecmp (deb, "widows", 6))
     CSSPrintError ("CSS property ignored:", deb);
-  *ptr = c;
+  if (c != EOS)
+    *ptr = c;
   return (ptr);
 }
 
@@ -2087,6 +2085,10 @@ static char *ParseCSSListStyleType (Element element, PSchema tsch,
 
 /*----------------------------------------------------------------------
   ParseCSSUrl: parse an URL
+  Parse the url content (don't start with "url")
+  Return the next pointer in the CSS string
+  If a correct URL is found, it's returned in url (this string must
+  be freed)
   ----------------------------------------------------------------------*/
 static char *ParseCSSUrl (char *cssRule, char **url)
 {
@@ -3286,7 +3288,18 @@ static char *ParseACSSFontFamily (Element element, PSchema tsch,
       if (quoteChar != EOS)
         cssRule = SkipQuotedString (cssRule, quoteChar);
       else
-        cssRule = SkipWord (cssRule);
+        /* unquoted font name. The name may contain spaces */
+        {
+          cssRule = SkipWord (cssRule);
+          while (*cssRule == SPACE || *cssRule == BSPACE || *cssRule == EOL ||
+              *cssRule == TAB || *cssRule == __CR__)
+            {
+              cssRule = SkipBlanksAndComments (cssRule);
+              if (*cssRule != ','  && *cssRule != ';'  && *cssRule != '}' &&
+                  *cssRule != EOS)
+                cssRule = SkipWord (cssRule);
+            }
+        }
       while (p == cssRule &&
              *cssRule != ','  && *cssRule != ';'  && *cssRule != '}' && *cssRule != EOS)
         {
@@ -3369,47 +3382,47 @@ static char *ParseACSSFontWeight (Element element, PSchema tsch,
     {
       if (!strncasecmp (cssRule, "100", 3))
         {
-          weight.typed_data.value = -3;
+          weight.typed_data.value = -4;
           cssRule = SkipWord (cssRule);
         }
       else if (!strncasecmp (cssRule, "200", 3))
         {
-          weight.typed_data.value = -2;
+          weight.typed_data.value = -3;
           cssRule = SkipWord (cssRule);
         }
       else if (!strncasecmp (cssRule, "300", 3))
         {
-          weight.typed_data.value = -1;
+          weight.typed_data.value = -2;
           cssRule = SkipWord (cssRule);
         }
       else if (!strncasecmp (cssRule, "400", 3))
         {
-          weight.typed_data.value = 0;
+          weight.typed_data.value = -1;
           cssRule = SkipWord (cssRule);
         }
       else if (!strncasecmp (cssRule, "500", 3))
         {
-          weight.typed_data.value = +1;
+          weight.typed_data.value = 0;
           cssRule = SkipWord (cssRule);
         }
       else if (!strncasecmp (cssRule, "600", 3))
         {
-          weight.typed_data.value = +2;
+          weight.typed_data.value = +1;
           cssRule = SkipWord (cssRule);
         }
       else if (!strncasecmp (cssRule, "700", 3))
         {
-          weight.typed_data.value = +3;
+          weight.typed_data.value = +2;
           cssRule = SkipWord (cssRule);
         }
       else if (!strncasecmp (cssRule, "800", 3))
         {
-          weight.typed_data.value = +4;
+          weight.typed_data.value = +3;
           cssRule = SkipWord (cssRule);
         }
       else if (!strncasecmp (cssRule, "900", 3))
         {
-          weight.typed_data.value = +5;
+          weight.typed_data.value = +4;
           cssRule = SkipWord (cssRule);
         }
     }
@@ -3428,12 +3441,16 @@ static char *ParseACSSFontWeight (Element element, PSchema tsch,
       weight.typed_data.unit = VALUE_INHERIT;
       cssRule += 7;
     }
-  else if (!strncasecmp (cssRule, "bolder", 6) ||
-           !strncasecmp (cssRule, "lighter", 7))
+  else if (!strncasecmp (cssRule, "bolder", 6))
     {
-      /* not implemented */
+      weight.typed_data.value = +2;
       cssRule = SkipWord (cssRule);
-      return (cssRule);
+    }
+
+  else if (!strncasecmp (cssRule, "lighter", 7))
+    {
+      weight.typed_data.value = -1;
+      cssRule = SkipWord (cssRule);
     }
   else
     return (cssRule);
@@ -3496,21 +3513,30 @@ static char *ParseACSSFontVariant (Element element, PSchema tsch,
   ptr = cssRule;
   if (!strncasecmp (cssRule, "small-caps", 10))
     {
-      /* Not supported yet */
+      style.typed_data.value = VariantSmallCaps;
       cssRule = SkipWord (cssRule);
     }
   else if (!strncasecmp (cssRule, "normal", 6))
     {
-      /* Not supported yet */
+      style.typed_data.value = VariantNormal;
       cssRule = SkipWord (cssRule);
     }
   else if (!strncasecmp (cssRule, "inherit", 7))
     {
-      /* Not supported yet */
+      style.typed_data.unit = VALUE_INHERIT;
       cssRule = SkipWord (cssRule);
     }
-  if (cssRule != ptr && DoDialog)
-    DisplayStyleValue ("font-variant", ptr, cssRule);
+  else
+    /* invalid font-variant */
+    return (cssRule);
+
+  if (style.typed_data.value != 0 || style.typed_data.unit == VALUE_INHERIT)
+    {
+      if (DoDialog)
+        DisplayStyleValue ("font-variant", ptr, cssRule);
+      else if (DoApply)
+        TtaSetStylePresentation (PRVariant, element, tsch, context, style);
+    }
   return (cssRule);
 }
 
@@ -3866,6 +3892,86 @@ static char *ParseCSSHeight (Element element, PSchema tsch,
 }
 
 /*----------------------------------------------------------------------
+  ParseCSSMaxHeight: parse a CSS height attribute
+  ----------------------------------------------------------------------*/
+static char *ParseCSSMaxHeight (Element element, PSchema tsch,
+                             PresentationContext context, char *cssRule,
+                             CSSInfoPtr css, ThotBool isHTML)
+{
+  PresentationValue   val;
+  char               *ptr;
+
+  val.typed_data.real = FALSE;
+  cssRule = SkipBlanksAndComments (cssRule);
+  ptr = cssRule;
+  /* first parse the attribute string */
+  if (!strncasecmp (cssRule, "auto", 4))
+    {
+      val.typed_data.unit = VALUE_AUTO;
+      val.typed_data.value = 0;
+      cssRule += 4;
+      cssRule = CSSCheckEndValue (ptr, cssRule, "Invalid height value");
+    }
+  else
+    cssRule = ParseCSSUnit (cssRule, &val);
+
+  if (val.typed_data.value != 0 &&
+      (val.typed_data.unit == UNIT_INVALID ||
+       val.typed_data.unit == UNIT_BOX))
+    {
+      CSSParseError ("height value", ptr, cssRule);
+      val.typed_data.unit = UNIT_PX;
+    }
+
+  if (DoDialog)
+    DisplayStyleValue ("max-height", ptr, cssRule);
+  else if (DoApply)
+    /* install the new presentation */
+    /*TtaSetStylePresentation (PRHeight, element, tsch, context, val)*/;
+  return (cssRule);
+}
+
+/*----------------------------------------------------------------------
+  ParseCSSMinHeight: parse a CSS height attribute
+  ----------------------------------------------------------------------*/
+static char *ParseCSSMinHeight (Element element, PSchema tsch,
+                             PresentationContext context, char *cssRule,
+                             CSSInfoPtr css, ThotBool isHTML)
+{
+  PresentationValue   val;
+  char               *ptr;
+
+  val.typed_data.real = FALSE;
+  cssRule = SkipBlanksAndComments (cssRule);
+  ptr = cssRule;
+  /* first parse the attribute string */
+  if (!strncasecmp (cssRule, "auto", 4))
+    {
+      val.typed_data.unit = VALUE_AUTO;
+      val.typed_data.value = 0;
+      cssRule += 4;
+      cssRule = CSSCheckEndValue (ptr, cssRule, "Invalid height value");
+    }
+  else
+    cssRule = ParseCSSUnit (cssRule, &val);
+
+  if (val.typed_data.value != 0 &&
+      (val.typed_data.unit == UNIT_INVALID ||
+       val.typed_data.unit == UNIT_BOX))
+    {
+      CSSParseError ("height value", ptr, cssRule);
+      val.typed_data.unit = UNIT_PX;
+    }
+
+  if (DoDialog)
+    DisplayStyleValue ("min-height", ptr, cssRule);
+  else if (DoApply)
+    /* install the new presentation */
+    /*TtaSetStylePresentation (PRHeight, element, tsch, context, val)*/;
+  return (cssRule);
+}
+
+/*----------------------------------------------------------------------
   ParseCSSWidth: parse a CSS width attribute
   ----------------------------------------------------------------------*/
 static char *ParseCSSWidth (Element element, PSchema tsch,
@@ -3902,6 +4008,86 @@ static char *ParseCSSWidth (Element element, PSchema tsch,
   else if (DoApply)
     /* install the new presentation */
     TtaSetStylePresentation (PRWidth, element, tsch, context, val);
+  return (cssRule);
+}
+
+/*----------------------------------------------------------------------
+  ParseCSSMaxWidth: parse a CSS width attribute
+  ----------------------------------------------------------------------*/
+static char *ParseCSSMaxWidth (Element element, PSchema tsch,
+                               PresentationContext context,
+                               char *cssRule, CSSInfoPtr css,
+                               ThotBool isHTML)
+{
+  PresentationValue   val;
+  char               *ptr;
+
+  val.typed_data.real = FALSE;
+  cssRule = SkipBlanksAndComments (cssRule);
+  ptr = cssRule;
+  /* first parse the attribute string */
+  if (!strncasecmp (cssRule, "auto", 4))
+    {
+      val.typed_data.unit = VALUE_AUTO;
+      val.typed_data.value = 0;
+      cssRule += 4;
+      cssRule = CSSCheckEndValue (ptr, cssRule, "Invalid width value");
+    }
+  else
+    cssRule = ParseCSSUnit (cssRule, &val);
+  if (val.typed_data.value != 0 &&
+      (val.typed_data.unit == UNIT_INVALID ||
+       val.typed_data.unit == UNIT_BOX))
+    {
+      CSSParseError ("Invalid width value", ptr, cssRule);
+      val.typed_data.unit = UNIT_PX;
+    }
+
+  if (DoDialog)
+    DisplayStyleValue ("max-width", ptr, cssRule);
+  else if (DoApply)
+    /* install the new presentation */
+    /*TtaSetStylePresentation (PRWidth, element, tsch, context, val)*/;
+  return (cssRule);
+}
+
+/*----------------------------------------------------------------------
+  ParseCSSMinWidth: parse a CSS width attribute
+  ----------------------------------------------------------------------*/
+static char *ParseCSSMinWidth (Element element, PSchema tsch,
+                               PresentationContext context,
+                               char *cssRule, CSSInfoPtr css,
+                               ThotBool isHTML)
+{
+  PresentationValue   val;
+  char               *ptr;
+
+  val.typed_data.real = FALSE;
+  cssRule = SkipBlanksAndComments (cssRule);
+  ptr = cssRule;
+  /* first parse the attribute string */
+  if (!strncasecmp (cssRule, "auto", 4))
+    {
+      val.typed_data.unit = VALUE_AUTO;
+      val.typed_data.value = 0;
+      cssRule += 4;
+      cssRule = CSSCheckEndValue (ptr, cssRule, "Invalid width value");
+    }
+  else
+    cssRule = ParseCSSUnit (cssRule, &val);
+  if (val.typed_data.value != 0 &&
+      (val.typed_data.unit == UNIT_INVALID ||
+       val.typed_data.unit == UNIT_BOX))
+    {
+      CSSParseError ("Invalid width value", ptr, cssRule);
+      val.typed_data.unit = UNIT_PX;
+    }
+
+  if (DoDialog)
+    DisplayStyleValue ("min-width", ptr, cssRule);
+  else if (DoApply)
+    /* install the new presentation */
+    /*TtaSetStylePresentation (PRWidth, element, tsch, context, val)*/;
   return (cssRule);
 }
 
@@ -5762,6 +5948,8 @@ static CSSProperty CSSProperties[] =
     {"font-size-adjust", ParseCSSFontSizeAdjust},
     {"font-size", ParseCSSFontSize},
     {"font", ParseCSSFont},
+    {"max-height", ParseCSSMaxHeight},
+    {"min-height", ParseCSSMinHeight},
     {"height", ParseCSSHeight},
     {"left", ParseCSSLeft},
     {"letter-spacing", ParseCSSLetterSpacing},
@@ -5794,6 +5982,8 @@ static CSSProperty CSSProperties[] =
     {"unicode-bidi", ParseCSSUnicodeBidi},
     {"vertical-align", ParseCSSVerticalAlign},
     {"white-space", ParseCSSWhiteSpace},
+    {"max-width", ParseCSSMaxWidth},
+    {"min-width", ParseCSSMinWidth},
     {"width", ParseCSSWidth},
     {"visibility", ParseCSSVisibility},
     {"word-spacing", ParseCSSWordSpacing},
@@ -5844,7 +6034,8 @@ void  ParseCSSRule (Element element, PSchema tsch, PresentationContext ctxt,
           (*cssRule > 0x5A && *cssRule < 0x61))
         {
           end = SkipProperty (cssRule, FALSE);
-          CSSParseError ("Invalid property", cssRule, end);
+          if (cssRule[0] != '-')
+            CSSParseError ("Invalid property", cssRule, end);
           cssRule = end; 
         }
       else if (*cssRule != EOS)
@@ -5877,7 +6068,7 @@ void  ParseCSSRule (Element element, PSchema tsch, PresentationContext ctxt,
               cssRule = end;
             }
           else if (i == NB_CSSSTYLEATTRIBUTE)
-            cssRule = SkipProperty (cssRule, TRUE);
+            cssRule = SkipProperty (cssRule, !ctxt->destroy);
           else
             {
               /* update index and skip the ":" indicator if present */
@@ -5982,7 +6173,7 @@ void  ParseCSSRule (Element element, PSchema tsch, PresentationContext ctxt,
   not really a CSS rule.
   ----------------------------------------------------------------------*/
 void  ParseHTMLSpecificStyle (Element el, char *cssRule, Document doc,
-                              int specificity, ThotBool destroy)
+                             int specificity, ThotBool destroy)
 {
   DisplayMode         dispMode;
   PresentationContext ctxt;
@@ -6163,7 +6354,7 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
   int                att, kind;
   int                specificity, xmlType;
   int                skippedNL;
-  ThotBool           isHTML;
+  ThotBool           isHTML, noname;
   ThotBool           level, quoted, doubleColon;
 #define ATTR_ID 1
 #define ATTR_CLASS 2
@@ -6219,16 +6410,19 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
              !TtaIsBlank (selector))
         *cur++ = *selector++;
       *cur++ = EOS; /* close the first string  in sel[] */
+      noname = TRUE;
       if (deb[0] != EOS)
         /* the selector starts with an element name */
         {
           if (deb[0] <= 64 && deb[0] != '*')
             {
               CSSPrintError ("Invalid element", deb);
-              return NULL;
+              names[0] = NULL; /* no element name */
+              DoApply = FALSE;
             }
           else
             {
+              noname = FALSE;
               names[0] = deb;
               if (!strcmp (names[0], "html"))
                 /* give a greater priority to the backgoud color of html */
@@ -6243,7 +6437,6 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
         names[0] = NULL; /* no element name */
 
       rel[0] = RelVoid;
-
       /* now names[0] points to the beginning of the parsed item
          and cur to the next string to be parsed */
       while (*selector == '.' || *selector == ':' ||
@@ -6519,6 +6712,8 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
                   attrnames[0] = deb;
                   attrnums[0] = 0;
                   attrlevels[0] = 0;
+                  attrvals[0] = NULL;
+                  attrmatch[0] = Txtmatch;
                   specificity += 10;
                   /* check matching */
                   selector = SkipBlanksAndComments (selector);
@@ -6629,6 +6824,12 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
       selector = SkipBlanksAndComments (selector);
       NewLineSkipped = skippedNL;
 
+      if (noname && !pseudoFirstChild[0] && attrnums[0] == 0 && attrnames[0] == NULL)
+        {
+          *cur++ = EOS;
+          CSSPrintError ("Invalid Selector", deb);
+          DoApply = FALSE;	    
+        }
       /* is it a multi-level selector? */
       if (*selector == EOS)
         /* end of the selector */
@@ -6643,8 +6844,8 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
           if (*next == EOS)
             /* nothing after the comma. Invalid selector */
             {
-              /*CSSPrintError ("Syntax error:", selector);*/
-              return NULL;
+              CSSPrintError ("Syntax error:", selector);
+              selector = NULL;
             }
           break;
         }
@@ -7044,7 +7245,7 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
   isHTML = (strcmp (schemaName, "HTML") == 0);
   tsch = GetPExtension (doc, ctxt->schema, css, link);
   skippedNL = NewLineSkipped;
-  if (tsch && cssRule)
+  if (DoApply && tsch && cssRule)
     {
       if (css)
         {
@@ -7328,7 +7529,7 @@ void ApplyCSSRules (Element el, char *cssRule, Document doc, ThotBool destroy)
   TtaGetEnvBoolean ("LOAD_CSS", &loadcss);
   if (!loadcss)
     return;
-
+  LineNumber = TtaGetElementLineNumber (el);
   css = SearchCSS (doc, NULL, el, &pInfo);
   if (css == NULL)
     {
@@ -7340,7 +7541,8 @@ void ApplyCSSRules (Element el, char *cssRule, Document doc, ThotBool destroy)
     /* create the entry into the css context */
     pInfo = AddInfoCSS (doc, css, CSS_DOCUMENT_STYLE, CSS_ALL, el);
   if (pInfo->PiEnabled)
-    ParseStyleDeclaration (el, cssRule, doc, css, el, NULL, destroy); 
+    ParseStyleDeclaration (el, cssRule, doc, css, el, NULL, destroy);
+  LineNumber = -1;
 }
 
 /*----------------------------------------------------------------------

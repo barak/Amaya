@@ -144,7 +144,7 @@ STRUCT
          { text              link }
            VisitedLinkColor = Text; ActiveLinkColor = Text) =
          { vlink                    alink }
-        LIST OF (Element) + (INS, DEL);
+        LIST OF (Element);
 
   Element = CASE OF                                                { block }
         Paragraph;                                                { P }
@@ -164,11 +164,13 @@ STRUCT
         FIELDSET;                                                { FIELDSET }
         Address;                                                { ADDRESS }
         IMG;                                                          { IMG }
+        INS;
+        DEL;
         Object;                                                        { OBJECT }
         Applet;                                                        { APPLET }
         MathML;                                                  { MATH }
-  SVG;                                  { SVG }
-  XLink;                                                        { Annotations }
+        SVG;                                  { SVG }
+        XLink;                                                        { Annotations }
         External_Object                  { IMG type=svg}
             (ATTR SRC;
                 { src }
@@ -209,6 +211,7 @@ STRUCT
                 BEGIN
                 Embed_Content;
                 END;
+        Template;           { XTiger }
         END;
 
         HTMLfragment = LIST OF (Element);
@@ -294,7 +297,7 @@ STRUCT
         Subscript = Basic_Set;                                        { SUB }
         Superscript = Basic_Set;                                { SUP }
         Span = Basic_Set;                                        { SPAN }
-  map; MAP;                                                { MAP }
+        map; MAP;                                                { MAP }
         BDO (ATTR !dir) = Basic_Set;                                { BDO }
         Object;                                                        { OBJECT }
         Embed_;                                                        { EMBED }
@@ -302,7 +305,7 @@ STRUCT
         ruby;                                                   { ruby }
         MathML;                                                        { MATH }
         XLink;                                                        { Annotations }
-  Template;           { XTiger }
+        Template;           { XTiger }
         External_Object;                                        { External Object }
         END;
 
@@ -344,6 +347,8 @@ STRUCT
         Cite = Basic_Set;                { CITE }
         ABBR = Basic_Set;                { ABBR }
         ACRONYM = Basic_Set;                { ACRONYM }
+        ins;                             { INS }
+        del;                             { DEL }
         END;
 
   Font_                                                                { FONT }
@@ -401,9 +406,19 @@ STRUCT
   INS                                                                { INS }
      (ATTR cite; datetime = Text; InternalLink; ExternalLink) =
          { cite  datetime }
-        Basic_Set;
+        LIST OF (Element);
 
   DEL                                                                { DEL }
+     (ATTR cite; datetime; InternalLink; ExternalLink) =
+         { cite  datetime }
+        LIST OF (Element);
+
+  ins                                                                { INS }
+     (ATTR cite; datetime; InternalLink; ExternalLink) =
+         { cite  datetime }
+        Basic_Set;
+
+  del                                                                { DEL }
      (ATTR cite; datetime; InternalLink; ExternalLink) =
          { cite  datetime }
         Basic_Set;
@@ -425,10 +440,12 @@ STRUCT
         Object;
         Applet;
         MathML;
-  SVG;
-  XLink;
+        SVG;
+        XLink;
         External_Object;
         Embed_;
+        INS;
+        DEL;
         END;
 
   Division                                                        { DIV }
@@ -543,7 +560,7 @@ STRUCT
   FIELDSET =                                                        { FIELDSET }
         BEGIN
         LEGEND;
-        Basic_Set;
+        Fieldset_Content = LIST OF (Element);
         END;
 
   LEGEND                                                        { LEGEND }
@@ -833,7 +850,7 @@ STRUCT
                                         FRAME;
                                         FRAMESET;
                                         END - (NOFRAMES));
-      ? NOFRAMES = BODY + (INS, DEL);                                { NOFRAMES }
+      ? NOFRAMES = BODY;                                               { NOFRAMES }
         END;
 
   FRAME                                                                { FRAME }
@@ -893,8 +910,8 @@ STRUCT
         Anchor;                { HREF_ }
         Block_Quote;        { cite }
         Quotation;        { cite }
-        INS;                { cite }
-        DEL;                { cite }
+        ins;                { cite }
+        del;                { cite }
         END;
 
 EXCEPT
@@ -963,7 +980,10 @@ EXCEPT
         Text_Area:      ReturnCreateNL, NoReplicate;
         HTMLfragment:   NoMove, NoResize, Hidden, NoBreakByReturn;
         Division:       NoMove, NoResize;
-
+        INS:            NoReplicate;
+        DEL:            NoReplicate;
+        ins:            NoReplicate;
+        del:            NoReplicate;
         ExternalLink:   Invisible;
         InternalLink:   Invisible;
         IntWidthPercent:NewPercentWidth, Invisible;
@@ -1040,6 +1060,7 @@ EXCEPT
         onselect:       EventAttr;
         ID :            CssId; {Default id attribute}
         Class:          CssClass, DuplicateAttr;
+        External_Object: Hidden;
         External_Object_Content: Hidden, NoSpellCheck;
         Embed_:         NoBreakByReturn, NoReplicate, NoSpellCheck;
         Embed_Content:  Hidden, NoSelect;
@@ -1050,6 +1071,7 @@ EXCEPT
         IFRAME:         NoBreakByReturn, NoReplicate, NoSpellCheck;
         Iframe_Content: Hidden, NoSelect, NoCut, NoBreakByReturn;
         Iframe_Src_Content: Hidden, NoCut, NoSelect;
+        Fieldset_Content: Hidden, NoSelect, NoCut, NoBreakByReturn;
         is_css:         Invisible;
         Start:          StartCounter;
         ItemValue:      SetCounter;

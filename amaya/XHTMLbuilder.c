@@ -50,7 +50,7 @@ static int          NoTextChild[] =
     HTML_EL_MAP, HTML_EL_map, HTML_EL_Applet,
     HTML_EL_Object, HTML_EL_IFRAME, HTML_EL_NOFRAMES,
     HTML_EL_Division, HTML_EL_Center, HTML_EL_NOSCRIPT,
-    HTML_EL_Data_cell, HTML_EL_Heading_cell,
+    HTML_EL_Data_cell, HTML_EL_Heading_cell, HTML_EL_INS, HTML_EL_DEL,
     0};
 
 /* Define a pointer to let parser functions access the HTML entity table */
@@ -232,6 +232,26 @@ ThotBool XhtmlCannotContainText (ElementType elType)
     }
   return ret;
 }
+/*----------------------------------------------------------------------
+  CheckNamespace
+  If attribute attrNum is not present on element el, generate a
+  parsing error message.
+  ----------------------------------------------------------------------*/
+static void CheckNamespace (Element el, Document doc)
+{
+  char           msgBuffer[MaxMsgLength];
+  int            lineNum;
+
+  if (DocumentMeta[doc] && DocumentMeta[doc]->xmlformat &&
+      TtaGiveNamespaceDeclaration (doc, el) == NULL)
+    {
+      sprintf (msgBuffer, "Mandatory namespace for %s will be added when saving",
+               TtaGetElementTypeName(TtaGetElementType(el)));
+      lineNum = TtaGetElementLineNumber(el);
+      XmlParseError (warningMessage, (unsigned char*)msgBuffer, lineNum);
+      TtaSetANamespaceDeclaration (doc, el, NULL, XHTML_URI);
+    }
+}
 
 /*----------------------------------------------------------------------
   CheckMandatoryAttribute
@@ -309,7 +329,7 @@ void XhtmlElementComplete (ParserData *context, Element el, int *error)
   Document       doc;   
   ElementType    elType, newElType, childType;
   Element        child, desc, leaf, prev, next, last,
-    elFrames, lastFrame, lastChild, parent, picture, content;
+    elFrames, lastFrame, lastChild, parent, picture, content, legend;
   Attribute      attr;
   AttributeType  attrType;
   SSchema        htmlSchema;
@@ -317,8 +337,7 @@ void XhtmlElementComplete (ParserData *context, Element el, int *error)
   char           *text;
   char           lastChar[2];
   char           *name1, *data;
-  char           msgBuffer[MaxMsgLength];
-  int            lineNum, typenum, length;
+  int            typenum, length;
   ThotBool       isImage, isInline, clean;
 
   *error = 0;
@@ -329,6 +348,20 @@ void XhtmlElementComplete (ParserData *context, Element el, int *error)
   isInline = IsXMLElementInline (elType, doc);
   newElType.ElSSchema = elType.ElSSchema;
 
+  if (elType.ElTypeNum == HTML_EL_ins ||
+      elType.ElTypeNum == HTML_EL_del)
+    {
+      child = TtaGetFirstChild (el);
+      if (IsBlockElement (child))
+        {
+          // change the element type
+          if (elType.ElTypeNum == HTML_EL_ins)
+            TtaChangeTypeOfElement (el, doc, HTML_EL_INS);
+          else
+            TtaChangeTypeOfElement (el, doc, HTML_EL_DEL);
+          isInline = FALSE;
+        }
+    }
   if (elType.ElTypeNum == HTML_EL_Paragraph ||
       elType.ElTypeNum == HTML_EL_Address ||
       elType.ElTypeNum == HTML_EL_H1 ||
@@ -371,6 +404,10 @@ void XhtmlElementComplete (ParserData *context, Element el, int *error)
   typenum = elType.ElTypeNum;
   switch (typenum)
     {
+    case HTML_EL_HTML:
+      CheckNamespace (el, doc);
+      break;
+
     case HTML_EL_PICTURE_UNIT:
       /* Check the mandatory SRC attribute */
       CheckMandatoryAttribute (el, doc, HTML_ATTR_SRC);
@@ -686,6 +723,7 @@ void XhtmlElementComplete (ParserData *context, Element el, int *error)
       /* Check the mandatory name attribute */
       CheckMandatoryAttribute (el, doc, HTML_ATTR_Param_name);
       break;
+
 
     case HTML_EL_IFRAME:	  /* it's an iframe */
       child = TtaGetFirstChild (el);
@@ -1134,21 +1172,77 @@ void XhtmlElementComplete (ParserData *context, Element el, int *error)
       while (prev);
       break;
 
-    case HTML_EL_FIELDSET:
-       
+    case HTML_EL_FIELDSET:	  /* it's a fieldset */
       childType.ElTypeNum = 0;
       child = TtaGetFirstChild (el);
-      if (child != NULL)
-        childType = TtaGetElementType (child);
-      if (childType.ElTypeNum != HTML_EL_LEGEND)
+      if (!child)
+        /* empty fieldset. Create a legend and a Fieldset_Content */
         {
-          sprintf (msgBuffer, "The <fieldset> element requires <legend> as first child element");
-          lineNum = TtaGetElementLineNumber(el);
-          if (DocumentMeta[doc] && DocumentMeta[doc]->xmlformat)
-            XmlParseError (errorParsing, (unsigned char *)msgBuffer, lineNum);
+          elType.ElTypeNum = HTML_EL_LEGEND;
+          legend = TtaNewTree (doc, elType, "");
+          TtaInsertFirstChild (&legend, el, doc);
+          elType.ElTypeNum = HTML_EL_Fieldset_Content;
+          content = TtaNewTree (doc, elType, "");
+          TtaInsertSibling (content, legend, FALSE, doc);
+        }
+      else
+        /* is the legend element already created ? */
+        {
+          legend = NULL;
+          desc = child;
+          elType = TtaGetElementType (desc);
+          while (desc && elType.ElTypeNum != HTML_EL_LEGEND)
+            {
+              TtaNextSibling(&desc);
+              if (desc)
+                elType = TtaGetElementType (desc);
+            }
+          /* is it the legend element ? */
+          if (elType.ElTypeNum == HTML_EL_LEGEND)
+            legend = desc;
           else
-            HTMLParseError (doc, msgBuffer, lineNum);
-
+            {
+              /* create a legend element */
+              elType.ElTypeNum = HTML_EL_LEGEND;
+              legend = TtaNewTree (doc, elType, "");
+              TtaInsertFirstChild (&legend, el, doc);
+            }
+          
+          /* is the Fieldset_Content element already created ? */
+          content = NULL;
+          desc = child;
+          elType = TtaGetElementType (desc);
+          while (desc && elType.ElTypeNum != HTML_EL_Fieldset_Content)
+            {
+              TtaNextSibling(&desc);
+              if (desc)
+                elType = TtaGetElementType (desc);
+            }
+          /* is it the Fieldset_Content element ? */
+          if (elType.ElTypeNum == HTML_EL_Fieldset_Content)
+            content = desc;
+          else
+            {
+              /* create a Fieldset_Content element */
+              elType.ElTypeNum = HTML_EL_Fieldset_Content;
+              content = TtaNewTree (doc, elType, "");
+              TtaInsertSibling (content, legend, FALSE, doc);
+              desc = TtaGetFirstChild (content);
+              /* move previous existing children into the Fieldset_Content */
+              child = TtaGetLastChild(el);
+              while (child != content)
+                {
+                  elType = TtaGetElementType (child);
+                  TtaRemoveTree (child, doc);
+                  TtaInsertFirstChild (&child, content, doc);
+                  if (desc)
+                    {
+                      TtaDeleteTree (desc, doc);
+                      desc = NULL;
+                    }
+                  child = TtaGetLastChild(el);
+                }
+            }
         }
       break;
 
@@ -1413,63 +1507,74 @@ void CreateAttrWidthPercentPxl (char *buffer, Element el,
   attrTypePercent.AttrSSchema = elType.ElSSchema;
   attrTypePxl.AttrTypeNum = HTML_ATTR_IntWidthPxl;
   attrTypePercent.AttrTypeNum = HTML_ATTR_IntWidthPercent;
-  /* is the last character a '%' ? */
-  if (buffer[length] == '%')
+  do
     {
-      /* remove IntWidthPxl */
-      attrOld = TtaGetAttribute (el, attrTypePxl);
-      /* update IntWidthPercent */
-      attrNew = TtaGetAttribute (el, attrTypePercent);
-      if (attrNew == NULL)
+      /* is the last character a '%' ? */
+      if (buffer[length] == '%')
         {
-          attrNew = TtaNewAttribute (attrTypePercent);
-          TtaAttachAttribute (el, attrNew, doc);
+          /* remove IntWidthPxl */
+          attrOld = TtaGetAttribute (el, attrTypePxl);
+          /* update IntWidthPercent */
+          attrNew = TtaGetAttribute (el, attrTypePercent);
+          if (attrNew == NULL)
+            {
+              attrNew = TtaNewAttribute (attrTypePercent);
+              TtaAttachAttribute (el, attrNew, doc);
+            }
+          else if (isImage && oldWidth == -1)
+            {
+              if (attrOld == NULL)
+                oldWidth = TtaGetAttributeValue (attrNew);
+              else
+                oldWidth = TtaGetAttributeValue (attrOld);
+            }
         }
-      else if (isImage && oldWidth == -1)
+      else
         {
-          if (attrOld == NULL)
-            oldWidth = TtaGetAttributeValue (attrNew);
-          else
-            oldWidth = TtaGetAttributeValue (attrOld);
+          /* remove IntWidthPercent */
+          attrOld = TtaGetAttribute (el, attrTypePercent);
+          /* update IntWidthPxl */
+          attrNew = TtaGetAttribute (el, attrTypePxl);
+          if (attrNew == NULL)
+            {
+              attrNew = TtaNewAttribute (attrTypePxl);
+              TtaAttachAttribute (el, attrNew, doc);
+            }
+          else if (isImage && oldWidth == -1)
+            {
+              TtaGiveBoxSize (el, doc, 1, UnPixel, &w, &h);
+              if (attrOld == NULL)
+                oldWidth = w * TtaGetAttributeValue (attrNew) / 100;
+              else
+                oldWidth = w * TtaGetAttributeValue (attrOld) / 100;	  
+            }
         }
-    }
-  else
-    {
-      /* remove IntWidthPercent */
-      attrOld = TtaGetAttribute (el, attrTypePercent);
-      /* update IntWidthPxl */
-      attrNew = TtaGetAttribute (el, attrTypePxl);
-      if (attrNew == NULL)
-        {
-          attrNew = TtaNewAttribute (attrTypePxl);
-          TtaAttachAttribute (el, attrNew, doc);
-        }
-      else if (isImage && oldWidth == -1)
-        {
-          TtaGiveBoxSize (el, doc, 1, UnPixel, &w, &h);
-          if (attrOld == NULL)
-            oldWidth = w * TtaGetAttributeValue (attrNew) / 100;
-          else
-            oldWidth = w * TtaGetAttributeValue (attrOld) / 100;	  
-        }
-    }
 
-  if (attrOld != NULL)
-    TtaRemoveAttribute (el, attrOld, doc);
-  if (sscanf (buffer, "%d", &val))
-    TtaSetAttributeValue (attrNew, val, el, doc);
-  else
-    /* its not a number. Delete attribute and send an error message */
-    {
-      TtaRemoveAttribute (el, attrNew, doc);
-      if (strlen (buffer) > MaxMsgLength - 30)
-        buffer[MaxMsgLength - 30] = EOS;
-      sprintf (msgBuffer, "Invalid attribute value \"%s\"", buffer);
-      HTMLParseError (doc, msgBuffer, 0);
+      if (attrOld)
+        TtaRemoveAttribute (el, attrOld, doc);
+      if (sscanf (buffer, "%d", &val))
+        TtaSetAttributeValue (attrNew, val, el, doc);
+      else
+        /* its not a number. Delete attribute and send an error message */
+        {
+          TtaRemoveAttribute (el, attrNew, doc);
+          if (strlen (buffer) > MaxMsgLength - 30)
+            buffer[MaxMsgLength - 30] = EOS;
+          sprintf (msgBuffer, "Invalid attribute value \"%s\"", buffer);
+          HTMLParseError (doc, msgBuffer, 0);
+        }
+
+      if (el != origEl)
+        // apply the attribute to the object itself
+        el = origEl;
+      else
+        el = NULL;
     }
+  while (el);
+
   if (isImage)
     UpdateImageMap (origEl, doc, oldWidth, -1);
-  else if (isSVG && oldWidth != -1)
+  if (isSVG && oldWidth != -1)
     {
       // force the redisplay of the SVG element
       el = TtaGetParent (child);
@@ -1545,63 +1650,74 @@ void CreateAttrHeightPercentPxl (char *buffer, Element el,
   attrTypePercent.AttrSSchema = elType.ElSSchema;
   attrTypePxl.AttrTypeNum = HTML_ATTR_IntHeightPxl;
   attrTypePercent.AttrTypeNum = HTML_ATTR_IntHeightPercent;
-  /* is the last character a '%' ? */
-  if (buffer[length] == '%')
+  do
     {
-      /* remove IntHeightPxl */
-      attrOld = TtaGetAttribute (el, attrTypePxl);
-      /* update IntHeightPercent */
-      attrNew = TtaGetAttribute (el, attrTypePercent);
-      if (attrNew == NULL)
+      /* is the last character a '%' ? */
+      if (buffer[length] == '%')
         {
-          attrNew = TtaNewAttribute (attrTypePercent);
-          TtaAttachAttribute (el, attrNew, doc);
+          /* remove IntHeightPxl */
+          attrOld = TtaGetAttribute (el, attrTypePxl);
+          /* update IntHeightPercent */
+          attrNew = TtaGetAttribute (el, attrTypePercent);
+          if (attrNew == NULL)
+            {
+              attrNew = TtaNewAttribute (attrTypePercent);
+              TtaAttachAttribute (el, attrNew, doc);
+            }
+          else if (isImage && oldHeight == -1)
+            {
+              if (attrOld == NULL)
+                oldHeight = TtaGetAttributeValue (attrNew);
+              else
+                oldHeight = TtaGetAttributeValue (attrOld);
+            }
         }
-      else if (isImage && oldHeight == -1)
+      else
         {
-          if (attrOld == NULL)
-            oldHeight = TtaGetAttributeValue (attrNew);
-          else
-            oldHeight = TtaGetAttributeValue (attrOld);
+          /* remove IntHeightPercent */
+          attrOld = TtaGetAttribute (el, attrTypePercent);
+          /* update IntHeightPxl */
+          attrNew = TtaGetAttribute (el, attrTypePxl);
+          if (attrNew == NULL)
+            {
+              attrNew = TtaNewAttribute (attrTypePxl);
+              TtaAttachAttribute (el, attrNew, doc);
+            }
+          else if (isImage && oldHeight == -1)
+            {
+              TtaGiveBoxSize (el, doc, 1, UnPixel, &w, &h);
+              if (attrOld == NULL)
+                oldHeight = w * TtaGetAttributeValue (attrNew) / 100;
+              else
+                oldHeight = w * TtaGetAttributeValue (attrOld) / 100;	  
+            }
         }
-    }
-  else
-    {
-      /* remove IntHeightPercent */
-      attrOld = TtaGetAttribute (el, attrTypePercent);
-      /* update IntHeightPxl */
-      attrNew = TtaGetAttribute (el, attrTypePxl);
-      if (attrNew == NULL)
-        {
-          attrNew = TtaNewAttribute (attrTypePxl);
-          TtaAttachAttribute (el, attrNew, doc);
-        }
-      else if (isImage && oldHeight == -1)
-        {
-          TtaGiveBoxSize (el, doc, 1, UnPixel, &w, &h);
-          if (attrOld == NULL)
-            oldHeight = w * TtaGetAttributeValue (attrNew) / 100;
-          else
-            oldHeight = w * TtaGetAttributeValue (attrOld) / 100;	  
-        }
-    }
 
-  if (attrOld != NULL)
-    TtaRemoveAttribute (el, attrOld, doc);
-  if (sscanf (buffer, "%d", &val))
-    TtaSetAttributeValue (attrNew, val, el, doc);
-  else
-    /* its not a number. Delete attribute and send an error message */
-    {
-      TtaRemoveAttribute (el, attrNew, doc);
-      if (strlen (buffer) > MaxMsgLength - 30)
-        buffer[MaxMsgLength - 30] = EOS;
-      sprintf (msgBuffer, "Invalid attribute value \"%s\"", buffer);
-      HTMLParseError (doc, msgBuffer, 0);
+      if (attrOld)
+        TtaRemoveAttribute (el, attrOld, doc);
+      if (sscanf (buffer, "%d", &val))
+        TtaSetAttributeValue (attrNew, val, el, doc);
+      else
+        /* its not a number. Delete attribute and send an error message */
+        {
+          TtaRemoveAttribute (el, attrNew, doc);
+          if (strlen (buffer) > MaxMsgLength - 30)
+            buffer[MaxMsgLength - 30] = EOS;
+          sprintf (msgBuffer, "Invalid attribute value \"%s\"", buffer);
+          HTMLParseError (doc, msgBuffer, 0);
+        }
+
+      if (el != origEl)
+        // apply the attribute to the object itself
+        el = origEl;
+      else
+        el = NULL;
     }
+  while (el);
+
   if (isImage)
     UpdateImageMap (origEl, doc, oldHeight, -1);
-  else if (isSVG && oldHeight != -1)
+  if (isSVG && oldHeight != -1)
     {
       // force the redisplay of the SVG element
       el = TtaGetParent (child);
@@ -1747,7 +1863,7 @@ void EndOfHTMLAttributeValue (char *attrValue, AttributeMapping *lastMappedAttr,
       TtaGetEnvBoolean ("LOAD_CSS", &loadcss);
       if (loadcss)
         ParseHTMLSpecificStyle (context->lastElement, attrValue,
-                                context->doc, 200, FALSE);
+                                context->doc, 1000, FALSE);
       done = TRUE;
     }
   else
@@ -2029,15 +2145,15 @@ void EndOfHTMLAttributeValue (char *attrValue, AttributeMapping *lastMappedAttr,
               if (strlen (attrValue) > MaxMsgLength - 30)
                 attrValue[MaxMsgLength - 30] = EOS;
               HTMLSetBackgroundImage (context->doc, context->lastElement,
-                                      REPEAT, 0, attrValue, FALSE);
+                                      REPEAT, 2000, attrValue, FALSE);
             }
           else if (!strcmp (lastMappedAttr->XMLattribute, "bgcolor"))
             HTMLSetBackgroundColor (context->doc, context->lastElement,
-                                    0, attrValue);
+                                    2000, attrValue);
           else if (!strcmp (lastMappedAttr->XMLattribute, "text") ||
                    !strcmp (lastMappedAttr->XMLattribute, "color"))
             HTMLSetForegroundColor (context->doc, context->lastElement,
-                                    0, attrValue);
+                                    2000, attrValue);
         }
     }
 }

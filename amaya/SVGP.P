@@ -56,6 +56,7 @@ DEFAULT
    Opacity: 100%;
    FillOpacity: Enclosing =;
    StrokeOpacity: Enclosing =;
+   LineWeight: Enclosing =;
    IN Structure_view
         BEGIN
         VertPos: Top = Previous . Bottom;
@@ -504,7 +505,7 @@ RULES
         CreateBefore (ElementName);
         CreateWith (VerticalLine);
            HorizPos: Left = Enclosing . Left Userspecified;
-           VertPos:  HRef = Enclosing . Top + 10 pt Userspecified;
+           VertPos:  HRef = Enclosing . Top Userspecified;
         Width: Enclosed . Width;
         Height: Enclosed . Height;
         IN Structure_view BEGIN

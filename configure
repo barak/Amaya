@@ -736,17 +736,13 @@ AMAYA_DAV_INCLUDES
 AMAYA_DAV_LIBS
 BUILDWEBDAV
 RAPTOR_CONFIG
-REDLAND_CONFIG
-ANNOTATIONS_CFLAGS
-ANNOTATIONS_INCLUDES
-ANNOTATIONS_LIBS
-ANNOTLIB_COMPILE_BM
-BUILDREDLAND
-REDLAND_CFLAGS
-REDLAND_LIBS
 BUILDRAPTOR
-RAPTOR_CFLAGS
-RAPTOR_LIBS
+AMAYA_ANNOT_OPTIONS
+AMAYA_ANNOT_INCLUDES
+AMAYA_ANNOT_EXTRA_LIBS
+ANNOTLIB_COMPILE_BM
+AMAYA_RAPTOR_LIBS
+AMAYA_RAPTOR_INCLUDES
 AMAYA_INSTALLDIR
 APP_MAJVER
 APP_MINVER
@@ -1363,27 +1359,24 @@ if test -n "$ac_init_help"; then
 Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-  --enable-system-wx try the wxWidgets system library
+  --enable-system-wx      try the wxWidgets system library
   --disable-svg           disable SVG support
   --enable-system-libwww  try the libWWW system library
   --disable-annot         disable Annotations support
-  --enable-bookmarks      enable experimental bookmark support
-  --enable-system-redland try the redland RDF system library
-  --enable-system-raptor  try the Raptor RDF system library
+  --enable-system-raptor  try the raptor RDF system library
   --disable-templates     disable experimental templates support
   --disable-generic-xml   disable Generic XML support
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --with-gl               enable Opengl canvas (experimental)
-  --with-gtk              use GTK GUI toolkit
-  --with-wx               use wxWidgets GUI toolkit
-  --with-mesa         enable canvas with software OpenGL implementation (Mesa)
+  --with-gl               enable canvas with hardware OpenGL implementation
+
+  --with-mesa             enable canvas with software OpenGL implementation (default)
   --with-wxdebug          compiles wxWidgets with debuging options
   --with-wxsrcdir=...     compiles Amaya with a specific wxWidgets sources path
   --with-graphiclibs      use static libjpeg, libpng.
-  --with-debug          compiles Amaya with debuging options (-g)
+  --with-debug            compiles Amaya with debuging options (-g)
   --with-dav              enable WebDAV support (experimental)
 
 Some influential environment variables:
@@ -14042,7 +14035,7 @@ fi # with_wx = no
 
 # the wx version
 AMAYAWX_MAJVER=9
-AMAYAWX_MINVER=54
+AMAYAWX_MINVER=55
 AMAYAWX_SUBVER=0
 
 #the old version (to remove when switching on wx)
@@ -14091,18 +14084,8 @@ if test "${with_debug+set}" = set; then
   withval=$with_debug;
 fi
 
-if test "$with_debug" = "yes" ; then
-  with_debug="yes"
-  CFLAGS="-g"
-  CXXFLAGS="-g"
-else
-  with_debug="no"
-  CFLAGS="-O2"
-  CXXFLAGS="-O2"
-fi
 
 if test "${CC}" = "gcc" ; then
- CFLAGS="${CFLAGS} -Wall"
   case "${host}" in
       *-*-irix5* | *-*irix6* )
          CFLAGS="${CFLAGS} -fsigned-char"
@@ -14114,6 +14097,8 @@ if test "$ac_cv_c_const" = "no" ; then
   CFLAGS="${CFLAGS} -DCONST= "
 fi
 
+CFLAGS="${CFLAGS} -Wall"
+CXXFLAGS="${CXXFLAGS} -Wall"
 
 # setup LDFLAGS
 # on macosx, specific flags must be set to avoid conflicts with allready installed libwww
@@ -14888,7 +14873,7 @@ fi
 
 ############# end of LibWWW and WebDAV Support ################################
 
-##########################Annotations and Bookmarks Support####################
+##########################Annotations Support####################
 # Check whether --enable-annot was given.
 if test "${enable_annot+set}" = set; then
   enableval=$enable_annot; case "${enableval}" in
@@ -14903,44 +14888,6 @@ else
 fi
 
 
-# Check whether --enable-bookmarks was given.
-if test "${enable_bookmarks+set}" = set; then
-  enableval=$enable_bookmarks; case "${enableval}" in
-	  yes) with_bookmarks="yes" ;;
-	  no)  with_bookmarks="no" ;;
-	  *) { { echo "$as_me:$LINENO: error: bad value ${enableval} for --enable-bookmarks" >&5
-echo "$as_me: error: bad value ${enableval} for --enable-bookmarks" >&2;}
-   { (exit 1); exit 1; }; } ;;
-	esac
-else
-  with_bookmarks="no"
-fi
-
-
-#if the directory containing Annotlib
-#and Bookmarks is not present,
-#don't try to build them
-if test ! -f $srcdir/annotlib/Makefile.in ; then
-	{ echo "$as_me:$LINENO: WARNING: Annotation makefile not found !!" >&5
-echo "$as_me: WARNING: Annotation makefile not found !!" >&2;}
-	{ echo "$as_me:$LINENO: WARNING: Disabling Annotations build !" >&5
-echo "$as_me: WARNING: Disabling Annotations build !" >&2;}
-	with_annot="no"
-	with_bookmarks="no"
-fi
-
-if test "$with_bookmarks" = "yes" -a "$with_annot" = "no" ; then
-   { echo "$as_me:$LINENO: WARNING: Disabling bookmarks build as annotations are disabled !" >&5
-echo "$as_me: WARNING: Disabling bookmarks build as annotations are disabled !" >&2;}
-   with_bookmarks="no"
-fi
-
-#bookmarks need Redland
-if test "$with_bookmarks" = "yes" ; then
-	with_redland="yes"
-else
-	with_redland="no"
-fi
 
 #annot need Raptor
 if test "$with_annot" = "yes" ; then
@@ -14948,20 +14895,6 @@ if test "$with_annot" = "yes" ; then
 else
 	with_raptor="no"
 fi
-
-# Check whether --enable-system-redland was given.
-if test "${enable_system_redland+set}" = set; then
-  enableval=$enable_system_redland; case "${enableval}" in
-	  yes) with_system_redland="yes";;
-	  no)  with_system_redland="no" ;;
-	  *) { { echo "$as_me:$LINENO: error: bad value ${enableval} for --enable-system-redland" >&5
-echo "$as_me: error: bad value ${enableval} for --enable-system-redland" >&2;}
-   { (exit 1); exit 1; }; } ;;
-	esac
-else
-  with_system_redland="no"
-fi
-
 
 # Check whether --enable-system-raptor was given.
 if test "${enable_system_raptor+set}" = set; then
@@ -15029,101 +14962,6 @@ echo "$as_me: WARNING: Not using system-provided Raptor library" >&2;}
     fi
 fi
 
-#If Redland is needed and we are asked
-#to use the system library, check if is present
-if test "$with_redland" = "yes" -a "$with_system_redland" = "yes" ; then
-    # check to see if we have a redland library
-    # Extract the first word of "redland-config", so it can be a program name with args.
-set dummy redland-config; ac_word=$2
-{ echo "$as_me:$LINENO: checking for $ac_word" >&5
-echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
-if test "${ac_cv_path_REDLAND_CONFIG+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  case $REDLAND_CONFIG in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_REDLAND_CONFIG="$REDLAND_CONFIG" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-  for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_REDLAND_CONFIG="$as_dir/$ac_word$ac_exec_ext"
-    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-REDLAND_CONFIG=$ac_cv_path_REDLAND_CONFIG
-if test -n "$REDLAND_CONFIG"; then
-  { echo "$as_me:$LINENO: result: $REDLAND_CONFIG" >&5
-echo "${ECHO_T}$REDLAND_CONFIG" >&6; }
-else
-  { echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6; }
-fi
-
-
-
-    if test "$REDLAND_CONFIG" = "" ; then
-	{ echo "$as_me:$LINENO: WARNING: Not using system-provided redland library" >&5
-echo "$as_me: WARNING: Not using system-provided redland library" >&2;}
-	with_system_redland="no"
-    else
-
-	{ echo "$as_me:$LINENO: checking system redland version" >&5
-echo $ECHO_N "checking system redland version... $ECHO_C" >&6; }
-	redland_min_version=0.9.16
-	REDLAND_VERSION=`$REDLAND_CONFIG --version`
-	redland_version_dec=`echo $REDLAND_VERSION | awk -F. '{printf("%d\n", 10000*$1 + 100*$2 + $3)};'`
-	redland_min_version_dec=`echo $redland_min_version | awk -F. '{printf("%d\n", 10000*$1 + 100*$2 + $3)};'`
-	if test $redland_version_dec -lt $redland_min_version_dec; then
-		{ echo "$as_me:$LINENO: result: no - found version $REDLAND_VERSION and minimal version is $redland_min_version" >&5
-echo "${ECHO_T}no - found version $REDLAND_VERSION and minimal version is $redland_min_version" >&6; }
-		with_system_redland="no"
-	else
-		{ echo "$as_me:$LINENO: result: yes - found version $REDLAND_VERSION" >&5
-echo "${ECHO_T}yes - found version $REDLAND_VERSION" >&6; }
-		{ echo "$as_me:$LINENO: checking checking for redland headers" >&5
-echo $ECHO_N "checking checking for redland headers... $ECHO_C" >&6; }
-						REDLAND_HEADERS=""
-		if test -e "/usr/include/redland.h" ; then
-			REDLAND_HEADERS="/usr/include";
-		elif test -e "/usr/local/include/redland.h" ; then
-			REDLAND_HEADERS="/usr/local/include";
-		fi
-		if test $REDLAND_HEADERS != ""; then
-			{ echo "$as_me:$LINENO: result: yes - have development version" >&5
-echo "${ECHO_T}yes - have development version" >&6; }
-		else
-			{ echo "$as_me:$LINENO: result: no - no development version" >&5
-echo "${ECHO_T}no - no development version" >&6; }
-			with_system_redland="no"
-		fi
-	fi
-    fi
-fi
-
-#if we use the builtin library,
-#check it is present
-if test "$with_redland" = "yes" -a "$with_system_redland" != "yes" \
-	-a ! -d "$srcdir/../redland" ; then
-	{ echo "$as_me:$LINENO: WARNING: Redland source dir not found !!" >&5
-echo "$as_me: WARNING: Redland source dir not found !!" >&2;}
-	{ echo "$as_me:$LINENO: WARNING: Disabling redland build !" >&5
-echo "$as_me: WARNING: Disabling redland build !" >&2;}
-	with_redland="no"
-fi
-
 #if we use the builtin library,
 #check it is present
 if test "$with_raptor" = "yes" -a "$with_system_raptor" != "yes" \
@@ -15135,73 +14973,26 @@ echo "$as_me: WARNING: Disabling raptor build !" >&2;}
 	with_raptor="no"
 fi
 
-CURRENTPATH="`pwd`"
-
-#At this point, we know everything about Redland,
+#At this point, we know everything about Raptor,
 #so either set the variables we will need later,
-#ot disable Annotations and Bookmarks
-if test "$with_redland" = "yes" ; then
-	if test "$with_system_redland" != "yes" ; then
-
-		if test "$with_system_raptor" = "yes" ; then
-			WITH_RAPTOR="auto"
-		else
-			WITH_RAPTOR="internal"
-		fi
-
-		BUILDREDLAND="redland"
-		mkdir $BUILDREDLAND
-
-		cd $BUILDREDLAND &&
-			CPPFLAGS="-I$CURRENTPATH/../../libwww/modules/expat/lib" \
-			LDFLAGS="-L$CURRENTPATH/libwww/modules/expat -L$CURRENTPATH/libwww/modules/expat/.libs" \
-			../../../redland/configure \
-			--build=$build_alias --host=$host_alias --target=$target_alias \
-			--disable-shared \
-			--without-bdb \
-	 		--enable-parsers=raptor \
-	 		--with-raptor=$WITH_RAPTOR \
-			--with-xml-parser=expat \
-			--with-www=none \
-			--without-libwww \
-			--without-openssl-digests \
-			--without-mysql
-			$ECHO "redland is configured"
-		cd ..
-
-		REDLAND_CFLAGS="-I\$(THOTDIR)/../redland/librdf"
-		REDLAND_LIBS="../redland/librdf/.libs/librdf.a"
-
-		RAPTOR_CFLAGS="-I\$(THOTDIR)/../redland/raptor"
-		RAPTOR_LIBS="../redland/raptor/.libs/libraptor.a"
-	else
-		REDLAND_CFLAGS="`$REDLAND_CONFIG --cflags`"
-		REDLAND_LIBS="-lrdf"
-
-		RAPTOR_LIBS="-lraptor"
-
-       fi
-elif test "$with_raptor" = "yes" ; then
+#or disable Annotations
+if test "$with_raptor" = "yes" ; then
 	if test "$with_system_raptor" != "yes" ; then
-
-		echo "Configuring Raptor"
+		AMAYA_ANNOT_OPTIONS="$AMAYA_ANNOT_OPTIONS -I\$(THOTDIR)/../redland/raptor "
+		AMAYA_RAPTOR_LIBS="../redland/raptor/.libs/libraptor.a"
+		AMAYA_RAPTOR_INCLUDES="-I\$(THOTDIR)/../redland/raptor"
 		BUILDRAPTOR="raptor"
+		CURRENTPATH="`pwd`"
 		mkdir $BUILDRAPTOR
-
 		cd $BUILDRAPTOR &&
+			CC="$CC" CXX="$CXX" \
 			CPPFLAGS="-I$CURRENTPATH/../../libwww/modules/expat/lib" \
 			LDFLAGS="-L$CURRENTPATH/libwww/modules/expat -L$CURRENTPATH/libwww/modules/expat/.libs" \
 			../../../redland/raptor/configure \
 			--build=$build_alias --host=$host_alias --target=$target_alias \
 			--disable-shared \
-			--without-bdb \
-	 		--enable-parsers=raptor \
-	 		--with-raptor=$WITH_RAPTOR \
 			--with-xml-parser=expat \
-			--with-www=none \
-			--without-libwww \
-			--without-openssl-digests \
-			--without-mysql
+			--with-www=none
 			$ECHO "Raptor is configured"
 			$ECHO "Patching the raptor_config.h file to avoid including glib2-0"
 			$CP raptor_config.h raptor_config.h.orig
@@ -15210,32 +15001,19 @@ elif test "$with_raptor" = "yes" ; then
 			$RM raptor_config.h.orig
 			$ECHO "Raptor is patched"
 		cd ..
-
-		RAPTOR_CFLAGS="-I\$(THOTDIR)/../redland/raptor"
-		RAPTOR_LIBS="../raptor/.libs/libraptor.a"
 	else
-		RAPTOR_CFLAGS="`$RAPTOR_CONFIG --cflags`"
-		RAPTOR_LIBS="-lraptor"
-	fi
-	with_bookmarks="no"
+		raptor_includes=`$RAPTOR_CONFIG --cflags`
+		raptor_libs=`$RAPTOR_CONFIG --libs`
+ 		AMAYA_ANNOT_OPTIONS="$AMAYA_ANNOT_OPTIONS"
+		AMAYA_ANNOT_INCLUDES="$raptor_includes -I\$(THOTDIR)/thotlib/include"
+		AMAYA_ANNOT_EXTRA_LIBS="$raptor_libs"
+		AMAYA_RAPTOR_INCLUDES="$raptor_includes"
+       fi
 else
 	with_annot="no"
-	with_bookmarks="no"
 fi
 
-#Bookmarks require some specific flags
-if test "$with_bookmarks" = "yes" ; then
-	ANNOTLIB_COMPILE_BM=
-	ANNOTATIONS_CFLAGS="-DBOOKMARKS"
-else
-	ANNOTLIB_COMPILE_BM='#'
-fi
-
-if test "$with_annot" = "yes" ; then
-	ANNOTATIONS_CFLAGS="$ANNOTATIONS_CFLAGS -DANNOTATIONS"
-	ANNOTATIONS_INCLUDES="-I\$(THOTDIR)/annotlib -I\$(THOTDIR)/annotlib/f"
-	ANNOTATIONS_LIBS="../annotlib/libAnnot.a"
-fi
+ANNOTLIB_COMPILE_BM='#'
 
 
 
@@ -15247,11 +15025,7 @@ fi
 
 
 
-
-
-
-
-###################End of Annotations and Bookmarks Support####################
+###################End of Annotations Support####################
 
 
 # Check whether --enable-templates was given.
@@ -15392,7 +15166,7 @@ if test "${VPATHOPT}" = "" ; then
 	VPATHOPT="VPATH"
 fi
 
-AMAYA_INSTALLDIR="amaya"
+AMAYA_INSTALLDIR="Amaya"
 
 
 
@@ -15414,6 +15188,9 @@ AMAYA_INSTALLDIR="amaya"
 
 
 
+
+
+#AC_SUBST(ANNOTLIB_COMPILE_BM)
 
 
 
@@ -15460,7 +15237,6 @@ make_output="Makefile Options.orig:Options.in tools/Makefile \
        script_uninstall:../batch/script_uninstall.in"
 
 if test "$build_amaya" = "yes" ; then
-
     make_output="$make_output amaya/Makefile"
     EXTRA_MAKEFILE_IN="$srcdir/amaya/Makefile.in"
 
@@ -15482,6 +15258,13 @@ if test "$build_amaya" = "yes" ; then
        EXTRA_MAKEFILE_IN="$EXTRA_MAKEFILE_IN $WX_SRCDIR/Makefile.in $WX_SRCDIR/configure.in"
     fi
 
+fi
+
+if test "$AMAYAOS" != "MACOSX" ; then
+    if test ! -d bin ; then
+      mkdir -p bin
+    fi
+    make_output="$make_output bin/amaya:../batch/amaya.in"
 fi
 
 
@@ -16295,17 +16078,13 @@ AMAYA_DAV_INCLUDES!$AMAYA_DAV_INCLUDES$ac_delim
 AMAYA_DAV_LIBS!$AMAYA_DAV_LIBS$ac_delim
 BUILDWEBDAV!$BUILDWEBDAV$ac_delim
 RAPTOR_CONFIG!$RAPTOR_CONFIG$ac_delim
-REDLAND_CONFIG!$REDLAND_CONFIG$ac_delim
-ANNOTATIONS_CFLAGS!$ANNOTATIONS_CFLAGS$ac_delim
-ANNOTATIONS_INCLUDES!$ANNOTATIONS_INCLUDES$ac_delim
-ANNOTATIONS_LIBS!$ANNOTATIONS_LIBS$ac_delim
-ANNOTLIB_COMPILE_BM!$ANNOTLIB_COMPILE_BM$ac_delim
-BUILDREDLAND!$BUILDREDLAND$ac_delim
-REDLAND_CFLAGS!$REDLAND_CFLAGS$ac_delim
-REDLAND_LIBS!$REDLAND_LIBS$ac_delim
 BUILDRAPTOR!$BUILDRAPTOR$ac_delim
-RAPTOR_CFLAGS!$RAPTOR_CFLAGS$ac_delim
-RAPTOR_LIBS!$RAPTOR_LIBS$ac_delim
+AMAYA_ANNOT_OPTIONS!$AMAYA_ANNOT_OPTIONS$ac_delim
+AMAYA_ANNOT_INCLUDES!$AMAYA_ANNOT_INCLUDES$ac_delim
+AMAYA_ANNOT_EXTRA_LIBS!$AMAYA_ANNOT_EXTRA_LIBS$ac_delim
+ANNOTLIB_COMPILE_BM!$ANNOTLIB_COMPILE_BM$ac_delim
+AMAYA_RAPTOR_LIBS!$AMAYA_RAPTOR_LIBS$ac_delim
+AMAYA_RAPTOR_INCLUDES!$AMAYA_RAPTOR_INCLUDES$ac_delim
 AMAYA_INSTALLDIR!$AMAYA_INSTALLDIR$ac_delim
 APP_MAJVER!$APP_MAJVER$ac_delim
 APP_MINVER!$APP_MINVER$ac_delim
@@ -16328,7 +16107,7 @@ EXTRA_MAKEFILE_IN!$EXTRA_MAKEFILE_IN$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 68; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 64; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -16735,7 +16514,6 @@ echo "$as_me: executing $ac_file commands" >&6;}
 
 echo timestamp > stamp-h
 
-
 if test -f Options ; then
    oldversion=`grep Version Options`
    newversion=`grep Version Options.orig`
@@ -16792,6 +16570,10 @@ if test "$no_create" != yes; then
 fi
 
 
+if test "$AMAYAOS" != "MACOSX" ; then
+    chmod a+x bin/amaya
+fi
+
 if test "$build_amaya" = "yes" ; then
     echo Amaya $AMAYA_VER configured
     echo Amaya configured with libWWW
@@ -16810,9 +16592,6 @@ if test "$build_amaya" = "yes" ; then
 	else
 	  echo Amaya configured with the Redland RDF library \(system\)
 	fi
-    fi
-    if test "$with_bookmarks" = "yes" ; then
-	echo Amaya configured with bookmarks support \(experimental\)
     fi
     if test "$with_templates" = "yes" ; then
 	echo Amaya configured with templates support \(experimental\)

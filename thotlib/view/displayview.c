@@ -40,6 +40,7 @@
 #include "appdialogue_f.h"
 #include "appli_f.h"
 #include "applicationapi_f.h"
+#include "attrmenu.h"
 #include "attrmenu_f.h"
 #include "attrpresent_f.h"
 #include "attributes_f.h"
@@ -83,21 +84,7 @@
 #include "displaybox_f.h"
 #include "content.h"
 #endif /* _GL */
-
-/* descriptor of the selection to do after redosplaying */
-typedef struct _SelectionDescriptor
-{
-  Element             SDElemSel;
-  Element             SDElemExt;
-  Attribute           SDAttribute;
-  int                 SDFirstChar;
-  int                 SDLastChar;
-  int                 SDCharExt;
-  ThotBool            SDSelActive;
-}
-SelectionDescriptor;
  
-static SelectionDescriptor NewDocSelection[MAX_DOCUMENTS];
 
 /*----------------------------------------------------------------------
   FrameToView retourne, sous la forme qui convient a l'API Thot, 
@@ -358,13 +345,36 @@ void BuildAbstractBoxes (PtrElement pEl, PtrDocument pDoc)
 }
 
 /*----------------------------------------------------------------------
+  TransmitAccessRight
+  Updates access rights to element abstract boxes and all children.
+  ----------------------------------------------------------------------*/
+static void TransmitAccessRight (PtrAbstractBox pAb, ThotBool ro)
+{
+  if (pAb == NULL)
+    return;
+  pAb->AbReadOnly = ro;
+  pAb = pAb->AbFirstEnclosed;
+  while (pAb)
+    {
+      if (pAb && !pAb->AbPresentationBox && pAb->AbElement)
+        {
+          if (pAb->AbElement->ElAccess == Inherited)
+            TransmitAccessRight (pAb, ro);
+          else
+            TransmitAccessRight (pAb, pAb->AbElement->ElAccess == ReadOnly);
+        }
+      pAb = pAb->AbNext;
+    }
+}
+
+/*----------------------------------------------------------------------
   RedisplayNewElement affiche un element qui vient d'etre ajoute'    
   dans un arbre abstrait.                                         
   ----------------------------------------------------------------------*/
-void   RedisplayNewElement (Document document,
-                            PtrElement newElement,
-                            PtrElement sibling, ThotBool first,
-                            ThotBool creation)
+void RedisplayNewElement (Document document,
+                          PtrElement newElement,
+                          PtrElement sibling, ThotBool first,
+                          ThotBool creation)
 {
   PtrDocument         pDoc;
 
@@ -656,111 +666,6 @@ static void RebuildImage (PtrDocument pDoc)
 
 
 /*----------------------------------------------------------------------
-  ChangeAbsBoxModifAttrIntoView change les booleens AbCanBeModified et AbReadOnly   
-  dans tous les paves de l'element pEl qui appartiennent a la vue 
-  vue. newAbsModif donne la nouvelle valeur de AbCanBeModified,          
-  reaffiche indique si on veut reafficher.                        
-  ----------------------------------------------------------------------*/
-static void  ChangeAbsBoxModifAttrIntoView (PtrElement pEl, int view,
-                                            ThotBool newAbsModif,
-                                            ThotBool redisplay)
-{
-  PtrAbstractBox      pAb, pAbbChild;
-  ThotBool            stop;
-
-  pAb = pEl->ElAbstractBox[view - 1];
-  if (pAb != NULL)
-    {
-      stop = FALSE;
-      while (!stop)
-        if (pAb->AbElement != pEl)
-          /* ce n'est pas un pave de l'element, on arrete */
-          stop = TRUE;
-        else
-          /* c'est un pave de l'element, on le traite */
-          {
-            pAb->AbReadOnly = !newAbsModif;
-            if (redisplay)
-              pAb->AbAspectChange = TRUE;
-            if (!pAb->AbPresentationBox)
-              /* c'est le pave principal de l'element */
-              {
-                /* les paves de presentation restent non modifiables */
-                pAb->AbCanBeModified = newAbsModif;
-                /* traite les paves de presentation crees par Create et */
-                /* CreateLast */
-                pAbbChild = pAb->AbFirstEnclosed;
-                while (pAbbChild != NULL)
-                  {
-                    if (pAbbChild->AbElement == pEl)
-                      /* c'est un pave de l'element */
-                      {
-                        pAbbChild->AbReadOnly = !newAbsModif;
-                        if (redisplay)
-                          pAbbChild->AbAspectChange = TRUE;
-                      }
-                    pAbbChild = pAbbChild->AbNext;
-                  }
-              }
-            if (pAb->AbNext != NULL)
-              /* passe au pave suivant */
-              pAb = pAb->AbNext;
-            else
-              stop = TRUE;
-          }
-    }
-}
-
-
-/*----------------------------------------------------------------------
-  ChangeAbsBoxModif change les booleens AbCanBeModified et AbReadOnly dans 
-  tous les paves existants de l'element pEl et de sa descendance. 
-  ----------------------------------------------------------------------*/
-void                ChangeAbsBoxModif (PtrElement pEl, Document document,
-                                       ThotBool newAbsModif)
-{
-  PtrDocument         pDoc;
-  int                 view;
-  PtrElement          pChild;
-
-  pDoc = LoadedDocument[document - 1];
-  if (pDoc == NULL)
-    return;
-  /* si le document n'a pas de schema de presentation, on ne fait rien */
-  if (PresentationSchema (pDoc->DocSSchema, pDoc) == NULL)
-    return;
-  /* si le document est en mode de non calcul de l'image, on ne fait rien */
-  if (documentDisplayMode[document - 1] == NoComputedDisplay)
-    return;
-  /* demande au mediateur si une couleur est associee a ReadOnly */
-  /* si oui, il faut reafficher les paves modifie's */
-  /* on traite toutes les vues du document */
-  for (view = 1; view <= MAX_VIEW_DOC; view++)
-    {
-      /* on traite tous les paves de l'element dans cette vue */
-      ChangeAbsBoxModifAttrIntoView (pEl, view, newAbsModif, TRUE);
-      if (pEl->ElAbstractBox[view - 1] != NULL)
-        RedispAbsBox (pEl->ElAbstractBox[view - 1],
-                      LoadedDocument[document - 1]);
-    }
-  /* on fait reafficher pour visualiser le changement de couleur */
-  AbstractImageUpdated (LoadedDocument[document - 1]);
-  RedisplayCommand (document);
-  /* meme traitement pour les fils qui heritent les droits d'acces */
-  if (!pEl->ElTerminal)
-    {
-      pChild = pEl->ElFirstChild;
-      while (pChild != NULL)
-        {
-          if (pChild->ElAccess == Inherited)
-            ChangeAbsBoxModif (pChild, document, newAbsModif);
-          pChild = pChild->ElNext;
-        }
-    }
-}
-
-
-/*----------------------------------------------------------------------
   RedisplayDefaultPresentation                                              
   ----------------------------------------------------------------------*/
 void  RedisplayDefaultPresentation (Document document, PtrElement pEl,
@@ -794,7 +699,7 @@ void  RedisplayDefaultPresentation (Document document, PtrElement pEl,
   HideElement "desaffiche" un element qui devient invisible       
   mais n'est pas detruit.                                         
   ----------------------------------------------------------------------*/
-void                HideElement (PtrElement pEl, Document document)
+void HideElement (PtrElement pEl, Document document)
 {
   PtrDocument         pDoc;
   PtrElement          pChild;
@@ -1101,7 +1006,7 @@ ThotBool IsSelectionRegistered (Document doc, ThotBool *abort)
   doc: the document.
   NewDisplayMode: new display mode for that document.
   ----------------------------------------------------------------------*/
-void   TtaSetDisplayMode (Document doc, DisplayMode newDisplayMode)
+void TtaSetDisplayMode (Document doc, DisplayMode newDisplayMode)
 {
   DisplayMode       oldDisplayMode;
   PtrDocument       pDoc;
@@ -1180,7 +1085,7 @@ void   TtaSetDisplayMode (Document doc, DisplayMode newDisplayMode)
                       else if (NewDocSelection[doc - 1].SDFirstChar == 0 &&
                                NewDocSelection[doc - 1].SDLastChar == 0)
                         /* whole element selected */
-                        SelectElement (pDoc, pEl, TRUE, TRUE);
+                        SelectElement (pDoc, pEl, TRUE, TRUE, TRUE);
                       else
                         /* partial selection */
                         SelectString (pDoc, pEl,
@@ -1249,7 +1154,7 @@ void   TtaSetDisplayMode (Document doc, DisplayMode newDisplayMode)
   Return value:
   current display mode for that document.
   ----------------------------------------------------------------------*/
-DisplayMode         TtaGetDisplayMode (Document document)
+DisplayMode TtaGetDisplayMode (Document document)
 {
   DisplayMode         result;
 
@@ -1264,4 +1169,40 @@ DisplayMode         TtaGetDisplayMode (Document document)
     /* parameter document is ok */
     result = documentDisplayMode[document - 1];
   return result;
+}
+
+/*----------------------------------------------------------------------
+  TtaUpdateAccessRightInViews
+
+  Update ReadOnly status of the element and its children in all views
+  Parameter:
+  document: the document.
+  element: the root element of the updated tree
+  ----------------------------------------------------------------------*/
+void TtaUpdateAccessRightInViews (Document document, Element element)
+{
+  PtrElement          pEl = (PtrElement) element;
+  int                 view;
+
+  UserErrorCode = 0;
+  /* Checks the parameter document */
+  if (document < 1 || document > MAX_DOCUMENTS)
+    TtaError (ERR_invalid_document_parameter);
+  else if (LoadedDocument[document - 1] == NULL)
+    TtaError (ERR_invalid_document_parameter);
+  else if (element == NULL)
+    TtaError (ERR_invalid_parameter);
+  else if (documentDisplayMode[document - 1] == NoComputedDisplay)
+    return;
+  else
+    {
+      for (view = 0; view < MAX_VIEW_DOC; view++)
+        {
+          if (LoadedDocument[document - 1]->DocView[view].DvPSchemaView > 0 &&
+              pEl->ElAbstractBox[view])
+            /* transmit access rigth */
+            TransmitAccessRight (pEl->ElAbstractBox[view],
+                                 pEl->ElAccess == ReadOnly);
+        }
+    }
 }

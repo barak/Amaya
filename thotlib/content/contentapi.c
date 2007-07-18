@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -623,7 +623,7 @@ void TtaRemoveFinalSpaces (Element element, Document document,
                      // keep the last space
                      ((i > 0 &&
                        (pBuf->BuContent[i-1] == SPACE ||
-                        pBuf->BuContent[i-1] == __CR__ || pBuf->BuContent[i] == EOL)) ||
+                        pBuf->BuContent[i-1] == __CR__ || pBuf->BuContent[i-1] == EOL)) ||
                       (i == 0 && pPrev &&
                        (pPrev->BuContent[last] == SPACE ||
                         pPrev->BuContent[last] == __CR__ || pPrev->BuContent[last] == EOL))))
@@ -2391,8 +2391,28 @@ static ThotPictInfo *GetImageDesc (Element element)
 }
 
 /*----------------------------------------------------------------------
-  TtaGetPictureType
+  TtaGivePictureSize
+  Returns the original width and height of the picture.
+  Parameter:
+  element: the element of interest. This element must be a picture
+  Return value:
+  width and height of the image
+  ----------------------------------------------------------------------*/
+void TtaGivePictureSize (Element element, int *width, int *height)
+{
+  ThotPictInfo    *imageDesc;
 
+  *width = *height = 0;
+  imageDesc = GetImageDesc (element);
+  if (imageDesc)
+    {
+      *width = imageDesc->PicWidth;
+      *height = imageDesc->PicHeight;
+    }
+}
+
+/*----------------------------------------------------------------------
+  TtaGetPictureType
   Returns the type of Picture element.
   Parameter:
   element: the element of interest. This element must be a Picture or have
@@ -2408,7 +2428,7 @@ PicType TtaGetPictureType (Element element)
 
   pictType = unknown_type;
   imageDesc = GetImageDesc (element);
-  if (imageDesc != NULL)
+  if (imageDesc)
     {
       typeImage = imageDesc->PicType;
       if (typeImage != unknown_type && typeImage != -1)

@@ -36,6 +36,7 @@
 #include "memory_f.h"
 #include "absboxes_f.h"
 #include "buildboxes_f.h"
+#include "buildlines_f.h"
 #include "boxmoves_f.h"
 #include "boxrelations_f.h"
 #include "boxpositions_f.h"
@@ -598,10 +599,7 @@ void AddBoxTranslations (PtrAbstractBox pAb, int visibility, int frame,
 
   /* Origine de la boite du pave le plus englobant */
   pBox = pAb->AbBox;
-#ifdef _GL 
-  if (FrameTable[frame].FrView == 1 &&
-      (pBox->BxXOrg || pBox->BxYOrg) &&
-      pAb->AbElement->ElSystemOrigin)
+  if (IsSystemOrigin (pAb, frame))
     {
       x = 0;
       y = 0;
@@ -611,13 +609,11 @@ void AddBoxTranslations (PtrAbstractBox pAb, int visibility, int frame,
       x = pBox->BxXOrg;
       y = pBox->BxYOrg;
     }
+#ifdef _GL
   pBox->BxClipX = x;
   pBox->BxClipY = y;
   pBox->BxClipW = pBox->BxW;
   pBox->BxClipH = pBox->BxH;
-#else /* _GL */
-  x = pBox->BxXOrg;
-  y = pBox->BxYOrg;
 #endif /* _GL */
 
   width = pBox->BxW;
@@ -720,6 +716,7 @@ void AddBoxTranslations (PtrAbstractBox pAb, int visibility, int frame,
                           y_move = FALSE;
                         else
                           y_move = pChildBox->BxYToCompute;
+
                         /* Check if the box should be moved vertically */
                         box1 = GetVPosRelativeBox (pChildBox, NULL);
                         if (box1 == NULL)
@@ -740,12 +737,7 @@ void AddBoxTranslations (PtrAbstractBox pAb, int visibility, int frame,
                     y_move = FALSE;
                     newY = FALSE;
                   }
-#ifdef IV
-if (!strcmp (pChildAb->AbElement->ElLabel, "L169"))
-  printf ("AddBoxTranslations L169 x=%d + %d\n",pChildBox->BxXOrg,x);
-if (!strcmp (pChildAb->AbElement->ElLabel, "L170"))
-  printf ("AddBoxTranslations L170 x=%d + %d\n",pChildBox->BxXOrg,x);
-#endif
+
                 /* decale la boite positionnee en X dans l'englobante */
                 if (horizRef && newX)
                   {
@@ -782,7 +774,7 @@ if (!strcmp (pChildAb->AbElement->ElLabel, "L170"))
                     /* la boite deplacee et met a jour les dimensions elastiques   */
                     /* des boites liees a la boite deplacee.                       */
                     pPosRel = pChildBox->BxPosRelations;
-                    while (pPosRel != NULL)
+                    while (pPosRel)
                       {
                         i = 1;
                         notEmpty = (pPosRel->PosRTable[i - 1].ReBox != NULL);
@@ -792,7 +784,10 @@ if (!strcmp (pChildAb->AbElement->ElLabel, "L170"))
                           while (i <= MAX_RELAT_POS && notEmpty)
                             {
                               pRel = &pPosRel->PosRTable[i - 1];
-                              if (pRel->ReBox->BxAbstractBox != NULL)
+                              if (pRel->ReBox->BxAbstractBox &&
+                                  // don't move children of a new system origin
+                                  (!IsParentBox (pChildBox, pRel->ReBox) ||
+                                   !IsSystemOrigin (pChildAb, frame)))
                                 {
                                   /* Initialise la file des boites deplacees */
                                   pChildBox->BxMoved = NULL;
@@ -823,6 +818,7 @@ if (!strcmp (pChildAb->AbElement->ElLabel, "L170"))
                         pPosRel = pPosRel->PosRNext;
                       }
                   }
+
                 /* ne decale pas la boite, mais le fait de deplacer */
                 /* l'englobante sans deplacer une englobee peut        */
                 /* modifier la largeur de la boite englobante.         */
@@ -836,6 +832,7 @@ if (!strcmp (pChildAb->AbElement->ElLabel, "L170"))
                     /* La boite est placee */
                     pChildBox->BxXToCompute = FALSE;
                   }
+
                 /* decale la boite positionnee en Y dans l'englobante */
                 if (vertRef && newY)
                   {
@@ -869,11 +866,12 @@ if (!strcmp (pChildAb->AbElement->ElLabel, "L170"))
                         if (HighlightBoxErrors)
                           fprintf (stderr, "Box overflow %s\n", AbsBoxType (pChildAb, TRUE));
                       }
+
                     /* Decale les boites qui ont des relations hors-structure avec */
                     /* la boite deplacee et met a jour les dimensions elastiques   */
                     /* des boites liees a la boite deplacee.                       */
                     pPosRel = pChildBox->BxPosRelations;
-                    while (pPosRel != NULL)
+                    while (pPosRel)
                       {
                         i = 1;
                         notEmpty = (pPosRel->PosRTable[i - 1].ReBox != NULL);
@@ -883,7 +881,10 @@ if (!strcmp (pChildAb->AbElement->ElLabel, "L170"))
                           while (i <= MAX_RELAT_POS && notEmpty)
                             {
                               pRel = &pPosRel->PosRTable[i - 1];
-                              if (pRel->ReBox->BxAbstractBox != NULL)
+                              if (pRel->ReBox->BxAbstractBox &&
+                                  // don't move children of a new system origin
+                                  (!IsParentBox (pChildBox, pRel->ReBox) ||
+                                   !IsSystemOrigin (pChildAb, frame)))
                                 {
                                   /* Initialise la file des boites deplacees */
                                   pChildBox->BxMoved = NULL;
@@ -936,19 +937,35 @@ if (!strcmp (pChildAb->AbElement->ElLabel, "L170"))
 #ifdef _GL
         if (pChildBox)
           {
-            /*if no transformation, make clipx, clipy OK*/
-            pChildBox->BxClipX = pChildBox->BxXOrg + pChildBox->BxLMargin + pChildBox->BxLBorder +
-              pChildBox->BxLPadding;
-            pChildBox->BxClipY = pChildBox->BxYOrg + pChildBox->BxTMargin + pChildBox->BxTBorder +
-              pChildBox->BxTPadding;
+            if (!IsSystemOrigin (pChildAb, frame))
+              {
+                /*if no transformation, make clipx, clipy OK*/
+                pChildBox->BxClipX = pChildBox->BxXOrg + pChildBox->BxLMargin
+                  + pChildBox->BxLBorder + pChildBox->BxLPadding;
+                pChildBox->BxClipY = pChildBox->BxYOrg + pChildBox->BxTMargin
+                  + pChildBox->BxTBorder + pChildBox->BxTPadding;
+              }
             pChildBox->BxClipW = pChildBox->BxW;
             pChildBox->BxClipH = pChildBox->BxH;
-          }
+            }
 #endif /* _GL */
 
         /* next child */
         pChildAb = pChildAb->AbNext;
       }
+
+  if (x &&
+      (pBox->BxType == BoBlock ||
+       pBox->BxType == BoFloatBlock || pBox->BxType == BoCellBlock))
+    {
+      // update included floated boxes
+      ShiftFloatingBoxes (pBox, x, frame);
+#ifdef IV
+      if (!pBox->BxContentWidth && !pBox->BxShrink &&
+          pAb->AbWidth.DimAbRef)
+      ResizeWidth (pBox, pBox, NULL, -x, 0, 0, 0, frame, TRUE);
+#endif
+    }
   /* Si une dimension de la boite depend du contenu et qu'une des  */
   /* boites filles est positionnee par une relation hors-structure */
   /* --> il faut reevaluer la dimension correspondante.            */

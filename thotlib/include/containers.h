@@ -1,6 +1,8 @@
 #ifndef CONTAINERS_H_
 #define CONTAINERS_H_
 
+#include "thot_sys.h"
+
 /**
  * Generic container
  * @{ */
@@ -25,7 +27,6 @@ typedef int (*Container_CompareFunction)(ContainerElement,ContainerElement);
 
 /**
  * Generic container.
- * Only destroy element capability.
  */
 typedef struct sContainer
 {
@@ -73,7 +74,15 @@ extern ForwardIterator ForwardIterator_Create(Container container,
                      ForwardIterator_GetNextFunction  getNext);
 extern ContainerNode ForwardIterator_GetFirst(ForwardIterator iter);
 extern ContainerNode ForwardIterator_GetNext(ForwardIterator iter);
+
+extern long ForwardIterator_GetCount(ForwardIterator iter);
+
 #endif /* __CEXTRACT__ */
+
+#define ITERATOR_FOREACH(iter, nodetype, node)\
+  for (node = (nodetype)ForwardIterator_GetFirst(iter); node!=NULL; \
+    node = (nodetype)ForwardIterator_GetNext(iter))
+
 /** @} */
 
 
@@ -121,8 +130,10 @@ extern DLListNode       DLList_InsertBefore(DLList list, DLListNode after, Conta
 extern ContainerElement DLList_RemoveElement(DLList list, DLListNode node);
 extern void             DLList_DestroyElement(DLList list, DLListNode node);
 extern ForwardIterator  DLList_GetForwardIterator(DLList list);
-extern void             DLList_Swap(DLList list, DLListNode node1, DLListNode node2);
+extern void             DLList_SwapContent(DLList list, DLListNode node1, DLListNode node2);
 extern void             DLList_Sort(DLList list, Container_CompareFunction compare);
+extern int              DLList_GetSize(DLList list);
+extern DLListNode       DLList_GetElement(DLList list, int index);
 extern DLList           DLList_GetRefList(DLList srcList, Container_CompareFunction compare);
 extern DLList           DLList_GetRefListFromIterator(ForwardIterator iter, Container_CompareFunction compare);
 #endif /* __CEXTRACT__ */
@@ -199,10 +210,13 @@ extern void             HashMap_Destroy(HashMap map);
 extern void             HashMap_Empty(HashMap map);
 extern ThotBool         HashMap_IsEmpty(HashMap map);
 extern ContainerElement HashMap_Set(HashMap map, HashMapKey key, ContainerElement elem);
-extern ContainerElement HashMap_Get(HashMap map, HashMapKey key);
+extern ContainerElement HashMap_Get(HashMap map, const HashMapKey key);
+extern HashMapNode      HashMap_Find(HashMap map, const HashMapKey key);
 extern ContainerElement HashMap_Remove(HashMap map, HashMapKey key);
 extern void             HashMap_DestroyElement(HashMap map, HashMapKey key);
 extern ForwardIterator  HashMap_GetForwardIterator(HashMap map);
+extern void             HashMap_SwapContents(HashMap map1, HashMap map2);
+extern void             HashMap_Dump(HashMap map, ThotBool isKeyString);
 #endif /* __CEXTRACT__ */
 /** @} */
 
@@ -226,7 +240,6 @@ extern HashMap PointerHashMap_Create(Container_DestroyElementFunction destroy
 extern HashMap StringHashMap_Create(Container_DestroyElementFunction destroy,
                                       ThotBool keyIsStored, int nbNodes);
 #endif /* __CEXTRACT__ */
-/** @} */
 
 /**
  * Keyword hash map.
@@ -236,8 +249,18 @@ extern HashMap StringHashMap_Create(Container_DestroyElementFunction destroy,
 #ifndef __CEXTRACT__
 extern HashMap KeywordHashMap_Create(Container_DestroyElementFunction destroy,
                                       ThotBool keyIsStored, int nbNodes);
+
+/**
+ * Create a Keyword hash map initialized with a keyword list and NULL elements.
+ * Note that a such KeywordHashMap embed copies of keys. 
+ * \param list space-separated list of element names.
+ */
+extern HashMap KeywordHashMap_CreateFromList(Container_DestroyElementFunction destroy,
+                                      int nbNodes, const char *list);
+
 #endif /* __CEXTRACT__ */
-/** @} */
+
+
 
 
 #endif /*CONTAINERS_H_*/

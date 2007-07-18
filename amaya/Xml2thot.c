@@ -278,7 +278,9 @@ static ThotBool ChangeXmlParserContextByUri (char *uriName)
 {
   currentParserCtxt = firstParserCtxt;
   while (currentParserCtxt != NULL &&
-         strcmp ((char *)uriName, currentParserCtxt->UriName))
+         strcmp ((char *)uriName, currentParserCtxt->UriName) &&
+         (strcmp ((char *)uriName, Template_URI_o) ||
+          strcmp (currentParserCtxt->UriName, Template_URI)))
     currentParserCtxt = currentParserCtxt->NextParserCtxt;
 
   /* Initialize the corresponding Thot schema */
@@ -3258,7 +3260,7 @@ static void EndOfXmlAttributeValue (char *attrValue)
           /* It's a style attribute */
           if (HTMLStyleAttribute)
             ParseHTMLSpecificStyle (XMLcontext.lastElement, attrValue,
-                                    XMLcontext.doc, 100, FALSE);
+                                    XMLcontext.doc, 1000, FALSE);
 	   
           /* it's a LANG attribute value */
           if (attrType.AttrTypeNum == 1)
@@ -3603,7 +3605,7 @@ static void CreateDoctypeElement (char *name, char *sysid, char *pubid)
   ParseCdataElement
   Parse the content of a CDATA element
   -------------------------------------- -------------------------------*/
-static void       ParseCdataElement (char *data, int length)
+static void ParseCdataElement (char *data, int length)
 
 {
   ElementType     elType;
@@ -4659,7 +4661,7 @@ static void Hndl_XmlDeclHandler (void  *userData,
   FreeXmlParser
   Frees all ressources associated with the XML parser.
   ----------------------------------------------------------------------*/
-void             FreeXmlParserContexts (void)
+void FreeXmlParserContexts (void)
 
 {
   PtrParserCtxt  ctxt, nextCtxt;
@@ -5118,7 +5120,7 @@ void ParseExternalDocument (char *fileName, char *originalName, Element el,
   NotifyElement event;
   DisplayMode   dispMode;
   gzFile        infile;
-  int           parsingLevel;
+  int           parsingLevel, saveDocNet;
   char          charsetname[MAX_LENGTH];
   char          type[NAME_LENGTH];
   char         *extUseUri = NULL, *extUseId = NULL, *s = NULL, *htmlURL = NULL;
@@ -5400,9 +5402,10 @@ void ParseExternalDocument (char *fileName, char *originalName, Element el,
     {
       /* Fetch and display the recursive images */
       /* modify the net status */
+      saveDocNet = DocNetworkStatus[doc];
       DocNetworkStatus[doc] = AMAYA_NET_ACTIVE;
       FetchAndDisplayImages (doc, AMAYA_LOAD_IMAGE, extEl);
-      DocNetworkStatus[doc] = AMAYA_NET_INACTIVE;
+      DocNetworkStatus[doc] = saveDocNet;
       /* Make the external element not editable */
       TtaSetAccessRight (extEl, ReadOnly, doc);
     }
@@ -6023,26 +6026,23 @@ void StartXmlParser (Document doc, char *fileName,
       /* Display the document */
       if (!externalDoc)
         {
-          TtaSetDisplayMode (doc, DisplayImmediately);
           /* if (DocumentTypes[doc] == docHTML) */
           /* Load specific user style only for an (X)HTML document */
           /* For a generic XML document, it would create new element types
              in the structure schema, one for each type appearing in a
              selector in the User style sheet */
           LoadUserStyleSheet (doc);
+          TtaSetDisplayMode (doc, DisplayImmediately);
         }
 
       /* Check the Thot abstract tree against the structure schema. */
       TtaSetStructureChecking (TRUE, doc);
       DocumentSSchema = NULL;
     }
-#ifdef TODO
-  if (IsTemplateInstance(doc))
-    LoadInstanceOfTemplate(doc);
-#endif /* TODO */
 
+  // if some included HTML elements affected HTML variables
+  ClearHTMLParser (); 
   TtaSetDocumentUnmodified (doc);
-
 }
 
 /* end of module */

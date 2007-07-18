@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -1425,6 +1425,8 @@ static int CopyXClipboard (unsigned char **buffer, View view)
           else
             maxLength = 7;
         }
+      else if (pFirstEl == pLastEl && pFirstEl->ElVolume == 0)
+        maxLength = 9;
       else
         {
           if (pFirstEl->ElTerminal)
@@ -1479,8 +1481,10 @@ static int CopyXClipboard (unsigned char **buffer, View view)
   max = maxLength + lg;
   /* Allocate a buffer with the right length */
   text = (CHAR_T *)TtaGetMemory (max * sizeof (CHAR_T));
+  text[0] = EOS;
   /* Copy the text into the buffer */
   i = 0;
+  pEl = pFirstEl;
   ind = firstChar - 1;
   if (clipboard)
     {
@@ -1521,11 +1525,19 @@ static int CopyXClipboard (unsigned char **buffer, View view)
           ustrcpy (&text[i], TEXT("<graph>"));
           i += 7;
         }
+      // no more copy
+      pEl = NULL;
     }
-
+  else if (pFirstEl == pLastEl && pFirstEl->ElVolume == 0)
+    {
+      ustrcpy (&text[i], TEXT("<struct>"));
+      i += 8;
+      // no more copy
+      pEl = NULL;
+    }
+ 
   /* copy the text of following elements */
   pOldBlock = NULL;
-  pEl = pFirstEl;
   while (pEl)
     {
       pEl = FwdSearch5Types (pEl, CharString + 1,
@@ -1688,7 +1700,12 @@ void DoCopyToClipboard (Document doc, View view, ThotBool force, ThotBool primar
 #ifdef _WX
   // Don't change the clipboard buffer when a single click is done
   wxTheClipboard->UsePrimarySelection(primary);
-  if (!SelPosition && wxTheClipboard->Open())
+  if ((!SelPosition ||
+       (FirstSelectedElement &&
+        (FirstSelectedElement != LastSelectedElement ||
+        (!FirstSelectedElement->ElTerminal &&
+         FirstSelectedElement->ElVolume != 0)))) &&
+      wxTheClipboard->Open())
     {
       unsigned char *  buffer = NULL;
       int              len;

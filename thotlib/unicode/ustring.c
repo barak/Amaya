@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <langinfo.h>
 #include "thot_sys.h"
 #include "fileaccess.h"
 
@@ -434,29 +435,10 @@ CHARSET TtaGetLocaleCharset ()
 #ifndef _MACOS
   if (LocaleSystemCharset == UNSUPPORTED_CHARSET)
     {
-      char * lang = getenv("LANG");
-#ifdef _WX
-      if (lang && TtaDirExists ("/tmp"))
-#else /* _WX */
-      if (lang && ThotDirExists ("/tmp"))
-#endif /* _WX */
-        {
-          int  fd;
-          char buffer[256];
-          memset ( buffer, 0, 256 );
-          /* ask the system using locale command */
-          system ("locale -ck LC_MESSAGES | grep messages-codeset | sed 's/.*=\"//' | sed 's/\"//' > /tmp/locale");
-          fd = open ("/tmp/locale", O_RDONLY);
-          if (fd)
-            {
-              read (fd, buffer, 255);
-              close (fd);
-              system ("rm -f /tmp/locale");
-              buffer[strlen(buffer)-1] = EOS;
-              /* convert the string into thotlib index */
-              LocaleSystemCharset = TtaGetCharset(buffer); 
-            }
-        }
+      char *buffer;
+      buffer = nl_langinfo(_NL_MESSAGES_CODESET);
+      if (buffer != NULL)
+        LocaleSystemCharset = TtaGetCharset(buffer);
     }
 #endif /* _MACOS */
   if ((LocaleSystemCharset == UNSUPPORTED_CHARSET) ||

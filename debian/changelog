@@ -1,3 +1,36 @@
+amaya (9.55~dfsg.0-1) unstable; urgency=high
+
+  * New upstream release. Using the tarball respin fixing a bug. Let's call
+    this one the "I love upstream when they partially revert patches and keep
+    doing the same programming errors again and again" release.
+    + Upstream now installs everything in $prefix/lib/Amaya, so drop
+      installdir_amaya.diff, use 'Amaya' instead of 'amaya', and drop the
+      conflicts against previous versions of the package.
+  * Switch to debhelper version 5.
+  * Don't depend on ttf-freefont (Closes: #423585).
+  * Drop fix_ftbfs64.diff, merged upstream.
+  * New patch, fix_ftbfs64_again.diff.
+  * New cflags_cleanup.diff patch, getting rid of the forces CFLAGS and
+    CXXFLAGS and was originally in rdf_conf_in_conf.diff, partially merged 
+    upstream...
+  * but even more partially reverted, so rdf_conf_in_conf.diff is still here.
+    Or back. Or a bit of both.
+  * Replace raptor_split.diff with raptor.diff. Upstream does not use the
+    redland library at all anymore, so there is no need to link against it and
+    pull half the libraries from the archive for it.
+  * Stop doing dirty stuff to get the locale. Use nl_langinfo() instead. This
+    fixes a security issue (Closes: #431600). Thanks Steve Kemp for the
+    report.
+  * Apply the cextract, esstix, png and jpeg patch within the prune target, so
+    the rerolled upstream tarball still works without the debian patch applied.
+  * Update the menu file to the new structure, change from "Apps/Net" to
+    "Applications/Web Development".
+  * Move the .desktop file from amaya-data to amaya, so it can find the binary
+    and make lintian happy. No need to conflict, as the files have different
+    names
+
+ -- Regis Boudin <regis@debian.org>  Wed, 18 Jul 2007 23:15:23 +0100
+
 amaya (9.54~dfsg.0-1) unstable; urgency=low
 
   * New upstream release.

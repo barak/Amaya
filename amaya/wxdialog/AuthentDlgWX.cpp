@@ -19,12 +19,13 @@ static int      Waiting = 0;
 // Event table: connect the events to the handler functions to process them
 //-----------------------------------------------------------------------------
 BEGIN_EVENT_TABLE(AuthentDlgWX, AmayaDialog)
-  EVT_BUTTON( XRCID("wxID_OK"),         AuthentDlgWX::OnConfirmButton )
-  EVT_BUTTON( XRCID("wxID_CANCEL"),     AuthentDlgWX::OnCancelButton )
-  EVT_TEXT( XRCID("wxID_AU"),           AuthentDlgWX::OnName )
-  EVT_TEXT( XRCID("wxID_PASSWD"),       AuthentDlgWX::OnPassword )
-  EVT_TEXT_ENTER( XRCID("wxID_AU"),     AuthentDlgWX::OnConfirmButton )
-  EVT_TEXT_ENTER( XRCID("wxID_PASSWD"), AuthentDlgWX::OnConfirmButton )
+  EVT_BUTTON( XRCID("wxID_OK"),          AuthentDlgWX::OnConfirmButton )
+  EVT_BUTTON( XRCID("wxID_CANCEL"),      AuthentDlgWX::OnCancelButton )
+  EVT_CHECKBOX( XRCID("wxID_CHECK_PWD"), AuthentDlgWX::OnSavePasswordButton )
+  EVT_TEXT( XRCID("wxID_AU"),            AuthentDlgWX::OnName )
+  EVT_TEXT( XRCID("wxID_PASSWD"),        AuthentDlgWX::OnPassword )
+  EVT_TEXT_ENTER( XRCID("wxID_AU"),      AuthentDlgWX::OnConfirmButton )
+  EVT_TEXT_ENTER( XRCID("wxID_PASSWD"),  AuthentDlgWX::OnConfirmButton )
 END_EVENT_TABLE()
 
 /*----------------------------------------------------------------------
@@ -33,12 +34,13 @@ END_EVENT_TABLE()
     + parent : parent window
     + pathname : document location
   ----------------------------------------------------------------------*/
-AuthentDlgWX::AuthentDlgWX( int ref, wxWindow* parent, char * auth_realm,
-			    char * server) :
+AuthentDlgWX::AuthentDlgWX( int ref, wxWindow * parent, char *auth_realm,
+			    char *server, char *name, char *pwd) :
   AmayaDialog( parent, ref )
 {
   char    *ptr1, *ptr2, *label;
   int      len = 20;
+  ThotBool check;
 
   wxXmlResource::Get()->LoadDialog(this, parent, wxT("AuthentDlgWX"));
   wxString wx_title = TtaConvMessageToWX( TtaGetMessage (AMAYA, AM_GET_AUTHENTICATION) );
@@ -76,16 +78,36 @@ AuthentDlgWX::AuthentDlgWX( int ref, wxWindow* parent, char * auth_realm,
   XRCCTRL(*this, "wxID_LABEL_NAME", wxStaticText)->SetLabel(TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_NAME) ));
   XRCCTRL(*this, "wxID_LABEL_PASSWD", wxStaticText)->SetLabel(TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_PASSWORD) ));
 
-  wxString wx_name = TtaConvMessageToWX( Answer_name );
-  XRCCTRL(*this, "wxID_AU", wxTextCtrl)->SetValue(wx_name);
-  XRCCTRL(*this, "wxID_AU", wxTextCtrl)->SetSelection (0, -1);
-  wxString wx_password = TtaConvMessageToWX( Answer_password );
-  XRCCTRL(*this, "wxID_PASSWD", wxTextCtrl)->SetValue(wx_password);
-
   // buttons
   XRCCTRL(*this, "wxID_OK", wxButton)->SetLabel(TtaConvMessageToWX( TtaGetMessage(LIB, TMSG_LIB_CONFIRM) ));
   XRCCTRL(*this, "wxID_CANCEL", wxButton)->SetLabel(TtaConvMessageToWX( TtaGetMessage(LIB, TMSG_CANCEL) ));
   
+  // init the save password check entry
+  TtaGetEnvBoolean ("SAVE_PASSWORDS", &check);
+  if (check)
+    {
+      wxString wx_name = TtaConvMessageToWX( name );
+      XRCCTRL(*this, "wxID_AU", wxTextCtrl)->SetValue(wx_name);
+      wxString wx_password = TtaConvMessageToWX( pwd );
+      XRCCTRL(*this, "wxID_PASSWD", wxTextCtrl)->SetValue(wx_password);
+      // 'Save passwords' checkbox
+      XRCCTRL(*this, "wxID_CHECK_PWD",  wxCheckBox)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA ,AM_PASSWORDS_SAVE)));
+      if (name[0] != EOS && pwd[0] != EOS)
+        XRCCTRL(*this, "wxID_CHECK_PWD", wxCheckBox)->SetValue(TRUE);
+      else
+        XRCCTRL(*this, "wxID_CHECK_PWD", wxCheckBox)->SetValue(FALSE);
+    }
+  else
+    {
+      // hide save password check entry
+      wxWindow * p_obj;
+      XRCCTRL(*this, "wxID_CHECK_PWD", wxCheckBox)->SetValue(FALSE);
+      p_obj = XRCCTRL(*this, "wxID_CHECK_PWD", wxCheckBox);
+      p_obj->GetContainingSizer()->Show(p_obj, FALSE);
+    }
+
+  XRCCTRL(*this, "wxID_AU", wxTextCtrl)->SetSelection (0, -1);
+
   // Set focus to ...
   //  XRCCTRL(*this, "wxID_AU", wxTextCtrl)->SetFocus();
 
@@ -93,8 +115,7 @@ AuthentDlgWX::AuthentDlgWX( int ref, wxWindow* parent, char * auth_realm,
   SetAutoLayout( TRUE );
 }
 
-/*---------------------------------------------------------------------------
-  Destructor. (Empty, as we don't need anything special done when destructing).
+/*---------------------------------------------------------------------------bra  Destructor. (Empty, as we don't need anything special done when destructing).
   ---------------------------------------------------------------------------*/
 AuthentDlgWX::~AuthentDlgWX()
 {
@@ -109,6 +130,10 @@ AuthentDlgWX::~AuthentDlgWX()
   ----------------------------------------------------------------------*/
 void AuthentDlgWX::OnConfirmButton( wxCommandEvent& event )
 {
+  ThotBool check;
+  wxCheckBox * p_cbox = XRCCTRL(*this, "wxID_CHECK_PWD", wxCheckBox);
+  check = p_cbox->IsChecked();
+   ThotCallback (BaseDialog + PasswordSave, INTEGER_DATA, (char*) check );
   // return done
   Waiting = 0;
   ThotCallback (MyRef, INTEGER_DATA, (char*) 1);
@@ -122,6 +147,17 @@ void AuthentDlgWX::OnCancelButton( wxCommandEvent& event )
   // return done
   Waiting = 0;
   ThotCallback (MyRef, INTEGER_DATA, (char*) 0);
+}
+
+/*---------------------------------------------------------------
+  OnSavePasswordButton
+  ---------------------------------------------------------------*/
+void AuthentDlgWX::OnSavePasswordButton ( wxCommandEvent& event )
+{
+  ThotBool check;
+  wxCheckBox * p_cbox = XRCCTRL(*this, "wxID_CHECK_PWD", wxCheckBox);
+  check = p_cbox->IsChecked();
+  ThotCallback (BaseDialog + PasswordSave, INTEGER_DATA, (char*) check );
 }
 
 /*---------------------------------------------------------------

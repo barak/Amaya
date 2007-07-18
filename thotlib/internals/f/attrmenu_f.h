@@ -11,13 +11,20 @@ extern void CallbackReqAttrMenu ( int ref,
                                   int val,
                                   char *txt );
 extern void BuildReqAttrMenu ( PtrAttribute pAttr,
-                               PtrDocument pDoc );
+                               PtrDocument pDoc,
+                               PtrElement pEl );
 extern void UpdateAttrMenu ( PtrDocument pDoc,
                              ThotBool force );
 extern void TtaUpdateAttrMenu ( Document document );
 extern void CallbackValAttrMenu ( int ref,
                                   int valmenu,
                                   char *valtext );
+extern void SetAttrValueToRange ( PtrAttrListElem elem,
+                                  void* value );
+extern void CallbackEditRefAttribute ( PtrAttrListElem pAttrElem,
+                                       int frame );
+extern void CallbackEditAttribute ( PtrAttrListElem pAttrElem,
+                                    int frame );
 extern void CallbackAttrMenu ( int refmenu,
                                int attMenu,
                                int frame );
@@ -34,13 +41,20 @@ extern void CallbackReqAttrMenu ( int ref,
                                     int val,
                                     char *txt );
 extern void BuildReqAttrMenu ( PtrAttribute pAttr,
-                                 PtrDocument pDoc );
+                                 PtrDocument pDoc,
+                                 PtrElement pEl );
 extern void UpdateAttrMenu ( PtrDocument pDoc,
                                ThotBool force );
 extern void TtaUpdateAttrMenu ( Document document );
 extern void CallbackValAttrMenu ( int ref,
                                     int valmenu,
                                     char *valtext );
+extern void SetAttrValueToRange ( AttrListElem* elem,
+                                    void* value );
+extern void CallbackEditRefAttribute ( PtrAttrListElem pAttrElem,
+                                         int frame );
+extern void CallbackEditAttribute ( PtrAttrListElem pAttrElem,
+                                      int frame );
 extern void CallbackAttrMenu ( int refmenu,
                                  int attMenu,
                                  int frame );

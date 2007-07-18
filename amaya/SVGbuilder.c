@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1998-2005
+ *  (c) COPYRIGHT INRIA and W3C, 1998-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -33,6 +33,7 @@
 #include "html2thot_f.h"
 #include "HTMLactions_f.h"
 #include "styleparser_f.h"
+#include "SVGbuilder_f.h"
 #include "Xml2thot_f.h"
 
 /*----------------------------------------------------------------------
@@ -104,7 +105,8 @@ void ParseCSSequivAttribute (int attrType, Attribute attr, Element el,
 #define buflen 200
   char               css_command[buflen+20];
   int                length, val = 0;
-  char               *text;
+  float              value;
+  char              *text;
 
   text = NULL;
   /* get the value of the attribute */
@@ -180,28 +182,40 @@ void ParseCSSequivAttribute (int attrType, Attribute attr, Element el,
           break;
         case SVG_ATTR_font_weight_VAL_bold_:
           sprintf (css_command, "font-weight: bold");
+          break;
         case SVG_ATTR_font_weight_VAL_bolder:
           sprintf (css_command, "font-weight: bolder");
+          break;
         case SVG_ATTR_font_weight_VAL_lighter:
           sprintf (css_command, "font-weight: lighter");
+          break;
         case SVG_ATTR_font_weight_VAL_w100:
           sprintf (css_command, "font-weight: 100");
+          break;
         case SVG_ATTR_font_weight_VAL_w200:
           sprintf (css_command, "font-weight: 200");
+          break;
         case SVG_ATTR_font_weight_VAL_w300:
           sprintf (css_command, "font-weight: 300");
+          break;
         case SVG_ATTR_font_weight_VAL_w400:
           sprintf (css_command, "font-weight: 400");
+          break;
         case SVG_ATTR_font_weight_VAL_w500:
           sprintf (css_command, "font-weight: 500");
+          break;
         case SVG_ATTR_font_weight_VAL_w600:
           sprintf (css_command, "font-weight: 600");
+          break;
         case SVG_ATTR_font_weight_VAL_w700:
           sprintf (css_command, "font-weight: 700");
+          break;
         case SVG_ATTR_font_weight_VAL_w800:
           sprintf (css_command, "font-weight: 800");
+          break;
         case SVG_ATTR_font_weight_VAL_w900:
           sprintf (css_command, "font-weight: 900");
+          break;
         case SVG_ATTR_font_weight_VAL_inherit:
           sprintf (css_command, "font-weight: inherit");
           break;
@@ -211,13 +225,31 @@ void ParseCSSequivAttribute (int attrType, Attribute attr, Element el,
       sprintf (css_command, "text-decoration: %s", text);
       break;
     case SVG_ATTR_opacity_:
-      sprintf (css_command, "opacity: %s", text);
+      value = ParseFloatAttribute (attr);
+      if (value > 1.0)
+        sprintf (css_command, "opacity: 1.0");
+      else if (value < 0)
+        sprintf (css_command, "opacity: 0.0");
+      else
+        sprintf (css_command, "opacity: %s", text);
       break;
     case SVG_ATTR_stroke_opacity:
-      sprintf (css_command, "stroke-opacity: %s", text);
+      value = ParseFloatAttribute (attr);
+      if (value > 1.0)
+        sprintf (css_command, "stroke-opacity: 1.0");
+      else if (value < 0)
+        sprintf (css_command, "stroke-opacity: 0.0");
+      else
+        sprintf (css_command, "stroke-opacity: %s", text);
       break;
     case SVG_ATTR_fill_opacity:
-      sprintf (css_command, "fill-opacity: %s", text);
+      value = ParseFloatAttribute (attr);
+      if (value > 1.0)
+        sprintf (css_command, "fill-opacity: 1.0");
+      else if (value < 0)
+        sprintf (css_command, "fill-opacity: 0.0");
+      else
+        sprintf (css_command, "fill-opacity: %s", text);
       break;
     default:
       break;
@@ -225,7 +257,7 @@ void ParseCSSequivAttribute (int attrType, Attribute attr, Element el,
 
   /* parse the equivalent CSS rule */
   if (css_command[0] != EOS)
-    ParseHTMLSpecificStyle (el, css_command, doc, 200, delete_);
+    ParseHTMLSpecificStyle (el, css_command, doc, 2000, delete_);
   if (text)
     TtaFreeMemory (text);
 }
@@ -431,8 +463,9 @@ void CopyTRefContent (Element source, Element el, Document doc)
   CopyUseContent
   Copy the subtree pointed by the href URI as a subtree of element el,
   which is of type use or tref.
+  Return TRUE is successful.
   ----------------------------------------------------------------------*/
-void CopyUseContent (Element el, Document doc, char *href)
+ThotBool CopyUseContent (Element el, Document doc, char *href)
 {
   Element              source, curEl, copy, child, nextChild, elFound;
   ElementType          elType;
@@ -478,7 +511,9 @@ void CopyUseContent (Element el, Document doc, char *href)
         /* search forward if not found */
         direction = SearchForward;
       }
-  if (source)
+  if (!source)
+    return FALSE;
+  else
     /* the element to be copied in the use or tref element has been found */
     {
       /* remove the old copy if there is one */
@@ -520,6 +555,7 @@ void CopyUseContent (Element el, Document doc, char *href)
       if (oldStructureChecking)
         TtaSetStructureChecking (oldStructureChecking, doc);
     }
+  return TRUE;
 }
 
 /*----------------------------------------------------------------------
@@ -920,7 +956,7 @@ void SetTextAnchor (Attribute attr, Element el, Document doc, ThotBool delete_)
         ctxt->type = PositionRight;
       else
         ctxt->type = PositionLeft;
-      ctxt->cssSpecificity = 200;
+      ctxt->cssSpecificity = 2000;
       ctxt->important = FALSE;
       ctxt->destroy = FALSE;
       SetTextAnchorTree (el, ctxt, SvgSSchema, attr);
@@ -1111,10 +1147,10 @@ static void ParseviewBoxAttribute (Attribute attr, Element el, Document doc,
 }
 
 /*----------------------------------------------------------------------
-  ParsepreserveAspectRatioAttribute
+  ParsePreserveAspectRatioAttribute
   Parse the value of a viewbox attribute
   ----------------------------------------------------------------------*/
-static void ParsepreserveAspectRatioAttribute (Attribute attr, Element el,
+static void ParsePreserveAspectRatioAttribute (Attribute attr, Element el,
                                             Document doc, int* align,
                                             int* meetOrSlice, ThotBool delete_)
 {
@@ -1216,9 +1252,10 @@ void      SVGElementCreated (Element el, Document doc)
 {
   ElementType		elType;
   AttributeType attrType;
-  Attribute     attr;
+  Attribute     attr, attrViewBox, attrAspectRatio;
   float         vBX, vBY, vBWidth, vBHeight;
   int           align, meetOrSlice;
+  char          msgBuffer[100];
 
   elType = TtaGetElementType (el);
   if (elType.ElTypeNum == SVG_EL_SVG ||
@@ -1232,25 +1269,89 @@ void      SVGElementCreated (Element el, Document doc)
     {
       attrType.AttrSSchema = elType.ElSSchema;
       attrType.AttrTypeNum = SVG_ATTR_viewBox;
-      attr = TtaGetAttribute (el, attrType);
-      if (attr)
+      attrViewBox = TtaGetAttribute (el, attrType);
+      if (attrViewBox || elType.ElTypeNum == SVG_EL_image)
         {
-          ParseviewBoxAttribute (attr, el, doc, &vBX, &vBY, &vBWidth,
-                                 &vBHeight, FALSE);
+          if (attrViewBox)
+            ParseviewBoxAttribute (attrViewBox, el, doc, &vBX, &vBY, &vBWidth,
+                                   &vBHeight, FALSE);
+          else
+            {
+              vBX = 0; vBY = 0; vBWidth = -1; vBHeight = -1;
+            }
           attrType.AttrTypeNum = SVG_ATTR_preserveAspectRatio;
-          attr = TtaGetAttribute (el, attrType);
-          if (attr)
-            ParsepreserveAspectRatioAttribute (attr, el, doc, &align,
-                                               &meetOrSlice, FALSE);
+          attrAspectRatio = TtaGetAttribute (el, attrType);
+          if (attrAspectRatio)
+            ParsePreserveAspectRatioAttribute (attrAspectRatio, el, doc,
+                                               &align, &meetOrSlice, FALSE);
           else
             {
               align = 6; /* preserveAspectRatio = xMidYMid by default */
               meetOrSlice = 1; /* meet by default */
             }
-          TtaInsertTransform (el, TtaNewTransformViewBox (vBX, vBY, vBWidth,
+          if (attrViewBox || attrAspectRatio)
+            TtaInsertTransform (el, TtaNewTransformViewBox (vBX, vBY, vBWidth,
                                            vBHeight, align, meetOrSlice), doc);
         }
     }
+  else if (elType.ElTypeNum == SVG_EL_ellipse)
+    /* an ellipse. If attributes rx and/or ry are missing, create
+       a default presentation rule for the default value: 0 */
+    {
+      attrType.AttrSSchema = elType.ElSSchema;
+      attrType.AttrTypeNum = SVG_ATTR_rx;
+      attr = TtaGetAttribute (el, attrType);
+      if (!attr)
+        {
+          sprintf (msgBuffer, "Attribute rx mandatory in ellipse");
+          XmlParseError (errorParsing, (unsigned char *)msgBuffer, 0);
+        }
+      attrType.AttrTypeNum = SVG_ATTR_ry;
+      attr = TtaGetAttribute (el, attrType);
+      if (!attr)
+        {
+          sprintf (msgBuffer, "Attribute ry mandatory in ellipse");
+          XmlParseError (errorParsing, (unsigned char *)msgBuffer, 0);
+        }
+    }
+}
+
+/*----------------------------------------------------------------------
+  InstanciateUseElements
+  Find all "use" element in the subtree of element el and instanciate
+  those with no child.
+  ----------------------------------------------------------------------*/
+static void InstanciateUseElements (Element el, Document doc)
+{
+  Element       use;
+  ElementType   elType;
+  Attribute     attr;
+  AttributeType attrType;
+  int           length;
+  char          *href;
+
+  elType = TtaGetElementType (el);
+  elType.ElTypeNum = SVG_EL_use_;
+  attrType.AttrSSchema = elType.ElSSchema;
+  attrType.AttrTypeNum = SVG_ATTR_xlink_href;
+  use = el;
+  do
+    {
+      use = TtaSearchTypedElementInTree (elType, SearchForward, el, use);
+      if (use && !TtaGetFirstChild (use))
+        {
+          attr = TtaGetAttribute (use, attrType);
+          if (attr)
+            {
+              length = TtaGetTextAttributeLength (attr);
+              href = (char *)TtaGetMemory (length + 1);
+              TtaGiveTextAttributeValue (attr, href, &length);
+              CopyUseContent (use, doc, href);
+              TtaFreeMemory (href);
+            }
+        }
+    }
+  while (use);
 }
 
 /*----------------------------------------------------------------------
@@ -1261,14 +1362,14 @@ void SVGElementComplete (ParserData *context, Element el, int *error)
 {
   Document             doc;   
   ElementType		       elType, parentType, newType;
-  Element		           child, parent, new_, leaf;
+  Element		           child, parent, new_, leaf, root, prev;
   AttributeType        attrType;
   Attribute            attr;
   int                  length;
   PRule		             fillPatternRule, newPRule;
   SSchema	             SVGSSchema;
   char                 *href;
-  ThotBool		         closedShape;
+  ThotBool		         closedShape, ok;
 
   *error = 0;
   doc = context->doc;
@@ -1356,10 +1457,23 @@ void SVGElementComplete (ParserData *context, Element el, int *error)
       switch (elType.ElTypeNum)
         {	 
         case SVG_EL_foreignObject:
-        case SVG_EL_SVG:
         case SVG_EL_symbol_:
           /* case SVG_EL_view: */
           TtaSetElCoordinateSystem (el);
+          break;
+
+        case SVG_EL_SVG:
+          TtaSetElCoordinateSystem (el);
+          /* if the SVG element has a UnresolvedRef attribute, process all
+             use elements in the subtree that have not been instanciated yet */
+          attrType.AttrSSchema = elType.ElSSchema;
+          attrType.AttrTypeNum = SVG_ATTR_UnresolvedRef;
+          attr = TtaGetAttribute (el, attrType);
+          if (attr)
+            {
+              InstanciateUseElements (el, doc);
+              TtaRemoveAttribute (el, attr, doc);
+            } 
           break;
 
         case SVG_EL_image:
@@ -1397,8 +1511,49 @@ void SVGElementComplete (ParserData *context, Element el, int *error)
               length = TtaGetTextAttributeLength (attr);
               href = (char *)TtaGetMemory (length + 1);
               TtaGiveTextAttributeValue (attr, href, &length);
-              CopyUseContent (el, doc, href);
+              ok = CopyUseContent (el, doc, href);
               TtaFreeMemory (href);
+              if (!ok)
+                /* the referred element was not found. It may be a forward
+                   reference to an element that has not been parsed yet.
+                   We should retry when the document is complete. */
+                {
+                  /* find the root of the current SVG tree */
+                  root = NULL;
+                  parent = TtaGetParent (el);
+                  while (parent && !root)
+                    {
+                      parentType = TtaGetElementType (parent);
+                      prev = parent;
+                      parent = TtaGetParent (parent);
+                      if (parentType.ElSSchema == elType.ElSSchema &&
+                          parentType.ElTypeNum == SVG_EL_SVG)
+                        /* this is an SVG element */
+                        if (parent)
+                          {
+                            parentType = TtaGetElementType (parent);
+                            if (parentType.ElTypeNum == SVG_EL_Document)
+                              /* its parent is the root of the document */
+                              root = prev;
+                            else if (parentType.ElSSchema != elType.ElSSchema)
+                              /* its parent is in a different namespace */
+                              root = prev;
+                          }
+                    }
+                  if (root)
+                    /* put a UnresolvedRef attribute on the root if it is not
+                       present yet */
+                    {
+                      attrType.AttrSSchema = elType.ElSSchema;
+                      attrType.AttrTypeNum = SVG_ATTR_UnresolvedRef;
+                      attr = TtaGetAttribute (root, attrType);
+                      if (!attr)
+                        {
+                          attr = TtaNewAttribute (attrType);
+                          TtaAttachAttribute (root, attr, doc);
+                        }
+                    } 
+                }
             }
           break;
 
@@ -1875,7 +2030,7 @@ void UpdatePositionOfPoly (Element el, Document doc, int minX, int minY,
   leaf = TtaGetFirstChild (el);  /* Thot Graphic element */
   ctxt = TtaGetSpecificStyleContext (doc);
   /* the specific presentation is not a CSS rule */
-  ctxt->cssSpecificity = 200;
+  ctxt->cssSpecificity = 2000;
   ctxt->destroy = FALSE;
   pval.typed_data.unit = UNIT_PX;
 
@@ -2032,7 +2187,7 @@ void ParseCoordAttribute (Attribute attr, Element el, Document doc)
             return;
           ctxt = TtaGetSpecificStyleContext (doc);
           /* the specific presentation is not a CSS rule */
-          ctxt->cssSpecificity = 200;
+          ctxt->cssSpecificity = 2000;
           ctxt->destroy = FALSE;
           ctxt->important = important;
           TtaSetStylePresentation (ruleType, el, NULL, ctxt, pval);
@@ -2071,7 +2226,7 @@ ThotBool ParseWidthHeightAttribute (Attribute attr, Element el, Document doc,
     }
   ctxt = TtaGetSpecificStyleContext (doc);
   /* the specific presentation is not a CSS rule */
-  ctxt->cssSpecificity = 200;
+  ctxt->cssSpecificity = 2000;
   ctxt->destroy = FALSE;
   /* decide of the presentation rule to be created or updated */
   TtaGiveAttributeType (attr, &attrType, &attrKind);
@@ -2096,7 +2251,7 @@ ThotBool ParseWidthHeightAttribute (Attribute attr, Element el, Document doc,
   if (delete_)
     /* attribute deleted */
     if (ruleType != PRXRadius && ruleType != PRYRadius)
-      /* attribute madatory. Do not delete */
+      /* attribute mandatory. Do not delete */
       ret = TRUE;
     else
       {
@@ -2127,20 +2282,6 @@ ThotBool ParseWidthHeightAttribute (Attribute attr, Element el, Document doc,
         pval.typed_data.unit = UNIT_PX;
       if (pval.typed_data.unit != UNIT_INVALID)
         {
-          if (ruleType != PRXRadius && ruleType != PRYRadius)
-            /* it's not attribute ry or ry for a rectangle */
-            {
-              if (pval.typed_data.value == 0)
-                /* a value of 0 disables rendering of this element */
-                ruleType = PRVisibility;
-              else
-                {
-                  /* if there was a value of 0 previously, enable rendering */
-                  ctxt->destroy = TRUE;
-                  TtaSetStylePresentation (PRVisibility, el, NULL, ctxt, pval);
-                  ctxt->destroy = FALSE;
-                }
-            }
           if ((elType.ElTypeNum == SVG_EL_ellipse ||
                elType.ElTypeNum == SVG_EL_circle_) &&
               (attrType.AttrTypeNum == SVG_ATTR_r ||
@@ -2234,7 +2375,7 @@ void ParseBaselineShiftAttribute (Attribute attr, Element el, Document doc,
         }
       ctxt = TtaGetSpecificStyleContext (doc);
       /* the specific presentation is not a CSS rule */
-      ctxt->cssSpecificity = 200;
+      ctxt->cssSpecificity = 2000;
       ctxt->destroy = delete_;
       TtaSetStylePresentation (PRHorizRef, el, NULL, ctxt, pval);
       TtaFreeMemory (ctxt);
@@ -2410,7 +2551,7 @@ void ParseTransformAttribute (Attribute attr, Element el, Document doc,
                       pval.typed_data.real = FALSE;
                       pval.typed_data.mainValue = TRUE;
                       ctxt = TtaGetSpecificStyleContext (doc);
-                      ctxt->cssSpecificity = 200; /* this is not a CSS rule */
+                      ctxt->cssSpecificity = 2000; /* this is not a CSS rule */
                       ctxt->destroy = delete_;
                       /****** process values a, b, c, d *****/
                       /* value e specifies an horizontal translation */
@@ -2451,7 +2592,7 @@ void ParseTransformAttribute (Attribute attr, Element el, Document doc,
                   pval.typed_data.value = (int)x;
                   pval.typed_data.mainValue = TRUE;
                   ctxt = TtaGetSpecificStyleContext (doc);
-                  ctxt->cssSpecificity = 200;     /* this is not a CSS rule */
+                  ctxt->cssSpecificity = 2000;     /* this is not a CSS rule */
                   ctxt->destroy = delete_;
                   TtaSetStylePresentation (PRHorizPos, el, NULL, ctxt, pval);
 #endif /* _GL */
@@ -3170,6 +3311,7 @@ int ParseIntAttribute (Attribute attr)
     }
   return 0;
 }
+
 /*----------------------------------------------------------------------
   ParseFloatAttrbute : 
   Parse the value of a float data attribute

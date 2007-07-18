@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -522,6 +522,7 @@ static void GL_TextureBind (ThotPictInfo *img, ThotBool isPixmap,
         {
           if ((int)p2_w < img->PicWidth || (int)p2_h < img->PicHeight)
             {
+	      //if (img->PicFileName && strstr (img->PicFileName,"w3c_main"))
               GL_MakeTextureSize (img, p2_w, p2_h);
               glTexImage2D (GL_TEXTURE_2D, 0, Mode, p2_w, p2_h,
                             0, Mode, GL_UNSIGNED_BYTE,
@@ -531,6 +532,7 @@ static void GL_TextureBind (ThotPictInfo *img, ThotBool isPixmap,
             }
           else
             {
+	      //if (img->PicFileName && strstr (img->PicFileName,"w3c_main"))
               /* create a texture whose sizes are power of 2*/
               glTexImage2D (GL_TEXTURE_2D, 0, Mode, p2_w, p2_h, 0, Mode, 
                             GL_UNSIGNED_BYTE, NULL);
@@ -644,7 +646,10 @@ static void GL_TexturePartialMap (ThotPictInfo *desc, int dx, int dy,
          to the size of the square */      
       /* lower left */
       texW = desc->TexCoordW * (float)(dx + w) / (float)desc->PicWidth;
-      texH = desc->TexCoordH * (float)(desc->PicHeight + 1 - dy - h) / (float)desc->PicHeight;
+      if (h == 1)
+        texH = desc->TexCoordH * (float)(desc->PicHeight - dy - h) / (float)desc->PicHeight;
+      else
+        texH = desc->TexCoordH * (float)(desc->PicHeight + 1 - dy - h) / (float)desc->PicHeight;
       texX = desc->TexCoordW * (float)(dx) / (float)desc->PicWidth;
       texY = desc->TexCoordH * (float)(desc->PicHeight - dy) / (float)desc->PicHeight;
       /* Texture coordinates are unrelative
@@ -871,20 +876,20 @@ void DisplayOpaqueGroup (PtrAbstractBox pAb, int frame,
 
       if (do_display_background)
         {
-          GL_SetFillOpacity (1000);     
+          //GL_SetFillOpacity (1000);
           GL_SetOpacity (1000);
-          GL_SetStrokeOpacity (1000);
-          GL_TextureMap ((ThotPictInfo*)pAb->AbBox->Pre_computed_Pic,  
+          //GL_SetStrokeOpacity (1000);
+          GL_TextureMap ((ThotPictInfo*)pAb->AbBox->Pre_computed_Pic,
           x, y, width, height, frame);
         }
-      GL_SetFillOpacity (pAb->AbOpacity);
+      //GL_SetFillOpacity (pAb->AbOpacity);
       GL_SetOpacity (pAb->AbOpacity);
-      GL_SetStrokeOpacity (pAb->AbOpacity);
+      //GL_SetStrokeOpacity (pAb->AbOpacity);
       GL_TextureMap ((ThotPictInfo*)pAb->AbBox->Post_computed_Pic,
                      x, y, width, height, frame);
-      GL_SetFillOpacity (1000);
+      //GL_SetFillOpacity (1000);
       GL_SetOpacity (1000);
-      GL_SetStrokeOpacity (1000);
+      //GL_SetStrokeOpacity (1000);
 
       glLoadMatrixd (m);      
       TtaFreeMemory (m);      
@@ -1543,10 +1548,6 @@ static void LayoutPicture (ThotPixmap pixmap, ThotDrawable drawable, int picXOrg
           if (pAb->AbLeafType == LtGraphics)
             box = pAb->AbBox;
         }
-#ifdef IV
-if (imageDesc->PicFileName && strstr (imageDesc->PicFileName,"fond_colon"))
-printf ("LayoutPicture (%s)\n",imageDesc->PicFileName);
-#endif
       // x,y,w,h define the area to be painted
       x = box->BxXOrg;
       y = box->BxYOrg;
@@ -1707,6 +1708,9 @@ printf ("LayoutPicture (%s)\n",imageDesc->PicFileName);
                   if (i + dw > w)
                     dw = w - i;
 #ifdef _GL
+                  /*if (dh == 1)
+                    GL_TextureMap (imageDesc, x+i, y+j,dw,dh, frame);
+                    else*/
                   GL_TexturePartialMap (imageDesc, dx, dy, x+i, y+j,
                                         /*dx+*/dw, /*dy+*/dh, frame);
 #else /* _GL */
@@ -2156,6 +2160,7 @@ void DrawPicture (PtrBox box, ThotPictInfo *imageDesc, int frame,
       imageDesc->PicWArea = w;
       imageDesc->PicHArea = h;
     }
+
   picWArea = imageDesc->PicWArea;
   picHArea = imageDesc->PicHArea;
   bgColor = box->BxAbstractBox->AbBackground;
@@ -2166,10 +2171,10 @@ void DrawPicture (PtrBox box, ThotPictInfo *imageDesc, int frame,
         DrawEpsBox (box, imageDesc, frame, epsflogo_width, epsflogo_height);
       else
         {
-#ifdef _TRACE_GL_BUGS_GLISTEXTURE
+#ifdef _TRACE_GL_PICTURE
           if (imageDesc->TextureBind)
             printf ( "GLBUG - DrawPicture : glIsTexture=%s\n", glIsTexture (imageDesc->TextureBind) ? "yes" : "no" );
-#endif /* _TRACE_GL_BUGS_GLISTEXTURE */
+#endif /* _TRACE_GL_PICTURE */
           if ((pres == ReScale && 
                (imageDesc->PicWArea != w || imageDesc->PicHArea != h)) ||
 #ifdef _GL
@@ -2530,7 +2535,7 @@ ThotBool Ratio_Calculate (PtrAbstractBox pAb, ThotPictInfo *imageDesc,
 void ClipAndBoxUpdate (PtrAbstractBox pAb, PtrBox box, int w, int h,
                        int top, int bottom, int left, int right, int frame)
 {
-  PtrAbstractBox parent;
+  PtrAbstractBox parent = NULL;
 
   /* prepare the redisplay of the box */
   UpdateBoxRegion (frame, box, 0, 0, w, h);
@@ -2811,7 +2816,8 @@ void LoadPicture (int frame, PtrBox box, ThotPictInfo *imageDesc)
           /* intrinsic width and height */
 
           /* free the previous pixmap */
-          TtaFreeMemory (imageDesc->PicPixmap);
+          if (strcmp (imageDesc->PicFileName, LostPicturePath))
+            TtaFreeMemory (imageDesc->PicPixmap);
           imageDesc->PicPixmap = NULL;
           imageDesc->PicPixmap = (ThotPixmap) 
             (*(PictureHandlerTable[typeImage].Produce_Picture)) (

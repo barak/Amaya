@@ -21,6 +21,8 @@ extern void GeneralConfMenu ( Document document,
                               View view );
 extern void PublishConfMenu ( Document document,
                               View view );
+extern void GetEmailsConf ( void );
+extern void SetEmailsConf ( void );
 extern void GetBrowseConf ( void );
 extern void SetBrowseConf ( void );
 extern void ApplyConfigurationChanges ( void );
@@ -37,6 +39,8 @@ extern void AnnotConfMenu ( Document document,
                             View view );
 extern void GetTemplatesConf ( void );
 extern void SetTemplatesConf ( void );
+extern void GetPasswordsConf ( void );
+extern void SetPasswordsConf ( void );
 extern int GetPrefGeneralBase ( void );
 extern int GetPrefBrowseBase ( void );
 extern int GetPrefCacheBase ( void );
@@ -47,6 +51,8 @@ extern int GetPrefGeometryBase ( void );
 extern int GetPrefAnnotBase ( void );
 extern int GetPrefDAVBase ( void );
 extern int GetPrefTemplatesBase ( void );
+extern int GetPrefEmailsBase ( void );
+extern int GetPrefPasswordsBase ( void );
 extern void SetProp_General ( const Prop_General * prop );
 extern Prop_General GetProp_General ( void );
 extern void SetProp_Browse ( const Prop_Browse * prop );
@@ -67,6 +73,10 @@ extern void SetProp_DAV ( const Prop_DAV * prop );
 extern Prop_DAV GetProp_DAV ( void );
 extern void SetProp_Templates ( const Prop_Templates * prop );
 extern Prop_Templates GetProp_Templates ( void );
+extern void SetProp_Emails ( const Prop_Emails * prop );
+extern Prop_Emails GetProp_Emails ( void );
+extern void SetProp_Passwords ( const Prop_Passwords * prop );
+extern Prop_Passwords GetProp_Passwords ( void );
 extern void PreferenceMenu ( Document document,
                              View view );
 extern void InitConfMenu ( void );
@@ -88,6 +98,8 @@ extern void GeneralConfMenu ( Document document,
                                 View view );
 extern void PublishConfMenu ( Document document,
                                 View view );
+extern void GetEmailsConf ( void );
+extern void SetEmailsConf ( void );
 extern void GetBrowseConf ( void );
 extern void SetBrowseConf ( void );
 extern void ApplyConfigurationChanges ( void );
@@ -104,6 +116,8 @@ extern void AnnotConfMenu ( Document document,
                               View view );
 extern void GetTemplatesConf ( void );
 extern void SetTemplatesConf ( void );
+extern void GetPasswordsConf ( void );
+extern void SetPasswordsConf ( void );
 extern int GetPrefGeneralBase ( void );
 extern int GetPrefBrowseBase ( void );
 extern int GetPrefCacheBase ( void );
@@ -114,6 +128,8 @@ extern int GetPrefGeometryBase ( void );
 extern int GetPrefAnnotBase ( void );
 extern int GetPrefDAVBase ( void );
 extern int GetPrefTemplatesBase ( void );
+extern int GetPrefEmailsBase ( void );
+extern int GetPrefPasswordsBase ( void );
 extern void SetProp_General ( const Prop_General * prop );
 extern Prop_General GetProp_General ( void );
 extern void SetProp_Browse ( const Prop_Browse * prop );
@@ -134,6 +150,10 @@ extern void SetProp_DAV ( const Prop_DAV * prop );
 extern Prop_DAV GetProp_DAV ( void );
 extern void SetProp_Templates ( const Prop_Templates * prop );
 extern Prop_Templates GetProp_Templates ( void );
+extern void SetProp_Emails ( const Prop_Emails * prop );
+extern Prop_Emails GetProp_Emails ( void );
+extern void SetProp_Passwords ( const Prop_Passwords * prop );
+extern Prop_Passwords GetProp_Passwords ( void );
 extern void PreferenceMenu ( Document document,
                                View view );
 extern void InitConfMenu ( void );

@@ -2,6 +2,7 @@
 
 #include "wx/wx.h"
 #include "wx/xrc/xmlres.h"              // XRC XML resouces
+#include "wx/notebook.h"
 #include "wx/statline.h"
 
 #include "AmayaApp.h"
@@ -18,6 +19,7 @@
 static int MyRef = 0;
 static int Waiting = 0;
 static bool MysaveImgs = FALSE;
+static bool MysaveCss = FALSE;
 
 //-----------------------------------------------------------------------------
 // Event table: connect the events to the handler functions to process them
@@ -26,15 +28,19 @@ BEGIN_EVENT_TABLE(SaveAsDlgWX, AmayaDialog)
   EVT_BUTTON( XRCID("wxID_SAVE"),       SaveAsDlgWX::OnConfirmButton )
   EVT_BUTTON( XRCID("wxID_CANCEL"),        SaveAsDlgWX::OnCancelButton )
   EVT_BUTTON( XRCID("wxID_BROWSE"),        SaveAsDlgWX::OnBrowseButton )
-  EVT_BUTTON( XRCID("wxID_IMG_BROWSE"),    SaveAsDlgWX::OnDirButton )
+  EVT_BUTTON( XRCID("wxID_IMG_BROWSE"),    SaveAsDlgWX::OnDirImgButton )
+  EVT_BUTTON( XRCID("wxID_CSS_BROWSE"),    SaveAsDlgWX::OnDirCssButton )
   EVT_BUTTON( XRCID("wxID_CLEAR"),         SaveAsDlgWX::OnClearButton )
   EVT_RADIOBOX( XRCID("wxID_DOC_FORMAT"),        SaveAsDlgWX::OnDocFormatBox )
   EVT_CHECKBOX( XRCID("wxID_CPY_IMAGES_CHK"),    SaveAsDlgWX::OnImagesChkBox )
+  EVT_CHECKBOX( XRCID("wxID_CPY_CSS_CHK"),       SaveAsDlgWX::OnCssChkBox )
   EVT_CHECKBOX( XRCID("wxID_TRANSFORM_URLS_CHK"),SaveAsDlgWX::OnUrlsChkBox )
   EVT_TEXT( XRCID("wxID_DOC_LOCATION_CTRL"),     SaveAsDlgWX::OnDocLocation )
   EVT_TEXT( XRCID("wxID_IMG_LOCATION_CTRL"),     SaveAsDlgWX::OnImgLocation )
+  EVT_TEXT( XRCID("wxID_CSS_LOCATION_CTRL"),     SaveAsDlgWX::OnCssLocation )
   EVT_COMBOBOX( XRCID("wxID_CHARSET_CB"),        SaveAsDlgWX::OnCharsetCbx )
   EVT_COMBOBOX( XRCID("wxID_MIME_TYPE_CB"),      SaveAsDlgWX::OnMimeTypeCbx )
+  EVT_CLOSE( SaveAsDlgWX::OnClose )
 END_EVENT_TABLE()
 
   /*----------------------------------------------------------------------
@@ -47,32 +53,50 @@ SaveAsDlgWX::SaveAsDlgWX( int ref, wxWindow* parent, const wxString & pathname,
                           int doc, bool  saveImgs) :
   AmayaDialog( parent, ref )
 {
-  int  doc_type;
+  wxNotebook *p_notebook;
+  wxPanel    *p_page;
+  int         doc_type;
+  int         page_id = 0;
   
   doc_type = DocumentTypes[doc];
   MyRef = ref;
   MysaveImgs = saveImgs;
   // waiting for a return
   Waiting = 1;
+
   wxXmlResource::Get()->LoadDialog(this, parent, wxT("SaveAsDlgWX"));
   wxString wx_title = TtaConvMessageToWX( TtaGetMessage (AMAYA, AM_SAVE_AS) );
   SetTitle( wx_title );
+  p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxNotebook);
+  p_page = (wxPanel *)FindWindow(wxXmlResource::GetXRCID( _T("wxID_PAGE_EXTRA")));
+  while (page_id < (int) p_notebook->GetPageCount() )
+    {
+      if ( p_page == p_notebook->GetPage(page_id))
+        {
+          if ( doc_type == docSource || doc_type == docCSS ||  doc_type == docText)
+            p_notebook->DeletePage(page_id);
+          else
+            p_notebook->SetPageText (page_id,
+                                     TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EXTENSION)));
+        }
+      else
+        p_notebook->SetPageText (page_id,
+                                 TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_QUICK_SAVE)));
+        page_id++;
+    }
 
   // Document format radio box
   if ( doc_type == docSource || doc_type == docCSS ||  doc_type == docText)
     {
       // now hide unused field
       wxWindow * p_obj;
-      p_obj = XRCCTRL(*this, "wxID_IMG_LOCATION", wxStaticText);
-      p_obj->GetContainingSizer()->Show(p_obj, FALSE);
-      p_obj = XRCCTRL(*this, "wxID_IMG_LOCATION_CTRL", wxTextCtrl);
-      p_obj->GetContainingSizer()->Show(p_obj, FALSE);
-      XRCCTRL(*this, "wxID_IMG_BROWSE", wxBitmapButton)->Hide();      
       p_obj = XRCCTRL(*this, "wxID_DOC_FORMAT", wxRadioBox);
       p_obj->GetContainingSizer()->Show(p_obj, FALSE);
       p_obj = XRCCTRL(*this, "wxID_OPTIONS", wxStaticText);
       p_obj->GetContainingSizer()->Show(p_obj, FALSE);
       p_obj = XRCCTRL(*this, "wxID_CPY_IMAGES_CHK", wxCheckBox);
+      p_obj->GetContainingSizer()->Show(p_obj, FALSE);
+      p_obj = XRCCTRL(*this, "wxID_CPY_CSS_CHK", wxCheckBox);
       p_obj->GetContainingSizer()->Show(p_obj, FALSE);
       p_obj = XRCCTRL(*this, "wxID_TRANSFORM_URLS_CHK", wxCheckBox);
       p_obj->GetContainingSizer()->Show(p_obj, FALSE);
@@ -105,22 +129,30 @@ SaveAsDlgWX::SaveAsDlgWX( int ref, wxWindow* parent, const wxString & pathname,
       // Options check box
       XRCCTRL(*this, "wxID_OPTIONS", wxStaticText)->SetLabel(TtaConvMessageToWX( TtaGetMessage(LIB, TMSG_OPTIONS) ));
       XRCCTRL(*this, "wxID_CPY_IMAGES_CHK", wxCheckBox)->SetLabel(TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_BCOPY_IMAGES) ));
+      XRCCTRL(*this, "wxID_CPY_CSS_CHK", wxCheckBox)->SetLabel(TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_BCOPY_CSS) ));
       XRCCTRL(*this, "wxID_TRANSFORM_URLS_CHK", wxCheckBox)->SetLabel(TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_BTRANSFORM_URL) ));
       CopyImages = false;
       XRCCTRL(*this, "wxID_CPY_IMAGES_CHK", wxCheckBox)->SetValue(CopyImages);
+      CopyCss = false;
+      XRCCTRL(*this, "wxID_CPY_CSS_CHK", wxCheckBox)->SetValue(CopyCss);
+      UpdateURLs = false;
       XRCCTRL(*this, "wxID_TRANSFORM_URLS_CHK", wxCheckBox)->SetValue(UpdateURLs);
 
       // Image directory
-      XRCCTRL(*this, "wxID_IMG_LOCATION", wxStaticText)->SetLabel(TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_IMAGES_LOCATION) ));
+      XRCCTRL(*this, "wxID_IMG_LOCATION", wxStaticText)->SetLabel(TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_WHERE_IMAGE) ));
       if (saveImgs)
         {
-          int end_slash_pos = pathname.Find(DIR_SEP, true);
-          wxString dir_value = pathname.SubString(0, end_slash_pos);
+          int end_pos = pathname.Find(DIR_SEP, true);
+          wxString dir_value = pathname.SubString(0, end_pos);
           XRCCTRL(*this, "wxID_IMG_LOCATION_CTRL", wxTextCtrl)->SetValue(dir_value);
           XRCCTRL(*this, "wxID_IMG_BROWSE", wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_SEL)));
         }
       else
         XRCCTRL(*this, "wxID_IMG_LOCATION_CTRL", wxTextCtrl)->SetEditable (false);
+
+      // CSS directory
+      XRCCTRL(*this, "wxID_CSS_LOCATION", wxStaticText)->SetLabel(TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_WHERE_RESOURCE) ));
+      XRCCTRL(*this, "wxID_CSS_LOCATION_CTRL", wxTextCtrl)->SetEditable (false);
     }
   
   // Document location
@@ -289,15 +321,46 @@ SaveAsDlgWX::~SaveAsDlgWX()
 }
 
 /*----------------------------------------------------------------------
+  OnClose
+  ----------------------------------------------------------------------*/
+void SaveAsDlgWX::OnClose( wxCloseEvent& event )
+{
+  Waiting = 0;
+  ThotCallback (MyRef, INTEGER_DATA, (char*) 0);
+}
+
+/*----------------------------------------------------------------------
   OnConfirmButton called when clicking the Confirm button
   ----------------------------------------------------------------------*/
 void SaveAsDlgWX::OnConfirmButton( wxCommandEvent& event )
 {
+  wxString path;
+  char     buffer[MAX_LENGTH];
+
   //if (Waiting)
     {
+      path = XRCCTRL(*this, "wxID_DOC_LOCATION_CTRL", wxTextCtrl)->GetValue( );
+      strncpy( buffer, (const char*)path.mb_str(wxConvUTF8), MAX_LENGTH-1);
+      buffer[MAX_LENGTH-1] = EOS;
+      ThotCallback (BaseDialog + NameSave,  STRING_DATA, (char *)buffer);
+      if (CopyImages)
+        {
+          path = XRCCTRL(*this, "wxID_IMG_LOCATION_CTRL", wxTextCtrl)->GetValue( );
+          strncpy( buffer, (const char*)path.mb_str(wxConvUTF8), MAX_LENGTH-1);
+          buffer[MAX_LENGTH-1] = EOS;
+          ThotCallback (BaseDialog + ImgDirSave,  STRING_DATA, (char *)buffer);
+        }
+      if (CopyCss)
+        {
+          path = XRCCTRL(*this, "wxID_CSS_LOCATION_CTRL", wxTextCtrl)->GetValue( );
+          strncpy( buffer, (const char*)path.mb_str(wxConvUTF8), MAX_LENGTH-1);
+          buffer[MAX_LENGTH-1] = EOS;
+          ThotCallback (BaseDialog + CssDirSave,  STRING_DATA, (char *)buffer);
+        }
+
       // save callback
-      ThotCallback (MyRef, INTEGER_DATA, (char*) 1);
       Waiting = 0;
+      ThotCallback (MyRef, INTEGER_DATA, (char*) 1);
     }
 }
 
@@ -309,32 +372,72 @@ void SaveAsDlgWX::OnCancelButton( wxCommandEvent& event )
   //if (Waiting)
     {
       // a return is still requested
-      ThotCallback (MyRef, INTEGER_DATA, (char*) 0);
       Waiting = 0;
+      ThotCallback (MyRef, INTEGER_DATA, (char*) 0);
     }
 }
 
 /*----------------------------------------------------------------------
-  OnDirButton called when the user want to change the folder
+  OnDirImgButton called when the user want to change the folder
   params:
   returns:
   ----------------------------------------------------------------------*/
-void SaveAsDlgWX::OnDirButton( wxCommandEvent& event )
+void SaveAsDlgWX::OnDirImgButton( wxCommandEvent& event )
 {
-  wxString path = XRCCTRL(*this, "wxID_IMG_LOCATION_CTRL", wxTextCtrl)->GetValue();
+  wxString        path;
+  wxDirDialog    *p_dlg;
+  char            buffer[MAX_LENGTH];
+  int             len;
+
+  path = XRCCTRL(*this, "wxID_IMG_LOCATION_CTRL", wxTextCtrl)->GetValue();
   if ((MysaveImgs || CopyImages) && !path.StartsWith(_T("http")))
     {
       // Create a generic filedialog
-      wxDirDialog * p_dlg = new wxDirDialog(this);
-      //p_dlg->SetStyle(p_dlg->GetStyle() | wxDD_NEW_DIR_BUTTON);
-      p_dlg->SetPath(XRCCTRL(*this, "wxID_IMG_LOCATION_CTRL", wxTextCtrl)->GetValue());
+      p_dlg = new wxDirDialog (this);
+      //p_dlg->SetStyle (p_dlg->GetStyle() | wxDD_NEW_DIR_BUTTON);
+      p_dlg->SetPath (path);
       if (p_dlg->ShowModal() == wxID_OK)
         {
-          XRCCTRL(*this, "wxID_IMG_LOCATION_CTRL", wxTextCtrl)->SetValue( p_dlg->GetPath() );
-          p_dlg->Destroy();
+          path = p_dlg->GetPath ();
+          strcpy (buffer, (const char*)path.mb_str(wxConvUTF8));
+          len = strlen (buffer);
+          if (buffer[len-1] != DIR_SEP)
+            strcat (buffer, DIR_STR);
+          XRCCTRL(*this, "wxID_IMG_LOCATION_CTRL", wxTextCtrl)->SetValue(TtaConvMessageToWX(buffer));
         }
-      else
-        p_dlg->Destroy();
+      p_dlg->Destroy();
+    }
+}
+
+/*----------------------------------------------------------------------
+  OnDirCssButton called when the user want to change the folder
+  params:
+  returns:
+  ----------------------------------------------------------------------*/
+void SaveAsDlgWX::OnDirCssButton( wxCommandEvent& event )
+{
+  wxString        path;
+  wxDirDialog    *p_dlg;
+  char            buffer[MAX_LENGTH];
+  int             len;
+
+  path = XRCCTRL(*this, "wxID_CSS_LOCATION_CTRL", wxTextCtrl)->GetValue();
+  if ((MysaveCss || CopyCss) && !path.StartsWith(_T("http")))
+    {
+      // Create a generic filedialog
+      p_dlg = new wxDirDialog (this);
+      //p_dlg->SetStyle (p_dlg->GetStyle() | wxDD_NEW_DIR_BUTTON);
+      p_dlg->SetPath (path);
+      if (p_dlg->ShowModal() == wxID_OK)
+        {
+          path = p_dlg->GetPath ();
+          strcpy (buffer, (const char*)path.mb_str(wxConvUTF8));
+          len = strlen (buffer);
+          if (buffer[len-1] != DIR_SEP)
+            strcat (buffer, DIR_STR);
+          XRCCTRL(*this, "wxID_CSS_LOCATION_CTRL", wxTextCtrl)->SetValue(TtaConvMessageToWX(buffer));
+        }
+      p_dlg->Destroy();
     }
 }
 
@@ -345,7 +448,7 @@ void SaveAsDlgWX::OnBrowseButton( wxCommandEvent& event )
 {
   wxString wx_filter;
   wxString path, dir_value, file_value;
-  int      end_slash_pos;
+  int      end_pos;
 
   wx_filter = APPFILENAMEFILTER;
   // Create a generic filedialog
@@ -361,42 +464,36 @@ void SaveAsDlgWX::OnBrowseButton( wxCommandEvent& event )
   
   // force the directory and file name, except for W3 docs on windows 
     path = XRCCTRL(*this, "wxID_DOC_LOCATION_CTRL", wxTextCtrl)->GetValue();
-#ifdef _WINDOWS 
-  {
-     char buffer[MAX_LENGTH];
-     wxASSERT( path.Len() < MAX_LENGTH );
-     strcpy( buffer, (const char*)path.mb_str(wxConvUTF8) );
-	 if (!IsW3Path (buffer))
+  if (path.StartsWith(_T("http")) ||
+      path.StartsWith(TtaConvMessageToWX((TtaGetEnvString ("THOTDIR")))))
+    p_dlg->SetDirectory(wxGetHomeDir());
+  else
 	 {
         file_value = path.AfterLast (DIR_SEP);
         p_dlg->SetPath(path);
         p_dlg->SetFilename(file_value);
 	 }
-  }
-#else /* _WINDOWS */
-  file_value = path.AfterLast (DIR_SEP);
-  p_dlg->SetPath(path);
-  p_dlg->SetFilename(file_value);
-#endif /* _WINDOWS */
   
   if (p_dlg->ShowModal() == wxID_OK)
     {
       path = p_dlg->GetPath();
       XRCCTRL(*this, "wxID_DOC_LOCATION_CTRL", wxTextCtrl)->SetValue( path);
-      if (MysaveImgs || CopyImages)
+      if (MysaveImgs || CopyImages || MysaveCss || CopyCss)
         {
-          // update the image path
-          end_slash_pos = path.Find(DIR_SEP, true);
-          dir_value = path.SubString(0, end_slash_pos);
-          XRCCTRL(*this, "wxID_IMG_LOCATION_CTRL", wxTextCtrl)->SetValue(dir_value);
+          end_pos = path.Find(DIR_SEP, true);
+          dir_value = path.SubString(0, end_pos);
         }
+      if (MysaveImgs || CopyImages)
+        // update the image path
+        XRCCTRL(*this, "wxID_IMG_LOCATION_CTRL", wxTextCtrl)->SetValue(dir_value);
+      if (MysaveCss || CopyCss)
+        // update the css path
+        XRCCTRL(*this, "wxID_IMG_LOCATION_CTRL", wxTextCtrl)->SetValue(dir_value);
       // destroy the dlg before calling thotcallback because it's a child of this
       // dialog and thotcallback will delete the dialog...
       // so if I do not delete it manualy here it will be deleted twice
-      p_dlg->Destroy();
     }
-  else
-    p_dlg->Destroy();
+  p_dlg->Destroy();
 }
 
 /*----------------------------------------------------------------------
@@ -406,7 +503,10 @@ void SaveAsDlgWX::OnClearButton( wxCommandEvent& event )
 {
   ThotCallback (MyRef, INTEGER_DATA, (char*) 3);
   XRCCTRL(*this, "wxID_DOC_LOCATION_CTRL", wxTextCtrl)->SetValue(TtaConvMessageToWX( SavePath));
-  XRCCTRL(*this, "wxID_IMG_LOCATION_CTRL", wxTextCtrl)->SetValue(TtaConvMessageToWX( SaveImgsURL));
+  if (MysaveImgs)
+    XRCCTRL(*this, "wxID_IMG_LOCATION_CTRL", wxTextCtrl)->SetValue(TtaConvMessageToWX(""));
+  if (MysaveCss)
+    XRCCTRL(*this, "wxID_CSS_LOCATION_CTRL", wxTextCtrl)->SetValue(TtaConvMessageToWX(""));
 }
 
 /*----------------------------------------------------------------------
@@ -454,8 +554,8 @@ void SaveAsDlgWX::OnImagesChkBox ( wxCommandEvent& event )
       // update the image path
       XRCCTRL(*this, "wxID_IMG_LOCATION_CTRL", wxTextCtrl)->SetEditable (true);
       wxString path = XRCCTRL(*this, "wxID_DOC_LOCATION_CTRL", wxTextCtrl)->GetValue( );
-      int end_slash_pos = path.Find(DIR_SEP, true);
-      wxString dir_value = path.SubString(0, end_slash_pos);
+      int end_pos = path.Find(DIR_SEP, true);
+      wxString dir_value = path.SubString(0, end_pos);
       XRCCTRL(*this, "wxID_IMG_LOCATION_CTRL", wxTextCtrl)->SetValue(dir_value);
       XRCCTRL(*this, "wxID_IMG_BROWSE", wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_SEL)));
     }
@@ -467,6 +567,34 @@ void SaveAsDlgWX::OnImagesChkBox ( wxCommandEvent& event )
           // no image is saved
           XRCCTRL(*this, "wxID_IMG_LOCATION_CTRL", wxTextCtrl)->SetValue(_T(""));
           XRCCTRL(*this, "wxID_IMG_BROWSE", wxBitmapButton)->SetToolTip(_T(""));
+        }
+    }
+}
+
+/*---------------------------------------------------------------
+  OnCssChkBox
+  ---------------------------------------------------------------*/
+void SaveAsDlgWX::OnCssChkBox ( wxCommandEvent& event )
+{
+  CopyCss = XRCCTRL(*this, "wxID_CPY_CSS_CHK", wxCheckBox)->GetValue();
+  if (CopyCss)
+    {
+      // update the image path
+      XRCCTRL(*this, "wxID_CSS_LOCATION_CTRL", wxTextCtrl)->SetEditable (true);
+      wxString path = XRCCTRL(*this, "wxID_DOC_LOCATION_CTRL", wxTextCtrl)->GetValue( );
+      int end_pos = path.Find(DIR_SEP, true);
+      wxString dir_value = path.SubString(0, end_pos);
+      XRCCTRL(*this, "wxID_CSS_LOCATION_CTRL", wxTextCtrl)->SetValue(dir_value);
+      XRCCTRL(*this, "wxID_CSS_BROWSE", wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_SEL)));
+    }
+  else
+    {
+      XRCCTRL(*this, "wxID_CSS_LOCATION_CTRL", wxTextCtrl)->SetEditable (MysaveCss);
+      if (!MysaveCss)
+        {
+          // no image is saved
+          XRCCTRL(*this, "wxID_CSS_LOCATION_CTRL", wxTextCtrl)->SetValue(_T(""));
+          XRCCTRL(*this, "wxID_CSS_BROWSE", wxBitmapButton)->SetToolTip(_T(""));
         }
     }
 }
@@ -484,14 +612,17 @@ void SaveAsDlgWX::OnUrlsChkBox ( wxCommandEvent& event )
   ---------------------------------------------------------------*/
 void SaveAsDlgWX::OnDocLocation ( wxCommandEvent& event )
 {
-  wxString location = XRCCTRL(*this, "wxID_DOC_LOCATION_CTRL", wxTextCtrl)->GetValue( );
-
-  // allocate a temporary buffer to convert wxString to (char *) UTF-8 buffer
-  char buffer[MAX_LENGTH];
-  wxASSERT( location.Len() < MAX_LENGTH );
-  strcpy( buffer, (const char*)location.mb_str(wxConvUTF8) );
-
-  ThotCallback (BaseDialog + NameSave,  STRING_DATA, (char *)buffer );
+  wxString path = XRCCTRL(*this, "wxID_DOC_LOCATION_CTRL", wxTextCtrl)->GetValue( );
+  if (CopyImages || CopyCss)
+    {
+      // Update other paths
+      int end_pos = path.Find(DIR_SEP, true);
+      wxString dir_value = path.SubString(0, end_pos);
+      if (CopyImages)
+        XRCCTRL(*this, "wxID_IMG_LOCATION_CTRL", wxTextCtrl)->SetValue(dir_value);
+      if (CopyCss)
+        XRCCTRL(*this, "wxID_CSS_LOCATION_CTRL", wxTextCtrl)->SetValue(dir_value);
+    }
 }
 
 /*---------------------------------------------------------------
@@ -499,13 +630,13 @@ void SaveAsDlgWX::OnDocLocation ( wxCommandEvent& event )
   ---------------------------------------------------------------*/
 void SaveAsDlgWX::OnImgLocation ( wxCommandEvent& event )
 {
-  wxString location = XRCCTRL(*this, "wxID_IMG_LOCATION_CTRL", wxTextCtrl)->GetValue( );
-  
-  // allocate a temporary buffer to convert wxString to (char *) UTF-8 buffer
-  char buffer[MAX_LENGTH];
-  wxASSERT( location.Len() < MAX_LENGTH );
-  strcpy( buffer, (const char*)location.mb_str(wxConvUTF8) );
-  ThotCallback (BaseDialog + ImgDirSave,  STRING_DATA, (char *)buffer );
+}
+
+/*---------------------------------------------------------------
+  OnImgLocation 
+  ---------------------------------------------------------------*/
+void SaveAsDlgWX::OnCssLocation ( wxCommandEvent& event )
+{
 }
 
 #endif /* _WX */

@@ -2175,6 +2175,14 @@ static void         CheckDefaultRules ()
       CurRule->PrType = PtWeight;
       InheritRule (InheritParent);
     }
+  if (GetTypedRule (PtVariant, pPSchema->PsFirstDefaultPRule) == NULL)
+    /* pas de regle Variant par defaut, on en cree une : */
+    /* Variant: Enclosing =; */
+    {
+      CreateDefaultRule ();
+      CurRule->PrType = PtVariant;
+      InheritRule (InheritParent);
+    }
   if (GetTypedRule (PtFont, pPSchema->PsFirstDefaultPRule) == NULL)
     /* pas de regle Font par defaut, on en cree une : */
     /* Font: Enclosing =; */
@@ -3199,6 +3207,22 @@ static void ProcessLongKeyWord (int x, SyntacticCode gCode, indLine wi)
       CreatePRule (PtWeight, wi);
       CurRule->PrChrValue = 'B';	/* Weight; Bold */
       break;
+    case KWD_SmallCaps:
+      /* Variant = SmallCaps */
+      CurRule->PrChrValue = 'C';
+      break;
+    case KWD_DoubleStruck:
+      /* Variant = DoubleStruck */
+      CurRule->PrChrValue = 'D';
+      break;
+    case KWD_Script:
+      /* Variant = Script */
+      CurRule->PrChrValue = 'S';
+      break;
+    case KWD_Fraktur:
+      /* Variant = Fraktur */
+      CurRule->PrChrValue = 'F';
+      break;
     case KWD_Underline:
       /* Souligne */
       CreatePRule (PtUnderline, wi);
@@ -3229,6 +3253,10 @@ static void ProcessLongKeyWord (int x, SyntacticCode gCode, indLine wi)
     case KWD_Weight:
       /* Weight */
       CreatePRule (PtWeight, wi);
+      break;
+    case KWD_Variant:
+      /* Variant */
+      CreatePRule (PtVariant, wi);
       break;
     case KWD_Indent:
       /* Indent */
@@ -3635,6 +3663,9 @@ static void ProcessLongKeyWord (int x, SyntacticCode gCode, indLine wi)
       if (CurRule->PrType == PtUnicodeBidi)
         /* UnicodeBidi = Normal */
         CurRule->PrChrValue = 'N';
+      else if (CurRule->PrType == PtVariant)
+        /* Variant = Normal */
+        CurRule->PrChrValue = 'N';
       else
         /* Weight = Normal */
         CurRule->PrChrValue = 'N';
@@ -3709,6 +3740,7 @@ static void ProcessLongKeyWord (int x, SyntacticCode gCode, indLine wi)
       if (gCode == RULE_Reference)
         SetLevel (RlEnclosed, wi);
       else if (CurRule->PrType == PtVisibility ||
+               CurRule->PrType == PtVariant ||
                CurRule->PrType == PtDirection ||
                CurRule->PrType == PtUnicodeBidi)
         CompilerMessage (wi, PRS, FATAL, CANT_INHERIT_FROM_ENCLOSED,

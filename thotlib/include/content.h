@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT MIT and INRIA, 1996-2005
+ *  (c) COPYRIGHT MIT and INRIA, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -105,7 +105,7 @@ extern void TtaRemoveFinalSpaces (Element element, Document document,
   it. It return NULL if the string is not found.
   ----------------------------------------------------------------------*/
 extern Element TtaSearchText (Document document, Element element, ThotBool forward,
-			      char *text, CHARSET encoding);
+			      char *text, int *firstCh, int *lastCh, CHARSET encoding);
 
 /* ----------------------------------------------------------------------
    TtaInsertTextContent
@@ -471,6 +471,16 @@ void TtaSetStopOffsetColorGradient (float offset, Element el);
    source : identifier of the source page element.
   ----------------------------------------------------------------------*/
 extern void TtaCopyPage (Element destination, Element source);
+
+/*----------------------------------------------------------------------
+  TtaGivePictureSize
+  Returns the original width and height of the picture.
+  Parameter:
+  element: the element of interest. This element must be a picture
+  Return value:
+  width and height of the image
+  ----------------------------------------------------------------------*/
+extern void TtaGivePictureSize (Element element, int *width, int *height);
 
 /*----------------------------------------------------------------------
    TtaGetPictureType

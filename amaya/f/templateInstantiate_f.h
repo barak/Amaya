@@ -7,7 +7,8 @@
 #ifdef __STDC__
 
 extern void CreateInstance ( char *templatePath,
-                             char *instancePath );
+                             char *instancePath,
+                             int basedoc );
 extern void InstantiateTemplate_callback ( int newdoc,
                                            int status,
                                            char *urlName,
@@ -26,9 +27,18 @@ extern Element Template_GetNewSimpleTypeInstance ( Document doc,
 extern Element Template_GetNewXmlElementInstance ( Document doc,
                                                    Element parent,
                                                    Declaration decl );
+extern Element InsertWithNotify ( Element el,
+                                  Element child,
+                                  Element parent,
+                                  Document doc );
 extern Element Template_InsertUseChildren ( Document doc,
                                             Element el,
                                             Declaration dec );
+extern void Template_FixAccessRight ( XTigerTemplate t,
+                                      Element el,
+                                      Document doc );
+extern void AddPromptIndicator ( Element el,
+                                 Document doc );
 extern Element InstantiateUse ( XTigerTemplate t,
                                 Element el,
                                 Document doc,
@@ -38,12 +48,13 @@ extern void InstantiateRepeat ( XTigerTemplate t,
                                 Document doc,
                                 ThotBool registerUndo );
 extern void DoInstanceTemplate ( char *templatename );
-extern void PreInstantiateComponents ( XTigerTemplate t );
+extern void Template_PreInstantiateComponents ( XTigerTemplate t );
 
 #else /* __STDC__ */
 
 extern void CreateInstance ( char *templatePath,
-                               char *instancePath );
+                               char *instancePath,
+                               int basedoc );
 extern void InstantiateTemplate_callback ( int newdoc,
                                              int status,
                                              char *urlName,
@@ -62,9 +73,18 @@ extern Element Template_GetNewSimpleTypeInstance ( Document doc,
 extern Element Template_GetNewXmlElementInstance ( Document doc,
                                                      Element parent,
                                                      Declaration decl );
+extern Element InsertWithNotify ( Element el,
+                                    Element child,
+                                    Element parent,
+                                    Document doc );
 extern Element Template_InsertUseChildren ( Document doc,
                                               Element el,
                                               Declaration dec );
+extern void Template_FixAccessRight ( XTigerTemplate t,
+                                        Element el,
+                                        Document doc );
+extern void AddPromptIndicator ( Element el,
+                                   Document doc );
 extern Element InstantiateUse ( XTigerTemplate t,
                                   Element el,
                                   Document doc,
@@ -74,7 +94,7 @@ extern void InstantiateRepeat ( XTigerTemplate t,
                                   Document doc,
                                   ThotBool registerUndo );
 extern void DoInstanceTemplate ( char *templatename );
-extern void PreInstantiateComponents ( XTigerTemplate t );
+extern void Template_PreInstantiateComponents ( XTigerTemplate t );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

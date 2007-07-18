@@ -59,8 +59,6 @@ AnOutputFile;
 static ThotBool          StartDollar = FALSE;
 static ThotBool          StartDate = FALSE;
 static ThotBool          IgnoreDate = FALSE;
-static unsigned char     DateString[10];
-static int               DateIndex = 0;
 
 static ThotBool          RCSDollar = FALSE;
 static ThotBool          RCSMarker = FALSE;
@@ -575,85 +573,6 @@ void TtaGetTime (char *s, CHARSET charset)
     }
 }
 
-#ifdef LC
-/*----------------------------------------------------------------------
-  CheckDate checks if the current date should be generated
-  Returns TRUE if the character must be skipped.
-  ----------------------------------------------------------------------*/
-static ThotBool CheckDate (unsigned char c, int fnum, char *outBuf,
-                           Document doc)
-{
-  PtrDocument pDoc;
-  char        tm[DATESTRLEN];
-  int         index;
-
-  pDoc = LoadedDocument[doc - 1];
-  if (StartDate)
-    {
-      if (c == '-' || c == '>' || c == SPACE)
-        /* keep this character */
-        return FALSE;
-      else
-        {
-          /* generate the current date */
-          if (pDoc->DocDefaultCharset)
-            TtaGetTime (tm, US_ASCII);
-          else
-            TtaGetTime (tm, pDoc->DocCharset);
-          for (index = 0; tm[index] != EOS; index++)
-            ExportChar ((wchar_t) tm[index], fnum, outBuf, doc,
-                        FALSE, FALSE, FALSE);
-          StartDate = FALSE;
-          IgnoreDate = TRUE;
-        }
-    }
-
-  if (c == '$')
-    {
-      /* start/stop the analyse of the date */
-      if (!StartDollar || DateIndex == 4)
-        StartDollar = !StartDollar;
-      else
-        StartDollar = TRUE;
-      if (IgnoreDate)
-        /* close the previous date parsing */
-        IgnoreDate = FALSE;
-      DateIndex = 0;
-    }
-  else if (StartDollar)
-    {
-      if (IgnoreDate)
-        {
-          if (c == '<')
-            {
-              /* implicit closing of the date parsing */
-              IgnoreDate = FALSE;
-              StartDollar = FALSE;
-            }
-          else
-            /* it's a character of the previous date */
-            return TRUE;
-        }
-      else if (c == ':' || c == '=')
-        {
-          if (!StartDate && DateIndex > 0 &&
-              !strncasecmp ((char *)DateString, "Date", DateIndex))
-            /* following characters will be skipped until the $ or EOL or EOS */
-            StartDate = TRUE;
-        }
-      else if (c == EOS || c == EOL || DateIndex > 4)
-        {
-          /* stop the analyse of the date */
-          StartDollar = FALSE;
-          StartDate = FALSE;
-          IgnoreDate = FALSE;
-        }
-      else if (c != SPACE)
-        DateString[DateIndex++] = c;
-    }
-  return FALSE;
-}
-#endif /* LC */
 
 /*----------------------------------------------------------------------
   CheckRCS checks if the current date should be generated and avoid
@@ -792,13 +711,6 @@ static void PutChar (wchar_t c, int fnum, char *outBuf, Document doc,
                      ThotBool entityName)
 {
   /* detect if the generation of a date is requested */
-#ifdef LC
-  if (fnum > 0 && CheckDate ((unsigned char) c, fnum, outBuf, doc))
-    /* remove the previous date */
-    return;
-  else
-    ExportChar (c, fnum, outBuf, doc, lineBreak, translate, entityName);
-#endif /* LC */
   if (fnum > 0 && CheckRCS ((unsigned char) c, fnum, outBuf, doc))
     return;
   else
@@ -1286,11 +1198,60 @@ static void TranslateLeaf (PtrElement pEl, ThotBool transChar,
                   else
                     switch (ci)
                       {
+                      case 1:
+                        c = 0x301a; /* LeftDoubleBracket */
+                        break;
+                      case 2:
+                        c = 0x301b; /* RightDoubleBracket */
+                        break;
+                      case 3:
+                        c = 0x2308; /* LeftCeiling */
+                        break;
+                      case 4:
+                        c = 0x2309; /* RightCeiling */
+                        break;
+                      case 5:
+                        c = 0x230a; /* LeftFloor */
+                        break;
+                      case 6:
+                        c = 0x230b; /* RightFloor */
+                        break;
+                      case 7:
+                        c = 0x2758; /* VerticalSeparator */
+                        break;
+                      case 11:
+                        c = 0x2223; /* VerticalBar */
+                        break;
+                      case 12:
+                        c = 0x2956; /* DoubleVerticalBar */
+                        break;
+
+                      case '1':
+                        c = 0x2231; /* Clockwise Integral */
+                        break;
+                      case '2':
+                        c = 0x2232; /* Clockwise Contour Integral */
+                        break;
+                      case '3':
+                        c = 0x2233; /* Counter Clockwise Contour Integral */
+                        break;
+                      case 'b':
+                        c = 0x23B4; /* Over bracket */
+                        break;
+                      case 'B':
+                        c = 0x23B5; /* Under bracket */
+                        break;
                       case 'c':
                         c = 0x222E; /* contour integral */
                         break;
                       case 'd':
                         c = 0x222C; /* double integral */
+                        break;
+                      case 'e':
+                        c = 0x222F; /* double contour integral */
+                        break;
+                      case 'f':
+                        c = 0x2230; /* triple contour integral */
                         break;
                       case 'h':
                         c = 0x00AF; /* overline */
@@ -1301,8 +1262,17 @@ static void TranslateLeaf (PtrElement pEl, ThotBool transChar,
                       case 'i':
                         c = 0x222B; /* integral */
                         break;
+                      case 'k':
+                        c = 0x02C7; /* hacek */
+                        break;
                       case 'o':
                         c = 0xFE37; /* over brace */
+                        break;
+                      case 'p':
+                        c = 0xFE35; /* over parenthesis */
+                        break;
+                      case 'q':
+                        c = 0xFE36; /* under parenthesis */
                         break;
                       case 'r':
                         c = 0x221A; /* square root */
@@ -1319,14 +1289,8 @@ static void TranslateLeaf (PtrElement pEl, ThotBool transChar,
                       case 'I':
                         c = 0x22C2; /* n-ary intersection */
                         break;
-                      case 'L':
-                        c = 0x2190; /* leftwards arrow */
-                        break;
                       case 'P':
                         c = 0x220F; /* n-ary product */
-                        break;
-                      case 'R':
-                        c = 0x2192; /* rightwards arrow */
                         break;
                       case 'S':
                         c = 0x2211; /* n-ary summation */
@@ -1334,14 +1298,11 @@ static void TranslateLeaf (PtrElement pEl, ThotBool transChar,
                       case 't':
                         c = 0x222D; /* triple integral */
                         break;
+                      case 'T':
+                          c = 0x2DC; /* Diacritical Tilde */
+                        break;
                       case 'U':
                         c = 0x22C3; /* n-ary union */
-                        break;
-                      case 'V':
-                        c = 0x2193; /* downwards arrow */
-                        break;
-                      case '^':
-                        c = 0x2191; /* upwards arrow */
                         break;
                       case '<':
                         c = 0x2329; /* mathematical left angle bracket */
@@ -1352,6 +1313,200 @@ static void TranslateLeaf (PtrElement pEl, ThotBool transChar,
                       case '|':
                         c = 0x2223; /* divides */
                         break;
+
+                      case 'L': /* LeftArrow */
+                        c = 0x2190;
+                      break;
+                      case '^': /* UpArrow */
+                        c = 0x2191;
+                      break;
+                      case 'R': /* RightArrow */
+                        c = 0x2192;
+                      break;
+                      case 'V': /* DownArrow */
+                        c = 0x2193;
+                      break;
+                      case 'A': /* LeftRightArrow */
+                        c = 0x2194;
+                      break;
+                      case 155: /* UpDownArrow */
+                        c = 0x2195;
+                      break;
+                      case 156: /* UpperLeftArrow */
+                        c = 0x2196;
+                      break;
+                      case 157: /* UpperRightArrow */
+                        c = 0x2197;
+                      break;
+                      case 158: /* LowerRightArrow */
+                        c = 0x2198;
+                      break;
+                      case 159: /* LowerLeftArrow */
+                        c = 0x2199;
+                      break;
+                      case 160: /* LeftTeeArrow */
+                        c = 0x21A4;
+                      break;
+                      case 161: /* UpTeeArrow */
+                        c = 0x21A5;
+                      break;
+                      case 162: /* RightTeeArrow */
+                        c = 0x21A6;
+                      break;
+                      case 163: /* DownTeeArrow */
+                        c = 0x21A7;
+                      break;
+                      case 164: /* LeftVector */
+                        c = 0x21BC;
+                      break;
+                      case 165: /* DownLeftVector */
+                        c = 0x21BD;
+                      break;
+                      case 166: /* RightUpVector */
+                        c = 0x21BE;
+                      break;
+                      case 167: /* LeftUpVector */
+                        c = 0x21BF;
+                      break;
+                      case 168: /* RightVector */
+                        c = 0x21C0;
+                      break;
+                      case 169: /* DownRightVector */
+                        c = 0x21C1;
+                      break;
+                      case 170: /* RightDownVector */
+                        c = 0x21C2;
+                      break;
+                      case 171: /* LeftDownVector */
+                        c = 0x21C3;
+                      break;
+                      case 172: /* RightArrowLeftArrow */
+                        c = 0x21C4;
+                      break;
+                      case 173: /* UpArrowDownArrow */
+                        c = 0x21C5;
+                      break;
+                      case 174: /* LeftArrowRightArrow */
+                        c = 0x21C6;
+                      break;
+                      case 175: /* DoubleLeftArrow */
+                        c = 0x21D0;
+                      break;
+                      case 176: /* DoubleUpArrow */
+                        c = 0x21D1;
+                      break;
+                      case 177: /* DoubleRightArrow */
+                        c = 0x21D2;
+                      break;
+                      case 178: /* DoubleDownArrow */
+                        c = 0x21D3;
+                      break;
+                      case 179: /* DoubleLeftRightArrow */
+                        c = 0x21D4;
+                      break;
+                      case 180: /* DoubleUpDownArrow */
+                        c = 0x21D5;
+                      break;
+                      case 181: /* LeftArrowBar */
+                        c = 0x21E4;
+                      break;
+                      case 182: /* RightArrowBar */
+                        c = 0x21E5;
+                      break;
+                      case 183: /* DownArrowUpArrow */
+                        c = 0x21F5;
+                      break;
+                      case 184: /* LongLeftArrow */
+                        c = 0x27F5;
+                      break;
+                      case 185: /* LongRightArrow */
+                        c = 0x27F6;
+                      break;
+                      case 186: /* LongLeftRightArrow */
+                        c = 0x27F7;
+                      break;
+                      case 187: /* DoubleLongLeftArrow */
+                        c = 0x27F8;
+                      break;
+                      case 188: /* DoubleLongRightArrow */
+                        c = 0x27F9;
+                      break;
+                      case 189: /* DoubleLongLeftRightArrow */
+                        c = 0x27FA;
+                      break;
+                      case 190: /* UpArrowBar */
+                        c = 0x2912;
+                      break;
+                      case 191: /* DownArrowBar */
+                        c = 0x2913;
+                      break;
+                      case 192: /* LeftRightVector */
+                        c = 0x294E;
+                      break;
+                      case 193: /* RightUpDownVector */
+                        c = 0x294F;
+                      break;
+                      case 194: /* DownLeftRightVector */
+                        c = 0x2950;
+                      break;
+                      case 195: /* LeftUpDownVector */
+                        c = 0x2951;
+                      break;
+                      case 196: /* LeftVectorBar */
+                        c = 0x2952;
+                      break;
+                      case 197: /* RightVectorBar */
+                        c = 0x2953;
+                      break;
+                      case 198: /* RightUpVectorBar */
+                        c = 0x2954;
+                      break;
+                      case 199: /* RightDownVectorBar */
+                        c = 0x2955;
+                      break;
+                      case 200: /* DownLeftVectorBar */
+                        c = 0x2956;
+                      break;
+                      case 201: /* DownRightVectorBar */
+                        c = 0x2957;
+                      break;
+                      case 202: /* LeftUpVectorBar */
+                        c = 0x2958;
+                      break;
+                      case 203: /* LeftDownVectorBar */
+                        c = 0x2959;
+                      break;
+                      case 204: /* LeftTeeVector */
+                        c = 0x295A;
+                      break;
+                      case 205: /* RightTeeVector */
+                        c = 0x295B;
+                      break;
+                      case 206: /* RightUpTeeVector */
+                        c = 0x295C;
+                      break;
+                      case 207: /* RightDownTeeVector */
+                        c = 0x295D;
+                      break;
+                      case 208: /* DownLeftTeeVector */
+                        c = 0x295E;
+                      break;
+                      case 209: /* DownRightTeeVector */
+                        c = 0x295F;
+                      break;
+                      case 210: /* LeftUpTeeVector */
+                        c = 0x2960;
+                      break;
+                      case 211: /* LeftDownTeeVector */
+                        c = 0x2961;
+                      break;
+                      case 212: /* UpEquilibrium */
+                        c = 0x296E;
+                      break;
+                      case 213: /* ReverseUpEquilibrium */
+                        c = 0x296F;
+                      break;
+
                       default:
                         c = (CHAR_T)ci;
                       }
@@ -1455,6 +1610,7 @@ static unsigned char PresRuleValue (PtrPRule pPRule)
     case PtFont:
     case PtStyle:
     case PtWeight:
+    case PtVariant:
     case PtUnderline:
     case PtThickness:
     case PtDirection:
@@ -3202,6 +3358,7 @@ static void ApplyTRule (PtrTRule pTRule, PtrTSchema pTSch, PtrSSchema pSSch,
               case PtFont:
               case PtStyle:
               case PtWeight:
+              case PtVariant:
               case PtUnderline:
               case PtThickness:
               case PtDirection:
@@ -4339,7 +4496,7 @@ static void ExportNsDeclaration (Document doc, PtrElement pNode)
   PtrDocument      pDoc;
   int              i, fnum;
 
-  if (pNode == NULL || pNode->ElTerminal)
+  if (pNode == NULL || pNode->ElTerminal || ElementIsHidden (pNode))
     return;
   fnum = 1; /* main output file */
   pDoc = LoadedDocument[doc - 1];

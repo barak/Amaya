@@ -3,4 +3,4 @@ text/xhtml; /usr/bin/amaya %s; compose=/usr/bin/amaya %s; edit=/usr/bin/amaya %s
 image/png;  /usr/bin/amaya %s; description=PNG Image; test=test -n "$DISPLAY";  nametemplate=%s.png; priority=2
 image/jpeg;  /usr/bin/amaya %s; description=JPEG Image; test=test -n "$DISPLAY";  nametemplate=%s.jpeg; priority=2
 image/gif;  /usr/bin/amaya %s; description=GIF Image; test=test -n "$DISPLAY";  nametemplate=%s.gif; priority=2
-image/svg+xml; /usr/bin/amaya %s; description=SVG Image; test=test -n "$DISPLAY";  nametemplate=%s.gif; priority=2
+image/svg+xml; /usr/bin/amaya %s; description=SVG Image; test=test -n "$DISPLAY";  nametemplate=%s.svg; priority=2

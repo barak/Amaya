@@ -116,8 +116,10 @@ ThotBool TtaChangeTypeOfElement (Element elem, Document doc, int newTypeNum)
       else
         TtaInsertFirstChild (&elem, parent, doc);
 #ifndef NODISPLAY
+#ifndef _WX
       /* redisplay the selection message */
       BuildSelectionMessage ();
+#endif /* _WX */
 #endif
       SetDocumentModified (LoadedDocument[doc - 1], TRUE, 0);
       return TRUE;
@@ -1197,7 +1199,6 @@ void TtaSetAccessRight (Element element, AccessRight right, Document document)
 #ifndef NODISPLAY
   AccessRight         oldAccessRight;
   AccessRight         newAccessRight = ReadWrite;
-  DisplayMode         SaveDisplayMode;
 #endif
 
   UserErrorCode = 0;
@@ -1266,30 +1267,6 @@ void TtaSetAccessRight (Element element, AccessRight right, Document document)
               else if (oldAccessRight == Hidden)
                 /* The element is not hiddden, Creating its abstract boxes */
                 RedisplayNewElement (document, (PtrElement) element, NULL, TRUE, FALSE);
-              else
-                {
-                  // make the management of loaded objects too long
-                  SaveDisplayMode = TtaGetDisplayMode (document);
-#ifdef IV
-                  if (SaveDisplayMode != NoComputedDisplay
-                      && (newAccessRight == ReadOnly ||
-                          newAccessRight == ReadWrite))
-                    /* change AbCanBeModified in all abstract boxes except if it's
-                       without image calculation mode */
-                    {
-                      /* We set the deferred displaying mode */
-                      if (SaveDisplayMode != DeferredDisplay)
-                        TtaSetDisplayMode (document, DeferredDisplay);
-                      /* change AbCanBeModified for all abstract boxes */
-                      ChangeAbsBoxModif ((PtrElement) element, document,
-                                         (ThotBool)(newAccessRight == ReadWrite));
-                      /* Restore the display mode of the document */
-                      /* Redisplay if the mode is immediat display */
-                      if (SaveDisplayMode != DeferredDisplay)
-                        TtaSetDisplayMode (document, SaveDisplayMode);
-                    }
-#endif /* IV */
-                }
             }
 #endif /* NODISPLAY */
         }
@@ -1680,8 +1657,7 @@ Element             TtaGetCommonAncestor (Element element1, Element element2)
    Return value:
    the ancestor, or NULL if there is no ancestor of that type.
    ---------------------------------------------------------------------- */
-Element             TtaGetTypedAncestor (Element element,
-                                         ElementType ancestorType)
+Element TtaGetTypedAncestor (Element element, ElementType ancestorType)
 {
   PtrElement          ancestor;
 
@@ -1700,6 +1676,39 @@ Element             TtaGetTypedAncestor (Element element,
 }
 
 /* ----------------------------------------------------------------------
+   TtaGetExactTypedAncestor
+   Returns the first ancestor of the exact given type for a given element.
+   Parameters:
+   element: the element whose ancestor is asked.
+   ancestorType: type of the asked ancestor.
+   Return value:
+   the ancestor, or NULL if there is no ancestor of that type.
+   ---------------------------------------------------------------------- */
+Element TtaGetExactTypedAncestor (Element element, ElementType ancestorType)
+{
+  PtrElement          ancestor;
+
+  UserErrorCode = 0;
+  ancestor = NULL;
+  if (element == NULL || ancestorType.ElSSchema == NULL)
+    TtaError (ERR_invalid_parameter);
+  else if (ancestorType.ElTypeNum > ((PtrSSchema) (ancestorType.ElSSchema))->SsNRules
+           || ancestorType.ElTypeNum < 1)
+    TtaError (ERR_invalid_element_type);
+  else
+    {
+      ancestor = (PtrElement)element;
+      while (ancestor && ancestorType.ElTypeNum != ancestor->ElTypeNumber)
+        {
+          ancestor = GetTypedAncestor (ancestor->ElParent,
+                                       ancestorType.ElTypeNum,
+                                       (PtrSSchema) (ancestorType.ElSSchema));
+        }
+    }
+  return ((Element) ancestor);
+}
+
+/* ----------------------------------------------------------------------
    TtaIsExtensionElement
    Returns true if the element is from an extension schema
    Parameter:
@@ -1707,7 +1716,7 @@ Element             TtaGetTypedAncestor (Element element,
    Return value:
    true or false.
    ---------------------------------------------------------------------- */
-ThotBool            TtaIsExtensionElement (Element element)
+ThotBool TtaIsExtensionElement (Element element)
 {
 
   UserErrorCode = 0;

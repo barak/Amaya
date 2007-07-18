@@ -1,0 +1,28 @@
+Merged upstream.
+
+Index: amaya-9.55~dfsg.0/thotlib/dialogue/attrmenu.c
+===================================================================
+--- amaya-9.55~dfsg.0.orig/thotlib/dialogue/attrmenu.c	2007-07-18 23:06:34.000000000 +0100
++++ amaya-9.55~dfsg.0/thotlib/dialogue/attrmenu.c	2007-07-18 23:08:27.000000000 +0100
+@@ -2097,7 +2097,7 @@
+         {
+         case AtEnumAttr:
+         case AtNumAttr:
+-          pAttrNew->AeAttrValue = (int)value;
++          pAttrNew->AeAttrValue = (intptr_t)value;
+           /* applique les attributs a la partie selectionnee */
+           AttachAttrToRange (pAttrNew, lastChar, firstChar, lastSel,
+                              firstSel, pDoc, TRUE);
+Index: amaya-9.55~dfsg.0/thotlib/internals/h/typeint.h
+===================================================================
+--- amaya-9.55~dfsg.0.orig/thotlib/internals/h/typeint.h	2007-07-18 23:11:53.000000000 +0100
++++ amaya-9.55~dfsg.0/thotlib/internals/h/typeint.h	2007-07-18 23:12:11.000000000 +0100
+@@ -130,7 +130,7 @@
+     {
+       struct	  /* AeAttrType = AtNumAttr or AtEnumAttr */
+       {
+-	int		_AeAttrValue_;	   /* attribute value or value number*/
++	intptr_t	_AeAttrValue_;	   /* attribute value or value number*/
+       } s0;
+       struct	  /* AeAttrType = AtReferenceAttr */
+       {

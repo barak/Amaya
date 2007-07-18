@@ -8,53 +8,37 @@
 
 extern void AddElementDeclaration ( XTigerTemplate t,
                                     Element el );
-extern void AddUnionDeclaration ( XTigerTemplate t,
-                                  Element el );
-extern void AddComponentDeclaration ( XTigerTemplate t,
-                                      Element el );
-extern void AddImportedLibrary ( XTigerTemplate t,
-                                 Element el );
+extern void Template_AddLibraryToImport ( XTigerTemplate t,
+                                          Element el );
 extern void CheckTypesAttribute ( XTigerTemplate t,
                                   Element el );
-extern void AddHeadParameters ( XTigerTemplate t,
-                                Element el );
-extern void ParseDeclarations ( XTigerTemplate t,
-                                Element el );
-extern void LoadTemplate_callback ( int newdoc,
-                                    int status,
-                                    char *urlName,
-                                    char *outputfile,
-                                    char* proxyName,
-                                    AHTHeaders *http_headers,
-                                    void * context );
+extern void Template_AddHeadParameters ( XTigerTemplate t,
+                                         Element el );
+extern void Template_ParseDeclarations ( XTigerTemplate t,
+                                         Element el );
+extern void Template_PreParseDeclarations ( XTigerTemplate t,
+                                            Element el );
 extern void LoadTemplate ( Document doc,
                            char* templatename );
+extern void Template_LoadXTigerTemplateLibrary ( XTigerTemplate t );
 
 #else /* __STDC__ */
 
 extern void AddElementDeclaration ( XTigerTemplate t,
                                       Element el );
-extern void AddUnionDeclaration ( XTigerTemplate t,
-                                    Element el );
-extern void AddComponentDeclaration ( XTigerTemplate t,
-                                        Element el );
-extern void AddImportedLibrary ( XTigerTemplate t,
-                                   Element el );
+extern void Template_AddLibraryToImport ( XTigerTemplate t,
+                                            Element el );
 extern void CheckTypesAttribute ( XTigerTemplate t,
                                     Element el );
-extern void AddHeadParameters ( XTigerTemplate t,
-                                  Element el );
-extern void ParseDeclarations ( XTigerTemplate t,
-                                  Element el );
-extern void LoadTemplate_callback ( int newdoc,
-                                      int status,
-                                      char *urlName,
-                                      char *outputfile,
-                                      char* proxyName,
-                                      AHTHeaders *http_headers,
-                                      void * context );
+extern void Template_AddHeadParameters ( XTigerTemplate t,
+                                           Element el );
+extern void Template_ParseDeclarations ( XTigerTemplate t,
+                                           Element el );
+extern void Template_PreParseDeclarations ( XTigerTemplate t,
+                                              Element el );
 extern void LoadTemplate ( Document doc,
                              char* templatename );
+extern void Template_LoadXTigerTemplateLibrary ( XTigerTemplate t );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

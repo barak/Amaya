@@ -60,6 +60,9 @@
   #include "AmayaWindowIterator.h"
   #include "AmayaParams.h"
   
+  #include "wxdialog/SendByMailDlgWX.h"
+  #include "email.h"
+  
   extern XmlEntity *pMathEntityTable;
 #endif /* _WX */
 
@@ -113,7 +116,6 @@
 int             Window_Curs;
 char            DocToOpen[MAX_LENGTH];
 #endif /* _WINGUI */
-
 
 static int          AmayaInitialized = 0;
 static ThotBool     NewFile = FALSE;
@@ -213,6 +215,7 @@ extern int       menu_item;
 
 #include "wininclude.h"
 #endif /* _WINGUI */
+#include "MENUconf.h"
 #include "AHTURLTools_f.h"
 #include "css_f.h"
 #include "EDITORactions_f.h"
@@ -268,39 +271,6 @@ extern int       menu_item;
 
 extern void InitMathML ();
 extern void InitTemplates ();
-
-/* the structure used for storing the context of the 
-   GetAmayaDoc_callback function */
-typedef struct _AmayaDoc_context
-{
-  Document   doc;
-  Document   baseDoc;
-  ThotBool   history;
-  ThotBool   local_link;
-  char      *target;
-  char      *documentname; /* the document name */
-  char      *initial_url;  /* initial loaded URL */
-  char      *form_data;
-  int        method;
-  ThotBool   inNewWindow;
-  TTcbf     *cbf;
-  void      *ctx_cbf;
-} AmayaDoc_context;
-
-/* the structure used for storing the context of the 
-   Reload_callback function */
-typedef struct _RELOAD_context
-{
-  Document   newdoc;
-  char      *documentname;
-  char      *form_data;
-  int        method;
-  int        position;	/* volume preceding the the first element to be shown */
-  int        distance; /* distance from the top of the window to the top of this
-                   element (% of the window height) */
-  int        visibility; /* register the current visibility */
-  ThotBool   maparea; /* register the current maparea */
-} RELOAD_context;
 
 typedef enum
   {
@@ -1065,10 +1035,21 @@ void UpdateEditorMenus (Document doc)
   isXhtml11 = (DocumentMeta[doc] && DocumentMeta[doc]->xmlformat &&
                profile != L_Strict && profile != L_Basic);
 
-#ifndef _WX
   /* update specific menu entries */
-  TtaUpdateMenus (doc, 1, FALSE);
-#endif /* _WX */
+  if (DocumentTypes[doc] == docCSS)
+    {
+      TtaSetMenuOff (doc, 1, Types);
+      TtaSetMenuOff (doc, 1, XMLTypes);
+      TtaSetMenuOff (doc, 1, Links);
+      TtaSetMenuOff (doc, 1, XMLTypes);
+      TtaSetItemOff (doc, 1, File, BSynchro);
+      TtaSetItemOff (doc, 1, Edit_, BTransform);
+    }
+  else if (DocumentTypes[doc] == docHTML)
+    {
+      TtaSetMenuOn (doc, 1, Types);
+      TtaUpdateMenus (doc, 1, FALSE);
+    }
 
   /* Update the doctype menu */
   UpdateDoctypeMenu (doc);
@@ -1126,6 +1107,7 @@ void UpdateEditorMenus (Document doc)
         {
           SwitchIconMath (doc, 1, TRUE);
           TtaSetMenuOn (doc, 1, XMLTypes);
+          TtaSetMenuOff (doc, 1, Types);
           TtaSetItemOn (doc, 1, Edit_, BTransform);
         }
       else
@@ -1712,6 +1694,13 @@ static void TextURL (Document doc, View view, char *text)
         }
       if (DocumentTypes[doc] == docSource)
         doc = GetDocFromSource (doc);
+      if (DocumentURLs[doc] && url &&
+          !strcmp (DocumentURLs[doc], url))
+        {
+          // nothing to do
+          TtaFreeMemory (s);
+          return;
+        }
       if (!DontReplaceOldDoc && !CanReplaceCurrentDocument (doc, view))
         {
           /* restore the previous value @@ */
@@ -1782,15 +1771,23 @@ void SetWindowTitle (Document sourceDoc, Document targetDoc, View view)
     UpdateTitle (title, sourceDoc);
 }
 
+
 /*----------------------------------------------------------------------
   InitFormAnswer
   Dialogue form for answering text, user name and password
   ----------------------------------------------------------------------*/
 void InitFormAnswer (Document document, View view, const char *auth_realm,
-                     char *server)
+                     char *server, int i_auth)
 {
+  char      name[MAX_LENGTH];
+  char      passwd[MAX_LENGTH];
+  
 #ifdef _GTK
   char *label;
+
+  name[0] = EOS;
+  passwd[0] = EOS;
+  GetPasswordTable (i_auth, &name[0], &passwd[0]);
 
   TtaNewForm (BaseDialog + FormAnswer, TtaGetViewFrame (document, view), 
               TtaGetMessage (AMAYA, AM_GET_AUTHENTICATION),
@@ -1829,12 +1826,17 @@ void InitFormAnswer (Document document, View view, const char *auth_realm,
       TtaWaitShowDialogue ();
     }
 #endif /* _GTK */
+
 #ifdef _WX
-  ThotBool created;
+  ThotBool  created;
+
+  name[0] = EOS;
+  passwd[0] = EOS;
+  GetPasswordTable (i_auth, &name[0], &passwd[0]);
 
   created = CreateAuthentDlgWX (BaseDialog + FormAnswer,
                                 TtaGetViewFrame (document, view),
-                                (char *)auth_realm, server);
+                                (char *)auth_realm, server, name, passwd); 
   if (created)
     {
       TtaSetDialoguePosition ();
@@ -2362,7 +2364,7 @@ void  OpenDoc (Document doc, View view)
       NewFile = FALSE;
        /* no specific type requested */
       InitOpenDocForm (doc, view, "",
-                       TtaGetMessage (AMAYA, AM_OPEN_DOCUMENT), docText);
+                       TtaGetMessage (LIB, TMSG_BUTTON_OPEN), docText);
 #ifndef _WX
     }
 #endif /* _WX */
@@ -2388,6 +2390,11 @@ void OpenDocInNewWindow (Document document, View view)
   ----------------------------------------------------------------------*/
 void OpenNew (Document document, View view, int docType, int docProfile)
 {
+  char    name[100];
+#ifdef _WX
+  char   *s, *compound;
+#endif /* _WX */
+
   /* create a new document */
   DontReplaceOldDoc = TRUE;
   NewFile = TRUE;
@@ -2395,29 +2402,31 @@ void OpenNew (Document document, View view, int docType, int docProfile)
   NewDocProfile = docProfile;
   NewXML = TRUE;
   Answer_text[0] = EOS;
+  strcpy (name, TtaGetMessage (AMAYA, AM_NEW));
   if (NewDocType == docHTML)
     {
 #ifdef _WX
-      char *s = TtaGetEnvString ("XHTML_Profile");
-      char *compound = TtaGetMessage (AMAYA, AM_COMPOUND_DOCUMENT);
+      s = TtaGetEnvString ("XHTML_Profile");
+      compound = TtaGetMessage (AMAYA, AM_COMPOUND_DOCUMENT);
       if (s && compound && !strcmp (s, compound))
-        InitOpenDocForm (document, view, "New.xml",
-                         TtaGetMessage (AMAYA, AM_NEW_HTML), docHTML);
+        strcat (name,".xml");
       else
-        InitOpenDocForm (document, view, "New.html",
-                         TtaGetMessage (AMAYA, AM_NEW_HTML), docHTML);
+        strcat (name,".html");
+        InitOpenDocForm (document, view, name,
+                         TtaGetMessage (LIB, TMSG_BUTTON_NEW), docHTML);
 #else /* _WX */
+        strcat (name,".html");
       if (docProfile == L_Basic)
-        InitOpenDocForm (document, view, "New.html",
+        InitOpenDocForm (document, view, name,
                          TtaGetMessage (AMAYA, AM_NEW_HTML_BASIC), docHTML);
       else if (docProfile == L_Strict)
-        InitOpenDocForm (document, view, "New.html",
+        InitOpenDocForm (document, view, name,
                          TtaGetMessage (AMAYA, AM_NEW_HTML_STRICT), docHTML);
       else if (docProfile == L_Transitional)
-        InitOpenDocForm (document, view, "New.html",
+        InitOpenDocForm (document, view, name,
                          TtaGetMessage (AMAYA, AM_NEW_HTML_TRANSITIONAL), docHTML);
       else
-        InitOpenDocForm (document, view, "New.html",
+        InitOpenDocForm (document, view, name,
                          TtaGetMessage (AMAYA, AM_NEW_HTML11), docHTML);
 #endif /* _WX */
       /* will scan html documents */
@@ -2426,22 +2435,25 @@ void OpenNew (Document document, View view, int docType, int docProfile)
   else if (NewDocType == docMath)
     {
       /* will scan html documents */
+      strcat (name,".mml");
       strcpy (ScanFilter, "*.mml");
-      InitOpenDocForm (document, view, "New.mml",
+      InitOpenDocForm (document, view, name,
                        TtaGetMessage (AMAYA, AM_NEW_MATHML), docMath);
     }
   else if (NewDocType == docSVG)
     {
       /* will scan html documents */
+      strcat (name,".svg");
       strcpy (ScanFilter, "*.svg");
-      InitOpenDocForm (document, view, "New.svg",
+      InitOpenDocForm (document, view, name,
                        TtaGetMessage (AMAYA, AM_NEW_SVG), docSVG);
     }
   else
     {
       /* will scan html documents */
+      strcat (name,".css");
       strcpy (ScanFilter, "*.css");
-      InitOpenDocForm (document, view, "New.css",
+      InitOpenDocForm (document, view, name,
                        TtaGetMessage (AMAYA, AM_NEW_CSS), docCSS);
     }
 }
@@ -2778,7 +2790,7 @@ Document InitDocAndView (Document oldDoc, ThotBool replaceOldDoc,
         }
       /* remove the current selection */
       TtaUnselect (doc);
-      UpdateContextSensitiveMenus (doc);
+      UpdateContextSensitiveMenus (doc, 1);
 #ifdef _WX
       HideHSplitToggle (doc, 1);
       HideVSplitToggle (doc, 1);
@@ -3697,7 +3709,6 @@ Document LoadDocument (Document doc, char *pathname,
   ThotBool            isRDF;
 
   isRDF = FALSE;
-  docType = docText;
   unknown = TRUE;
   tempdir = localdoc = NULL;
   charsetname[0] = EOS;
@@ -3719,9 +3730,9 @@ Document LoadDocument (Document doc, char *pathname,
     s = tempfile;
   else
     s = pathname;
-
   CheckDocHeader (s, &xmlDec, &withDoctype, &isXML, &useMath, &isknown,
                   &docProfile, &charset, charsetname, &thotType);
+  docType = thotType;
 
   /* Check charset information in a meta */
   if (charset == UNDEFINED_CHARSET)
@@ -3757,6 +3768,12 @@ Document LoadDocument (Document doc, char *pathname,
           unknown = FALSE;
           if (IsRDFName (pathname))
             isRDF = TRUE;
+          else if (IsXMLStruct (pathname))
+            {
+              // only display the source of this document
+              docType = docText;
+              isXML = FALSE;
+            }
         }
       else if (IsRDFName (pathname))
         {
@@ -3804,8 +3821,14 @@ Document LoadDocument (Document doc, char *pathname,
       else if (IsXMLName (pathname))
         {
           docType = docXml;
-          docProfile = L_Other;
           isXML = TRUE;
+          if (IsXMLStruct (s))
+            {
+              // only display the source of this document
+              docType = docText;
+              isXML = FALSE;
+            }
+          docProfile = L_Other;
           unknown = FALSE;
         }
 #endif /* XML_GENERIC */
@@ -3822,7 +3845,9 @@ Document LoadDocument (Document doc, char *pathname,
           docType = docHTML;
           unknown = FALSE;
         }
-	  
+      else
+        unknown = (thotType != docHTML);
+
       /* Assign a content type to that local document */
       if (isRDF)
         strcpy (local_content_type , "application/xml+rdf");
@@ -3919,12 +3944,18 @@ Document LoadDocument (Document doc, char *pathname,
                 {
 #ifdef XML_GENERIC      
                   docType = docXml;
+                  isXML = TRUE;
+                  if (IsXMLStruct (s))
+                    {
+                      // only display the source of this document
+                      docType = docText;
+                      isXML = FALSE;
+                    }
 #else /* XML_GENERIC */
                   docType = docText;
 #endif /* XML_GENERIC */
                   docProfile = L_Other;
                 }
-              isXML = TRUE;
               unknown = FALSE;
             }
           else if (contentText &&
@@ -4042,6 +4073,8 @@ Document LoadDocument (Document doc, char *pathname,
       strcpy (SavingFile, tempfile);
       SavingDocument = 0;
       SavingObject = 0;
+      TtaFreeMemory (localdoc);
+      // generate the saving path
       localdoc = (char *)TtaGetMemory (MAX_LENGTH);
       TtaExtractName (pathname, tempfile, localdoc);
       /* reinitialize directories and document lists */
@@ -4093,7 +4126,7 @@ Document LoadDocument (Document doc, char *pathname,
                                          documentname, docType, 0, FALSE,
                                          docProfile, method);
             }
-          else if (method == CE_ABSOLUTE  || method == CE_HELP ||
+          else if (method == CE_ABSOLUTE  || method == CE_HELP || method == CE_INSTANCE  ||
                    method == CE_FORM_POST || method == CE_FORM_GET)
             /* replace the current document by a new one */
             newdoc = InitDocAndView (doc,
@@ -4158,20 +4191,25 @@ Document LoadDocument (Document doc, char *pathname,
             }
         }
 
+      localdoc = GetLocalPath (newdoc, pathname);
       /* what we have to do if doc and targetDocument are different */
-      if (tempfile[0] != EOS)
+      if (method == CE_INSTANCE && TtaFileExist (localdoc))
+        // only the temporary file exists
+        CheckDocHeader (localdoc, &xmlDec, &withDoctype, &isXML, &useMath, &isknown,
+                        &docProfile, &charset, charsetname, &thotType);
+      else if (tempfile[0] != EOS)
         {
           /* It is a document loaded from the Web */
           if (!TtaFileExist (tempfile))
             {
               /* Nothing is loaded */
               ResetStop (doc);
+              TtaFreeMemory (localdoc);
               TtaFreeMemory (content_type);
               return (0);
             }
           /* we have to rename the temporary file */
-          /* allocate and initialize a teporary document */
-          localdoc = GetLocalPath (newdoc, pathname);
+          // the loaded file is different
           TtaFileUnlink (localdoc);
           if (doc != newdoc)
             {
@@ -4193,9 +4231,8 @@ Document LoadDocument (Document doc, char *pathname,
         {
           /* store a copy of the local document */
           /* allocate and initialize a teporary document */
-          localdoc = GetLocalPath (newdoc, pathname);
-	  
-          TtaFileCopy (pathname, localdoc);
+          if (method != CE_INSTANCE)
+            TtaFileCopy (pathname, localdoc);
         }
 
 #ifdef BOOKMARKS
@@ -4481,6 +4518,10 @@ void Reload_callback (int doc, int status, char *urlName, char *outputfile,
       res = LoadDocument (newdoc, urlName, form_data, NULL, method,
                           tempfile, documentname, http_headers, FALSE,
                           &DontReplaceOldDoc, NULL);
+      // check if it's a template instance
+#ifdef TEMPLATES
+      CheckTemplate (doc);
+#endif /* TEMPLATES */
       UpdateEditorMenus (doc);
       if (visibility == 4)
         {
@@ -4662,7 +4703,8 @@ void Reload (Document doc, View view)
       /* load the document from the Web */
       toparse = GetObjectWWW (doc, 0, pathname, form_data, tempfile, 
                               mode,
-                              NULL, NULL, (void (*)(int, int, char*, char*, char*, const AHTHeaders*, void*)) Reload_callback, 
+                              NULL, NULL,
+                              (void (*)(int, int, char*, char*, char*, const AHTHeaders*, void*)) Reload_callback, 
                               (void *) ctx, YES, NULL);
     }
   else if (TtaFileExist (pathname))
@@ -4774,11 +4816,12 @@ void ZoomOut (Document document, View view)
   ----------------------------------------------------------------------*/
 void ShowSource (Document doc, View view)
 {
+  Element          root;
   CHARSET          charset;
   char            *localFile;
   char            *s;
-  char  	    documentname[MAX_LENGTH];
-  char  	    tempdir[MAX_LENGTH];
+  char  	         documentname[MAX_LENGTH];
+  char  	         tempdir[MAX_LENGTH];
   Document         sourceDoc;
   NotifyElement    event;
 
@@ -4896,6 +4939,19 @@ void ShowSource (Document doc, View view)
           event.element = NULL;
           UpdateEditorMenus (sourceDoc);
           SetCharsetMenuOff (sourceDoc, 1);
+
+#ifdef TEMPLATES
+          // lock source of template instances
+          if (DocumentMeta[doc] && DocumentMeta[doc]->template_url)
+            {
+              ThotBool allow;
+              TtaGetEnvBoolean ("EDIT_SRC_TEMPLATE", &allow);
+              root = TtaGetRootElement (sourceDoc);
+              if (!allow)
+                TtaSetAccessRight (root, ReadOnly, sourceDoc);
+            }
+#endif /* TEMPLATES */
+
           /* update back/forward buttons */
           if (HasPreviousDoc (doc))
             SetArrowButton (DocumentSource[doc], TRUE, TRUE);
@@ -5355,13 +5411,13 @@ void GetAmayaDoc_callback (int newdoc, int status, char *urlName, char *outputfi
                 s = "";
               sprintf (tempdocument, TtaGetMessage (AMAYA, AM_CANNOT_LOAD), pathname);
               if (proxyName != NULL)
-		{
-		  strcpy (proxymsg, "Used proxy: ");
-		  strcat (proxymsg, proxyName);
-		  InitConfirm3L (newdoc, 1, tempdocument, s, proxymsg, FALSE);
-		}
-	      else
-		InitConfirm3L (newdoc, 1, tempdocument, s, NULL, FALSE);
+                {
+                  strcpy (proxymsg, "Used proxy: ");
+                  strcat (proxymsg, proxyName);
+                  InitConfirm3L (newdoc, 1, tempdocument, s, proxymsg, FALSE);
+                }
+              else
+                InitConfirm3L (newdoc, 1, tempdocument, s, NULL, FALSE);
             }
         }
 
@@ -5385,8 +5441,12 @@ void GetAmayaDoc_callback (int newdoc, int status, char *urlName, char *outputfi
       newdoc != 0 && method != CE_MAKEBOOK && method != CE_TEMPLATE)
     {
       /* attribute HREF contains the NAME of a target anchor */
-      elFound = SearchNAMEattribute (newdoc, target, NULL, NULL);
-      if (elFound != NULL)
+      if (DocumentTypes[newdoc] == docHTML)
+        elFound = SearchNAMEattribute (newdoc, target, NULL, NULL);
+       else if (DocumentTypes[newdoc] == docText)
+         elFound = SearchTextattribute (newdoc, target);
+
+      if (elFound)
         {
           /* show the target element in all views */
           for (i = 1; i < 4; i++)
@@ -5716,7 +5776,8 @@ Document GetAmayaDoc (char *urlname, char *form_data,
           else if (method == CE_MAKEBOOK || method == CE_TEMPLATE)
             mode = AMAYA_ASYNC;
 
-          if (IsW3Path (initial_url))
+          // for new created template instances, the temporary file is parsed
+          if (method != CE_INSTANCE && IsW3Path (initial_url))
             {
               css = SearchCSS (0, initial_url, NULL, &pInfo);
               if (method == CE_MAKEBOOK || method == CE_RELATIVE  || method == CE_TEMPLATE)
@@ -6080,26 +6141,6 @@ void CallbackDialogue (int ref, int typedata, char *data)
                     }
                   else
                     {
-#ifdef IV
-                      if (IsMathMLName (tempfile))
-                        NewDocType = docMath;
-                      else if (IsSVGName (tempfile))
-                        NewDocType = docSVG;
-                      else if (IsCSSName (tempfile))
-                        NewDocType = docCSS;
-#ifdef XML_GENERIC
-                      else if (IsXMLName (tempfile))
-                        NewDocType = docXml;
-#endif /* XML_GENERIC */
-#ifdef _SVG
-                      else if (IsLibraryName (tempfile))
-                        NewDocType = docLibrary;
-#endif /* _SVG */
-                      else
-                        NewDocType = docHTML;
-                      InitializeNewDoc (tempfile, NewDocType, CurrentDocument,
-                                        NewDocProfile, NewXML);
-#endif /* IV */
                       NotFoundDoc (tempfile, CurrentDocument);
                     }
                 }
@@ -6354,6 +6395,16 @@ void CallbackDialogue (int ref, int typedata, char *data)
         }
       else
         Answer_password[NAME_LENGTH - 1] = EOS;
+      break;
+#endif /* _WX */
+    case PasswordSave:
+      if (val == 0)
+         Answer_save_password = FALSE;
+      else
+         Answer_save_password = TRUE;
+      break;
+#ifdef _WX
+      i = strlen (data);
 #endif /* _WX */
 #ifdef _GTK
       strncpy (Answer_password, data, NAME_LENGTH);
@@ -6446,7 +6497,7 @@ void CallbackDialogue (int ref, int typedata, char *data)
             }
           TtaDestroyDialogue (BaseDialog + SaveForm);
           if (SavingDocument)
-            DoSaveAs (UserCharset, UserMimeType);
+            DoSaveAs (UserCharset, UserMimeType, FALSE);
           else if (SavingObject)
             {
               DoSaveObjectAs ();
@@ -6609,6 +6660,14 @@ void CallbackDialogue (int ref, int typedata, char *data)
       /* Image directory */
       if (!IsW3Path (data))
         change = NormalizeFile (data, SaveImgsURL, AM_CONV_NONE);
+      else
+        strcpy (SaveImgsURL, data);
+      break;
+
+    case CssDirSave:
+      /* Image directory */
+      if (!IsW3Path (data))
+        change = NormalizeFile (data, SaveCssURL, AM_CONV_NONE);
       else
         strcpy (SaveImgsURL, data);
       break;
@@ -7426,6 +7485,7 @@ void FreeAmayaStructures ()
       TtaFreeMemory (SaveName);
       TtaFreeMemory (ObjectName);
       TtaFreeMemory (SaveImgsURL);
+      TtaFreeMemory (SaveCssURL);
       TtaFreeMemory (SavingFile);
       TtaFreeMemory (SavedDocumentURL);
       TtaFreeMemory (AttrHREFvalue);
@@ -7458,6 +7518,9 @@ void FreeAmayaStructures ()
 #ifdef TEMPLATES
       FreeTemplateEnvironment ();
 #endif /* TEMPLATES */
+
+      /* Write and free password table  */
+      WritePasswordTable ();
 
       FreeAmayaCache (); 
     }
@@ -7681,6 +7744,7 @@ void InitAmaya (NotifyEvent * event)
   TtaSetEnvBoolean ("SEND_REFERER", FALSE, FALSE);
   TtaSetEnvBoolean ("INSERT_NBSP", FALSE, FALSE);
   TtaSetEnvBoolean ("GENERATE_MATHPI", TRUE, FALSE);
+  TtaSetEnvBoolean ("EDIT_SRC_TEMPLATE", FALSE, FALSE);
 #ifdef _WX
   TtaSetEnvBoolean ("CLOSE_WHEN_APPLY", TRUE, FALSE);
 #endif /* _WX */
@@ -7747,6 +7811,8 @@ void InitAmaya (NotifyEvent * event)
   ObjectName[0] = EOS;
   SaveImgsURL = (char *)TtaGetMemory (MAX_LENGTH);
   SaveImgsURL[0] = EOS;
+  SaveCssURL = (char *)TtaGetMemory (MAX_LENGTH);
+  SaveCssURL[0] = EOS;
   strcpy (ScanFilter, "*.*htm*");
   SaveAsHTML = TRUE;
   SaveAsXML = FALSE;
@@ -8305,7 +8371,7 @@ void MakeIDMenu (Document doc, View view)
 }
 
 /*----------------------------------------------------------------------
-  CheckAmayaClosed closes the application when there is any more
+  CheckAmayaClosed closes the application when there is no more
   opened document
   ----------------------------------------------------------------------*/
 void CheckAmayaClosed ()
@@ -8340,18 +8406,21 @@ void AmayaCloseTab (Document doc, View view)
   int page_position = 0;
   int window_id     = 0;
   
-  window_id = TtaGetDocumentWindowId( doc, view );
-  if (TtaUniqueTabInWindow (doc))
-    TtaCloseWindow( window_id );
-  else
+  if (CanReplaceCurrentDocument (doc, view))
     {
-      /* Get the window id and page id of current document and
-         close the corresponding page */
-      TtaGetDocumentPageId( doc, view, &page_id, &page_position );
-      TtaClosePage( window_id, page_id );
-
-      /* Close the windows if it contains no more page */
-      TtaCleanUpWindow( window_id );
+      window_id = TtaGetDocumentWindowId( doc, view );
+      if (TtaUniqueTabInWindow (doc))
+        TtaCloseWindow( window_id );
+      else
+        {
+          /* Get the window id and page id of current document and
+             close the corresponding page */
+          TtaGetDocumentPageId( doc, view, &page_id, &page_position );
+          TtaClosePage( window_id, page_id );
+          
+          /* Close the windows if it contains no more page */
+          TtaCleanUpWindow( window_id );
+        }
     }
 #endif /* _WX */
 }
@@ -8498,6 +8567,7 @@ void AmayaClose (Document document, View view)
 #ifdef _SVG
   SVGLIB_FreeDocumentResource ();
 #endif /* _SVG */
+
   TtaQuit ();
 #endif /* _WX */
 }
@@ -8996,3 +9066,195 @@ void ClearURLList()
     }
 #endif /* _WX */
 }
+
+
+#ifdef _WX
+#include <wx/sstream.h>
+#include <wx/wfstream.h>
+#include <wx/dir.h>
+#include "../thotlib/internals/h/SMTP.h"
+#endif /* _WX */
+
+/*----------------------------------------------------------------------
+ * Retrieve a valid temporary directory path.
+ * Dont create the file, just assumes that it doesnt exist and can be created. 
+ * The returned value must be deleted.
+ * Returns NULL if any problem occurs.
+ * Dont use mktemp because doesnt exist on windows
+  ----------------------------------------------------------------------*/
+char* CreateTempDirectory(const char* name)
+{
+  static int i = 0, len;
+  char                 buff[MAX_LENGTH];
+  char                 temppath[MAX_LENGTH];
+  
+  strcpy(temppath, TtaGetEnvString ("APP_TMPDIR"));
+  len = strlen(temppath);
+  if(len==0)
+    return NULL;
+  if(temppath[len]!=DIR_SEP)
+  {
+    temppath[len] = DIR_SEP;
+    temppath[len+1] = 0;
+    
+  }
+  
+  while(i<10000)
+  {
+    sprintf(buff, "%s%s%04d", temppath, name, i);
+    if(!TtaCheckDirectory(buff))
+    {
+      if(TtaCheckMakeDirectory(buff, TRUE))
+        return TtaStrdup(buff);
+    }
+    i++;
+  }
+  return NULL;
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void SendByMail (Document document, View view)
+{
+#ifdef _WX
+  char                 buff[MAX_LENGTH], *appname, *vers;
+  ElementType          elType;
+  Element              docEl, el, text;
+  int                  len, i;
+  Language             lang;
+  EMail                mail;
+  wxArrayString        arr;
+  SendByMailDlgWX      dlg(0, NULL); 
+  char                *temppath = CreateTempDirectory ("sendmail/");
+  char                *server = TtaGetEnvString ("EMAILS_SMTP_SERVER");
+  char                *from   = TtaGetEnvString ("EMAILS_FROM_ADDRESS");
+  char                *docPath, *docType, *docChar;
+  char                *dstFileName = NULL;  
+  int                  port;
+  int                  error;
+  ThotBool             retry = TRUE;
+
+  TtaGetEnvInt ("EMAILS_SMTP_PORT", &port);
+  if (server == NULL || from == NULL ||
+      server[0] == EOS || from[0] == EOS || port == 0)
+  {
+    TtaDisplaySimpleMessage (INFO, AMAYA, AM_EMAILS_NO_SERVER);
+    // TODO Show the properties dialog at the "emails" tab.
+    return;
+  }
+
+  Synchronize(document, view); 
+  SaveTempCopy(document, temppath, &dstFileName);
+  if (DocumentTypes[document] == docHTML)
+  {
+    docEl = TtaGetMainRoot (document);
+    elType = TtaGetElementType(docEl);
+    elType.ElTypeNum = HTML_EL_TITLE;
+    el = TtaSearchTypedElement (elType, SearchInTree, docEl);
+    text = TtaGetFirstChild (el);
+    len = TtaGetTextLength(text);
+    if (len > 0)
+    {
+      len = MAX_LENGTH-1;
+      TtaGiveTextContent(text, (unsigned char*)buff, &len, &lang);
+      buff[len] = EOS;
+    }
+    else
+      buff[0] = EOS;
+    dlg.SetSubject(TtaConvMessageToWX (buff));
+  }
+
+  // generate the application name
+  vers = (char *) TtaGetAppVersion();
+  appname = (char *) TtaGetMemory (strlen (vers) + 10);
+  sprintf (appname, "Amaya (%s)", vers);
+  while (retry)
+  {
+    if (dlg.ShowModal() == wxID_OK)
+    {
+      mail = TtaNewEMail ((const char*)dlg.GetSubject().mb_str(wxConvUTF8),
+                          (const char*) dlg.GetMessage().mb_str(wxConvUTF8),
+                          from);
+      if (mail)
+      {
+        TtaSetMailer(mail, appname);
+        
+        arr = dlg.GetRecipients();
+        for (i = 0; i < (int)arr.GetCount(); i++)
+        {
+          wxString rcpt = arr[i];
+          rcpt.Trim(true).Trim(false);
+          if (!rcpt.IsEmpty ())
+            TtaAddEMailToRecipient (mail, (const char*) rcpt.mb_str(wxConvUTF8));
+        }
+        docPath = GetLocalPath (document, DocumentURLs[document]);
+        docType = DocumentMeta[document]->content_type;
+        docChar = DocumentMeta[document]->charset;
+
+        // Send document as attachment
+        if (dlg.SendAsAttachment ())
+          TtaAddEMailAttachmentFile (mail, docType, docPath);
+        // Send document as mail message
+        else if (dlg.SendAsContent ())
+          TtaAddEMailAlternativeFile(mail, docType, docPath, docChar);
+        
+        // Send all attached files (images, css ...) as attachments.
+        if (dlg.SendAsAttachment () || dlg.SendAsContent ())
+        {
+          wxFileName    msgName (wxString(docPath, wxConvUTF8));
+          wxArrayString files;
+          wxDir::GetAllFiles (wxString(temppath, wxConvLibc), &files, wxT(""), wxDIR_FILES);
+          for (i = 0; i < (int)files.GetCount(); i++)
+          {
+            wxFileName filename(files[i]);
+            if (filename.GetFullName() != wxString(dstFileName, wxConvUTF8))
+              TtaAddEMailAttachmentFile(mail, "",
+                                        (const char*)filename.GetFullPath().mb_str(wxConvUTF8));
+          }
+        }
+
+        error = 0;
+        if (TtaSendEMail (mail, server, port, &error))
+          TtaSetStatus (document, view, TtaGetMessage (AMAYA, AM_EMAILS_SENT), NULL);
+      }
+
+      switch(error)
+      {
+        case EMAIL_OK:
+          retry = FALSE;
+          break;
+        case EMAIL_SERVER_NOT_RESPOND:
+          TtaDisplaySimpleMessage(INFO, AMAYA, AM_EMAILS_ERR_SERVER_RESPOND);
+          break;
+        case EMAIL_SERVER_REJECT:
+          TtaDisplaySimpleMessage(INFO, AMAYA, AM_EMAILS_ERR_SERVER_REJECT);
+          break;
+        case EMAIL_FROM_BAD_ADDRESS:
+          TtaDisplaySimpleMessage(INFO, AMAYA, AM_EMAILS_ERR_FROM_ADDR);
+          break;
+        case EMAIL_TO_BAD_ADDRESS:
+          TtaDisplaySimpleMessage(INFO, AMAYA, AM_EMAILS_ERR_RCPT_ADDR);
+          break;
+        case EMAIL_BAD_CONTENT:
+          TtaDisplaySimpleMessage(INFO, AMAYA, AM_EMAILS_ERR_BAD_CONTENT);
+          break;
+        default:
+          TtaDisplaySimpleMessage(INFO, AMAYA, AM_EMAILS_ERR_UNKNOW);
+          break;
+      }
+    }
+    else
+      break;
+  }
+  TtaFreeMemory (appname);
+  // Remove temp dir content.
+  wxArrayString files;
+  wxDir::GetAllFiles(wxString(temppath, wxConvUTF8), &files, wxT(""), wxDIR_FILES);
+  for (i = 0; i < (int)files.GetCount(); i++)
+    wxRemoveFile(files[i]);
+  
+  wxRmdir(wxString(temppath, wxConvUTF8));  
+#endif /* _WX */
+}
+
+

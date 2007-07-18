@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA 1996-2005
+ *  (c) COPYRIGHT INRIA 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -130,7 +130,7 @@ typedef struct _AttributeBlock
     {
       struct	  /* AeAttrType = AtNumAttr or AtEnumAttr */
       {
-	int		_AeAttrValue_;	   /* attribute value or value number*/
+	intptr_t	_AeAttrValue_;	   /* attribute value or value number*/
       } s0;
       struct	  /* AeAttrType = AtReferenceAttr */
       {
@@ -219,6 +219,20 @@ typedef enum
 } PathSegType;
 
 typedef struct _PathSeg *PtrPathSeg;
+
+
+/* descriptor of the selection to do after redosplaying */
+typedef struct _SelectionDescriptor
+{
+  Element             SDElemSel;
+  Element             SDElemExt;
+  Attribute           SDAttribute;
+  int                 SDFirstChar;
+  int                 SDLastChar;
+  int                 SDCharExt;
+  ThotBool            SDSelActive;
+}
+SelectionDescriptor;
 
 /* Description of a SVG path segment */
 typedef struct _PathSeg
