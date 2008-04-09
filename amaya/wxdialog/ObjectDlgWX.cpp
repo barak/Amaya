@@ -20,9 +20,14 @@ static int      Waiting = 0;
 // Event table: connect the events to the handler functions to process them
 //-----------------------------------------------------------------------------
 BEGIN_EVENT_TABLE(ObjectDlgWX, AmayaDialog)
-  EVT_BUTTON(     XRCID("wxID_OK"),           ObjectDlgWX::OnOpenButton )
-  EVT_BUTTON(     XRCID("wxID_BROWSEBUTTON"), ObjectDlgWX::OnBrowseButton )
-  EVT_BUTTON(     XRCID("wxID_CANCEL"),       ObjectDlgWX::OnCancelButton )
+  EVT_BUTTON( XRCID("wxID_OK"),               ObjectDlgWX::OnOpenButton )
+  EVT_BUTTON( XRCID("wxID_BROWSEBUTTON"),     ObjectDlgWX::OnBrowseButton )
+  EVT_BUTTON( XRCID("wxID_CANCEL"),           ObjectDlgWX::OnCancelButton )
+  EVT_BUTTON( XRCID("wxID_CLEAR"),            ObjectDlgWX::OnClearButton )
+  EVT_TOOL( XRCID("wxID_INLINE"),             ObjectDlgWX::OnPosition ) 
+  EVT_TOOL( XRCID("wxID_LEFT"),               ObjectDlgWX::OnPosition ) 
+  EVT_TOOL( XRCID("wxID_RIGHT"),              ObjectDlgWX::OnPosition ) 
+  EVT_TOOL( XRCID("wxID_CENTER"),             ObjectDlgWX::OnPosition ) 
   EVT_TEXT_ENTER( XRCID("wxID_ID_URL"),       ObjectDlgWX::OnOpenButton )
   EVT_TEXT_ENTER( XRCID("wxID_ID_ALT"),       ObjectDlgWX::OnOpenButton )
   EVT_COMBOBOX( XRCID("wxID_MIME_TYPE_CB"),   ObjectDlgWX::OnMimeTypeCbx )
@@ -54,8 +59,10 @@ ObjectDlgWX::ObjectDlgWX( int ref, wxWindow* parent, const wxString & title,
   XRCCTRL(*this, "wxID_LABEL", wxStaticText)->SetLabel( TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_NEWOBJECT) ));
   XRCCTRL(*this, "wxID_TYPE_LABEL", wxStaticText)->SetLabel( TtaConvMessageToWX( TtaGetMessage (AMAYA, AM_SELECT_MIMETYPE) ));
   XRCCTRL(*this, "wxID_ALT_LABEL", wxStaticText)->SetLabel( TtaConvMessageToWX( TtaGetMessage (AMAYA, AM_ALT) ));
+  XRCCTRL(*this, "wxID_POSITION_LABEL", wxStaticText)->SetLabel( TtaConvMessageToWX( TtaGetMessage (AMAYA, AM_POSITION) ));
   XRCCTRL(*this, "wxID_MANDATORY", wxStaticText)->SetLabel( TtaConvMessageToWX( "" ));
   XRCCTRL(*this, "wxID_OK", wxButton)->SetLabel( TtaConvMessageToWX( TtaGetMessage(LIB, TMSG_LIB_CONFIRM) ));
+  XRCCTRL(*this, "wxID_CLEAR", wxButton)->SetToolTip( TtaConvMessageToWX( TtaGetMessage(AMAYA,AM_CLEAR) ));
   XRCCTRL(*this, "wxID_BROWSEBUTTON", wxBitmapButton)->SetToolTip( TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_BROWSE) ));
   XRCCTRL(*this, "wxID_CANCEL", wxButton)->SetLabel( TtaConvMessageToWX( TtaGetMessage(LIB, TMSG_CANCEL) ));
 
@@ -85,15 +92,35 @@ ObjectDlgWX::ObjectDlgWX( int ref, wxWindow* parent, const wxString & title,
   XRCCTRL(*this, "wxID_MIME_TYPE_CB", wxComboBox)->SetValue( mime_type );
 
   XRCCTRL(*this, "wxID_URL", wxTextCtrl)->SetValue(urlToOpen  );
-#if defined(_WINDOW) || defined(_MACOS)
-  // select the string
-  XRCCTRL(*this, "wxID_URL", wxTextCtrl)->SetSelection(0, -1);
-#else /* _WINDOW || _MACOS */
-  // set te cursor to the end
-  XRCCTRL(*this, "wxID_URL", wxTextCtrl)->SetInsertionPointEnd();
-#endif /* _WINDOW || _MACOS */
+
+  wxToolBar* tb = XRCCTRL(*this, "wxID_TOOL", wxToolBar);
+  ImgPosition = 2;
+  switch (ImgPosition)
+    {
+    case 1:
+      tb->ToggleTool(XRCID("wxID_LEFT"), true);
+      break;
+    case 2:
+      tb->ToggleTool(XRCID("wxID_CENTER"), true);
+      break;
+    case 3:
+      tb->ToggleTool(XRCID("wxID_RIGHT"), true);
+      break;
+    default:
+      tb->ToggleTool(XRCID("wxID_INLINE"), true);
+      break;
+    }
 
   SetAutoLayout( TRUE );
+
+  XRCCTRL(*this, "wxID_URL", wxTextCtrl)->SetFocus();
+#if defined(_WINDOWS) || defined(_MACOS)
+  // select the string
+  XRCCTRL(*this, "wxID_URL", wxTextCtrl)->SetSelection(0, -1);
+#else /* _WINDOWS || _MACOS */
+  // set te cursor to the end
+  XRCCTRL(*this, "wxID_URL", wxTextCtrl)->SetInsertionPointEnd();
+#endif /* _WINDOWS || _MACOS */
 }
 
 /*----------------------------------------------------------------------
@@ -118,6 +145,56 @@ void ObjectDlgWX::OnMimeTypeCbx( wxCommandEvent& event )
 }
 
 /*----------------------------------------------------------------------
+  OnClearButton called when the user wants to clear each fields
+  params:
+  returns:
+  ----------------------------------------------------------------------*/
+void ObjectDlgWX::OnClearButton( wxCommandEvent& event )
+{
+  XRCCTRL(*this, "wxID_URL", wxTextCtrl)->SetValue(_T(""));
+}
+
+/*----------------------------------------------------------------------
+  -----------------------------------------------------------------------*/
+void ObjectDlgWX::OnPosition( wxCommandEvent& event )
+{
+  wxToolBar* tb = XRCCTRL(*this, "wxID_TOOL", wxToolBar);
+  int id = event.GetId();
+  if ( id == wxXmlResource::GetXRCID(_T("wxID_INLINE")) )
+    {
+      tb->ToggleTool(XRCID("wxID_INLINE"), true);
+      tb->ToggleTool(XRCID("wxID_LEFT"), false);
+      tb->ToggleTool(XRCID("wxID_CENTER"), false);
+      tb->ToggleTool(XRCID("wxID_RIGHT"), false);
+      ImgPosition = 0;
+    }
+  else if ( id == wxXmlResource::GetXRCID(_T("wxID_LEFT")) )
+    {
+      tb->ToggleTool(XRCID("wxID_INLINE"), false);
+      tb->ToggleTool(XRCID("wxID_LEFT"), true);
+      tb->ToggleTool(XRCID("wxID_CENTER"), false);
+      tb->ToggleTool(XRCID("wxID_RIGHT"), false);
+      ImgPosition = 1;
+    }
+  else if ( id == wxXmlResource::GetXRCID(_T("wxID_CENTER")) )
+    {
+      tb->ToggleTool(XRCID("wxID_INLINE"), false);
+      tb->ToggleTool(XRCID("wxID_LEFT"), false);
+      tb->ToggleTool(XRCID("wxID_CENTER"), true);
+      tb->ToggleTool(XRCID("wxID_RIGHT"), false);
+      ImgPosition = 2;
+    }
+  else if ( id == wxXmlResource::GetXRCID(_T("wxID_RIGHT")) )
+    {
+      tb->ToggleTool(XRCID("wxID_INLINE"), false);
+      tb->ToggleTool(XRCID("wxID_LEFT"), false);
+      tb->ToggleTool(XRCID("wxID_CENTER"), false);
+      tb->ToggleTool(XRCID("wxID_RIGHT"), true);
+      ImgPosition = 3;
+    }
+}
+
+/*----------------------------------------------------------------------
   OnOpenButton called when the user validate his selection
   params:
   returns:
@@ -125,30 +202,35 @@ void ObjectDlgWX::OnMimeTypeCbx( wxCommandEvent& event )
 void ObjectDlgWX::OnOpenButton( wxCommandEvent& event )
 {
   char     buffer[MAX_LENGTH];
-  char     Alt[512];
 
   // get the current url
   wxString url = XRCCTRL(*this, "wxID_URL", wxTextCtrl)->GetValue( );
-  wxASSERT( url.Len() < MAX_LENGTH );
+  if (url.Len() == 0)
+    {
+      Waiting = 0;
+      ThotCallback (MyRef, INTEGER_DATA, (char*) 0);
+      return;
+    }
+
   strcpy( buffer, (const char*)url.mb_str(wxConvUTF8) );
   // give the new url to amaya (to do url completion)
   ThotCallback (BaseImage + ImageURL,  STRING_DATA, (char *)buffer );
 
   // get the current alt
   wxString alt = XRCCTRL(*this, "wxID_ALT", wxTextCtrl)->GetValue( );
-  wxASSERT( alt.Len() < 512 );
-  strcpy( Alt, (const char*)alt.mb_str(wxConvUTF8) );
-  // give the new url to amaya (to do url completion)
-  ThotCallback (BaseImage + ImageAlt,  STRING_DATA, (char *)Alt );
-
-  if (Alt[0] == EOS)
-    XRCCTRL(*this, "wxID_MANDATORY", wxStaticText)->SetLabel( TtaConvMessageToWX( TtaGetMessage (AMAYA, AM_ALT_MISSING) ));
+  if (alt.Len() == 0)
+    {
+      XRCCTRL(*this, "wxID_MANDATORY", wxStaticText)->SetLabel( TtaConvMessageToWX( TtaGetMessage (AMAYA, AM_ALT_MISSING) ));
+      XRCCTRL(*this, "wxID_ALT", wxTextCtrl)->SetFocus();
+    }
   else
      {
        // load the image
        // return done
        Waiting = 0;
-       ThotCallback (MyRef, INTEGER_DATA, (char*)1);
+       strncpy (ImgAlt, (const char*)alt.mb_str(wxConvUTF8), MAX_LENGTH - 1);
+       ImgAlt[MAX_LENGTH - 1] = EOS;
+       ThotCallback (MyRef, INTEGER_DATA, (char*) 1);
      }
 }
 

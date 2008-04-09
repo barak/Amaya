@@ -27,6 +27,10 @@ extern ThotBool TtaAddEMailAlternativeFile ( EMail mail,
 extern ThotBool TtaAddEMailAttachmentFile ( EMail mail,
                                             const char* mimeType,
                                             const char* filename );
+extern ThotBool TtaAddEMailAttachmentFileAlternativeName ( EMail mail,
+                                                           const char* mimeType,
+                                                           const char* filename,
+                                                           const char* name );
 extern ThotBool TtaSendEMail ( EMail mail,
                                const char* serverAddress,
                                int port,
@@ -55,6 +59,10 @@ extern ThotBool TtaAddEMailAlternativeFile ( EMail mail,
 extern ThotBool TtaAddEMailAttachmentFile ( EMail mail,
                                               const char* mimeType,
                                               const char* filename );
+extern ThotBool TtaAddEMailAttachmentFileAlternativeName ( EMail mail,
+                                                             const char* mimeType,
+                                                             const char* filename,
+                                                             const char* name );
 extern ThotBool TtaSendEMail ( EMail mail,
                                  const char* serverAddress,
                                  int port,

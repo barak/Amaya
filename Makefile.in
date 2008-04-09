@@ -7,7 +7,6 @@
 @VPATHOPT@= @srcdir@
 THOTDIR = @top_srcdir@
 THOTINCLUDES = @THOTINCLUDES@
-LIBZ = @LIBZ@
 
 include Options
 
@@ -57,7 +56,7 @@ wxwidgets: rebuild force
 
 gl: rebuild force
 	@(if test -d "$(GL_BUILDDIR)" ; then cd "$(GL_BUILDDIR)" ; \
-	  $(MAKE) linux-static ; fi)
+	  $(MAKE) ; fi)
 
 print_prog: rebuild force bin/str @BUILDLIBWWW@
 	@(if test -d thotlib ; then cd thotlib ; \

@@ -1,8 +1,8 @@
-Index: amaya-9.55~dfsg.0/configure.in
+Index: amaya-10.0.1/configure.in
 ===================================================================
---- amaya-9.55~dfsg.0.orig/configure.in	2007-05-20 13:40:43.000000000 +0100
-+++ amaya-9.55~dfsg.0/configure.in	2007-05-20 13:51:33.000000000 +0100
-@@ -666,18 +666,8 @@
+--- amaya-10.0.1.orig/configure.in	2008-03-02 22:04:23.000000000 +0000
++++ amaya-10.0.1/configure.in	2008-03-02 22:04:27.000000000 +0000
+@@ -463,18 +463,8 @@
  
  # Check if debug is enable
  AC_ARG_WITH(debug,              [  --with-debug            compiles Amaya with debuging options (-g) ])
@@ -21,7 +21,7 @@ Index: amaya-9.55~dfsg.0/configure.in
    case "${host}" in
        *-*-irix5* | *-*irix6* )
           CFLAGS="${CFLAGS} -fsigned-char"
-@@ -689,13 +679,8 @@
+@@ -486,13 +476,8 @@
    CFLAGS="${CFLAGS} -DCONST= "
  fi
  

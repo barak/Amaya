@@ -4,19 +4,26 @@
 #define SMTP_H_
 
 
-#include <wx/filename.h>
-#include <wx/socket.h>
-#include <wx/hashmap.h>
-#include <wx/filename.h>
-#include <wx/stream.h>
+#include "wx/filename.h"
+#include "wx/socket.h"
+#include "wx/hashmap.h"
+#include "wx/file.h"
+#include "wx/filename.h"
+#include "wx/stream.h"
+
 
 /**
  * Quoted-printable encoder output stream
  */
 class wxQuotedPrintableOutputStream : public wxFilterOutputStream{
 protected:
-    int m_offset;
+    char m_buffer[76+2+1];
+    int  m_pos;
+  
     virtual size_t OnSysWrite(const void *buffer, size_t size);
+    
+    void FlushBuffer();
+    
 public:
     wxQuotedPrintableOutputStream(wxOutputStream& stream);
     virtual ~wxQuotedPrintableOutputStream(){Close();}
@@ -30,7 +37,7 @@ class wxDebugOutputStream : public wxFilterOutputStream{
 protected:
     virtual size_t OnSysWrite(const void *buffer, size_t size)
     {
-      printf("(%05d) >> %s\n",  size, (const char*)buffer);
+      printf("(%05d) >> %s\n",  (int)size, (const char*)buffer);
       GetFilterOutputStream()->Write(buffer, size);
       return size;
     }
@@ -74,10 +81,38 @@ typedef struct{
     size_t size;
     void* data;
 } wxMimeSlot_BinaryContent;
+
 typedef struct{
     wxFileName filename;
     wxString   sendpath;
 } wxMimeSlot_FileContent;
+
+
+/**
+ * Byte counter stream.
+ * \see wx 
+ */
+class wxByteCounterOutputStream : public wxOutputStream
+{
+public:
+  wxByteCounterOutputStream();
+
+    bool Ok() const { return IsOk(); }
+    bool IsOk() const { return true; }
+
+    unsigned long GetCount(unsigned char c)const{return m_table[c];}
+    unsigned long GetCount()const{return m_count;}
+    
+protected:
+    virtual size_t OnSysWrite(const void *buffer, size_t size);
+    virtual wxFileOffset OnSysSeek(wxFileOffset pos, wxSeekMode mode);
+    virtual wxFileOffset OnSysTell() const;
+
+    unsigned long m_table[256];
+    unsigned long m_count;
+
+    DECLARE_NO_COPY_CLASS(wxByteCounterOutputStream)
+};
 
 
 /**
@@ -113,7 +148,7 @@ public:
     wxMimeSlot(wxMultipartMimeContainer* mime);
     virtual ~wxMimeSlot();
     
-    virtual bool Write(wxOutputStream& out)const;
+    virtual bool Write(wxOutputStream& out, bool bInline = false)const;
     virtual wxMimeContentTransfertEncoding GetAutoContentTransfertEncoding()const;
 
     void SetContentType(const wxString& contentType){m_contentType = contentType;}
@@ -233,6 +268,9 @@ protected:
     wxArrayString m_extraHeaders;
     wxMultipartMimeContainer m_attachements;
     wxMultipartMimeContainer m_alternatives;
+
+    wxFile    m_tempFile; /* Temporary stored mail content. */
+    
 public:
     wxEmailMessage(const wxString& subject, const wxString& text, const wxString& from);
     virtual ~wxEmailMessage(){}
@@ -248,10 +286,11 @@ public:
      * the type will be determined by the file extension.
      * \param fileName Filename of the new file attachment.
      * \param mimeType MIME main type, like 'image/jpeg'.
-     * \param bInline True if the file is attached inline or false if attachment 
+     * \param bInline True if the file is attached inline or false if attachment
+     * \param name Alternative name used in the mail. 
      * \return The wxMimeSlot node. 
      */
-    wxNode* AddFile(const wxFileName& fileName, wxString mimeType = wxT(""), bool bInline=false);
+    wxNode* AddFile(const wxFileName& fileName, wxString mimeType = wxT(""), bool bInline=false, const wxString& name=wxT(""));
     
     wxNode* AddAlternative(const wxString data, const wxString& mimeType = wxT("text/plain"));
     wxNode* AddAlternativeFile(const wxFileName& fileName, wxString mimeType = wxT("text/plain"));
@@ -300,6 +339,11 @@ public:
      * Write the message to a stream.
      */
     virtual bool Write(wxOutputStream& out);
+    
+    /**
+     * QEncode a text.
+     */ 
+    static wxString QEncode(const wxString& str);
 };
 
 enum wxSMTP_STEP

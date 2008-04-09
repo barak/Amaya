@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -178,8 +178,9 @@ static ThotBool NotifyClick (int event, ThotBool pre, PtrElement pEl, int doc)
   5 -> click with the middle button
   6 -> click with the right button
   7 -> reset the selection without notification
+// return TRUE if the event is already managed
   ----------------------------------------------------------------------*/
-void LocateSelectionInView (int frame, int x, int y, int button)
+ThotBool LocateSelectionInView (int frame, int x, int y, int button)
 {
   PtrBox              pBox;
   PtrElement          pEl = NULL, firstEl;
@@ -232,6 +233,17 @@ void LocateSelectionInView (int frame, int x, int y, int button)
                   IsParentBox (pBox, pViewSel->VsBox))
                 pBox = GetClickedLeafBox (frame, x, y, &pFlow);
             }
+          else if (pBox && pBox->BxAbstractBox && FrameTable[frame].FrView == 1)
+            {
+              pEl = pBox->BxAbstractBox->AbElement;
+              if (pEl)
+                pEl = pEl->ElParent;
+              if (pEl && pEl->ElPrevious &&
+                  TypeHasException (ExcIsBreak, pEl->ElTypeNumber, pEl->ElStructSchema) &&
+                  !TypeHasException (ExcIsBreak, pEl->ElPrevious->ElTypeNumber, pEl->ElPrevious->ElStructSchema))
+                pBox = pBox->BxPrevious;
+            }
+
           if (pBox)
             {
 #ifndef _GL
@@ -317,14 +329,14 @@ void LocateSelectionInView (int frame, int x, int y, int button)
                   /* Extension of selection */
                   if (SkipClickEvent)
                     /* the application asks Thot to do nothing */
-                    return;
+                    return SkipClickEvent;
                   ChangeSelection (frame, pAb, nChars, TRUE, left, FALSE, FALSE);
                   break;
                 case 1:
                   /* Extension of selection */
                   if (SkipClickEvent)
                     /* the application asks Thot to do nothing */
-                    return;
+                    return SkipClickEvent;
                   ChangeSelection (frame, pAb, nChars, TRUE, left, FALSE, TRUE);
                   break;
                 case 2:
@@ -333,7 +345,7 @@ void LocateSelectionInView (int frame, int x, int y, int button)
                   SkipClickEvent = NotifyClick (TteElemLClick, TRUE, el, doc);
                   if (SkipClickEvent)
                     /* the application asks Thot to do nothing */
-                    return;
+                    return SkipClickEvent;
                   ChangeSelection (frame, pAb, nChars, FALSE, TRUE, FALSE, FALSE);
                   // the document can be reloaded
                   pAb = pFrame->FrAbstractBox;
@@ -355,7 +367,7 @@ void LocateSelectionInView (int frame, int x, int y, int button)
                 case 4:
                   if (SkipClickEvent)
                     /* the application asks Thot to do nothing */
-                    return;
+                    return SkipClickEvent;
                   /* check if the curseur is within the box */
                   if ((x >= xOrg && x <= xOrg + width &&
                        y >= yOrg && y <= yOrg + height) ||
@@ -365,7 +377,7 @@ void LocateSelectionInView (int frame, int x, int y, int button)
                       el = pAb->AbElement;
                       if (NotifyClick (TteElemClick, TRUE, el, doc))
                         /* the application asks Thot to do nothing */
-                        return;
+                        return TRUE;
                       /* send event TteElemClick.Post to the application */
                       NotifyClick (TteElemClick, FALSE, el, doc);
                     }
@@ -379,7 +391,7 @@ void LocateSelectionInView (int frame, int x, int y, int button)
                       el = pAb->AbElement;
                       if (NotifyClick (TteElemMClick, TRUE, el, doc))
                         /* the application asks Thot to do nothing */
-                        return;
+                        return TRUE;
                     }
 #if defined(_UNIX) && !defined(_MACOS)
                   if (MenuActionList[CMD_PasteFromClipboard].Call_Action != NULL)
@@ -397,7 +409,7 @@ void LocateSelectionInView (int frame, int x, int y, int button)
                       el = pAb->AbElement;
                       if (NotifyClick (TteElemRClick, TRUE, el, doc))
                         /* the application asks Thot to do nothing */
-                        return;
+                        return TRUE;
                     }
                   TtaSetDialoguePosition ();
                   if (ThotLocalActions[T_insertpaste] != NULL)
@@ -413,12 +425,13 @@ void LocateSelectionInView (int frame, int x, int y, int button)
                   break;
                 case 7: /* reset the previous selection */
                   ChangeSelection (frame, pAb, nChars, FALSE, TRUE, FALSE, FALSE);
-                  return;
+                  break;
                 default: break;
                 }
             }
         }
     }
+  return FALSE;
 }
 
 
@@ -845,7 +858,7 @@ ThotPoint *BuildPolygonForPath (PtrPathSeg pPa, int frame,
                           (double) x1, (double) y1, 
                           (double) x2, (double) y2, 
                           (double) cx1, (double) cy1,
-                          (int) fmod(pPa->XAxisRotation, 360), 
+                          (int)fmod((double)pPa->XAxisRotation, (double)360), 
                           pPa->LargeArc, pPa->Sweep,
                           &points, npoints, &maxpoints);
           x2 = (double) (PixelValue (pPa->XEnd, UnPixel, NULL,
@@ -1092,7 +1105,7 @@ static PtrBox IsOnShape (PtrAbstractBox pAb, int x, int y, int *selpoint)
   /* Est-ce un point caracteristique specifique du graphique ? */
   if (pAb->AbLeafType == LtSymbol && pAb->AbShape == 'r')
     {
-      GetFontAndIndexFromSpec (32, pBox->BxFont, &font);
+      GetFontAndIndexFromSpec (32, pBox->BxFont, 1, &font);
       xp =  FontHeight (font);
       xm = xp / 2;
       xp = xp / 4;
@@ -1871,6 +1884,7 @@ PtrBox GetClickedLeafBox (int frame, int xRef, int yRef, PtrFlow *pFlow)
   PtrAbstractBox      pAb;
   PtrBox              pSelBox, pBox;
   PtrBox              box;
+  PtrElement          matchCell = NULL, prevMatch;
   int                 max;
   int                 pointIndex;
   int                 d;
@@ -1879,7 +1893,7 @@ PtrBox GetClickedLeafBox (int frame, int xRef, int yRef, PtrFlow *pFlow)
   pBox = NULL;
   pSelBox = NULL;
   /* au-dela de max, on n'accepte pas la selection */
-  max = 2000;
+  max = THOT_MAXINT;
   pFrame = &ViewFrameTable[frame - 1];
 
   if (pFrame->FrAbstractBox != NULL)
@@ -1887,10 +1901,14 @@ PtrBox GetClickedLeafBox (int frame, int xRef, int yRef, PtrFlow *pFlow)
   if (pBox != NULL)
     {
       pBox = pBox->BxNext;
-      while (pBox != NULL)
+      while (pBox)
         {
           pAb = pBox->BxAbstractBox;
-          if (/*pAb->AbVisibility >= pFrame->FrVisibility &&*/
+          prevMatch = matchCell;
+          if (matchCell && !ElemIsAnAncestor (matchCell, pAb->AbElement))
+            // the element is not within that cell
+            ;
+          else if (/*pAb->AbVisibility >= pFrame->FrVisibility &&*/
               (!pAb->AbPresentationBox || pAb->AbCanBeModified))
             {
               if (pAb->AbLeafType == LtGraphics ||
@@ -1907,21 +1925,21 @@ PtrBox GetClickedLeafBox (int frame, int xRef, int yRef, PtrFlow *pFlow)
               else if (pAb->AbLeafType == LtSymbol && pAb->AbShape == 'r')
                 /* glitch for the root symbol */
                 d = GetShapeDistance (xRef, yRef, pBox, 1, frame);
-              else if ((pAb->AbLeafType == LtText ||
-                        pAb->AbLeafType == LtSymbol ||
-                        pAb->AbLeafType == LtPicture ||
+              else if (pAb->AbLeafType == LtText ||
+                       pAb->AbLeafType == LtSymbol ||
+                       pAb->AbLeafType == LtPicture ||
                         /* empty or compound box */
-                        (pAb->AbLeafType == LtCompound && pAb->AbVolume == 0)) 
-#ifdef _GL
-                       && (pBox->BxBoundinBoxComputed || 
-                           pBox->BxType == BoBlock || pBox->BxNChars == 0)
-#endif /* _GL */
-                       )
-                d = GetBoxDistance (pBox, *pFlow, xRef, yRef, Y_RATIO, frame);
+                       (pAb->AbLeafType == LtCompound &&
+                        (pAb->AbVolume == 0 || 
+                         pBox->BxType == BoBlock || pBox->BxNChars == 0)))
+                d = GetBoxDistance (pBox, *pFlow, xRef, yRef, Y_RATIO, frame, &matchCell);
               else
                 d = max + 1;
 
               /* get the closest element */
+              if (prevMatch != matchCell && matchCell)
+                // ignore previous boxes out of the current cell
+                max = THOT_MAXINT;
               if (d < max)
                 {
                   max = d;
@@ -2817,7 +2835,7 @@ void LocateClickedChar (PtrBox pBox, int frame, ThotBool extend,
   int                 extraSpace;
   int                 spaceWidth;
   int                 charWidth;
-  int                 t, b, l, r;
+  int                 t, b, l, r, variant;
   SpecFont            font;
   CHAR_T              c;
   ThotBool            notfound, rtl;
@@ -2845,12 +2863,16 @@ void LocateClickedChar (PtrBox pBox, int frame, ThotBool extend,
   else
     {
       font = pBox->BxFont;
+      if (pBox->BxAbstractBox)
+        variant = pBox->BxAbstractBox->AbFontVariant;
+      else
+        variant = 1;
       dx = 0;
       length = pBox->BxNChars;
       /* space width */
       if (pBox->BxSpaceWidth == 0)
         {
-          spaceWidth = BoxCharacterWidth (SPACE, font);
+          spaceWidth = BoxCharacterWidth (SPACE, 1, font);
           extraSpace = 0;
         }
       else
@@ -2872,7 +2894,7 @@ void LocateClickedChar (PtrBox pBox, int frame, ThotBool extend,
               if ( c >= 0x060C && c <= 0x06B0 ) /*arabic char*/
                 charWidth = BoxArabicCharacterWidth (c, pBuffer, &ind, font);
               else
-                charWidth = BoxCharacterWidth (c, font);
+                charWidth = BoxCharacterWidth (c, variant, font);
             }
           if (extend)
             notfound = (dx + (charWidth / 2) < *x);

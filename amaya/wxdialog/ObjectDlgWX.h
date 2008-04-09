@@ -33,9 +33,11 @@ public:
 private:
 
   void OnMimeTypeCbx( wxCommandEvent& event );
+  void OnClearButton( wxCommandEvent& event );
   void OnOpenButton( wxCommandEvent& event );
   void OnBrowseButton( wxCommandEvent& event );
   void OnCancelButton( wxCommandEvent& event );
+  void OnPosition( wxCommandEvent& event );
 
   // Any class wishing to process wxWindows events must use this macro
   DECLARE_EVENT_TABLE()

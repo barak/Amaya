@@ -115,7 +115,7 @@ static void SetImageRule (PtrElement pEl, int w, int h,
 /*----------------------------------------------------------------------
   PivotError							
   ----------------------------------------------------------------------*/
-static void PivotError (BinFile file, char *code)
+static void PivotError (BinFile file, const char *code)
 {
   int                 i, j;
   char                c;
@@ -2543,9 +2543,9 @@ PtrElement ReadTreePiv (BinFile pivFile, PtrSSchema pSSchema, PtrDocument pDoc,
                                               pPa->Sweep = b2;
                                             }
                                           break;
-                                        default:
+                                          /*default:
                                           PivotError (pivFile,
-                                                      "PivotError: Path 2");
+                                          "PivotError: Path 2");*/
                                           break;
                                         }
                                       /* lit l'octet qui suit (type d'element de

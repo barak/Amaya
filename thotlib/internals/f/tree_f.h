@@ -28,6 +28,12 @@ extern void ChangeLanguageLeaves ( PtrElement pEl,
                                    Language lang );
 extern void InsertElemAfterLastSibling ( PtrElement pOld,
                                          PtrElement pNew );
+extern void CopyAttributes ( PtrElement pEl1,
+                             PtrElement pEl2,
+                             PtrDocument pSourceDoc,
+                             PtrDocument pTargetDoc,
+                             ThotBool Check,
+                             ThotBool copyRef );
 extern ThotBool ElemIsWithinSubtree ( PtrElement pEl,
                                       PtrElement pRoot );
 extern ThotBool EquivalentType ( PtrElement pEl,
@@ -78,14 +84,14 @@ extern PtrElement BackSearchVisibleElem ( PtrElement pRoot,
                                           int view );
 extern PtrElement FwdSearch2Attributes ( PtrElement pEl,
                                          int val,
-                                         char *textVal,
+                                         const char *textVal,
                                          int attNum,
                                          int attNum2,
                                          PtrSSchema pSS,
                                          PtrSSchema pSS2 );
 extern PtrElement BackSearch2Attributes ( PtrElement pEl,
                                           int val,
-                                          char *textVal,
+                                          const char *textVal,
                                           int attNum,
                                           int attNum2,
                                           PtrSSchema pSS,
@@ -244,6 +250,12 @@ extern void ChangeLanguageLeaves ( PtrElement pEl,
                                      Language lang );
 extern void InsertElemAfterLastSibling ( PtrElement pOld,
                                            PtrElement pNew );
+extern void CopyAttributes ( PtrElement pEl1,
+                               PtrElement pEl2,
+                               PtrDocument pSourceDoc,
+                               PtrDocument pTargetDoc,
+                               ThotBool Check,
+                               ThotBool copyRef );
 extern ThotBool ElemIsWithinSubtree ( PtrElement pEl,
                                         PtrElement pRoot );
 extern ThotBool EquivalentType ( PtrElement pEl,
@@ -294,14 +306,14 @@ extern PtrElement BackSearchVisibleElem ( PtrElement pRoot,
                                             int view );
 extern PtrElement FwdSearch2Attributes ( PtrElement pEl,
                                            int val,
-                                           char *textVal,
+                                           const char *textVal,
                                            int attNum,
                                            int attNum2,
                                            PtrSSchema pSS,
                                            PtrSSchema pSS2 );
 extern PtrElement BackSearch2Attributes ( PtrElement pEl,
                                             int val,
-                                            char *textVal,
+                                            const char *textVal,
                                             int attNum,
                                             int attNum2,
                                             PtrSSchema pSS,

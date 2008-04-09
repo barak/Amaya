@@ -24,6 +24,61 @@ extern void UpdateStyleSheet ( char *url,
                                char *tempdoc );
 extern char *CssToPrint ( Document doc,
                           char *printdir );
+extern void GenerateStyle ( char * data,
+                            ThotBool add );
+extern void DoStyleColor ( char *color );
+extern void UpdateStylePanel ( Document doc,
+                               View view );
+extern void DoSelectFontSize ( Document doc,
+                               View view );
+extern void DoSelectFontFamilly ( Document doc,
+                                  View view );
+extern void DoSelectFont ( Document doc,
+                           View view );
+extern void DoSelectColor ( Document doc,
+                            View view );
+extern void DoSelectBgColor ( Document doc,
+                              View view );
+extern ThotBool RemoveSpecificStyle ( Document doc,
+                                      char *cssproperty );
+extern void DoRemoveColor ( Document doc,
+                            View view );
+extern void DoRemoveBgColor ( Document doc,
+                              View view );
+extern void DoRemoveFont ( Document doc,
+                           View view );
+extern void DoLeftAlign ( Document doc,
+                          View view );
+extern void DoRightAlign ( Document doc,
+                           View view );
+extern void DoCenter ( Document doc,
+                       View view );
+extern void DoJustify ( Document doc,
+                        View view );
+extern void DoRemoveAlign ( Document doc,
+                            View view );
+extern void LineSpacingSingle ( Document doc,
+                                View view );
+extern void LineSpacingHalf ( Document doc,
+                              View view );
+extern void LineSpacingDouble ( Document doc,
+                                View view );
+extern void DoRemoveLineSpacing ( Document doc,
+                                  View view );
+extern void MarginLeftIncrease ( Document doc,
+                                 View view );
+extern void MarginLeftDecrease ( Document doc,
+                                 View view );
+extern void DoRemoveMargin ( Document doc,
+                             View view );
+extern void MakeDisableCSS ( Document doc,
+                             PInfoPtr pInfo );
+extern void MakeEnableCSS ( Document doc,
+                            PInfoPtr pInfo );
+extern void MakeOpenCSS ( Document doc,
+                          PInfoPtr pInfo );
+extern void MakeRemoveCSS ( Document doc,
+                            PInfoPtr pInfo );
 extern void ShowAppliedStyle ( Document doc,
                                View view );
 extern void SynchronizeAppliedStyle ( NotifyElement *event );
@@ -61,6 +116,61 @@ extern void UpdateStyleSheet ( char *url,
                                  char *tempdoc );
 extern char *CssToPrint ( Document doc,
                             char *printdir );
+extern void GenerateStyle ( char * data,
+                              ThotBool add );
+extern void DoStyleColor ( char *color );
+extern void UpdateStylePanel ( Document doc,
+                                 View view );
+extern void DoSelectFontSize ( Document doc,
+                                 View view );
+extern void DoSelectFontFamilly ( Document doc,
+                                    View view );
+extern void DoSelectFont ( Document doc,
+                             View view );
+extern void DoSelectColor ( Document doc,
+                              View view );
+extern void DoSelectBgColor ( Document doc,
+                                View view );
+extern ThotBool RemoveSpecificStyle ( Document doc,
+                                        char *cssproperty );
+extern void DoRemoveColor ( Document doc,
+                              View view );
+extern void DoRemoveBgColor ( Document doc,
+                                View view );
+extern void DoRemoveFont ( Document doc,
+                             View view );
+extern void DoLeftAlign ( Document doc,
+                            View view );
+extern void DoRightAlign ( Document doc,
+                             View view );
+extern void DoCenter ( Document doc,
+                         View view );
+extern void DoJustify ( Document doc,
+                          View view );
+extern void DoRemoveAlign ( Document doc,
+                              View view );
+extern void LineSpacingSingle ( Document doc,
+                                  View view );
+extern void LineSpacingHalf ( Document doc,
+                                View view );
+extern void LineSpacingDouble ( Document doc,
+                                  View view );
+extern void DoRemoveLineSpacing ( Document doc,
+                                    View view );
+extern void MarginLeftIncrease ( Document doc,
+                                   View view );
+extern void MarginLeftDecrease ( Document doc,
+                                   View view );
+extern void DoRemoveMargin ( Document doc,
+                               View view );
+extern void MakeDisableCSS ( Document doc,
+                               PInfoPtr pInfo );
+extern void MakeEnableCSS ( Document doc,
+                              PInfoPtr pInfo );
+extern void MakeOpenCSS ( Document doc,
+                            PInfoPtr pInfo );
+extern void MakeRemoveCSS ( Document doc,
+                              PInfoPtr pInfo );
 extern void ShowAppliedStyle ( Document doc,
                                  View view );
 extern void SynchronizeAppliedStyle ( NotifyElement *event );

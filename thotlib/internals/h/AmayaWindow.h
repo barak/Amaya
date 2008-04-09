@@ -13,14 +13,12 @@
 #include "wx/splitter.h"
 #include "wx/notebook.h"
 
-class AmayaPanel;
 class AmayaPage;
 class AmayaFrame;
-class AmayaNotebook;
 class AmayaCParam;
 class AmayaURLBar;
 class AmayaToolBar;
-class AmayaPanel;
+class AmayaToolPanel;
 class AmayaStatusBar;
 
 #include "windowtypes_wx.h"
@@ -74,10 +72,10 @@ class AmayaWindow : public wxFrame
 {
  public:
 //  friend class AmayaApp;
-  DECLARE_DYNAMIC_CLASS(AmayaWindow)
+  DECLARE_ABSTRACT_CLASS(AmayaWindow)
 
-  AmayaWindow ( int             window_id = -1
-                ,wxWindow *     frame = NULL
+  AmayaWindow ( wxWindow *      parent
+                ,wxWindowID     id = wxID_ANY
                 ,const wxPoint& pos  = wxDefaultPosition
                 ,const wxSize&  size = wxDefaultSize
                 ,int kind = WXAMAYAWINDOW_UNKNOWN
@@ -86,38 +84,55 @@ class AmayaWindow : public wxFrame
   virtual ~AmayaWindow();
   
   static void   DoAmayaAction( int command, int doc, int view );
-  
-  void          SetMenuBar( wxMenuBar * p_menu_bar );
-  int		        GetWindowId() { return m_WindowId; }
+
+  // Init and config :
+  virtual void CleanUp();
+  virtual bool Initialize();
+  virtual void LoadConfig();
+  virtual void SaveConfig();
+
+  // Window properties :
+  int           GetWindowId() { return m_WindowId; }
   void          SetWindowId( int window_id ) { m_WindowId = window_id; }
   int           GetKind() const { return m_Kind; }
   static int    GetActiveWindowId() { return m_ActiveWindowId; }
   static AmayaWindow * GetActiveWindow();
 
-  virtual void         CleanUp();
+  // Window decorations :
+  virtual AmayaStatusBar * GetStatusBar();
+  virtual AmayaStatusBar * CreateStatusBar();
+  virtual void             CreateMenuBar();
+
+  
+  // Page and frame management :
   virtual AmayaPage *  GetActivePage() const;
   virtual AmayaFrame * GetActiveFrame() const;
-
-  virtual void ToggleFullScreen();
-
-  // --------------------------------------------- //
-  // WXAMAYAWINDOW_NORMAL interface
-  virtual AmayaPanel * GetAmayaPanel() const;
-  virtual bool IsPanelOpened();
-  virtual void ClosePanel();
-  virtual void OpenPanel();
-  virtual void RefreshShowPanelToggleMenu();
-
-  virtual AmayaPage *    CreatePage( bool attach = false, int position = 0 );
+  virtual AmayaPage *    CreatePage( Document doc, bool attach = false, int position = 0 );
   virtual bool           AttachPage( int position, AmayaPage * p_page );
   virtual bool           DetachPage( int position );
   virtual bool           ClosePage( int position );
   virtual bool           CloseAllButPage( int position );
   virtual AmayaPage *    GetPage( int position ) const;
   virtual int            GetPageCount() const;
+  
+  
 
-  virtual AmayaToolBar * GetAmayaToolBar();
-  virtual AmayaStatusBar * GetAmayaStatusBar();
+  
+
+  virtual void ToggleFullScreen();
+  
+  
+  // --------------------------------------------- //
+  // WXAMAYAWINDOW_NORMAL interface
+  virtual void UpdateToolPanelLayout();
+  virtual AmayaToolPanel* GetToolPanel(int kind){return NULL;}
+  virtual bool ToolPanelsShown();
+  virtual void HideToolPanels();
+  virtual void ShowToolPanels();
+  virtual void RefreshShowToolPanelToggleMenu();
+
+
+  virtual void SetPageIcon(int page_id, char *iconpath);
 
   // url bar control
   virtual wxString GetURL();
@@ -125,17 +140,18 @@ class AmayaWindow : public wxFrame
   virtual void     AppendURL ( const wxString & new_url );
   virtual void     EmptyURLBar();
 
+  // toolbars
+  virtual bool IsToolBarShown(int toolbarID){return false;}
+  virtual void ShowToolBar(int toolbarID, bool bShow=true){}
+  virtual void HideToolBar(int toolbarID){ShowToolBar(toolbarID, false);}
+  
+  
   // --------------------------------------------- //
   // WXAMAYAWINDOW_SIMPLE interface
   virtual bool         AttachFrame( AmayaFrame * p_frame );
   virtual AmayaFrame * DetachFrame();
 
- public:
-  //  bool CheckUnicodeKey( wxKeyEvent& event );
-  //  bool CheckSpecialKey( wxKeyEvent& event );
-  //  bool CheckShortcutKey( wxKeyEvent& event );
-  //  bool IsSpecialKey( int wx_keycode );
-
+  
  public:
   void OnChar( wxKeyEvent& event );
   
@@ -145,6 +161,9 @@ class AmayaWindow : public wxFrame
   void OnIdle( wxIdleEvent& event );
   void OnActivate( wxActivateEvent & event );
   void OnAmayaAction( wxCommandEvent& event );
+  void OnCloseEvent(wxCloseEvent& event);
+  
+  void OnPopupMenuEvent(wxCommandEvent& event);
 
  protected:
   int               m_Kind;               // window kind
@@ -152,7 +171,6 @@ class AmayaWindow : public wxFrame
   static int        m_ActiveWindowId;
   int               m_ActiveFrameId;
   bool              m_MustCheckFocusIsNotLost;
-  wxMenuBar *       m_pMenuBar;
 };
 
 #endif // __AMAYAWINDOW_H__

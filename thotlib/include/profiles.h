@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -22,14 +22,15 @@
 #define L_Annot             0x40 /* accept only Annot values */
 #define L_Bookmarks         0x80 /* accept only Bookmarks values */
 #define L_CSS               0x200 /* accept only CSS values */
+#define L_TEXT              0x400 /* accept only TEXT values */
 
 /* Values for the profiles */
 #define L_BasicValue        0x0F /* allowed in all XHTML profiles */
 #define L_StrictValue       0x0E /* allowed in all XHTML profiles except Basic */
 #define L_RubyValue         0x04 /* allowed only in Xhtml11 profile */
 #define L_TransitionalValue 0x08 /* allowed only in Transitional profile */
-#define L_MathMLValue       0x1E /* allowed in MathML profile and  */
-                                 /* XHTML profiles except Basic */
+#define L_MathMLValue       0x2E /* allowed in MathML profile, SVG profile */
+                                 /* and XHTML profiles except Basic */
 #define L_OtherValue        0xFF
 
 /*----------------------------------------------------------------------

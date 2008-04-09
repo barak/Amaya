@@ -958,10 +958,13 @@ EXCEPT
         H6:             ParagraphBreak;
         Address:        ParagraphBreak;
         Term:           ParagraphBreak;
+        List_Item:      ListItemBreak;
+        Definition:      ListItemBreak;
         MAP:            IsDraw, IsMap, NoReplicate;
         IMG:            IsImg, NoReplicate;
         AREA:           MoveResize, ClickableSurface, HighlightChildren;
         Anchor:         ClickableSurface;
+        Horizontal_Rule: ClickableSurface;
         Form:           NoReplicate;
         Image_Input:    IsImg, NoReplicate;
         Password_Input: Shadow, NoReplicate;
@@ -979,7 +982,7 @@ EXCEPT
         SCRIPT_:        ReturnCreateNL, NoReplicate;
         Text_Area:      ReturnCreateNL, NoReplicate;
         HTMLfragment:   NoMove, NoResize, Hidden, NoBreakByReturn;
-        Division:       NoMove, NoResize;
+        Division:       NoMove, NoResize, NoBreakByReturn;
         INS:            NoReplicate;
         DEL:            NoReplicate;
         ins:            NoReplicate;

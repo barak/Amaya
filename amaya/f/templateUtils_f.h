@@ -24,6 +24,12 @@ extern char *GetAttributeStringValue ( Element el,
                                        Attribute attribute,
                                        int* sz );
 extern Element GetFirstEditableElement ( Element el );
+extern ThotBool TemplateCanInsertFirstChild ( ElementType elementType,
+                                              Element parent,
+                                              Document document );
+extern ThotBool ValidateTemplateAttrInMenu ( NotifyAttribute * event );
+extern void DumpTemplateElement ( Element el,
+                                  Document doc );
 
 #else /* __STDC__ */
 
@@ -45,6 +51,12 @@ extern char *GetAttributeStringValue ( Element el,
                                          Attribute attribute,
                                          int* sz );
 extern Element GetFirstEditableElement ( Element el );
+extern ThotBool TemplateCanInsertFirstChild ( ElementType elementType,
+                                                Element parent,
+                                                Document document );
+extern ThotBool ValidateTemplateAttrInMenu ( NotifyAttribute * event );
+extern void DumpTemplateElement ( Element el,
+                                    Document doc );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

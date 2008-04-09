@@ -22,7 +22,6 @@ static AttributeMapping TemplateAttributeMappingTable[] =
    /* The first entry MUST be unknown_attr */
    /* The rest of this table MUST be in alphabetical order */
    {"unknown_attr", "", 'A', Template_ATTR_Unknown_attribute, L_OtherValue},
-   {"currentOccurs", "", 'A', Template_ATTR_currentOccurs, L_OtherValue},
    {"currentType", "", 'A', Template_ATTR_currentType, L_OtherValue},   
    {"default", "", 'A', Template_ATTR_defaultAt, L_OtherValue},   
    {"exclude", "", 'A', Template_ATTR_exclude, L_OtherValue},
@@ -48,15 +47,18 @@ static AttributeMapping TemplateAttributeMappingTable[] =
 static AttrValueMapping TemplateAttrValueMappingTable[] =
 {
    {Template_ATTR_prompt, "prompt", Template_ATTR_prompt_VAL_Yes_},
-   {Template_ATTR_type, "integer", Template_ATTR_type_VAL_integerVal},
-   {Template_ATTR_type, "decimal", Template_ATTR_type_VAL_decimal},
+   {Template_ATTR_type, "number", Template_ATTR_type_VAL_number},
    {Template_ATTR_type, "string", Template_ATTR_type_VAL_string},
    {Template_ATTR_type, "list", Template_ATTR_type_VAL_listVal},
+   {Template_ATTR_useAt, "required", Template_ATTR_useAt_VAL_required},
+   {Template_ATTR_useAt, "optional", Template_ATTR_useAt_VAL_optional},
+   {Template_ATTR_useAt, "prohibited", Template_ATTR_useAt_VAL_prohibited},
    {0, "", 0}			/* Last entry. Mandatory */
 };
+
 #else /* TEMPLATES */
 /* there is no mapping table of Template elements */
 
 static ElemMapping *TemplateElemMappingTable = NULL;
-//static AttributeMapping* TemplateAttributeMappingTable = NULL;
+static AttributeMapping* TemplateAttributeMappingTable = NULL;
 #endif /* TEMPLATES */

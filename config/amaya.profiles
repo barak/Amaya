@@ -2,8 +2,9 @@
 ## by comments lines beginning with one or several hashes '#' (like ####VIEWS).
 ## These comments are there to help you searching your module (or function).
 
-## The structure is recursive (modules contains functions and modules which can
-## contain other functions and modules which ...)
+## The structure is recursive (modules contains functions, GUI elements
+## and modules which can contain other functions, GUI elements and
+## modules which ...)
 
 ## This file can contain 5 different types of elements :
 ##   ** Profile definitions: 
@@ -24,6 +25,9 @@
 ##   ** Function insertions: 
 ##      Function are inserted in module without any symbol before the
 ##      name of the function or with the symbol '&'.
+##   ** GUI element insertion:
+##      GUI elements are inserted in module with a star '*' prefix before the
+##      GUI class name.
 
 ## WARNING : Marks '&' before a function's name are marks used by internal 
 ## profile function. You don't have to deal with it (they are used to determine 
@@ -32,72 +36,97 @@
 
 #-------------------- User Profiles ------------------------------------------
 ################# AMAYA EDITOR
-# Give the list of visible functions
 <Editor>
-+browsing
-+config
++browsing_lite
 +edit
-ConfigAnnot
-CooperationConfig
-CustomQuery
-FilterAnnot
-ShowButtons
-ShowAddress
-ZoomIn
-ZoomOut
-&TransformType
-TtcParentElement
-TtcChildElement
-TtcPreviousElement
-TtcNextElement
-
-<Editor_WX>
-+config_WX
-+templates
-+browsing_WX
-+edit_WX
-HelpLocal
-ShowPanel
++web-module
++annot-module
+#+javascript_dom
+&CreateBase
+MenuShowLogFile
 FullScreen
+ShowAlternate
+ShowLinks
+ShowTargets
 SplitHorizontally
 SplitVertically
-ZoomIn
-ZoomOut
-&TransformType
-TtcParentElement
-TtcChildElement
-TtcPreviousElement
-TtcNextElement
 CopyLocation
+
+################# AMAYA Lite
+<Editor_Lite>
++browsing_lite
++edit_lite
+&SingleCreateTable
+&SingleNewXHTML
+
+################# AMAYA Lite+Math
+<Editor_Lite2>
++browsing_lite
++edit_lite
++advanced-edit
+&SingleCreateTable
+&SingleNewXHTML
+HelpAttributes
+*AmayaAttributeToolPanel
+
+################# AMAYA Lite+Math+Web
+<Editor_Lite3>
++browsing_lite
++web-module
++edit_lite
++advanced-edit
++doctype
++clientside-module
++presentation-module
++object-module
++hypertext-module
++forms
++link-module
+FullScreen
+&SingleCreateTable
+&SingleNewXHTML
+HelpAttributes
+*AmayaAttributeToolPanel
+
+################# AMAYA Lite+Math+Web+CSS
+<Editor_Lite4>
++browsing_lite
++web-module
++edit_lite
++advanced-edit
++doctype
++clientside-module
++presentation-module
++object-module
++hypertext-module
++forms
++link-module
++css-style
+FullScreen
+&SingleCreateTable
+&SetCSSStyle
+&Synchronize
+&SingleNewXHTML
+&NewCss
+HelpAttributes
+*AmayaAttributeToolPanel
 
 ################# AMAYA BROWSER
 <Browser>
-+browsing
-ConfigAnnot
-CooperationConfig
-CustomQuery
-ZoomIn
-ZoomOut
-
-<Browser_WX>
-+browsing
-ZoomIn
-ZoomOut
++browsing-lite
++annot-module
++web-module
 
 ################# AMAYA DISPLAY
 <Display>
 HelpAmaya
 HelpAtW3C
 
-<Display_WX>
-HelpAmaya
-HelpAtW3C
 
 #-------------------- Document Profiles -------------------------------------
 # Give the list of active functions
 ################# XHTML-TRANSITIONAL
 {XHTML Transitional}
-+base-module
 +bdi-text-module
 +clientside-module
 +attr-style
@@ -112,6 +141,8 @@ HelpAtW3C
 +meta-module
 +presentation-module
 +maths
++tables
+&CreateBase
 &CreateMath
 +object-module
 +script-module
@@ -119,10 +150,10 @@ HelpAtW3C
 +svg
 +tables
 +text-module
++css-style
 
 ################# XHTML-STRICT
 {XHTML 1.0 Strict}
-+base-module
 +bdi-text-module
 +clientside-module
 +attr-style
@@ -136,15 +167,15 @@ HelpAtW3C
 +meta-module
 +presentation-module
 +maths
++tables
+&CreateBase
 &CreateMath
 +object-module
 +script-module
 +struct-module
 +svg
-+tables
 +text-module
-&InsertBefore
-&InsertAfter
++css-style
 
 ################# XHTML-BASIC
 {XHTML Basic}
@@ -157,12 +188,10 @@ HelpAtW3C
 +object-module
 +struct-module
 +text-module
-&InsertBefore
-&InsertAfter
++css-style
 
 ################# XHTML1.1
 {XHTML 1.1}
-+base-module
 +bdi-text-module
 +clientside-module
 +attr-style
@@ -176,31 +205,30 @@ HelpAtW3C
 +meta-module
 +presentation-module
 +maths
+&CreateBase
 &CreateMath
++tables
 +object-module
 +script-module
 +svg
 +tables
 +text-module
 +ruby
-&InsertBefore
-&InsertAfter
++css-style
 
 ################# MathML
 {MathML}
 +basic-style
 +hypertext-module
 +maths
-&InsertBefore
-&InsertAfter
++css-style
 
 ################# SVG
 {SVG}
 +basic-style
 +hypertext-module
 +maths
-&InsertBefore
-&InsertAfter
++css-style
 
 ################# Annot
 {Annot}
@@ -225,10 +253,8 @@ HelpAtW3C
 +svg
 +tables
 +text-module
-ReplyToAnnotation
-PostAnnotation
-&InsertBefore
-&InsertAfter
++css-style-lite
++annot-annot
 
 
 #-------------------- Modules ---------------------------------------------
@@ -244,88 +270,141 @@ CopyLockInformation
 LockIndicator
 DAVLockDocument
 
-######### BROWSING
-[browsing]
-+annot-module
+######### BROWSING_Lite
+[browsing_lite]
++config
++print
 +views
-+print
-AmayaClose
-DocumentInfo
+FollowTheLinkNewWin
+FollowTheLinkNewTab
+ZoomIn
+ZoomOut
 DoAction
-HelpAmaya
-HelpAtW3C
-HelpIndex
-HelpSearching
-HelpSelecting
 GoToHome
-GotoPreviousHTML
-GotoNextHTML
-HelpBrowsing
-NextLinkOrFormElement
 OpenDoc
-OpenDocInNewWindow
+OpenFile
 PreviousLinkOrFormElement
 Reload
 SaveDocumentAs
-ShowLogFile
-StopTransfer
-AmayaCloseWindow
-ReadAsUTF_8
-ReadAsISO_8859_1
-ReadAsISO_8859_15
-ReadAsWINDOWS_1252
-ReadAsISO_8859_2
-ReadAsWINDOWS_1250
-ReadAsISO_8859_3
-ReadAsISO_8859_4
-ReadAsWINDOWS_1257
-ReadAsISO_8859_5
-ReadAsWINDOWS_1251
-ReadAsKOI8_R
-ReadAsISO_8859_6
-ReadAsWINDOWS_1256
-ReadAsISO_8859_7
-ReadAsWINDOWS_1253
-ReadAsISO_8859_8
-ReadAsWINDOWS_1255
-ReadAsISO_8859_9
-ReadAsWINDOWS_1254
-ReadAsGB_2312
-ReadAsISO_2022_JP
-ReadAsEUC_JP
-ReadAsSHIFT_JIS
-TtcCopySelection
-TtcSearchText
-
-[browsing_WX]
-+annot-module
-+views_WX
-+print
-AmayaClose
-DocumentInfo
-DoAction
-HelpAmaya
-HelpAtW3C
-HelpIndex
-HelpSearching
-HelpSelecting
-GoToHome
-GotoPreviousHTML
-GotoNextHTML
-HelpBrowsing
-NextLinkOrFormElement
-OpenDoc
-PreviousLinkOrFormElement
-Reload
-SaveDocumentAs
-ShowLogFile
-StopTransfer
-AmayaCloseTab
 NewTab
 RefreshTab
 RefreshAllTabs
 CloseOtherTabs
+AmayaCloseTab
 AmayaCloseWindow
+AmayaClose
+TtcCopySelection
+TtcSearchText
+SendByMail
+ShowLogFile
+UpdateShowError
+
+########### EDITING_Lite
+[edit_lite]
++css-style-lite
++image-module
++makebook-lite
++list-module
++text-module-lite
++edit-module
++presentation-lite
++spell
++templates
++table-edit
+DoNewXHTML
+HelpDocument
+HelpTemplating
+HelpPublishing
+HelpAccess
+&InsertBefore
+&InsertAfter
+&SaveDocument
+&SaveAll
+&TtcCutSelection
+&TtcDeleteSelection
+&TtcPaste
+&PasteBuffer
+&TtcUndo
+&TtcRedo
+&SelectAll
+ShowEditingBar
+&DoSelectFontFamilly
+&DoSelectFontSize
+*AmayaToolBarEditing
+*AmayaXHTMLToolPanel
+*AmayaStyleToolPanel
+*AmayaExplorerToolPanel
+*AmayaSpeCharToolPanel
+
+########### EDITING
+[edit]
++edit_lite
++advanced-edit
++doctype
++clientside-module
++css-style
++attr-style
++bdi-text-module
++davbase
++hypertext-module
++struct-module
++makebook
++text-module
++forms
++link-module
++iframe-module
++meta-module
++presentation-module
++object-module
++ruby
++script-module
++svg
++tables
+&CreateBase
+&SetCSSStyle
+HelpXml
+&NewXHTML
+&NewMathML
+#&NewSVG
+&NewCss
+&Synchronize
+HelpAttributes
+*AmayaAttributeToolPanel
+*AmayaXMLToolPanel
+
+######### advanced-edit
+[advanced-edit]
++maths
+&CreateMath
+&TransformType
+TtcParentElement
+TtcChildElement
+TtcPreviousElement
+TtcNextElement
+HelpChanging
+HelpTables
+HelpMath
+*AmayaMathMLToolPanel
+
+######### doctype
+[doctype]
+&RemoveDoctype
+&AddDoctype
+&CreateDoctypeXhtml11
+&CreateDoctypeXhtmlTransitional
+&CreateDoctypeXhtmlStrict
+&CreateDoctypeXhtmlBasic
+&CreateDoctypeHtmlTransitional
+&CreateDoctypeHtmlStrict
+
+######### web-module
+[web-module]
+DocumentInfo
+GotoPreviousHTML
+GotoNextHTML
+HelpBrowsing
+StopTransfer
+FollowTheLink
 ReadAsUTF_8
 ReadAsISO_8859_1
 ReadAsISO_8859_15
@@ -350,158 +429,29 @@ ReadAsGB_2312
 ReadAsISO_2022_JP
 ReadAsEUC_JP
 ReadAsSHIFT_JIS
-TtcCopySelection
-TtcSearchText
-SendByMail
-
-########### EDITING
-[edit]
-+attr-style
-+bdi-text-module
-+clientside-module
-+css-style
-+davbase
-+hypertext-module
-+image-module
-+list-module
-+struct-module
-+text-module
-+forms
-+link-module
-+edit-module
-+iframe-module
-+meta-module
-+presentation-module
-+makebook
-+makeid
-+maths
-+object-module
-+ruby
-+script-module
-+spell
-+svg
-+tables
-&ApplyClass
-&CreateBase
-&CreateMath
-&CreateXMLElementMenu
-HelpDocument
-HelpAttributes
-HelpChanging
-HelpPublishing
-HelpAccess
-HelpXml
-&MenuAttribute
-&NewXHTML11
-&NewXHTMLTransitional
-&NewXHTMLStrict
-&NewXHTMLBasic
-&NewMathML
-&NewSVG
-&NewCss
-&RemoveDoctype
-&AddDoctype
-&CreateDoctypeXhtml11
-&CreateDoctypeXhtmlTransitional
-&CreateDoctypeXhtmlStrict
-&CreateDoctypeXhtmlBasic
-&CreateDoctypeHtmlTransitional
-&CreateDoctypeHtmlStrict
-&SaveDocument
-&TtcCutSelection
-&TtcDeleteSelection
-&TtcPaste
-&PasteBuffer
-&TtcUndo
-&TtcRedo
-&Synchronize
-&InsertBefore
-&InsertAfter
-
-########### EDITING WX
-[edit_WX]
-+attr-style_WX
-+bdi-text-module
-+clientside-module
-+css-style
-+davbase
-+hypertext-module
-+image-module
-+list-module
-+struct-module
-+text-module
-+forms
-+link-module
-+edit-module
-+iframe-module
-+meta-module
-+presentation-module
-+makebook
-+makeid
-+maths
-+object-module
-+ruby
-+script-module
-+spell
-+svg
-+tables
-&CreateBase
-&CreateMath
-&SetCSSStyle
-HelpDocument
-HelpAttributes
-HelpChanging
-HelpTemplating
-HelpPublishing
-HelpAccess
-HelpXml
-#&MenuAttribute
-&NewXHTML
-&NewMathML
-&NewSVG
-&NewCss
-&RemoveDoctype
-&AddDoctype
-&CreateDoctypeXhtml11
-&CreateDoctypeXhtmlTransitional
-&CreateDoctypeXhtmlStrict
-&CreateDoctypeXhtmlBasic
-&CreateDoctypeHtmlTransitional
-&CreateDoctypeHtmlStrict
-&SaveDocument
-&TtcCutSelection
-&TtcDeleteSelection
-&TtcPaste
-&PasteBuffer
-&TtcUndo
-&TtcRedo
-&Synchronize
-&InsertBefore
-&InsertAfter
+CopyLocation
+ShowTargets
+ShowBrowsingBar
+*AmayaToolBarBrowsing
 
 ######### VIEWS
 [views]
-HelpViews
-ShowAlternate
 ShowLinks
 ShowSource
 ShowStructure
-#ShowFormatted
 ShowToC
-# ShowTimeLineWindow
+#ShowFormatted
+#ShowTimeLineWindow
+ShowPanel
 TtcCloseView
-
-######### VIEWS_WX
-[views_WX]
 HelpViews
-ShowAlternate
-ShowLinks
-ShowSource
-ShowStructure
-#ShowFormatted
-ShowToC
-# ShowTimeLineWindow
-TtcCloseView
+HelpAmaya
+HelpAtW3C
+HelpIndex
+HelpSearching
+HelpSelecting
+HelpLocal
+TipOfTheDay
 
 ########### PRINTING
 [print]
@@ -516,36 +466,39 @@ SetupAndPrint
 
 ########### XHTML modules
 [struct-module]
-&ChangeTitle
 &CreateComment
 
-[text-module]
-&SetOnOffAbbr
-&SetOnOffAcronym
-&CreateAddress
-&CreateBlockQuote
+[text-module-lite]
+&ChangeTitle
 &CreateBreak
-&SetOnOffCite
 &SetOnOffCode
-&SetOnOffDefinition
-&CreateDivision
 &SetOnOffEmphasis
+&SetOnOffStrong
 &CreateHeading1
 &CreateHeading2
 &CreateHeading3
 &CreateHeading4
 &CreateHeading5
 &CreateHeading6
-&SetOnOffKeyboard
 &CreateParagraph
 &CreatePreformatted
-&SetOnOffQuotation
-&SetOnOffSample
-&SetOnOffStrong
-&SetOnOffVariable
-&CreateDate
 HelpCreating
 HelpEditChar
+
+[text-module]
++text-module-lite
+&CreateAddress
+&CreateBlockQuote
+&CreateDivision
+&SetOnOffAbbr
+&SetOnOffAcronym
+&SetOnOffCite
+&SetOnOffDefinition
+&SetOnOffKeyboard
+&SetOnOffQuotation
+&SetOnOffSample
+&SetOnOffVariable
+&CreateDate
 
 [hypertext-module]
 &CreateOrChangeLink
@@ -553,8 +506,7 @@ HelpEditChar
 &DeleteAnchor
 HelpLinks
 &LinkToPreviousTarget
-&XPointer_bufferStore
-ShowTargets
+#&XPointer_bufferStore
 
 [list-module]
 &CreateDefinitionList
@@ -563,14 +515,17 @@ ShowTargets
 &CreateList
 &CreateNumberedList
 
-[presentation-module]
-&SetOnOffBold
-&SetOnOffBig
+[presentation-lite]
 &CreateHorizontalRule
-&SetOnOffItalic
-&SetOnOffSmall
 &SetOnOffSub
 &SetOnOffSup
+
+[presentation-module]
++presentation-lite
+&SetOnOffBold
+&SetOnOffBig
+&SetOnOffItalic
+&SetOnOffSmall
 &SetOnOffTeletype
 
 [image-module]
@@ -631,6 +586,9 @@ HelpImageMaps
 &CreateTBody
 &ChangeToDataCell
 &ChangeToHeadingCell
+
+[table-edit]
+&DoCreateTable
 &CellVertExtend
 &CellHorizExtend
 &CellVertShrink
@@ -641,20 +599,29 @@ SelectRow
 SelectColumn
 &CreateColumnBefore
 &CreateColumnAfter
+SelectRow
+&CreateRowBefore
+&CreateRowAfter
+SelectColumn
+&CreateColumnBefore
+&CreateColumnAfter
+&MergeSelectedCells
 &PasteBefore
 &PasteAfter
-HelpTables
 
 [tables]
 +basic-table-module
++table-edit
 &CreateColgroup
 &CreateCol
 &CreateTHead
 &CreateTFoot
+&ChangeToDataCell
+&ChangeToHeadingCell
 
 ################# MATHML
 [maths]
-#+css-style
++table-edit
 &CreateMathMenu
 &CreateMTEXT
 &CreateMI
@@ -675,22 +642,9 @@ HelpTables
 &CreateMUNDER
 &CreateMOVER
 &CreateMROW
+&CreateMPARENTHESIS
 &CreateMMULTISCRIPTS
 &CreateMTABLE
-&CellVertExtend
-&CellHorizExtend
-&CellVertShrink
-&CellHorizShrink
-SelectRow
-&CreateRowBefore
-&CreateRowAfter
-SelectColumn
-&CreateColumnBefore
-&CreateColumnAfter
-&PasteBefore
-&PasteAfter
-HelpMath
-HelpTables
 
 ################# SVG
 [svg]
@@ -700,6 +654,14 @@ ShowLibrary
 AddNewModelIntoLibraryForm
 HelpSVG
 
+########### Javascript/DOM
+[javascript_dom]
+&SwitchJavaScript
+&ExecuteACommand
+&ExecuteExternal
+&AddExternal
+&InsertScript
+
 ########### STYLE
 [iframe-module]
 &CreateIFrame
@@ -707,72 +669,84 @@ HelpSVG
 [attr-style]
 &CreateStyle
 &CreateClass
-&ChangeBackgroundImage
-&TtcChangeCharacters
-&TtcChangeColors
-&TtcChangeFormat
-
-[attr-style_WX]
-&CreateStyle
-&CreateClass
+ApplyClass
+*AmayaApplyClassToolPanel
 
 [css-browsing]
-OpenCSS
-DisableCSS
-EnableCSS
-ShowAppliedStyle
+*StyleListToolPanel
 HelpStyleSheets
 
 [css-style]
++css-style-lite
 +css-browsing
 &LinkCSS
+OpenCSS
+DisableCSS
+EnableCSS
 &RemoveCSS
+ShowAppliedStyle
+
+[css-style-lite]
+&DoClassicTheme
+&DoModernTheme
+&DoNoTheme
+&DoSelectColor
+&DoRemoveColor
+&DoSelectBgColor
+&DoRemoveBgColor
+&DoLeftAlign
+&DoCenter
+&DoRightAlign
+&DoJustify
+&DoRemoveAlign
+&LineSpacingSingle
+&LineSpacingHalf
+&LineSpacingDouble
+&DoRemoveLineSpacing
+&MarginLeftIncrease
+&MarginLeftDecrease
+&DoRemoveMargin
+&DoSelectFont
+&DoRemoveFont
 
 ########### OPTIONAL MODULES
 [config]
-ConfigGeneral
-ConfigBrowse
-ConfigPublish
-ConfigCache
-ConfigProxy
-ConfigColor
-ConfigGeometry
-HelpConfigure
-HelpShortCuts
-
-[config_WX]
 ConfigAmaya
 HelpConfigure
 HelpShortCuts
 
 [templates]
 ConfigTemplates
-&NewTemplate
 
 [spell]
 SpellCheck
 HelpSpellChecking
 
-[makebook]
-HelpMakeBook
+[makebook-lite]
 HelpNumbering
-&MakeBook
 &MakeToc
 &SectionNumbering
 
-[makeid]
+[makebook]
++makebook-lite
 &MakeIDMenu
+&MakeBook
+HelpMakeBook
 
 [annot-module]
++annot-doc
++annot-annot
+
+[annot-doc]
 AnnotateSelection
 AnnotateDocument
-DeleteAnnotation
-HelpAnnotation
 LoadAnnotations
-MoveAnnotationSel
-MoveAnnotationXPtr
+HelpAnnotation
+
+[annot-annot]
+DeleteAnnotation
 PostAnnotation
 ReplyToAnnotation
-XPointer_bufferStore
-
-
+#MoveAnnotationSel
+#MoveAnnotationXPtr
+#XPointer_bufferStore

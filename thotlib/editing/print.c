@@ -135,7 +135,7 @@ static int          BlackAndWhite;
 static int          HorizShift;
 static int          VertShift;
 static int          Zoom;
-static char        *Orientation;
+static const char  *Orientation;
 static int          NPagesPerSheet;
 static int          NoEmpyBox;
 static int          Repaginate;
@@ -2142,7 +2142,7 @@ ThotBool PrintOnePage (PtrDocument pDoc, PtrAbstractBox pPageAb,
   DisplayConfirmMessage
   displays the given message (text).
   ----------------------------------------------------------------------*/
-void DisplayConfirmMessage (char *text)
+void DisplayConfirmMessage (const char *text)
 {
 #ifdef _GTK
   gtk_window_set_title (GTK_WINDOW (window),text); 
@@ -2465,7 +2465,7 @@ void PrintDoc (HWND hWnd, int argc, char **argv, HDC PrinterDC,
   char             *realName = NULL;
   char             *server = NULL;
   char             *pChar = NULL;
-  char             *destination = NULL;
+  const char       *destination = NULL;
   char              option [100];
   char              name [MAX_PATH];             
   char              cmd[800];

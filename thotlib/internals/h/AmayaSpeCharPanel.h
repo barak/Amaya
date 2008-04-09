@@ -4,22 +4,29 @@
 #define __AMAYASPECHARPANEL_H__
 
 #include "wx/wx.h"
-#include "AmayaSubPanel.h"
+#include "wx/notebook.h"
+#include "wx/choicebk.h"
+#include "wx/toolbook.h"
+#include "wx/imaglist.h"
+#include "AmayaToolPanel.h"
+
 
 class AmayaNormalWindow;
 
-WX_DECLARE_HASH_MAP( int, wxString, wxIntegerHash, wxIntegerEqual, MathMLEntityHash );
-
-/*
- *  Description:  - AmayaSpeCharPanel is a specific sub-panel
- *       Author:  Stephane GULLY
- *      Created:  13/09/2004 04:45:34 PM CET
- *     Revision:  none
-*/
-
-class AmayaSpeCharPanel : public AmayaSubPanel
+typedef struct
 {
- public:
+  int unicode;
+  const char* name;
+}AmayaSpeChar;
+
+WX_DECLARE_HASH_MAP( int, AmayaSpeChar*, wxIntegerHash, wxIntegerEqual, AmayaSpeCharMap );
+
+
+
+class AmayaSpeCharToolPanel :  public AmayaToolPanel
+{
+  DECLARE_DYNAMIC_CLASS(AmayaSpeCharToolPanel)
+public:
   typedef enum
     {
       wxSPECHAR_ACTION_UNKNOWN,
@@ -27,42 +34,29 @@ class AmayaSpeCharPanel : public AmayaSubPanel
       wxSPECHAR_ACTION_REFRESH,
     } wxSPECHAR_ACTION;
   
- public:
-  DECLARE_DYNAMIC_CLASS(AmayaSpeCharPanel)
+    AmayaSpeCharToolPanel();
+  virtual bool Create(wxWindow* parent, wxWindowID id, const wxPoint& pos = wxDefaultPosition, 
+            const wxSize& size = wxDefaultSize, long style = 0,
+            const wxString& name = wxT("AmayaSpeCharToolPanel"), wxObject* extra=NULL);
+  
+  virtual wxString GetToolPanelName()const;
+  virtual int      GetToolPanelType()const{return WXAMAYA_PANEL_SPECHAR;}
+  virtual wxString GetToolPanelConfigKeyName()const{return wxT("PANEL_SPECHAR");}
+  virtual bool GetDefaultVisibilityState()const{return true;}
 
-  AmayaSpeCharPanel( wxWindow * p_parent_window = NULL
-		   ,AmayaNormalWindow * p_parent_nwindow = NULL );
-  virtual ~AmayaSpeCharPanel();
+  /** Return a default AUI config for the panel.*/
+  virtual wxString GetDefaultAUIConfig();
 
-  virtual bool IsActive();
-  virtual int GetPanelType();
-  void RefreshToolTips();
-
- protected:
-  virtual void SendDataToPanel( AmayaParams& params );
-  virtual void DoUpdate();
-
-  void DoFilter( int * filtre );
-  void RefreshButtonState();
-
- protected:
+protected:
+  void Initialize();
+  
+  void OnTool(wxCommandEvent& event);
+  
   DECLARE_EVENT_TABLE()
-  void OnButtonFiltre1( wxCommandEvent& event );
-  void OnButtonFiltre2( wxCommandEvent& event );
-  void OnButtonFiltre3( wxCommandEvent& event );
-  void OnButtonFiltre4( wxCommandEvent& event );
-  void OnButtonFiltre5( wxCommandEvent& event );
-  void OnButtonFiltre6( wxCommandEvent& event );
-  void OnButtonFiltre7( wxCommandEvent& event );
-  void OnButtonFiltre8( wxCommandEvent& event );
-  void OnButtonInsert( wxCommandEvent& event );
-
-  wxComboBox * m_pList;
-  wxColour m_OffColour;
-  wxColour m_OnColour;
-
-  static MathMLEntityHash m_MathMLEntityHash;
-  static int * m_pActiveFiltre;
+  
+  AmayaSpeCharMap m_hash;
+  wxChoicebook *m_pBook;
+  wxImageList m_imagelist;
 };
 
 #endif // __AMAYASPECHARPANEL_H__

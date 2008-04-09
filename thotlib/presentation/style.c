@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2007
+ *  (c) COPYRIGHT INRIA, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -722,6 +722,9 @@ static PtrPRule *FirstPresAttrRuleSearch (PtrPSchema tsch, int attrType,
   int                 i, j, val;
   unsigned int        match;
 
+  if(tsch->PsAttrPRule==NULL)
+    return NULL;
+  
   /* select the right attribute */
   attrs = tsch->PsAttrPRule->AttrPres[attrType - 1];
   *attrblock = NULL;
@@ -807,7 +810,7 @@ static PtrPRule *FirstPresAttrRuleSearch (PtrPSchema tsch, int attrType,
 static PtrPRule *PresAttrChainInsert (PtrPSchema tsch, int attrType,
                                       GenericContext ctxt, int att)
 {
-  AttributePres      *attrs, *new_;
+  AttributePres      *attrs = NULL, *new_;
   PtrSSchema          pSS;
   PtrPRule           *ppRule;
   char               *attrVal;

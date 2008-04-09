@@ -132,19 +132,19 @@ void SetMainWindowBackgroundColor (int frame, int color)
 
 #ifdef _GL
   /* to be sure that the frame is the current one when drawing its background */
-
   GL_prepare(frame);
 #endif /* _GL */
-
 #ifdef _GTK
   update_bg_colorGTK (frame, color);
 #endif /*_GTK*/
 
   GL_Background[frame] = color;
-  TtaGiveThotRGB (color, &red, &green, &blue);
+  if (color != -1)
+    TtaGiveThotRGB (color, &red, &green, &blue);
+  else
+    TtaGiveThotRGB (WindowBColor, &red, &green, &blue);
   /* the 0.0 for alpha is needed for group opacity */
   glClearColor ((float)red/255., (float)green/255., (float)blue/255., 0.0);
-
 #ifdef _GL_COLOR_DEBUG
   {
     float tmp[4];
@@ -163,21 +163,17 @@ void ResetMainWindowBackgroundColor (int frame)
   int color = GL_Background[frame];
 
 #ifdef _GL
-
   /* to be sure that the frame is the current one when drawing its background */
-
   GL_prepare(frame);
-
 #endif /* _GL */
-
-
-
 #ifdef _GTK
   update_bg_colorGTK (frame, color);
 #endif /*_GTK*/
 
-  GL_Background[frame] = color;
-  TtaGiveThotRGB (color, &red, &green, &blue);
+  if (color != -1)
+      TtaGiveThotRGB (color, &red, &green, &blue);
+  else
+    TtaGiveThotRGB (WindowBColor, &red, &green, &blue);
   /* the 0.0 for alpha is needed for group opacity */
   glClearColor ((float)red/255., (float)green/255., (float)blue/255., 0.0);
 
@@ -687,26 +683,10 @@ ThotBool GL_prepare (int frame)
       FrameTable[frame].DblBuffNeedSwap = TRUE;
 #endif /*_TESTSWAP*/
 
-#ifdef _WINGUI
-    if (FrRef[frame])
-      if (GL_Windows[frame])
-      {
-        GL_Windows[frame] = GetDC (FrRef[frame]);
-        wglMakeCurrent (GL_Windows[frame], GL_Context[frame]);	 
-        return TRUE;
-      }
-#endif /*_WINGUI*/
-#ifdef _GTK      
-      if (FrRef[frame] && FrameTable[frame].WdFrame)
-	if (gtk_gl_area_make_current (GTK_GL_AREA(FrameTable[frame].WdFrame)))
-	  return TRUE;
-#endif /* #ifdef _GTK */
-#ifdef _WX
     if (FrameTable[frame].WdFrame)
     {
       return FrameTable[frame].WdFrame->SetCurrent();
     }
-#endif /* _WX */
 
     }
   return FALSE;
@@ -720,21 +700,7 @@ void GL_Swap (int frame)
   if (frame >= 0 && frame < MAX_FRAME && SwapOK[frame] && NeedRedraw (frame))
     {
       glDisable (GL_SCISSOR_TEST);
-#ifdef _WINGUI
-      if (FrRef[frame])
-        if (GL_Windows[frame])
-          {
-            SwapBuffers (GL_Windows[frame]);
-            ReleaseDC (FrRef[frame], GL_Windows[frame] );
-          }
-#endif /* _WINGUI */
-#ifdef _GTK      
-      if (FrameTable[frame].WdFrame)
-      {
-        gtk_gl_area_swapbuffers (GTK_GL_AREA(FrameTable[frame].WdFrame));
-      }
-#endif /* #ifdef _GTK */
-#ifdef _WX
+
       if (FrameTable[frame].WdFrame)
       {
 #ifdef _GL_DEBUG
@@ -742,7 +708,7 @@ void GL_Swap (int frame)
 #endif /* _GL_DEBUG */
         FrameTable[frame].WdFrame->SwapBuffers();
       }
-#endif /* _WX */
+
       glEnable (GL_SCISSOR_TEST); 
       FrameTable[frame].DblBuffNeedSwap = FALSE;
     }
@@ -770,17 +736,6 @@ void GL_SwapEnable (int frame)
 {
   SwapOK[frame] = TRUE;
 }
-
-#ifdef _WINGUI
-/*----------------------------------------------------------------------
-  WinGL_Swap : specific to windows
-  ----------------------------------------------------------------------*/
-void WinGL_Swap (HDC hDC)
-{
-  /* glSwapBuffers (hDC); */
-  SwapBuffers (hDC);
-}
-#endif /*_WINGUI*/
 #endif /* _GL */
 
 /*----------------------------------------------------------------------

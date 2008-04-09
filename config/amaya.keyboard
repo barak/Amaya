@@ -42,7 +42,7 @@ Shift <Key>F4:        TtcPreviousElement()
 #Ctrl <Key>Down:    TtcLineDown()
 <Key>Tab:           NextLinkOrFormElement()
 Shift <Key>Tab:     PreviousLinkOrFormElement()
-Ctrl <Key>a:        TtcStartOfLine() 
+Ctrl <Key>a:        SelectAll() 
 Shift Ctrl <Key>A:  TtcSelStartOfLine() 
 Ctrl <Key>e:        TtcEndOfLine() 
 Shift Ctrl <Key>E:  TtcSelEndOfLine() 
@@ -82,10 +82,12 @@ Ctrl <Key>v:	                   PasteBuffer()
 Ctrl <Key>x:	                   TtcCutSelection()
 Shift Ctrl <Key>Z:                 TtcRedo() 
 Ctrl <Key>z:                       TtcUndo() 
-
+Ctrl <Key>k:                       InsertAfter() 
+Shift Ctrl <Key>K:                 InsertBefore() 
+ 
 #Headings sbmenu
 Ctrl <Key>h , Ctrl <Key>&:   CreateHeading1() 
-Ctrl <Key>h , Ctrl <Key>é:   CreateHeading2() 
+Ctrl <Key>h , Ctrl <Key>ï¿½:   CreateHeading2() 
 Ctrl <Key>h , Ctrl <Key>":   CreateHeading3() 
 Ctrl <Key>h , Ctrl <Key>':   CreateHeading4() 
 Ctrl <Key>h , Ctrl <Key>(:   CreateHeading5() 
@@ -142,6 +144,13 @@ Ctrl <Key>i , Ctrl <Key>w:         SetOnOffCite()
 Ctrl <Key>i , Ctrl <Key>x:         SetOnOffDefinition() 
 Ctrl <Key>i , Ctrl <Key>y:         SetOnOffAcronym() 
 Ctrl <Key>i , Ctrl <Key>z:         SetOnOffBDO() 
+
+#Javascript and DOM
+Ctrl <Key>j , Ctrl <Key>j:         Switch_JS_DOM() 
+Ctrl <Key>j , Ctrl <Key>c:         ExecuteACommand() 
+Ctrl <Key>j , Ctrl <Key>e:         ExecuteExternal() 
+Ctrl <Key>j , Ctrl <Key>a:         AddExternal() 
+Ctrl <Key>j , Ctrl <Key>i:         CreateScript() 
 
 #Links and SvgLibrary
 Ctrl <Key>l , Ctrl <Key>a:         AddNewModelIntoLibrary()

@@ -45,8 +45,8 @@
 43 Feito
 44 Diretórios
 45 O documento %s já exist. Quer gravar por cima dele?
-46 O botão esquerdo fixa a cor do texto
-47 O botão do meio ou da direita fixa a cor de fundo
+46 **Set the text color
+47 **Set the background color
 48 Família de tipos (fonts)
 49 Normal
 50 Negrito
@@ -57,33 +57,33 @@
 55 Normal
 56 Sublinhado
 57 Cortado (cross out)
-58 Tamanho do corpo (pt)
-59 Indentação (pt)
-60 Espaçamento entre linhas (pt)
-61 Espaçamento entre linhas
-62 Salvar documento
-63 Fechar sem salvar
-64 Estilo de carácter
-65 Cores
-66 XHTML
-67 Suprimir
-68 Destino (Output)
-69 Arquivo PostScript
-70 Impressora
-71 Buscar
-72 Ignore o caso
-73 Substituir por
-74 Substituir
-75 Não substituir
-76 Substituir sob demanda
-77 Substituição Automática
-78 Onde buscar
-79 Antes da seleção
-80 Dentro da seleção
-81 Depois da seleção
-82 No documento todo
-83 Não substituir
-84 Cores padrão
+58 Tamanho
+59 **Unindent
+60 **Single line spacing
+61 **Middle line spacing
+62 **Double line spacing
+63 Salvar documento
+64 Fechar sem salvar
+65 Estilo de carácter
+66 Cores
+67 XHTML
+68 Suprimir
+69 Destino (Output)
+70 Arquivo PostScript
+71 Impressora
+72 Buscar
+73 Ignore o caso
+74 Substituir por
+75 Substituir
+76 Não substituir
+77 Substituir sob demanda
+78 Substituição Automática
+79 Onde buscar
+80 Antes da seleção
+81 Dentro da seleção
+82 Depois da seleção
+83 No documento todo
+84 Não substituir
 85 antes de fechá-lo
 86 Fechar um documento
 87 Símbolos matemáticos
@@ -95,7 +95,7 @@
 93 Gráfico
 94 Símbolo
 95 Imagem
-96 XML/XTiger
+96 XML
 97 depois
 98 antes
 99 em torno de
@@ -136,98 +136,139 @@
 134 Não é possível criar "%s"
 135 Sobrelinhado (Overline)
 136 Formato de documento
-137 Eventos
-138 Remover atributo
-139 Botão esquerdo fixa a cor da seleção
-140 Botão do meio ou da direita fixa a cor do cursor
-141 Mais ...
-142 Comece
-143 Cor
-144 **Background color
-145 **Foreground color
-146 **Switch colors
-147 **Select a generic XML structure
-148 Verificação
-149 Buscar/Pular
-150 Substituir (+ dic)
-151 Substituir e próximo
-152 Outro idioma
-153 Pular (+ dic)
-154 Palavras contendo:
-155 Verificar ortografia...
-156 Numerais romanos
-157 Ignorar
-158 palavras todas maíusculas
-159 palavras com dígitos
-160 Erro em arquivo de parâmetros
-161 Não há arquivo de teclado
-162 Não é possível salvar o dicionário do documento
-163 Palavra incorreta "%s" recusada neste dicionário
-164 Palavra "%s" adicionada ao dicionário do documento
-165 Fim da verificação ortográfica
-166 Abortada a verificação ortográfica
-167 Por favor selecione um documento
-168 Dicionário do documento salvo: %s
-169 **Not available in this version
-170 **Enable/Disable palette
-171 **Tools
-172 **Mandatory attribute, it can't be removed
-173 **Refresh
-174 **Left
-175 **Right
-176 **Center
-177 **Justify
-178 Applicar classe
-179 Selecionar uma classe ou pseudo-classe
-180 Selecionar
-181 **Discard
-182 Matemática
-183 **Misc
-184 **Binary relations
-185 **Binary relations of negation
-186 **Operators
-187 **Greek alphabet (capital)
-188 **Arrows
-189 **Special characters
-190 Interromper transferência
-191 Documento precedente
-192 Documento seguinte
-193 Recarregar
-194 Salvar
-195 Novo documento XHTML
-196 >Abrir documento
-197 Imprimir
-198 Buscar
-199 Home
-200 Ênfase On/Off
-201 Forte On/Off
-202 Código On/Off
-203 Inserir imagem
-204 Cabeçalho nível 1
-205 Cabeçalho nível 2
-206 Cabeçalho nível 3
-207 Lista com bolinhas
-208 Lista numerada
-209 Lista de definição
-210 Enlace
-211 Tabela
-212 **You are about to close %d open tabs. Are you sure you want to continue?
-213 **Warn me when I attempt to close multiple tabs
-214 **Close tabs
-215 **No error detected
-216 Exibir erros de gramática (parsing)
-217 **Boxes
-218 Divisão
-219 Destino
-220 Inserção On/Off
-221 Supressão On/Off
-222 Índice On/Off
-223 Expoente On/Off
-224 Termo
-225 Definição
-226 Objeto
-227 **CSS Style
-228 Arquivos
-229 **Horizontal split/unsplit
-230 **Vertical split/unsplit
-231 **Show/hide tools
+137 Remover atributo
+138 **Select a background color
+139 **Select a text color
+140 **Select a generic XML structure
+141 Verificação
+142 Buscar/Pular
+143 Substituir (+ dic)
+144 Substituir e próximo
+145 Outro idioma
+146 Pular (+ dic)
+147 Palavras contendo:
+148 Verificar ortografia...
+149 Numerais romanos
+150 Ignorar
+151 palavras todas maíusculas
+152 palavras com dígitos
+153 Erro em arquivo de parâmetros
+154 Não há arquivo de teclado
+155 Não é possível salvar o dicionário do documento
+156 Palavra incorreta "%s" recusada neste dicionário
+157 Palavra "%s" adicionada ao dicionário do documento
+158 Fim da verificação ortográfica
+159 Abortada a verificação ortográfica
+160 Por favor selecione um documento
+161 Dicionário do documento salvo: %s
+162 **Not available in this version
+163 **Enable/Disable palette
+164 **Tools
+165 **Mandatory attribute, it can't be removed
+166 **Refresh
+167 **Align left
+168 **Align right
+169 **Center
+170 **Justify
+171 Applicar classe
+172 Selecionar uma classe ou pseudo-classe
+173 Selecionar
+174 **Discard
+175 Matemática
+176 **Misc
+177 **Binary relations
+178 **Binary relations of negation
+179 **Operators
+180 **Greek alphabet (capital)
+181 **Arrows
+182 **Special characters
+183 Interromper transferência
+184 Documento precedente
+185 Documento seguinte
+186 Recarregar
+187 Salvar
+188 Salvar
+189 Novo documento XHTML
+190 >Abrir documento
+191 Imprimir
+192 Buscar
+193 Home
+194 Ênfase On/Off
+195 Forte On/Off
+196 Código On/Off
+197 Inserir imagem
+198 Cabeçalho nível 1
+199 Cabeçalho nível 2
+200 Cabeçalho nível 3
+201 Cabeçalho nível 4
+202 Parágrafo
+203 Lista com bolinhas
+204 Lista numerada
+205 Lista de definição
+206 Enlace
+207 Tabela
+208 **You are about to close %d open tabs. Are you sure you want to continue?
+209 **Warn me when I attempt to close multiple tabs
+210 **Close tabs
+211 **No error detected
+212 Exibir erros de gramática (parsing)
+213 **Boxes
+214 Divisão
+215 Destino
+216 Inserção On/Off
+217 Supressão On/Off
+218 Índice On/Off
+219 Expoente On/Off
+220 Termo
+221 Definição
+222 Objeto
+223 **Style
+224 Arquivos
+225 **Horizontal split/unsplit
+226 **Vertical split/unsplit
+227 **Show/hide tools
+228 Desfazer
+229 Refazer
+230 Recortar
+231 Copiar
+232 Colar
+233 Verificar ortografia
+234 **Various constructs
+235 **Relations, orders and logic
+236 **Sets and functions
+237 **Arithmetic, operations, complexes and constants
+238 **Analysis, linear algebra and statistic
+239 **Trigonometry and logarithms
+240 Ampliar (Zoom in)
+241 Reduzir (Zoom out)
+242 **Theme
+243 XML
+244 Texto
+245 **No recent document
+246 **Click an element to select it
+247 **Click to change the editing mode
+248 **Merge cells
+249 **Shrink horizontal extend
+250 **Shrink vertical extend
+251 **Insert a row
+252 **Append a row
+253 **Insert a column
+254 **Append a column
+255 **Tip of the day
+256 **Show tip at startup
+257 **Next tip
+258 **Did you know...
+259 **Close
+260 **Amaya can be adapted to your own needs: five profiles are provided with different sets of menus and panels. See Preferences/General.
+261 **Panels can be displayed on the left or on the right side of the window or even customized panel by panel. See Preferences.
+262 **With the F2 or Escape key you can select the parent element in the document structure, to apply editing functions (copy, paste, attributes, style, etc.) to the right element.
+263 **You can display two documents side by side in the window by dragging a document tab to the left or right side of the displayed document.
+264 **In customizable mode, you can drag panels to change their order or to make them floating.
+265 **With the customizable mode, you can move panels on both sides of the window just by dragging.
+266 **You can switch editing mode (Text/XML) by clicking on the corresponding button in the bottom right corner.
+267 **When there is red button in the bottom right corner, you can display errors by clicking on it.
+268 **You can select an ancestor of the current selection by clicking on its name on the path control displayed at the bottom of the window.
+269 **You can move to another tab with the menu displayed by the arrow button at right of document tabs.
+270 **Classic
+271 **Modern
+272 **No theme

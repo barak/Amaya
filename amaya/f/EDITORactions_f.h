@@ -6,16 +6,22 @@
 #ifndef __CEXTRACT__
 #ifdef __STDC__
 
+extern void SwitchJavaScript ( Document document,
+                               View view );
+extern void ExecuteACommand ( Document document,
+                              View view );
+extern void InsertScript ( Document document,
+                           View view );
+extern void AddExternal ( Document document,
+                          View view );
+extern void ExecuteExternal ( Document document,
+                              View view );
+extern void SingleNewXHTML ( Document doc,
+                             View view );
+extern void DoNewXHTML ( Document doc,
+                         View view );
 extern void NewXHTML ( Document doc,
                        View view );
-extern void NewXHTMLBasic ( Document doc,
-                            View view );
-extern void NewXHTMLStrict ( Document doc,
-                             View view );
-extern void NewXHTML11 ( Document doc,
-                         View view );
-extern void NewXHTMLTransitional ( Document doc,
-                                   View view );
 extern void NewMathML ( Document doc,
                         View view );
 extern void NewSVG ( Document doc,
@@ -60,6 +66,9 @@ extern void SpellCheck ( Document doc,
                          View view );
 extern void CreateBreak ( Document doc,
                           View view );
+extern Element InsertWithinHead ( Document doc,
+                                  View view,
+                                  int elementT );
 extern void CreateBase ( Document doc,
                          View view );
 extern void CreateMeta ( Document doc,
@@ -73,10 +82,11 @@ extern void CreateComment ( Document doc,
 extern void CreateDate ( Document doc,
                          View view );
 extern void CreateScript ( Document doc,
-                           View view );
+                           View view,
+                           ThotBool ExternalFile );
 extern ThotBool HTMLelementAllowed ( Document doc );
-extern void CreateHTMLelement ( int typeNum,
-                                Document doc );
+extern ThotBool CreateHTMLelement ( int typeNum,
+                                    Document doc );
 extern void CreateParagraph ( Document doc,
                               View view );
 extern void CreateHeading1 ( Document doc,
@@ -116,6 +126,10 @@ extern void CreateAddress ( Document doc,
 extern void DoTableCreation ( Document doc );
 extern void CreateTable ( Document doc,
                           View view );
+extern void SingleCreateTable ( Document doc,
+                                View view );
+extern void DoCreateTable ( Document doc,
+                            View view );
 extern void CreateCaption ( Document doc,
                             View view );
 extern void CreateColgroup ( Document doc,
@@ -130,8 +144,13 @@ extern void CellVertExtend ( Document doc,
                              View view );
 extern void CellHorizExtend ( Document doc,
                               View view );
+extern ThotBool CanMergeSelectedCells ( Document doc );
+extern void MergeSelectedCells ( Document doc,
+                                 View view );
+extern ThotBool CanVShrinkCell ( Document doc );
 extern void CellVertShrink ( Document doc,
                              View view );
+extern ThotBool CanHShrinkCell ( Document doc );
 extern void CellHorizShrink ( Document doc,
                               View view );
 extern void SelectRow ( Document doc,
@@ -212,23 +231,7 @@ extern void FlushCache ( Document doc,
                          View view );
 extern void ConfigAmaya ( Document doc,
                           View view );
-extern void ConfigColor ( Document doc,
-                          View view );
-extern void ConfigGeometry ( Document doc,
-                             View view );
-extern void ConfigGeneral ( Document doc,
-                            View view );
-extern void ConfigBrowse ( Document doc,
-                           View view );
-extern void ConfigPublish ( Document doc,
-                            View view );
-extern void ConfigCache ( Document doc,
-                          View view );
-extern void ConfigProxy ( Document doc,
-                          View view );
 extern void SaveOptions ( Document doc,
-                          View view );
-extern void ConfigAnnot ( Document doc,
                           View view );
 extern void AnnotateDocument ( Document doc,
                                View view );
@@ -268,23 +271,29 @@ extern void PropDocument ( Document doc,
                            View view );
 extern void CopyLockInformation ( Document doc,
                                   View view );
-extern void CooperationConfig ( Document doc,
-                                View view );
 extern void LockIndicator ( Document doc,
                             View view );
+extern void SelectAll ( Document doc,
+                        View view );
 
 #else /* __STDC__ */
 
+extern void SwitchJavaScript ( Document document,
+                                 View view );
+extern void ExecuteACommand ( Document document,
+                                View view );
+extern void InsertScript ( Document document,
+                             View view );
+extern void AddExternal ( Document document,
+                            View view );
+extern void ExecuteExternal ( Document document,
+                                View view );
+extern void SingleNewXHTML ( Document doc,
+                               View view );
+extern void DoNewXHTML ( Document doc,
+                           View view );
 extern void NewXHTML ( Document doc,
                          View view );
-extern void NewXHTMLBasic ( Document doc,
-                              View view );
-extern void NewXHTMLStrict ( Document doc,
-                               View view );
-extern void NewXHTML11 ( Document doc,
-                           View view );
-extern void NewXHTMLTransitional ( Document doc,
-                                     View view );
 extern void NewMathML ( Document doc,
                           View view );
 extern void NewSVG ( Document doc,
@@ -329,6 +338,9 @@ extern void SpellCheck ( Document doc,
                            View view );
 extern void CreateBreak ( Document doc,
                             View view );
+extern Element InsertWithinHead ( Document doc,
+                                    View view,
+                                    int elementT );
 extern void CreateBase ( Document doc,
                            View view );
 extern void CreateMeta ( Document doc,
@@ -342,10 +354,11 @@ extern void CreateComment ( Document doc,
 extern void CreateDate ( Document doc,
                            View view );
 extern void CreateScript ( Document doc,
-                             View view );
+                             View view,
+                             ThotBool ExternalFile );
 extern ThotBool HTMLelementAllowed ( Document doc );
-extern void CreateHTMLelement ( int typeNum,
-                                  Document doc );
+extern ThotBool CreateHTMLelement ( int typeNum,
+                                      Document doc );
 extern void CreateParagraph ( Document doc,
                                 View view );
 extern void CreateHeading1 ( Document doc,
@@ -385,6 +398,10 @@ extern void CreateAddress ( Document doc,
 extern void DoTableCreation ( Document doc );
 extern void CreateTable ( Document doc,
                             View view );
+extern void SingleCreateTable ( Document doc,
+                                  View view );
+extern void DoCreateTable ( Document doc,
+                              View view );
 extern void CreateCaption ( Document doc,
                               View view );
 extern void CreateColgroup ( Document doc,
@@ -399,8 +416,13 @@ extern void CellVertExtend ( Document doc,
                                View view );
 extern void CellHorizExtend ( Document doc,
                                 View view );
+extern ThotBool CanMergeSelectedCells ( Document doc );
+extern void MergeSelectedCells ( Document doc,
+                                   View view );
+extern ThotBool CanVShrinkCell ( Document doc );
 extern void CellVertShrink ( Document doc,
                                View view );
+extern ThotBool CanHShrinkCell ( Document doc );
 extern void CellHorizShrink ( Document doc,
                                 View view );
 extern void SelectRow ( Document doc,
@@ -481,23 +503,7 @@ extern void FlushCache ( Document doc,
                            View view );
 extern void ConfigAmaya ( Document doc,
                             View view );
-extern void ConfigColor ( Document doc,
-                            View view );
-extern void ConfigGeometry ( Document doc,
-                               View view );
-extern void ConfigGeneral ( Document doc,
-                              View view );
-extern void ConfigBrowse ( Document doc,
-                             View view );
-extern void ConfigPublish ( Document doc,
-                              View view );
-extern void ConfigCache ( Document doc,
-                            View view );
-extern void ConfigProxy ( Document doc,
-                            View view );
 extern void SaveOptions ( Document doc,
-                            View view );
-extern void ConfigAnnot ( Document doc,
                             View view );
 extern void AnnotateDocument ( Document doc,
                                  View view );
@@ -537,10 +543,10 @@ extern void PropDocument ( Document doc,
                              View view );
 extern void CopyLockInformation ( Document doc,
                                     View view );
-extern void CooperationConfig ( Document doc,
-                                  View view );
 extern void LockIndicator ( Document doc,
                               View view );
+extern void SelectAll ( Document doc,
+                          View view );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

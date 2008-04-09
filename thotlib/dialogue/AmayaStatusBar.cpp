@@ -1,6 +1,8 @@
 #ifdef _WX
 
 #include "wx/wx.h"
+#include "wx/tooltip.h"
+#include "wx/xrc/xmlres.h"
 
 #include "thot_gui.h"
 #include "thot_sys.h"
@@ -35,6 +37,7 @@
 #include "AmayaParams.h"
 #include "appdialogue_wx_f.h"
 #include "displayview_f.h"
+#include "unstructchange_f.h"
 
 #include "AmayaStatusBar.h"
 /* the log button should be shifted on MacOS platforms */
@@ -44,37 +47,80 @@
 #define LOG_SHIFT  4
 #endif /* _MACOS */
 
+
+class AmayaStatusText : public wxStaticText
+{
+  DECLARE_EVENT_TABLE();
+public:
+  AmayaStatusText(wxWindow* parent, wxWindowID id, const wxString& str):
+    wxStaticText(parent, id, str, wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE)
+    {
+      SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_INSERT_MODE)));
+    }
+private:
+  void OnUpdate(wxUpdateUIEvent& event)
+  {
+    static wxString xml = TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_INSERT_MODE_XML));
+    static wxString txt = TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_INSERT_MODE_TEXT));
+    
+    ThotBool edit;
+    TtaGetEnvBoolean ("XML_EDIT_MODE", &edit);
+    
+    wxString str = edit?xml:txt;
+    if(GetLabel()!=str)
+      SetLabel(str);
+  }
+  
+  void OnDblClick(wxMouseEvent& event)
+  {
+    ThotBool edit;
+    TtaGetEnvBoolean ("XML_EDIT_MODE", &edit);
+    TtaSetEnvBoolean ("XML_EDIT_MODE", !edit, TRUE);
+    UpdateWindowUI();
+  }
+};
+BEGIN_EVENT_TABLE(AmayaStatusText, wxStaticText)
+  EVT_UPDATE_UI(wxID_ANY, AmayaStatusText::OnUpdate)
+  EVT_LEFT_UP(AmayaStatusText::OnDblClick)
+END_EVENT_TABLE()
+
+
+
 IMPLEMENT_DYNAMIC_CLASS(AmayaStatusBar, wxStatusBar)
 
 //-----------------------------------------------------------------------------
 // Event table: connect the events to the handler functions to process them
 //-----------------------------------------------------------------------------
 BEGIN_EVENT_TABLE(AmayaStatusBar, wxStatusBar)
-  EVT_BUTTON( -1, AmayaStatusBar::OnLogErrorButton )
+  EVT_BUTTON(XRCID("wxID_STATUS_LOG_BUTTON"), AmayaStatusBar::OnLogErrorButton )
   EVT_SIZE( AmayaStatusBar::OnSize )
 END_EVENT_TABLE()
+
+
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
 AmayaStatusBar::AmayaStatusBar( wxWindow * p_parent ) 
   : wxStatusBar(p_parent, wxID_ANY)
-    ,m_LogErrorBmp_Green(TtaGetResourcePathWX( WX_RESOURCES_ICON_16X16, "ledgreen.png"), wxBITMAP_TYPE_PNG)
     ,m_LogErrorBmp_Red(TtaGetResourcePathWX( WX_RESOURCES_ICON_16X16, "ledred.png"), wxBITMAP_TYPE_PNG)
+    ,m_LogErrorBmp_Green(TtaGetResourcePathWX( WX_RESOURCES_ICON_16X16, "ledgreen.png"), wxBITMAP_TYPE_PNG)
     ,m_pathCtrl(NULL)
 {
   TTALOGDEBUG_0( TTA_LOG_DIALOG, _T("AmayaStatusBar::AmayaStatusBar"));
 
 
   // setup the logerror button
-  m_pLogErrorButton = new wxBitmapButton( this, wxID_ANY, m_LogErrorBmp_Red,
+  m_pLogErrorButton = new wxBitmapButton( this, XRCID("wxID_STATUS_LOG_BUTTON"),
+                                          m_LogErrorBmp_Green,
                                           wxDefaultPosition, wxDefaultSize,
                                           wxBU_EXACTFIT | wxNO_BORDER);
   wxASSERT(m_pLogErrorButton);
   
   m_pathCtrl = new AmayaPathControl(this, wxID_ANY);
+  m_insertMode = new AmayaStatusText(this, wxID_ANY, wxT(""));
 
   // setup statusbar attributes
-  static const int widths[Field_Max] = { -1, -1, m_pLogErrorButton->GetSize().GetWidth()+LOG_SHIFT};
+  static const int widths[Field_Max] = { -1, -1, 48, m_pLogErrorButton->GetSize().GetWidth()+LOG_SHIFT};
   SetFieldsCount(Field_Max);
   SetStatusWidths(Field_Max, widths);
   SetMinHeight(m_pLogErrorButton->GetSize().GetHeight()+4);
@@ -117,6 +163,9 @@ void AmayaStatusBar::OnSize(wxSizeEvent& event)
   GetFieldRect(Field_Path, rect);
   m_pathCtrl->SetSize(rect.x+1, rect.y+1, rect.width-1, rect.height-1);
 
+  GetFieldRect(Field_InsertMode, rect);
+  m_insertMode->SetSize(rect.x+1, rect.y+3, rect.width-1, rect.height-3);
+  
   event.Skip();
 }
 
@@ -158,5 +207,6 @@ void AmayaStatusBar::SetStatusText(const wxString& text, int i)
 {
   wxStatusBar::SetStatusText(text, Field_Text);
 }
+
 
 #endif /* _WX */

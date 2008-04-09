@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2007
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -17,6 +17,9 @@
 #define THOT_EXPORT extern
 #include "amaya.h"
 #include "SVG.h"
+#ifdef _WX
+#include "appdialogue_wx.h"
+#endif /* _WX */
 
 #include "init_f.h"
 #include "query_f.h"
@@ -97,12 +100,11 @@ ThotBool AddLoadedImage (char *name, char *pathname,
   pImage->elImage = NULL;
   pImage->imageType = unknown_type;
   *desc = pImage;
-  TtaFreeMemory (localname);
   if (sameImage)
     {
       /* the image file exists for a different document */
       pImage->status = IMAGE_LOADED;
-      pImage->tempfile = GetLocalPath (doc, sameImage->tempfile);
+      pImage->tempfile = localname;
       TtaFileCopy (sameImage->tempfile, pImage->tempfile);
       if (sameImage->content_type)
         pImage->content_type = TtaStrdup (sameImage->content_type);
@@ -114,6 +116,7 @@ ThotBool AddLoadedImage (char *name, char *pathname,
     {
       pImage->status = IMAGE_NOT_LOADED;
       pImage->content_type = NULL;
+      TtaFreeMemory (localname);
       return (TRUE);
     }
 }
@@ -809,11 +812,13 @@ static void HandleImageLoaded (int doc, int status, char *urlName, char *outputf
   LoadedImageDesc    *desc;
   ElemImage          *ctxEl, *ctxPrev;
   ElementType         elType;
+  DisplayMode         dispMode;
   char               *tempfile;
   char               *base_url;
   char               *ptr;
   char               *dir, *name;
   char               *prefix;
+  int                 i, j;
   ThotBool            oldStructureChecking;
 
   /* restore the context */
@@ -838,18 +843,26 @@ static void HandleImageLoaded (int doc, int status, char *urlName, char *outputf
         TtaFreeMemory (base_url);
     }
 
-  if (doc == 0 ||DocumentURLs[doc])
+  if (doc == 0 || DocumentURLs[doc])
     {
       /* compute the tempfile name */
       if (desc->tempfile)
         TtaFreeMemory (desc->tempfile);
       tempfile = (char *)TtaGetMemory (MAX_LENGTH);
-      strcpy (tempfile, desc->localName);
+      strncpy (tempfile, desc->localName, MAX_LENGTH-1);
+      tempfile[MAX_LENGTH-1] = EOS;
       /* If this is an image document, point to the correct files */
       if (DocumentTypes[doc] == docImage)
         {
           SetContainerImageName (tempfile);
           desc->tempfile = tempfile;
+        }
+      else if (status < 0)
+        {
+          // load error
+          TtaFileUnlink (outputfile);
+          TtaFreeMemory (tempfile);
+          desc->tempfile = NULL;
         }
       else
         {
@@ -865,8 +878,19 @@ static void HandleImageLoaded (int doc, int status, char *urlName, char *outputf
             {
               prefix = ptr;
               ptr = strchr (prefix, '.');
-              if (ptr) 
-                *ptr = EOS;
+              if (ptr)
+                {
+                  // add the suffix (x.png differs to x.gif)
+                  i = strlen (ptr);
+                  if (i > 4)
+                    i = 4;
+                  for (j = 0; j < i; j++)
+                    {
+                      ptr[j] = ptr[j+1];
+                      ptr += strlen (ptr);
+                    }
+                  ptr[j] = EOS;
+                }
             }
           else
             prefix = "";
@@ -880,15 +904,6 @@ static void HandleImageLoaded (int doc, int status, char *urlName, char *outputf
             /* change the tempfile name */
             sprintf (desc->tempfile, "%s", outputfile); 
         }
-
-      /* save pathname */
-      /* That could make confusion if the image is redirected:
-         the registered name is not the original name
-         TtaFreeMemory (desc->originalName);
-         pathname = urlName;
-         desc->originalName = TtaGetMemory (strlen (pathname) + 1);
-         strcpy (desc->originalName, pathname);
-      */
 
       /* update desc->status in order to alert DisplayImage if the
          image was not found */	
@@ -906,8 +921,13 @@ static void HandleImageLoaded (int doc, int status, char *urlName, char *outputf
       /* memorize the mime type (in case we want to save the file later on) */
       if (ptr)
         desc->content_type = TtaStrdup (ptr);
+
       ctxEl = desc->elImage;
       desc->elImage = NULL;
+      /* Avoid too many redisplay */
+      dispMode = TtaGetDisplayMode (doc);
+      if (dispMode == DisplayImmediately)
+        TtaSetDisplayMode (doc, DeferredDisplay);
       while (ctxEl)
         {
           /* the image may be included using either an SRC, an EMBED,
@@ -918,11 +938,19 @@ static void HandleImageLoaded (int doc, int status, char *urlName, char *outputf
                 ctxEl->callback (doc, ctxEl->currentElement, desc->tempfile,
                                  ctxEl->extra, TRUE);
             }
+          else if (DocumentMeta[doc] && ctxEl->currentElement == DocumentMeta[doc]->link_icon)
+            {
+#ifdef _WX
+              TtaSetPageIcon (doc, 1, desc->tempfile);
+              DocumentMeta[doc]->link_icon = NULL;
+#endif /* _WX */
+            }
           else
             {
               elType = TtaGetElementType (ctxEl->currentElement);
               name = TtaGetSSchemaName (elType.ElSSchema);
               if ((strcmp (name, "HTML") == 0 &&
+                   desc->status == IMAGE_LOADED &&
                    (elType.ElTypeNum == HTML_EL_PICTURE_UNIT ||
                     elType.ElTypeNum == HTML_EL_Embed_ ||
                     elType.ElTypeNum == HTML_EL_Object ||
@@ -943,6 +971,9 @@ static void HandleImageLoaded (int doc, int status, char *urlName, char *outputf
           ctxEl = ctxEl->nextElement;
           TtaFreeMemory (ctxPrev);
         }
+      /* Restore the display mode */
+      if (dispMode == DisplayImmediately)
+        TtaSetDisplayMode (doc, dispMode);
     }
 }
 
@@ -1031,6 +1062,8 @@ ThotBool FetchImage (Document doc, Element el, char *imageURI, int flags,
   attr = NULL;
   FetchImage_ctx = NULL;
   update = FALSE;
+  attrType2.AttrSSchema = NULL;
+  attrType2.AttrTypeNum = 0;
   ret = TRUE;
   if (el || extra)
     {
@@ -1169,7 +1202,18 @@ ThotBool FetchImage (Document doc, Element el, char *imageURI, int flags,
                       if (!strncmp (pathname, "file:/", 6))
                         callback (doc, el, &pathname[6], extra, TRUE);
                       else
-                        callback (doc, el, &pathname[0], extra, TRUE);
+                        callback (doc, el, pathname, extra, TRUE);
+                    }
+                  else if (DocumentMeta[doc] &&
+                           el == DocumentMeta[doc]->link_icon)
+                    {
+#ifdef _WX
+                      if (!strncmp (pathname, "file:/", 6))
+                        TtaSetPageIcon (doc, 1, &pathname[6]);
+                      else
+                        TtaSetPageIcon (doc, 1, pathname);
+                      DocumentMeta[doc]->link_icon = NULL;
+#endif /* _WX */
                     }
                   else
                     DisplayImage (doc, el, NULL, pathname, NULL);
@@ -1180,6 +1224,14 @@ ThotBool FetchImage (Document doc, Element el, char *imageURI, int flags,
                   if (callback)
                     {
                       callback (doc, el, desc->tempfile, extra, FALSE);
+                    }
+                  else if (DocumentMeta[doc] &&
+                           el == DocumentMeta[doc]->link_icon)
+                    {
+#ifdef _WX
+                      TtaSetPageIcon (doc, 1, desc->tempfile);
+                      DocumentMeta[doc]->link_icon = NULL;
+#endif /* _WX */
                     }
                   else
                     DisplayImage (doc, el, desc, NULL, desc->content_type);
@@ -1222,6 +1274,33 @@ ThotBool FetchImage (Document doc, Element el, char *imageURI, int flags,
   TtaHandlePendingEvents ();
   return ret;
 }
+
+/*----------------------------------------------------------------------
+  FetchIcon
+  ----------------------------------------------------------------------*/
+static void FetchIcon (Document doc, int flags, Element el,
+                         char *currentURL, AttributeType attrType)
+{
+  Attribute           attr;
+  char               *imageURI, *utf8value;
+  int                 length = 0;
+
+  attr = TtaGetAttribute (el, attrType);
+  if (attr)
+    length = TtaGetTextAttributeLength (attr);
+  if (length > 0)
+    {
+      /* allocate some memory */
+      utf8value = (char *)TtaGetMemory (length + 7);
+      TtaGiveTextAttributeValue (attr, utf8value, &length);
+      imageURI = (char *)TtaConvertMbsToByte ((unsigned char *)utf8value,
+                                              TtaGetDefaultCharset ());
+      TtaFreeMemory (utf8value);
+      FetchImage (doc, el, imageURI, flags, NULL, NULL);
+      TtaFreeMemory (imageURI);
+    }
+ }
+
 
 /*----------------------------------------------------------------------
   FetchImages fetches images linked by attrType1 or attrType2 attributes.  
@@ -1378,9 +1457,10 @@ static void FetchImages (Document doc, int flags, Element elSubTree,
   Returns TRUE if the the transfer succeeds without being stopped;
   Otherwise, returns FALSE.
   ----------------------------------------------------------------------*/
- ThotBool FetchAndDisplayImages (Document doc, int flags, Element elSubTree)
+ThotBool FetchAndDisplayImages (Document doc, int flags, Element elSubTree)
 {
   AttributeType       attrType, attrType1, attrType2;
+  DisplayMode         dispMode;
   char               *currentURL;
   ThotBool            stopped_flag, loadImages, loadObjects;
 
@@ -1407,6 +1487,10 @@ static void FetchImages (Document doc, int flags, Element elSubTree,
   /* register the current URL */
   currentURL = TtaStrdup (DocumentURLs[doc]);
 
+  /* Avoid too many redisplay */
+  dispMode = TtaGetDisplayMode (doc);
+  if (dispMode == DisplayImmediately)
+    TtaSetDisplayMode (doc, DeferredDisplay);
   /* We are currently fetching images for this document */
   /* during this time LoadImage has not to stop transfer */
   /* prepare the attribute to be searched */
@@ -1415,6 +1499,13 @@ static void FetchImages (Document doc, int flags, Element elSubTree,
     /* there are some HTML elements in this documents. 
        Get all 'img' or 'object' or 'embed' elements */
     {
+      if (DocumentMeta[doc] && DocumentMeta[doc]->link_icon &&
+          loadImages && elSubTree == NULL)
+        {
+          attrType.AttrTypeNum = HTML_ATTR_HREF_;
+          FetchIcon (doc, flags, DocumentMeta[doc]->link_icon,
+                       currentURL, attrType);
+        }
       /* search all elements having an attribute SRC */
       attrType1.AttrSSchema = attrType.AttrSSchema;
       attrType2.AttrSSchema = attrType.AttrSSchema;
@@ -1442,6 +1533,10 @@ static void FetchImages (Document doc, int flags, Element elSubTree,
     stopped_flag = FALSE;
   else
     stopped_flag = TRUE;
+
+  /* Restore the display mode */
+  if (dispMode == DisplayImmediately)
+    TtaSetDisplayMode (doc, dispMode);
   
   /* Images fetching is now finished */
   TtaFreeMemory (currentURL);

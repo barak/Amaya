@@ -10,13 +10,7 @@ extern ThotBool IsCurrentSelectionSVG ( void );
 extern ThotBool IsCurrentSelectionContainsUseElement ( void );
 extern void AddNewModelIntoLibraryForm ( Document doc,
                                          View view );
-extern void CallbackLibrary ( int ref,
-                              int typedata,
-                              char *data );
 extern void CloseLibrary ( Document doc );
-extern void CreateNewLibraryDialog ( Document doc,
-                                     View view );
-extern void ShowLibraryBrowser ( void );
 extern int SVGLibraryListItemNumber ( char *buffer );
 extern char *IsSVGCatalogueExist ( char *data );
 extern void AddGraphicalObjectIntoCatalogue ( Document doc,
@@ -79,11 +73,6 @@ extern ThotBool WriteInterSessionLibraryFileManager ( void );
 extern void SearchGraphicalObjectByTitle ( char *GraphicalObjectTitle );
 extern void RemoveLibraryModel ( Document deletedDoc,
                                  Element deletedEl );
-extern void AddLibraryButton ( Document doc,
-                               View view );
-extern void SwitchIconLibrary ( Document doc,
-                                View view,
-                                ThotBool state );
 extern void OpenLibraryCallback ( Document doc,
                                   View view,
                                   char *text );
@@ -94,13 +83,7 @@ extern ThotBool IsCurrentSelectionSVG ( void );
 extern ThotBool IsCurrentSelectionContainsUseElement ( void );
 extern void AddNewModelIntoLibraryForm ( Document doc,
                                            View view );
-extern void CallbackLibrary ( int ref,
-                                int typedata,
-                                char *data );
 extern void CloseLibrary ( Document doc );
-extern void CreateNewLibraryDialog ( Document doc,
-                                       View view );
-extern void ShowLibraryBrowser ( void );
 extern int SVGLibraryListItemNumber ( char *buffer );
 extern char *IsSVGCatalogueExist ( char *data );
 extern void AddGraphicalObjectIntoCatalogue ( Document doc,
@@ -163,11 +146,6 @@ extern ThotBool WriteInterSessionLibraryFileManager ( void );
 extern void SearchGraphicalObjectByTitle ( char *GraphicalObjectTitle );
 extern void RemoveLibraryModel ( Document deletedDoc,
                                    Element deletedEl );
-extern void AddLibraryButton ( Document doc,
-                                 View view );
-extern void SwitchIconLibrary ( Document doc,
-                                  View view,
-                                  ThotBool state );
 extern void OpenLibraryCallback ( Document doc,
                                     View view,
                                     char *text );

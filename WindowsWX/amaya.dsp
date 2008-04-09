@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /GX /O2 /I "../libpng/zlib" /I "..\..\wxWidgets\lib\vc_dll\mswu" /I ".\\" /I "..\..\wxWidgets\include" /I "..\..\wxWidgets\contrib\include" /I "..\..\wxWidgets\src\jpeg" /I "..\..\wxWidgets\src\tiff" /I "..\..\wxWidgets\src\png" /I "..\..\freetype\include" /I "..\..\libwww\modules\expat\lib" /I "..\thotlib\internals\h" /I "..\thotlib\internals\var" /I ".\amaya" /I "..\amaya" /I "..\amaya\f" /I "..\thotlib\include" /I "..\..\libwww\Library\src" /I "..\thotlib\internals\f" /I "..\annotlib" /I "..\annotlib\f" /I "..\davlib\h" /I "..\davlib\f" /I "..\davlib\tree\h" /D "WWW_WIN_DLL" /D "SOCKS" /D "BOOKMARKS" /D "STDC_HEADERS" /D "XMD_H" /D "EXPAT_PARSER" /D "XML_DTD" /D "XML_NS" /D "_SVG" /D "TEMPLATES" /D "THOT_TOOLTIPS" /D "ANNOTATIONS" /D "XML_GENERIC" /D "DAV" /D "__WXMSW__" /D WINVER=0x0400 /D "UNICODE" /D "_UNICODE" /D "_WINDOWS" /D "_GL" /D "WIN32" /D "_WX" /D wxUSE_GUI=1 /D "WXUSINGDLL" /YX /FD /TP /c
+# ADD CPP /nologo /MD /W3 /GX /O2 /I "../libpng/zlib" /I "..\..\wxWidgets\lib\vc_dll\mswu" /I ".\\" /I "..\..\wxWidgets\include" /I "..\..\wxWidgets\contrib\include" /I "..\..\wxWidgets\src\jpeg" /I "..\..\wxWidgets\src\tiff" /I "..\..\wxWidgets\src\png" /I "..\..\freetype\include" /I "..\..\libwww\modules\expat\lib" /I "..\thotlib\internals\h" /I "..\thotlib\internals\var" /I ".\amaya" /I "..\amaya" /I "..\amaya\f" /I "..\thotlib\include" /I "..\..\libwww\Library\src" /I "..\thotlib\internals\f" /I "..\annotlib" /I "..\annotlib\f" /I "..\davlib\h" /I "..\davlib\f" /I "..\davlib\tree\h" /D "WWW_WIN_DLL" /D "SOCKS" /D "STDC_HEADERS" /D "XMD_H" /D "EXPAT_PARSER" /D "XML_DTD" /D "XML_NS" /D "_SVG" /D "TEMPLATES" /D "THOT_TOOLTIPS" /D "ANNOTATIONS" /D "XML_GENERIC" /D "DAV" /D "__WXMSW__" /D WINVER=0x0400 /D "UNICODE" /D "_UNICODE" /D "_WINDOWS" /D "_GL" /D "WIN32" /D "_WX" /D wxUSE_GUI=1 /D "WXUSINGDLL" /YX /FD /TP /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /o /win32 "NUL"
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /o /win32 "NUL"
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -53,11 +53,11 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /machine:I386
-# ADD LINK32 wxbase26u_xml.lib wxmsw26u_gl.lib wxmsw26u_xrc.lib wxmsw26u_adv.lib wxmsw26u_core.lib wxbase26u.lib wxbase26u_net.lib freetype2110.lib wsock32.lib comctl32.lib rpcrt4.lib winmm.lib advapi32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib opengl32.lib glu32.lib /nologo /subsystem:windows /incremental:yes /machine:I386 /nodefaultlib:"LIBC.lib" /libpath:"..\..\wxWidgets\lib\vc_dll" /libpath:"..\..\freetype\objs"
+# ADD LINK32 wxjpeg.lib wxmsw28u_aui.lib wxbase28u_xml.lib wxmsw28u_gl.lib wxmsw28u_xrc.lib wxmsw28u_adv.lib wxmsw28u_core.lib wxbase28u.lib wxbase28u_net.lib freetype2110.lib wsock32.lib comctl32.lib rpcrt4.lib winmm.lib advapi32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib opengl32.lib glu32.lib /nologo /subsystem:windows /incremental:yes /machine:I386 /nodefaultlib:"LIBC.lib" /libpath:"..\..\wxWidgets\lib\vc_dll" /libpath:"..\..\freetype\objs"
 # SUBTRACT LINK32 /pdb:none
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
-PreLink_Cmds=copy                                               ..\..\wxWidgets\lib\vc_dll\*.dll                                               bin\ 
+PreLink_Cmds=copy       ..\..\wxWidgets\lib\vc_dll\*.dll       bin\      	copy       ..\..\wxWidgets\lib\vc_dll\wxjpeg.lib       bin\ 
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "amaya - Win32 Debug"
@@ -74,7 +74,7 @@ PreLink_Cmds=copy                                               ..\..\wxWidgets\
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /Zi /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /YX /FD /c
-# ADD CPP /nologo /MDd /W3 /GR /GX /ZI /Od /I "../libpng/zlib" /I "..\..\wxWidgets\lib\vc_dll\mswud" /I ".\\" /I "..\..\wxWidgets\include" /I "..\..\wxWidgets\contrib\include" /I "..\..\wxWidgets\src\jpeg" /I "..\..\wxWidgets\src\tiff" /I "..\..\wxWidgets\src\png" /I "..\..\freetype\include" /I "..\..\libwww\modules\expat\lib" /I "..\thotlib\internals\h" /I "..\thotlib\internals\var" /I ".\amaya" /I "..\amaya" /I "..\amaya\f" /I "..\thotlib\include" /I "..\..\libwww\Library\src" /I "..\thotlib\internals\f" /I "..\annotlib" /I "..\annotlib\f" /I "..\davlib\h" /I "..\davlib\f" /I "..\davlib\tree\h" /D "WWW_WIN_DLL" /D "SOCKS" /D "BOOKMARKS" /D "STDC_HEADERS" /D "XMD_H" /D "EXPAT_PARSER" /D "XML_DTD" /D "XML_NS" /D "_SVG" /D "TEMPLATES" /D "THOT_TOOLTIPS" /D "ANNOTATIONS" /D "XML_GENERIC" /D "DAV" /D "__WXMSW__" /D WINVER=0x0400 /D "UNICODE" /D "_UNICODE" /D "_WINDOWS" /D "_GL" /D "WIN32" /D "_WX" /D wxUSE_GUI=1 /D "WXUSINGDLL" /FR /YX /FD /GZ /TP /c
+# ADD CPP /nologo /MDd /W3 /GR /GX /ZI /Od /I "../libpng/zlib" /I "..\..\wxWidgets\lib\vc_dll\mswud" /I ".\\" /I "..\..\wxWidgets\include" /I "..\..\wxWidgets\contrib\include" /I "..\..\wxWidgets\src\jpeg" /I "..\..\wxWidgets\src\tiff" /I "..\..\wxWidgets\src\png" /I "..\..\freetype\include" /I "..\..\libwww\modules\expat\lib" /I "..\thotlib\internals\h" /I "..\thotlib\internals\var" /I ".\amaya" /I "..\amaya" /I "..\amaya\f" /I "..\thotlib\include" /I "..\..\libwww\Library\src" /I "..\thotlib\internals\f" /I "..\annotlib" /I "..\annotlib\f" /I "..\davlib\h" /I "..\davlib\f" /I "..\davlib\tree\h" /D "WWW_WIN_DLL" /D "SOCKS" /D "STDC_HEADERS" /D "XMD_H" /D "EXPAT_PARSER" /D "XML_DTD" /D "XML_NS" /D "_SVG" /D "TEMPLATES" /D "THOT_TOOLTIPS" /D "ANNOTATIONS" /D "XML_GENERIC" /D "DAV" /D "__WXMSW__" /D WINVER=0x0400 /D "UNICODE" /D "_UNICODE" /D "_WINDOWS" /D "_GL" /D "WIN32" /D "_WX" /D wxUSE_GUI=1 /D "WXUSINGDLL" /FR /YX /FD /GZ /TP /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /o /win32 "NUL"
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /o /win32 "NUL"
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -84,11 +84,11 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 wxbase26ud_xml.lib wxmsw26ud_gl.lib wxmsw26ud_xrc.lib wxmsw26ud_adv.lib wxmsw26ud_core.lib wxbase26ud.lib wxbase26ud_net.lib freetype2110_D.lib wsock32.lib comctl32.lib rpcrt4.lib winmm.lib advapi32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib opengl32.lib glu32.lib /nologo /subsystem:windows /debug /machine:I386 /nodefaultlib:"LIBCD.lib" /nodefaultlib:"LIBCMTD.lib" /libpath:"..\..\wxWidgets\lib\vc_dll" /libpath:"..\..\freetype\objs"
+# ADD LINK32 wxjpeg.lib wxmsw28ud_aui.lib wxbase28ud_xml.lib wxmsw28ud_gl.lib wxmsw28ud_xrc.lib wxmsw28ud_adv.lib wxmsw28ud_core.lib wxbase28ud.lib wxbase28ud_net.lib freetype2110_D.lib wsock32.lib comctl32.lib rpcrt4.lib winmm.lib advapi32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib opengl32.lib glu32.lib /nologo /subsystem:windows /debug /machine:I386 /nodefaultlib:"LIBCD.lib" /nodefaultlib:"LIBCMTD.lib" /libpath:"..\..\wxWidgets\lib\vc_dll" /libpath:"..\..\freetype\objs"
 # SUBTRACT LINK32 /pdb:none
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
-PreLink_Cmds=copy                                               ..\..\wxWidgets\lib\vc_dll\*.dll                                               bin\ 
+PreLink_Cmds=copy        ..\..\wxWidgets\lib\vc_dll\*.dll        bin\      	copy       ..\..\wxWidgets\lib\vc_dll\wxjpeg.lib       bin\ 
 # End Special Build Tool
 
 !ENDIF 
@@ -122,7 +122,7 @@ SOURCE=..\amaya\wxdialog\DocInfoDlgWX.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\amaya\wxdialog\EnumListDlgWX.cpp
+SOURCE=..\amaya\wxdialog\FontDlgWX.cpp
 # End Source File
 # Begin Source File
 
@@ -138,6 +138,10 @@ SOURCE=..\amaya\wxdialog\InitConfirmDlgWX.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\amaya\wxdialog\ListBoxBook.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\amaya\wxdialog\ListDlgWX.cpp
 # End Source File
 # Begin Source File
@@ -147,14 +151,6 @@ SOURCE=..\amaya\wxdialog\ListEditDlgWX.cpp
 # Begin Source File
 
 SOURCE=..\amaya\wxdialog\MakeIdDlgWX.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\amaya\wxdialog\NewTemplateDocDlgWX.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\amaya\wxdialog\NumDlgWX.cpp
 # End Source File
 # Begin Source File
 
@@ -203,10 +199,6 @@ SOURCE=..\amaya\wxdialog\SpellCheckDlgWX.cpp
 # Begin Source File
 
 SOURCE=..\amaya\wxdialog\StyleDlgWX.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\amaya\wxdialog\TextDlgWX.cpp
 # End Source File
 # Begin Source File
 
@@ -355,6 +347,10 @@ SOURCE=..\amaya\query.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\amaya\wxdialog\StyleListToolPanel.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\amaya\styleparser.c
 # End Source File
 # Begin Source File
@@ -472,10 +468,6 @@ SOURCE=.\libwww.lib
 # Begin Source File
 
 SOURCE=.\libraptor.lib
-# End Source File
-# Begin Source File
-
-SOURCE=.\librdf\Debug\librdf.lib
 # End Source File
 # End Target
 # End Project

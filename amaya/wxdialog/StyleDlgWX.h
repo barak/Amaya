@@ -21,7 +21,7 @@ public:
   // Constructor.
   StyleDlgWX( int ref,
               wxWindow* parent );
-  void SetValue (char *property, char *value);
+  void SetValue (const char *property, char *value);
 
   // Destructor.
   virtual ~StyleDlgWX();
@@ -50,9 +50,8 @@ private:
 private:
   // "Color" tab
   wxColourData colour_data;
-  wxColour     m_OffColour;
-  wxColour     m_OnColour;
   int          m_ref;
+  wxColour     m_OffColour;
   static bool  m_OnApplyLock;
 };
 

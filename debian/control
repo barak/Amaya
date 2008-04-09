@@ -3,14 +3,14 @@ Section: web
 Priority: optional
 Maintainer: Regis Boudin <regis@debian.org>
 Uploaders: Anand Kumria <wildfire@progsoc.org>
-Build-Depends: debhelper (>= 5.0.0), libpng12-dev, libjpeg62-dev, libglu1-mesa-dev | libglu-dev, libfreetype6-dev, libwxgtk2.6-dev, libraptor1-dev, libwww-dev, libx11-dev
+Build-Depends: debhelper (>= 5.0.0), libpng12-dev, libjpeg62-dev, libglu1-mesa-dev | libglu-dev, libfreetype6-dev, libwxgtk2.8-dev, libraptor1-dev, libwww-dev, libx11-dev
 Standards-Version: 3.7.3
 Homepage: http://www.w3.org/Amaya
 
 Package: amaya
 Architecture: any
 Depends: amaya-data (= ${source:Version}), ${shlibs:Depends}, ${misc:Depends}
-Recommends: amaya-doc
+Recommends: amaya-doc, ttf-freefont
 Provides: www-browser
 Description: Web Browser, HTML Editor and Testbed for Draft W3C standards
  Amaya is a WYSIWYG HTML Editor and browser with support for many 

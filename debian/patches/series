@@ -2,6 +2,4 @@ cflags_cleanup.diff
 rdf_conf_in_conf.diff
 raptor.diff
 enable_system_libwww.diff
-security_fix.diff
-fix_ftbfs64_again.diff
-xdg_comply.diff
+desktop_file_fix.patch

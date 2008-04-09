@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2007
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -50,7 +50,7 @@ ThotBool WithinLastPastedCell (Element el)
 
 /*----------------------------------------------------------------------
   GetSiblingRow
-  returns the sibling row before or after the cuttent row.
+  returns the sibling row before or after the current row.
   ----------------------------------------------------------------------*/
 Element GetSiblingRow (Element row, ThotBool before, ThotBool inMath)
 {
@@ -82,7 +82,7 @@ Element GetSiblingRow (Element row, ThotBool before, ThotBool inMath)
   GetSiblingCell
   returns the sibling cell before or after the current cell.
   ----------------------------------------------------------------------*/
-static Element GetSiblingCell (Element cell, ThotBool before, ThotBool inMath)
+Element GetSiblingCell (Element cell, ThotBool before, ThotBool inMath)
 {
   ElementType         elType;
   SSchema             cellSS;
@@ -201,7 +201,7 @@ static Element GetSiblingCell (Element cell, ThotBool before, ThotBool inMath)
   returns the first cell contained in a given row.
   Element row must be a table row.
   ----------------------------------------------------------------------*/
-static Element GetFirstCellOfRow (Element row, ThotBool inMath)
+Element GetFirstCellOfRow (Element row, ThotBool inMath)
 {
   Element     firstCell, el;
   ElementType rowType, elType;
@@ -633,6 +633,7 @@ static void CreateCellsInRowGroup (Element group, Element prevCol,
   ThotBool         span;
 
   row = TtaGetFirstChild (group);
+  elType.ElTypeNum = 0;
   /* skip the first elements that are now rows */
   if (row)
     elType = TtaGetElementType (row);
@@ -968,7 +969,7 @@ ThotBool RemoveColumn (Element colhead, Document doc, ThotBool ifEmpty,
                   /* register the deleted cells only if the column is
                      deleted explicitely by the user */
                   if (!ifEmpty)
-                    if (TtaPrepareUndo (doc))
+                    if (TtaHasUndoSequence (doc))
                       {
                         TtaRegisterElementDelete (cell, doc);
                         /* change the value of "info" in the latest cell
@@ -1012,7 +1013,7 @@ ThotBool RemoveColumn (Element colhead, Document doc, ThotBool ifEmpty,
             }
           TtaDeleteTree (colhead, doc);
           if (!ifEmpty)
-            if (TtaPrepareUndo (doc))
+            if (TtaHasUndoSequence (doc))
               /* The value of "info" in the latest cell deletion recorded in
                  the Undo queue should be 4 to allow procedure CellPasted to
                  regenerate a column head for the last cell when undoing
@@ -1026,11 +1027,11 @@ ThotBool RemoveColumn (Element colhead, Document doc, ThotBool ifEmpty,
 }
 
 /*----------------------------------------------------------------------
-  NextRow
+  NextTableRow
   return the next row. Takes into account possible Template elements
   enclosing the given row or the next one.
   ----------------------------------------------------------------------*/
-static Element NextRow (Element row)
+Element NextTableRow (Element row)
 {
   Element       next, child, ancestor, prev;
   ElementType   elType;
@@ -1060,7 +1061,7 @@ static Element NextRow (Element row)
             return child;
           else
             // ignore empty template elements
-            return NextRow (next);
+            return NextTableRow (next);
         }
     }
   else
@@ -1206,7 +1207,7 @@ void CheckAllRows (Element table, Document doc, ThotBool placeholder,
       group = TtaGetParent (row);
       while (row)
         {
-          nextRow = NextRow (row);
+          nextRow = NextTableRow (row);
           elType = TtaGetElementType (row);
           if ((!inMath && elType.ElTypeNum == rowType) ||
               (inMath && (elType.ElTypeNum == MathML_EL_MTR ||
@@ -1521,13 +1522,12 @@ void CheckAllRows (Element table, Document doc, ThotBool placeholder,
 void CheckTable (Element table, Document doc)
 {
   ElementType         elType;
-  Element             el, columnHeads, thead, tfoot, firstcolhead,
-    tbody, Tablebody, prevrow,
-    prevEl, nextEl, enclosingTable;
+  Element             el, columnHeads, thead, tfoot, firstcolhead, temp_el;
+  Element             tbody, table_body, prevrow, prevEl, nextEl, enclosingTable;
   AttributeType       attrType;
   Attribute           attr;
   ThotBool            previousStructureChecking;
-  ThotBool            before, inMath;
+  ThotBool            before, inMath, inTemplate;
 
   if (DocumentMeta[doc] && DocumentMeta[doc]->isTemplate)
     /* do not check the structure of a table when loading a template.
@@ -1541,27 +1541,51 @@ void CheckTable (Element table, Document doc)
       columnHeads = NULL;
       thead = NULL;
       tfoot = NULL;
-      Tablebody = NULL;
+      table_body = NULL;
       elType = TtaGetElementType (table);
       inMath = TtaSameSSchemas (elType.ElSSchema, TtaGetSSchema ("MathML", doc));
+      inTemplate = FALSE;
       el = TtaGetFirstChild (table);
+      temp_el = NULL;
       while (el)
         {
           elType = TtaGetElementType (el);
-          if ((inMath && elType.ElTypeNum == MathML_EL_MTable_head) ||
+          if (!strcmp (TtaGetSSchemaName (elType.ElSSchema), "Template"))
+            {
+              // move down the template element
+              temp_el = el;
+              inTemplate = TRUE;
+            }
+          else if ((inMath && elType.ElTypeNum == MathML_EL_MTable_head) ||
               (!inMath && elType.ElTypeNum == HTML_EL_Table_head))
             columnHeads = el;
           else if ((inMath && elType.ElTypeNum == MathML_EL_MTable_body) ||
                    (!inMath && elType.ElTypeNum == HTML_EL_Table_body))
             {
-              if (Tablebody == NULL)
-                Tablebody = el;
+              if (table_body == NULL)
+                table_body = el;
             }
           else if (!inMath && elType.ElTypeNum == HTML_EL_thead)
             thead = el;
           else if (!inMath && elType.ElTypeNum == HTML_EL_tfoot)
             tfoot = el;
-          TtaNextSibling (&el);
+          prevEl = el;
+          if (temp_el)
+            {
+              el = TtaGetFirstChild (temp_el);
+              temp_el = NULL;
+            }
+          else
+            TtaNextSibling (&el);
+          if (el == NULL && inTemplate)
+            {
+              // move up the template element
+              el = TtaGetParent (prevEl);
+              if (el == table)
+                el = NULL;
+              else
+                TtaNextSibling (&el);
+            }
         }
 
       if (columnHeads != NULL)
@@ -1627,24 +1651,24 @@ void CheckTable (Element table, Document doc)
                 }
             }
 
-          if (Tablebody == NULL)
+          if (table_body == NULL)
             {
               /* There is no Table_body element. Create a Table_body element */
               if (inMath)
                 elType.ElTypeNum = MathML_EL_MTable_body;
               else
                 elType.ElTypeNum = HTML_EL_Table_body;
-              Tablebody = TtaNewElement (doc, elType);
-              if (Tablebody != NULL)
+              table_body = TtaNewElement (doc, elType);
+              if (table_body != NULL)
                 {
                   if (thead != NULL)
-                    TtaInsertSibling (Tablebody, thead, FALSE, doc);
+                    TtaInsertSibling (table_body, thead, FALSE, doc);
                   else
-                    TtaInsertSibling (Tablebody, columnHeads, FALSE, doc);
+                    TtaInsertSibling (table_body, columnHeads, FALSE, doc);
                   /* collect all Table_row elements and put them in the new
                      Table_body */
                   tbody = NULL;
-                  el = Tablebody;
+                  el = table_body;
                   TtaNextSibling (&el);
                   prevrow = NULL;
                   prevEl = NULL;
@@ -1664,7 +1688,7 @@ void CheckTable (Element table, Document doc)
                               elType.ElTypeNum = HTML_EL_tbody;
                               tbody = TtaNewElement (doc, elType);
                               if (prevEl == NULL)
-                                TtaInsertFirstChild (&tbody, Tablebody, doc);
+                                TtaInsertFirstChild (&tbody, table_body, doc);
                               else
                                 TtaInsertSibling (tbody, prevEl, FALSE, doc);
                               TtaInsertFirstChild (&el, tbody, doc);
@@ -1684,7 +1708,7 @@ void CheckTable (Element table, Document doc)
                             }
                           TtaRemoveTree (el, doc);
                           if (prevEl == NULL)
-                            TtaInsertFirstChild (&el, Tablebody, doc);
+                            TtaInsertFirstChild (&el, table_body, doc);
                           else
                             TtaInsertSibling (el, prevEl, FALSE, doc);
                           prevEl = el;
@@ -1694,11 +1718,11 @@ void CheckTable (Element table, Document doc)
                 }
             }
 
-          /* if there is a tfoot element, put it after the Tablebody element */
-          if (tfoot && Tablebody)
+          /* if there is a tfoot element, put it after the table_body element */
+          if (tfoot && table_body)
             {
               TtaRemoveTree (tfoot, doc);
-              TtaInsertSibling (tfoot, Tablebody, FALSE, doc);
+              TtaInsertSibling (tfoot, table_body, FALSE, doc);
             }
           /* associate each cell with a column */
           CheckAllRows (table, doc, FALSE, FALSE);
@@ -2498,6 +2522,21 @@ static void ClearColumn (Element colhead, Document doc)
 }
 
 /*----------------------------------------------------------------------
+  CheckDeleteParentTable checks if the table parent has been deleted
+  ----------------------------------------------------------------------*/
+void CheckDeleteParentTable (Element el)
+{
+  if (DeletedTable && el &&
+      (ParentDeletedTable == el ||
+       TtaGetParent (ParentDeletedTable) == NULL))
+    {
+      // the deleted table is the registered table
+      DeletedTable = NULL;
+      ParentDeletedTable = NULL;
+    }
+}
+
+/*----------------------------------------------------------------------
   DeleteTable
   A table will be deleted by the user.
   ----------------------------------------------------------------------*/
@@ -2545,6 +2584,8 @@ ThotBool DeleteTBody (NotifyElement * event)
   el = event->element;
   // skip siblings that are not tbody elements
   sibling = el;
+  elType.ElSSchema = NULL;
+  elType.ElTypeNum = 0;
   TtaNextSibling (&sibling);
   if (sibling)
     elType = TtaGetElementType (sibling);
@@ -2582,7 +2623,7 @@ ThotBool DeleteTBody (NotifyElement * event)
     return FALSE;		/* let Thot perform normal operation */
   else
     {
-      if (TtaPrepareUndo (doc))
+      if (TtaHasUndoSequence (doc))
         TtaRegisterElementDelete (el, doc);
       // prepare the next selection
       sibling = GetNoTemplateSibling (el, FALSE);
@@ -3152,7 +3193,7 @@ void TablebodyDeleted (NotifyElement * event)
     }
   if (empty)
     {
-      if (TtaPrepareUndo (doc))
+      if (TtaHasUndoSequence (doc))
         /* register that the table is deleted */
         TtaRegisterElementDelete (table, doc);
       TtaDeleteTree (table, doc);
@@ -3243,6 +3284,9 @@ void RowPasted (NotifyElement * event)
 
   /* get the first column head in the table */
   colhead = TtaSearchTypedElement (elType, SearchInTree, table);
+  if (colhead == NULL)
+    // the table does have any colhead 
+    return;
 
   /* get the first cell in the pasted row */
   prevCell = NULL;
@@ -3499,6 +3543,8 @@ int GetActualColspan (Element cell, ThotBool inMath)
   attr = TtaGetAttribute (cell, attrType);
   if (attr)
     TtaGiveReferenceAttributeValue (attr, &colhead);
+  else
+    colhead = NULL;
   span = 1;
   while (colhead)
     {

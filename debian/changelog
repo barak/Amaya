@@ -1,3 +1,13 @@
+amaya (10.0.1-1) experimental; urgency=low
+
+  * New upstream release. Remove the 2 merged patches (ftbfs on 64bits arches
+    and security fix). Build-depend on wx 2.8, and upload to experimental.
+  * Recommend ttf-freefont. (Closes: #462068)
+  * Remove bashism from debian/rules. (Closes: #472907). Many thanks to Raphael
+    Geissert for the report and the patch.
+
+ -- Regis Boudin <regis@debian.org>  Wed, 09 Apr 2008 22:05:49 +0100
+
 amaya (9.55~dfsg.0-1) unstable; urgency=high
 
   * New upstream release. Using the tarball respin fixing a bug. Let's call
@@ -9,7 +19,9 @@ amaya (9.55~dfsg.0-1) unstable; urgency=high
   * Switch to debhelper version 5.
   * Don't depend on ttf-freefont (Closes: #423585).
   * Drop fix_ftbfs64.diff, merged upstream.
-  * New patch, fix_ftbfs64_again.diff.
+  * New patch, fix_ftbfs64_again.diff. Obviously, even after half a dozen
+    patches fixing the same problem, some people still don't get that casting
+    a pointer to an int is not a good idea...
   * New cflags_cleanup.diff patch, getting rid of the forces CFLAGS and
     CXXFLAGS and was originally in rdf_conf_in_conf.diff, partially merged 
     upstream...
@@ -25,9 +37,6 @@ amaya (9.55~dfsg.0-1) unstable; urgency=high
     the rerolled upstream tarball still works without the debian patch applied.
   * Update the menu file to the new structure, change from "Apps/Net" to
     "Applications/Web Development".
-  * Move the .desktop file from amaya-data to amaya, so it can find the binary
-    and make lintian happy. No need to conflict, as the files have different
-    names
 
  -- Regis Boudin <regis@debian.org>  Wed, 18 Jul 2007 23:15:23 +0100
 

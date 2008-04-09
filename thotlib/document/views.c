@@ -524,6 +524,16 @@ int CreateAbstractImage (PtrDocument pDoc, int v, PtrSSchema pSS,
 }
 
 /*----------------------------------------------------------------------
+  IsEmptyDocument returns TRUE when the document is an empty document
+  ----------------------------------------------------------------------*/
+ThotBool IsEmptyDocument (PtrDocument pDoc)
+{
+  if (pDoc && pDoc->DocDName && !strcmp (pDoc->DocDName, "empty"))
+    return TRUE;
+  return FALSE;
+}
+
+/*----------------------------------------------------------------------
    OpenCreatedView ouvre une vue dont on a deja cree' l'image        
    pDoc: document concerne'.                               
    view: numero de la vue a ouvrir           
@@ -569,8 +579,6 @@ void OpenCreatedView (PtrDocument pDoc, int view,
   
       /* the new document needs a new frame */
       int doc_id = IdentDocument(pDoc);
-      
-      TtaMakePage(window_id, page_id);
 
       frame = TtaMakeFrame( pSS->SsName,
                             schView,
@@ -618,6 +626,9 @@ void OpenCreatedView (PtrDocument pDoc, int view,
         }
       pDoc->DocViewFrame[view - 1] = frame;
       pDoc->DocViewVolume[view - 1] = volume;
+      // change the default background of an empty document
+      if (IsEmptyDocument (pDoc) && pDoc->DocViewRootAb[view - 1])
+        pDoc->DocViewRootAb[view - 1]->AbBackground = -1;
       ChangeConcreteImage (frame, &h, pDoc->DocViewRootAb[view - 1]);
       DisplayFrame (frame);
       ShowSelection (pDoc->DocViewRootAb[view - 1], TRUE);

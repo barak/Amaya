@@ -93,7 +93,7 @@ clean:
 	find -name "*.STR" -exec rm -f '{}' \;
 	find -name "*.PRS" -exec rm -f '{}' \;
 	rm -f batch/*.LST
-	rm -f batch/{APP,PRESEN,STRUCT,TRANS}.h
+	cd batch && rm -f APP.h PRESEN.h STRUCT.h TRANS.h
 
 	dh_clean 
 
@@ -105,7 +105,8 @@ install:
 
 	# Add here commands to install the arch part of the package into 
 	# debian/tmp.
-	mkdir -p $(CURDIR)/debian/tmp/usr/{bin,lib,share}
+	mkdir -p $(CURDIR)/debian/tmp/usr/ && cd $(CURDIR)/debian/tmp/usr/ \
+		&& mkdir bin lib share
 	$(MAKE) -C $(BUILD_DIR) install DESTDIR=$(CURDIR)/debian/tmp
 	$(BUILD_DIR)/script_install_gnomekde $(CURDIR)/$(BUILD_DIR)/bin $(CURDIR)/debian/tmp/usr/share /usr/lib
 

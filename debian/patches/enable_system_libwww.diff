@@ -1,8 +1,8 @@
-Index: Documents/configure.in
+Index: amaya-10.0.1/configure.in
 ===================================================================
---- Documents.orig/configure.in
-+++ Documents/configure.in
-@@ -990,6 +990,113 @@
+--- amaya-10.0.1.orig/configure.in	2008-03-02 22:04:38.000000000 +0000
++++ amaya-10.0.1/configure.in	2008-03-02 22:04:43.000000000 +0000
+@@ -679,6 +679,113 @@
  	esac],
  	[with_svg="yes"])
  
@@ -116,7 +116,7 @@ Index: Documents/configure.in
  ##########################Annotations Support####################
  dnl
  dnl annotations are enabled by default
-@@ -1139,36 +1246,7 @@
+@@ -828,36 +935,7 @@
   GENERIC_XML_OPTIONS=""
  fi
  
@@ -153,7 +153,7 @@ Index: Documents/configure.in
      if test ! -f $srcdir/amaya/MathML.S ; then
  	if test "$with_math" = "yes" ; then
  	    AC_MSG_WARN(MathML sources not found !!)
-@@ -1187,18 +1265,6 @@
+@@ -876,18 +954,6 @@
  	fi
      fi
  
@@ -172,7 +172,7 @@ Index: Documents/configure.in
  
  fi
  
-@@ -1299,11 +1365,6 @@
+@@ -990,11 +1056,6 @@
  AC_SUBST(IMGLIBS)
  AC_SUBST(EXTRA_INCLUDES)
  
@@ -184,7 +184,7 @@ Index: Documents/configure.in
  AC_SUBST(MAKE_LIBWWW_RDF_PARSER)
  AC_SUBST(LIBWWW_RDF_PARSER)
  #AC_SUBST(ANNOTLIB_COMPILE_BM)
-@@ -1316,9 +1377,6 @@
+@@ -1007,9 +1068,6 @@
  dnl Include the option Makefile.xxx fragment according to the configure options
  dnl
  
@@ -194,7 +194,7 @@ Index: Documents/configure.in
  if test "$with_math" = "no" ; then
      math_frag=/dev/null
  else
-@@ -1340,13 +1398,6 @@
+@@ -1031,13 +1089,6 @@
  fi
  AC_SUBST_FILE(annot_frag)
  
@@ -208,7 +208,7 @@ Index: Documents/configure.in
  if test "$with_templates" = "yes" ; then
      templates_frag=$srcdir/amaya/Makefile.templates
  else
-@@ -1372,8 +1423,11 @@
+@@ -1063,8 +1114,11 @@
  
  if test "$build_amaya" = "yes" ; then
      make_output="$make_output amaya/Makefile"
@@ -222,20 +222,20 @@ Index: Documents/configure.in
  
      if test "$with_annot" = "yes" ; then
         make_output="$make_output annotlib/Makefile"
-Index: Documents/Makefile.in
+Index: amaya-10.0.1/Makefile.in
 ===================================================================
---- Documents.orig/Makefile.in
-+++ Documents/Makefile.in
-@@ -59,7 +59,7 @@
+--- amaya-10.0.1.orig/Makefile.in	2008-03-02 22:04:38.000000000 +0000
++++ amaya-10.0.1/Makefile.in	2008-03-02 22:04:43.000000000 +0000
+@@ -58,7 +58,7 @@
  	@(if test -d "$(GL_BUILDDIR)" ; then cd "$(GL_BUILDDIR)" ; \
- 	  $(MAKE) linux-static ; fi)
+ 	  $(MAKE) ; fi)
  
 -print_prog: rebuild force bin/str
 +print_prog: rebuild force bin/str @BUILDLIBWWW@
  	@(if test -d thotlib ; then cd thotlib ; \
    $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" CXX="$(CXX)" CXXFLAGS="$(CXXFLAGS)" print ; fi)
  
-@@ -129,130 +129,17 @@
+@@ -128,130 +128,17 @@
  #
  # Rules to rebuild the libWWW package
  #
@@ -374,11 +374,11 @@ Index: Documents/Makefile.in
  # Rules to build the raptor RDF library
  #
  raptor: force
-Index: Documents/Options.in
+Index: amaya-10.0.1/Options.in
 ===================================================================
---- Documents.orig/Options.in
-+++ Documents/Options.in
-@@ -79,7 +79,5 @@
+--- amaya-10.0.1.orig/Options.in	2008-03-02 22:04:17.000000000 +0000
++++ amaya-10.0.1/Options.in	2008-03-02 22:04:43.000000000 +0000
+@@ -67,7 +67,5 @@
  GL_INCLUDES=@GL_INCLUDES@
  GL_LIBRARIES=@GL_LIBRARIES@
  
@@ -386,17 +386,16 @@ Index: Documents/Options.in
 -
  
  
-Index: Documents/amaya/Makefile.in
+Index: amaya-10.0.1/amaya/Makefile.in
 ===================================================================
---- Documents.orig/amaya/Makefile.in
-+++ Documents/amaya/Makefile.in
-@@ -6,10 +6,16 @@
+--- amaya-10.0.1.orig/amaya/Makefile.in	2008-03-02 22:04:33.000000000 +0000
++++ amaya-10.0.1/amaya/Makefile.in	2008-03-02 22:04:43.000000000 +0000
+@@ -6,9 +6,15 @@
  
  @VPATHOPT@= @srcdir@
  THOTDIR = @top_srcdir@
 -WWWDAV = @WWWDAV@
  LIBWWW_RDF_PARSER = @LIBWWW_RDF_PARSER@
- LIBZ = @LIBZ@
  
 +AMAYA_LIBWWW_LIBS = @LIBWWW_LDFLAGS@
 +AMAYA_LIBWWW_INCLUDES = @LIBWWW_CFLAGS@
@@ -408,7 +407,7 @@ Index: Documents/amaya/Makefile.in
  OBJDIRS = wxdialog
  
  include ../Options
-@@ -86,10 +92,6 @@
+@@ -85,10 +91,6 @@
  ../tools/mkdep/mkdep : 
  	@(cd ../tools/mkdep ; $(MAKE) CC="$(CC)" CFLAGS="-O -x c")
  
@@ -419,7 +418,7 @@ Index: Documents/amaya/Makefile.in
  ../redland/librdf/.libs/librdf.a \
  ../redland/raptor/.libs/libraptor.a \
  redland:
-@@ -104,8 +106,13 @@
+@@ -103,8 +105,13 @@
  #									#
  #########################################################################
  
@@ -435,7 +434,7 @@ Index: Documents/amaya/Makefile.in
  
  #include the fragment "amaya/Makefile.svg" for svg if configured in
  @svg_frag@
-@@ -116,9 +123,6 @@
+@@ -115,9 +122,6 @@
  #include the fragment "annotlib/Makefile.annot" for annotations if configured in
  @annot_frag@
  
@@ -445,10 +444,10 @@ Index: Documents/amaya/Makefile.in
  #include the fragment "amaya/Makefile.templates" for templates if configured in
  @templates_frag@
  
-Index: Documents/annotlib/Makefile.in
+Index: amaya-10.0.1/annotlib/Makefile.in
 ===================================================================
---- Documents.orig/annotlib/Makefile.in
-+++ Documents/annotlib/Makefile.in
+--- amaya-10.0.1.orig/annotlib/Makefile.in	2008-03-02 22:04:17.000000000 +0000
++++ amaya-10.0.1/annotlib/Makefile.in	2008-03-02 22:04:43.000000000 +0000
 @@ -14,9 +14,7 @@
  
  INCLUDES= -DHAVE_CONFIG_H -DANNOTATIONS \
@@ -460,10 +459,10 @@ Index: Documents/annotlib/Makefile.in
  	   @AMAYA_RAPTOR_INCLUDES@ @THOTINCLUDES@ $(GUI_INCLUDES)
  
  
-Index: Documents/davlib/Makefile.in
+Index: amaya-10.0.1/davlib/Makefile.in
 ===================================================================
---- Documents.orig/davlib/Makefile.in
-+++ Documents/davlib/Makefile.in
+--- amaya-10.0.1.orig/davlib/Makefile.in	2008-03-02 22:04:17.000000000 +0000
++++ amaya-10.0.1/davlib/Makefile.in	2008-03-02 22:04:43.000000000 +0000
 @@ -13,46 +13,21 @@
  
  INCLUDES =-DHAVE_CONFIG_H -I.. \
@@ -524,10 +523,10 @@ Index: Documents/davlib/Makefile.in
  
  #
  # dependencies
-Index: Documents/amaya/Makefile.math
+Index: amaya-10.0.1/amaya/Makefile.math
 ===================================================================
---- Documents.orig/amaya/Makefile.math
-+++ Documents/amaya/Makefile.math
+--- amaya-10.0.1.orig/amaya/Makefile.math	2008-03-02 22:04:17.000000000 +0000
++++ amaya-10.0.1/amaya/Makefile.math	2008-03-02 22:04:43.000000000 +0000
 @@ -23,7 +23,7 @@
  
  MATH_SCHEMAS= $(AMAYA)/MathML.S $(AMAYA)/MathMLP.P $(AMAYA)/MathMLT.T
@@ -537,10 +536,10 @@ Index: Documents/amaya/Makefile.math
  
  #
  # Structure schema compilation.
-Index: Documents/amaya/Makefile.svg
+Index: amaya-10.0.1/amaya/Makefile.svg
 ===================================================================
---- Documents.orig/amaya/Makefile.svg
-+++ Documents/amaya/Makefile.svg
+--- amaya-10.0.1.orig/amaya/Makefile.svg	2008-03-02 22:04:17.000000000 +0000
++++ amaya-10.0.1/amaya/Makefile.svg	2008-03-02 22:04:43.000000000 +0000
 @@ -31,7 +31,7 @@
  	$(AMAYA)/Timeline.S $(AMAYA)/TimelineP.P $(AMAYA)/TimelineT.T
  

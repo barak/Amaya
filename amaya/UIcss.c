@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2007
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -13,6 +13,7 @@
 
 #ifdef _WX
 #include "wx/wx.h"
+#include "wx/colordlg.h"
 #endif /* _WX */
 
 /* nItagetMecluded headerfiles */
@@ -27,6 +28,8 @@
 #endif /* _WINGUI */
 #ifdef _WX
 #include "wxdialogapi_f.h"
+#include "appdialogue_wx.h"
+
 #endif /* _WX */
 
 static int         CSScase;
@@ -62,6 +65,7 @@ static char       *DisplayCategory[]={
 #include "query_f.h"
 #include "styleparser_f.h"
 #include "Xmlbuilder_f.h"
+#include "paneltypes_wx.h"
 
 /*----------------------------------------------------------------------
   LoadRemoteStyleSheet loads a remote style sheet into a file.
@@ -402,14 +406,17 @@ void UpdateStyleSheet (char *url, char *tempdoc)
       if (url && ((css->url && !strcmp (url, css->url)) ||
                   (css->localName && !strcmp (url, css->localName))))
         {
-          /* an external CSS */
-          found = FALSE;
-          /* update the copy in .amaya/0 */
+          /* an external CSS: update the copy in .amaya/0 */
           if (css->localName && tempdoc)
             TtaFileCopy (tempdoc, css->localName);
           doc = 1;
           /* current parsed CSS file */
           ParsedCSS = css->doc;
+          if (ParsedCSS)
+            {
+              RemoveParsingErrors (ParsedCSS);
+              CloseLogs (ParsedCSS);
+            }
           while (doc < DocumentTableLength)
             {
               /* don't manage a document used by make book */
@@ -436,13 +443,14 @@ void UpdateStyleSheet (char *url, char *tempdoc)
                           if (dispMode == DisplayImmediately)
                             TtaSetDisplayMode (doc, NoComputedDisplay);
                           /* invalidate current logs */
+                          RemoveParsingErrors (doc);
                           CloseLogs (doc);
-                          CloseLogs (ParsedCSS);
+                          found = TRUE; // the css file is almost parsed
                           if (refcss && refcss->infos[doc])
                             {
                               refInfo = refcss->infos[doc];
                               /* re-apply that CSS to each related document */
-                              UnlinkCSS (refcss, doc, refInfo->PiLink, TRUE, FALSE);
+                              UnlinkCSS (refcss, doc, refInfo->PiLink, TRUE, FALSE, FALSE);
                               refInfo->PiEnabled = TRUE;
                               if (refInfo->PiCategory == CSS_DOCUMENT_STYLE)
                                 EnableStyleElement (doc, refInfo->PiLink);
@@ -463,18 +471,21 @@ void UpdateStyleSheet (char *url, char *tempdoc)
                                   /* the CSS parser detected an error */
                                   TtaWriteClose (ErrFile);
                                   ErrFile = NULL;
-                                  TtaSetItemOn (doc, 1, File, BShowLogFile);
+                                  UpdateLogFile (doc, TRUE);
                                   if (ParsedCSS)
                                     {
                                       TtaWriteClose (CSSErrFile);
                                       CSSErrFile = NULL;
-                                      TtaSetItemOn (ParsedCSS, 1, File, BShowLogFile);
+                                      UpdateLogFile (ParsedCSS, TRUE);
                                     }
                                   CSSErrorsFound = FALSE;
                                   InitInfo ("", TtaGetMessage (AMAYA, AM_CSS_ERROR));
                                 }
                               else
-                                TtaSetItemOff (doc, 1, File, BShowLogFile);
+                                {
+                                  UpdateLogFile (doc, FALSE);
+                                  UpdateLogFile (ParsedCSS, FALSE);
+                                }
                               /* Restore the display mode */
                               if (dispMode == DisplayImmediately)
                                 TtaSetDisplayMode (doc, dispMode);
@@ -490,6 +501,10 @@ void UpdateStyleSheet (char *url, char *tempdoc)
                 }
               doc++;
             }
+        }
+      if (!found)
+        {
+          CloseLogs (ParsedCSS);
         }
       css = css->NextCSS;
     }
@@ -686,12 +701,20 @@ char *CssToPrint (Document doc, char *printdir)
 /*----------------------------------------------------------------------
   GenerateStyle
   Apply the current set of CSS properties to the current selection
+  Add is TRUE when data is added to the existing style
   -----------------------------------------------------------------------*/
-static void GenerateStyle (char * data)
+void GenerateStyle (char * data , ThotBool add)
 {
-  int      profile, doc;
+  Element             el, firstC, lastC;
+  Attribute           attr = NULL;
+  char                 *value;
+  int                 doc, i, j, len;
+  ThotBool            open;
 
   doc = TtaGetSelectedDocument();
+  if (doc == 0)
+    return;
+
   if (!TtaGetDocumentAccessMode (doc))
     {
       /* the document is in ReadOnly mode */
@@ -699,14 +722,831 @@ static void GenerateStyle (char * data)
       return;
     }
 
-  profile = TtaGetDocumentProfile (doc);
-  if (profile == L_Basic)
+  TtaGiveFirstSelectedElement (doc, &el, &i, &j);
+  if (el == NULL)
+    return;
+
+  if (data && data[0] != EOS)
+    GenerateInlineElement (HTML_EL_Span, HTML_ATTR_Style_, data, !add);
+  else
     {
-      // cannot generate inline style
-      TtaDisplaySimpleMessage (CONFIRM, AMAYA, AM_NOT_ALLOWED);
-      return;
+      TtaGiveLastSelectedElement (doc, &lastC, &i, &j);
+      if (el == lastC)
+        // only one selected element
+        attr = GetCurrentStyleAttribute ();
+      if (attr)
+        {
+          // the attribute is now empty
+          open = !TtaHasUndoSequence (doc);
+          if (open)
+            TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
+          // remove style rules
+          len = TtaGetTextAttributeLength (attr);
+          value = (char *)TtaGetMemory (len);
+          TtaGiveTextAttributeValue (attr, value, &len);
+          ParseHTMLSpecificStyle (el, value, doc, 1000, TRUE);
+          // remove the attribute
+          TtaRegisterAttributeDelete (attr, el, doc);
+          TtaRemoveAttribute (el, attr, doc);
+          DeleteSpanIfNoAttr (el, doc, &firstC, &lastC);
+          TtaSelectElement (doc, firstC);
+          if (lastC != firstC)
+            TtaExtendSelection (doc, lastC, TtaGetElementVolume (lastC) + 1);
+          if (open)
+            TtaCloseUndoSequence (doc);
+        }
+      //else
+      //  TtaDisplaySimpleMessage (CONFIRM, AMAYA, AM_NOT_ALLOWED);
     }
-  GenerateInlineElement (HTML_EL_Span, HTML_ATTR_Style_, data);
+}
+
+/*----------------------------------------------------------------------
+  GetEnclosingBlock
+  ----------------------------------------------------------------------*/
+static ThotBool GetEnclosingBlock (Document doc)
+{
+  Element             first, last;
+  ElementType	        elType;
+  int                 i, j;
+
+  if (DocumentTypes[doc] == docText || DocumentTypes[doc] == docSource ||
+      DocumentTypes[doc] == docXml)
+    return FALSE;
+  TtaGiveFirstSelectedElement (doc, &first, &i, &j);
+  if (first == NULL)
+    return FALSE;
+  while (IsCharacterLevelElement (first))
+    // look for a block element
+    first = TtaGetParent (first);
+  elType = TtaGetElementType (first);
+  while (first &&
+         TtaHasHiddenException (elType) &&
+         elType.ElSSchema &&
+         strcmp (TtaGetSSchemaName (elType.ElSSchema), "Template"))
+    {
+      // skip hidden and template elements
+      first = TtaGetParent (first);
+      elType = TtaGetElementType (first);
+    }
+
+  TtaGiveLastSelectedElement (doc, &last, &i, &j);
+  while (IsCharacterLevelElement (last))
+    // look for a block element
+    last = TtaGetParent (last);
+  elType = TtaGetElementType (last);
+  while (last &&
+         TtaHasHiddenException (elType) &&
+         elType.ElSSchema &&
+         strcmp (TtaGetSSchemaName (elType.ElSSchema), "Template"))
+    {
+      // skip hidden and template elements
+      last = TtaGetParent (last);
+      elType = TtaGetElementType (last);
+    }
+
+  if (first)
+    {
+      TtaSelectElement (doc, first);
+      if (last != first)
+        TtaExtendSelection (doc, last, TtaGetElementVolume (last) + 1);
+      return TRUE;
+    }
+  else
+    // no block found
+    return FALSE;
+}
+
+/*----------------------------------------------------------------------
+  NewSpanElement
+  Apply color style
+  ----------------------------------------------------------------------*/
+static Element NewSpanElement (Document doc, ThotBool *open)
+{
+  Element             first, parent, el = NULL;
+  ElementType         elType;
+  int                 firstChar, lastChar, i;
+  ThotBool            before = FALSE;
+
+  *open = FALSE;
+  if ( TtaIsSelectionEmpty ())
+    {
+      TtaGiveFirstSelectedElement (doc, &first, &firstChar, &lastChar);
+      parent = TtaGetParent (first);
+      elType = TtaGetElementType (parent);
+      i =  TtaGetElementVolume (first);
+      if (!strcmp (TtaGetSSchemaName (elType.ElSSchema), "HTML") &&
+          elType.ElTypeNum == HTML_EL_Span)
+        {
+          elType.ElTypeNum = HTML_EL_TEXT_UNIT;
+          if (firstChar == 1 && lastChar == 0 && first == TtaGetFirstChild (parent))
+            {
+              *open = TRUE;
+              before = TRUE;
+            }
+          else if  (lastChar >= i && first == TtaGetLastChild (parent))
+            {
+              *open = TRUE;
+              before = FALSE;
+            }
+
+          if (*open)
+            {
+              *open = !TtaHasUndoSequence (doc);
+              if (*open)
+                TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
+              el = TtaNewElement (doc, elType);
+              TtaInsertSibling (el, parent, before, doc);
+              TtaSelectElement (doc, el);
+              TtaRegisterElementCreate (el, doc);
+            }
+        }
+    }
+  return el;
+}
+
+/*----------------------------------------------------------------------
+  DoStyleColor
+  Apply color style
+  ----------------------------------------------------------------------*/
+void DoStyleColor (char *color)
+{
+  Document            doc;
+  Element             el = NULL;
+  char               *ptr;
+  int                 col, bg_col, new_col, firstChar, lastChar;
+  unsigned short      red, green, blue;
+  DisplayMode         dispMode;
+  ThotBool            open = FALSE, isBg;
+
+  doc = TtaGetSelectedDocument();
+  if (!TtaGetDocumentAccessMode (doc) || color == NULL)
+    /* document is ReadOnly */
+    return;
+  if (DocumentTypes[doc] == docText || DocumentTypes[doc] == docSource ||
+      DocumentTypes[doc] == docXml)
+    return;
+  // new thot color
+  ptr = strstr (color, "#");
+  if (ptr == NULL)
+    return;
+  isBg =  (strstr (color, "background-color") != NULL);
+  TtaGiveRGB (ptr, &red, &green, &blue);
+  new_col = TtaGetThotColor (red, green, blue);
+
+  // check the current color
+  TtaGiveFirstSelectedElement (doc, &el, &firstChar, &lastChar);
+  TtaGiveBoxColors (el, doc, 1, &col, &bg_col);
+  if ((isBg && new_col == bg_col) || new_col == col)
+    // do nothing
+    return;
+
+  /* Need to force a redisplay */
+  dispMode = TtaGetDisplayMode (doc);
+  if (dispMode == DisplayImmediately)
+    TtaSetDisplayMode (doc, DeferredDisplay);
+  el = NewSpanElement (doc, &open);
+  if (el)
+     TtaGiveBoxColors (el, doc, 1, &col, &bg_col);
+  if ((isBg && new_col == bg_col) || new_col != col)
+    GenerateStyle (color, TRUE);
+  if (open)
+    TtaCloseUndoSequence (doc);
+  if (dispMode == DisplayImmediately)
+    TtaSetDisplayMode (doc, dispMode);
+}
+
+
+/*----------------------------------------------------------------------
+  UpdateStylePanel
+  ----------------------------------------------------------------------*/
+void UpdateStylePanel (Document doc, View view)
+{
+#ifdef _WX
+  AmayaParams p;
+
+  p.param1 = doc;
+  TtaSendDataToPanel (WXAMAYA_PANEL_STYLE, p );
+#endif /* _WX */
+}
+
+/*----------------------------------------------------------------------
+  DoSelectFontSize
+  Change the font size of the selection
+  ----------------------------------------------------------------------*/
+void DoSelectFontSize (Document doc, View view)
+{
+  Element             el = NULL;
+  DisplayMode         dispMode;
+  TypeUnit            unit;
+  char                font_string[100];
+  int                 firstChar, lastChar;
+  int                 size, family;
+  ThotBool            open = FALSE;
+
+  doc = TtaGetSelectedDocument();
+  if (!TtaGetDocumentAccessMode (doc))
+    /* document is ReadOnly */
+    return;
+  if (DocumentTypes[doc] == docText || DocumentTypes[doc] == docSource ||
+      DocumentTypes[doc] == docXml)
+    return;
+
+  TtaGiveFirstSelectedElement (doc, &el, &firstChar, &lastChar);
+  TtaGiveBoxFontInfo (el, doc, 1, &size, &unit, &family);
+  if (el && size != -1 && (size != Current_FontSize || unit != UnPoint))
+    {
+      /* Need to force a redisplay */
+      dispMode = TtaGetDisplayMode (doc);
+      if (dispMode == DisplayImmediately)
+        TtaSetDisplayMode (doc, DeferredDisplay);
+      NewSpanElement (doc, &open);
+      sprintf (font_string, "font-size: %dpt", Current_FontSize);
+      GenerateStyle (font_string, TRUE);
+      if (open)
+        TtaCloseUndoSequence (doc);
+      if (dispMode == DisplayImmediately)
+        TtaSetDisplayMode (doc, dispMode);
+    }
+}
+
+/*----------------------------------------------------------------------
+  DoSelectFontFamilly
+  Change the font family of the selection
+  ----------------------------------------------------------------------*/
+void DoSelectFontFamilly (Document doc, View view)
+{
+  Element             el = NULL;
+  DisplayMode         dispMode;
+  int                 firstChar, lastChar;
+  int                 size, family;
+  TypeUnit            unit;
+  ThotBool            open = FALSE;
+
+  doc = TtaGetSelectedDocument();
+  if (!TtaGetDocumentAccessMode (doc))
+    /* document is ReadOnly */
+    return;
+  if (DocumentTypes[doc] == docText || DocumentTypes[doc] == docSource ||
+      DocumentTypes[doc] == docXml)
+    return;
+
+  TtaGiveFirstSelectedElement (doc, &el, &firstChar, &lastChar);
+  TtaGiveBoxFontInfo (el, doc, 1, &size, &unit, &family);
+  if (el && size != -1 && family != Current_FontFamily)
+    {
+      /* Need to force a redisplay */
+      dispMode = TtaGetDisplayMode (doc);
+      if (dispMode == DisplayImmediately)
+        TtaSetDisplayMode (doc, DeferredDisplay);
+      NewSpanElement (doc, &open);
+      switch (Current_FontFamily)
+        {
+        case 3:
+          GenerateStyle ("font-family: Courier New,Courier,monospace", TRUE);
+          break;
+        case 2:
+          GenerateStyle ("font-family: Arial,Helvetica,sans-serif", TRUE);
+          break;
+        default:
+          GenerateStyle ("font-family: Times New Roman,Times,serif", TRUE);
+        }
+      if (open)
+        TtaCloseUndoSequence (doc);
+      if (dispMode == DisplayImmediately)
+        TtaSetDisplayMode (doc, dispMode);
+    }
+}
+
+/*----------------------------------------------------------------------
+  DoSelectFont
+  Change the font family and/or the font size of the selection
+  ----------------------------------------------------------------------*/
+void DoSelectFont (Document doc, View view)
+{
+  Element             el = NULL;
+  DisplayMode         dispMode;
+  int                 firstChar, lastChar;
+  int                 family, size;
+  ThotBool            open = FALSE;
+
+  if (!TtaGetDocumentAccessMode (doc))
+    /* document is ReadOnly */
+    return;
+  if (DocumentTypes[doc] == docText || DocumentTypes[doc] == docSource ||
+      DocumentTypes[doc] == docXml)
+    return;
+
+  TtaGiveFirstSelectedElement (doc, &el, &firstChar, &lastChar);
+  if (el)
+    {
+      family = Current_FontFamily;
+      size = Current_FontSize;
+      if (CreateFontDlgWX (TtaGetViewFrame (doc, view),
+                           TtaGetMessage(AMAYA,AM_CHOOSE_FONT),
+                           &family, &size))
+        {
+          open = !TtaHasUndoSequence (doc);
+          if (open)
+            TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
+          /* Need to force a redisplay */
+          dispMode = TtaGetDisplayMode (doc);
+          if (dispMode == DisplayImmediately)
+            TtaSetDisplayMode (doc, DeferredDisplay);
+          if (Current_FontFamily != family)
+            {
+              Current_FontFamily = family;
+              DoSelectFontFamilly (doc, view);
+            }
+          if (Current_FontSize != size)
+            {
+              Current_FontSize = size;
+              DoSelectFontSize (doc, view);
+            }
+          if (dispMode == DisplayImmediately)
+            TtaSetDisplayMode (doc, dispMode);
+          if (open)
+            TtaCloseUndoSequence (doc);
+        }
+    }
+}
+
+/*----------------------------------------------------------------------
+  DoSelectColor
+  Apply color style
+  ----------------------------------------------------------------------*/
+void DoSelectColor (Document doc, View view)
+{
+  wxColour            c;
+  wxColourData        colour_data;
+  char                color_string[100];
+  unsigned short      red;
+  unsigned short      green;
+  unsigned short      blue;
+
+  if (!TtaGetDocumentAccessMode (doc))
+    /* document is ReadOnly */
+    return;
+  if (DocumentTypes[doc] == docText || DocumentTypes[doc] == docSource ||
+      DocumentTypes[doc] == docXml)
+    return;
+
+  if (Current_Color != -1)
+    TtaGiveThotRGB (Current_Color, &red, &green, &blue);
+  else
+    TtaGiveThotRGB (0, &red, &green, &blue);
+
+  colour_data.SetColour( wxColour( red, green, blue ) );
+  wxColourDialog dialog (NULL, &colour_data);
+  if (dialog.ShowModal() == wxID_OK)
+    {
+      colour_data = dialog.GetColourData();
+      c = colour_data.GetColour();
+      Current_Color = TtaGetThotColor (c.Red(), c.Green(), c.Blue());
+      sprintf( color_string, "color:#%02x%02x%02x", c.Red(), c.Green(), c.Blue());
+      DoStyleColor (color_string);
+    }
+  UpdateStylePanel (doc, view);
+}
+
+/*----------------------------------------------------------------------
+  DoSelectBgColor
+  Apply color style
+  ----------------------------------------------------------------------*/
+void DoSelectBgColor (Document doc, View view)
+{
+  wxColour            c;
+  wxColourData        colour_data;
+  char                color_string[100];
+  unsigned short      red;
+  unsigned short      green;
+  unsigned short      blue;
+
+  if (!TtaGetDocumentAccessMode (doc))
+    /* document is ReadOnly */
+    return;
+  if (DocumentTypes[doc] == docText || DocumentTypes[doc] == docSource ||
+      DocumentTypes[doc] == docXml)
+    return;
+
+  if (Current_BackgroundColor != -1)
+    TtaGiveThotRGB (Current_BackgroundColor, &red, &green, &blue);
+  else
+    TtaGiveThotRGB (0, &red, &green, &blue);
+    
+  colour_data.SetColour( wxColour( red, green, blue ) );
+  wxColourDialog dialog (NULL, &colour_data);
+  if (dialog.ShowModal() == wxID_OK)
+    {
+      colour_data = dialog.GetColourData();
+      c = colour_data.GetColour();
+      Current_BackgroundColor = TtaGetThotColor (c.Red(), c.Green(), c.Blue());
+      sprintf( color_string, "background-color:#%02x%02x%02x", c.Red(), c.Green(), c.Blue());
+      DoStyleColor (color_string);
+    }
+  UpdateStylePanel (doc, view);
+}
+
+/*----------------------------------------------------------------------
+  CleanUpAttribute removes the CSS rule (data) from the attribute value
+  Return TRUE if the selection will change
+  -----------------------------------------------------------------------*/
+static ThotBool CleanUpAttribute (Attribute attr, char *data, Element el, Document doc)
+{
+  char     *buffer, *property, *start, *stop, *ptr;
+  int       lg;
+  ThotBool  selChange = FALSE;
+
+  property = TtaStrdup (data);
+  if (property == NULL)
+    return selChange;
+  ptr = strstr (property, ":");
+  lg = TtaGetTextAttributeLength (attr);
+  if (lg && ptr)
+    {
+      // look for the property in the initial string
+      buffer = (char *)TtaGetMemory (lg + 2);
+      TtaGiveTextAttributeValue (attr, buffer, &lg);
+      *ptr = EOS;
+      start = strstr (buffer, property);
+      lg = strlen(property); // property length
+      if (start && start != buffer && start[-1] != SPACE && start[-1] != ';' &&
+          start[lg] != ':')
+        start = NULL;
+      if (start)
+        {
+          stop = start;
+          while (*stop != EOS && *stop != ';')
+            stop++;
+          while (*stop != EOS)
+            {
+              stop++;
+              *start = *stop;
+              start++;
+            }
+          *start = EOS;
+          if (buffer[0] == EOS)
+            {
+              Element firstC, lastC;
+              // the attribute is now empty
+              TtaRegisterAttributeDelete (attr, el, doc);
+              TtaRemoveAttribute (el, attr, doc);
+              DeleteSpanIfNoAttr (el, doc, &firstC, &lastC);
+              selChange = TRUE;
+            }
+          else
+            {
+              TtaRegisterAttributeReplace (attr, el, doc);
+              TtaSetAttributeText (attr, buffer, el, doc);
+            }
+          // unapply the CSS property
+          ParseHTMLSpecificStyle (el, data, doc, 2000, TRUE);
+          TtaSetDocumentModified (doc);
+        }
+      TtaFreeMemory (buffer);
+    }
+  TtaFreeMemory (property);
+  return selChange;
+}
+
+/*----------------------------------------------------------------------
+  RemoveSpecificStyle
+  Remove a css property
+  ----------------------------------------------------------------------*/
+ThotBool RemoveSpecificStyle (Document doc, char *cssproperty)
+{
+  Element         el, parent1, parent2;
+  ElementType	    elType;
+  Attribute       attr;
+  AttributeType   attrType;
+  int             firstChar, lastChar;
+  char           *name;
+  DisplayMode     dispMode;
+  ThotBool        open = FALSE, selChange = FALSE;
+
+  if (!TtaGetDocumentAccessMode (doc))
+    /* document is ReadOnly */
+    return selChange;
+  if (DocumentTypes[doc] == docText || DocumentTypes[doc] == docSource ||
+      DocumentTypes[doc] == docXml)
+    return selChange;
+
+  TtaGiveFirstSelectedElement (doc, &el, &firstChar, &lastChar);
+  parent1 = TtaGetParent (el);
+  attrType.AttrTypeNum = 0;
+  if (TtaIsReadOnly (el))
+    {
+      /* the selected element is read-only */
+      TtaDisplaySimpleMessage (CONFIRM, AMAYA, AM_READONLY);
+      return selChange;
+    }
+
+  /* Need to force a redisplay */
+  dispMode = TtaGetDisplayMode (doc);
+  if (dispMode == DisplayImmediately)
+    TtaSetDisplayMode (doc, DeferredDisplay);
+  open = !TtaHasUndoSequence (doc);
+  if (open)
+    TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
+  while (el)
+    {
+      // get the style attribute
+      elType = TtaGetElementType (el);
+      parent2 = TtaGetParent (el);
+      attrType.AttrSSchema = elType.ElSSchema;
+      name = TtaGetSSchemaName (elType.ElSSchema);
+      if (!strcmp (name, "HTML"))
+        attrType.AttrTypeNum =  HTML_ATTR_Style_;
+#ifdef _SVG
+      else if (!strcmp (name, "SVG"))
+        attrType.AttrTypeNum = SVG_ATTR_style_;
+#endif /* _SVG */
+      else if (!strcmp (name, "MathML"))
+        attrType.AttrTypeNum = MathML_ATTR_style_;
+      attr = TtaGetAttribute (el, attrType);
+      if (attr)
+        selChange = CleanUpAttribute (attr, cssproperty, el, doc);
+      // next element within the selection
+      TtaGiveNextSelectedElement (doc, &el, &firstChar, &lastChar);
+    }
+  if (open)
+    TtaCloseUndoSequence (doc);
+  if (dispMode == DisplayImmediately)
+    TtaSetDisplayMode (doc, dispMode);
+  return selChange;
+}
+
+/*----------------------------------------------------------------------
+  DoRemoveColor
+  Remove color style
+  ----------------------------------------------------------------------*/
+void DoRemoveColor (Document doc, View view)
+{
+  RemoveSpecificStyle (doc, "color: black");
+}
+
+/*----------------------------------------------------------------------
+  DoRemoveBgColor
+  Remove color style
+  ----------------------------------------------------------------------*/
+void DoRemoveBgColor (Document doc, View view)
+{
+  RemoveSpecificStyle (doc, "background-color: white");
+}
+
+/*----------------------------------------------------------------------
+  DoRemoveFont
+  Remove the font family and/or the font size of the selection
+  ----------------------------------------------------------------------*/
+void DoRemoveFont (Document doc, View view)
+{
+ Element             el = NULL;
+  int                 firstChar, lastChar;
+  int                 size = -1, family;
+  TypeUnit            unit;
+
+  doc = TtaGetSelectedDocument();
+  if (!TtaGetDocumentAccessMode (doc))
+    /* document is ReadOnly */
+    return;
+  if (DocumentTypes[doc] == docText || DocumentTypes[doc] == docSource ||
+      DocumentTypes[doc] == docXml)
+    return;
+
+  RemoveSpecificStyle (doc, "font-family: Times");
+  RemoveSpecificStyle (doc, "font-size: 12pt");
+  // update the style panel
+  TtaGiveFirstSelectedElement (doc, &el, &firstChar, &lastChar);
+  TtaGiveBoxFontInfo (el, doc, 1, &size, &unit, &family);
+  if (size != -1 &&
+      (size != Current_FontSize || unit != UnPoint  || family != Current_FontFamily))
+    {
+      Current_FontFamily = family;
+      Current_FontSize = size;
+      UpdateStylePanel (doc, view);
+    }
+}
+
+/*----------------------------------------------------------------------
+  DoLeftAlign
+  Apply left-align style
+  ----------------------------------------------------------------------*/
+void DoLeftAlign (Document doc, View view)
+{
+  if (GetEnclosingBlock(doc))
+    GenerateStyle ("text-align:left;", TRUE);
+}
+
+/*----------------------------------------------------------------------
+  DoRightAlign
+  Apply right-align style
+  ----------------------------------------------------------------------*/
+void DoRightAlign (Document doc, View view)
+{
+  if (GetEnclosingBlock(doc))
+    GenerateStyle ("text-align:right;", TRUE);
+}
+
+/*----------------------------------------------------------------------
+  DoCenter
+  Apply center style
+  ----------------------------------------------------------------------*/
+void DoCenter (Document doc, View view)
+{
+  if (GetEnclosingBlock(doc))
+    GenerateStyle ("text-align:center;", TRUE);
+}
+
+/*----------------------------------------------------------------------
+  DoJustify
+  Apply justify style
+  ----------------------------------------------------------------------*/
+void DoJustify (Document doc, View view)
+{
+  if (GetEnclosingBlock(doc))
+    GenerateStyle ("text-align:justify;", TRUE);
+}
+
+
+/*----------------------------------------------------------------------
+  DoRemoveAlign
+  Remove alignment
+  ----------------------------------------------------------------------*/
+void DoRemoveAlign (Document doc, View view)
+{
+  RemoveSpecificStyle (doc, "text-align: left");
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void LineSpacingSingle (Document doc, View view)
+{
+  if (GetEnclosingBlock(doc))
+    GenerateStyle ("line-height:1em;", TRUE);
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void LineSpacingHalf (Document doc, View view)
+{
+  if (GetEnclosingBlock(doc))
+    GenerateStyle ("line-height:1.5em;", TRUE);
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void LineSpacingDouble (Document doc, View view)
+{
+  if (GetEnclosingBlock(doc))
+    GenerateStyle ("line-height:2em;", TRUE);
+}
+
+/*----------------------------------------------------------------------
+  DoRemoveLineSpacing
+  Remove line spacing
+  ----------------------------------------------------------------------*/
+void DoRemoveLineSpacing (Document doc, View view)
+{
+  RemoveSpecificStyle (doc, "line-height:1em");
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void MarginLeftIncrease (Document doc, View view)
+{
+  if (GetEnclosingBlock(doc))
+    GenerateStyle ("margin-left:2em;", TRUE);
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void MarginLeftDecrease (Document doc, View view)
+{
+  if (GetEnclosingBlock(doc))
+    GenerateStyle ("margin-left:0;", TRUE);
+}
+
+/*----------------------------------------------------------------------
+  DoRemove Margin
+  Remove margin
+  ----------------------------------------------------------------------*/
+void DoRemoveMargin (Document doc, View view)
+{
+  RemoveSpecificStyle (doc, "margin-left:0");
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+static CSSInfoPtr GetCSSFromInfo(Document doc, PInfoPtr pInfo)
+{
+  CSSInfoPtr          css = CSSList;
+  PInfoPtr            pI;
+  while (css)
+    {
+      pI = css->infos[doc];
+      while (pI)
+        {
+          if(pI==pInfo)
+            return css;
+          pI = pI->PiNext;
+        }
+      css = css->NextCSS;
+    }
+  return NULL;
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void MakeDisableCSS(Document doc, PInfoPtr pInfo)
+{
+  CSSInfoPtr css;  
+    
+  /* disable the CSS file, but not remove */
+  if (pInfo->PiCategory == CSS_DOCUMENT_STYLE)
+    RemoveStyle (NULL, doc, TRUE, FALSE, pInfo->PiLink, pInfo->PiCategory);
+  else
+    {
+      css = GetCSSFromInfo(doc, pInfo);
+      if(css)
+        {
+          if(!css->url)
+            RemoveStyle (css->localName, doc, TRUE, FALSE, NULL, pInfo->PiCategory);
+          else
+            RemoveStyle (css->url, doc, TRUE, FALSE, NULL, pInfo->PiCategory);
+        }
+    }
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void MakeEnableCSS(Document doc, PInfoPtr pInfo)
+{
+  CSSInfoPtr css;  
+    
+  /* enable the CSS file */
+  if (pInfo->PiCategory == CSS_DOCUMENT_STYLE)
+    EnableStyleElement (doc, pInfo->PiLink);
+  else
+    {
+      css = GetCSSFromInfo(doc, pInfo);
+      if(css)
+        {
+          if(!css->url)
+            AddStyle (css->localName, doc, NULL, pInfo->PiCategory);
+          else
+            AddStyle (css->url, doc, NULL, pInfo->PiCategory);
+        }
+    }
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void MakeOpenCSS(Document doc, PInfoPtr pInfo)
+{
+  CSSInfoPtr css;
+  css = GetCSSFromInfo(doc, pInfo);
+  if(css)
+    {
+      if (pInfo->PiCategory == CSS_DOCUMENT_STYLE)
+        {
+          ShowSource (doc, 1);
+          return;
+        }
+      DontReplaceOldDoc = TRUE;
+      if(!css->url)
+        GetAmayaDoc (css->localName, NULL, doc, doc, CE_CSS, TRUE, NULL, NULL);
+      else
+        GetAmayaDoc (css->url, NULL, doc, doc, CE_CSS, TRUE, NULL, NULL);
+    }
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void MakeRemoveCSS(Document doc, PInfoPtr pInfo)
+{
+  CSSInfoPtr css;
+  Element    el;
+  ThotBool   open;
+  
+  /* remove the link to this file */
+  if (pInfo->PiCategory == CSS_DOCUMENT_STYLE)
+    DeleteStyleElement (doc, pInfo->PiLink);
+  else if (pInfo->PiCategory == CSS_EXTERNAL_STYLE)
+    {
+      css = GetCSSFromInfo(doc, pInfo);
+      
+      /* look for the element LINK */
+      el = pInfo->PiLink;
+      RemoveLink (el, doc);
+      /* register this element in the editing history */
+      open = !TtaHasUndoSequence (doc);
+      if (open)
+        TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
+      TtaRegisterElementDelete (el, doc);
+      TtaDeleteTree (el, doc);
+      if (open)
+        TtaCloseUndoSequence (doc);
+      TtaSetDocumentModified (doc);
+    }
 }
 
 
@@ -766,6 +1606,7 @@ static void CallbackCSS (int ref, int typedata, char *data)
             case 1:
               /* display the CSS file */
 #ifdef _WX
+              DontReplaceOldDoc = TRUE;
               GetAmayaDoc (ptr, NULL, CSSdocument,
                            CSSdocument, CE_CSS, TRUE, NULL, NULL);
 #else /* _WX */
@@ -846,7 +1687,7 @@ static void CallbackCSS (int ref, int typedata, char *data)
       break;
     case CSSValue:
       if (data)
-        GenerateStyle (data);
+        GenerateStyle (data, FALSE);
       else
         TtaDestroyDialogue (ref);
       break;

@@ -43,15 +43,14 @@
 #include "AmayaSimpleWindow.h"
 #include "AmayaPage.h"
 #include "AmayaToolBar.h"
-#include "AmayaNotebook.h"
 #include "AmayaPanel.h"
-#include "AmayaSubPanel.h"
 #include "AmayaXHTMLPanel.h"
-#include "AmayaSubPanelManager.h"
 
 #include "AmayaFileDropTarget.h"
 #include "AmayaFrame.h"
 
+/*----------------------------------------------------------------------
+  -----------------------------------------------------------------------*/
 bool AmayaFileDropTarget::OnDropFiles( wxCoord x, wxCoord y, const wxArrayString& filenames )
 {
   Document            doc;
@@ -71,11 +70,13 @@ bool AmayaFileDropTarget::OnDropFiles( wxCoord x, wxCoord y, const wxArrayString
     strcpy (buffer, (const char*)filenames[0].mb_str(wxConvUTF8));
     
     if (pDoc->Call_Text)
-      (*(Proc3)pDoc->Call_Text) ((void *)doc, (void *)view, (void *)buffer);
+      (*(Proc4)pDoc->Call_Text) ((void *)doc, (void *)view, (void *)buffer, (void *)TRUE);
   }
   return true;
 }
 
+/*----------------------------------------------------------------------
+  -----------------------------------------------------------------------*/
 AmayaFileDropTarget::~AmayaFileDropTarget ()
 {
 	m_pOwner = NULL;

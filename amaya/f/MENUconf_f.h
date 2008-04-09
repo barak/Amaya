@@ -23,6 +23,7 @@ extern void PublishConfMenu ( Document document,
                               View view );
 extern void GetEmailsConf ( void );
 extern void SetEmailsConf ( void );
+extern void GetDefaultEmailsConf ( void );
 extern void GetBrowseConf ( void );
 extern void SetBrowseConf ( void );
 extern void ApplyConfigurationChanges ( void );
@@ -33,14 +34,13 @@ extern void ColorConfMenu ( Document document,
                             View view );
 extern void SetGeometryConf ( int document,
                               const char * view_name );
-extern void GeometryConfMenu ( Document document,
-                               View view );
 extern void AnnotConfMenu ( Document document,
                             View view );
 extern void GetTemplatesConf ( void );
 extern void SetTemplatesConf ( void );
 extern void GetPasswordsConf ( void );
 extern void SetPasswordsConf ( void );
+extern void GetDefaultPasswordsConf ( void );
 extern int GetPrefGeneralBase ( void );
 extern int GetPrefBrowseBase ( void );
 extern int GetPrefCacheBase ( void );
@@ -100,6 +100,7 @@ extern void PublishConfMenu ( Document document,
                                 View view );
 extern void GetEmailsConf ( void );
 extern void SetEmailsConf ( void );
+extern void GetDefaultEmailsConf ( void );
 extern void GetBrowseConf ( void );
 extern void SetBrowseConf ( void );
 extern void ApplyConfigurationChanges ( void );
@@ -110,14 +111,13 @@ extern void ColorConfMenu ( Document document,
                               View view );
 extern void SetGeometryConf ( int document,
                                 const char * view_name );
-extern void GeometryConfMenu ( Document document,
-                                 View view );
 extern void AnnotConfMenu ( Document document,
                               View view );
 extern void GetTemplatesConf ( void );
 extern void SetTemplatesConf ( void );
 extern void GetPasswordsConf ( void );
 extern void SetPasswordsConf ( void );
+extern void GetDefaultPasswordsConf ( void );
 extern int GetPrefGeneralBase ( void );
 extern int GetPrefBrowseBase ( void );
 extern int GetPrefCacheBase ( void );

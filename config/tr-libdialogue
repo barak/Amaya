@@ -45,8 +45,8 @@
 43 Tamam
 44 Dizinleri
 45 %s belgesi zaten var, üzerine yazmak ister misiniz?
-46 Sol duğme tuş yazı rengini ayarlar
-47 Orta veya sağ tuş arkaplan rengini ayarlar
+46 **Set the text color
+47 **Set the background color
 48 Yazıtipi ailesi
 49 Normal
 50 Kalın
@@ -57,33 +57,33 @@
 55 Normal
 56 Altçizgi
 57 Cross out
-58 Body boyu (pt)
-59 İçeriden (pt)
-60 Satır aralığı (pt)
-61 Satır aralığı
-62 Belge kaydet
-63 Kapat, kaydetme
-64 Karakter tarzı
-65 Renkler
-66 XHTML
-67 Sil
-68 Çıktı
-69 PostScript dosya
-70 Yazıcı
-71 Metin arama
-72 BÜYÜK HARF = küçük harf
-73 ile değiştir
-74 Değiştir
-75 Değiştirme
-76 İstek üzerine değiştir
-77 Otomatik olarak değiştir
-78 Arama nerede
-79 Seçimden önce
-80 Seçim içi
-81 Seçimden sonra
-82 Tüm belgede
-83 Değiştirme
-84 Öntanımlı renkler
+58 Boyu
+59 **Unindent
+60 **Single line spacing
+61 **Middle line spacing
+62 **Double line spacing
+63 Belge kaydet
+64 Kapat, kaydetme
+65 Karakter tarzı
+66 Renkler
+67 XHTML
+68 Sil
+69 Çıktı
+70 PostScript dosya
+71 Yazıcı
+72 Metin arama
+73 BÜYÜK HARF = küçük harf
+74 ile değiştir
+75 Değiştir
+76 Değiştirme
+77 İstek üzerine değiştir
+78 Otomatik olarak değiştir
+79 Arama nerede
+80 Seçimden önce
+81 Seçim içi
+82 Seçimden sonra
+83 Tüm belgede
+84 Değiştirme
 85 kapamadan önce
 86 Belgeyi kapa
 87 Matematik sembolleri
@@ -95,7 +95,7 @@
 93 Grafik
 94 Simge
 95 Görüntü
-96 XML/XTiger
+96 XML
 97 önce
 98 sonra
 99 civarında
@@ -136,98 +136,139 @@
 134 "%s" yaratılamadı
 135 Üstçizgi
 136 Dokümanın forması
-137 Olaylar
-138 Özeliği sil
-139 Sol düğme seçilin rengini değiştiriyor
-140 Orta ve sağ düğme kürsör\'ün rengini değiştiriyor
-141 Diğer...
-142 Yenilendir
-143 Renk
-144 **Background color
-145 **Foreground color
-146 **Switch colors
-147 **Select a generic XML structure
-148 Kontrol ediliyor
-149 Atla ve sonraki
-150 Değiştir (+ sözlük)
-151 Değiştir
-152 Başka dil
-153 Atla (+ sözlük)
-154 Karakterleri içeren:
-155 Yazım hataları düzelt...
-156 Roma rakamları
-157 Aldırma
-158 Hepsi büyük harf olan sözcükler
-159 Rakam içeren sözcükler
-160 Parametre dosya hatası
-161 Tuştakımı dosyası yok
-162 Belge sözlüğü kaydedilemiyor
-163 Yanlış sözcük "%s" bu sözlükte kabul edilmiyor
-164 "%s" sözcüğü belge sözlüğüne eklendi
-165 Yazım hataları arama sonu
-166 Yazım hatası araması iptal edildi
-167 Lütfen bir belge seçin
-168 Belge sözlüğü kaydedildi: %s
-169 **Not available in this version
-170 **Enable/Disable palette
-171 **Tools
-172 **Mandatory attribute, it can't be removed
-173 **Refresh
-174 **Left
-175 **Right
-176 **Center
-177 **Justify
-178 Sınıf uygula
-179 Sınıf seçimi
-180 Sınıf seçimi
-181 **Discard
-182 Matematik
-183 **Misc
-184 **Binary relations
-185 **Binary relations of negation
-186 **Operators
-187 **Greek alphabet (capital)
-188 **Arrows
-189 **Special characters
-190 Aktarımı kes
-191 Önceki belge
-192 Sonraki belge
-193 Yeniden yükle
-194 Kaydet
-195 Yeni XHTML dosyası
-196 Belge aç
-197 Yazdır
-198 Ara
-199 Özel sayfa
-200 Vurgu On/Off
-201 Kuvvetli On/Off
-202 Kod On/Off
-203 Görüntü ekle
-204 Başlık 1
-205 Başlık 2
-206 Başlık 3
-207 Liste
-208 Numaralı liste
-209 Tanım listesi
-210 Bağlantı
-211 Tablo
-212 **You are about to close %d open tabs. Are you sure you want to continue?
-213 **Warn me when I attempt to close multiple tabs
-214 **Close tabs
-215 **No error detected
-216 Pars hatalarını göster
-217 **Boxes
-218 Bölme
-219 Yarat
-220 Araya Koy On/Off
-221 Sil On/Off
-222 Alt On/Off
-223 Üst On/Off
-224 Terim
-225 Tanım
-226 Nesne
-227 **CSS Style
-228 Dosyası
-229 **Horizontal split/unsplit
-230 **Vertical split/unsplit
-231 **Show/hide tools
+137 Özeliği sil
+138 **Select a background color
+139 **Select a text color
+140 **Select a generic XML structure
+141 Kontrol ediliyor
+142 Atla ve sonraki
+143 Değiştir (+ sözlük)
+144 Değiştir
+145 Başka dil
+146 Atla (+ sözlük)
+147 Karakterleri içeren:
+148 Yazım hataları düzelt...
+149 Roma rakamları
+150 Aldırma
+151 Hepsi büyük harf olan sözcükler
+152 Rakam içeren sözcükler
+153 Parametre dosya hatası
+154 Tuştakımı dosyası yok
+155 Belge sözlüğü kaydedilemiyor
+156 Yanlış sözcük "%s" bu sözlükte kabul edilmiyor
+157 "%s" sözcüğü belge sözlüğüne eklendi
+158 Yazım hataları arama sonu
+159 Yazım hatası araması iptal edildi
+160 Lütfen bir belge seçin
+161 Belge sözlüğü kaydedildi: %s
+162 **Not available in this version
+163 **Enable/Disable palette
+164 **Tools
+165 **Mandatory attribute, it can't be removed
+166 **Refresh
+167 **Align left
+168 **Align right
+169 **Center
+170 **Justify
+171 Sınıf uygula
+172 Sınıf seçimi
+173 Sınıf seçimi
+174 **Discard
+175 Matematik
+176 **Misc
+177 **Binary relations
+178 **Binary relations of negation
+179 **Operators
+180 **Greek alphabet (capital)
+181 **Arrows
+182 **Special characters
+183 Aktarımı kes
+184 Önceki belge
+185 Sonraki belge
+186 Yeniden yükle
+187 Kaydet
+188 Kaydet
+189 Yeni XHTML dosyası
+190 Belge aç
+191 Yazdır
+192 Ara
+193 Özel sayfa
+194 Vurgu On/Off
+195 Kuvvetli On/Off
+196 Kod On/Off
+197 Görüntü ekle
+198 Başlık 1
+199 Başlık 2
+200 Başlık 3
+201 Başlık 4
+202 Paragraf
+203 Liste
+204 Numaralı liste
+205 Tanım listesi
+206 Bağlantı
+207 Tablo
+208 **You are about to close %d open tabs. Are you sure you want to continue?
+209 **Warn me when I attempt to close multiple tabs
+210 **Close tabs
+211 **No error detected
+212 Pars hatalarını göster
+213 **Boxes
+214 Bölme
+215 Yarat
+216 Araya Koy On/Off
+217 Sil On/Off
+218 Alt On/Off
+219 Üst On/Off
+220 Terim
+221 Tanım
+222 Nesne
+223 **Style
+224 Dosyası
+225 **Horizontal split/unsplit
+226 **Vertical split/unsplit
+227 **Show/hide tools
+228 Geri al
+229 Iileri al
+230 Kes
+231 Kopyala
+232 Yapıştır
+233 Yazım hataları ara
+234 **Various constructs
+235 **Relations, orders and logic
+236 **Sets and functions
+237 **Arithmetic, operations, complexes and constants
+238 **Analysis, linear algebra and statistic
+239 **Trigonometry and logarithms
+240 Uzaklaştır
+241 Harita alanlarını göster
+242 **Theme
+243 XML
+244 Text
+245 **No recent document
+246 **Click an element to select it
+247 **Click to change the editing mode
+248 **Merge cells
+249 **Shrink horizontal extend
+250 **Shrink vertical extend
+251 **Insert a row
+252 **Append a row
+253 **Insert a column
+254 **Append a column
+255 **Tip of the day
+256 **Show tip at startup
+257 **Next tip
+258 **Did you know...
+259 **Close
+260 **Amaya can be adapted to your own needs: five profiles are provided with different sets of menus and panels. See Preferences/General.
+261 **Panels can be displayed on the left or on the right side of the window or even customized panel by panel. See Preferences.
+262 **With the F2 or Escape key you can select the parent element in the document structure, to apply editing functions (copy, paste, attributes, style, etc.) to the right element.
+263 **You can display two documents side by side in the window by dragging a document tab to the left or right side of the displayed document.
+264 **In customizable mode, you can drag panels to change their order or to make them floating.
+265 **With the customizable mode, you can move panels on both sides of the window just by dragging.
+266 **You can switch editing mode (Text/XML) by clicking on the corresponding button in the bottom right corner.
+267 **When there is red button in the bottom right corner, you can display errors by clicking on it.
+268 **You can select an ancestor of the current selection by clicking on its name on the path control displayed at the bottom of the window.
+269 **You can move to another tab with the menu displayed by the arrow button at right of document tabs.
+270 **Classic
+271 **Modern
+272 **No theme

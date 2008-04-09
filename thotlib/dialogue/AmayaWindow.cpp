@@ -43,45 +43,43 @@
 #include "input_f.h"
 
 #include "AmayaWindow.h"
-#include "AmayaPanel.h"
-#include "AmayaNotebook.h"
 #include "AmayaPage.h"
 #include "AmayaFrame.h"
 #include "AmayaCallback.h"
-#include "AmayaToolBar.h"
 #include "AmayaStatusBar.h"
-#include "AmayaPanel.h"
 #include "AmayaApp.h"
 #include "AmayaLogDebug.h"
 
-IMPLEMENT_DYNAMIC_CLASS(AmayaWindow, wxFrame)
+IMPLEMENT_ABSTRACT_CLASS(AmayaWindow, wxFrame)
 
   /* contains the last activated window id. */
   int AmayaWindow::m_ActiveWindowId = -1;
 
 DECLARE_EVENT_TYPE(wxEVT_AMAYA_ACTION_EVENT, -1)
-  DEFINE_EVENT_TYPE(wxEVT_AMAYA_ACTION_EVENT)
+DEFINE_EVENT_TYPE(wxEVT_AMAYA_ACTION_EVENT)
 
 /*----------------------------------------------------------------------
  *       Class:  AmayaWindow
  *      Method:  AmayaWindow
  * Description:  create a new AmayaWindow
   -----------------------------------------------------------------------*/
-AmayaWindow::AmayaWindow (  int window_id
-                              ,wxWindow *p_parent_window
+AmayaWindow::AmayaWindow (  wxWindow* parent
+                              ,wxWindowID id
                               ,const wxPoint &pos
                               ,const wxSize &size
                               ,int kind
                               ,long style
                               ) : 
-    wxFrame( wxDynamicCast(p_parent_window, wxWindow),
-             -1, _T(""), pos, size, style ),
+    wxFrame(parent, id, wxT(""), pos, size, style ),
     m_Kind( kind ),
-    m_WindowId( window_id ),
+    m_WindowId( id ),
     m_ActiveFrameId( 0 ),
-    m_MustCheckFocusIsNotLost( false ),
-    m_pMenuBar(NULL)
+    m_MustCheckFocusIsNotLost( false )
 {
+  WindowTable[id].WdWindow = this;
+  WindowTable[id].FrWidth  = 640;
+  WindowTable[id].FrHeight = 480;
+
   TTALOGDEBUG_1( TTA_LOG_DIALOG,  _T("AmayaWindow::AmayaWindow: window_id=%d"), m_WindowId );
   SetIcon( AmayaApp::GetAppIcon() );
 
@@ -102,6 +100,7 @@ AmayaWindow::AmayaWindow (  int window_id
 AmayaWindow::~AmayaWindow()
 {
   TTALOGDEBUG_1( TTA_LOG_DIALOG, _T("AmayaWindow::~AmayaWindow: window_id=%d"), m_WindowId );
+  
   // empty the current window entry
   memset(&WindowTable[m_WindowId], 0, sizeof(Window_Ctl));
 
@@ -112,13 +111,58 @@ AmayaWindow::~AmayaWindow()
 
 /*----------------------------------------------------------------------
  *       Class:  AmayaWindow
+ *      Method:  Initialize
+ * Description:  Initialize common part of all AmayaNormalWindow-based.
+ -----------------------------------------------------------------------*/
+bool AmayaWindow::Initialize()
+{
+  AmayaStatusBar* sbar = CreateStatusBar();
+  if(sbar)
+    SetStatusBar(sbar);
+  
+  CreateMenuBar();
+  
+  LoadConfig();  
+  return true;
+}
+
+/*----------------------------------------------------------------------
+ *       Class:  AmayaWindow
+ *      Method:  LoadConfig
+ * Description:  Load the config from registry and initialize dependancies
+ -----------------------------------------------------------------------*/
+void AmayaWindow::LoadConfig()
+{
+}
+
+/*----------------------------------------------------------------------
+ *       Class:  AmayaWindow
+ *      Method:  SaveConfig
+ * Description:  Save config to registry
+ -----------------------------------------------------------------------*/
+void AmayaWindow::SaveConfig()
+{
+  TtaSaveAppRegistry();
+}
+
+/*----------------------------------------------------------------------
+ *       Class:  AmayaWindow
  *      Method:  CreatePage
  * Description:  create a new AmayaPage, the notebook will be the parent page
  *               it's possible to attach automaticaly this page to the window or not
   -----------------------------------------------------------------------*/
-AmayaPage * AmayaWindow::CreatePage( bool attach, int position )
+AmayaPage * AmayaWindow::CreatePage( Document doc,  bool attach, int position )
 {
+  printf("AmayaWindow::CreatePage\n");
   return NULL;
+}
+/*----------------------------------------------------------------------
+ *       Class:  AmayaWindow
+ *      Method:  SetPageIcon
+ * Description:  
+ -----------------------------------------------------------------------*/
+void AmayaWindow::SetPageIcon(int page_id, char *iconpath)
+{
 }
 
 /*----------------------------------------------------------------------
@@ -254,18 +298,6 @@ void AmayaWindow::EmptyURLBar()
 
 /*----------------------------------------------------------------------
  *       Class:  AmayaWindow
- *      Method:  SetMenuBar
- * Description:  override the wxFrame::SetMenuBar methode to remember the menubar for fullscreen mode
-  -----------------------------------------------------------------------*/
-void AmayaWindow::SetMenuBar( wxMenuBar * p_menu_bar )
-{
-  m_pMenuBar = p_menu_bar;
-  wxFrame::SetMenuBar(p_menu_bar);
-}
-
-
-/*----------------------------------------------------------------------
- *       Class:  AmayaWindow
  *      Method:  OnSize
  * Description:  the window is resized, we must recalculate by hand the new urlbar size
  *               (wxWidgets is not able to do that itself ...)
@@ -286,23 +318,33 @@ void AmayaWindow::OnSize( wxSizeEvent& event )
 
 /*----------------------------------------------------------------------
  *       Class:  AmayaWindow
- *      Method:  GetAmayaToolBar
- * Description:  return the current toolbar
+ *      Method:  GetStatusBar
+ * Description:  
   -----------------------------------------------------------------------*/
-AmayaToolBar * AmayaWindow::GetAmayaToolBar()
+AmayaStatusBar * AmayaWindow::GetStatusBar()
+{
+  return wxDynamicCast(wxFrame::GetStatusBar(), AmayaStatusBar);
+}
+
+/*----------------------------------------------------------------------
+ *       Class:  AmayaWindow
+ *      Method:  CreateStatusBar
+ * Description:  
+  -----------------------------------------------------------------------*/
+AmayaStatusBar * AmayaWindow::CreateStatusBar()
 {
   return NULL;
 }
 
 /*----------------------------------------------------------------------
  *       Class:  AmayaWindow
- *      Method:  GetAmayaStatusBar
+ *      Method:  CreateMenuBar
  * Description:  
   -----------------------------------------------------------------------*/
-AmayaStatusBar * AmayaWindow::GetAmayaStatusBar()
+void AmayaWindow::CreateMenuBar()
 {
-  return NULL;
 }
+
 
 /*----------------------------------------------------------------------
  *       Class:  AmayaWindow
@@ -333,6 +375,9 @@ void AmayaWindow::CleanUp()
 {
 }
 
+
+
+
 /*----------------------------------------------------------------------
  *       Class:  AmayaWindow
  *      Method:  OnIdle
@@ -344,18 +389,19 @@ void AmayaWindow::OnIdle( wxIdleEvent& event )
   // it can not be procced in OnActivate callback because the wxWindow::FindFocus is allways NULL (bug)
   if (m_MustCheckFocusIsNotLost)
     {
-      wxWindow *       p_win_focus         = wxWindow::FindFocus();
+      wxWindow *p_win_focus = wxWindow::FindFocus();
       if (p_win_focus)
-        TTALOGDEBUG_1( TTA_LOG_FOCUS, _T("AmayaWindow::OnIdle - focus = %s"), p_win_focus->GetClassInfo()->GetClassName())
-          else
-            {
-              TTALOGDEBUG_0( TTA_LOG_FOCUS, _T("AmayaWindow::OnIdle - no focus"));
+        TTALOGDEBUG_1( TTA_LOG_FOCUS, _T("AmayaWindow::OnIdle - focus = %s"),
+                       p_win_focus->GetClassInfo()->GetClassName())
+      else
+        {
+          TTALOGDEBUG_0( TTA_LOG_FOCUS, _T("AmayaWindow::OnIdle - no focus"));
 #ifndef _MACOS
-              TtaRedirectFocus();
+          TtaRedirectFocus();
 #else /* _MACOS */
-              TtaCheckLostFocus();
+          TtaCheckLostFocus();
 #endif /* _MACOS */
-            }
+        }
       m_MustCheckFocusIsNotLost = false;
     }
 
@@ -394,50 +440,49 @@ void AmayaWindow::OnActivate( wxActivateEvent & event )
 
 /*----------------------------------------------------------------------
  *       Class:  AmayaWindow
- *      Method:  GetAmayaPanel
- * Description:  return the window's panel (exist only on AmayaNormalWindow)
+ *      Method:  UpdateToolPanelLayout
+ * Description:  Update the layout of the toolpanels
   -----------------------------------------------------------------------*/
-AmayaPanel * AmayaWindow::GetAmayaPanel() const
+void AmayaWindow::UpdateToolPanelLayout()
 {
-  return NULL;
 }
 
 /*----------------------------------------------------------------------
  *       Class:  AmayaWindow
- *      Method:  ClosePanel
+ *      Method:  HideToolPanels
  * Description:  close the side panel
   -----------------------------------------------------------------------*/
-void AmayaWindow::ClosePanel()
+void AmayaWindow::HideToolPanels()
 {
 }
 
 /*----------------------------------------------------------------------
  *       Class:  AmayaWindow
- *      Method:  OpenPanel
+ *      Method:  ShowToolPanels
  * Description:  open the side panel
   -----------------------------------------------------------------------*/
-void AmayaWindow::OpenPanel()
+void AmayaWindow::ShowToolPanels()
 {
 }
 
 /*----------------------------------------------------------------------
  *       Class:  AmayaWindow
- *      Method:  IsPanelOpened
+ *      Method:  ToolPanelsShown
  * Description:  returns true if the side panel is opened
   -----------------------------------------------------------------------*/
-bool AmayaWindow::IsPanelOpened()
+bool AmayaWindow::ToolPanelsShown()
 {
   return false;
 }
 
 /*----------------------------------------------------------------------
  *       Class:  AmayaWindow
- *      Method:  RefreshShowPanelToggleMenu
+ *      Method:  RefreshShowToolPanelToggleMenu
  * Description:  is called to toggle on/off the "Show/Hide panel" menu item depeding on
  *               the panel showing state.
  *               Only used by AmayaNormalWindow
   -----------------------------------------------------------------------*/
-void AmayaWindow::RefreshShowPanelToggleMenu()
+void AmayaWindow::RefreshShowToolPanelToggleMenu()
 {
 }
 
@@ -452,24 +497,8 @@ void AmayaWindow::ToggleFullScreen()
   //     but it require to contribute to wxwidgets (submit a patch)
   //     it's possible with this function gtk_notebook_set_show_tabs()
   //     (http://developer.gnome.org/doc/API/2.0/gtk/GtkNotebook.html#gtk-notebook-set-show-tabs)
-  if (IsFullScreen())
-    {
-      wxFrame::SetMenuBar(m_pMenuBar);
-      if (GetStatusBar())
-        GetStatusBar()->Show();
-      if (GetAmayaToolBar())
-        GetAmayaToolBar()->Show();
-      ShowFullScreen(false);
-    }
-  else
-    {
-      wxFrame::SetMenuBar(NULL);
-      if (GetStatusBar())
-        GetStatusBar()->Hide();
-      if (GetAmayaToolBar())
-        GetAmayaToolBar()->Hide();
-      ShowFullScreen(true);
-    }
+  ShowFullScreen(!IsFullScreen());
+  
 }
 
 /*----------------------------------------------------------------------
@@ -523,15 +552,41 @@ void AmayaWindow::OnAmayaAction( wxCommandEvent& event )
   
   int action_id = event.GetId();
   int doc       = event.GetExtraLong();
-  int view      = event.GetInt();  
-  TtaExecuteMenuActionFromActionId(action_id, doc, view, FALSE);
+  int view      = event.GetInt();
+
+  if (LoadedDocument[doc-1] != NULL)
+    TtaExecuteMenuActionFromActionId(action_id, doc, view, FALSE);
 }
+
+/*----------------------------------------------------------------------
+ *       Class:  AmayaWindow
+ *      Method:  OnCloseEvent
+ * Description:  catch the close event
+  -----------------------------------------------------------------------*/
+void AmayaWindow::OnCloseEvent(wxCloseEvent& event)
+{
+  SaveConfig();
+  event.Skip();
+}
+
+/*----------------------------------------------------------------------
+ *       Class:  AmayaWindow
+ *      Method:  OnPopupMenuEvent
+ * Description:  catch the close event
+  -----------------------------------------------------------------------*/
+void AmayaWindow::OnPopupMenuEvent(wxCommandEvent& event)
+{
+  TtaSetEnumContextMenu(event.GetId()); 
+  //event.Skip();
+}
+
 
 /*----------------------------------------------------------------------
  *  this is where the event table is declared
  *  the callbacks are assigned to an event type
  *----------------------------------------------------------------------*/
 BEGIN_EVENT_TABLE(AmayaWindow, wxFrame)
+  EVT_MENU_RANGE(1000, 2000, AmayaWindow::OnPopupMenuEvent)
   EVT_SIZE(      AmayaWindow::OnSize )
   EVT_IDLE(      AmayaWindow::OnIdle ) // Process a wxEVT_IDLE event  
   EVT_ACTIVATE(  AmayaWindow::OnActivate )
@@ -541,6 +596,7 @@ BEGIN_EVENT_TABLE(AmayaWindow, wxFrame)
   //  EVT_CHAR( AmayaWindow::OnChar )
 #endif /* !_WINDOWS  && ! MACOS */
   EVT_COMMAND(-1, wxEVT_AMAYA_ACTION_EVENT, AmayaWindow::OnAmayaAction)
-  END_EVENT_TABLE()
+  EVT_CLOSE(AmayaWindow::OnCloseEvent)
+END_EVENT_TABLE()
 
 #endif /* #ifdef _WX */

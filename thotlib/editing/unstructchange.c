@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2007
+ *  (c) COPYRIGHT INRIA, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -28,6 +28,7 @@
 #include "dialog.h"
 #include "tree.h"
 #include "content.h"
+#include "registry.h"
 
 #undef THOT_EXPORT
 #define THOT_EXPORT extern
@@ -604,13 +605,15 @@ void PasteCommand ()
   int                 firstChar, lastChar, view, i, nRowsTempCol, info = 0;
   int                 colspan, rowspan, back, rowType;
   ThotBool            ok, before, within, lock, cancelled, first, beginning;
-  ThotBool            savebefore, withinTable;
+  ThotBool            savebefore, withinTable, histOpen;
 
   before = FALSE;
   withinTable = FALSE;
   pColHead = pRow = pNextRow = pTable = pRealCol = NULL;
   if (FirstSavedElement == NULL)
     return;
+  cellType.ElTypeNum = 0;
+  cellType.ElSSchema = NULL;
   if (GetCurrentSelection (&pDoc, &firstSel, &lastSel, &firstChar, &lastChar))
     {
       /* cannot paste within a read only document */
@@ -637,9 +640,10 @@ void PasteCommand ()
               /* table formatting is not loked, lock it now */
               TtaLockTableFormatting ();
             }
-
-          OpenHistorySequence (pDoc, firstSel, lastSel, NULL, firstChar,
-                               lastChar-1);
+          histOpen = TtaHasUndoSequence (doc);
+          if (!histOpen)
+            OpenHistorySequence (pDoc, firstSel, lastSel, NULL, firstChar,
+                                 lastChar-1);
           pCell = NULL;
           if (WholeColumnSaved || TableRowsSaved)
             {
@@ -1109,7 +1113,8 @@ void PasteCommand ()
 
           /* close the history sequence after applications have possibly
              registered more changes to the pasted elements */
-          CloseHistorySequence (pDoc);
+          if (!histOpen)
+            CloseHistorySequence (pDoc);
 
           if (!lock)
             {
@@ -1167,7 +1172,7 @@ void SelectSiblings (PtrElement *firstEl, PtrElement *lastEl,
   if (!SelContinue)
     /* discrete selection. don't do anything */
     return;
-  if (SelectedColumn)
+  if (FirstSelectedColumn)
     /* We are in column selection mode */
     {
       /* if the selection starts at the beginning of an element, select
@@ -1481,20 +1486,55 @@ static PtrElement ParentNotTemplate (PtrElement pEl)
 }
 
 /*----------------------------------------------------------------------
-  TtcCreateElement handles the key "Return".
+  IsXMLEditMode returns the current edit mode
+  ----------------------------------------------------------------------*/
+ThotBool IsXMLEditMode ()
+{
+  PtrDocument         pDoc;
+  PtrElement          firstSel, lastSel;
+  int                 firstChar, lastChar;
+  ThotBool            edit;
+
+  TtaGetEnvBoolean ("XML_EDIT_MODE", &edit);
+  if (!edit)
+    {
+      // check if the insert point is within a XML structure
+      if (GetCurrentSelection (&pDoc, &firstSel, &lastSel, &firstChar, &lastChar))
+        {
+          if (firstSel && firstSel->ElStructSchema &&
+              (!strcmp (firstSel->ElParent->ElStructSchema->SsName, "XML") ||
+               !strcmp (firstSel->ElParent->ElStructSchema->SsName, "SVG") ||
+               !strcmp (firstSel->ElParent->ElStructSchema->SsName, "MathML")))
+            // force the XML edit mode
+            return TRUE;
+        }
+    }
+  return edit;
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+static ThotBool NotifyNewElement (Document doc, Element el, ThotBool before)
+{
+}
+
+/*----------------------------------------------------------------------
+  TtcCreateElement handles the Return (or Enter) key.
   ----------------------------------------------------------------------*/
 void TtcCreateElement (Document doc, View view)
 {
-  PtrElement          firstSel, lastSel, pListEl, pE, pNew, pSibling;
+  PtrElement          firstSel, lastSel, pListEl, pE, pE1, pNew, pSibling, parent;
   PtrElement          pClose, pAncest, pElem, pParent, pElDelete, pPrevious;
-  PtrElement          pNext, pElReplicate, pAggregEl, pSib;
+  PtrElement          pNext, pElReplicate, pAggregEl, pSib, firstEl, lastEl;
   PtrDocument         pDoc;
   PtrSSchema          pSS;
   NotifyElement       notifyEl;
-  int                 firstChar, lastChar, NSiblings;
+  int                 firstChar, lastChar, NSiblings, i, j;
   int                 frame, typeNum, nComp;
   ThotBool            ok, replicate, createAfter, selBegin, selEnd, ready;
-  ThotBool            empty, list, optional, deleteEmpty, histSeq;
+  ThotBool            empty, list, optional, deleteEmpty, histSeq,
+                      xmlmode, previous, following, specialBreak,
+                      insertionPoint, extendHistory, prevHist;
   ThotBool            lock = TRUE;
   DisplayMode         dispMode;
 
@@ -1514,6 +1554,76 @@ void TtcCreateElement (Document doc, View view)
         /* use the right frame */
         ActiveFrame = frame;
     }
+  extendHistory = FALSE;
+  xmlmode = IsXMLEditMode ();
+  if (!xmlmode)
+    /* We should perhaps do the following whatever the editing mode,
+       AmayaLite or not ... */
+    {
+      /* if the selection is not an insertion point nor an empty element,
+         first delete the selected content/elements */
+      insertionPoint = (firstSel == lastSel  &&
+                        firstSel->ElTerminal &&
+                        ((firstSel->ElLeafType == LtText && SelPosition)     ||
+                         (firstSel->ElLeafType == LtPicture && SelPosition)  ||
+                         firstSel->ElLeafType == LtGraphics ||
+                         firstSel->ElLeafType == LtPolyLine ||
+                         firstSel->ElLeafType == LtPath     ||
+                         firstSel->ElLeafType == LtSymbol));
+      empty = (firstSel == lastSel &&
+               (firstSel->ElVolume == 0 ||
+                TypeHasException (ExcIsBreak, firstSel->ElTypeNumber,
+                                  firstSel->ElStructSchema)));
+      if (!insertionPoint && !empty)
+        {
+          // get the future insert point
+          if (firstChar == 0 && lastChar == 0)
+            {
+              if (ElementIsReadOnly (firstSel->ElParent) ||
+                  ElementIsReadOnly (lastSel->ElParent))
+                return;
+              dispMode = TtaGetDisplayMode (doc);
+              if (dispMode == DisplayImmediately)
+                TtaSetDisplayMode (doc, DeferredDisplay);
+              if (!TypeHasException (ExcIsCell, firstSel->ElTypeNumber, firstSel->ElStructSchema))
+                {
+                  // duplicate first the first selected element
+                  CreateNewElement (firstSel->ElTypeNumber, firstSel->ElStructSchema,
+                                    pDoc, TRUE);
+                  TtaExtendUndoSequence (doc);
+                }
+              // keep the new selection
+              GetCurrentSelection (&pDoc, &pE, &pE1, &i, &j);
+              // restore the initial selection
+              SelectElement (pDoc, firstSel, TRUE, FALSE, TRUE);
+              if (lastSel != firstSel)
+                ExtendSelection (lastSel, 0, TRUE, FALSE, FALSE);
+              CutCommand (FALSE, FALSE);
+              // set the new selection
+              SelectElement (pDoc, pE, TRUE, TRUE, TRUE);
+              if (dispMode == DisplayImmediately)
+                TtaSetDisplayMode (doc, dispMode);
+              // check if the undo history is not closed
+              if (TtaHasUndoSequence (doc))
+                TtaCloseUndoSequence (doc);
+              return;
+            }
+          /* delete the selected content/elements the usual way */
+          TtcDeleteSelection (doc, view);
+          /* the Cut command has closed its history sequence. We will need
+             to extend this sequence instead of opening a new one for the
+             elements that will be created/deleted in the following */
+          extendHistory = TRUE;
+          /* get the new selection after the deletion */
+          GetCurrentSelection (&pDoc, &firstSel, &lastSel, &firstChar, &lastChar);
+          if (firstSel == lastSel &&
+              (TypeHasException (ExcIsCell, firstSel->ElTypeNumber, firstSel->ElStructSchema) ||
+               TypeHasException (ExcIsRow, firstSel->ElTypeNumber, firstSel->ElStructSchema)))
+            return;
+        }
+    }
+  firstEl = firstSel;
+  lastEl = lastSel;
   if (!ElementIsReadOnly (firstSel) && AscentReturnCreateNL (firstSel))
     {
       /* one of the ancestors of the first selected element says that the
@@ -1521,7 +1631,7 @@ void TtcCreateElement (Document doc, View view)
       InsertChar (GetWindowNumber (doc, view), '\n', -1);
       CloseTextInsertion ();
     }
-  else if (firstSel->ElParent && !ElementIsReadOnly (firstSel->ElParent))
+  else if (firstSel && firstSel->ElParent && !ElementIsReadOnly (firstSel->ElParent))
     {
       /* lock the table formatting */
       TtaGiveTableFormattingLock (&lock);
@@ -1534,25 +1644,25 @@ void TtcCreateElement (Document doc, View view)
       createAfter = TRUE;
       replicate = TRUE;
       ready = FALSE;
-      empty = FALSE;
       list = TRUE;
       pElDelete = NULL;
       pElReplicate = NULL;
       typeNum = 0;
       pSS = NULL;
       deleteEmpty = FALSE;
-      histSeq = FALSE;	/* no history sequence open */
+      histSeq = FALSE;	/* no new history sequence open */
+      prevHist = TtaHasUndoSequence (doc);	/* is there a history sequence open */
       if (firstChar > 0 && firstChar == lastChar)
         lastChar--;
 
       /* si la selection ne comprend qu'un element vide ou un <br/>, on essaie
          de remplacer cet element par un autre au niveau superieur */
-      if (firstSel == lastSel && (firstSel->ElVolume == 0 ||
-                                  TypeHasException (ExcIsBreak,
-                                                    firstSel->ElTypeNumber,
-                                                    firstSel->ElStructSchema)))
+      empty = (firstSel == lastSel &&
+               (firstSel->ElVolume == 0 ||
+                TypeHasException (ExcIsBreak, firstSel->ElTypeNumber,
+                                  firstSel->ElStructSchema)));
+      if (empty)
         {
-          empty = TRUE;
           pElem = firstSel;
           while (pElem->ElParent && EmptyElement (pElem->ElParent) &&
                  !TypeHasException (ExcNoBreakByReturn,
@@ -1589,8 +1699,7 @@ void TtcCreateElement (Document doc, View view)
                   }
                 else if (pListEl == NULL)
                   {
-                    if (GetElementConstruct (pParent->ElParent, &nComp) ==
-                        CsAggregate)
+                    if (GetElementConstruct (pParent->ElParent, &nComp) == CsAggregate)
                       {
                         SRuleForSibling (pDoc, pParent, FALSE, 1, &typeNum,
                                          &pSS, &list, &optional);
@@ -1606,25 +1715,19 @@ void TtcCreateElement (Document doc, View view)
                                 pElem->ElNext != NULL)
                               {
                                 /* store the editing operation in the history*/
-                                if (!histSeq)
+                                if (!prevHist && !histSeq)
                                   {
-                                    OpenHistorySequence (pDoc, firstSel, lastSel,
-                                                         NULL, firstChar, lastChar);
+                                    if (extendHistory)
+                                      TtaExtendUndoSequence (doc);
+                                    else
+                                      OpenHistorySequence (pDoc, firstSel,
+                                           lastSel, NULL, firstChar, lastChar);
                                     histSeq = TRUE;
                                   }
-                                AddEditOpInHistory (pParent->ElParent, pDoc,
-                                                    TRUE, TRUE);
-                                if (!BreakElement (pParent->ElParent, pElem,
-                                                   0, FALSE, TRUE))
-                                  /* operation failed, remove it from history*/
-                                  CancelLastEditFromHistory (pDoc);
-                                else
+                                if (BreakElement (pParent->ElParent, pElem,
+                                                  0, FALSE, TRUE))
                                   /* element pParent has been split */
                                   {
-                                    /* record the element that has been
-                                       created by BreakElement: it has to be
-                                       deleted when undoing the command */
-                                    AddEditOpInHistory (pParent->ElParent->ElNext, pDoc, FALSE, TRUE);
                                     SRuleForSibling (pDoc, pParent, FALSE, 1,
                                                      &typeNum, &pSS, &list, &optional);
                                     if (typeNum > 0)
@@ -1730,22 +1833,18 @@ void TtcCreateElement (Document doc, View view)
                       /* try to split element pParent before element pElem */
                       {
                         /* store the editing operation in the history */
-                        if (!histSeq)
+                        if (!prevHist && !histSeq)
                           {
-                            OpenHistorySequence (pDoc, firstSel, lastSel, NULL,
-                                                 firstChar, lastChar);
+                            if (extendHistory)
+                              TtaExtendUndoSequence (doc);
+                            else
+                              OpenHistorySequence (pDoc, firstSel, lastSel,
+                                                   NULL, firstChar, lastChar);
                             histSeq = TRUE;
                           }
-                        AddEditOpInHistory (pParent, pDoc, TRUE, TRUE);
-			
                         if (BreakElement (pParent, pElem, 0, FALSE, FALSE))
                           /* element pParent has been split */
                           {
-                            /* record the element that has been
-                               created by BreakElement: it has to be
-                               deleted when undoing the command */
-                            AddEditOpInHistory (pParent->ElNext, pDoc, FALSE,
-                                                TRUE);
                             ready = TRUE;
                             pElDelete = pElem;
                             createAfter = TRUE;
@@ -1753,11 +1852,7 @@ void TtcCreateElement (Document doc, View view)
                           }
                         else
                           /* cannot split element */
-                          {
-                            /* remove operation from history */
-                            CancelLastEditFromHistory (pDoc);
-                            pListEl = NULL;
-                          }
+                          pListEl = NULL;
                       }
                   }
                 if (list && pListEl == NULL)
@@ -1791,11 +1886,12 @@ void TtcCreateElement (Document doc, View view)
             pListEl = NULL;
         }
 	
+      selBegin = FALSE;
+      selEnd = FALSE;
       if (!ready && !empty)
         {
           /* La selection commence-t-elle en tete ou en queue d'element? */
-          selBegin = FALSE;
-          selEnd = FALSE;
+          pListEl = NULL;
           ok = TRUE;
           if (firstSel == lastSel)
             /* only one element selected */
@@ -1820,16 +1916,16 @@ void TtcCreateElement (Document doc, View view)
                     }
                   else if (firstSel->ElLeafType == LtPicture)
                     {
-                      // check previous and next of the picture
-                      PtrElement parent = firstSel->ElParent;
+                      // check previous and next siblings of the picture
+                      parent = firstSel->ElParent;
                       if (TypeHasException (ExcIsImg, parent->ElTypeNumber,
                                             parent->ElStructSchema))
-                        firstSel = lastSel = parent;
-                      if (firstSel->ElPrevious == NULL && firstChar == 0)
-                        /* no previous and a selection at the left border */
+                        firstEl = lastEl = parent;
+                      if (firstEl->ElPrevious == NULL && firstChar == 0)
+                        /* no previous and selection is on the left border */
                         selBegin = TRUE;
-                      if (firstSel->ElNext == NULL && firstChar > 0)
-                        /* no next and a selection at the right border */
+                      if (firstEl->ElNext == NULL && firstChar > 0)
+                        /* no next and selection is on the right border */
                         selEnd = TRUE;
                     }
                   else
@@ -1841,8 +1937,8 @@ void TtcCreateElement (Document doc, View view)
                           firstSel->ElPrevious == NULL &&
                           firstSel->ElNext == NULL &&
                           firstSel->ElParent)
-                        /* select the enclosing element */
-                        firstSel = lastSel = firstSel->ElParent;
+                        /* use the enclosing element */
+                        firstEl = lastEl = firstSel->ElParent;
                       selBegin = TRUE;
                       selEnd = TRUE;
                     }
@@ -1855,28 +1951,88 @@ void TtcCreateElement (Document doc, View view)
                 }
             }
 
+          specialBreak = FALSE;
+          if (!xmlmode)
+            {
+              /* if we are within a Paragraph (or equivalent) at any level,
+                 we split that element */
+              pE = firstEl->ElParent;
+              previous = FALSE;
+              following = FALSE;
+              while (pE &&
+                     !TypeHasException (ExcParagraphBreak, pE->ElTypeNumber,
+                                        pE->ElStructSchema))
+                {
+                  if (selBegin && pE->ElPrevious)
+                    previous = TRUE;
+                  if (selEnd && pE->ElNext)
+                    following = TRUE;
+                  pE = pE->ElParent;
+                }
+              if (pE)
+                /* there is an enclosing Paragraph (or equivalent) element,
+                   we can split it */
+                {
+                  if (previous)
+                    selBegin = FALSE;
+                  if (following)
+                    selEnd = FALSE;
+                }
+              /* if the Paragraph (or equivalent) element is within a HTML <li>
+                 we split that <li> element */
+              previous = FALSE;
+              following = FALSE;
+              pE1 = pE;
+              while (pE1 &&
+                     !TypeHasException (ExcListItemBreak, pE1->ElTypeNumber,
+                                        pE1->ElStructSchema))
+                {
+                  if (selBegin && pE1->ElPrevious)
+                    previous = TRUE;
+                  if (selEnd && pE1->ElNext)
+                    following = TRUE;
+                  pE1 = pE1->ElParent;
+                }
+              if (pE1)
+                {
+                  pE = pE1;
+                  if (previous)
+                    selBegin = FALSE;
+                  if (following)
+                    selEnd = FALSE;
+                }
+              if (pE)
+                /* there is an enclosing Paragraph or <li> element, we
+                   split it */
+                {
+                  specialBreak = TRUE;
+                  pElReplicate = pE;
+                  pListEl = ParentNotTemplate(pE);
+                }
+            }
+
           /* Si la selection ne commence ni en tete ni en queue, on */
-          /* essaie de couper un paragraphe en deux */
+          /* essaie de couper un element en deux */
           if (!selBegin && !selEnd &&
-              CanSplitElement (firstSel, firstChar, TRUE, &pAncest, &pE,
-                               &pElReplicate))
+              (specialBreak || CanSplitElement (firstEl, firstChar, TRUE,
+                                                &pAncest, &pE, &pElReplicate)))
             {
               /* register the operation in history */
-              if (!histSeq)
+              if (!prevHist && !histSeq)
                 {
-                  OpenHistorySequence (pDoc, firstSel, lastSel, NULL,
-                                       firstChar, lastChar);
+                  if (extendHistory)
+                    TtaExtendUndoSequence (doc);
+                  else
+                    OpenHistorySequence (pDoc, firstSel, lastSel, NULL,
+                                         firstChar, lastChar);
                   histSeq = TRUE;
                 }
-              AddEditOpInHistory (pElReplicate, pDoc, TRUE, TRUE);
-	      
-              if (BreakElement (NULL, firstSel, firstChar, TRUE, TRUE))
+              if (!specialBreak)
+                pElReplicate = NULL;
+              if (BreakElement (pElReplicate, firstEl, firstChar, TRUE, TRUE))
                 {
-                  /* record the element that has been created by
-                     BreakElement: it has to be deleted when undoing the
-                     command */
-                  AddEditOpInHistory (pElReplicate->ElNext, pDoc, FALSE, TRUE);
-                  CloseHistorySequence (pDoc);
+                  if (histSeq)
+                    CloseHistorySequence (pDoc);
                   if (!lock)
                     /* unlock table formatting */
                     TtaUnlockTableFormatting ();
@@ -1886,24 +2042,22 @@ void TtcCreateElement (Document doc, View view)
                 {
                   ok = FALSE;
                   pListEl = NULL;
-                /* remove operation from history */
-                CancelLastEditFromHistory (pDoc);
                 }
             }
 
           /* on cherche l'element CsList ascendant qui permet de creer un */
           /* element voisin */
-          if (lastSel->ElTerminal && lastSel->ElLeafType == LtPageColBreak)
+          if (lastEl->ElTerminal && lastEl->ElLeafType == LtPageColBreak)
             /* on ne duplique pas les sauts de pages */
             pListEl = NULL;
-          else if (ok)
+          else if (ok && !pListEl)
             {
-              if (lastSel->ElParent &&
-                  GetElementConstruct (lastSel->ElParent, &nComp) == CsAny)
-                pListEl = lastSel->ElParent;
+              if (lastEl->ElParent &&
+                  GetElementConstruct (lastEl->ElParent, &nComp) == CsAny)
+                pListEl = ParentNotTemplate(lastEl);
               else
                 {
-                  pAncest = lastSel;
+                  pAncest = lastEl;
                   /* ignore the next Template ancestors */
                   while (pAncest->ElParent && pAncest->ElParent->ElStructSchema &&
                          !strcmp (pAncest->ElParent->ElStructSchema->SsName, "Template"))
@@ -1913,17 +2067,17 @@ void TtcCreateElement (Document doc, View view)
               /* si c'est la fin d'une liste de Textes on remonte */
               if (pListEl != NULL)
                 {
-                  if (lastSel->ElTerminal &&
-                      (lastSel->ElNext == NULL || selBegin) &&
-                      pListEl == ParentNotTemplate(lastSel) &&
-                      GetElementConstruct (lastSel->ElParent, &nComp) != CsAny &&
+                  if (lastEl->ElTerminal &&
+                      (lastEl->ElNext == NULL || selBegin) &&
+                      pListEl == ParentNotTemplate(lastEl) &&
+                      GetElementConstruct (lastEl->ElParent, &nComp) != CsAny &&
                       !TypeHasException (ExcReturnCreateWithin,
                                          pListEl->ElTypeNumber,
                                          pListEl->ElStructSchema))
                     {
-                      if (pListEl->ElParent &&
-                          GetElementConstruct (pListEl->ElParent, &nComp) == CsAny)
-                        pListEl = pListEl->ElParent;
+                      pE1 = ParentNotTemplate(pListEl);
+                      if (pE1 && GetElementConstruct (pE1, &nComp) == CsAny)
+                        pListEl = pE1;
                       else
                         {
                           pAncest = pListEl;
@@ -1938,15 +2092,15 @@ void TtcCreateElement (Document doc, View view)
               else
                 {
                   /* There is no List ancestor, search an Any parent */
-                  if (lastSel->ElTerminal)
-                    pListEl = ParentAny (lastSel->ElParent);
+                  if (lastEl->ElTerminal)
+                    pListEl = ParentAny (lastEl->ElParent);
                   else
-                    pListEl = ParentAny (lastSel);
+                    pListEl = ParentAny (lastEl);
                   if (pListEl != NULL)
                     {
-                      if (lastSel->ElTerminal &&
-                          pListEl == lastSel->ElParent &&
-                          (lastSel->ElNext == NULL || selBegin) &&
+                      if (lastEl->ElTerminal &&
+                          pListEl == ParentNotTemplate(lastEl) &&
+                          (lastEl->ElNext == NULL || selBegin) &&
                           !TypeHasException (ExcReturnCreateWithin,
                                              pListEl->ElTypeNumber,
                                              pListEl->ElStructSchema))
@@ -1958,7 +2112,7 @@ void TtcCreateElement (Document doc, View view)
           /* verifie si les elements a doubler portent l'exception NoCreate */
           if (pListEl)
             {
-              pE = lastSel;
+              pE = lastEl;
               pElReplicate = NULL;
               do
                 {
@@ -2022,14 +2176,14 @@ void TtcCreateElement (Document doc, View view)
             pListEl = pAggregEl;
           /* demande a l'application si on peut creer ce type d'element */
           notifyEl.event = TteElemNew;
-          notifyEl.document = (Document) IdentDocument (pDoc);
+          notifyEl.document = doc;
           notifyEl.element = (Element) (pElReplicate->ElParent);
           notifyEl.info = 0; /* not sent by undo */
           notifyEl.elementType.ElTypeNum = typeNum;
           notifyEl.elementType.ElSSchema = (SSchema) pSS;
           pSibling = pElReplicate;
           NSiblings = 0;
-          while (pSibling->ElPrevious != NULL)
+          while (pSibling->ElPrevious)
             {
               NSiblings++;
               pSibling = pSibling->ElPrevious;
@@ -2055,65 +2209,67 @@ void TtcCreateElement (Document doc, View view)
             {
               /* annule d'abord la selection */
               TtaClearViewSelections ();
-              if (pElDelete != NULL)
+              if (pElDelete)
                 /* detruire le sous-arbre qu'on remplace */
                 {
                   deleteEmpty = TRUE;
-                  if (!histSeq)
+                  if (!prevHist && !histSeq)
                     {
                       /* handle the remaining unlock of table formatting */
-                      OpenHistorySequence (pDoc, firstSel, lastSel, NULL,
+                      if (extendHistory)
+                        TtaExtendUndoSequence (doc);
+                      else
+                        OpenHistorySequence (pDoc, firstSel, lastSel, NULL,
                                              firstChar, lastChar);
                       histSeq = TRUE;
                     }
-                  if (pElDelete)
+                  AddEditOpInHistory (pElDelete, pDoc, TRUE, FALSE);
+                  pPrevious = PreviousNotPage (pElDelete, TRUE);
+                  pNext = NextNotPage (pElDelete, FALSE);
+                  DestroyAbsBoxes (pElDelete, pDoc, TRUE);
+                  AbstractImageUpdated (pDoc);
+                  /* prepare l'evenement ElemDelete.Post */
+                  notifyEl.event = TteElemDelete;
+                  notifyEl.document = doc;
+                  notifyEl.element = (Element) (pElDelete->ElParent);
+                  notifyEl.info = 0; /* not sent by undo */
+                  notifyEl.elementType.ElTypeNum = pElDelete->ElTypeNumber;
+                  notifyEl.elementType.ElSSchema =
+                    (SSchema) (pElDelete->ElStructSchema);
+                  pSibling = pElDelete;
+                  NSiblings = 0;
+                  while (pSibling->ElPrevious != NULL)
                     {
-                      AddEditOpInHistory (pElDelete, pDoc, TRUE, FALSE);
-                      pPrevious = PreviousNotPage (pElDelete, TRUE);
-                      pNext = NextNotPage (pElDelete, FALSE);
-                      DestroyAbsBoxes (pElDelete, pDoc, TRUE);
-                      AbstractImageUpdated (pDoc);
-                      /* prepare l'evenement ElemDelete.Post */
-                      notifyEl.event = TteElemDelete;
-                      notifyEl.document = (Document) IdentDocument (pDoc);
-                      notifyEl.element = (Element) (pElDelete->ElParent);
-                      notifyEl.info = 0; /* not sent by undo */
-                      notifyEl.elementType.ElTypeNum = pElDelete->ElTypeNumber;
-                      notifyEl.elementType.ElSSchema =
-                        (SSchema) (pElDelete->ElStructSchema);
-                      pSibling = pElDelete;
-                      NSiblings = 0;
-                      while (pSibling->ElPrevious != NULL)
-                        {
-                          NSiblings++;
-                          pSibling = pSibling->ElPrevious;
-                        }
-                      notifyEl.position = NSiblings;
-                      pClose = NextElement (pElDelete);
-                      
-                      /* retire l'element de l'arbre abstrait */
-                      RemoveElement (pElDelete);
-                      dispMode = TtaGetDisplayMode (doc);
-                      if (dispMode == DisplayImmediately)
-                        TtaSetDisplayMode (doc, DeferredDisplay);
-                      UpdateNumbers (pClose, pElDelete, pDoc, TRUE);
-                      if (dispMode == DisplayImmediately)
-                        TtaSetDisplayMode (doc, dispMode);
-                      
-                      RedisplayCopies (pElDelete, pDoc, TRUE);
-                      DeleteElement (&pElDelete, pDoc);
-                      /* envoie l'evenement ElemDelete.Post a l'application */
-                      CallEventType ((NotifyEvent *) (&notifyEl), FALSE);
-                      if (pNext != NULL)
-                        if (SiblingElement (pNext, TRUE) == NULL)
-                          /* l'element qui suit l'element detruit devient premier*/
-                          ChangeFirstLast (pNext, pDoc, TRUE, FALSE);
-                      if (pPrevious != NULL)
-                        if (SiblingElement (pPrevious, FALSE) == NULL)
-                          /* l'element qui precede l'element detruit devient
-                             dernier */
-                          ChangeFirstLast (pPrevious, pDoc, FALSE, FALSE);
+                      NSiblings++;
+                      pSibling = pSibling->ElPrevious;
                     }
+                  notifyEl.position = NSiblings;
+                  pClose = NextElement (pElDelete);
+
+                  /* retire l'element de l'arbre abstrait */
+                  if (ElemIsWithinSubtree (firstSel, pElDelete))
+                    firstSel = NULL;
+                  RemoveElement (pElDelete);
+                  dispMode = TtaGetDisplayMode (doc);
+                  if (dispMode == DisplayImmediately)
+                    TtaSetDisplayMode (doc, DeferredDisplay);
+                  UpdateNumbers (pClose, pElDelete, pDoc, TRUE);
+                  if (dispMode == DisplayImmediately)
+                    TtaSetDisplayMode (doc, dispMode);
+
+                  RedisplayCopies (pElDelete, pDoc, TRUE);
+                  DeleteElement (&pElDelete, pDoc);
+                  /* envoie l'evenement ElemDelete.Post a l'application */
+                  CallEventType ((NotifyEvent *) (&notifyEl), FALSE);
+                  if (pNext != NULL)
+                    if (SiblingElement (pNext, TRUE) == NULL)
+                      /* l'element qui suit l'element detruit devient premier*/
+                      ChangeFirstLast (pNext, pDoc, TRUE, FALSE);
+                  if (pPrevious != NULL)
+                    if (SiblingElement (pPrevious, FALSE) == NULL)
+                      /* l'element qui precede l'element detruit devient
+                         dernier */
+                      ChangeFirstLast (pPrevious, pDoc, FALSE, FALSE);
                 }
               if (!replicate)
                 {
@@ -2124,11 +2280,11 @@ void TtcCreateElement (Document doc, View view)
               else
                 {
                   /* Reconstruction d'une structure parallele */
-                  pNew = NewSubtree (lastSel->ElTypeNumber,
-                                     lastSel->ElStructSchema, pDoc,
+                  pNew = NewSubtree (lastEl->ElTypeNumber,
+                                     lastEl->ElStructSchema, pDoc,
                                      TRUE, TRUE, TRUE, TRUE);
-                  DuplicateAttrWithExc (pNew, lastSel);
-                  pE = lastSel;
+                  DuplicateAttrWithExc (pNew, lastEl);
+                  pE = lastEl;
                   while (pE->ElParent != pListEl && pE->ElParent &&
                          pE->ElParent->ElStructSchema &&
                          strcmp (pE->ElParent->ElStructSchema->SsName, "Template"))
@@ -2182,10 +2338,13 @@ void TtcCreateElement (Document doc, View view)
                     /* element pSib is no longer the first child */
                     ChangeFirstLast (pSib, pDoc, TRUE, TRUE);
                 }
-              if (!histSeq)
+              if (!prevHist && !histSeq)
                 {
-                  OpenHistorySequence (pDoc, firstSel, lastSel, NULL,
-                                       firstChar, lastChar);
+                  if (extendHistory)
+                    TtaExtendUndoSequence (doc);
+                  else
+                    OpenHistorySequence (pDoc, firstSel, lastSel, NULL,
+                                         firstChar, lastChar);
                   histSeq = TRUE;
                 }
               AddEditOpInHistory (pNew, pDoc, FALSE, TRUE);
@@ -2228,7 +2387,19 @@ void TtcCreateElement (Document doc, View view)
                   if (dispMode == DisplayImmediately)
                     TtaSetDisplayMode (doc, dispMode);
                   /* restore a selection */
-                  SelectElementWithEvent (pDoc, FirstLeaf (pNew), TRUE, TRUE);
+                  if (!xmlmode && !empty && selBegin && firstSel)
+                    {
+                      /* set the caret at the position it was before */
+                      if (!firstSel->ElTerminal)
+                        SelectElement (pDoc, firstSel, TRUE, TRUE, TRUE);
+                      else if (firstSel->ElLeafType == LtText)
+                        MoveCaret (pDoc, firstSel, 1);
+                      else if (firstSel->ElLeafType == LtPicture)
+                        MoveCaret (pDoc, firstSel, 0);
+                    }
+                  else
+                    /* set the selection within the new element */
+                    SelectElementWithEvent (pDoc, FirstLeaf (pNew), TRUE, TRUE);
                 }
             }
         }
@@ -2241,9 +2412,8 @@ void TtcCreateElement (Document doc, View view)
 }
 
 /*----------------------------------------------------------------------
-  AscentChildOfParagraph  return the ancestor of element pEl      
-  (or pEl itself) whose parent has exception              
-  ExcParagraphBreak.                                      
+  AscentChildOfParagraph  return the ancestor of element pEl
+  (or pEl itself) whose parent has exception ExcParagraphBreak.             
   ----------------------------------------------------------------------*/
 static PtrElement  AscentChildOfParagraph (PtrElement pEl)
 {
@@ -2280,7 +2450,7 @@ static PtrElement  AscentChildOfParagraph (PtrElement pEl)
   ----------------------------------------------------------------------*/
 void DeleteNextChar (int frame, PtrElement pEl, ThotBool before)
 {
-  PtrElement          pSibling, pNext, pPrev, pE, pElem, pParent, pS;
+  PtrElement          pSibling, pNext, pPrev, pE, pE1, pElem, pParent, pS;
   PtrElement          pSel, pSuccessor, pLeaf;
   PtrElement         *list;
   PtrDocument         pDoc;
@@ -2289,15 +2459,13 @@ void DeleteNextChar (int frame, PtrElement pEl, ThotBool before)
   Document            doc;
   int                 nSiblings;
   int                 nbEl, j, firstChar, lastChar;
-  ThotBool            stop, ok, isRow;
+  ThotBool            stop, ok, isRow, xmlmode, selHead, histOpen;
 
   if (pEl == NULL)
     return;
-  /* pSel: element to be selected at the end */
-  if (before)
-    pSel = NULL;
-  else
-    pSel = pEl;
+  /* pSel: element to be selected when finished */
+  pSel = pEl;
+  selHead = before;
   pElem = NULL;
   pDoc = DocumentOfElement (pEl);
 
@@ -2340,15 +2508,25 @@ void DeleteNextChar (int frame, PtrElement pEl, ThotBool before)
 
   /* determine the current selection */
   firstChar = 0;  lastChar= 0;
-  if (pEl->ElTerminal && pEl->ElLeafType == LtText)
+  if (pEl->ElTerminal)
     {
-      if (before)
-        firstChar = 1;
-      else
-        firstChar = pEl->ElVolume + 1;
-      lastChar = firstChar - 1;
+      if (pEl->ElLeafType == LtText)
+        {
+          if (before)
+            firstChar = 1;
+          else
+            firstChar = pEl->ElVolume + 1;
+          lastChar = firstChar - 1;
+        }
+      else if (pEl->ElLeafType == LtPicture)
+        {
+          if (before)
+            firstChar = 0;
+          else
+            firstChar = 1;
+          lastChar = firstChar;
+        }
     }
-
   doc = IdentDocument (pDoc);
 
   if ((pSibling->ElVolume == 0 && pParent->ElVolume > 0) ||
@@ -2359,11 +2537,14 @@ void DeleteNextChar (int frame, PtrElement pEl, ThotBool before)
        (pSibling) is empty.
        Delete the empty sibling */
     {
-      OpenHistorySequence (pDoc, pEl, pEl, NULL, firstChar, lastChar);
+      histOpen = TtaHasUndoSequence (doc);
+      if (!histOpen)
+        OpenHistorySequence (pDoc, pEl, pEl, NULL, firstChar, lastChar);
       /* record the element to be deleted in the history */
       AddEditOpInHistory (pSibling, pDoc, TRUE, FALSE);
       TtaDeleteTree ((Element)pSibling, doc);
-      CloseHistorySequence (pDoc);
+      if (!histOpen)
+        CloseHistorySequence (pDoc);
       return;
     }
 
@@ -2383,6 +2564,66 @@ void DeleteNextChar (int frame, PtrElement pEl, ThotBool before)
         pE = pE->ElParent;
     }
 
+  /* In standard mode, we merge two block elements */
+  xmlmode = IsXMLEditMode ();
+  if (!xmlmode)
+    {
+      /* get the ancestor block element */
+      pE = pEl;
+      while (pE && pE->ElParent &&
+             !TypeHasException (ExcParagraphBreak,
+                                pE->ElParent->ElTypeNumber,
+                                pE->ElParent->ElStructSchema))
+        pE = pE->ElParent;
+      if (pE && pE->ElParent)
+        /* we have found an ancestor block. use it instead of the original
+           element */
+        pElem = pE;
+
+      /* get the lowest level block element in the sibling element */
+      pE = pSibling;
+      pE1 = NULL;
+      while (pE && !pE->ElTerminal)
+        {
+          if (TypeHasException (ExcParagraphBreak, pE->ElTypeNumber,
+                                pE->ElStructSchema))
+            /* this is the lowest level block element seen so far */
+            pE1 = pE;
+          pE = pE->ElFirstChild;
+          if (before && pE)
+            while (pE->ElNext)
+              pE = pE->ElNext;
+        }
+      if (pE1)
+        pSibling = pE1;
+
+      /* Are we in the special case of a BackSpace at the beginning of a list
+         item? */
+      if (before &&     /* BackSpace */
+          pElem && pElem->ElParent && pElem->ElParent->ElParent)
+        {
+          pE = pElem->ElParent->ElParent;
+          if (pE && pE->ElParent &&
+              TypeHasException (ExcListItemBreak, pE->ElTypeNumber,
+                                pE->ElStructSchema))
+            /* we are at the beginning of another list item */
+            {
+              if (pSibling && pSibling->ElParent && pE != pSibling->ElParent &&
+                  TypeHasException (ExcListItemBreak,
+                                    pSibling->ElParent->ElTypeNumber,
+                                    pSibling->ElParent->ElStructSchema))
+                /* the previous element is a list item */
+                {
+                  /* move the content of the current list item within
+                     the previous list item */
+                  before = FALSE;
+                  pElem = pSibling;
+                  pSibling = pE;
+                }
+            }
+        }
+    }
+
   if (pSibling && pParent != pEl && pElem)
     {
       if (pSibling->ElTerminal)
@@ -2393,19 +2634,13 @@ void DeleteNextChar (int frame, PtrElement pEl, ThotBool before)
            children of element pSibling become siblings of element pElem? */
         {
           pSibling = pSibling->ElFirstChild;
-          if (pSibling != NULL)
+          if (pSibling)
             {
               if (before)
-                while (pSibling->ElNext != NULL)
+                while (pSibling->ElNext)
                   pSibling = pSibling->ElNext;
-              else
-                {
-                  pE = pElem;
-                  pElem = pSibling;
-                  pSibling = pE;
-                }
-              if (!AllowedSibling (pSibling, pDoc, pElem->ElTypeNumber,
-                                   pElem->ElStructSchema, FALSE, FALSE,FALSE))
+              if (!AllowedSibling (pElem, pDoc, pSibling->ElTypeNumber,
+                               pSibling->ElStructSchema, before, FALSE,FALSE))
                 /* not allowed */
                 pSibling = NULL;
             }
@@ -2453,16 +2688,15 @@ void DeleteNextChar (int frame, PtrElement pEl, ThotBool before)
           }
         else
           {
-            pSibling = pElem;
-            pLeaf = NextLeaf (pSibling);
-            pElem = AscentChildOfParagraph (pLeaf);
-            if (pElem == NULL && pLeaf->ElVolume == 0)
+            pLeaf = NextLeaf (pElem);
+            pSibling = AscentChildOfParagraph (pLeaf);
+            if (pSibling == NULL && pLeaf->ElVolume == 0)
               {
-                pSibling = pLeaf;
-                pElem = pParent;
+                pElem = pLeaf;
+                pSibling = pParent;
               }
-            else if (ElemIsAnAncestor (pElem, pSibling))
-              pElem = pLeaf;
+            else if (ElemIsAnAncestor (pSibling, pElem))
+              pSibling = pLeaf;
           }
       else
         {
@@ -2483,10 +2717,13 @@ void DeleteNextChar (int frame, PtrElement pEl, ThotBool before)
                 /* pSibling is empty. Delete it */
                 {
                   /* record the element to be deleted in the history */
+                  histOpen = TtaHasUndoSequence (doc);
+                  if (!histOpen)
                   OpenHistorySequence (pDoc, pEl, pEl, NULL, firstChar, lastChar);
                   AddEditOpInHistory (pSibling, pDoc, TRUE, FALSE);
                   TtaDeleteTree ((Element)pSibling, doc);
-                  CloseHistorySequence (pDoc);
+                  if (!histOpen)
+                    CloseHistorySequence (pDoc);
                 }
             }
           else
@@ -2532,36 +2769,45 @@ void DeleteNextChar (int frame, PtrElement pEl, ThotBool before)
     }
 
   if (pElem != NULL && pSibling != NULL &&
-      AllowedSibling (pSibling, pDoc, pElem->ElTypeNumber,
-                      pElem->ElStructSchema, FALSE, FALSE, FALSE))
+      AllowedSibling (pElem, pDoc, pSibling->ElTypeNumber,
+                      pSibling->ElStructSchema, before, FALSE, FALSE))
     {
       /* switch selection off */
       TtaClearViewSelections ();
-      pE = pElem;
+      /* count elements to be moved */
+      pE = pSibling;
       nbEl = 0;
-      while (pE != NULL)
+      while (pE)
         {
           nbEl++;
-          pE = pE->ElNext;
+          if (before)
+            pE = pE->ElPrevious;
+          else
+            pE = pE->ElNext;
         }
+      /* get a buffer for keeping track of all element to be moved */
       list = (PtrElement *) TtaGetMemory (nbEl * sizeof (PtrElement));
-      pE = pElem;
+      pE = pSibling;
       nbEl = 0;
-      while (pE != NULL)
+      while (pE)
         {
-          /* enregistre les elements preexistants */
           list[nbEl++] = pE;
-          pE = pE->ElNext;
+          if (before)
+            pE = pE->ElPrevious;
+          else
+            pE = pE->ElNext;
         }
-      pParent = pElem->ElParent;
+      pParent = pSibling->ElParent;
       isRow = TypeHasException (ExcIsRow, pParent->ElTypeNumber,
                                 pParent->ElStructSchema);
 
       /* start history sequence */
-      OpenHistorySequence (pDoc, pEl, pEl, NULL, firstChar, lastChar);
-
+      histOpen = TtaHasUndoSequence (doc);
+      if (!histOpen)
+        OpenHistorySequence (pDoc, pEl, pEl, NULL, firstChar, lastChar);
+      /* move all these elements */
       j = 0;
-      while (pElem != NULL)
+      while (pSibling)
         {
           j++;
           if (j < nbEl)
@@ -2569,25 +2815,25 @@ void DeleteNextChar (int frame, PtrElement pEl, ThotBool before)
           else
             pNext = NULL;
           /* Send event ElemDelete.Pre to application for existing elements */
-          if (isRow || !SendEventSubTree (TteElemDelete, pDoc, pElem,
+          if (isRow || !SendEventSubTree (TteElemDelete, pDoc, pSibling,
                                           TTE_STANDARD_DELETE_LAST_ITEM,
                                           0, FALSE, FALSE))
             {
-              /* detruit les paves de l'element qui va etre deplace' */
-              DestroyAbsBoxes (pElem, pDoc, TRUE);
+              /* kill all abstract boxes for the element to be moved */
+              DestroyAbsBoxes (pSibling, pDoc, TRUE);
               AbstractImageUpdated (pDoc);
               if (!isRow)
                 {
                   /* prepare the event ElemDelete.Post */
                   notifyEl.event = TteElemDelete;
                   notifyEl.document = doc;
-                  notifyEl.element = (Element) (pElem->ElParent);
+                  notifyEl.element = (Element) (pSibling->ElParent);
                   notifyEl.info = 0; /* not sent by undo */
-                  notifyEl.elementType.ElTypeNum = pElem->ElTypeNumber;
+                  notifyEl.elementType.ElTypeNum = pSibling->ElTypeNumber;
                   notifyEl.elementType.ElSSchema =
-                    (SSchema) (pElem->ElStructSchema);
+                    (SSchema) (pSibling->ElStructSchema);
                   nSiblings = 0;
-                  pS = pElem;
+                  pS = pSibling;
                   while (pS->ElPrevious != NULL)
                     {
                       nSiblings++;
@@ -2595,13 +2841,13 @@ void DeleteNextChar (int frame, PtrElement pEl, ThotBool before)
                     }
                   notifyEl.position = nSiblings;
                 }
-              pSuccessor = NextElement (pElem);
+              pSuccessor = NextElement (pSibling);
               /* record the element to be deleted in the history */
-              AddEditOpInHistory (pElem, pDoc, TRUE, FALSE);
-              /* retire l'element de l'arbre abstrait */
-              RemoveElement (pElem);
-              UpdateNumbers (pSuccessor, pElem, pDoc, TRUE);
-              RedisplayCopies (pElem, pDoc, TRUE);
+              AddEditOpInHistory (pSibling, pDoc, TRUE, FALSE);
+              /* remove the element from the tree */
+              RemoveElement (pSibling);
+              UpdateNumbers (pSuccessor, pSibling, pDoc, TRUE);
+              RedisplayCopies (pSibling, pDoc, TRUE);
               if (!isRow)
                 {
                   /* send the event ElemDelete.Post to the application */
@@ -2609,10 +2855,10 @@ void DeleteNextChar (int frame, PtrElement pEl, ThotBool before)
                   /* send the event ElemPaste.Pre to the application */
                   notifyVal.event = TteElemPaste;
                   notifyVal.document = doc;
-                  notifyVal.element = (Element) (pSibling->ElParent);
-                  notifyVal.target = (Element) pElem;
+                  notifyVal.element = (Element) (pElem->ElParent);
+                  notifyVal.target = (Element) pSibling;
                   nSiblings = 1;
-                  pS = pSibling;
+                  pS = pElem;
                   while (pS->ElPrevious != NULL)
                     {
                       nSiblings++;
@@ -2623,39 +2869,41 @@ void DeleteNextChar (int frame, PtrElement pEl, ThotBool before)
                 }
               else
                 ok = FALSE;
-              if (ok || (pElem->ElVolume == 0))
+              if (ok || (pSibling->ElVolume == 0))
                 /* the application refuses to paste this element or this
                    element is empty, free it */
-                DeleteElement (&pElem, pDoc);
-              else if (pSibling && pSibling->ElParent != pElem)
+                DeleteElement (&pSibling, pDoc);
+              else if (pElem && pElem->ElParent != pSibling)
                 {
-                  /* l'application accepte */
-                  /* insere l'element a sa nouvelle position */
-                  InsertElementAfter (pSibling, pElem);
+                  /* application accepts */
+                  /* inserts the element at its new position */
+                  if (before)
+                    InsertElementBefore (pElem, pSibling);
+                  else
+                    InsertElementAfter (pElem, pSibling);
+                  CreateAllAbsBoxesOfEl (pSibling, pDoc);
                   /* record the inserted element in the history */
-                  AddEditOpInHistory (pElem, pDoc, FALSE, TRUE);
+                  AddEditOpInHistory (pSibling, pDoc, FALSE, TRUE);
                   if (!isRow)
-                    NotifySubTree (TteElemPaste, pDoc, pElem, 0, 0, FALSE, FALSE);
+                    NotifySubTree (TteElemPaste, pDoc, pSibling, 0, 0, FALSE, FALSE);
                 }
             }
-          if (pElem != NULL)
-            pSibling = pElem;
-          if (pSel == NULL)
-            pSel = pElem;
+          if (pSibling)
+            pElem = pSibling;
           /* passe a l'element suivant */
           if (pNext == NULL)
-            pElem = NULL;
-          else if (AllowedSibling (pSibling, pDoc, pNext->ElTypeNumber,
+            pSibling = NULL;
+          else if (AllowedSibling (pElem, pDoc, pNext->ElTypeNumber,
                                    pNext->ElStructSchema, FALSE, FALSE,FALSE))
-            pElem = pNext;
+            pSibling = pNext;
           else
-            pElem = NULL;
+            pSibling = NULL;
         }
       TtaFreeMemory (list);
 
-      /* detruit les elements qui ont ete vide's */
+      /* remove all elements that are now empty */
       pPrev = NULL;
-      while (pParent != NULL && pParent->ElFirstChild == NULL)
+      while (pParent && pParent->ElFirstChild == NULL)
         {
           pE = pParent;
           pParent = pE->ElParent;
@@ -2668,7 +2916,6 @@ void DeleteNextChar (int frame, PtrElement pEl, ThotBool before)
               /* cherche l'element qui precede l'element a detruire */
               pPrev = PreviousNotPage (pE, FALSE);
               DestroyAbsBoxes (pE, pDoc, TRUE);
-              AbstractImageUpdated (pDoc);
               pNext = NextElement (pE);
               /* prepare l'evenement ElemDelete.Post */
               notifyEl.event = TteElemDelete;
@@ -2696,8 +2943,7 @@ void DeleteNextChar (int frame, PtrElement pEl, ThotBool before)
             }
         }
       /* reaffiche ce qui doit l'etre */
-      pE = pSibling->ElParent;
-      CreateAllAbsBoxesOfEl (pE, pDoc);
+      AbstractImageUpdated (pDoc);
       if (pPrev != NULL)
         /* verifie si l'element precedent devient dernier parmi */
         /* ses freres */
@@ -2706,31 +2952,34 @@ void DeleteNextChar (int frame, PtrElement pEl, ThotBool before)
       RedisplayDocViews (pDoc);
       /* si on est dans un element copie' par inclusion, on met a jour
          les copies de cet element. */
+      pE = pElem->ElParent;
       RedisplayCopies (pE, pDoc, TRUE);
       /* indique que le document est modifie' */
       SetDocumentModified (pDoc, TRUE, 30);
 
-      /* selectionne */
-      if (!pSel)
-        {
-          pSel = pSibling;
-          before = !before;
-        }
+      /* set the selection */
       if (pSel && pSel->ElStructSchema)
         {
           if (pSel->ElVolume > 0)
             /* the first element moved is not empty. Select its first
-               or last character, depending on "before" */
+               or last character, depending on "selHead" */
             {
               pSel = FirstLeaf (pSel);
               if (!pSel->ElTerminal)
                 SelectElement (pDoc, pSel, TRUE, TRUE, TRUE);
               else if (pSel->ElLeafType == LtText)
                 {
-                if (before)
+                if (selHead)
                   MoveCaret (pDoc, pSel, 1);
                 else
                   MoveCaret (pDoc, pSel, pSel->ElTextLength + 1);
+                }
+              else if (pSel->ElLeafType == LtPicture)
+                {
+                if (selHead)
+                  MoveCaret (pDoc, pSel, 0);
+                else
+                  MoveCaret (pDoc, pSel, 1);
                 }
               else if (pSel->ElLeafType != LtPairedElem)
                 SelectElement (pDoc, pSel, TRUE, TRUE, TRUE);
@@ -2779,7 +3028,8 @@ void DeleteNextChar (int frame, PtrElement pEl, ThotBool before)
             }
         }
       /* end of command: close history sequence */
-      CloseHistorySequence (pDoc);
+      if (!histOpen)
+        CloseHistorySequence (pDoc);
     }
 }
 

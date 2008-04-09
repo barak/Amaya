@@ -12,7 +12,7 @@ extern void          ThotCallback ( int ref, int typedata, char *data );
 #ifdef _WX
 /* amaya need to know thotlib color list in order to setup the dialogs */
 extern int           NumberOfColors ( void );
-extern char *        ColorName ( int num );
+extern const char *  ColorName ( int num );
 
 extern int           TtaGetFrameWindowParentId( int frame_id );
 extern int           TtaGetWindowNumber( );
@@ -29,15 +29,13 @@ extern ThotBool      TtaRegisterWidgetWX( int ref, void * p_widget );
 extern int           TtaGetActiveWindowId();
 extern AmayaWindow * TtaGetActiveWindow();
 extern wxMenu *      TtaGetContextMenu( int window_id );
+extern wxMenu *      TtaGetDocContextMenu( int window_id );
 
 extern int TtaMakeWindow(int x, int y, int w, int h, int kind, int parent_window_id );
-extern int TtaMakeFrame( const char * schema_name,
-			 int schView,
-			 Document doc_id,
-			 const char * doc_name,
-			 int width,
-			 int height,
-			 int * volume );
+extern int TtaMakeFrame( const char * schema_name, int schView,
+                         Document doc_id, const char * doc_name, int width,
+                         int height, int * volume );
+extern void TtaSetPageIcon( Document doc, View view, char *iconpath);
 extern void TtaShowWindow( int window_id, ThotBool show );
 extern int TtaGetFreePageId( int window_id );
 extern void TtaSwitchPanelButton( Document doc, View view,
@@ -46,6 +44,7 @@ extern void TtaSwitchPanelButton( Document doc, View view,
 				  ThotBool value );
 
 extern void TtaToggleOnOffSidePanel( int frame_id );
+extern void TtaToggleToolbar( int frame_id, int toolbar_id );
 extern void TtaToggleOnOffFullScreen( int frame_id );
 extern ThotBool TtaGetFullScreenState(int frame_id );
 extern void TtaSplitViewVertically( int frame_id );
@@ -66,9 +65,25 @@ extern ThotBool TtaIsSpecialKey( int wx_keycode );
 
 extern void TtaSendStatsInfo();
 
+
+/* Function prototype to show a context menu.*/
+typedef int(*PopupDocContextMenuFuction)(int document, int window, void* win, int x, int y);
+
+void TtaSetPopupDocContextMenuFunction(PopupDocContextMenuFuction fn);
+void TtaPopupDocContextMenu(int document, int window, void* win, int x, int y);
+
 #endif /* _WX */
 
 extern void TtaCheckLostFocus();
 extern void TtaRedirectFocus();
+
+void TtaResetEnumContextMenu();
+void TtaSetEnumContextMenu(int res);
+int TtaGetEnumContextMenu();
+
+
+typedef int(*DocumentPageTypeFunction)(Document doc);
+void TtaRegisterDocumentPageTypeFunction(DocumentPageTypeFunction fct);
+int TtaGetDocumentPageType(Document doc);
 
 #endif /* #define __APPDIALOGUE_WX_H__ */

@@ -45,8 +45,8 @@
 43 Zatvoriť
 44 Priečinky
 45 Dokument %s už existuje. Chcete ho nahradiť?
-46 Ľavým tlačidlom nastavíte farbu textu
-47 Stredným alebo pravým tlačidlom nastavíte farbu pozadia
+46 **Set the text color
+47 **Set the background color
 48 Rodina písma
 49 Normálne
 50 Tučné
@@ -58,32 +58,32 @@
 56 Podčiarknuté
 57 Prečiarknuté
 58 Veľkosť písmen (v bodoch)
-59 Osadenie (v bodoch)
-60 Riadkovanie (v bodoch)
-61 Riadkovanie
-62 Uložiť dokument
-63 Zatvoriť bez uloženia
-64 Štýl znakov
-65 Farby
-66 XHTML
-67 Odstrániť
-68 Výstup
-69 PostScriptový súbor
-70 Tlačiareň
-71 Hľadať výraz
-72 Nerozlišovať veľkosť písmen
-73 Nahradiť výrazom
-74 Nahradiť
-75 Nič nenahrádzať
-76 Potrvrdzovať nahradenie
-77 Automaticky nahradiť
-78 Kde hľadať
-79 Pred výberom
-80 Vo výbere
-81 Za výberom
-82 V celom dokumente
-83 Nenahrádzať
-84 Pôvodné farby
+59 **Unindent
+60 **Single line spacing
+61 **Middle line spacing
+62 **Double line spacing
+63 Uložiť dokument
+64 Zatvoriť bez uloženia
+65 Štýl znakov
+66 Farby
+67 XHTML
+68 Odstrániť
+69 Výstup
+70 PostScriptový súbor
+71 Tlačiareň
+72 Hľadať výraz
+73 Nerozlišovať veľkosť písmen
+74 Nahradiť výrazom
+75 Nahradiť
+76 Nič nenahrádzať
+77 Potrvrdzovať nahradenie
+78 Automaticky nahradiť
+79 Kde hľadať
+80 Pred výberom
+81 Vo výbere
+82 Za výberom
+83 V celom dokumente
+84 Nenahrádzať
 85 pred zatvorením
 86 Zatvoriť dokumetn
 87 Matematické symboly
@@ -95,7 +95,7 @@
 93 Grafika
 94 Symbol
 95 Obrázok
-96 XML/XTiger
+96 XML
 97 za
 98 pred
 99 okolo
@@ -136,98 +136,139 @@
 134 Nedá sa vytvoriť "%s"
 135 Pruh nad
 136 Formát dokumentu
-137 Udalosti
-138 Odstániť atribút
-139 Ľavým tlačidlom nastavíte farbu výberu
-140 Stredným alebo pravým tlačidlom nastavíte farbu bez označenia
-141 Ďalej ...
-142 Získať
-143 Farba
-144 Farba pozadia
-145 Farba popredia
-146 Zmeniť farby
-147 Vybrať základnú štruktúru XML
-148 Kontrola
-149 Hľadať/Preskočiť
-150 Nahradiť (+ slovník)
-151 Nahradiť a nájsť ďalšie
-152 Iný jazyk
-153 Pridať do slovníka
-154 slová obsahujúce:
-155 Kontrola pravopisu ...
-156 Rímske čísla
-157 Ignorovať
-158 slová napísané VEĽKÝMI písmenami
-159 slová s číslami
-160 Chyba súboru s parametrami
-161 Neexistuje súbor klávesnice
-162 Slovník sa nedá uložiť
-163 Nesprávne slovo "%s" bolo zamietnuté v tomto slovníku
-164 Slovo "%s" bolo pridané do slovníka
-165 Koniec kontroly pravopisu
-166 Kontrola pravopisu prerušená
-167 Prosím vyberte dokument
-168 Slovník bol uložený
-169 Nie je prístupné v tejto verzii
-170 Vysunúť/zasunúť nástrojovú lištu
-171 Nástroje
-172 Toto je povinný atribút, ktorý nemôže byť odstránený
-173 Obnoviť
-174 Doľava
-175 Doprava
-176 Centrovať
-177 Do bloku
-178 Aplikovať triedu (class)
-179 Vyberte triedu alebo pseudotriedu
-180 Vybrať
-181 Skartovať
-182 Vzorce
-183 Rôzne
-184 Relačné operátory
-185 Negované relačné operátory
-186 Operátory
-187 Grácka abeceda (veľké)
-188 Šipky
-189 Špeciálne znaky
-190 Prerušiť prenos
-191 Predchádzajúci dokument
-192 Nasledujúci dokument
-193 Načítať najnovšiu verziu stránky
-194 Uložiť
-195 Nový XHTML dokument
-196 Otvoriť dokument
-197 Tlačiť
-198 Hľadať
-199 Prejsť na domovskú stránku
-200 Zvýrazniť On/Off
-201 Silno zvýrazniť On/Off
-202 Zdrojový kód On/Off
-203 Obrázok (img)
-204 Nadpis úrovne 1 (h1)
-205 Nadpis úrovne 2 (h2)
-206 Nadpis úrovne 3 (h3)
-207 Odrážky (ul)
-208 Číslovanie (ol)
-209 Zoznam definícií (dl)
-210 Hypertextový odkaz
-211 Tabuľka (table)
-212 Chystáte sa zatoriť niekoľko otvorených kariet (%d). Chcete naozaj pokračovať?
-213 Varovať vždy, ak sa pokúšam zavrieť viac kariet naraz
-214 Zatvoriť karty
-215 Žiadne chyby neboli nájdené
-216 Zobraziť nájdené chyby
-217 Kolónky
-218 Oddelenie, vrstva (div)
-219 Záložka
-220 Novovložený text On/Off
-221 Text na odstránenie On/Off
-222 Dolný index On/Off
-223 Horný index On/Off
-224 Termín (dt)
-225 Definícia termínu (dd)
-226 Objekt (object)
-227 CSS pravidlá
-228 Súbor
-229 Rozdeliť okno horizontálne
-230 Rozdeliť okno vertikálne
-231 Zobraziť/skryť nástroje
+137 Odstániť atribút
+138 Farba pozadia
+139 Farba popredia
+140 Vybrať základnú štruktúru XML
+141 Kontrola
+142 Hľadať/Preskočiť
+143 Nahradiť (+ slovník)
+144 Nahradiť a nájsť ďalšie
+145 Iný jazyk
+146 Pridať do slovníka
+147 slová obsahujúce:
+148 Kontrola pravopisu ...
+149 Rímske čísla
+150 Ignorovať
+151 slová napísané VEĽKÝMI písmenami
+152 slová s číslami
+153 Chyba súboru s parametrami
+154 Neexistuje súbor klávesnice
+155 Slovník sa nedá uložiť
+156 Nesprávne slovo "%s" bolo zamietnuté v tomto slovníku
+157 Slovo "%s" bolo pridané do slovníka
+158 Koniec kontroly pravopisu
+159 Kontrola pravopisu prerušená
+160 Prosím vyberte dokument
+161 Slovník bol uložený
+162 Nie je prístupné v tejto verzii
+163 Vysunúť/zasunúť nástrojovú lištu
+164 Nástroje
+165 Toto je povinný atribút, ktorý nemôže byť odstránený
+166 Obnoviť
+167 Doľava
+168 Doprava
+169 Centrovať
+170 Do bloku
+171 Aplikovať triedu (class)
+172 Vyberte triedu alebo pseudotriedu
+173 Vybrať
+174 Skartovať
+175 Vzorce
+176 Rôzne
+177 Relačné operátory
+178 Negované relačné operátory
+179 Operátory
+180 Grácka abeceda (veľké)
+181 Šipky
+182 Špeciálne znaky
+183 Prerušiť prenos
+184 Predchádzajúci dokument
+185 Nasledujúci dokument
+186 Načítať najnovšiu verziu stránky
+187 Uložiť
+188 Uložiť
+189 Nový XHTML dokument
+190 Otvoriť dokument
+191 Tlačiť
+192 Hľadať
+193 Prejsť na domovskú stránku
+194 Zvýrazniť On/Off
+195 Silno zvýrazniť On/Off
+196 Zdrojový kód On/Off
+197 Obrázok (img)
+198 Nadpis úrovne 1
+199 Nadpis úrovne 2
+200 Nadpis úrovne 3
+201 Nadpis úrovne 4
+202 Odsek
+203 Odrážky (ul)
+204 Číslovanie (ol)
+205 Zoznam definícií (dl)
+206 Hypertextový odkaz
+207 Tabuľka (table)
+208 Chystáte sa zatoriť niekoľko otvorených kariet (%d). Chcete naozaj pokračovať?
+209 Varovať vždy, ak sa pokúšam zavrieť viac kariet naraz
+210 Zatvoriť karty
+211 Žiadne chyby neboli nájdené
+212 Zobraziť nájdené chyby
+213 Kolónky
+214 Oddelenie, vrstva (div)
+215 Záložka
+216 Novovložený text On/Off
+217 Text na odstránenie On/Off
+218 Dolný index On/Off
+219 Horný index On/Off
+220 Termín (dt)
+221 Definícia termínu (dd)
+222 Objekt (object)
+223 Pravidlá
+224 Súbor
+225 Rozdeliť okno horizontálne
+226 Rozdeliť okno vertikálne
+227 Zobraziť/skryť nástroje
+228 Späť
+229 Opakovať
+230 Vystrihnúť
+231 Kopírovať
+232 Prilepiť
+233 Kontrola pravopisu
+234 **Various constructs
+235 **Relations, orders and logic
+236 **Sets and functions
+237 **Arithmetic, operations, complexes and constants
+238 **Analysis, linear algebra and statistic
+239 **Trigonometry and logarithms
+240 Zväčšiť veľkosť textu
+241 Zmenšiť veľkosť textu
+242 **Theme
+243 XML
+244 Textové
+245 **No recent document
+246 **Click an element to select it
+247 **Click to change the editing mode
+248 Zlúčiť
+249 Rozdeliť bunky horizontálne
+250 Rozdeliť bunky vertikálne
+251 Vložiť riadok nad
+252 Vložiť riadok pod
+253 Vložiť stĺpec vľavo
+254 Vložiť stĺpec vpravo
+255 **Tip of the day
+256 **Show tip at startup
+257 **Next tip
+258 **Did you know...
+259 **Close
+260 **Amaya can be adapted to your own needs: five profiles are provided with different sets of menus and panels. See Preferences/General.
+261 **Panels can be displayed on the left or on the right side of the window or even customized panel by panel. See Preferences.
+262 **With the F2 or Escape key you can select the parent element in the document structure, to apply editing functions (copy, paste, attributes, style, etc.) to the right element.
+263 **You can display two documents side by side in the window by dragging a document tab to the left or right side of the displayed document.
+264 **In customizable mode, you can drag panels to change their order or to make them floating.
+265 **With the customizable mode, you can move panels on both sides of the window just by dragging.
+266 **You can switch editing mode (Text/XML) by clicking on the corresponding button in the bottom right corner.
+267 **When there is red button in the bottom right corner, you can display errors by clicking on it.
+268 **You can select an ancestor of the current selection by clicking on its name on the path control displayed at the bottom of the window.
+269 **You can move to another tab with the menu displayed by the arrow button at right of document tabs.
+270 **Classic
+271 **Modern
+272 **No theme

@@ -10,17 +10,17 @@ extern void AddElementDeclaration ( XTigerTemplate t,
                                     Element el );
 extern void Template_AddLibraryToImport ( XTigerTemplate t,
                                           Element el );
-extern void CheckTypesAttribute ( XTigerTemplate t,
-                                  Element el );
+extern void Template_CheckTypesAttribute ( XTigerTemplate t,
+                                           Element el );
 extern void Template_AddHeadParameters ( XTigerTemplate t,
                                          Element el );
 extern void Template_ParseDeclarations ( XTigerTemplate t,
                                          Element el );
 extern void Template_PreParseDeclarations ( XTigerTemplate t,
                                             Element el );
-extern void LoadTemplate ( Document doc,
-                           char* templatename );
-extern void Template_LoadXTigerTemplateLibrary ( XTigerTemplate t );
+extern ThotBool LoadTemplate ( Document doc,
+                               char* templatename );
+extern ThotBool Template_LoadXTigerTemplateLibrary ( XTigerTemplate t );
 
 #else /* __STDC__ */
 
@@ -28,17 +28,17 @@ extern void AddElementDeclaration ( XTigerTemplate t,
                                       Element el );
 extern void Template_AddLibraryToImport ( XTigerTemplate t,
                                             Element el );
-extern void CheckTypesAttribute ( XTigerTemplate t,
-                                    Element el );
+extern void Template_CheckTypesAttribute ( XTigerTemplate t,
+                                             Element el );
 extern void Template_AddHeadParameters ( XTigerTemplate t,
                                            Element el );
 extern void Template_ParseDeclarations ( XTigerTemplate t,
                                            Element el );
 extern void Template_PreParseDeclarations ( XTigerTemplate t,
                                               Element el );
-extern void LoadTemplate ( Document doc,
-                             char* templatename );
-extern void Template_LoadXTigerTemplateLibrary ( XTigerTemplate t );
+extern ThotBool LoadTemplate ( Document doc,
+                                 char* templatename );
+extern ThotBool Template_LoadXTigerTemplateLibrary ( XTigerTemplate t );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

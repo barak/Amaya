@@ -5,7 +5,6 @@
 
 #ifndef __CEXTRACT__
 #ifdef __STDC__
-
 extern DocumentMetaDataElement *DocumentMetaDataAlloc ( void );
 extern void DocumentMetaClear ( DocumentMetaDataElement *me );
 extern char * DocumentTypeString ( Document document );
@@ -30,9 +29,16 @@ extern void SetTableMenuOn ( Document doc,
 extern void UpdateEditorMenus ( Document doc );
 extern void ShowLogFile ( Document doc,
                           View view );
+extern void MenuShowLogFile ( Document doc,
+                              View view );
 extern ThotBool OpenParsingErrors ( Document document );
 extern void RemoveParsingErrors ( Document document );
+extern ThotBool HasParsingErrors ( Document document );
 extern void CleanUpParsingErrors ( void );
+extern void UpdateLogFile ( Document doc,
+                            ThotBool enable );
+extern void UpdateShowError ( Document doc,
+                              View view );
 extern void CheckParsingErrors ( Document doc );
 extern void UpdateTransfer ( Document document );
 extern void StopTransfer ( Document document,
@@ -47,11 +53,21 @@ extern void InitFormAnswer ( Document document,
                              int i_auth );
 extern void InitInfo ( char *label,
                        char *info );
+extern void InitAlert ( Document document,
+                        View view,
+                        char *label );
 extern void ConfirmError ( Document document,
                            View view,
                            char *label,
                            char *extrabutton,
                            char *confirmbutton );
+extern void ConfirmError3L ( Document document,
+                             View view,
+                             char *label1,
+                             char *label2,
+                             char *label3,
+                             char *extrabutton,
+                             char *confirmbutton );
 extern void InitConfirm3L ( Document document,
                             View view,
                             char *label1,
@@ -72,6 +88,8 @@ extern void OpenDoc ( Document doc,
                       View view );
 extern void OpenDocInNewWindow ( Document document,
                                  View view );
+extern void OpenRecentDoc ( Document document,
+                            View view );
 extern void OpenNew ( Document document,
                       View view,
                       int docType,
@@ -153,7 +171,6 @@ extern Document GetAmayaDoc ( char *urlname,
 extern void CallbackDialogue ( int ref,
                                int typedata,
                                char *data );
-extern void FreeAmayaIcons ( void );
 extern void FreeAmayaStructures ( void );
 extern void InitAmaya ( NotifyEvent * event );
 extern void OpenNewDocFromArgv ( char * url );
@@ -161,6 +178,10 @@ extern void ChangeAttrOnRoot ( Document doc,
                                int attrNum );
 extern void ShowPanel ( Document doc,
                         View view );
+extern void ShowBrowsingBar ( Document doc,
+                              View view );
+extern void ShowEditingBar ( Document doc,
+                             View view );
 extern void FullScreen ( Document doc,
                          View view );
 extern void SplitHorizontally ( Document doc,
@@ -177,10 +198,6 @@ extern void HideVSplitToggle ( Document doc,
                                View view );
 extern void ShowMapAreas ( Document doc,
                            View view );
-extern void ShowButtons ( Document doc,
-                          View view );
-extern void ShowAddress ( Document doc,
-                          View view );
 extern void MakeIDMenu ( Document doc,
                          View view );
 extern void CheckAmayaClosed ( void );
@@ -216,11 +233,9 @@ extern int GetMaxURLList ( void );
 extern void SetMaxURLList ( int max );
 extern void ClearURLList ( void );
 extern char* CreateTempDirectory ( const char* name );
-extern void SendByMail ( Document document,
-                         View view );
+extern int ChooseDocumentPage ( Document doc );
 
 #else /* __STDC__ */
-
 extern DocumentMetaDataElement *DocumentMetaDataAlloc ( void );
 extern void DocumentMetaClear ( DocumentMetaDataElement *me );
 extern char * DocumentTypeString ( Document document );
@@ -245,9 +260,16 @@ extern void SetTableMenuOn ( Document doc,
 extern void UpdateEditorMenus ( Document doc );
 extern void ShowLogFile ( Document doc,
                             View view );
+extern void MenuShowLogFile ( Document doc,
+                                View view );
 extern ThotBool OpenParsingErrors ( Document document );
 extern void RemoveParsingErrors ( Document document );
+extern ThotBool HasParsingErrors ( Document document );
 extern void CleanUpParsingErrors ( void );
+extern void UpdateLogFile ( Document doc,
+                              ThotBool enable );
+extern void UpdateShowError ( Document doc,
+                                View view );
 extern void CheckParsingErrors ( Document doc );
 extern void UpdateTransfer ( Document document );
 extern void StopTransfer ( Document document,
@@ -262,11 +284,21 @@ extern void InitFormAnswer ( Document document,
                                int i_auth );
 extern void InitInfo ( char *label,
                          char *info );
+extern void InitAlert ( Document document,
+                          View view,
+                          char *label );
 extern void ConfirmError ( Document document,
                              View view,
                              char *label,
                              char *extrabutton,
                              char *confirmbutton );
+extern void ConfirmError3L ( Document document,
+                               View view,
+                               char *label1,
+                               char *label2,
+                               char *label3,
+                               char *extrabutton,
+                               char *confirmbutton );
 extern void InitConfirm3L ( Document document,
                               View view,
                               char *label1,
@@ -287,6 +319,8 @@ extern void OpenDoc ( Document doc,
                         View view );
 extern void OpenDocInNewWindow ( Document document,
                                    View view );
+extern void OpenRecentDoc ( Document document,
+                              View view );
 extern void OpenNew ( Document document,
                         View view,
                         int docType,
@@ -368,7 +402,6 @@ extern Document GetAmayaDoc ( char *urlname,
 extern void CallbackDialogue ( int ref,
                                  int typedata,
                                  char *data );
-extern void FreeAmayaIcons ( void );
 extern void FreeAmayaStructures ( void );
 extern void InitAmaya ( NotifyEvent * event );
 extern void OpenNewDocFromArgv ( char * url );
@@ -376,6 +409,10 @@ extern void ChangeAttrOnRoot ( Document doc,
                                  int attrNum );
 extern void ShowPanel ( Document doc,
                           View view );
+extern void ShowBrowsingBar ( Document doc,
+                                View view );
+extern void ShowEditingBar ( Document doc,
+                               View view );
 extern void FullScreen ( Document doc,
                            View view );
 extern void SplitHorizontally ( Document doc,
@@ -392,10 +429,6 @@ extern void HideVSplitToggle ( Document doc,
                                  View view );
 extern void ShowMapAreas ( Document doc,
                              View view );
-extern void ShowButtons ( Document doc,
-                            View view );
-extern void ShowAddress ( Document doc,
-                            View view );
 extern void MakeIDMenu ( Document doc,
                            View view );
 extern void CheckAmayaClosed ( void );
@@ -431,8 +464,7 @@ extern int GetMaxURLList ( void );
 extern void SetMaxURLList ( int max );
 extern void ClearURLList ( void );
 extern char* CreateTempDirectory ( const char* name );
-extern void SendByMail ( Document document,
-                           View view );
+extern int ChooseDocumentPage ( Document doc );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

@@ -45,8 +45,8 @@
 43 Close
 44 Directories
 45 The document %s already exists. Do you want to overwrite it?
-46 Left button sets the text color
-47 Middle or Right button sets the background color
+46 Set the text color
+47 Set the background color
 48 Font family
 49 Normal
 50 Bold
@@ -57,33 +57,33 @@
 55 Normal
 56 Underline
 57 Cross out
-58 Body size (pt)
-59 Indent (pt)
-60 Line spacing (pt)
-61 Line spacing
-62 Save document
-63 Close, don't save
-64 Character style
-65 Colors
-66 XHTML
-67 Delete
-68 Output
-69 PostScript file
-70 Printer
-71 Search for
-72 Ignore case
-73 Replace by
-74 Replace
-75 No replace
-76 Replace on request
-77 Automatic replace
-78 Search where
-79 Before selection
-80 Within selection
-81 After selection
-82 In the whole document
-83 Do not replace
-84 Default colors
+58 Size
+59 Unindent
+60 Single line spacing
+61 Middle line spacing
+62 Double line spacing
+63 Save document
+64 Close, don't save
+65 Character style
+66 Colors
+67 Elements
+68 Delete
+69 Output
+70 PostScript file
+71 Printer
+72 Search for
+73 Ignore case
+74 Replace by
+75 Replace
+76 No replace
+77 Replace on request
+78 Automatic replace
+79 Search where
+80 Before selection
+81 Within selection
+82 After selection
+83 In the whole document
+84 Do not replace
 85 before closing it
 86 Close a document
 87 Math symbols
@@ -95,7 +95,7 @@
 93 Graphic
 94 Symbol
 95 Image
-96 XML/XTiger
+96 XML elements
 97 after
 98 before
 99 around
@@ -136,98 +136,139 @@
 134 Cannot create "%s"
 135 Overline
 136 Document format
-137 Events
-138 Remove attribute
-139 Left button sets the selection color
-140 Middle or Right button sets the caret color
-141 More ...
-142 Get
-143 Color
-144 Background color
-145 Foreground color
-146 Switch colors
-147 Select a generic XML structure
-148 Checking
-149 Search/Skip
-150 Replace (+ dic)
-151 Replace and next
-152 Other language
-153 Learn
-154 words containing:
-155 Spell checking ...
-156 Roman numerals
-157 Ignore
-158 words that are all caps
-159 words with digits
-160 Parameter file error
-161 No keyboard file
-162 Cannot save the document dictionary
-163 Incorrect word "%s" refused in this dictionary
-164 Word "%s" added in the document dictionary
-165 End of spell checking
-166 Spell checking aborted
-167 Please select a document
-168 Document dictionary saved: %s
-169 Not available in this version
-170 Enable/Disable palette
-171 Tools
-172 Mandatory attribute, it can't be removed
-173 Refresh
-174 Left
-175 Right
-176 Center
-177 Justify
-178 Apply class
-179 Select a class or a pseudo-class
-180 Select
-181 Discard
-182 Maths
-183 Misc
-184 Binary relations
-185 Binary relations of negation
-186 Operators
-187 Greek alphabet (capital)
-188 Arrows
-189 Special characters
-190 Interrupt transfer
-191 Previous document
-192 Next document
-193 Reload
-194 Save
-195 New XHTML document
-196 Open document
-197 Print
-198 Search
-199 Home
-200 Emphasis On/Off
-201 Strong On/Off
-202 Code On/Off
-203 Insert/Replace image
-204 Heading level 1
-205 Heading level 2
-206 Heading level 3
-207 Bulleted list
-208 Numbered list
-209 Definition list
-210 Link
-211 Table
-212 You are about to close %d open tabs. Are you sure you want to continue?
-213 Warn me when I attempt to close multiple tabs
-214 Close tabs
-215 No error detected
-216 Show parsing errors
-217 Boxes
-218 Division
-219 Target
-220 Insertion On/Off
-221 Deletion On/Off
-222 Subscript On/Off
-223 Superscript On/Off
-224 Term
-225 Definition
-226 Object
-227 CSS Style
-228 Files
-229 Horizontal split/unsplit
-230 Vertical split/unsplit
-231 Show/hide tools
+137 Remove attribute
+138 Select a background color
+139 Select a text color
+140 Select a generic XML structure
+141 Checking
+142 Search/Skip
+143 Replace (+ dic)
+144 Replace and next
+145 Other language
+146 Learn
+147 words containing:
+148 Spell checking ...
+149 Roman numerals
+150 Ignore
+151 words that are all caps
+152 words with digits
+153 Parameter file error
+154 No keyboard file
+155 Cannot save the document dictionary
+156 Incorrect word "%s" refused in this dictionary
+157 Word "%s" added in the document dictionary
+158 End of spell checking
+159 Spell checking aborted
+160 Please select a document
+161 Document dictionary saved: %s
+162 Not available in this version
+163 Enable/Disable palette
+164 Tools
+165 Mandatory attribute, it can't be removed
+166 Refresh
+167 Align left
+168 Align right
+169 Center
+170 Justify
+171 Apply class
+172 Select a class or a pseudo-class
+173 Select
+174 Discard
+175 Math
+176 Misc
+177 Binary relations
+178 Binary relations of negation
+179 Operators
+180 Greek alphabet (capital)
+181 Arrows
+182 Special characters
+183 Interrupt transfer
+184 Previous document
+185 Next document
+186 Reload
+187 Save
+188 Save All
+189 New XHTML document
+190 Open document
+191 Print
+192 Find
+193 Home
+194 Emphasis On/Off
+195 Strong On/Off
+196 Code On/Off
+197 Insert/Replace image
+198 Heading level 1
+199 Heading level 2
+200 Heading level 3
+201 Heading level 4
+202 Paragraph
+203 Bulleted list
+204 Numbered list
+205 Definition list
+206 Link
+207 Table
+208 You are about to close %d open tabs. Are you sure you want to continue?
+209 Warn me when I attempt to close multiple tabs
+210 Close tabs
+211 No error detected
+212 Show parsing errors
+213 Boxes
+214 Division
+215 Target
+216 Inserted text On/Off
+217 Deleted text On/Off
+218 Subscript On/Off
+219 Superscript On/Off
+220 Term
+221 Definition
+222 Object
+223 Style
+224 Files
+225 Horizontal split/unsplit
+226 Vertical split/unsplit
+227 Show/hide tools
+228 Undo
+229 Redo
+230 Cut
+231 Copy
+232 Paste
+233 Check spelling
+234 Various constructs
+235 Relations, orders and logic
+236 Sets and functions
+237 Arithmetic, operations, complexes and constants
+238 Analysis, linear algebra and statistic
+239 Trigonometry and logarithms
+240 Zoom in
+241 Zoom out
+242 Theme
+243 XML
+244 Text
+245 No recent document
+246 Click an element to select it
+247 Click to change the editing mode
+248 Merge cells
+249 Shrink horizontal extend
+250 Shrink vertical extend
+251 Insert a row
+252 Append a row
+253 Insert a column
+254 Append a column
+255 Tip of the day
+256 Show tip at startup
+257 Next tip
+258 Did you know...
+259 Close
+260 Amaya can be adapted to your own needs: five profiles are provided with different sets of menus and panels. See Preferences/General.
+261 Panels can be displayed on the left or on the right side of the window or even customized panel by panel. See Preferences.
+262 With the F2 or Escape key you can select the parent element in the document structure, to apply editing functions (copy, paste, attributes, style, etc.) to the right element.
+263 You can display two documents side by side in the window by dragging a document tab to the left or right side of the displayed document.
+264 In customizable mode, you can drag panels to change their order or to make them floating.
+265 With the customizable mode, you can move panels on both sides of the window just by dragging.
+266 You can switch editing mode (Text/XML) by clicking on the corresponding button in the bottom right corner.
+267 When there is red button in the bottom right corner, you can display errors by clicking on it.
+268 You can select an ancestor of the current selection by clicking on its name on the path control displayed at the bottom of the window.
+269 You can move to another tab with the menu displayed by the arrow button at right of document tabs.
+270 Classic
+271 Modern
+272 No theme

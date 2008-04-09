@@ -11,8 +11,10 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
+#ifndef _WINDOWS
 #include <langinfo.h>
+#endif /* _WINDOWS */
+#include <stdlib.h>
 #include "thot_sys.h"
 #include "fileaccess.h"
 
@@ -32,11 +34,11 @@ unsigned long offset[6] = {
 };
 
 typedef struct {
-  char       *ISOCode;
+  const char *ISOCode;
   CHARSET     Charset;
 } CharsetCode;
 
-static CharsetCode CharsetCodeTable[] =
+static const CharsetCode CharsetCodeTable[] =
 {
     {"us-ascii",         US_ASCII},
     {"ascii",            US_ASCII},
@@ -430,8 +432,7 @@ CHARSET TtaGetLocaleCharset ()
 	  LocaleSystemCharset = WINDOWS_1252;
 	}
    }
-#endif /* _WINDOWS */
-#ifdef _UNIX
+#else /* _WINDOWS */
 #ifndef _MACOS
   if (LocaleSystemCharset == UNSUPPORTED_CHARSET)
     {
@@ -450,7 +451,7 @@ CHARSET TtaGetLocaleCharset ()
     /* default unix charset is iso-latin-1 */
     LocaleSystemCharset = ISO_8859_1;
 #endif /* _MACOSX */
-#endif /* _UNIX */
+#endif /* _WINDOWS */
   return LocaleSystemCharset;
 }
 
@@ -475,7 +476,7 @@ CHARSET TtaGetDefaultCharset ()
 /*----------------------------------------------------------------------
   TtaGetCharsetName gives the constant string of the charset ISO name.
   ----------------------------------------------------------------------*/
-char *TtaGetCharsetName (CHARSET charset)
+const char *TtaGetCharsetName (CHARSET charset)
 {
   int index = 0;
 

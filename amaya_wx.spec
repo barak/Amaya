@@ -8,13 +8,13 @@
 
 # neededforbuild  autoconf automake mmcore mmbase mmslib xpm libz libpng libjpeg
 
-%define version 9.55
+%define version 9.99
 
 Vendor:       W3C World Wide Web Consortium
 Distribution: W3C
 Name:         amaya_wx
 Release:      1
-Copyright:    Copyright 1995-2007 (MIT) (INRIA), (L)GPL compatible
+License:    W3C http://www.w3.org/Consortium/Legal/2002/copyright-software-20021231
 Group:        X11/Applications/Networking
 URL:          http://www.w3.org/Amaya/
 Autoreqprov:  on
@@ -86,7 +86,7 @@ autoconf
 mkdir linux
 cd linux
 export HOME=`pwd`
-../configure --with-wx --prefix=/usr/share --exec=/usr/share 
+../configure --prefix=/usr/share --exec=/usr/share  --datadir=/usr/share
 #cp Options.orig Options
 #make all
 make
@@ -104,6 +104,6 @@ make install prefix=$RPM_BUILD_ROOT/usr/share
 /bin/ln -f -s /usr/share/Amaya/wx/bin/amaya /usr/bin/amaya
 %postun
 rm -f /usr/bin/amaya
-rm -f /usr/applications/Amaya.desktop
-rm -f /usr/pixmaps/amaya.png
+rm -f /usr/share/applications/Amaya.desktop
+rm -f /usr/share/pixmaps/amaya.png
 

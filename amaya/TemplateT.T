@@ -216,15 +216,6 @@ ATTRIBUTES
       create DoubleQuote;
     end;
 
-  currentOccurs :
-    begin
-      create SAN;
-      create 'currentOccurs=';
-      create DoubleQuote;
-      create currentOccurs;
-      create DoubleQuote;
-    end;
-
   types :
     begin
       create SAN;
@@ -251,6 +242,24 @@ ATTRIBUTES
       create type;
       create DoubleQuote;
     end;
+
+  type = number:
+    begin
+      create SAN;
+      create 'type="number"';
+    end;
+
+  type = string:
+    begin
+      create SAN;
+      create 'type="number"';
+    end;
+
+  type = listVal:
+    begin
+      create SAN;
+      create 'type="list"';
+    end;
 	
   prompt :
     begin
@@ -258,13 +267,22 @@ ATTRIBUTES
       create 'prompt="prompt"';
     end;
 
-  useAt :
+  useAt = required:
     begin
       create SAN;
-      create 'use=';
-      create DoubleQuote;
-      create useAt;
-      create DoubleQuote;
+      create 'use="required"';
+    end;
+
+  useAt = optional:
+    begin
+      create SAN;
+      create 'use="optional"';
+    end;
+
+  useAt = prohibited:
+    begin
+      create SAN;
+      create 'use="prohibited"';
     end;
 
   defaultAt :

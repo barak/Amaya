@@ -15,21 +15,21 @@
 #include "init_f.h"
 #include "HTMLsave_f.h"
 #include "styleparser_f.h"
+#include "containers.h"
+
 
 #ifdef _WX
-  #include "wxdialog/NewTemplateDocDlgWX.h"
   #include "wxdialog/AuthentDlgWX.h"
   #include "wxdialog/CheckedListDlgWX.h"
   #include "wxdialog/CreateTableDlgWX.h"
   #include "wxdialog/DocInfoDlgWX.h"
-  #include "wxdialog/EnumListDlgWX.h"
+  #include "wxdialog/FontDlgWX.h"
   #include "wxdialog/HRefDlgWX.h"
   #include "wxdialog/ImageDlgWX.h"
   #include "wxdialog/InitConfirmDlgWX.h"
   #include "wxdialog/ListDlgWX.h"
   #include "wxdialog/ListEditDlgWX.h"
   #include "wxdialog/MakeIdDlgWX.h"
-  #include "wxdialog/NumDlgWX.h"
   #include "wxdialog/ObjectDlgWX.h"
   #include "wxdialog/OpenDocDlgWX.h"
   #include "wxdialog/PreferenceDlgWX.h"
@@ -42,8 +42,9 @@
   #include "wxdialog/SendByMailDlgWX.h"
   #include "wxdialog/SpellCheckDlgWX.h"
   #include "wxdialog/StyleDlgWX.h"
-  #include "wxdialog/TextDlgWX.h"
   #include "wxdialog/TitleDlgWX.h"
+
+  #include "wx/numdlg.h"
 
 static StyleDlgWX *Style_dlg = NULL;
 
@@ -55,6 +56,7 @@ int g_Last_used_filter = 0;
 int img_Last_used_filter = 0;
 int obj_Last_used_filter = 0;
 int link_Last_used_filter = 0;
+
 
 /*----------------------------------------------------------------------
   ParseStyleDlgValues: parse a CSS Style string to update the Style
@@ -97,7 +99,7 @@ void  ParseStyleDlgValues (void *style_widget, char *cssRule)
 /*----------------------------------------------------------------------
   DisplayStyleValue: update the property in Style dialog
   ----------------------------------------------------------------------*/
-void  DisplayStyleValue (char *property, char *start_value, char *end_value)
+void  DisplayStyleValue (const char *property, char *start_value, char *end_value)
 {
 #ifdef _WX
   char c = EOS;
@@ -107,10 +109,11 @@ void  DisplayStyleValue (char *property, char *start_value, char *end_value)
       if (end_value)
         {
           c = *end_value;
-          *end_value = EOS;
+          if (c != EOS)
+            *end_value = EOS;
         }
       Style_dlg->SetValue (property, start_value);
-      if (end_value)
+      if (end_value && c != *end_value)
         *end_value = c;
     }
 #endif /* _WX */
@@ -241,7 +244,6 @@ ThotBool CreateSelectIntegralDlgWX ( int ref, ThotWindow parent)
 #endif /* _WX */
 }
 
-
 /*----------------------------------------------------------------------
   CreateInitConfirmDlgWX create the dialog for document changes
   (save/not save) comfirmation.
@@ -312,27 +314,19 @@ ThotBool CreateInitConfirmDlgWX ( int ref, ThotWindow parent,
     + parent : parent window
     + title : dialog title
     + listUrl : the url list to show in the combobox
-    + docName : ??? not used
-    + doc_select : ??? not used
-    + dir_select : ??? not used 
-    + doc_type : ??? not used
   returns:
   ----------------------------------------------------------------------*/
 ThotBool CreateOpenDocDlgWX ( int ref, ThotWindow parent, const char *title,
                               const char *urlList, const char *urlToOpen,
-                              const char *docName, int doc_select,
-                              int dir_select, DocumentType doc_type,
-                              ThotBool newfile)
+                              DocumentType doc_type, int doc, ThotBool newfile)
 {
 #ifdef _WX
-  int select_charset = 1;
 
   /* check if the dialog is alredy open */
   if (TtaRaiseDialogue (ref))
     return FALSE;
 
   wxString wx_title     = TtaConvMessageToWX( title );
-  wxString wx_docName   = TtaConvMessageToWX( docName );
   wxString wx_urlToOpen = TtaConvMessageToWX( urlToOpen );
   wxString wx_filter;
   wxString wx_profiles = _T("");
@@ -343,8 +337,6 @@ ThotBool CreateOpenDocDlgWX ( int ref, ThotWindow parent, const char *title,
     if (newfile)
       /* create a new HTML document: activate the list of profiles */
       wx_profiles = _T("XHTML Transitional");
-    else
-      select_charset = 0;
     }
   else if (doc_type == docMath)
     wx_filter = APPMATHNAMEFILTER;
@@ -353,7 +345,6 @@ ThotBool CreateOpenDocDlgWX ( int ref, ThotWindow parent, const char *title,
   else if (doc_type == docCSS)
     {
       wx_filter = APPCSSNAMEFILTER;
-      select_charset = 0; // no charset selection
     }
   else if (doc_type == docImage)
     wx_filter = APPIMAGENAMEFILTER;
@@ -364,17 +355,15 @@ ThotBool CreateOpenDocDlgWX ( int ref, ThotWindow parent, const char *title,
   else 
     {
       wx_filter = APPFILENAMEFILTER;
-      select_charset = 0; // open an existing document
     }
 
-  OpenDocDlgWX * p_dlg = new OpenDocDlgWX( ref, parent,
+  OpenDocDlgWX * p_dlg = new OpenDocDlgWX( ref, NULL/*parent*/,
                                            wx_title,
-                                           wx_docName,
                                            BuildWX_URL_List(urlList),
                                            wx_urlToOpen,
                                            wx_filter,
                                            &g_Last_used_filter,
-                                           wx_profiles, select_charset);
+                                           wx_profiles, doc, newfile);
 
   if ( TtaRegisterWidgetWX( ref, p_dlg ) )
       /* the dialog has been sucesfully registred */
@@ -388,52 +377,6 @@ ThotBool CreateOpenDocDlgWX ( int ref, ThotWindow parent, const char *title,
 #else /* _WX */
   return FALSE;
 #endif /* _WX */
-}
-
-
-/*----------------------------------------------------------------------
-  CreateNewTemplateDocDlgWX create the dialog for creating new documents from
-  template
-  params:
-    + parent : parent window
-    + title : dialog title
-    + templateList : template list to show in the combobox
-    + templateToOpen : user defined template
-    + docName : place to store the template's instance
-
-  returns:
-  ----------------------------------------------------------------------*/
-ThotBool CreateNewTemplateDocDlgWX (int ref,  ThotWindow parent, Document doc,
-                                    const char *title)
-{
-#if defined(TEMPLATES) && defined(_WX)
-  /* check if the dialog is alredy open */
-  if (TtaRaiseDialogue (ref))
-    return FALSE;
-  
-  wxString wx_title = TtaConvMessageToWX( title );
-  wxString wx_filter = TtaConvMessageToWX("All files (*.*)\0*.*\0");
-  
-  NewTemplateDocDlgWX * p_dlg = new NewTemplateDocDlgWX( ref,
-                                                         parent,
-                                                         doc,
-                                                         wx_title,
-                                                         wx_filter,
-                                                         &g_Last_used_filter
-                                                         );
-
-  if ( TtaRegisterWidgetWX( ref, p_dlg ) )
-      /* the dialog has been sucesfully registred */
-      return TRUE;
-  else
-    {
-      /* an error occured durring registration */
-      p_dlg->Destroy();
-      return FALSE;
-    }
-#else /* TEMPLATES */
-  return FALSE;
-#endif /* TEMPLATES */
 }
 
 
@@ -605,7 +548,7 @@ ThotBool CreateSearchDlgWX (int ref, ThotWindow parent,  char* caption,
   wxString wx_replace = TtaConvMessageToWX( replace );
 
   SearchDlgWX * p_dlg = new SearchDlgWX( ref,
-					 parent,
+					 NULL,
 					 wx_caption,
 					 wx_searched,
 					 wx_replace,
@@ -681,7 +624,7 @@ ThotBool CreatePrintDlgWX (int ref, ThotWindow parent, char* printer_file,
   returns:
   ----------------------------------------------------------------------*/
 ThotBool CreateSaveAsDlgWX (int ref, ThotWindow parent, char* pathname,
-                            int doc, ThotBool saveImgs)
+                            int doc, ThotBool saveImgs, ThotBool checkTemplate)
 {
 #ifdef _WX
   /* check if the dialog is alredy open */
@@ -689,11 +632,8 @@ ThotBool CreateSaveAsDlgWX (int ref, ThotWindow parent, char* pathname,
     return FALSE;
 
   wxString wx_pathname = TtaConvMessageToWX( pathname );
-  SaveAsDlgWX * p_dlg = new SaveAsDlgWX( ref,
-                                         parent,
-                                         wx_pathname,
-                                         doc,
-                                         saveImgs);
+  SaveAsDlgWX * p_dlg = new SaveAsDlgWX( ref, parent, wx_pathname, doc,
+                                         saveImgs, checkTemplate);
 
   if ( TtaRegisterWidgetWX( ref, p_dlg ) )
       /* the dialog has been sucesfully registred */
@@ -855,6 +795,40 @@ ThotBool CreateCSSDlgWX (int ref, int subref, ThotWindow parent, char *title,
 #endif /* _WX */  
 }
 
+
+
+/*----------------------------------------------------------------------
+  ShowNonSelListDlgWX
+  ----------------------------------------------------------------------*/
+void ShowNonSelListDlgWX (ThotWindow parent, char *title, char* label, 
+                          char *button, void* strings)
+{
+#ifdef _WX
+  wxString      wx_title  = TtaConvMessageToWX( title );
+  wxString      wx_label  = TtaConvMessageToWX( label );
+  wxString      wx_button = TtaConvMessageToWX( button );
+  wxArrayString wx_items;
+  
+  ForwardIterator  iter = DLList_GetForwardIterator((DLList)strings);
+  DLListNode       node;
+  const char*      str;
+  
+  ITERATOR_FOREACH(iter, DLListNode, node)
+    {
+      str = (const char*)node->elem;
+      if(str)
+        wx_items.Add(TtaConvMessageToWX(str));
+    }
+  TtaFreeMemory(iter);
+
+  NonSelListDlgWX dlg(parent, wx_title, wx_label, wx_items, wx_button);
+  dlg.ShowModal();
+#endif /* _WX */  
+}
+
+
+
+
 /*----------------------------------------------------------------------
   CreateListDlgWX proposes 
   params:
@@ -991,6 +965,7 @@ ThotBool CreateDocInfoDlgWX (int ref, ThotWindow parent, int doc)
  Used to :
   - Add CSS file
   - Create/Modify a link
+  - Add Javascript file
  ------------------------------------------------------------------------*/
 ThotBool CreateHRefDlgWX (int ref, ThotWindow parent,
                           const char *url_list, const char *HRefValue,
@@ -1002,8 +977,11 @@ ThotBool CreateHRefDlgWX (int ref, ThotWindow parent,
   wxString wx_filter;
   if (doc_type == docCSS)
     wx_filter = APPCSSNAMEFILTER;
-  else 
+  else if (doc_type == docJavascript)
+    wx_filter = APPJAVASCRIPTNAMEFILTER;
+  else
     wx_filter = APPFILENAMEFILTER;
+
   wxArrayString wx_items = BuildWX_URL_List(url_list);
 
   /* check if the dialog is already open */
@@ -1041,38 +1019,27 @@ ThotBool CreateHRefDlgWX (int ref, ThotWindow parent,
     + value : init value
   returns:
   ----------------------------------------------------------------------*/
+static char Buffer[512];
 ThotBool CreateTextDlgWX (int ref, int subref, ThotWindow parent,
                           const char *title, const char *label,
                           const char *value)
 {
-#ifdef _WX
   wxString wx_title   = TtaConvMessageToWX( title );
   wxString wx_label   = TtaConvMessageToWX( label );
   wxString wx_value = TtaConvMessageToWX( value );
 
-  /* check if the dialog is alredy open */
-  if (TtaRaiseDialogue (ref))
-    return FALSE;
-
-  TextDlgWX * p_dlg = new TextDlgWX( ref, subref, parent,
-				     wx_title,
-				     wx_label,
-				     wx_value );
-
-  if ( TtaRegisterWidgetWX( ref, p_dlg ) )
+  
+  wxTextEntryDialog dlg(parent, wx_label, wx_title, wx_value);
+  if(dlg.ShowModal()==wxID_OK)
     {
-      /* the dialog has been sucesfully registred */
-      return TRUE;
+      wx_value = dlg.GetValue();
+      wxASSERT( wx_value.Len() < 512 );
+      strcpy( Buffer, (const char*)wx_value.mb_str(wxConvUTF8) );
+      ThotCallback (subref, STRING_DATA, (char *)Buffer);
+      ThotCallback (ref, INTEGER_DATA, (char*)1);
     }
-  else
-    {
-      /* an error occured durring registration */
-      p_dlg->Destroy();
-      return FALSE;
-    }
-#else /* _WX */
-  return FALSE;
-#endif /* _WX */
+
+  return TRUE;
 }
 
 /*-----------------------------------------------------------------------
@@ -1140,43 +1107,6 @@ ThotBool CreatePreferenceDlgWX (int ref, ThotWindow parent,
   return FALSE;
 #endif /* _WX */
 }
-
-/*-----------------------------------------------------------------------
- CreateSendByMailDlgWX
- Used to :
-  - Create the Send by mail Amaya dialog
- ------------------------------------------------------------------------*/
-ThotBool CreateSendByMailDlgWX (int ref, ThotWindow parent,
-                        const char* rcptList, const char* subject,
-                        const char* message, ThotBool sendAttach)
-{
-#ifdef _WX
-  /* check if the dialog is alredy open */
-  if (TtaRaiseDialogue (ref))
-    return FALSE;
-
-  SendByMailDlgWX * p_dlg = new SendByMailDlgWX( ref, parent);
-  if ( TtaRegisterWidgetWX( ref, p_dlg ) )
-    {
-      /* the dialog has been sucesfully registred */
-      
-      p_dlg->SetSubject(TtaConvMessageToWX(subject));
-      p_dlg->SetMessage(TtaConvMessageToWX(message));
-//      p_dlg->SetRecipients(TtaConvMessageToWX(rcptList));
-      
-      return TRUE;
-    }
-  else
-    {
-      /* an error occured durring registration */
-      p_dlg->Destroy();
-      return FALSE;
-    }
-#else /* _WX */
-  return FALSE;
-#endif /* _WX */
-}
-
 
 /*-----------------------------------------------------------------------
  CreateSpellCheckDlgWX
@@ -1294,11 +1224,6 @@ ThotBool CreateEnumListDlgWX (int ref, int subref, ThotWindow parent,
                               int nb_item, const char *items,
                               int selection)
 {
-#ifdef _WX
-  /* check if the dialog is alredy open */
-  if (TtaRaiseDialogue (ref))
-    return FALSE;
-
   wxString      wx_title = TtaConvMessageToWX( title );
   wxString      wx_label = TtaConvMessageToWX( label );
   wxArrayString wx_items;
@@ -1317,33 +1242,25 @@ ThotBool CreateEnumListDlgWX (int ref, int subref, ThotWindow parent,
     {
       /* TODO: change the message when there is no items, should never occured */
       wxMessageDialog messagedialog( NULL,
-				     TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_NO_CSS)),
-				     wx_title,
-				     (long) wxOK | wxICON_EXCLAMATION | wxSTAY_ON_TOP);
+             TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_NO_CSS)),
+             wx_title,
+             (long) wxOK | wxICON_EXCLAMATION | wxSTAY_ON_TOP);
       messagedialog.ShowModal();
       return FALSE;
-    }
+    }  
 
-  /* create the dialog */
-  EnumListDlgWX * p_dlg = new EnumListDlgWX( ref, subref,
-					     parent,
-					     wx_title,
-					     wx_label,
-					     wx_items,
-					     selection );
-
-  if ( TtaRegisterWidgetWX( ref, p_dlg ) )
-      /* the dialog has been sucesfully registred */
-      return TRUE;
-  else
+  wxSingleChoiceDialog dlg(parent, wx_label, wx_title, wx_items);
+  dlg.SetSelection(selection);
+  if(dlg.ShowModal()==wxID_OK)
     {
-      /* an error occured durring registration */
-      p_dlg->Destroy();
-      return FALSE;
+      int id = dlg.GetSelection();
+      if(id!=wxNOT_FOUND)
+        {
+          ThotCallback (subref, INTEGER_DATA, (char*)id);
+          ThotCallback (ref, INTEGER_DATA, (char*)1);
+        }
     }
-#else /* _WX */
-  return FALSE;
-#endif /* _WX */  
+  return TRUE;
 }
 
 /*----------------------------------------------------------------------
@@ -1354,30 +1271,54 @@ ThotBool CreateEnumListDlgWX (int ref, int subref, ThotWindow parent,
 ThotBool CreateNumDlgWX (int ref, int subref, ThotWindow parent,
                          const char *title, const char *label, int value)
 {
-#ifdef _WX
-  /* check if the dialog is already open */
-  if (TtaRaiseDialogue (ref))
-    return FALSE;
-
   wxString      wx_title = TtaConvMessageToWX( title );
   wxString      wx_label = TtaConvMessageToWX( label );
   
-  /* create the dialog */
-  NumDlgWX * p_dlg = new NumDlgWX( ref, subref,
-                                   parent, wx_title,
-                                   wx_label, value );
-
-  if ( TtaRegisterWidgetWX( ref, p_dlg ) )
-    /* the dialog has been sucessfully registred */
-    return TRUE;
+  value = wxGetNumberFromUser(wx_label, wxT(""), wx_title, value, 0, 100, parent);
+  
+  if(value==wxNOT_FOUND)
+    {
+      if (ref == MathsDialogue + FormMaths)
+        ThotCallback (ref, INTEGER_DATA, (char*)0);
+    }
   else
     {
-      /* an error occured during registration */
-      p_dlg->Destroy();
-      return FALSE;
+      if (ref == MathsDialogue + FormMaths)
+        {
+          ThotCallback (ref, INTEGER_DATA, (char*)value);
+        }
+      else
+        {
+          ThotCallback (subref, INTEGER_DATA, (char *)value);
+          ThotCallback (ref, INTEGER_DATA, (char*)1);
+        }
     }
-#else /* _WX */
+  
+  return TRUE;
+}
+
+
+/*----------------------------------------------------------------------
+  CreateFontDlgWX
+  ----------------------------------------------------------------------*/
+ThotBool CreateFontDlgWX(ThotWindow parent, const char *title, int* family, int* size)
+{
+  if (family && size)
+    {
+      wxString wx_title = TtaConvMessageToWX(title);
+      FontDlgWX dlg (parent, wx_title);
+      // manage the return of the modal dialog
+      if (*family > 0)
+        dlg.SetFontFamily(*family-1);
+      if(*size > 0)
+        dlg.SetFontSize(*size);
+      if (dlg.ShowModal()==wxID_OK)
+        {
+          *family = dlg.GetFontFamily();
+          *size = dlg.GetFontSize();
+          return TRUE;
+        }
+    }
   return FALSE;
-#endif /* _WX */
 }
 

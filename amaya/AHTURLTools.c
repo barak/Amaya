@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2007
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -19,7 +19,6 @@
 
 #include "init_f.h"
 #include "AHTURLTools_f.h"
-#include "query_f.h"
 
 #define MAX_PRINT_URL_LENGTH 50
 typedef struct _HTURI
@@ -175,7 +174,7 @@ char *EscapeXML (const char *string)
   int   buffer_len;
   int   buffer_free_mem;
   char *ptr;
-  char *entity = NULL;
+  const char *entity = NULL;
   int   new_chars;
   void *status;
 
@@ -373,9 +372,9 @@ void ExplodeURL (char *url, char **proto, char **host, char **dir,
   Converts a Thot PicType into the equivalent MIME type. If no convertion
   is possible, it returns NULL.
   ----------------------------------------------------------------------*/
-char *PicTypeToMIME (PicType contentType)
+const char *PicTypeToMIME (PicType contentType)
 {
-  char *mime_type;
+  const char *mime_type;
   
   switch (contentType)
     {
@@ -460,9 +459,9 @@ ThotBool ImageElement (Document doc, char **url, Element *image)
   DocImageMimeType
   Returns the MIME type of a docImage document.
   ----------------------------------------------------------------------*/
-char *DocImageMimeType (Document doc)
+const char *DocImageMimeType (Document doc)
 {
-  char *mime_type;
+  const char *mime_type;
   LoadedImageDesc *pImage;
   PicType type;
   Element image;
@@ -1082,7 +1081,7 @@ ThotBool IsHTTPPath (const char *path)
     return FALSE;
 
   if ((!strncmp (path, "http:", 5) != 0)
-      || (AHTFTPURL_flag () && !strncmp (path, "ftp:", 4))
+      || !strncmp (path, "ftp:", 4)
       || !strncmp (path, "internal:", 9))
     return TRUE;
   return FALSE;
@@ -1148,7 +1147,7 @@ ThotBool IsValidProtocol (const char *url)
 {
   if (!strncmp (url, "http:", 5)
       || !strncmp (url, "internal:", 9)
-      || (AHTFTPURL_flag () && !strncmp (url, "ftp:", 4)))
+      || !strncmp (url, "ftp:", 4))
     /* experimental */
     /*** || !strncmp (path, "news:", 5)***/ 
     return (TRUE);
@@ -1912,7 +1911,7 @@ char   *AmayaParseUrl (const char *aName, char *relatedName, int wanted)
   char       rel[MAX_LENGTH];
   char      *p, *access;
   HTURI      given, related;
-  int        len;
+  int        len, l;
   char       used_sep;
   char      *used_str;
 
@@ -1979,65 +1978,117 @@ char   *AmayaParseUrl (const char *aName, char *relatedName, int wanted)
         related.fragment = 0;
       }
   
+  len = MAX_LENGTH - 1 - strlen (result);
   if (wanted & AMAYA_PARSE_PATH)
     {
       if (given.absolute)
         {
           /* All is given */
           if (wanted & AMAYA_PARSE_PUNCTUATION)
-            strcat (result, used_str);
-          strcat (result, given.absolute);
+            {
+              strcat (result, used_str);
+              len--;
+            }
+          l = strlen (given.absolute);
+          if (l <= len)
+            {
+              strcat (result, given.absolute);
+              len -= l;
+            }
         }
       else if (related.absolute)
         {
           /* Adopt path not name */
           strcat (result, used_str);
-          strcat (result, related.absolute);
+          len--;
+          l = strlen (related.absolute);
+          if (l <= len)
+            {
+              strcat (result, related.absolute);
+              len -= l;
+            }
           if (given.relative)
             {
               /* Search part? */
               p = strchr (result, '?');
               if (!p)
-                p=result+strlen(result)-1;
-              for (; *p!=used_sep; p--);	/* last / */
+                p = result + strlen(result) - 1;
+              for (; *p != used_sep; p--);	/* last / */
               /* Remove filename */
-              p[1]=0;
+              p[1] = EOS;
               /* Add given one */
-              strcat (result, given.relative);
-            }
+              l = strlen (given.relative);
+              if (l <= len)
+                {
+                  strcat (result, given.relative);
+                  len -= l;
+                }
+           }
         }
       else if (given.relative)
+        {
         /* what we've got */
-        strcat (result, given.relative);
+          l = strlen (given.relative);
+          if (l <= len)
+            {
+              strcat (result, given.relative);
+              len -= l;
+            }
+        }
       else if (related.relative)
-        strcat (result, related.relative);
+        {
+          l = strlen (related.relative);
+          if (l <= len)
+            {
+              strcat (result, related.relative);
+              len -= l;
+            }
+        }
       else
-        /* No inheritance */
-        strcat (result, used_str);
+        {
+          /* No inheritance */
+          strcat (result, used_str);
+          len--;
+        }
     }
   
   if (wanted & AMAYA_PARSE_ANCHOR)
-    if (given.fragment || related.fragment)
+    if (len && (given.fragment || related.fragment))
       {
         if (given.absolute && given.fragment)
           {
             /*Fixes for relURLs...*/
             if (wanted & AMAYA_PARSE_PUNCTUATION)
-              strcat (result, "#");
-            strcat (result, given.fragment); 
+              {
+                strcat (result, "#");
+                len --;
+              }
+                l = strlen (given.fragment);
+                if (l <= len)
+                  strcat (result, given.fragment);
           }
-        else if (!(given.absolute) && !(given.fragment))
-          strcat (result, "");
-        else
+        else if (given.absolute || given.fragment)
           {
             if (wanted & AMAYA_PARSE_PUNCTUATION)
-              strcat (result, "#");
-            strcat (result, given.fragment ? given.fragment : related.fragment); 
+              {
+                strcat (result, "#");
+                len--;
+              }
+            if (given.fragment)
+              {
+                l = strlen (given.fragment);
+                if (l <= len)
+                  strcat (result, given.fragment);
+               }
+            else
+              {
+                l = strlen (given.fragment);
+                if (l <= len)
+                  strcat (result, related.fragment);
+              }
           }
       }
-  len = strlen (result);
-  if ((return_value = (char *)TtaGetMemory (len + 1)) != NULL)
-    strcpy (return_value, result);
+  return_value = TtaStrdup (result);
   return (return_value);		/* exactly the right length */
 }
 

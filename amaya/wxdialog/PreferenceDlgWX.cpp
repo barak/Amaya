@@ -9,6 +9,7 @@
 #include "wx/listbook.h"
 #include "wx/colordlg.h"
 #include "wx/listbox.h"
+#include "wx/dynarray.h"
 #include "AmayaApp.h"
 
 #define THOT_EXPORT extern
@@ -26,6 +27,7 @@
 
 bool PreferenceDlgWX::m_OnApplyLock = FALSE;
 static int MyRef = 0;
+
 
 //-----------------------------------------------------------------------------
 // Event table: connect the events to the handler functions to process them
@@ -98,19 +100,43 @@ END_EVENT_TABLE()
   m_UrlList = url_list;
   MyRef = ref;
 
-#if !defined(DAV) || !defined(TEMPLATES)
-  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
-#endif /* DAV || TEMPLATES */
+  m_book = new wxListBoxBook(this, XRCID("wxID_NOTEBOOK"));
+  GetSizer()->Prepend(m_book, 1, wxEXPAND);
+  
+  m_book->InsertPage(0, wxXmlResource::Get()->LoadPanel(m_book, wxT("wxID_PAGE_GENERAL")),
+      TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_GENERAL_MENU)), true);
+  m_book->InsertPage(1, wxXmlResource::Get()->LoadPanel(m_book, wxT("wxID_PAGE_BROWSE")),
+      TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_BROWSE_MENU)), false);
+  m_book->InsertPage(2, wxXmlResource::Get()->LoadPanel(m_book, wxT("wxID_PAGE_PUBLISH")),
+      TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_PUBLISH_MENU)), false);
+  m_book->InsertPage(3, wxXmlResource::Get()->LoadPanel(m_book, wxT("wxID_PAGE_CACHE")),
+      TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_CACHE_MENU)), false);
+  m_book->InsertPage(4, wxXmlResource::Get()->LoadPanel(m_book, wxT("wxID_PAGE_PASSWORDS")),
+      TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_PASSWORDS)), false);
+  m_book->InsertPage(5, wxXmlResource::Get()->LoadPanel(m_book, wxT("wxID_PAGE_PROXY")),
+      TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_PROXY_MENU)), false);
+  m_book->InsertPage(6, wxXmlResource::Get()->LoadPanel(m_book, wxT("wxID_PAGE_COLOR")),
+      TtaConvMessageToWX(TtaGetMessage(LIB, TMSG_COLORS)), false);
+  m_book->InsertPage(7, wxXmlResource::Get()->LoadPanel(m_book, wxT("wxID_PAGE_GEOMETRY")),
+      TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_GEOMETRY_MENU)), false);
+  m_book->InsertPage(8, wxXmlResource::Get()->LoadPanel(m_book, wxT("wxID_PAGE_ANNOT")),
+      TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_ANNOT_CONF_MENU)), false);
+  m_book->InsertPage(9, wxXmlResource::Get()->LoadPanel(m_book, wxT("wxID_PAGE_DAV")),
+      TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_DAV_PREFERENCES)), false);
+  m_book->InsertPage(10, wxXmlResource::Get()->LoadPanel(m_book, wxT("wxID_PAGE_TEMPLATES")),
+      TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_TEMPLATES)), false);
+  m_book->InsertPage(11, wxXmlResource::Get()->LoadPanel(m_book, wxT("wxID_PAGE_EMAILS")),
+      TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EMAILS)), false);
+  
 #ifndef DAV
   // invalid WebDAV Page
   int page_id = GetPagePosFromXMLID( _T("wxID_PAGE_DAV") );
   if (page_id)
-    p_notebook->DeletePage(page_id );
+    m_book->DeletePage(page_id );
 #endif /* DAV */
 
   // setup dialog title
   SetTitle( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_DLGPREFERENCE_TITLE)));
-
   // send labels to dialog (labels depends on language)
   SetupLabelDialog_General();
   SetupLabelDialog_Browse();
@@ -131,7 +157,7 @@ END_EVENT_TABLE()
   // invalid templates Page
   int templates_page_id = GetPagePosFromXMLID( _T("wxID_PAGE_TEMPLATES") );
   if (templates_page_id)
-    p_notebook->DeletePage(templates_page_id );  
+    m_book->DeletePage(templates_page_id );  
 #endif /* TEMPLATES */
   SetupLabelDialog_Emails();
   SetupLabelDialog_Passwords();
@@ -161,12 +187,16 @@ END_EVENT_TABLE()
 
   // give focus to ...
   //  XRCCTRL(*this, "wxID_COMBOBOX_HOMEPAGE", wxComboBox)->SetFocus();
+  
 
   // on windows, the color selector dialog must be complete.
   colour_data.SetChooseFull(true);
 
-  SetAutoLayout( TRUE );
+  SetSize(720, 420);
+  
 
+  CentreOnScreen();
+  
   // this flag is used to know when events can be proceed
   // for example : when resources are loaded it produces "Page changed" events
   m_IsInitialized = true;
@@ -186,14 +216,13 @@ PreferenceDlgWX::~PreferenceDlgWX()
   ----------------------------------------------------------------------*/
 int PreferenceDlgWX::GetPagePosFromXMLID( const wxString & xml_id )
 {
-  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
   wxPanel *    p_page     = (wxPanel *)FindWindow(wxXmlResource::GetXRCID(xml_id));
   int          page_id    = 0;
   bool         found      = false;
 
-  while (!found && page_id < (int) p_notebook->GetPageCount() )
+  while (!found && page_id < (int) m_book->GetPageCount() )
     {
-      if ( p_page == p_notebook->GetPage(page_id))
+      if ( p_page == m_book->GetPage(page_id))
         found = true;
       else
         page_id++;
@@ -209,8 +238,7 @@ int PreferenceDlgWX::GetPagePosFromXMLID( const wxString & xml_id )
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::OnPageChanged( wxListbookEvent& event )
 {
-  wxListbook *p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
-  wxPanel *p_new_page = (wxPanel *)((event.GetSelection()>=0 && p_notebook)?p_notebook->GetPage(event.GetSelection()):NULL);
+  wxPanel *p_new_page = (wxPanel *)((event.GetSelection()>=0 && m_book)?m_book->GetPage(event.GetSelection()):NULL);
 
   if(!m_IsInitialized || !p_new_page || !XRCCTRL(*this,"wxID_OK",wxButton) ||
      !XRCCTRL(*this,"wxID_DEFAULT",wxButton))
@@ -247,18 +275,12 @@ void PreferenceDlgWX::OnPageChanged( wxListbookEvent& event )
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::SetupLabelDialog_General()
 {
-  // Setup notebook tab names :
-  int page_id;
-  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
-  page_id = GetPagePosFromXMLID( _T("wxID_PAGE_GENERAL") );
-  if (page_id >= 0)
-    p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_GENERAL_MENU)) );
-
   // update dialog General tab labels with given ones
   XRCCTRL(*this, "wxID_LABEL_HOMEPAGE", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_HOME_PAGE)) );
   XRCCTRL(*this, "wxID_LABEL_CHARZOOM", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_ZOOM)) );
   XRCCTRL(*this, "wxID_LABEL_LG", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_DIALOGUE_LANGUAGE)) );
 
+  XRCCTRL(*this, "wxID_XML_EDIT", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_XML_EDIT)) );
   XRCCTRL(*this, "wxID_CHECK_CCLINE", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_PASTE_LINE_BY_LINE)) );
   XRCCTRL(*this, "wxID_CHECK_BACKUP", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_AUTO_SAVE)) );
   XRCCTRL(*this, "wxID_CHECK_INSERT_NBSP", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_INSERT_NBSP)) );
@@ -267,10 +289,17 @@ void PreferenceDlgWX::SetupLabelDialog_General()
   XRCCTRL(*this, "wxID_CHECK_SHOWTARGETS", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_SHOW_TARGETS)) );
   XRCCTRL(*this, "wxID_CHECK_SHOWSHORTCUTS", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_SHOWSHORTCUTS)));
   XRCCTRL(*this, "wxID_CHECK_WARNCTAB", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_WARNCTAB)) );
+  XRCCTRL(*this, "wxID_CHECK_TIPOFTHEDAY", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_SHOW_TIPS_STARTUP)) );
 
   XRCCTRL(*this, "wxID_RADIO_QUICKAXX", wxRadioBox)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_ACCESSKEY)) );
   XRCCTRL(*this, "wxID_RADIO_QUICKAXX", wxRadioBox)->SetString(2,TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_NONE)) );
 
+  XRCCTRL(*this, "wxID_LABEL_TOOLPANEL_ALIGN", wxStaticText)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_TOOLPANEL_ALIGN)) );
+  XRCCTRL(*this, "wxID_LABEL_PROFILE", wxStaticText)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_PROFILE)) );
+  XRCCTRL(*this, "wxID_CHOICE_LG", wxChoice)->SetToolTip( TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_PROFILE_CHANGE) ));
+  XRCCTRL(*this, "wxID_CHOICE_PROFILE", wxChoice)->SetToolTip( TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_PROFILE_CHANGE) ));
+  XRCCTRL(*this, "wxID_CHOICE_TOOLPANEL_ALIGN", wxChoice)->SetToolTip( TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_PROFILE_CHANGE) ));
+ 
   /* tooltip of color buttons */
   XRCCTRL(*this, "wxID_BUTTON_TEXTCOLOR", wxBitmapButton)->SetToolTip( TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_FG_SEL_COLOR) ));
   XRCCTRL(*this, "wxID_BUTTON_BACKCOLOR", wxBitmapButton)->SetToolTip( TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_FG_SEL_COLOR) ));
@@ -282,13 +311,13 @@ void PreferenceDlgWX::SetupLabelDialog_General()
 
   // fill the combobox with url list
   XRCCTRL(*this, "wxID_COMBOBOX_HOMEPAGE", wxComboBox)->Append(m_UrlList);
-#if defined(_WINDOW) || defined(_MACOS)
+#if defined(_WINDOWS) || defined(_MACOS)
   // select the string
   XRCCTRL(*this, "wxID_COMBOBOX_HOMEPAGE", wxComboBox)->SetSelection(0, -1);
-#else /* _WINDOW || _MACOS */
+#else /* _WINDOWS || _MACOS */
   // set te cursor to the end
   XRCCTRL(*this, "wxID_COMBOBOX_HOMEPAGE", wxComboBox)->SetInsertionPointEnd();
-#endif /* _WINDOW || _MACOS */
+#endif /* _WINDOWS || _MACOS */
 }
 
 /*----------------------------------------------------------------------
@@ -300,10 +329,12 @@ void PreferenceDlgWX::SetupLabelDialog_General()
 void PreferenceDlgWX::SetupDialog_General( const Prop_General & prop )
 {
   wxString        value;
+  char           *prof;
 
   XRCCTRL(*this, "wxID_COMBOBOX_HOMEPAGE", wxComboBox)->SetValue( TtaConvMessageToWX(prop.HomePage) );
   XRCCTRL(*this, "wxID_CHARZOOM_VALUE", wxSpinCtrl)->SetValue( prop.Zoom );
 
+  XRCCTRL(*this, "wxID_XML_EDIT", wxCheckBox)->SetValue( prop.XMLEdit );
   XRCCTRL(*this, "wxID_CHECK_CCLINE", wxCheckBox)->SetValue( prop.PasteLineByLine );
   XRCCTRL(*this, "wxID_CHECK_BACKUP", wxCheckBox)->SetValue( prop.S_AutoSave );
   XRCCTRL(*this, "wxID_CHECK_INSERT_NBSP", wxCheckBox)->SetValue( prop.S_NBSP );
@@ -312,6 +343,7 @@ void PreferenceDlgWX::SetupDialog_General( const Prop_General & prop )
   XRCCTRL(*this, "wxID_CHECK_SHOWTARGETS", wxCheckBox)->SetValue( prop.S_Targets );
   XRCCTRL(*this, "wxID_CHECK_SHOWSHORTCUTS", wxCheckBox)->SetValue( prop.S_Shortcuts );
   XRCCTRL(*this, "wxID_CHECK_WARNCTAB", wxCheckBox)->SetValue( prop.WarnCTab );
+  XRCCTRL(*this, "wxID_CHECK_TIPOFTHEDAY", wxCheckBox)->SetValue( prop.ShowTipsStartup );
 
   XRCCTRL(*this, "wxID_RADIO_QUICKAXX", wxRadioBox)->SetSelection( prop.AccesskeyMod );
   if (!strcmp (prop.DialogueLang, "de"))
@@ -346,15 +378,27 @@ void PreferenceDlgWX::SetupDialog_General( const Prop_General & prop )
     value = _T("zh-")+TtaConvMessageToWX(prop.DialogueLang)+_T(" (Traditional Chinese)");
   else
     value = TtaConvMessageToWX(prop.DialogueLang);
+
+  prof = TtaGetEnvString ("CURRENT_PROFILE");
+  if (prof)
+    XRCCTRL(*this, "wxID_CHOICE_PROFILE", wxChoice)->SetStringSelection(TtaConvMessageToWX(prof));
+  else
+    XRCCTRL(*this, "wxID_CHOICE_PROFILE", wxChoice)->SetStringSelection(TtaConvMessageToWX("Advanced"));
+
   XRCCTRL(*this, "wxID_CHOICE_LG", wxChoice)->SetStringSelection( value );
-#if defined(_WINDOW) || defined(_MACOS)
+#if defined(_WINDOWS) || defined(_MACOS)
   // select the string
   XRCCTRL(*this, "wxID_COMBOBOX_HOMEPAGE", wxComboBox)->SetSelection(0, -1);
-#else /* _WINDOW || _MACOS */
+#else /* _WINDOWS || _MACOS */
   // set te cursor to the end
   XRCCTRL(*this, "wxID_COMBOBOX_HOMEPAGE", wxComboBox)->SetInsertionPointEnd();
-#endif /* _WINDOW || _MACOS */
+#endif /* _WINDOWS || _MACOS */
   XRCCTRL(*this, "wxID_COMBOBOX_HOMEPAGE", wxComboBox)->SetFocus();
+  
+  XRCCTRL(*this, "wxID_CHOICE_TOOLPANEL_ALIGN", wxChoice)->Append(TtaConvMessageToWX(TtaGetMessage(LIB, TMSG_FORMATLEFT)) );
+  XRCCTRL(*this, "wxID_CHOICE_TOOLPANEL_ALIGN", wxChoice)->Append(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_FORMATRIGHT)) );
+  XRCCTRL(*this, "wxID_CHOICE_TOOLPANEL_ALIGN", wxChoice)->Append(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_AUI_FREE_PANEL_POS)) );
+  XRCCTRL(*this, "wxID_CHOICE_TOOLPANEL_ALIGN", wxChoice)->SetSelection(prop.ToolPanelLayout);
 }
 
 /*----------------------------------------------------------------------
@@ -367,12 +411,15 @@ Prop_General PreferenceDlgWX::GetValueDialog_General()
 {
   wxString        value;
   Prop_General    prop;
-  memset( &prop, 0, sizeof(Prop_General) );
+  char           *prof;
+  char            buffer[MAX_LENGTH];
 
+  memset( &prop, 0, sizeof(Prop_General) );
   value = XRCCTRL(*this, "wxID_COMBOBOX_HOMEPAGE", wxComboBox)->GetValue();
   strcpy( prop.HomePage, (const char*)value.mb_str(wxConvUTF8) );
 
   prop.Zoom = XRCCTRL(*this, "wxID_CHARZOOM_VALUE",     wxSpinCtrl)->GetValue();
+  prop.XMLEdit = XRCCTRL(*this, "wxID_XML_EDIT", wxCheckBox)->GetValue();
   prop.PasteLineByLine = XRCCTRL(*this, "wxID_CHECK_CCLINE", wxCheckBox)->GetValue();
   prop.S_AutoSave = XRCCTRL(*this, "wxID_CHECK_BACKUP", wxCheckBox)->GetValue();
   prop.S_NBSP = XRCCTRL(*this, "wxID_CHECK_INSERT_NBSP", wxCheckBox)->GetValue();
@@ -381,16 +428,33 @@ Prop_General PreferenceDlgWX::GetValueDialog_General()
   prop.S_Targets = XRCCTRL(*this, "wxID_CHECK_SHOWTARGETS", wxCheckBox)->GetValue();
   prop.S_Shortcuts = XRCCTRL(*this, "wxID_CHECK_SHOWSHORTCUTS", wxCheckBox)->GetValue();
   prop.WarnCTab = XRCCTRL(*this, "wxID_CHECK_WARNCTAB", wxCheckBox)->GetValue();
+  prop.ShowTipsStartup = XRCCTRL(*this, "wxID_CHECK_TIPOFTHEDAY", wxCheckBox)->GetValue();
   prop.AccesskeyMod = XRCCTRL(*this, "wxID_RADIO_QUICKAXX", wxRadioBox)->GetSelection();
 
   value = XRCCTRL(*this, "wxID_CHOICE_LG", wxChoice)->GetStringSelection();
-  char buffer[MAX_LENGTH];
-  strcpy(buffer, (const char*)value.mb_str(wxConvUTF8) );
+  strcpy (buffer, (const char*)value.mb_str(wxConvUTF8) );
   if (!strncmp (buffer, "zh", 2))
-    strncpy( prop.DialogueLang, &buffer[3], 2 );
+    strncpy ( prop.DialogueLang, &buffer[3], 2 );
   else
-    strncpy( prop.DialogueLang, buffer, 2 );
+    strncpy ( prop.DialogueLang, buffer, 2 );
   prop.DialogueLang[2] = EOS;
+  prop.ToolPanelLayout = XRCCTRL(*this, "wxID_CHOICE_TOOLPANEL_ALIGN", wxChoice)->GetSelection();
+
+  // detect if the Amaya profile changes
+  buffer[0] = EOS;
+  value = XRCCTRL(*this, "wxID_CHOICE_PROFILE", wxChoice)->GetStringSelection();
+  if (!value.IsEmpty())
+    {
+      strcpy (buffer, (const char*)value.mb_str(wxConvUTF8) );
+      prof = TtaGetEnvString ("CURRENT_PROFILE");
+      if (prof == NULL || strcmp (prof, buffer))
+        {
+          // change the Amaya profile
+          TtaSetEnvString ("CURRENT_PROFILE", buffer, TRUE);
+          // Avoid to save previous "AUI_DECORATION"
+          SavePANEL_PREFERENCES = 0;
+        }
+    }
   return prop;
 }
 
@@ -405,13 +469,6 @@ Prop_General PreferenceDlgWX::GetValueDialog_General()
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::SetupLabelDialog_Browse()
 {
-  // Setup notebook tab names :
-  int page_id;
-  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
-  page_id = GetPagePosFromXMLID( _T("wxID_PAGE_BROWSE") );
-  if (page_id >= 0)
-    p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_BROWSE_MENU)) );
-
   // update dialog General tab labels with given ones
   XRCCTRL(*this, "wxID_RADIO_OPENLOC", wxRadioBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_OPENLOC)) );
   XRCCTRL(*this, "wxID_RADIO_OPENLOC", wxRadioBox)->SetString(0, TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_REPLACECURRENT)));
@@ -491,20 +548,14 @@ Prop_Browse PreferenceDlgWX::GetValueDialog_Browse()
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::SetupLabelDialog_Publish()
 {
-  // Setup notebook tab names :
-  int page_id;
-  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
-  page_id = GetPagePosFromXMLID( _T("wxID_PAGE_PUBLISH") );
-  if (page_id >= 0)
-    p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_PUBLISH_MENU)) );
-
   XRCCTRL(*this, "wxID_LABEL_CHARSET", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_DEFAULT_CHARSET)) );
   XRCCTRL(*this, "wxID_LABEL_DEFAULTNAME", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_DEFAULT_NAME)) );
   XRCCTRL(*this, "wxID_LABEL_REDIRECT", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_SAFE_PUT_REDIRECT)) );
 
   XRCCTRL(*this, "wxID_CHECK_XHTML", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_USE_XHTML_MIMETYPE)) );
   XRCCTRL(*this, "wxID_CHECK_ETAGS", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_USE_ETAGS)) );
-  XRCCTRL(*this, "wxID_CHECK_PUTGET", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_VERIFY_PUT)) );
+  XRCCTRL(*this, "wxID_CHECK_PUTGET", wxCheckBox)->Hide();
+  //XRCCTRL(*this, "wxID_CHECK_PUTGET", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_VERIFY_PUT)) );
   XRCCTRL(*this, "wxID_CHECK_CRLF", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_EXPORT_CRLF)) );
   XRCCTRL(*this, "wxID_CHECK_MATHPI", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_MATHPI)) );
   XRCCTRL(*this, "wxID_LABEL_EXPORTLENGTH", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_EXPORT_LENGTH)) );
@@ -575,13 +626,6 @@ Prop_Publish PreferenceDlgWX::GetValueDialog_Publish()
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::SetupLabelDialog_Cache()
 {
-  // Setup notebook tab names :
-  int page_id;
-  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
-  page_id = GetPagePosFromXMLID( _T("wxID_PAGE_CACHE") );
-  if (page_id >= 0)
-    p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_CACHE_MENU)) );
-
   XRCCTRL(*this, "wxID_LABEL_CACHEDIR", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_CACHE_DIR)) );
   XRCCTRL(*this, "wxID_LABEL_CACHESIZE", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_CACHE_SIZE)) );
   XRCCTRL(*this, "wxID_LABEL_MAXSIZEITEM", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_CACHE_ENTRY_SIZE)) );
@@ -674,13 +718,6 @@ void PreferenceDlgWX::OnClearUrlList( wxCommandEvent& event )
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::SetupLabelDialog_Proxy()
 {
-  // Setup notebook tab names :
-  int page_id;
-  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
-  page_id = GetPagePosFromXMLID( _T("wxID_PAGE_PROXY") );
-  if (page_id >= 0)
-    p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_PROXY_MENU)) );
-
   XRCCTRL(*this, "wxID_LABEL_PROXYHTTP", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_HTTP_PROXY)) );
   XRCCTRL(*this, "wxID_LABEL_PROXYDOM", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_PROXY_DOMAIN)) );
   XRCCTRL(*this, "wxID_LABEL_PROXYSPACE", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_PROXY_DOMAIN_INFO)) );
@@ -739,13 +776,6 @@ Prop_Proxy PreferenceDlgWX::GetValueDialog_Proxy()
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::SetupLabelDialog_Color()
 {
-  // Setup notebook tab names :
-  int page_id;
-  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
-  page_id = GetPagePosFromXMLID( _T("wxID_PAGE_COLOR") );
-  if (page_id >= 0)
-    p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_COLOR_MENU)) );
-
   XRCCTRL(*this, "wxID_LABEL_TEXTCOLOR", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_DOC_FG_COLOR)) );
   XRCCTRL(*this, "wxID_LABEL_BACKCOLOR", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_DOC_BG_COLOR)) );
   XRCCTRL(*this, "wxID_LABEL_SELCOLOR", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_FG_SEL_COLOR)) );
@@ -755,7 +785,7 @@ void PreferenceDlgWX::SetupLabelDialog_Color()
 
   // setup combobox choices
   int    id_color   = 0;
-  char * color_name = NULL;
+  const char * color_name = NULL;
   while (id_color < NumberOfColors())
     {
       color_name = ColorName(id_color);
@@ -954,14 +984,7 @@ void PreferenceDlgWX::OnColorTextChanged( wxCommandEvent& event )
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::SetupLabelDialog_Geometry()
 {
-  int      page_id;
   ThotBool val;
-
-  // Setup notebook tab names :
-  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
-  page_id = GetPagePosFromXMLID( _T("wxID_PAGE_GEOMETRY") );
-  if (page_id >= 0)
-    p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_GEOMETRY_MENU)) );
 
   XRCCTRL(*this, "wxID_CHECK_SAVEGEO", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_SAVE_GEOMETRY_ON_EXIT)) );
   XRCCTRL(*this, "wxID_LABEL_GEOMCHG", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_GEOMETRY_CHANGE)) );
@@ -1017,13 +1040,6 @@ void PreferenceDlgWX::OnGeomRestor( wxCommandEvent& event )
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::SetupLabelDialog_Annot()
 {
-  // Setup notebook tab names :
-  int page_id;
-  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
-  page_id = GetPagePosFromXMLID( _T("wxID_PAGE_ANNOT") );
-  if (page_id >= 0)
-    p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_ANNOT_CONF_MENU)) );
-
   XRCCTRL(*this, "wxID_LABEL_ANNOT_USER", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_ANNOT_USER)) );
   XRCCTRL(*this, "wxID_LABEL_POST_SERVER", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_ANNOT_POST_SERVER)) );
   XRCCTRL(*this, "wxID_LABEL_SERVERS", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_ANNOT_SERVERS)) );
@@ -1088,13 +1104,6 @@ Prop_Annot PreferenceDlgWX::GetValueDialog_Annot()
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::SetupLabelDialog_DAV()
 {
-  // Setup notebook tab names :
-  int page_id;
-  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
-  page_id = GetPagePosFromXMLID( _T("wxID_PAGE_DAV") );
-  if (page_id >= 0)
-    p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_DAV_PREFERENCES)) );
-
   // update dialog WebDAV tab labels with given ones
   XRCCTRL(*this, "wxID_LABEL_USER_REF", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_DAV_USER_URL)) );
   XRCCTRL(*this, "wxID_LABEL_RESOURCES", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_DAV_USER_RESOURCES)) );
@@ -1205,13 +1214,6 @@ Prop_DAV PreferenceDlgWX::GetValueDialog_DAV()
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::SetupLabelDialog_Templates()
 {
-  // Setup notebook tab names :
-  int page_id;
-  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
-  page_id = GetPagePosFromXMLID( _T("wxID_PAGE_TEMPLATES") );
-  if (page_id >= 0)
-    p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_TEMPLATES)));
-
   XRCCTRL(*this, "wxID_BUTTON_CHOOSE_TEMPLATE", wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_SEL)));
   XRCCTRL(*this, "wxID_BUTTON_ADD_TEMPLATE", wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_APPLY_BUTTON)));
   wxStaticBoxSizer *sz = (wxStaticBoxSizer*)XRCCTRL(*this, "wxID_PAGE_TEMPLATES", wxPanel)->GetSizer()->GetItem((size_t)0)->GetSizer();
@@ -1419,13 +1421,6 @@ void PreferenceDlgWX::OnTemplateSelected(wxCommandEvent& event)
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::SetupLabelDialog_Emails()
 {
-  // Setup notebook tab names :
-  int page_id;
-  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
-  page_id = GetPagePosFromXMLID( _T("wxID_PAGE_EMAILS") );
-  if (page_id >= 0)
-    p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EMAILS)));
-
   XRCCTRL(*this, "wxID_LABEL_EMAIL", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EMAILS_PROPERTIES)));
   XRCCTRL(*this, "wxID_LABEL_EMAIL_SERVER_ADDRESS", wxStaticText)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EMAILS_SERVER_ADDRESS)));
   XRCCTRL(*this, "wxID_LABEL_EMAIL_SERVER_PORT", wxStaticText)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_EMAILS_SERVER_PORT)));
@@ -1473,10 +1468,9 @@ void PreferenceDlgWX::SetupLabelDialog_Passwords()
 {
   // Setup notebook tab names :
   int page_id;
-  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
   page_id = GetPagePosFromXMLID( _T("wxID_PAGE_PASSWORDS") );
   if (page_id >= 0)
-    p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_PASSWORDS)));
+    m_book->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_PASSWORDS)));
 
   XRCCTRL(*this, "wxID_CHECK_DEF_PASSWORDS", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_PASSWORDS_SAVE_OPTION)));
   XRCCTRL(*this, "wxID_BUTTON_EMPTY_PASSWORDS", wxButton)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_PASSWORDS_EMPTY)));
@@ -1636,8 +1630,7 @@ void PreferenceDlgWX::OnOk( wxCommandEvent& event )
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::OnDefault( wxCommandEvent& event )
 {
-  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
-  wxWindow * p_page = (wxWindow *) (p_notebook->GetSelection() != -1) ? p_notebook->GetPage(p_notebook->GetSelection()) : NULL;
+  wxWindow * p_page = (wxWindow *) (m_book->GetSelection() != -1) ? m_book->GetPage(m_book->GetSelection()) : NULL;
 
   if (!p_page)
     return;

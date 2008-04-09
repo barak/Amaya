@@ -40,7 +40,8 @@
 #define mGeneralEmpty3       9
 #define mGeneralEmpty4       10
 #define mGeneralAccessKey    11
-#define MAX_GENERALMENU_DLG  12
+#define mToolPanelLayout     12
+#define MAX_GENERALMENU_DLG  13
 
 #define BrowseMenu          1
 #define mToggleBrowse       2
@@ -107,6 +108,7 @@ typedef struct Prop_General_t
   int      AccesskeyMod;
   int      FontMenuSize;
   char     HomePage[MAX_LENGTH];
+  ThotBool XMLEdit;
   ThotBool PasteLineByLine;
   ThotBool S_Buttons;
   ThotBool S_Address;
@@ -118,6 +120,8 @@ typedef struct Prop_General_t
   ThotBool S_Shortcuts;
   ThotBool S_Templates;
   ThotBool WarnCTab;
+  ThotBool ShowTipsStartup;
+  int      ToolPanelLayout; /* 0=left, 1=right, 2=free */
 } Prop_General;
 
 typedef struct Prop_Browse_t

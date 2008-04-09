@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -221,19 +221,19 @@ static void FreeFontEntry (GL_font* font)
 /*----------------------------------------------------------------------
   Char index Cache freeing recursive function 
   ----------------------------------------------------------------------*/
-static void FreeACharCache (Char_Cache_index *Cache)
+static void FreeACharCache (Char_Cache_index *cache)
 {
-  if (Cache->next)
-    FreeACharCache (Cache->next);
-  if (Cache->glyph.data)
+  if (cache->next)
+    FreeACharCache (cache->next);
+  if (cache->glyph.data)
     {
       /* the cache data can be of tow different type */
-      if (Cache->glyph.data_type == GL_GLYPH_DATATYPE_GLLIST)
-        glDeleteLists(*((GLuint*)Cache->glyph.data), 1); /* a glList */
-      else if (Cache->glyph.data_type == GL_GLYPH_DATATYPE_FTBITMAP)
-        TtaFreeMemory (Cache->glyph.data); /* a freetype bitmap */
+      if (cache->glyph.data_type == GL_GLYPH_DATATYPE_GLLIST)
+        glDeleteLists(*((GLuint*)cache->glyph.data), 1); /* a glList */
+      else if (cache->glyph.data_type == GL_GLYPH_DATATYPE_FTBITMAP)
+        TtaFreeMemory (cache->glyph.data); /* a freetype bitmap */
     }
-  TtaFreeMemory (Cache);  
+  TtaFreeMemory (cache);  
 }
 
 /*----------------------------------------------------------------------
@@ -295,7 +295,7 @@ Char_Cache_index *Char_index_lookup_cache (GL_font *font, unsigned int idx,
     MakeBitmapGlyph (font, cache->character, &cache->glyph);
   /* return the new cache entry */
 
-  return (cache);  
+  return (cache);
 }
 
 /*----------------------------------------------------------------------
@@ -718,8 +718,7 @@ static int FontDescender (GL_font *font)
 /*----------------------------------------------------------------------
   FaceKernAdvance : Return Distance between 2 glyphs
   ----------------------------------------------------------------------*/
-static float FaceKernAdvance (FT_Face face, unsigned int index1, 
-                              unsigned int index2)
+static float FaceKernAdvance (FT_Face face, unsigned int index1,  unsigned int index2)
 {  
   FT_Vector kernAdvance;
 
@@ -736,10 +735,112 @@ static float FaceKernAdvance (FT_Face face, unsigned int index1,
 
 /********OPENGL BITMAP CONSTRUCTION SET********/
 /*----------------------------------------------------------------------
+  GetCharacterGlyph
+  ----------------------------------------------------------------------*/
+unsigned char *GetCharacterGlyph (GL_font *font, unsigned int idx, int w, int h)
+{
+  FT_BitmapGlyph  bitmap;
+  FT_Bitmap       *source = NULL;
+  FT_Glyph        Glyph;
+  unsigned        char *data = NULL, *dest = NULL, *src = NULL;
+  unsigned char  *bsrc, b;
+  unsigned int    index;
+  int             err = 0, p, i, y, width, height, offx, offy;
+
+  p = w * h * 3; // 3 bytes by pixel
+  data = (unsigned char *)TtaGetMemory (p);
+  memset (data, 0xFF, p);
+  index = FT_Get_Char_Index (font->face, idx);
+  if (index != 0 &&
+      !FT_Load_Glyph (font->face, index, thot_ft_load_mode) &&
+      !FT_Get_Glyph (font->face->glyph, &Glyph))
+    {
+      if (Glyph->format != ft_glyph_format_bitmap)
+        /* Last parameter tells that we destroy font's bitmap
+         * So we MUST cache it */
+        err = FT_Glyph_To_Bitmap (&Glyph, thot_ft_render_mode, 0, 1);
+      if (err)
+        FT_Done_Glyph (Glyph);
+      else
+        {
+          /* when the glyph is found into the font, we must come here */
+          bitmap = (FT_BitmapGlyph) Glyph;
+          source = &bitmap->bitmap;
+          width = source->width;
+          height = source->rows;
+          offx = (w-width)/2;
+          offy = (h-height)/2;
+          if(offx<0)
+            offx = 0;
+          if(offy<0)
+            offy = 0;
+          if (data)
+            {
+              dest = data;
+              src = source->buffer;
+              switch (source->pixel_mode)
+                {
+                  /* 1 bit per pixel, expand the bitmap */
+                case ft_pixel_mode_mono:
+                  for (y = offy; y < h; y++)
+                    {
+                      if ( y - offy < height)
+                        {
+                          dest = data + y * w * 3 + offx * 3;
+                          bsrc = src;
+                          b = 0;
+                          for (i = 0; i < w; i++)
+                            {
+                              if (i < width)
+                                {
+                                  if (i%8 == 0)
+                                    b = *bsrc++; // get the current byte
+                                  if (b&0x80)
+                                    memset (dest, 0, 3);
+                                  b <<= 1;
+                                }
+                              dest += 3; // next 3 bytes
+                            }
+                          src += source->pitch;
+                        }
+                    }
+                  break;
+                  /* one byte per pixel, just copy the bitmap */
+                case ft_pixel_mode_grays:
+                  for (y = offy; y < h; y++)
+                    {
+                      dest = data + y * w * 3 + offx * 3;
+                      if ( y - offy < height)
+                        {
+                          bsrc = src;
+                          b = 0;
+                          for (i = 0; i < w; i++)
+                            {
+                              if (i < width)
+                                {
+                                  b = *bsrc++; // get the current byte
+                                  memset (dest, ~b, 3);
+                                }
+                              dest += 3; // next 3 bytes
+                            }
+                          src += source->pitch;
+                        }
+                    }
+                  break;
+                default:
+                  ; /* currently unused by freetype */
+                }
+            }
+        }
+    }
+  
+  return data;
+}
+
+/*----------------------------------------------------------------------
   MakeBitmapGlyph : Make bitmap and struct to handle the glyph
   ----------------------------------------------------------------------*/
-static void MakeBitmapGlyph (GL_font *font, unsigned int g,
-                             GL_glyph *BitmapGlyph)
+static void MakeBitmapGlyph (GL_font *font, unsigned int g, GL_glyph *BitmapGlyph)
 {
   FT_BitmapGlyph  bitmap;
   FT_Bitmap       *source = NULL;
@@ -1024,11 +1125,11 @@ void StopTextureScale ( int texture_id )
   Drawpixel Method for software implementation, as it's much faster for those
   Texture Method for hardware implementation as it's faster and better.
   ----------------------------------------------------------------------*/
-static void GL_TextureInit (unsigned char *Image,   int width, int height)
+static void GL_TextureInit (unsigned char *image,  int width, int height)
 {
   /* We give te texture to opengl Pipeline system */
   glTexImage2D (GL_TEXTURE_2D, 0, GL_ALPHA, width, height, 0,
-                GL_ALPHA, GL_UNSIGNED_BYTE,(GLvoid *) Image);
+                GL_ALPHA, GL_UNSIGNED_BYTE,(GLvoid *) image);
 }
 
 /*----------------------------------------------------------------------
@@ -1037,13 +1138,13 @@ static void GL_TextureInit (unsigned char *Image,   int width, int height)
   Texture Method for hardware implementation as it's faster and better.
   ----------------------------------------------------------------------*/
 static void GL_TextMap (float x, float y, int width, int height,
-                        int Texture_w, int Texture_h)
+                        int texture_w, int texture_h)
 {
   float GL_w, GL_h;
   int xFrame, yFrame;
 
-  GL_w =/* SUPERSAMPLING*/ ((float)width / (float)Texture_w);  
-  GL_h = /*SUPERSAMPLING*/ ((float)height / (float)Texture_h);
+  GL_w =/* SUPERSAMPLING*/ ((float)width / (float)texture_w);  
+  GL_h = /*SUPERSAMPLING*/ ((float)height / (float)texture_h);
   xFrame = (int) x;
   yFrame = (int) y;
   glBegin (GL_QUADS); 
@@ -1074,9 +1175,9 @@ int UnicodeFontRender (void *gl_font, wchar_t *text, float x, float y, int size)
   GL_font            *font;
   GL_glyph           *glyph;
   Char_Cache_index   *cache;
-  unsigned char      *data;
-  float		      maxy, miny, shift, xorg;
-  int                 Width, Height, width, bitmap_alloc;
+  unsigned char      *data = NULL;
+  float		            maxy, miny, shift, xorg;
+  int                 w, h, width, bitmap_alloc;
   register int        pen_x, n;
  
   if (text == NULL) 
@@ -1136,8 +1237,8 @@ int UnicodeFontRender (void *gl_font, wchar_t *text, float x, float y, int size)
     }
   
   maxy = maxy - miny;
-  Height = (p2 ((int) maxy));
-  Width = 0;
+  h = (p2 ((int) maxy));
+  w = 0;
   
   /*shift if the first pos is neg */
   if (bitmap_pos[0].x < 0)
@@ -1151,15 +1252,15 @@ int UnicodeFontRender (void *gl_font, wchar_t *text, float x, float y, int size)
     if (bitmaps[n])
       {
         width = (int) (bitmap_pos[n].x + shift + bitmaps[n]->dimension.x);
-        Width = (p2 (width));
+        w = (p2 (width));
         break;
       }
     else 
       n--;  
-  if (Height <= 0 || Width <= 0 || fabs (miny - 10000) < 0.0001)
+  if (h <= 0 || w <= 0 || fabs (miny - 10000) < 0.0001)
     return 0;
   
-  bitmap_alloc = (sizeof (unsigned char) * Height * Width) + 4;
+  bitmap_alloc = (sizeof (unsigned char) * h * w) + 4;
   if (bitmap_alloc >= MAX_BITMAP_ALLOC)
     {
       data = (unsigned char *)TtaGetMemory (bitmap_alloc); 
@@ -1179,7 +1280,7 @@ int UnicodeFontRender (void *gl_font, wchar_t *text, float x, float y, int size)
                         (int) (bitmap_pos[n].y - miny),
                         (int) bitmaps[n]->dimension.x, 
                         (int) bitmaps[n]->dimension.y, 
-                        Width,
+                        w,
                         // if it's the first lettre just copy the bitmap without testing the pixels
                         (n == 0) ||
                         // OR
@@ -1201,13 +1302,13 @@ int UnicodeFontRender (void *gl_font, wchar_t *text, float x, float y, int size)
   /* if notinfeedbackmode (we draw draw something) then */
   /* throw bitmap data to OpenGL */
   if (GL_NotInFeedbackMode ())
-    GL_TextureInit (data, Width, Height);
+    GL_TextureInit (data, w, h);
   if (data && bitmap_alloc >= MAX_BITMAP_ALLOC)
     TtaFreeMemory (data);
 
   /* now map the created texture on a quad */
   y -= SUPERSAMPLING (maxy + miny);
-  GL_TextMap ((x - SUPERSAMPLING(shift)), y, width, (int) maxy, Width, Height);
+  GL_TextMap ((x - SUPERSAMPLING(shift)), y, width, (int) maxy, w, h);
   
   /* If there is no cache we must free
      allocated glyphs   */

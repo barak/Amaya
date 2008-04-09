@@ -5,7 +5,6 @@
 
 #ifndef __CEXTRACT__
 #ifdef __STDC__
-
 extern ThotBool CheckValidProfile ( NotifyElement *event );
 extern ThotBool CheckGenerator ( NotifyElement *event );
 extern ThotBool CheckUSEMAP ( NotifyAttribute *event );
@@ -60,6 +59,8 @@ extern ThotBool SaveBefore ( Document doc );
 extern void Synchronize ( Document doc,
                           View view );
 extern void RedisplayDoc ( Document doc );
+extern void SaveAll ( Document doc,
+                      View view );
 extern void SaveDocument ( Document doc,
                            View view );
 extern ThotBool CanReplaceCurrentDocument ( Document doc,
@@ -74,9 +75,10 @@ extern void DoSaveAs ( char *user_charset,
 extern ThotBool SaveTempCopy ( Document doc,
                                const char* dstdir,
                                char** filename );
+extern void SendByMail ( Document document,
+                         View view );
 
 #else /* __STDC__ */
-
 extern ThotBool CheckValidProfile ( NotifyElement *event );
 extern ThotBool CheckGenerator ( NotifyElement *event );
 extern ThotBool CheckUSEMAP ( NotifyAttribute *event );
@@ -131,6 +133,8 @@ extern ThotBool SaveBefore ( Document doc );
 extern void Synchronize ( Document doc,
                             View view );
 extern void RedisplayDoc ( Document doc );
+extern void SaveAll ( Document doc,
+                        View view );
 extern void SaveDocument ( Document doc,
                              View view );
 extern ThotBool CanReplaceCurrentDocument ( Document doc,
@@ -145,6 +149,8 @@ extern void DoSaveAs ( char *user_charset,
 extern ThotBool SaveTempCopy ( Document doc,
                                  const char* dstdir,
                                  char** filename );
+extern void SendByMail ( Document document,
+                           View view );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

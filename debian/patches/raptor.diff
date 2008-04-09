@@ -1,8 +1,8 @@
-Index: Documents/Makefile.in
+Index: amaya-10.0.1/Makefile.in
 ===================================================================
---- Documents.orig/Makefile.in
-+++ Documents/Makefile.in
-@@ -15,7 +15,7 @@
+--- amaya-10.0.1.orig/Makefile.in	2008-03-02 22:04:33.000000000 +0000
++++ amaya-10.0.1/Makefile.in	2008-03-02 22:04:38.000000000 +0000
+@@ -14,7 +14,7 @@
  
  #MKP: adding davlib
  SUBDIRS	= @SUBDIRS@ tools thotlib batch annotlib @DAVDIR@ amaya
@@ -11,7 +11,7 @@ Index: Documents/Makefile.in
  
  prefix = @prefix@
  exec_prefix = @exec_prefix@
-@@ -24,7 +24,7 @@
+@@ -23,7 +23,7 @@
  
  srcdir	= $(THOTDIR)
  
@@ -20,7 +20,7 @@ Index: Documents/Makefile.in
  
  amaya : tools thotlib amaya_prog print_prog
  
-@@ -253,11 +253,11 @@
+@@ -252,11 +252,11 @@
  		@($(ECHO) "libwww is installed")
  
  #
@@ -36,11 +36,11 @@ Index: Documents/Makefile.in
  
  #
  # Rules to rebuild the libjpeg package
-Index: Documents/configure.in
+Index: amaya-10.0.1/configure.in
 ===================================================================
---- Documents.orig/configure.in
-+++ Documents/configure.in
-@@ -1004,113 +1004,78 @@
+--- amaya-10.0.1.orig/configure.in	2008-03-02 22:04:33.000000000 +0000
++++ amaya-10.0.1/configure.in	2008-03-02 22:04:38.000000000 +0000
+@@ -693,113 +693,78 @@
  	[with_annot="yes"])
  
  
@@ -196,7 +196,7 @@ Index: Documents/configure.in
         fi
  else
  	with_annot="no"
-@@ -1118,7 +1083,15 @@
+@@ -807,7 +772,15 @@
  
  ANNOTLIB_COMPILE_BM=['#']
  
@@ -213,8 +213,8 @@ Index: Documents/configure.in
  
  ###################End of Annotations Support####################
  
-@@ -1323,9 +1296,6 @@
- AC_SUBST(GTK_OPTIONS)
+@@ -1014,9 +987,6 @@
+ 
  AC_SUBST(THOT_OPTIONS)
  AC_SUBST(AMAYA_OPTIONS)
 -AC_SUBST(AMAYA_ANNOT_OPTIONS)
