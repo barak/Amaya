@@ -12,6 +12,8 @@ extern void ExecuteACommand ( Document document,
                               View view );
 extern void InsertScript ( Document document,
                            View view );
+extern void RemoveDeprecatedElements ( Document doc,
+                                       View view );
 extern void AddExternal ( Document document,
                           View view );
 extern void ExecuteExternal ( Document document,
@@ -31,12 +33,14 @@ extern void NewCss ( Document doc,
 extern void CreateDoctype ( Document doc,
                             Element doctype,
                             int profile,
+                            int extraProfile,
                             ThotBool useMathML,
                             ThotBool useSVG );
 extern void InitializeNewDoc ( char *url,
                                int docType,
                                Document doc,
                                int profile,
+                               int extraProfile,
                                ThotBool isXML );
 extern void NotFoundDoc ( char *url,
                           Document doc );
@@ -52,6 +56,8 @@ extern void CreateDoctypeXhtmlStrict ( Document doc,
                                        View view );
 extern void CreateDoctypeXhtmlBasic ( Document doc,
                                       View view );
+extern void CreateDoctypeXhtmlRDFa ( Document doc,
+                                     View view );
 extern void CreateDoctypeHtmlTransitional ( Document doc,
                                             View view );
 extern void CreateDoctypeHtmlStrict ( Document doc,
@@ -132,10 +138,6 @@ extern void DoCreateTable ( Document doc,
                             View view );
 extern void CreateCaption ( Document doc,
                             View view );
-extern void CreateColgroup ( Document doc,
-                             View view );
-extern void CreateCol ( Document doc,
-                        View view );
 extern void ChangeToDataCell ( Document doc,
                                View view );
 extern void ChangeToHeadingCell ( Document doc,
@@ -284,6 +286,8 @@ extern void ExecuteACommand ( Document document,
                                 View view );
 extern void InsertScript ( Document document,
                              View view );
+extern void RemoveDeprecatedElements ( Document doc,
+                                         View view );
 extern void AddExternal ( Document document,
                             View view );
 extern void ExecuteExternal ( Document document,
@@ -303,12 +307,14 @@ extern void NewCss ( Document doc,
 extern void CreateDoctype ( Document doc,
                               Element doctype,
                               int profile,
+                              int extraProfile,
                               ThotBool useMathML,
                               ThotBool useSVG );
 extern void InitializeNewDoc ( char *url,
                                  int docType,
                                  Document doc,
                                  int profile,
+                                 int extraProfile,
                                  ThotBool isXML );
 extern void NotFoundDoc ( char *url,
                             Document doc );
@@ -324,6 +330,8 @@ extern void CreateDoctypeXhtmlStrict ( Document doc,
                                          View view );
 extern void CreateDoctypeXhtmlBasic ( Document doc,
                                         View view );
+extern void CreateDoctypeXhtmlRDFa ( Document doc,
+                                       View view );
 extern void CreateDoctypeHtmlTransitional ( Document doc,
                                               View view );
 extern void CreateDoctypeHtmlStrict ( Document doc,
@@ -404,10 +412,6 @@ extern void DoCreateTable ( Document doc,
                               View view );
 extern void CreateCaption ( Document doc,
                               View view );
-extern void CreateColgroup ( Document doc,
-                               View view );
-extern void CreateCol ( Document doc,
-                          View view );
 extern void ChangeToDataCell ( Document doc,
                                  View view );
 extern void ChangeToHeadingCell ( Document doc,

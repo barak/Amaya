@@ -1,4 +1,4 @@
-		{ I. Vatton 	 November 1994-2002  }
+		{ . Vatton 	 Nonember 1994-2002  }
 
 STRUCTURE HTML;
 
@@ -11,8 +11,16 @@ ATTR
    PseudoClass = Text;
    Style\240 = Text;		{ style }
    Title = Text;		{ title }
-			{ i18n }
+		 	{ i18n }
    dir = ltr_, rtl_;		{ dir }
+		 	{ RDFa }
+   about = Text;		{ about }
+   property = Text;		{ property }
+   resource = Text;		{ resource }
+   datatype = Text;		{ datatype }
+   typeof = Text;		{ typeof }
+   REL = Text;			{ rel }
+   REV = Text;			{ rev }
 			{ events }
    onclick = Text;		{ onclick }
    ondblclick = Text;		{ ondblclick }
@@ -105,8 +113,8 @@ STRUCT
   LINK                                                                { LINK }
      (ATTR charset; HREF_ = Text; hreflang = Text;
          { charset  href          hreflang }
-           Link_type = Text; REL = Text; REV = Text;
-         { type              rel         rev }
+           Link_type = Text;
+         { type }
            media; target_ = Text) =
          { media  target }
         CONSTANT C_Empty;
@@ -269,8 +277,8 @@ STRUCT
          { charset  type       name }
            HREF_; hreflang; target_;
          { href   hreflang  target}
-           REL; REV; accesskey = Text;
-         { rel  rev  accesskey }
+           accesskey = Text;
+         { accesskey }
            shape = rectangle, circle, polygon, default_;
          { shape   rect       cirecle poly     default }
            coords = Text; tabindex = Integer;
@@ -715,7 +723,7 @@ STRUCT
            frame = void, above, below, hsides, lhs, rhs,
          { frame   void  above  below  hsides  lhs  rhs  }
                    vsides, box, border;
-         {           vsides  box  border }
+         {         vsides  box  border }
            rules_ = none_, groups, rows, cols, all;
          { rules    none   groups  rows  cols  all }
            cellspacing = Integer; cellpadding = Integer;
@@ -725,15 +733,15 @@ STRUCT
            datapagesize = Text; IntWidthPxl; IntWidthPercent) =
          { datapagesize }
         BEGIN
-      ?        CAPTION;                                                { CAPTION }
-      ? Cols = LIST OF (Col_elem = CASE OF
-                                COL;                                { COL }
-                                COLGROUP;                        { COLGROUP }
-                                END);
+      ? CAPTION;                                                { CAPTION }
+      ? ColStruct = CASE OF
+            Cols = LIST OF (COL);                               { COL }
+            Colgroups = LIST OF (COLGROUP);                     { COLGROUP }
+            END;
         Table_head = LIST OF (Column_head);
-      ? thead;                                                        { THEAD }
+      ? thead;                                                   { THEAD }
         Table_body = LIST OF (tbody);
-      ? tfoot;                                                        { TFOOT }
+      ? tfoot;                                                   { TFOOT }
         END;
 
   CAPTION                                                        { CAPTION }
@@ -752,14 +760,25 @@ STRUCT
         { valign        top       middle       bottom       baseline }
           Width__; span_ = Integer)
         { width    span }
-         = LIST OF (COL);
+         = LIST [0..*] OF (COL);
 
   COL                                                                { COL }
     (ATTR Cell_align; Cell_valign; Width__; span_)
         { align       valign       width    span }
          = CONSTANT C_Empty;
 
-  Column_head (ATTR IntWidthPercent; IntWidthPxl) =
+  ColColgroup = CASE OF { alias for reference  Ref_ColColgroup }
+        COL;
+        COLGROUP;
+        END;
+
+  Column_head (ATTR IntWidthPercent; IntWidthPxl;
+               IntWidthRelative = Integer;
+               { IntWidthForced indicates that IntWidthPercent,
+                 IntWidthPxl or IntWidthRelative comes from a
+                 COL or COLGROUP element }
+               IntWidthForced = IntWidthForced_;
+               Ref_ColColgroup = REFERENCE(ColColgroup)) =
         CONSTANT C_Head;
 
   thead                                                                { THEAD }
@@ -991,6 +1010,8 @@ EXCEPT
         InternalLink:   Invisible;
         IntWidthPercent:NewPercentWidth, Invisible;
         IntWidthPxl:    NewWidth, Invisible;
+        IntWidthRelative:NewWidth, Invisible;
+        IntWidthForced: Invisible;
         IntHeightPercent:Invisible;
         IntHeightPxl:   NewHeight, Invisible;
         IntAreaSize:    Invisible;
@@ -1026,7 +1047,9 @@ EXCEPT
         Column_head:    IsColHead, NoCut, Hidden, NoBreakByReturn;
         Table_head:     NoCut, Hidden, NoSelect, NoBreakByReturn;
         C_Head:         Hidden, NoSelect;
-        Cols:           Hidden, NoSelect, NoCreate;
+        ColStruct:           Hidden, NoSelect, NoCreate, NoBreakByReturn;
+        Cols:           Hidden, NoSelect, NoCreate, NoBreakByReturn;
+        Colgroups:      Hidden, NoSelect, NoCreate, NoBreakByReturn;
         Table_body:     PageBreakAllowed, Hidden, NoBreakByReturn;
         thead:          NoBreakByReturn; 
         tbody:          NoBreakByReturn;
@@ -1064,16 +1087,16 @@ EXCEPT
         ID :            CssId; {Default id attribute}
         Class:          CssClass, DuplicateAttr;
         External_Object: Hidden;
-        External_Object_Content: Hidden, NoSpellCheck;
+        External_Object_Content: Hidden, NoSpellCheck, NewRoot;
         Embed_:         NoBreakByReturn, NoReplicate, NoSpellCheck;
-        Embed_Content:  Hidden, NoSelect;
+        Embed_Content:  Hidden, NoSelect, NewRoot;
         Object:         NoBreakByReturn, NoReplicate, IsImg;
         Object_Content: Hidden, NoSelect, NoCreate, NoCut, NoBreakByReturn;
         Applet:         NoBreakByReturn, NoReplicate;
         Applet_Content: Hidden, NoSelect, NoCreate, NoCut, NoBreakByReturn;
         IFRAME:         NoBreakByReturn, NoReplicate, NoSpellCheck;
         Iframe_Content: Hidden, NoSelect, NoCut, NoBreakByReturn;
-        Iframe_Src_Content: Hidden, NoCut, NoSelect;
+        Iframe_Src_Content: Hidden, NoCut, NoSelect, NewRoot;
         Fieldset_Content: Hidden, NoSelect, NoCut, NoBreakByReturn;
         is_css:         Invisible;
         Start:          StartCounter;

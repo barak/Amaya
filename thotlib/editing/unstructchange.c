@@ -1131,13 +1131,19 @@ void PasteCommand ()
               if (savebefore)
                 {
                   for (i = 0; i < NCreatedElements && !pSel; i++)
-                    if (CreatedElement[i] != NULL)
+                    if (CreatedElement[i] &&
+                        !TypeHasException (ExcIsColHead,
+                                           CreatedElement[i]->ElTypeNumber,
+                                           CreatedElement[i]->ElStructSchema))
                       pSel = CreatedElement[i];
                 }
               else
                 {
                   for (i = NCreatedElements - 1; i >= 0 && !pSel; i--)
-                    if (CreatedElement[i] != NULL)
+                    if (CreatedElement[i] &&
+                        !TypeHasException (ExcIsColHead,
+                                           CreatedElement[i]->ElTypeNumber,
+                                           CreatedElement[i]->ElStructSchema))
                       pSel = CreatedElement[i];
                 }
               if (pSel)
@@ -1502,9 +1508,9 @@ ThotBool IsXMLEditMode ()
       if (GetCurrentSelection (&pDoc, &firstSel, &lastSel, &firstChar, &lastChar))
         {
           if (firstSel && firstSel->ElStructSchema &&
-              (!strcmp (firstSel->ElParent->ElStructSchema->SsName, "XML") ||
-               !strcmp (firstSel->ElParent->ElStructSchema->SsName, "SVG") ||
-               !strcmp (firstSel->ElParent->ElStructSchema->SsName, "MathML")))
+              (!strcmp (firstSel->ElStructSchema->SsName, "XML") ||
+               !strcmp (firstSel->ElStructSchema->SsName, "SVG") ||
+               !strcmp (firstSel->ElStructSchema->SsName, "MathML")))
             // force the XML edit mode
             return TRUE;
         }
@@ -1512,11 +1518,6 @@ ThotBool IsXMLEditMode ()
   return edit;
 }
 
-/*----------------------------------------------------------------------
-  ----------------------------------------------------------------------*/
-static ThotBool NotifyNewElement (Document doc, Element el, ThotBool before)
-{
-}
 
 /*----------------------------------------------------------------------
   TtcCreateElement handles the Return (or Enter) key.
@@ -1622,6 +1623,13 @@ void TtcCreateElement (Document doc, View view)
             return;
         }
     }
+  else if (firstSel && firstSel->ElStructSchema &&
+           !strcmp (firstSel->ElStructSchema->SsName, "MathML") &&
+           firstSel->ElParent && firstSel->ElParent->ElStructSchema &&
+           !strcmp (firstSel->ElParent->ElStructSchema->SsName, "MathML"))
+    // don't manage this action within a MathML construction
+    return;
+
   firstEl = firstSel;
   lastEl = lastSel;
   if (!ElementIsReadOnly (firstSel) && AscentReturnCreateNL (firstSel))
@@ -2134,7 +2142,10 @@ void TtcCreateElement (Document doc, View view)
               if (pElReplicate)
                 {
                   if (TypeHasException (ExcNoReplicate, pElReplicate->ElTypeNumber,
-                                        pElReplicate->ElStructSchema))
+                                        pElReplicate->ElStructSchema) ||
+                      (pElReplicate->ElStructSchema &&
+                       (!strcmp (pElReplicate->ElStructSchema->SsName, "MathML") ||
+                        !strcmp (pElReplicate->ElStructSchema->SsName, "SVG"))))
                     {
                       if (!selBegin)
                       selEnd = TRUE;

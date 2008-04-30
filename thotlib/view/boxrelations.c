@@ -223,7 +223,8 @@ static void InsertDimRelation (PtrBox pOrginBox, PtrBox pTargetBox,
   if (inLine && IsParentBox (pTargetBox, pOrginBox))
     /* dont register the relation in this case */
     return;
-
+  if (pOrginBox == NULL)
+    return;
   if (op != OpIgnore)
     /* register in pTargetBox that pOrginBox has a relation with it */
     InsertDimRelation (pTargetBox, pOrginBox, OpIgnore, horizRef, inLine);
@@ -659,6 +660,8 @@ PtrAbstractBox GetEnclosingViewport (PtrAbstractBox pAb)
     {
       pAb = pAb->AbEnclosing;
       while (pAb &&
+             !TypeHasException (ExcNewRoot, pAb->AbElement->ElTypeNumber,
+                                pAb->AbElement->ElStructSchema) &&
              (pAb->AbLeafType != LtCompound ||
               pAb->AbPositioning == NULL ||
               pAb->AbPositioning->PnAlgorithm == PnInherit ||
@@ -724,7 +727,6 @@ void ComputeMBP (PtrAbstractBox pAb, int frame, ThotBool horizRef,
             dim = GetGhostSize (pBox, TRUE, pBlock);
           else
             {
-              //#ifdef POSITIONING
               if (pAb->AbLeafType == LtCompound &&
                   pAb->AbPositioning &&
                   (pAb->AbPositioning->PnAlgorithm == PnAbsolute ||
@@ -741,7 +743,6 @@ void ComputeMBP (PtrAbstractBox pAb, int frame, ThotBool horizRef,
                   else
                     dim = pBox->BxW;
                 }
-              //#endif /* POSITIONING */
               else if (pParent)
                 dim = pParent->BxW;
               else
@@ -1202,7 +1203,6 @@ void ComputePosRelation (AbPosition *rule, PtrBox pBox, int frame,
       fprintf (stderr, "Position refers a dead box");
       pRefAb = NULL;
     }
-  //#ifdef POSITIONING
   else if (pRefAb && !IsParentBox (pRefAb->AbBox, pBox))
     /* ignore previous absolute positioning */
     while (pRefAb &&
@@ -1226,7 +1226,6 @@ void ComputePosRelation (AbPosition *rule, PtrBox pBox, int frame,
           }
         rule->PosAbRef = pRefAb;
       }
-  //#endif /* POSITIONING */
 	   
   if (pAb->AbFloat != 'N' &&
       (pAb->AbLeafType == LtPicture ||
@@ -1267,6 +1266,7 @@ void ComputePosRelation (AbPosition *rule, PtrBox pBox, int frame,
         }
     }
 
+  parent = pAb->AbEnclosing;
   if (horizRef)
     {
       /* Horizontal rule */
@@ -1286,12 +1286,18 @@ void ComputePosRelation (AbPosition *rule, PtrBox pBox, int frame,
                pRefAb->AbHorizPos.PosAbRef == pAb)
         {
           /* Bad rule: change the ref to the previous box */
-          while (pRefAb &&
-                 pRefAb->AbHorizPos.PosAbRef == pAb)
+          while (pRefAb && pRefAb->AbHorizPos.PosAbRef == pAb)
             pRefAb = pRefAb->AbPrevious;
           pAb->AbHorizPos.PosAbRef = pRefAb;
         }
-      
+      if (parent && parent->AbDisplay == 'I')
+        {
+          // force inline display
+          pRefAb = NULL;
+          pAb->AbHorizPos.PosAbRef = NULL;
+          pAb->AbHorizPos.PosDistDelta = 0;
+        }
+
       if (pRefAb == NULL)
         {
           /* default rule */
@@ -1418,6 +1424,14 @@ void ComputePosRelation (AbPosition *rule, PtrBox pBox, int frame,
   else
     {
       /* Vertical rule */
+      if (parent && parent->AbDisplay == 'I')
+        {
+          // force inline display
+          pRefAb = NULL;
+          pAb->AbVertPos.PosAbRef = NULL;
+          pAb->AbVertPos.PosDistDelta = 0;
+        }
+
       if (pRefAb == pAb)
         {
           /* could not depend on itself */
@@ -1641,7 +1655,7 @@ void ComputePosRelation (AbPosition *rule, PtrBox pBox, int frame,
 
       if (pRefAb == pAb->AbEnclosing)
         {
-          GetExtraMargins (pRefBox, NULL, frame, &t, &b, &l, &r);
+          GetExtraMargins (pRefBox, frame, FALSE, &t, &b, &l, &r);
           t += pRefBox->BxTMargin + pRefBox->BxTBorder + pRefBox->BxTPadding;
           l += pRefBox->BxLMargin + pRefBox->BxLBorder + pRefBox->BxLPadding;
           b += pRefBox->BxBMargin + pRefBox->BxBBorder + pRefBox->BxBPadding;
@@ -2424,6 +2438,7 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
                     pParentAb->AbBox->BxType == BoGhost)))
                 {
                   /* all child heights depend on the parent height */
+#ifdef IV
                   if (pAb->AbLeafType == LtSymbol)
                     {
                       pParentAb->AbHeight.DimValue = 10;
@@ -2433,6 +2448,7 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
                                     0, 0, frame);
                     }
                   else
+#endif
                     {
                       pDimAb->DimAbRef = NULL;
                       pDimAb->DimValue = -1;
@@ -2457,13 +2473,14 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
                   pAb->AbFirstEnclosed->AbVisibility >= ViewFrameTable[frame - 1].FrVisibility &&
                   pAb->AbFirstEnclosed->AbHeight.DimAbRef == pAb)
                 {
-                  pDimAb->DimValue = 10;
-                  pDimAb->DimUnit = UnRelative;
+                  // get the default height
+                  pAb->AbFirstEnclosed->AbHeight.DimAbRef = NULL;
+                  pAb->AbFirstEnclosed->AbHeight.DimValue = -1;
                 }
             }
 
           /* Compute the delta width that must be substract to 100% width or enclosing width */
-          GetExtraMargins (pBox, NULL, frame, &t, &b, &l, &r);
+          GetExtraMargins (pBox, frame, FALSE, &t, &b, &l, &r);
           dx += l + r;
           if (pBox->BxLMargin > 0)
             dx += pBox->BxLMargin;
@@ -2652,8 +2669,7 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
                                        ((parent->AbWidth.DimAbRef == NULL &&
                                          parent->AbWidth.DimValue == -1) ||
                                         (inLine &&
-                                         pAb->AbDisplay != 'B' &&
-                                         pAb->AbDisplay != 'L')))
+                                         pAb->AbDisplay != 'B' && pAb->AbDisplay != 'L')))
                                 {
                                   /* inherit from contents */
                                   pDimAb->DimAbRef = NULL;
@@ -2671,8 +2687,7 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
                           else if (pParentAb->AbInLine &&
                                    pParentAb->AbBox->BxType != BoCell &&
                                    pParentAb->AbWidth.DimAbRef &&
-                                   pAb->AbDisplay != 'B' &&
-                                   pAb->AbDisplay != 'L')
+                                   pAb->AbDisplay != 'B' && pAb->AbDisplay != 'L')
                             {
                               /* inherit from the parent box */
                               pDimAb->DimAbRef = NULL;
@@ -3411,7 +3426,7 @@ void ComputeAxisRelation (AbPosition rule, PtrBox pBox, int frame, ThotBool hori
       pBox->BxType == BoFloatBlock ||
       pBox->BxType == BoCellBlock)
     {
-      GetExtraMargins (pBox, NULL, frame, &t, &b, &l, &r);
+      GetExtraMargins (pBox, frame, FALSE, &t, &b, &l, &r);
       x = pBox->BxLMargin + pBox->BxLBorder + pBox->BxLPadding + l;
       y = pBox->BxTMargin + pBox->BxTBorder + pBox->BxTPadding + t;
     }

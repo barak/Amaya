@@ -13,6 +13,8 @@ extern XTigerTemplate NewXTigerLibrary ( const char *templatePath );
 extern XTigerTemplate LookForXTigerLibrary ( const char *templatePath );
 extern XTigerTemplate GetXTigerTemplate ( const char *templatePath );
 extern XTigerTemplate GetXTigerDocTemplate ( Document doc );
+extern XTigerTemplate LookForXTigerTemplate ( const char *templatePath );
+extern void Template_Close ( XTigerTemplate t );
 extern void Template_AddStandardDependancies ( XTigerTemplate t );
 extern XTigerTemplate CreatePredefinedTypesLibrary ( void );
 extern XTigerTemplate CreateHTMLLibrary ( void );
@@ -20,6 +22,10 @@ extern Declaration Declaration_Clone ( Declaration dec );
 extern void Declaration_Destroy ( Declaration dec );
 extern ThotBool Declaration_GetElementType ( Declaration dec,
                                              ElementType *type );
+extern int Declaration_Compare ( Declaration dec1,
+                                 Declaration dec2 );
+extern int Declaration_CompareToString ( Declaration dec,
+                                         const char* name );
 extern void Declaration_CalcBlockLevel ( Declaration dec );
 extern void Template_CalcBlockLevel ( XTigerTemplate t );
 extern Declaration Template_DeclareNewSimpleType ( XTigerTemplate t,
@@ -47,7 +53,6 @@ extern Declaration Template_GetComponentDeclaration ( const XTigerTemplate t,
                                                       const char *name );
 extern Declaration Template_GetElementDeclaration ( const XTigerTemplate t,
                                                     const char *name );
-extern void Template_Close ( XTigerTemplate t );
 extern void Template_FillDeclarations ( XTigerTemplate t );
 extern void Template_AddLibraryDeclarations ( XTigerTemplate t,
                                               XTigerTemplate lib );
@@ -66,23 +71,32 @@ extern void PrintDeclarations ( XTigerTemplate t,
                                 FILE *file );
 extern void DumpAllDeclarations ( void );
 extern void DumpDeclarations ( XTigerTemplate t );
-extern HashMap GetComponents ( XTigerTemplate t );
+extern void DumpTemplateReferences ( void );
+extern SearchSet GetComponents ( XTigerTemplate t );
 extern Element GetComponentContent ( Declaration d );
 extern Document GetTemplateDocument ( XTigerTemplate t );
 extern void SetTemplateDocument ( XTigerTemplate t,
                                   Document doc );
-extern void AddUser ( XTigerTemplate t );
-extern void RemoveUser ( XTigerTemplate t );
-extern HashMap Template_ExpandUnion ( XTigerTemplate t,
-                                      Declaration decl );
-extern HashMap Template_ExpandHashMapTypes ( XTigerTemplate t,
-                                             HashMap types );
+extern void Template_AddReference ( XTigerTemplate t );
+extern void Template_RemoveReference ( XTigerTemplate t );
+extern ThotBool Template_IsPredefined ( XTigerTemplate t );
+extern ThotBool Template_IsLibrary ( XTigerTemplate t );
+extern ThotBool Template_IsInstance ( XTigerTemplate t );
+extern ThotBool Template_IsLoaded ( XTigerTemplate t );
+extern ThotBool Template_IsInternal ( XTigerTemplate t );
+extern SearchSet Template_GetDeclarationSetFromNames ( XTigerTemplate t,
+                                                       const char* names,
+                                                       ThotBool expand );
+extern SearchSet Template_ExpandUnion ( XTigerTemplate t,
+                                        Declaration decl );
+extern SearchSet Template_ExpandTypeSet ( XTigerTemplate t,
+                                          SearchSet types );
 extern void Template_FilterInsertableElement ( XTigerTemplate t,
-                                               HashMap map,
+                                               SearchSet set,
                                                Element refelem,
                                                ThotBool insertafter );
 extern char* Template_ExpandTypes ( XTigerTemplate t,
-                                    char* types,
+                                    const char* types,
                                     Element refelem,
                                     ThotBool insertafter );
 extern ThotBool Template_IsElementTypeAllowed ( ElementType type,
@@ -116,6 +130,8 @@ extern XTigerTemplate NewXTigerLibrary ( const char *templatePath );
 extern XTigerTemplate LookForXTigerLibrary ( const char *templatePath );
 extern XTigerTemplate GetXTigerTemplate ( const char *templatePath );
 extern XTigerTemplate GetXTigerDocTemplate ( Document doc );
+extern XTigerTemplate LookForXTigerTemplate ( const char *templatePath );
+extern void Template_Close ( XTigerTemplate t );
 extern void Template_AddStandardDependancies ( XTigerTemplate t );
 extern XTigerTemplate CreatePredefinedTypesLibrary ( void );
 extern XTigerTemplate CreateHTMLLibrary ( void );
@@ -123,6 +139,10 @@ extern Declaration Declaration_Clone ( Declaration dec );
 extern void Declaration_Destroy ( Declaration dec );
 extern ThotBool Declaration_GetElementType ( Declaration dec,
                                                ElementType *type );
+extern int Declaration_Compare ( Declaration dec1,
+                                   Declaration dec2 );
+extern int Declaration_CompareToString ( Declaration dec,
+                                           const char* name );
 extern void Declaration_CalcBlockLevel ( Declaration dec );
 extern void Template_CalcBlockLevel ( XTigerTemplate t );
 extern Declaration Template_DeclareNewSimpleType ( XTigerTemplate t,
@@ -150,7 +170,6 @@ extern Declaration Template_GetComponentDeclaration ( const XTigerTemplate t,
                                                         const char *name );
 extern Declaration Template_GetElementDeclaration ( const XTigerTemplate t,
                                                       const char *name );
-extern void Template_Close ( XTigerTemplate t );
 extern void Template_FillDeclarations ( XTigerTemplate t );
 extern void Template_AddLibraryDeclarations ( XTigerTemplate t,
                                                 XTigerTemplate lib );
@@ -169,23 +188,32 @@ extern void PrintDeclarations ( XTigerTemplate t,
                                   FILE *file );
 extern void DumpAllDeclarations ( void );
 extern void DumpDeclarations ( XTigerTemplate t );
-extern HashMap GetComponents ( XTigerTemplate t );
+extern void DumpTemplateReferences ( void );
+extern SearchSet GetComponents ( XTigerTemplate t );
 extern Element GetComponentContent ( Declaration d );
 extern Document GetTemplateDocument ( XTigerTemplate t );
 extern void SetTemplateDocument ( XTigerTemplate t,
                                     Document doc );
-extern void AddUser ( XTigerTemplate t );
-extern void RemoveUser ( XTigerTemplate t );
-extern HashMap Template_ExpandUnion ( XTigerTemplate t,
-                                        Declaration decl );
-extern HashMap Template_ExpandHashMapTypes ( XTigerTemplate t,
-                                               HashMap types );
+extern void Template_AddReference ( XTigerTemplate t );
+extern void Template_RemoveReference ( XTigerTemplate t );
+extern ThotBool Template_IsPredefined ( XTigerTemplate t );
+extern ThotBool Template_IsLibrary ( XTigerTemplate t );
+extern ThotBool Template_IsInstance ( XTigerTemplate t );
+extern ThotBool Template_IsLoaded ( XTigerTemplate t );
+extern ThotBool Template_IsInternal ( XTigerTemplate t );
+extern SearchSet Template_GetDeclarationSetFromNames ( XTigerTemplate t,
+                                                         const char* names,
+                                                         ThotBool expand );
+extern SearchSet Template_ExpandUnion ( XTigerTemplate t,
+                                          Declaration decl );
+extern SearchSet Template_ExpandTypeSet ( XTigerTemplate t,
+                                            SearchSet types );
 extern void Template_FilterInsertableElement ( XTigerTemplate t,
-                                                 HashMap map,
+                                                 SearchSet set,
                                                  Element refelem,
                                                  ThotBool insertafter );
 extern char* Template_ExpandTypes ( XTigerTemplate t,
-                                      char* types,
+                                      const char* types,
                                       Element refelem,
                                       ThotBool insertafter );
 extern ThotBool Template_IsElementTypeAllowed ( ElementType type,

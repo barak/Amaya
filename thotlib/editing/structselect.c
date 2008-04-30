@@ -1387,11 +1387,10 @@ void ShowSelection (PtrAbstractBox pRootAb, ThotBool showBegin)
             HighlightChildren, the selection is transmitted to children
           */
           while (pAb && pAb->AbFirstEnclosed &&
-                 ((pAb->AbBox && pAb->AbBox->BxType == BoGhost) ||
-                  (FrameTable[frame].FrView == 1 &&
-                   TypeHasException (ExcHighlightChildren,
-                                     pAb->AbElement->ElTypeNumber,
-                                     pAb->AbElement->ElStructSchema))))
+                 FrameTable[frame].FrView == 1 &&
+                 TypeHasException (ExcHighlightChildren,
+                                   pAb->AbElement->ElTypeNumber,
+                                   pAb->AbElement->ElStructSchema))
             {
               /* select children intead of the current abstract box */
               if (depth < MAX_TRANSMIT)
@@ -1586,25 +1585,23 @@ static void DisplaySel (PtrElement pEl, int view, int frame, ThotBool *abExist)
                    SelectedPointInPolyline > 0)
             partialSel = TRUE;
         }
-
       /*
         For ghost elements or elements with the exception
         HighlightChildren, the selection is transmitted to children
       */
       while (pAb && pAb->AbFirstEnclosed &&
-             ((pAb->AbBox && pAb->AbBox->BxType == BoGhost) ||
-              (FrameTable[frame].FrView == 1 &&
-               TypeHasException (ExcHighlightChildren,
-                                 pAb->AbElement->ElTypeNumber,
-                                 pAb->AbElement->ElStructSchema))))
+              FrameTable[frame].FrView == 1 &&
+             TypeHasException (ExcHighlightChildren,
+                               pAb->AbElement->ElTypeNumber,
+                               pAb->AbElement->ElStructSchema))
         {
-          /* select children intead of the current abstract box */
+          /* select children instead of the current abstract box */
           if (depth < MAX_TRANSMIT)
             pSelAb[depth++] = pAb;
           pAb = pAb->AbFirstEnclosed;
           pEl = pAb->AbElement;
         }
-      
+     
       if (partialSel && !pAb->AbPresentationBox)
         pNextAb = NULL;
       else
@@ -3062,11 +3059,10 @@ static void ReverseSelect (PtrElement pEl, PtrDocument pDoc, ThotBool highlight)
             HighlightChildren, the selection is transmitted to children
           */
           while (pAb && pAb->AbFirstEnclosed &&
-                 ((pAb->AbBox && pAb->AbBox->BxType == BoGhost) ||
-                  (FrameTable[frame].FrView == 1 &&
-                   TypeHasException (ExcHighlightChildren,
-                                     pAb->AbElement->ElTypeNumber,
-                                     pAb->AbElement->ElStructSchema))))
+                 FrameTable[frame].FrView == 1 &&
+                 TypeHasException (ExcHighlightChildren,
+                                   pAb->AbElement->ElTypeNumber,
+                                   pAb->AbElement->ElStructSchema))
             {
               /* select children intead of the current abstract box */
               if (depth < MAX_TRANSMIT)

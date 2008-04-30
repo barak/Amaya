@@ -2930,6 +2930,7 @@ RULES
 
  Definitions: BEGIN
         Width: auto{Enclosing . Width};
+        Visibility: 0;
         END;
 
  Definition: BEGIN
@@ -2938,6 +2939,7 @@ RULES
         MarginLeft: LIST_INDENT;
         Width: auto{Enclosing . Width};
         Display: Block;
+        Visibility: GrandFather =;
         HorizPos: Left = Enclosing . Left;
         IN Structure_view BEGIN
                 MarginLeft: 0;
@@ -3336,7 +3338,11 @@ RULES
                 END;        
         END;
 
- FIELDSET: BEGIN
+ Fieldset_Content: BEGIN
+        Width: auto{Enclosing . Width};
+        END;
+
+FIELDSET: BEGIN
         CreateBefore(ElementName);
         CreateWith(VerticalLine);
         Width: auto{Enclosing . Width};
@@ -4353,7 +4359,7 @@ RULES
         BEGIN
         CreateBefore(ElementName);
         CreateWith(VerticalLine);
-  Foreground: GrandFather =;
+        Foreground: GrandFather =;
         Background: GrandFather =;
         Line;
 #ifdef PAGE
@@ -4377,7 +4383,21 @@ RULES
                 END;
         END;
 
+ ColStruct:  BEGIN
+        Visibility: 0;
+        IN Structure_view BEGIN
+                Visibility: Enclosing =;
+                END;
+        END;
+
  Cols:  BEGIN
+        Visibility: 0;
+        IN Structure_view BEGIN
+                Visibility: Enclosing =;
+                END;
+        END;
+
+ Colgroups:  BEGIN
         Visibility: 0;
         IN Structure_view BEGIN
                 Visibility: Enclosing =;
@@ -8160,6 +8180,36 @@ ATTRIBUTES
         END;
 
   EmbedName:
+        BEGIN
+        CreateBefore(AttrName);
+        CreateBefore(AttrValue);
+        END;
+
+  about:
+        BEGIN
+        CreateBefore(AttrName);
+        CreateBefore(AttrValue);
+        END;
+
+  property:
+        BEGIN
+        CreateBefore(AttrName);
+        CreateBefore(AttrValue);
+        END;
+
+  resource:
+        BEGIN
+        CreateBefore(AttrName);
+        CreateBefore(AttrValue);
+        END;
+
+  datatype:
+        BEGIN
+        CreateBefore(AttrName);
+        CreateBefore(AttrValue);
+        END;
+
+  typeof:
         BEGIN
         CreateBefore(AttrName);
         CreateBefore(AttrValue);

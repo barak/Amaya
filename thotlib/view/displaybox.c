@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2007
+ *  (c) COPYRIGHT INRIA, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -353,16 +353,20 @@ static void DisplaySymbol (PtrBox pBox, int frame, ThotBool selected,
 #endif
         if (StixExist && font == NULL && pBox->BxH > 0)
           {
-            size = pBox->BxH;
+            size = PixelToPoint (pBox->BxH);
+            if (pBox->BxFont && pBox->BxFont->FontSize > size)
+              size = pBox->BxFont->FontSize;
             GetMathFontFromChar (pBox->BxAbstractBox->AbShape,
                                  pBox->BxFont,
                                  (void **) &font, size);
             if (font)
               useStix = TRUE;
           }
+        else
+          size = pBox->BxFont->FontSize;
+
       if (font == NULL)
         GetFontAndIndexFromSpec (32, pBox->BxFont, 1, &font);
-
       if (font != NULL)
         {
           /* Position in the frame */
@@ -379,12 +383,6 @@ static void DisplaySymbol (PtrBox pBox, int frame, ThotBool selected,
           if (height < 0)
             height = 0;
 	  
-          if (pBox->BxAbstractBox->AbSizeUnit == UnPoint ||
-              pBox->BxAbstractBox->AbSizeUnit == UnPixel)
-            size = FontRelSize (pBox->BxAbstractBox->AbSize);
-          else
-            size = pBox->BxAbstractBox->AbSize;
-
           if (selected &&
               !pFrame->FrSelectOnePosition &&
               pFrame->FrSelectionBegin.VsXPos != pBox->BxW)
@@ -583,8 +581,7 @@ static void DisplaySymbol (PtrBox pBox, int frame, ThotBool selected,
               break;
             case 'o':/* horizontal brace */
               if (useStix)
-                DrawStixHorizontalBrace (frame, xd, yd, width, height, 0, size,
-                                         fg);
+                DrawStixHorizontalBrace (frame, xd, yd, width, height, 0, size, fg);
               else
                 DrawHorizontalBrace (frame, i, 5, xd, yd, width, height, 0,fg);
               break;
@@ -605,18 +602,15 @@ static void DisplaySymbol (PtrBox pBox, int frame, ThotBool selected,
               break;
             case 'u':
               if (useStix)
-                DrawStixHorizontalBrace (frame, xd, yd, width, height, 1, size,
-                                         fg);
+                DrawStixHorizontalBrace (frame, xd, yd, width, height, 1, size, fg);
               else
                 DrawHorizontalBrace (frame, i, 5, xd, yd, width, height, 1,fg);
               break;
             case 'v':
-              DrawVerticalLine (frame, i, 5, xd, yd, width, height, 1, fg, pBox,
-                                0, 0);
+              DrawVerticalLine (frame, i, 5, xd, yd, width, height, 1, fg, pBox, 0, 0);
               break;
             case 'D':
-              DrawVerticalLine (frame, i, 6, xd, yd, width, height, 1, fg, pBox,
-                                0, 0);
+              DrawVerticalLine (frame, i, 6, xd, yd, width, height, 1, fg, pBox, 0, 0);
               break;
             case 'I':
               DrawIntersection (frame, xd, yd, width, height, font, fg);
@@ -640,13 +634,19 @@ static void DisplaySymbol (PtrBox pBox, int frame, ThotBool selected,
          /* c = 150 to 213 : Display one of the 64 strechable arrows from
             the MathML 2.0 Operator dictionary (appendix F.5)  */
             case 'L': /* (c = 76 [change to 150 ?]) ; LeftArrow ; U02190  */
-              DrawArrow (frame, i, 5, xd, yd, width, height, 180, 0, fg);
+              if (useStix)
+                DrawStixHorizArrow (frame, xd, yd, width, height, 1, size, fg);
+              else
+                DrawArrow (frame, i, 5, xd, yd, width, height, 180, 0, fg);
               break;
             case '^': /* (c = 94 [change to 151 ?]) ; UpArrow ; U02191 */
               DrawArrow (frame, i, 5, xd, yd, width, height, 90, 0, fg);
               break;
             case 'R': /* (c = 82 [change to 152 ?]) ; RightArrow ; U02192 */
-              DrawArrow (frame, i, 5, xd, yd, width, height, 0, 0, fg);
+              if (useStix)
+                DrawStixHorizArrow (frame, xd, yd, width, height, 0, size, fg);
+              else
+                DrawArrow (frame, i, 5, xd, yd, width, height, 0, 0, fg);
               break;
             case 'V': /* (c = 86 [change to 153 ?]) ; DownArrow ; U02193 */
               DrawArrow (frame, i, 5, xd, yd, width, height, 270, 0, fg);
@@ -2239,21 +2239,18 @@ static void DisplayJustifiedText (PtrBox pBox, PtrBox mbox, int frame,
 }
 
 
-
-
 /*----------------------------------------------------------------------
   DisplayBorders displays the box borders.
   The parameter pForm points the box that generates the border or fill.
   Parameters x, y, w, h give the clipping region.
   et, eb, el, and er give top, bottom, left and right extra margins.
-  Parameters first and last are TRUE when the box pBox is respectively
-  at the first position and/or the last position of pFrom (they must be
-  TRUE for pFrom itself).
+  Parameters bt, bb, bl, br give the top, bottom, left, and right width
+  of borders.
   ----------------------------------------------------------------------*/
 void DisplayBorders (PtrBox box, PtrAbstractBox pFrom, int frame,
                      int x, int y, int w, int h,
                      int et, int eb, int el, int er,
-                     ThotBool topdown, ThotBool first, ThotBool last) 
+                     int bt, int bb, int bl, int br) 
 {
   PtrBox              from;
   PtrAbstractBox      child;
@@ -2267,27 +2264,63 @@ void DisplayBorders (PtrBox box, PtrAbstractBox pFrom, int frame,
     return;
   from = pFrom->AbBox;
   /* position in the frame */
-  xFrame = box->BxXOrg - ViewFrameTable[frame - 1].FrXOrg;
-  yFrame = box->BxYOrg - ViewFrameTable[frame - 1].FrYOrg;
+#ifdef _GL
+  if (box->BxBoundinBoxComputed)
+    {
+      xFrame = box->BxClipX;
+      yFrame = box->BxClipY;
+      width = box->BxClipW;
+      height = box->BxClipH;
+    }
+  else
+#endif /* _GL */
+    {
+      xFrame = box->BxXOrg - ViewFrameTable[frame - 1].FrXOrg;
+      yFrame = box->BxYOrg - ViewFrameTable[frame - 1].FrYOrg;
+      width = box->BxWidth;
+      height = box->BxHeight;
+    }
+  if (x < xFrame)
+    {
+      width = width + xFrame - x;
+      xFrame = x;
+    }
+  if (x + w > xFrame + width)
+    width = x + w - xFrame;
+
   /* part of the top, left, bottom and right border which are visible */
   t = yFrame + et + from->BxTBorder - y;
   if (t > from->BxTBorder)
     t = from->BxTBorder;
+  else if (t < 0)
+    t = 0;
+
   l = xFrame + el + from->BxLBorder - x;
   if (l > from->BxLBorder)
     l = from->BxLBorder;
-  height = box->BxHeight;
+  else if (l < 0)
+    l = 0;
+
+  if (et < 0)
+    yFrame += et;
   b = y + h - yFrame - height + eb + from->BxBBorder;
   if (b > from->BxBBorder)
     b = from->BxBBorder;
-  width = box->BxWidth;
+  else if (b < 0)
+    b = 0;
+
   if (box->BxLMargin < 0)
     width += box->BxLMargin;
   if (er < 0)
     er = 0;
-  r = x + w - xFrame - width + er + from->BxRBorder;
+  if (el < 0)
+    xFrame += el;
+  r = x + w + 1 - xFrame - width + er + from->BxRBorder;
   if (r > from->BxRBorder)
     r = from->BxRBorder;
+  else if (r < 0)
+    r = 0;
+
   if (from->BxType == BoTable)
     {
       // no border around the caption
@@ -2321,17 +2354,9 @@ void DisplayBorders (PtrBox box, PtrAbstractBox pFrom, int frame,
             }
         }
     }
-  if (topdown && !first)
-    t = 0; /* no top border */
-  if (topdown && !last)
-    b = 0; /* no bottom border */
-  if (!topdown && !first)
-    l = 0; /* no left border */
-  if (!topdown && !last)
-    r = 0; /* no right border */
 
   if (from->BxTBorder && pFrom->AbTopStyle > 2 &&
-      pFrom->AbTopBColor != -2 && t > 0)
+      pFrom->AbTopBColor != -2 && t > 0 && bt)
     {
       /* the top border is visible */
       if (pFrom->AbTopBColor == -1)
@@ -2343,7 +2368,7 @@ void DisplayBorders (PtrBox box, PtrAbstractBox pFrom, int frame,
                           l, r);
     }
   if (from->BxLBorder && pFrom->AbLeftStyle > 2 &&
-      pFrom->AbLeftBColor != -2 && l > 0)
+      pFrom->AbLeftBColor != -2 && l > 0 && bl)
     {
       /* the left border is visible */
       if (pFrom->AbLeftBColor == -1)
@@ -2355,7 +2380,7 @@ void DisplayBorders (PtrBox box, PtrAbstractBox pFrom, int frame,
                         t , b);
     }
   if (from->BxBBorder && pFrom->AbBottomStyle > 2 &&
-      pFrom->AbBottomBColor != -2 && b > 0)
+      pFrom->AbBottomBColor != -2 && b > 0 && bb)
     {
       /* the bottom border is visible */
       if (pFrom->AbBottomBColor == -1)
@@ -2368,7 +2393,7 @@ void DisplayBorders (PtrBox box, PtrAbstractBox pFrom, int frame,
                           l, r);
     }
   if (from->BxRBorder && pFrom->AbRightStyle > 2 &&
-      pFrom->AbRightBColor != -2 && r > 0)
+      pFrom->AbRightBColor != -2 && r > 0 && br)
     {
       /* the right border is visible */
       if (pFrom->AbRightBColor == -1)
@@ -2411,7 +2436,7 @@ void DisplayBox (PtrBox box, int frame, int xmin, int xmax, int ymin,
     shiftx = shifty = 0;
   pFrame = &ViewFrameTable[frame - 1];
   pAb = box->BxAbstractBox;
-  GetExtraMargins (box, NULL, frame, &t, &b, &l, &r);
+  GetExtraMargins (box, frame, FALSE, &t, &b, &l, &r);
   x = ViewFrameTable[frame - 1].FrXOrg;
   y = ViewFrameTable[frame - 1].FrYOrg;
   xd = box->BxXOrg + box->BxLMargin + l + shiftx;
@@ -2576,8 +2601,8 @@ void DisplayBox (PtrBox box, int frame, int xmin, int xmax, int ymin,
       b += box->BxBMargin;
       t += box->BxTMargin;
       r += box->BxRMargin;
-      DisplayBorders (box, pAb, frame, xd - x, yd - y, width, height,
-                      t, b, l, r, TRUE, TRUE, TRUE);
+      DisplayBorders (box, pAb, frame, xd - x, yd - y, width, height, t, b, l, r,
+                      box->BxTBorder, box->BxBBorder, box->BxLBorder, box->BxRBorder);
     }
 #ifdef _GL
   if (Printing)

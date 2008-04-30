@@ -366,23 +366,11 @@ aspects spécifiques d'Amaya sont décrits.</p>
       <li><a href="Annotations.html.fr#Navigating">Les annotations dans la
         vue Liens</a></li>
       <li><a href="Annotations.html.fr#Threads">Répondre aux annotations /
-        fil de discussion</a> 
-        <ul>
-          <li><a href="Annotations.html.fr#Probl">Problèmes connus : fil
-            incomplet</a></li>
-        </ul>
-      </li>
+        fil de discussion</a> </li>
+      <li><a href="Annotations.html.fr#Probl">Problèmes connus : fil
+        incomplet</a></li>
       <li><a href="Annotations.html.fr#Issues1">Problèmes relatifs aux
-        annotations et aux documents modifiés</a> 
-        <ul>
-          <li><a href="Annotations.html.fr#Annotation1">Annotations
-            orphelines</a></li>
-          <li><a href="Annotations.html.fr#Annotation2">Annotations
-            trompeuses</a></li>
-          <li><a href="Annotations.html.fr#Comment">Comment éviter ces
-            problèmes ?</a></li>
-        </ul>
-      </li>
+        annotations et aux documents modifiés</a> </li>
     </ul>
   </li>
   <li><a href="Configure.html.fr#Configurer">Configurer Amaya</a> 
@@ -491,28 +479,31 @@ aspects spécifiques d'Amaya sont décrits.</p>
       accessible</a></li>
     </ul>
   </li>
+  <li><a href="HTML-elements/HTML.html.fr#Intro">Introduction à HTML</a>
+    <ul>
+      <li><a href="HTML-elements/infoTypes.html.fr#Information">Types
+        d'information dans HTML</a> </li>
+      <li><a href="HTML-elements/structure.html.fr#HTML">Structure du
+        document HTML</a></li>
+      <li><a href="HTML-elements/headings.html.fr#Heading">Éléments
+        d'en-tête</a></li>
+      <li><a href="HTML-elements/lists.html.fr#List">Éléments d'une
+      liste</a></li>
+      <li><a href="HTML-elements/address.html.fr#About">A propos de
+        l'auteur</a></li>
+      <li><a href="HTML-elements/inline.html.fr#Inline3">Définitions en
+        ligne, citations, code, insertions et suppressions, abréviations,
+        etc.</a></li>
+      <li><a href="HTML-elements/40styling.html.fr#Character">Éléments de
+        style de HTML (ce qu'il ne faut pas faire et ce qui doit être
+        fait...)</a></li>
+      <li><a href="HTML-elements/HTML.html.fr#HTML">Les éléments HTML</a></li>
+    </ul>
+  </li>
 </ul>
-</div>
-<hr />
 
-<p><a name="There" id="There">Il y a également une brève introduction qui
-décrit les éléments HTML et explique comment les utiliser.</a></p>
-<ul>
-  <li><a href="HTML-elements/HTML.html.fr#HTML">Les éléments HTML</a></li>
-  <li><a href="HTML-elements/infoTypes.html.fr#Information">Types
-    d'information dans HTML</a> </li>
-  <li><a href="HTML-elements/structure.html.fr#HTML">Structure du document
-    HTML</a></li>
-  <li><a href="HTML-elements/headings.html.fr#Heading">Éléments
-  d'en-tête</a></li>
-  <li><a href="HTML-elements/lists.html.fr#List">Éléments d'une liste</a></li>
-  <li><a href="HTML-elements/address.html.fr#About">A propos de
-  l'auteur</a></li>
-  <li><a href="HTML-elements/inline.html.fr#Inline3">Définitions en ligne,
-    citations, code, insertions et suppressions, abréviations, etc.</a></li>
-  <li><a href="HTML-elements/40styling.html.fr#Character">Éléments de style
-    de HTML (ce qu'il ne faut pas faire et ce qui doit être fait...)</a></li>
-</ul>
+<p> </p>
+</div>
 <hr />
 
 <p class="policyfooter"><small>Copyright  ©  1994-2008 <a

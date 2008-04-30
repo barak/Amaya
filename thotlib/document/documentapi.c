@@ -42,6 +42,7 @@
 #include "appdialogue_f.h"
 #include "applicationapi_f.h"
 #include "attributes_f.h"
+#include "callback_f.h"
 #include "config_f.h"
 #include "createabsbox_f.h"
 #include "displayview_f.h"
@@ -92,10 +93,33 @@ int TtaGetDocumentProfile (Document document)
 }
 
 /*----------------------------------------------------------------------
+  TtaGetDocumentExtraProfile
+  Gets the document profile
+  ----------------------------------------------------------------------*/
+int TtaGetDocumentExtraProfile (Document document)
+{
+  PtrDocument pDoc;
+
+  UserErrorCode = 0;
+  /* verifies the parameter document */
+  if (document < 1 || document > MAX_DOCUMENTS ||
+      LoadedDocument[document - 1] == NULL)
+    {
+      TtaError (ERR_invalid_document_parameter);
+      return (UNDEFINED_CHARSET);
+    }
+  else
+    {
+      pDoc = LoadedDocument[document - 1];
+      return (pDoc->DocExtraProfile);
+    }
+}
+
+/*----------------------------------------------------------------------
   TtaSetDocumentProfile
   Sets the document profile
   ----------------------------------------------------------------------*/
-void TtaSetDocumentProfile (Document document, int profile)
+void TtaSetDocumentProfile (Document document, int profile,  int extraProfile)
 {
   PtrDocument pDoc;
 
@@ -109,6 +133,7 @@ void TtaSetDocumentProfile (Document document, int profile)
     {
       pDoc = LoadedDocument[document - 1];
       pDoc->DocProfile = profile;
+      pDoc->DocExtraProfile = extraProfile;
     }
 }
 
@@ -281,6 +306,51 @@ void UnloadDocument (PtrDocument * pDoc)
     }
 }
 
+
+/*----------------------------------------------------------------------
+  CloseDocumentAndViews
+  Close a document and all its views.
+  If notify is TRUE send a notify event.
+  ----------------------------------------------------------------------*/
+void CloseDocumentAndViews(PtrDocument pDoc, ThotBool notify)
+{
+  NotifyDialog      notifyDoc;
+  Document          doc; 
+  if(pDoc)
+    {
+      doc = (Document) IdentDocument (pDoc);
+#ifndef NODISPLAY
+      /* Closing all opened views relating to the document */
+      /* close the views */
+      CloseAllViewsDoc(pDoc);
+#endif /* NODISPLAY */
+
+      /* Decrement reference counting.
+       * Do not use TtaRemoveDocumentReference here to prevent
+       * recursive document closing process.
+       */
+      pDoc->DocNbRef--;
+      if(pDoc->DocNbRef <= 0)
+        {
+#ifndef NODISPLAY
+          UnloadTree (doc);
+#else /* NODISPLAY */
+          DeleteAllTrees (pDoc);
+#endif /* NODISPLAY */
+          
+          if(notify)
+            {
+              notifyDoc.event = TteDocClose;
+              notifyDoc.document = doc;
+              notifyDoc.view = 0;
+              CallEventType ((NotifyEvent *) & notifyDoc, FALSE);          
+            }
+          UnloadDocument (&pDoc);
+        }
+    }
+}
+
+
 /*----------------------------------------------------------------------
   TtaCloseDocument
 
@@ -291,9 +361,6 @@ void UnloadDocument (PtrDocument * pDoc)
   ----------------------------------------------------------------------*/
 void TtaCloseDocument (Document document)
 {
-#ifndef NODISPLAY
-  int              nv;
-#endif
   PtrDocument      pDoc;
 
   UserErrorCode = 0;
@@ -308,20 +375,8 @@ void TtaCloseDocument (Document document)
       pDoc = LoadedDocument[document - 1];
       if (ThotLocalActions[T_clearhistory] != NULL)
         (*(Proc1)ThotLocalActions[T_clearhistory]) (pDoc);
-#ifndef NODISPLAY
-      /* Closing all opened views relating to the document */
-      /* close the views */
-      for (nv = 1; nv <= MAX_VIEW_DOC; nv++)
-        if (pDoc->DocView[nv - 1].DvPSchemaView != 0)
-          {
-            DestroyFrame (pDoc->DocViewFrame[nv - 1]);
-            CloseDocumentView (pDoc, nv, FALSE);
-          }
-      UnloadTree (document);
-#else /* NODISPLAY */
-      DeleteAllTrees (pDoc);
-#endif /* NODISPLAY */
-      UnloadDocument (&pDoc);
+
+      CloseDocumentAndViews(pDoc, FALSE);
     }
 }
 
@@ -1061,7 +1116,6 @@ SSchema TtaGetSSchemaByUri (char *uriName, Document document)
   schema = NULL;
   if (uriName == NULL || uriName[0] == EOS)
     TtaError (ERR_invalid_parameter);
-  /* verifies the parameter document */
   else if (document < 1 || document > MAX_DOCUMENTS)
     TtaError (ERR_invalid_document_parameter);
   else if (LoadedDocument[document - 1] == NULL)
@@ -1812,4 +1866,74 @@ ThotBool TtaIsXmlSSchema (SSchema schema)
   if (!schema)
     TtaError (ERR_invalid_parameter);
   return ((PtrSSchema) schema)->SsIsXml;
+}
+
+/*----------------------------------------------------------------------
+  TtaAddDocumentReference
+  Add a reference to the specified document.
+  ----------------------------------------------------------------------*/
+void TtaAddDocumentReference (Document document)
+{
+  PtrDocument pDoc;
+
+  UserErrorCode = 0;
+  /* verifies the parameter document */
+  if (document < 1 || document > MAX_DOCUMENTS)
+    TtaError (ERR_invalid_document_parameter);
+  else if (LoadedDocument[document - 1] == NULL)
+    TtaError (ERR_invalid_document_parameter);
+  else
+    {
+      /* parameter document is correct */
+      pDoc = LoadedDocument[document - 1];
+      pDoc->DocNbRef++;
+    }
+}
+
+/*----------------------------------------------------------------------
+  TtaRemoveDocumentReference
+  Remove a reference to the specified document.
+  If the document has no reference anymore, it is freed.
+  ----------------------------------------------------------------------*/
+void TtaRemoveDocumentReference (Document document)
+{
+  PtrDocument pDoc;
+
+  UserErrorCode = 0;
+  /* verifies the parameter document */
+  if (document < 1 || document > MAX_DOCUMENTS)
+    TtaError (ERR_invalid_document_parameter);
+  else if (LoadedDocument[document - 1] == NULL)
+    TtaError (ERR_invalid_document_parameter);
+  else
+    {
+      /* parameter document is correct */
+      pDoc = LoadedDocument[document - 1];
+      pDoc->DocNbRef--;
+      if(pDoc->DocNbRef <= 0)
+        {
+#ifndef NODISPLAY          
+          TCloseDocument(pDoc);
+#else /* NODISPLAY */
+          TtaCloseDocument(document);
+#endif /* NODISPLAY */
+        }
+    }
+}
+
+/*----------------------------------------------------------------------
+  TtaDumpDocumentReference
+  Show the number of reference of each opened document.
+  ----------------------------------------------------------------------*/
+void TtaDumpDocumentReference()
+{
+  int i;
+  for(i=0; i<MAX_DOCUMENTS; i++)
+    {
+      PtrDocument pDoc = (PtrDocument)LoadedDocument[i];
+      if(pDoc)
+        {
+          printf("[%02d] %s %d\n", i, pDoc->DocDName, pDoc->DocNbRef);
+        }
+    }
 }

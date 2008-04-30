@@ -23,6 +23,10 @@
 #include "HTMLtable_f.h"
 #include "MathMLbuilder_f.h"
 #include "Mathedit_f.h"
+#include "XHTMLbuilder_f.h"
+
+#include "templates.h"
+#include "templates_f.h"
 
 static Element      CurrentColumn = NULL;
 static Element      CurrentTable = NULL;
@@ -31,6 +35,7 @@ static Element      DeletedTable = NULL; // the current deleted table element
 static Element      ParentDeletedTable = NULL; // the parent of the deleted table
 static int          PreviousColspan;
 static int          PreviousRowspan;
+static int          PreviousSpan;
 
 /*----------------------------------------------------------------------
   WithinLastPastedCell
@@ -685,7 +690,7 @@ static void CreateCellsInRowGroup (Element group, Element prevCol,
   NewColumnHead creates a new Column_head and returns it.   
   If generateEmptyCells == TRUE, create an additional empty cell in all
   rows, except the row indicated.
-  If last == TRUE when lastcolhead is the last current column.
+  If last == TRUE then lastcolhead is the last current column.
   The parameter before indicates if the lastcolhead precedes or follows
   the new created Column_head. It should be FALSE when last is TRUE.
   ----------------------------------------------------------------------*/
@@ -695,7 +700,7 @@ Element NewColumnHead (Element lastcolhead, ThotBool before,
 {
   Element             colhead, currentrow, firstrow;
   Element             group, groupdone, block;
-  Element             prevCol, nextCol;
+  Element             prevColhead, nextColhead;
   Element             table, child;
   ElementType         elType;
   int                 rowspan;
@@ -712,11 +717,11 @@ Element NewColumnHead (Element lastcolhead, ThotBool before,
   if (colhead != NULL)
     {
       /* insert the new column head */
-      prevCol = nextCol = lastcolhead;
+      prevColhead = nextColhead = lastcolhead;
       if (before)
-        TtaPreviousSibling (&prevCol);
+        TtaPreviousSibling (&prevColhead);
       else
-        TtaNextSibling (&nextCol);
+        TtaNextSibling (&nextColhead);
       TtaInsertSibling (colhead, lastcolhead, before, doc);
       TtaRegisterElementCreate (colhead, doc);
       if (inMath)
@@ -756,8 +761,8 @@ Element NewColumnHead (Element lastcolhead, ThotBool before,
                     child = TtaGetLastChild (currentrow);
                   else
                     /* look for the previous cell */
-                    child = GetCloseCell (currentrow, prevCol, doc, TRUE, TRUE,
-                                          inMath, &span, &rowspan, FALSE);
+                    child = GetCloseCell (currentrow, prevColhead, doc, TRUE,
+                                         TRUE, inMath, &span, &rowspan, FALSE);
                   if (child)
                     {
                       if (!span)
@@ -774,7 +779,7 @@ Element NewColumnHead (Element lastcolhead, ThotBool before,
                   else
                     {
                       /* look for the next cell */
-                      child = GetCloseCell (currentrow, nextCol, doc, FALSE,
+                      child = GetCloseCell (currentrow, nextColhead, doc, FALSE,
                                             TRUE, inMath, &span, &rowspan, FALSE);
                       if (select && row == NULL)
                         /* first row where a cell is created */
@@ -811,7 +816,7 @@ Element NewColumnHead (Element lastcolhead, ThotBool before,
                       /* this block is a thead or tfoot element */
                       group = block;
                       if (group != groupdone)
-                        CreateCellsInRowGroup (group, prevCol, nextCol,
+                        CreateCellsInRowGroup (group, prevColhead, nextColhead,
                                                colhead, doc, inMath, last);
                       else if (last)
                         block = NULL;
@@ -825,7 +830,7 @@ Element NewColumnHead (Element lastcolhead, ThotBool before,
                       while (group != NULL)
                         {
                           if (group != groupdone)
-                            CreateCellsInRowGroup (group, prevCol, nextCol,
+                            CreateCellsInRowGroup (group, prevColhead, nextColhead,
                                                    colhead, doc, inMath, last);
                           if (last)
                             {
@@ -854,11 +859,186 @@ Element NewColumnHead (Element lastcolhead, ThotBool before,
 }
 
 /*----------------------------------------------------------------------
+  NewColElement
+  Create a COL element corresponding to the Column_head element (colhead)
+  that has just been created.
+  Boolean before indicates that the Column_head element was created before
+  or after the column where the selection was set.
+  ----------------------------------------------------------------------*/
+void  NewColElement (Element colhead, ThotBool before, Document doc)
+{
+  ElementType         elType;
+  Element             prevColhead, nextColhead, el, colstruct, col, newCol,
+                      prevCol, nextCol;
+  AttributeType       attrTypeRef, attrTypeSpan;
+  Attribute           attrRef, attrSpan;
+  SSchema             tableSS;
+  int                 val;
+
+  if (!colhead)
+    return;
+  elType = TtaGetElementType (colhead);
+  tableSS = elType.ElSSchema;
+  /* are there any COL or COLGROUP elements in this table ? (look for element
+     ColStruct that contains all COL and COLGROUP elements */
+  colstruct = NULL;
+  el = TtaGetParent (colhead);   /* get the Table_head element */
+  do
+    {
+      TtaPreviousSibling (&el);
+      if (el)
+        {
+          elType = TtaGetElementType (el);
+          if (elType.ElSSchema == tableSS &&
+              elType.ElTypeNum == HTML_EL_ColStruct)
+            colstruct = el;
+        }
+    }
+  while (el && !colstruct);
+  if (!colstruct)
+    /* there is no ColStruct element, then no COL or COLGROUP in this table */
+    return;
+
+  /* does this table use COLGROUP elements or only COL elements? */
+  el = TtaGetFirstChild (colstruct);
+  if (el)
+    el = TtaGetFirstChild (el);
+  col = NULL;
+  while (el && !col)
+    {
+      elType = TtaGetElementType (el);
+      if (elType.ElSSchema == tableSS &&
+          (elType.ElTypeNum == HTML_EL_COL ||
+           elType.ElTypeNum == HTML_EL_COLGROUP))
+        col = el;
+      else
+        TtaNextSibling (&el);
+    }
+  if (!col)
+    return;
+  if (elType.ElTypeNum == HTML_EL_COLGROUP)
+    {
+      /* does this COLGROUP contain COL elements? */
+      el = TtaGetFirstChild (col);
+      while (el)
+        {
+          elType = TtaGetElementType (el);
+          if (elType.ElSSchema == tableSS && elType.ElTypeNum == HTML_EL_COL)
+            {
+              col = el;
+              el = NULL;
+            }
+          else
+            TtaNextSibling (&el);
+        }
+    }
+
+  attrTypeRef.AttrSSchema = tableSS;
+  attrTypeRef.AttrTypeNum = HTML_ATTR_Ref_ColColgroup;
+  prevColhead = colhead;
+  TtaPreviousSibling (&prevColhead);
+  if (!prevColhead)
+    /* first column of the table */
+    {
+      elType = TtaGetElementType (col);
+      if (elType.ElTypeNum == HTML_EL_COL)
+        newCol = TtaNewTree (doc, elType, "");
+      else
+        newCol = TtaNewElement (doc, elType);
+      TtaInsertSibling (newCol, col, TRUE, doc);
+      /* no need to register the new COL element. When undoing, it will be
+         removed by the removal of the Column_head element */
+    }
+  else
+    {
+      attrRef = TtaGetAttribute (prevColhead, attrTypeRef);
+      if (attrRef)
+        TtaGiveReferenceAttributeValue (attrRef, &prevCol);
+      else
+        prevCol = NULL;
+      nextColhead = colhead;
+      TtaNextSibling (&nextColhead);
+      if (!nextColhead)
+        /* last column of the table */
+        {
+          if (prevCol)
+            {
+              elType = TtaGetElementType (prevCol);
+              if (elType.ElTypeNum == HTML_EL_COL)
+                newCol = TtaNewTree (doc, elType, "");
+              else
+                newCol = TtaNewElement (doc, elType);
+              TtaInsertSibling (newCol, prevCol, FALSE, doc);
+              /* no need to register the new COL element. When undoing, it
+                 will be removed by the removal of the Column_head element */
+            }
+        }
+      else
+        {
+          attrRef = TtaGetAttribute (nextColhead, attrTypeRef);
+          if (attrRef)
+            {
+             TtaGiveReferenceAttributeValue (attrRef, &nextCol);
+             if (prevCol != nextCol)
+               {
+                 if (before)
+                   elType = TtaGetElementType (nextCol);
+                 else
+                   elType = TtaGetElementType (prevCol);
+                 if (elType.ElTypeNum == HTML_EL_COL)
+                   newCol = TtaNewTree (doc, elType, "");
+                 else
+                   newCol = TtaNewElement (doc, elType);
+                 if (before)
+                   TtaInsertSibling (newCol, nextCol, TRUE, doc);
+                 else
+                   TtaInsertSibling (newCol, prevCol, FALSE, doc);
+                 /* no need to register the new COL element. When undoing, it
+                    will be removed by the removal of the Column_head element*/
+               }
+             else
+               /* the previous Column_head and the next one are linked to
+                  the same COL or COLGROUP element. Change the span of this
+                  element */
+               {
+                 newCol = prevCol;
+                 attrTypeSpan.AttrSSchema = tableSS;
+                 attrTypeSpan.AttrTypeNum = HTML_ATTR_span_;
+                 attrSpan = TtaGetAttribute (prevCol, attrTypeSpan);
+                 if (attrSpan)
+                   {
+                     /* no need to register the attribute. ClearColumn will
+                        do the job when undoing the creation of the column */
+                     val = TtaGetAttributeValue (attrSpan);
+                     val++;
+                     TtaSetAttributeValue (attrSpan, val, prevCol, doc);
+                   }
+               }
+            }
+        }
+    }
+  
+  /* link the Column_head element to the new COL or COLGROUP element */
+  if (newCol)
+    {
+      attrRef = TtaGetAttribute (colhead, attrTypeRef);
+      if (!attrRef)
+        {
+          attrRef = TtaNewAttribute (attrTypeRef);
+          if (attrRef)
+            TtaAttachAttribute (colhead, attrRef, doc);
+        }
+      if (attrRef)
+        TtaSetAttributeReference (attrRef, colhead, doc, newCol);
+    }
+}
+
+/*----------------------------------------------------------------------
   RemoveColumn remove the current colhead if it's empty.
   The parameter ifEmpty makes removing optional.
   Returns TRUE if the column has been removed.
   ----------------------------------------------------------------------*/
-ThotBool RemoveColumn (Element colhead, Document doc, ThotBool ifEmpty,
+static ThotBool RemoveColumn (Element colhead, Document doc, ThotBool ifEmpty,
                        ThotBool inMath)
 {
   Element             row, firstrow;
@@ -1126,21 +1306,32 @@ Element NextTableRow (Element row)
 #define MAX_COLS 100
 /*----------------------------------------------------------------------
   CheckAllRows
+  Analyze the structure of a table and creates the appropriate Column_head
+  elements that represent each basic column.
+  Generate empty cells at the end of "short" rows.
+  If the table is a MathML mtable, MathML placeholders are created within these
+  generated empty cells.
+  Remove empty columns at the end of the table if deleteLastEmptyColumns is
+  true.
   ----------------------------------------------------------------------*/
 void CheckAllRows (Element table, Document doc, ThotBool placeholder,
                    ThotBool deleteLastEmptyColumns)
 {
   Element            *colElement, *delayedColExt;
-  Element             row, nextRow, firstrow, colhead, prevColhead;
-  Element             cell, nextCell, group, prevGroup, new_, prev, el, next;
-  ElementType         elType;
-  AttributeType       attrTypeHSpan, attrTypeVSpan, attrType;
+  Element             row, nextRow, firstrow;
+  Element             colgroup, col, colcolgroup, colhead, prevColhead;
+  Element             cell, nextCell, group, prevGroup, new_, prev, el, next,
+                      parent;
+  ElementType         elType, elType1;
+  AttributeType       attrTypeHSpan, attrTypeVSpan, attrType, attrTypeSpan,
+                      attrTypeRef, attrTypeWidth, attrTypeForced;
   Attribute           attr;
   SSchema             tableSS;
   int                *colVSpan;
   int                 span, cRef, cNumber, cDelayed, overflow;
-  int                 i, rowType;
+  int                 i, rowType, length;
   ThotBool            inMath;
+  char*               buffer;
 
   if (table == NULL)
     return;
@@ -1176,17 +1367,6 @@ void CheckAllRows (Element table, Document doc, ThotBool placeholder,
       attrType.AttrTypeNum = HTML_ATTR_ColExt;
     }
 
-  colhead = TtaSearchTypedElement (elType, SearchInTree, table);
-  cNumber = 0;
-  cDelayed = 0;
-  while (colhead != 0 && cNumber < MAX_COLS)
-    {
-      colElement[cNumber] = colhead;
-      colVSpan[cNumber] = 0;
-      TtaNextSibling (&colhead);
-      cNumber++;
-    }
-
   /* remove text elements at the first level */
   el = TtaGetFirstChild (table);
   while (el)
@@ -1195,6 +1375,205 @@ void CheckAllRows (Element table, Document doc, ThotBool placeholder,
       if (TtaGetElementType (el).ElTypeNum == HTML_EL_TEXT_UNIT)
         TtaDeleteTree (el, doc);
       el = next;
+    }
+
+  /* get all Column_head elements of this table and record them in the
+     colElement table */
+  colhead = TtaSearchTypedElement (elType, SearchInTree, table);
+  cNumber = 0;
+  cDelayed = 0;
+  while (colhead && cNumber < MAX_COLS)
+    {
+      colElement[cNumber] = colhead;
+      colVSpan[cNumber] = 0;
+      TtaNextSibling (&colhead);
+      cNumber++;
+    }
+
+  /* process the COLGROUP and COL elements in this table */
+  if (inMath)
+    {
+      col = NULL;
+      colgroup = NULL;
+    }
+  else
+    {
+      elType1.ElSSchema = tableSS;
+      elType1.ElTypeNum = HTML_EL_Table_;
+      elType.ElTypeNum = HTML_EL_COLGROUP;
+      colgroup = TtaSearchElementAmong5Types (elType, elType1, elType1,
+                                        elType1, elType1, SearchInTree, table);
+      if (colgroup && TtaGetElementType (colgroup).ElTypeNum == HTML_EL_Table_)
+        /* we have found a nested table. No COLGROUP in this table */
+        colgroup = NULL;
+      if (colgroup)
+        colcolgroup = colgroup;
+      else
+        {
+          elType.ElTypeNum = HTML_EL_COL;
+          colcolgroup = TtaSearchElementAmong5Types (elType, elType1, elType1,
+                                        elType1, elType1, SearchInTree, table);
+          if (colcolgroup &&
+              TtaGetElementType (colcolgroup).ElTypeNum == HTML_EL_Table_)
+            /* we have found a nested table. No COL in this table */
+            colcolgroup = NULL;
+        }
+
+      if (colcolgroup)
+        {
+          cRef = 0;
+          attrTypeSpan.AttrSSchema = tableSS;
+          attrTypeSpan.AttrTypeNum = HTML_ATTR_span_;
+          attrTypeRef.AttrSSchema = tableSS;
+          attrTypeRef.AttrTypeNum = HTML_ATTR_Ref_ColColgroup;
+          attrTypeWidth.AttrSSchema = tableSS;
+          attrTypeWidth.AttrTypeNum = HTML_ATTR_Width__;
+          attrTypeForced.AttrSSchema = tableSS;
+          attrTypeForced.AttrTypeNum = HTML_ATTR_IntWidthForced;
+          while (colcolgroup)
+            {
+              elType = TtaGetElementType (colcolgroup);
+              if (elType.ElTypeNum == HTML_EL_COLGROUP)
+                /* it is a COLGROUP element */
+                {
+                  elType.ElTypeNum = HTML_EL_COL;
+                  col = TtaSearchTypedElement (elType, SearchInTree,
+                                               colcolgroup);
+                  if (col)
+                    /* this COLGROUP contains at least one COL */
+                    /* handle its COL children */
+                    {
+                      colgroup = colcolgroup;
+                      colcolgroup = col;
+                    }
+                }
+              /* is there a span attribute for that COL or COLGROUP element? */
+              attr = TtaGetAttribute (colcolgroup, attrTypeSpan);
+              if (attr == NULL)
+                span = 1;
+              else
+                span = TtaGetAttributeValue (attr);
+              for (i = 0; i < span; i++)
+                {
+                  if (!colElement[cRef])
+                    /* there is no Column_head for that COL or COLGROUP */
+                    /* Create one */
+                    {
+                      if (cRef > 0)
+                        prevColhead = colElement[cRef - 1];
+                      else
+                        prevColhead = NULL;
+                      colElement[cRef] = NewColumnHead (prevColhead, FALSE,
+                                               TRUE, NULL, doc, inMath, FALSE);
+                      if (cRef == cNumber && cRef < MAX_COLS)
+                        cNumber++;
+                    }
+                  colhead = colElement[cRef];
+                  cRef++;
+                  /* link the Column_head element to the corresponding COL or
+                     COLGROUP */
+                  attr = TtaGetAttribute (colhead, attrTypeRef);
+                  if (!attr)
+                    {
+                      attr = TtaNewAttribute (attrTypeRef);
+                      if (attr)
+                        TtaAttachAttribute (colhead, attr, doc);
+                    }
+                  if (attr)
+                    TtaSetAttributeReference (attr, colhead, doc, colcolgroup);
+                  /* transmit the "width" attribute of the COL or COLGROUP
+                     to the column head */
+                  attr = TtaGetAttribute (colcolgroup, attrTypeWidth);
+                  if (!attr && colgroup)
+                    /* this element has no "width" attribute, but it's a COL
+                       with a COLGROUP parent, take the "width" attribute of
+                       the parent */
+                    attr = TtaGetAttribute (colgroup, attrTypeWidth);
+                  if (attr)
+                    {
+                      length = TtaGetTextAttributeLength (attr);
+                      if (length > 0)
+                        {
+                          buffer = (char *)TtaGetMemory (length + 1);
+                          TtaGiveTextAttributeValue (attr, buffer, &length);
+                          CreateAttrWidthPercentPxl (buffer, colhead, doc, -1);
+                          TtaFreeMemory (buffer);
+                          /* put a IntWidthForced attribute to indicate
+                             that the width value comes from a COL or COLGROUP
+                             element */
+                          attr = TtaGetAttribute (colhead, attrTypeForced);
+                          if (!attr)
+                            {
+                              attr = TtaNewAttribute (attrTypeForced);
+                              if (attr)
+                                {
+                                  TtaSetAttributeValue (attr, HTML_ATTR_IntWidthForced_VAL_IntWidthForced_, colhead, doc);
+                                  TtaAttachAttribute (colhead, attr, doc);
+                                }
+                            }
+                        }
+                    } 
+                }
+              /* get the next COL or COLGROUP sibling element */
+              prev = colcolgroup;
+              TtaNextSibling (&colcolgroup);
+              if (colcolgroup)
+                /* skip unsignificant elements */
+                {
+                  do
+                    {
+                      elType = TtaGetElementType (colcolgroup);
+                      if (elType.ElSSchema != tableSS ||
+                          (elType.ElTypeNum != HTML_EL_COL &&
+                           elType.ElTypeNum != HTML_EL_COLGROUP))
+                        TtaNextSibling (&colcolgroup);
+                    }
+                  while (colcolgroup &&
+                         (elType.ElSSchema != tableSS ||
+                          (elType.ElTypeNum != HTML_EL_COL &&
+                           elType.ElTypeNum != HTML_EL_COLGROUP)));
+                }
+              if (!colcolgroup)
+                /* no sibling. If it was a COL, check its parent: it may be a
+                   COLGROUP */
+                {
+                  colgroup = NULL;
+                  elType = TtaGetElementType (prev);
+                  if (elType.ElTypeNum == HTML_EL_COL)
+                    {
+                      parent = TtaGetParent (prev);
+                      if (parent)
+                        {
+                          elType = TtaGetElementType (parent);
+                          if (elType.ElTypeNum == HTML_EL_COLGROUP &&
+                              elType.ElSSchema == tableSS)
+                            /* it was the last COL in a COLGROUP. Take the next
+                               COLGROUP */
+                            {
+                              colcolgroup = parent;
+                              TtaNextSibling (&colcolgroup);
+                            }
+                        } 
+                    }
+                }
+              /* skip unsignificant elements */
+              if (colcolgroup)
+                {
+                  do
+                    {
+                      elType = TtaGetElementType (colcolgroup);
+                      if (elType.ElSSchema != tableSS ||
+                          (elType.ElTypeNum != HTML_EL_COL &&
+                           elType.ElTypeNum != HTML_EL_COLGROUP))
+                        TtaNextSibling (&colcolgroup);
+                    }
+                  while (colcolgroup &&
+                         (elType.ElSSchema != tableSS ||
+                          (elType.ElTypeNum != HTML_EL_COL &&
+                           elType.ElTypeNum != HTML_EL_COLGROUP)));
+                }
+            }
+        }
     }
 
   cell = NULL;
@@ -1470,7 +1849,8 @@ void CheckAllRows (Element table, Document doc, ThotBool placeholder,
         }
     }
 
-  /* if there are some empty columns at the end, remove them */
+  /* if there are some empty columns at the end, remove them, except if they
+     were created bu COL or COLGROUP elements */
   if (deleteLastEmptyColumns && cNumber > 0)
     {
       /* start with the last column of the table */
@@ -1480,13 +1860,20 @@ void CheckAllRows (Element table, Document doc, ThotBool placeholder,
           /* get the previous column head before it is deleted */
           prevColhead = colhead;
           TtaPreviousSibling (&prevColhead);
-          /* remove this column if it is empty */
-          if (!RemoveColumn (colhead, doc, TRUE, inMath))
-            /* this column is not empty and has not been removed. Stop */
+          if (TtaGetAttribute (colhead, attrTypeRef))
+            /* This column head is linked to a COL or COLGROUP element. Keep
+               the column and stop */
             colhead = NULL;
           else
-            /* the column was empty and has been removed */
-            colhead = prevColhead;     
+            {
+              /* remove this column if it is empty */
+              if (!RemoveColumn (colhead, doc, TRUE, inMath))
+                /* this column is not empty and has not been removed. Stop */
+                colhead = NULL;
+              else
+                /* the column was empty and has been removed */
+                colhead = prevColhead;     
+            }
         }
     }
 
@@ -1521,15 +1908,15 @@ void CheckAllRows (Element table, Document doc, ThotBool placeholder,
   ----------------------------------------------------------------------*/
 void CheckTable (Element table, Document doc)
 {
-  ElementType         elType;
-  Element             el, columnHeads, thead, tfoot, firstcolhead, temp_el;
-  Element             tbody, table_body, prevrow, prevEl, nextEl, enclosingTable;
-  AttributeType       attrType;
-  Attribute           attr;
-  ThotBool            previousStructureChecking;
-  ThotBool            before, inMath, inTemplate;
+  ElementType       elType, elType1;
+  Element           el, columnHeads, thead, tfoot, firstcolhead, temp_el,
+                    tbody, table_body, prevrow, prevEl, nextEl, cols, col,
+                    colstruct, nextCol, prevCol, enclosingTable;
+  AttributeType     attrType;
+  Attribute         attr;
+  ThotBool          previousStructureChecking, before, inMath, inTemplate;
 
-  if (DocumentMeta[doc] && DocumentMeta[doc]->isTemplate)
+  if (IsTemplateDocument(doc))
     /* do not check the structure of a table when loading a template.
        Checking will be done when instanciating a template */
     return;
@@ -1542,8 +1929,11 @@ void CheckTable (Element table, Document doc)
       thead = NULL;
       tfoot = NULL;
       table_body = NULL;
+      colstruct = NULL;
+      cols = NULL;
+      col = NULL;
       elType = TtaGetElementType (table);
-      inMath = TtaSameSSchemas (elType.ElSSchema, TtaGetSSchema ("MathML", doc));
+      inMath = TtaSameSSchemas (elType.ElSSchema, TtaGetSSchema("MathML",doc));
       inTemplate = FALSE;
       el = TtaGetFirstChild (table);
       temp_el = NULL;
@@ -1557,7 +1947,7 @@ void CheckTable (Element table, Document doc)
               inTemplate = TRUE;
             }
           else if ((inMath && elType.ElTypeNum == MathML_EL_MTable_head) ||
-              (!inMath && elType.ElTypeNum == HTML_EL_Table_head))
+                   (!inMath && elType.ElTypeNum == HTML_EL_Table_head))
             columnHeads = el;
           else if ((inMath && elType.ElTypeNum == MathML_EL_MTable_body) ||
                    (!inMath && elType.ElTypeNum == HTML_EL_Table_body))
@@ -1569,6 +1959,14 @@ void CheckTable (Element table, Document doc)
             thead = el;
           else if (!inMath && elType.ElTypeNum == HTML_EL_tfoot)
             tfoot = el;
+          else if (!inMath && elType.ElTypeNum == HTML_EL_ColStruct)
+            colstruct = el;
+          else if (!inMath && (elType.ElTypeNum == HTML_EL_COL ||
+                               elType.ElTypeNum == HTML_EL_COLGROUP))
+            {
+              if (!col)
+                col = el;
+            }
           prevEl = el;
           if (temp_el)
             {
@@ -1617,8 +2015,51 @@ void CheckTable (Element table, Document doc)
       previousStructureChecking = TtaGetStructureChecking (doc);
       TtaSetStructureChecking (FALSE, doc);
 
-      /* create a Table_head element with a first Column_head */
+      /* create a ColStruct element enclosing all COL or COLGROUP elements
+         if any */
       elType = TtaGetElementType (table);
+      if (!inMath && !colstruct && col)
+        {
+          elType.ElTypeNum = HTML_EL_ColStruct;
+          colstruct = TtaNewElement (doc, elType);
+          if (colstruct)
+            {
+              TtaInsertSibling (colstruct, col, TRUE, doc);
+              elType = TtaGetElementType (col);
+              if (elType.ElTypeNum == HTML_EL_COL)
+                elType.ElTypeNum = HTML_EL_Cols;
+              else
+                elType.ElTypeNum = HTML_EL_Colgroups;
+              cols = TtaNewElement (doc, elType);
+              TtaInsertFirstChild (&cols, colstruct, doc);
+              prevCol = NULL;
+              do
+                {
+                  nextCol = col; TtaNextSibling (&nextCol);
+                  TtaRemoveTree (col, doc);
+                  if (prevCol)
+                    TtaInsertSibling (col, prevCol, FALSE, doc);
+                  else
+                    TtaInsertFirstChild (&col, cols, doc);
+                  prevCol = col;
+                  col = nextCol;
+                  if (col)
+                    {
+                      elType1 = TtaGetElementType (col);
+                      if (elType1.ElSSchema != elType.ElSSchema ||
+                          (elType1.ElTypeNum != HTML_EL_COL &&
+                           elType1.ElTypeNum != HTML_EL_COLGROUP &&
+                           elType1.ElTypeNum != HTML_EL_Invalid_element &&
+                           elType1.ElTypeNum != HTML_EL_Comment_ &&
+                           elType1.ElTypeNum != HTML_EL_XMLPI))
+                        col = NULL;
+                    } 
+                }
+              while (col);
+            }
+        }
+
+      /* create a Table_head element with a first Column_head */
       if (inMath)
         elType.ElTypeNum = MathML_EL_MTable_head;
       else
@@ -1627,26 +2068,32 @@ void CheckTable (Element table, Document doc)
       if (columnHeads)
         {
           firstcolhead = TtaGetFirstChild (columnHeads);
-          el = TtaGetFirstChild (table);
-          if (el == NULL)
-            TtaInsertFirstChild (&columnHeads, table, doc);
+          if (colstruct)
+            TtaInsertSibling (columnHeads, colstruct, FALSE, doc);
           else
             {
-              /* skip elements Comment and Invalid_element and insert the new
-                 element Table_head, after the element caption if it is
-                 present or as the first child if there is no caption */
-              while (el)
+              el = TtaGetFirstChild (table);
+              if (el == NULL)
+                TtaInsertFirstChild (&columnHeads, table, doc);
+              else
                 {
-                  elType = TtaGetElementType (el);
-                  if (elType.ElTypeNum == HTML_EL_Invalid_element ||
-                      elType.ElTypeNum == HTML_EL_Comment_ ||
-                      elType.ElTypeNum == HTML_EL_XMLPI)
-                    TtaNextSibling (&el);
-                  else
+                  /* skip elements Comment and Invalid_element and insert the
+                     new element Table_head, after the element caption if it is
+                     present or as the first child if there is no caption */
+                  while (el)
                     {
-                      before = (inMath || elType.ElTypeNum != HTML_EL_CAPTION);
-                      TtaInsertSibling (columnHeads, el, before, doc);
-                      el = NULL;
+                      elType = TtaGetElementType (el);
+                      if (elType.ElTypeNum == HTML_EL_Invalid_element ||
+                          elType.ElTypeNum == HTML_EL_Comment_ ||
+                          elType.ElTypeNum == HTML_EL_XMLPI)
+                        TtaNextSibling (&el);
+                      else
+                        {
+                          before = (inMath ||
+                                    elType.ElTypeNum != HTML_EL_CAPTION);
+                          TtaInsertSibling (columnHeads, el, before, doc);
+                          el = NULL;
+                        }
                     }
                 }
             }
@@ -2116,8 +2563,12 @@ void NewCell (Element cell, Document doc, ThotBool generateColumn,
     {
       if (generateColumn)
         /* generate the new column */
-        colhead = NewColumnHead (colhead, before, FALSE, row, doc, inMath,
-                                 generateEmptyCells);
+        {
+          colhead = NewColumnHead (colhead, before, FALSE, row, doc, inMath,
+                                   generateEmptyCells);
+          if (colhead && !inMath)
+            NewColElement (colhead, FALSE, doc);
+        }
       else if (before)
         /* select the previous column */
         TtaPreviousSibling (&colhead);
@@ -2425,15 +2876,17 @@ void RowDeleted (NotifyElement *event)
   cells in this column.
   Reduce the colspan attribute of the cells of the previous columns that
   span this column.
+  Remove or update the corresponding COL or COLGROUP element.
   ----------------------------------------------------------------------*/
 static void ClearColumn (Element colhead, Document doc)
 {
-  Element             cell, prevCell, row, nextColhead, prev, table;
-  ElementType         elType;
-  Attribute           attr;
-  AttributeType       attrTypeC, attrTypeR;
-  int                 rowspan, colspan, rs, cs;
-  ThotBool            span, inMath;
+  Element             cell, prevCell, row, nextColhead, prev, table, col,
+                      parent, sibling;
+  ElementType         elType, colType;
+  Attribute           attr, attrSpan;
+  AttributeType       attrTypeC, attrTypeR, attrTypeRef, attrTypeSpan;
+  int                 rowspan, colspan, rs, cs, span;
+  ThotBool            cellSpan, inMath, otherCol;
 
   LastPastedEl = NULL;
   elType = TtaGetElementType (colhead);
@@ -2453,9 +2906,95 @@ static void ClearColumn (Element colhead, Document doc)
       elType.ElTypeNum = HTML_EL_Table_row;
       attrTypeC.AttrTypeNum = HTML_ATTR_colspan_;
       attrTypeR.AttrTypeNum = HTML_ATTR_rowspan_;
+      attrTypeRef.AttrSSchema = elType.ElSSchema;
+      attrTypeRef.AttrTypeNum = HTML_ATTR_Ref_ColColgroup;
+      attrTypeSpan.AttrSSchema = elType.ElSSchema;
+      attrTypeSpan.AttrTypeNum = HTML_ATTR_span_;
     }
   nextColhead = colhead;
   TtaNextSibling (&nextColhead);
+
+  /* check the COL or COLGROUP element associated with the column */
+  if (!inMath)
+    {
+      attr = TtaGetAttribute (colhead, attrTypeRef);
+      if (attr)
+        {
+          TtaGiveReferenceAttributeValue (attr, &col);
+          if (col)
+            /* there is an associated COL or COLGROUP element */
+            {
+              /* get its span attribute (the number of column represented by
+                 the element) */
+              attrSpan = TtaGetAttribute (col, attrTypeSpan);
+              if (attrSpan)
+                span = TtaGetAttributeValue (attrSpan);
+              else
+                span = 1; /* default value is 1 */
+              if (span == 1)
+                /* this COL or COLGROUP element corresponds to the
+                   deleted column only. Delete it */
+                {
+                  /* if it's the last COL element in a COLGROUP, delete the
+                     COLGROUP */
+                  colType = TtaGetElementType (col);
+                  if (colType.ElTypeNum == HTML_EL_COL &&
+                      colType.ElSSchema == elType.ElSSchema)
+                    {
+                      parent = TtaGetParent (col);
+                      colType = TtaGetElementType (parent);
+                      if (parent &&
+                          colType.ElTypeNum == HTML_EL_COLGROUP &&
+                          colType.ElSSchema == elType.ElSSchema)
+                        /* it's a COL in a COLGROUP. Is it the only COL? */
+                        {
+                          otherCol = FALSE;
+                          sibling = TtaGetFirstChild (parent);
+                          while (sibling && !otherCol)
+                            {
+                              if (sibling != col)
+                                {
+                                 colType = TtaGetElementType (sibling);
+                                 if (colType.ElTypeNum == HTML_EL_COL &&
+                                     colType.ElSSchema == elType.ElSSchema)
+                                   otherCol = TRUE;
+                                }
+                              if (!otherCol)
+                                TtaNextSibling (&sibling);
+                            }
+                          if (!otherCol)
+                            /* no other COL element in the COLGROUP. Delete
+                               the COLGROUP */
+                            col = parent;
+                        }
+                    }
+                  /* no need to register the deletion of the COL element: when undoing the
+                     delete command, a new COL element will be created anyway */
+                  TtaDeleteTree (col, doc);
+                }
+              else
+                /* other columns are related to this COL or COLGROUP element.
+                   decrease its span attribute value by 1 */
+                {
+                  if (span == 2)
+                    /* the new value should be 1 (i.e. default value).
+                       Delete the attribute */
+                    {
+                      /* no need to register the deletion of the span attribute: when undoing
+                         the delete command, the attribute will be created anyway */
+                      TtaRemoveAttribute (col, attrSpan, doc);
+                    }
+                  else
+                    {
+                      /* no need to register the old value of the span attribute: when undoing
+                         the delete command, the attribute will be updated anyway */
+                      span--;
+                      TtaSetAttributeValue (attrSpan, span, col, doc);
+                    }
+                }
+            }
+        }
+    }
 
   /* get the first row in the table */
   row = TtaSearchTypedElement (elType, SearchInTree, table);
@@ -2492,7 +3031,7 @@ static void ClearColumn (Element colhead, Document doc)
         /* no cell for the column in that row. Get the previous cell in
            the same row and update its colspan attribute. */
         prevCell = GetCloseCell (row, colhead, doc, TRUE, FALSE, inMath,
-                                 &span, &rs, nextColhead==NULL);
+                                 &cellSpan, &rs, nextColhead==NULL);
       prev = row;
       if (rowspan == 0)
         rowspan = THOT_MAXINT;
@@ -2505,7 +3044,7 @@ static void ClearColumn (Element colhead, Document doc)
                 rowspan--;
               if (!cell && rowspan >= 1)
                 prevCell = GetCloseCell (row, colhead, doc, TRUE, FALSE,
-                                         inMath, &span, &rs, FALSE);
+                                         inMath, &cellSpan, &rs, FALSE);
             }
         }
       if (row == NULL)
@@ -2661,6 +3200,158 @@ ThotBool DeleteTBody (NotifyElement * event)
 }
 
 /*----------------------------------------------------------------------
+  ModifySpan  
+  The user wants to modify the value of a span attribute.                                       
+  ----------------------------------------------------------------------*/
+ThotBool ModifySpan (NotifyAttribute * event)
+{
+  /* save the attribute value before it is modified */
+  PreviousSpan = TtaGetAttributeValue (event->attribute);
+  if (PreviousSpan < 0)
+    PreviousSpan = 1;
+  return FALSE;		/* let Thot perform normal operation */
+}
+
+/*----------------------------------------------------------------------
+  SpanModified
+  The value of a span attribute has been changed.
+  ----------------------------------------------------------------------*/
+void SpanModified (NotifyAttribute * event)
+{
+  Element             col, colhead, prevColhead, table, el;
+  ElementType         elType;
+  Attribute           attr, attrRef;
+  AttributeType       attrType;
+  Document            doc;
+  int                 span, i, ncol;
+
+  attr = event->attribute;
+  span = TtaGetAttributeValue (attr);
+  if (span == PreviousSpan)
+    /* no change */
+    return;
+
+  doc = event->document;
+  col = event->element;
+  if (span < PreviousSpan)
+    /* if the user wants to delete existing columns, she should use the
+       specific table editing commands. What columns does she exactly want
+       to delete? */
+    /* restore the previous value */
+    TtaSetAttributeValue (attr, PreviousSpan, col, doc);
+  else
+    /* the user wants to create new columns */
+    {
+      elType = TtaGetElementType (col);
+      attrType.AttrSSchema = elType.ElSSchema;
+      attrType.AttrTypeNum = HTML_ATTR_Ref_ColColgroup;
+
+      /* get the last Column_head corresponding to the COL or COLGROUP
+         element to which the modified attribute belongs */
+      elType.ElTypeNum = HTML_EL_Table_;
+      table = TtaGetTypedAncestor (event->element, elType);
+      elType.ElTypeNum = HTML_EL_Column_head;
+      colhead = TtaSearchTypedElement (elType, SearchInTree, table); /* first
+                                                    column head in the table */
+      prevColhead = NULL;
+      while (colhead)
+        {
+          attrRef = TtaGetAttribute (colhead, attrType);
+          if (attrRef)
+            {
+              TtaGiveReferenceAttributeValue (attrRef, &el);
+              if (el == col)
+                /* this column head corresponds to our COL or COLGROUP */
+                prevColhead = colhead;
+              else
+                if (prevColhead)
+                  /* we are after the column heads corresponding to our
+                     COL or COLGROUP. Stop */
+                  colhead = NULL;
+            }
+          if (colhead)
+            TtaNextSibling (&colhead);
+        }
+
+      /* create new columns after the last one corresponding to our COL or
+         COLGROUP */
+      if (prevColhead)
+        {
+          ncol = span - PreviousSpan;
+          for (i = 1; i <= ncol; i++)
+            {
+              colhead = NewColumnHead (prevColhead, FALSE, FALSE, NULL, doc,
+                                       FALSE, TRUE);
+              if (colhead)
+                {
+                  prevColhead = colhead;
+                  attrRef = TtaNewAttribute (attrType);
+                  if (attrRef)
+                    {
+                      TtaAttachAttribute (colhead, attrRef, doc);
+                      TtaSetAttributeReference (attrRef, colhead, doc, col);
+                    }
+                }
+            }
+        }
+    }
+}
+
+/*----------------------------------------------------------------------
+  SpanCreated
+  An attribute span has just been created by the user.
+  ----------------------------------------------------------------------*/
+void SpanCreated (NotifyAttribute * event)
+{
+  PreviousSpan = 1;
+  SpanModified (event);
+}
+
+/*----------------------------------------------------------------------
+  DeleteSpan
+  The user wants to delete a span attribute
+  ----------------------------------------------------------------------*/
+ThotBool DeleteSpan (NotifyAttribute * event)
+{
+	if (event->info == 1)
+    /* undoing attribute creation. Accept */
+    return FALSE;
+  /* prevent the user from deleting this attribute. She should use
+     commands for deleting columns instead */
+  return TRUE;
+}
+
+/*----------------------------------------------------------------------
+  DeleteColElement
+  The user tries to delete a COL or COLGROUP element.
+  ----------------------------------------------------------------------*/
+ThotBool DeleteColElement (NotifyElement * event)
+{
+  /* reject the command */
+  return TRUE;
+}
+
+/*----------------------------------------------------------------------
+  CreateColElement
+  The user tries to creaete a COL or COLGROUP element.
+  ----------------------------------------------------------------------*/
+ThotBool CreateColElement (NotifyElement * event)
+{
+  /* reject the command */
+  return TRUE;
+}
+
+/*----------------------------------------------------------------------
+  PasteColElement
+  The user tries to paste a COL or COLGROUP element.
+  ----------------------------------------------------------------------*/
+ThotBool PasteColElement (NotifyOnValue * event)
+{
+  /* reject the command */
+  return TRUE;
+}
+
+/*----------------------------------------------------------------------
   DeleteColumn
   A column will be deleted by the user.
   ----------------------------------------------------------------------*/
@@ -2694,14 +3385,21 @@ void ColumnDeleted (NotifyElement *event)
   ----------------------------------------------------------------------*/
 void ColumnPasted (NotifyElement * event)
 {
+#ifdef VQ
   Element         prevColhead, row, prev, table, prevCell;
   ElementType     elType;
   Document        doc;
   int             rowspan;
   ThotBool        inMath, span;
+#endif
 
   CurrentColumn = event->element;
   LastPastedEl = CurrentColumn;
+  if (CurrentColumn &&
+      !TtaSameSSchemas (TtaGetElementType(CurrentColumn).ElSSchema,
+                        TtaGetSSchema("MathML", event->document)))
+    NewColElement (CurrentColumn, FALSE, event->document);
+#ifdef VQ
   prevColhead = CurrentColumn;
   TtaPreviousSibling (&prevColhead);
   if (prevColhead)
@@ -2745,6 +3443,7 @@ void ColumnPasted (NotifyElement * event)
             }
         }
     }
+#endif
 }
 
 /*----------------------------------------------------------------------

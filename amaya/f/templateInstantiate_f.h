@@ -18,21 +18,13 @@ extern Element Template_InsertBagChild ( Document doc,
                                          Element el,
                                          Declaration decl,
                                          ThotBool before );
+extern void CreateTemplate ( Document doc,
+                             char *templatePath );
 extern void CreateInstance ( char *templatePath,
                              char *instancePath,
+                             char *docname,
+                             DocumentType docType,
                              int basedoc );
-extern void InstantiateTemplate_callback ( int newdoc,
-                                           int status,
-                                           char *urlName,
-                                           char *outputfile,
-                                           char *proxyName,
-                                           AHTHeaders *http_headers,
-                                           void * context );
-extern void InstantiateTemplate ( Document doc,
-                                  char *templatename,
-                                  char *docname,
-                                  DocumentType docType,
-                                  ThotBool loaded );
 extern Element Template_GetNewSimpleTypeInstance ( Document doc,
                                                    Element parent,
                                                    Declaration decl );
@@ -76,21 +68,13 @@ extern Element Template_InsertBagChild ( Document doc,
                                            Element el,
                                            Declaration decl,
                                            ThotBool before );
+extern void CreateTemplate ( Document doc,
+                               char *templatePath );
 extern void CreateInstance ( char *templatePath,
                                char *instancePath,
+                               char *docname,
+                               DocumentType docType,
                                int basedoc );
-extern void InstantiateTemplate_callback ( int newdoc,
-                                             int status,
-                                             char *urlName,
-                                             char *outputfile,
-                                             char *proxyName,
-                                             AHTHeaders *http_headers,
-                                             void * context );
-extern void InstantiateTemplate ( Document doc,
-                                    char *templatename,
-                                    char *docname,
-                                    DocumentType docType,
-                                    ThotBool loaded );
 extern Element Template_GetNewSimpleTypeInstance ( Document doc,
                                                      Element parent,
                                                      Declaration decl );

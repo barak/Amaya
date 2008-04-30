@@ -716,7 +716,7 @@ Document CreateNewLibraryFile (char *libUrl, char *libtitle)
                                   FALSE /* replaceOldDoc */,
                                   TRUE /* inNewWindow */,
                                   documentname, docLibrary, 0, FALSE,
-				  L_Xhtml11, CE_RELATIVE);
+				  L_Xhtml11, 0, CE_RELATIVE);
   DontReplaceOldDoc = FALSE;
 
   TtaFreeMemory (documentname);
@@ -740,7 +740,7 @@ Document CreateNewLibraryFile (char *libUrl, char *libtitle)
    * OK mais voir si DocumentSource et DocumentURLs ne pose pas de probl�me
    */
   /* store the document profile */
-  TtaSetDocumentProfile (newLibraryDoc, L_Xhtml11);
+  TtaSetDocumentProfile (newLibraryDoc, L_Xhtml11, L_NoExtraProfile);
   ResetStop (newLibraryDoc);
   language = TtaGetDefaultLanguage ();
   docEl = TtaGetMainRoot (newLibraryDoc);
@@ -760,7 +760,7 @@ Document CreateNewLibraryFile (char *libUrl, char *libtitle)
 
   elType.ElTypeNum = HTML_EL_DOCTYPE;
   doctype = TtaSearchTypedElement (elType, SearchInTree, docEl);
-  CreateDoctype (newLibraryDoc, doctype, L_Xhtml11, FALSE, FALSE);
+  CreateDoctype (newLibraryDoc, doctype, L_Xhtml11, 0, FALSE, FALSE);
   
   /* Load user's style sheet */
   LoadUserStyleSheet (newLibraryDoc);
@@ -1858,7 +1858,7 @@ void GiveSVGXYWidthAndHeight (Element el, Document svgDoc, View view,
   Then opens it in a new window.
   Returns document number if operation succeed, 0 else if.
   inspired from CreateDoctype in EDITORactions.c module
-            and InitDocAndView in init.c module
+  and InitDocAndView in init.c module
   ----------------------------------------------------------------------*/
 Document CreateNewSVGFileofSVGSelected (char *url)
 {
@@ -1903,7 +1903,7 @@ Document CreateNewSVGFileofSVGSelected (char *url)
       /* create the SVG DOCTYPE element */
       elType.ElTypeNum = SVG_EL_DOCTYPE;
       doctype = TtaSearchTypedElement (elType, SearchInTree, root);
-      CreateDoctype (newSVGDoc, doctype, L_SVG, FALSE, FALSE);
+      CreateDoctype (newSVGDoc, doctype, L_SVG, 0, FALSE, FALSE);
 
       root = TtaGetRootElement (newSVGDoc);
       elType.ElTypeNum = SVG_EL_XMLcomment;
@@ -1921,7 +1921,7 @@ Document CreateNewSVGFileofSVGSelected (char *url)
       TtaSetTextContent (leaf, (unsigned char *)buffer, lang, newSVGDoc);
 
       TtaSetNotificationMode (newSVGDoc, 1);
-      TtaSetDocumentProfile (newSVGDoc, 0);
+      TtaSetDocumentProfile (newSVGDoc, 0, 0);
 
       /* search the svg root element */
       elType.ElTypeNum = SVG_EL_SVG;

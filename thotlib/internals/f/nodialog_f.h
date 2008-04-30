@@ -18,6 +18,19 @@ extern void TtaExecuteMenuAction ( const char *actionName,
                                    Document doc,
                                    View view,
                                    ThotBool force );
+extern int FindMenuAction ( const char *actionName );
+extern void TtaPostMenuAction ( const char *actionName,
+                                Document doc,
+                                View view,
+                                ThotBool force );
+extern void TtaPostMenuActionById ( int actionId,
+                                    Document doc,
+                                    View view,
+                                    ThotBool force );
+extern void TtaExecuteMenuActionFromActionId ( int action_id,
+                                               Document doc,
+                                               View view,
+                                               ThotBool force );
 extern void DisplayPRule ( PtrPRule RP,
                            FILE *fileDescriptor,
                            PtrElement pEl,
@@ -180,6 +193,7 @@ extern ThotBool OpenParsingErrors ( Document document );
 extern int TtaGiveActiveFrame ( void );
 extern ThotBool GL_DrawAll ( void );
 extern ThotBool TtaDetachFrame ( int frame_id );
+extern void TtaCloseAllHelpWindows ( void );
 
 #else /* __STDC__ */
 
@@ -195,6 +209,19 @@ extern void TtaExecuteMenuAction ( const char *actionName,
                                      Document doc,
                                      View view,
                                      ThotBool force );
+extern int FindMenuAction ( const char *actionName );
+extern void TtaPostMenuAction ( const char *actionName,
+                                  Document doc,
+                                  View view,
+                                  ThotBool force );
+extern void TtaPostMenuActionById ( int actionId,
+                                      Document doc,
+                                      View view,
+                                      ThotBool force );
+extern void TtaExecuteMenuActionFromActionId ( int action_id,
+                                                 Document doc,
+                                                 View view,
+                                                 ThotBool force );
 extern void DisplayPRule ( PtrPRule RP,
                              FILE *fileDescriptor,
                              PtrElement pEl,
@@ -357,6 +384,7 @@ extern ThotBool OpenParsingErrors ( Document document );
 extern int TtaGiveActiveFrame ( void );
 extern ThotBool GL_DrawAll ( void );
 extern ThotBool TtaDetachFrame ( int frame_id );
+extern void TtaCloseAllHelpWindows ( void );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

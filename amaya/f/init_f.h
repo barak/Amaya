@@ -5,6 +5,7 @@
 
 #ifndef __CEXTRACT__
 #ifdef __STDC__
+
 extern DocumentMetaDataElement *DocumentMetaDataAlloc ( void );
 extern void DocumentMetaClear ( DocumentMetaDataElement *me );
 extern char * DocumentTypeString ( Document document );
@@ -98,6 +99,32 @@ extern void GoToHome ( Document doc,
                        View view );
 extern void UpdateDoctypeMenu ( Document doc );
 extern void AddDirAttributeToDocEl ( Document doc );
+extern void WhereOpenView ( Document oldDoc,
+                            ThotBool replaceOldDoc,
+                            ThotBool inNewWindow,
+                            DocumentType docType,
+                            int method,
+                            int* windowId,
+                            int* pageId,
+                            int* pagePosition,
+                            int* _visibility,
+                            ThotBool* isOpen,
+                            int* requestedDoc );
+extern View InitView ( Document oldDoc,
+                       Document doc,
+                       ThotBool replaceOldDoc,
+                       ThotBool inNewWindow,
+                       ThotBool isOpen,
+                       int window_id,
+                       int page_id,
+                       int page_position,
+                       DocumentType docType,
+                       int method );
+extern void PostInitView ( Document doc,
+                           DocumentType docType,
+                           int visibility,
+                           ThotBool replaceOldDoc,
+                           ThotBool isOpen );
 extern Document InitDocAndView ( Document oldDoc,
                                  ThotBool replaceOldDoc,
                                  ThotBool inNewWindow,
@@ -106,6 +133,7 @@ extern Document InitDocAndView ( Document oldDoc,
                                  Document sourceOfDoc,
                                  ThotBool readOnly,
                                  int profile,
+                                 int extraProfile,
                                  int method );
 extern void ReparseAs ( Document doc,
                         View view,
@@ -234,8 +262,11 @@ extern void SetMaxURLList ( int max );
 extern void ClearURLList ( void );
 extern char* CreateTempDirectory ( const char* name );
 extern int ChooseDocumentPage ( Document doc );
+extern void CloseHelpWindow ( Document doc,
+                              View view );
 
 #else /* __STDC__ */
+
 extern DocumentMetaDataElement *DocumentMetaDataAlloc ( void );
 extern void DocumentMetaClear ( DocumentMetaDataElement *me );
 extern char * DocumentTypeString ( Document document );
@@ -329,6 +360,32 @@ extern void GoToHome ( Document doc,
                          View view );
 extern void UpdateDoctypeMenu ( Document doc );
 extern void AddDirAttributeToDocEl ( Document doc );
+extern void WhereOpenView ( Document oldDoc,
+                              ThotBool replaceOldDoc,
+                              ThotBool inNewWindow,
+                              DocumentType docType,
+                              int method,
+                              int* windowId,
+                              int* pageId,
+                              int* pagePosition,
+                              int* _visibility,
+                              ThotBool* isOpen,
+                              int* requestedDoc );
+extern View InitView ( Document oldDoc,
+                         Document doc,
+                         ThotBool replaceOldDoc,
+                         ThotBool inNewWindow,
+                         ThotBool isOpen,
+                         int window_id,
+                         int page_id,
+                         int page_position,
+                         DocumentType docType,
+                         int method );
+extern void PostInitView ( Document doc,
+                             DocumentType docType,
+                             int visibility,
+                             ThotBool replaceOldDoc,
+                             ThotBool isOpen );
 extern Document InitDocAndView ( Document oldDoc,
                                    ThotBool replaceOldDoc,
                                    ThotBool inNewWindow,
@@ -337,6 +394,7 @@ extern Document InitDocAndView ( Document oldDoc,
                                    Document sourceOfDoc,
                                    ThotBool readOnly,
                                    int profile,
+                                   int extraProfile,
                                    int method );
 extern void ReparseAs ( Document doc,
                           View view,
@@ -465,6 +523,8 @@ extern void SetMaxURLList ( int max );
 extern void ClearURLList ( void );
 extern char* CreateTempDirectory ( const char* name );
 extern int ChooseDocumentPage ( Document doc );
+extern void CloseHelpWindow ( Document doc,
+                                View view );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

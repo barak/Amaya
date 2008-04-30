@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2007
+ *  (c) COPYRIGHT INRIA, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -26,6 +26,7 @@
 #include "frame_tv.h"
 
 #include "boxmoves_f.h"
+#include "boxpositions_f.h"
 #include "displayselect_f.h"
 #include "exceptions_f.h"
 #include "font_f.h"
@@ -67,7 +68,7 @@ void DisplayPointSelection (int frame, PtrBox pBox, int pointselect)
       halfThick = thick / 2;
 
       /* selection points */
-      GetExtraMargins (pBox, NULL, frame, &t, &b, &l, &r);
+      GetExtraMargins (pBox, frame, FALSE, &t, &b, &l, &r);
       leftX = l + pBox->BxXOrg + pBox->BxLMargin + pBox->BxLBorder
         + pBox->BxLPadding - pFrame->FrXOrg - halfThick;
       topY = t + pBox->BxYOrg + pBox->BxTMargin + pBox->BxTBorder
@@ -467,16 +468,14 @@ void DisplayBgBoxSelection (int frame, PtrBox pBox)
 void DrawBoxSelection (int frame, PtrBox pBox)
 {
   PtrBox              pChildBox;
-  PtrAbstractBox      pAb;
 
-  if (pBox != NULL)
+  if (pBox)
     {
-      pAb = pBox->BxAbstractBox;      
       if (pBox->BxType == BoSplit || pBox->BxType == BoMulScript)
         {
           /* display the selection on pieces of the current box */
           pChildBox = pBox->BxNexChild;
-          while (pChildBox != NULL)
+          while (pChildBox)
             {
               DrawBoxSelection (frame, pChildBox);
               pChildBox = pChildBox->BxNexChild;

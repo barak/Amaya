@@ -64,7 +64,7 @@ $ECHO "Name=Amaya" >> $GNOMEKDEDIR/applications/amaya.desktop
 $ECHO "Comment=Edit the Web" >> $GNOMEKDEDIR/applications/amaya.desktop
 $ECHO "Comment[fr]=Editez le Web" >> $GNOMEKDEDIR/applications/amaya.desktop
 $ECHO "Categories=Application;Network;Development;" >> $GNOMEKDEDIR/applications/amaya.desktop
-$ECHO "amaya %u" >> $GNOMEKDEDIR/applications/amaya.desktop
+$ECHO "Exec=amaya %u" >> $GNOMEKDEDIR/applications/amaya.desktop
 $ECHO "Icon=amaya.png" >> $GNOMEKDEDIR/applications/amaya.desktop
 $ECHO "Terminal=false" >> $GNOMEKDEDIR/applications/amaya.desktop
 $ECHO "Type=Application" >> $GNOMEKDEDIR/applications/amaya.desktop

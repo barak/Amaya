@@ -21,6 +21,7 @@
 
 #define THOT_EXPORT extern
 #include "amaya.h"
+#include "parser.h"
 #include "css.h"
 #include "XLink.h"
 #include "MathML.h"
@@ -531,7 +532,7 @@ static Element GenerateInlinechildren (Element el, ElementType newType, Document
   -----------------------------------------------------------------------*/
 void AttributeChange (int aType, char * data)
 {
-  GenerateInlineElement (HTML_EL_Span, aType, data, TRUE);
+  GenerateInlineElement (HTML_EL_Span, NULL, aType, data, TRUE);
 }
 
 /*----------------------------------------------------------------------
@@ -623,7 +624,7 @@ static void UpdateAttribute (Attribute attr, char * data, Element el, Document d
   If the selection is within a style element and the element type is
   a span adds the data into the style element.
   -----------------------------------------------------------------------*/
-ThotBool GenerateInlineElement (int eType, int aType, char * data, ThotBool replace)
+ThotBool GenerateInlineElement (int eType, SSchema eSchema, int aType, char * data, ThotBool replace)
 {
   Element         el, firstSel, lastSel, next, in_line, sibling, child;
   Element         last, parent, enclose, selected;
@@ -689,7 +690,10 @@ ThotBool GenerateInlineElement (int eType, int aType, char * data, ThotBool repl
           
           /* register this element in the editing history */
           elType = TtaGetElementType (firstSel);
-          newType.ElSSchema = elType.ElSSchema;
+          if (eSchema!=NULL)
+            newType.ElSSchema = eSchema;
+          else
+            newType.ElSSchema = elType.ElSSchema;
           newType.ElTypeNum = 0;
           attrType.AttrSSchema = elType.ElSSchema;
           attrType.AttrTypeNum = aType;
@@ -2494,7 +2498,7 @@ void CreateAnchor (Document doc, View view, ThotBool createLink)
           TtaOpenUndoSequence (doc, first, last, firstChar, lastChar);
           if (createLink)
             {
-              if(GenerateInlineElement (HTML_EL_Anchor, HTML_ATTR_HREF_, "", TRUE))
+              if(GenerateInlineElement (HTML_EL_Anchor, NULL, HTML_ATTR_HREF_, "", TRUE))
                 {
                   // get the created anchor
                   TtaGiveFirstSelectedElement (doc, &anchor, &firstChar, &i);
@@ -2522,7 +2526,7 @@ void CreateAnchor (Document doc, View view, ThotBool createLink)
             }
           else
             {
-              if(!GenerateInlineElement (HTML_EL_Anchor, HTML_ATTR_ID, "", TRUE))
+              if(!GenerateInlineElement (HTML_EL_Anchor, NULL, HTML_ATTR_ID, "", TRUE))
                 {
                   /* ask Thot to display changes made in the document */
                   TtaSetDisplayMode (doc, dispMode);
@@ -3963,7 +3967,7 @@ void CheckNewLines (NotifyOnTarget *event)
     {
       length = TtaGetElementVolume (leaf);
       content = (CHAR_T *)TtaGetMemory ((length + 1) * sizeof(CHAR_T));
-      TtaGiveBufferContent (leaf, content, length, &lang);
+      TtaGiveBufferContent (leaf, &content[0], length, &lang);
       content[length] = EOS;
     }
   else
@@ -4787,10 +4791,10 @@ ThotBool AttrColorDelete (NotifyAttribute *event)
   ----------------------------------------------------------------------*/
 ThotBool GlobalAttrInMenu (NotifyAttribute * event)
 {
-  ElementType         elType, parentType;
-  Element             parent;
-  char               *attr;
-  ThotBool            edit_xmlid;
+  ElementType   elType, parentType;
+  Element       parent;
+  char         *attr;
+  ThotBool      edit_xmlid;
 
   elType = TtaGetElementType (event->element);
 
@@ -4837,6 +4841,7 @@ ThotBool GlobalAttrInMenu (NotifyAttribute * event)
     edit_xmlid = TRUE;
   else
     TtaGetEnvBoolean ("SHOW_XMLID", &edit_xmlid);
+
   if (!edit_xmlid && event->attributeType.AttrTypeNum == HTML_ATTR_xmlid)
     return TRUE;	/* don't show xml:id in the menu */
   else if ((DocumentMeta[event->document] == NULL ||
@@ -4845,6 +4850,20 @@ ThotBool GlobalAttrInMenu (NotifyAttribute * event)
             event->attributeType.AttrTypeNum == HTML_ATTR_xmlid))
     return TRUE;	/* don't put xml attributes in the menu */
 
+
+  if (event->attributeType.AttrTypeNum == HTML_ATTR_REL ||
+      event->attributeType.AttrTypeNum == HTML_ATTR_REV)
+    {
+      if (TtaGetDocumentExtraProfile (event->document) != L_RDFa)
+	/* REL et REV are global for XHTML+RDFa documents only */
+	return FALSE;
+      else
+	{
+	  event->restr.RestrEnumVal = TtaStrdup(REL_REV_Attr_Values);
+	  event->restr.RestrFlags |= attr_enum;
+	}
+    }
+  
   /* handle only Global attributes */
   if (event->attributeType.AttrTypeNum != HTML_ATTR_ID &&
       event->attributeType.AttrTypeNum != HTML_ATTR_Class &&
@@ -4866,17 +4885,17 @@ ThotBool GlobalAttrInMenu (NotifyAttribute * event)
     /* it's not a global attribute. Accept it */
     return ValidateTemplateAttrInMenu(event);
 #else /* TEMPLATES */
-    /* it's not a global attribute. Accept it */
+  /* it's not a global attribute. Accept it */
     return FALSE;
 #endif /* TEMPLATES */
-
-  if (strcmp (TtaGetSSchemaName (elType.ElSSchema),"HTML"))
-    /* it's not a HTML element */
-    return TRUE;
-  else
-    /* it's a HTML element */
-    {
-      /* BASE and SCRIPT do not accept any global attribute */
+    
+    if (strcmp (TtaGetSSchemaName (elType.ElSSchema),"HTML"))
+      /* it's not a HTML element */
+      return TRUE;
+    else
+      /* it's a HTML element */
+      {
+	/* BASE and SCRIPT do not accept any global attribute */
       if (elType.ElTypeNum == HTML_EL_BASE ||
           elType.ElTypeNum == HTML_EL_SCRIPT_ ||
           elType.ElTypeNum == HTML_EL_Element)
@@ -4978,6 +4997,16 @@ ThotBool GlobalAttrInMenu (NotifyAttribute * event)
 #endif /* TEMPLATES */
     }
   return TRUE;	/* don't put an invalid attribute in the menu */
+}
+
+/*----------------------------------------------------------------------
+  AttrRELREVinMenu
+  Display a list of values for those attributes
+  ----------------------------------------------------------------------*/
+ThotBool AttrRELREVinMenu (NotifyAttribute * event)
+{  
+  /* let Thot perform normal operation */
+  return FALSE;
 }
 
 /*----------------------------------------------------------------------

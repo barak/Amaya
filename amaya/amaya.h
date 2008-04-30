@@ -555,6 +555,7 @@ THOT_EXPORT const char *DocumentTypeNames[docTypeMax]
 #endif /* THOT_INITGLOBALVAR */
 ; /* do not remove this ; */
 
+
 /* a record for data associated with a request */
 typedef struct _DocumentMetaDataElement
 {
@@ -568,25 +569,24 @@ typedef struct _DocumentMetaDataElement
   char      *content_location; /* simplified content location returned by the server */
   char      *full_content_location; /* full content location returned by the server */
   char      *reason;           /* http_headers reason*/
-
   int        method;           /* method used to send this data */
   Element    link_icon;        /* there is a link to an icon */
   ThotBool   xmlformat;        /* the document should be exported in xml format */
   ThotBool   compound;         /* the document is a compound document */
 #ifdef ANNOTATIONS
   Document   source_doc;       /* if the document is an annotation,
-				  this variable giveso the annoted document
-				  docid */
+				  this variable giveso the annoted document docid */
 #endif /* ANNOTATIONS */
-
-  ThotBool  isTemplate;			 /* True if the document is a XTiger template or library,
-  									False if template instance or not using XTiger.*/
-#ifdef TEMPLATES
-  char      *template_url;       /* the url of the original template (or null if not an instance) */
-  char      *template_version;   /* if this document is derived from a template,
-				     The name and the version of the template used to create the document 
-				     is stored in this variable */
-#endif /* TEMPLATES */
+  
+//#ifdef TEMPLATES
+//  ThotBool  isTemplate;	 /* True if the document is a XTiger template or library,
+//  			    False if template instance or not using XTiger.*/
+//  ThotBool  isInternalTemplate;  /* True if the template is loaded internaly, not used ad edited document.*/ 
+//  char      *template_url;       /* the url of the original template (or null if not an instance) */
+//  char      *template_version;   /* if this document is derived from a template,
+//				     The name and the version of the template used to create the document 
+//				     is stored in this variable */
+//#endif /* TEMPLATES */
   
 } DocumentMetaDataElement;
 
@@ -684,6 +684,7 @@ THOT_EXPORT LoadedImageDesc *ImageLocal;
 #define DOCTYPE1_XHTML11_PLUS_MATHML  "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN\""
 #define DOCTYPE1_XHTML11_PLUS_MATHML_PLUS_SVG  "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1 plus MathML 2.0 plus SVG 1.1//EN\""
 #define DOCTYPE1_XHTML10_TRANSITIONAL "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\""
+#define DOCTYPE1_XHTML_PLUS_RDFa      "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML+RDFa 1.0//EN\""
 #define DOCTYPE1_MATHML20             "<!DOCTYPE math PUBLIC \"-//W3C//DTD MathML 2.0//EN\""
 #define DOCTYPE1_SVG10                "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.0//EN\""
 
@@ -696,6 +697,7 @@ THOT_EXPORT LoadedImageDesc *ImageLocal;
 #define DOCTYPE2_XHTML11_PLUS_MATHML  "      \"http://www.w3.org/Math/DTD/mathml2/xhtml-math11-f.dtd\">"
 #define DOCTYPE2_XHTML11_PLUS_MATHML_PLUS_SVG  "      \"http://www.w3.org/2002/04/xhtml-math-svg/xhtml-math-svg.dtd\">"
 #define DOCTYPE2_XHTML10_TRANSITIONAL "      \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">"
+#define DOCTYPE2_XHTML_PLUS_RDFa      "      \"http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd\">"
 #define DOCTYPE2_MATHML20             "      \"http://www.w3.org/TR/MathML2/dtd/mathml2.dtd\">"
 #define DOCTYPE2_SVG10                "      \"http://www.w3.org/TR/2001/REC-SVG-20050904/DTD/svg10.dtd\">"
 

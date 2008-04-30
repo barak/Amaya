@@ -146,68 +146,6 @@ void ParseCharsetAndContentType (Element el, Document doc)
     }
 }
 
-#ifdef TEMPLATES
-/*----------------------------------------------------------------------
-  ----------------------------------------------------------------------*/
-void ParseTemplateMeta (Element el, Document doc)
-{
-  AttributeType attrType;
-  Attribute     attr;
-  ElementType   elType;
-  char         *text, *text2, *ptrText;
-  int           length;
-
-  elType = TtaGetElementType (el);
-  attrType.AttrSSchema = elType.ElSSchema;
-  attrType.AttrTypeNum = HTML_ATTR_meta_name;
-  attr = TtaGetAttribute (el, attrType);
-
-  if (attr != NULL)
-    {
-      /* There is a name attribute */
-      length = TtaGetTextAttributeLength (attr);
-      if (length > 0)
-        {
-          text = (char *)TtaGetMemory (length + 1);
-          TtaGiveTextAttributeValue (attr, text, &length);
-          if (!strcasecmp (text, "template"))
-            {
-              /* We are parsing the 'template' meta */
-              attrType.AttrTypeNum = HTML_ATTR_meta_content;
-              attr = TtaGetAttribute (el, attrType);
-              if (attr != NULL)
-                {
-                  length = TtaGetTextAttributeLength (attr);
-                  if (length > 0)
-                    {
-                      text2 = (char *)TtaGetMemory (length + 1);
-                      TtaGiveTextAttributeValue (attr, text2, &length);
-                      ptrText = text2;
-		      
-                      /* Convert all char to lower case */
-                      while (*ptrText)
-                        {
-                          *ptrText = tolower (*ptrText);
-                          ptrText++;
-                        }
-
-                      if (!DocumentMeta[doc])
-                        DocumentMeta[doc] = DocumentMetaDataAlloc ();
-                      if (DocumentMeta[doc]->template_version == NULL)
-                        {
-                          DocumentMeta[doc]->template_version = TtaStrdup (text2);
-                        }
-                      TtaFreeMemory (text2);
-                    }       
-                } 
-            }
-          TtaFreeMemory (text);
-        }
-    }
-}
-#endif /* TEMPLATES */
-
-
 /*----------------------------------------------------------------------
   XhtmlCannotContainText 
   Return TRUE if element el is a block element.
@@ -913,9 +851,6 @@ void XhtmlElementComplete (ParserData *context, Element el, int *error)
       ParseCharsetAndContentType (el, doc);
       /* Check the mandatory CONTENT attribute */
       CheckMandatoryAttribute (el, doc, HTML_ATTR_meta_content);
-#ifdef TEMPLATES
-      ParseTemplateMeta (el, doc);
-#endif /* TEMPLATES */
       break;
 
     case HTML_EL_BASE:
@@ -1139,6 +1074,18 @@ void XhtmlElementComplete (ParserData *context, Element el, int *error)
     case HTML_EL_Table_:
       CheckTable (el, doc);
       SubWithinTable ();
+      break;
+
+    case HTML_EL_COL:
+    case HTML_EL_COLGROUP:
+      /* create a C_Empty child */
+      if (!TtaGetFirstChild (el))
+        {
+          elType.ElTypeNum = HTML_EL_C_Empty;
+          child = TtaNewElement (doc, elType);
+          if (child)
+            TtaInsertFirstChild (&child, el, doc);
+        }
       break;
        
     case HTML_EL_TITLE:
@@ -1455,13 +1402,14 @@ static void XhtmlTypeAttrValue (char *val,
   CreateAttrWidthPercentPxl
   an HTML attribute "width" has been created for a Table, an image,
   an Object of a HR.
-  Create the corresponding attribute IntWidthPercent or IntWidthPxl.
+  Create the corresponding attribute IntWidthPercent, IntWidthPxl or
+  IntWidthRelative for element el.
   oldWidth is -1 or the old image width.
   ----------------------------------------------------------------------*/
 void CreateAttrWidthPercentPxl (char *buffer, Element el,
                                 Document doc, int oldWidth)
 {
-  AttributeType   attrTypePxl, attrTypePercent;
+  AttributeType   attrTypePxl, attrTypePercent, attrTypeRelative;
   Attribute       attrOld, attrNew;
   int             length, val;
   char            msgBuffer[MaxMsgLength];
@@ -1514,15 +1462,20 @@ void CreateAttrWidthPercentPxl (char *buffer, Element el,
     length--;
   attrTypePxl.AttrSSchema = elType.ElSSchema;
   attrTypePercent.AttrSSchema = elType.ElSSchema;
+  attrTypeRelative.AttrSSchema = elType.ElSSchema;
   attrTypePxl.AttrTypeNum = HTML_ATTR_IntWidthPxl;
   attrTypePercent.AttrTypeNum = HTML_ATTR_IntWidthPercent;
+  attrTypeRelative.AttrTypeNum = HTML_ATTR_IntWidthRelative;
   do
     {
       /* is the last character a '%' ? */
       if (buffer[length] == '%')
+        /* percentage */
         {
-          /* remove IntWidthPxl */
+          /* remove IntWidthPxl or IntWidthRelative */
           attrOld = TtaGetAttribute (el, attrTypePxl);
+          if (!attrOld)
+            attrOld = TtaGetAttribute (el, attrTypeRelative);
           /* update IntWidthPercent */
           attrNew = TtaGetAttribute (el, attrTypePercent);
           if (attrNew == NULL)
@@ -1538,10 +1491,36 @@ void CreateAttrWidthPercentPxl (char *buffer, Element el,
                 oldWidth = TtaGetAttributeValue (attrOld);
             }
         }
-      else
+      /* is the last character a '*' ? */
+      else if (buffer[length] == '*')
+        /* relative width */
         {
-          /* remove IntWidthPercent */
+          /* remove IntWidthPxl or IntWidthPercent */
+          attrOld = TtaGetAttribute (el, attrTypePxl);
+          if (!attrOld)
+            attrOld = TtaGetAttribute (el, attrTypePercent);
+          /* update IntWidthRelative */
+          attrNew = TtaGetAttribute (el, attrTypeRelative);
+          if (attrNew == NULL)
+            {
+              attrNew = TtaNewAttribute (attrTypeRelative);
+              TtaAttachAttribute (el, attrNew, doc);
+            }
+          else if (isImage && oldWidth == -1)
+            {
+              if (attrOld == NULL)
+                oldWidth = TtaGetAttributeValue (attrNew);
+              else
+                oldWidth = TtaGetAttributeValue (attrOld);
+            }
+        }
+      else
+        /* width in pixels */
+        {
+          /* remove IntWidthPercent or IntWidthRelative */
           attrOld = TtaGetAttribute (el, attrTypePercent);
+          if (!attrOld)
+            attrOld = TtaGetAttribute (el, attrTypeRelative);
           /* update IntWidthPxl */
           attrNew = TtaGetAttribute (el, attrTypePxl);
           if (attrNew == NULL)

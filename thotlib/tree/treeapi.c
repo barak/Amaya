@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2007
+ *  (c) COPYRIGHT INRIA, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -42,6 +42,7 @@
 #include "labelalloc_f.h"
 #include "memory_f.h"
 #include "references_f.h"
+#include "schemas_f.h"
 #include "structcommands_f.h"
 #include "structcreation_f.h"
 #include "structmodif_f.h"
@@ -73,6 +74,43 @@ void TtaChangeElementType (Element element, int typeNum)
     TtaError (ERR_invalid_element_type);
   else
     ((PtrElement)element)->ElTypeNumber = typeNum;
+}
+
+/* ----------------------------------------------------------------------
+   TtaUpdateRootElementType
+   Change the document and the root element schema if different to the
+   requested schema.
+   CAUTION: THIS FUNCTION SHOULD BE USED VERY CARFULLY!
+   Parameters:
+   root:   the concerned element must be the root of the document
+   schemaName: the requested schema name.
+   ---------------------------------------------------------------------- */
+void TtaUpdateRootElementType (Element root, char *schemaName, Document doc)
+{
+  PtrDocument pDoc;
+  PtrSSchema  pSS, pSNew;
+  PtrElement  pEl = (PtrElement)root;
+
+  UserErrorCode = 0;
+  if (root == NULL)
+    TtaError (ERR_invalid_parameter);
+  else if (pEl->ElParent || pEl->ElTerminal)
+    TtaError (ERR_invalid_parameter);
+  else if (LoadedDocument[doc - 1] == NULL)
+    TtaError (ERR_invalid_document_parameter);
+  else
+    {
+      pDoc = LoadedDocument[doc - 1];
+      pSS = pEl->ElStructSchema;
+      if (pSS == NULL || pSS->SsName == NULL ||
+          strcmp (pSS->SsName, schemaName))
+        {
+          pSNew = LoadStructureSchema (NULL, schemaName, pDoc);
+          pEl->ElStructSchema = pSNew;
+          pDoc->DocSSchema = pSNew;
+          //ReleaseStructureSchema (pSS, pDoc);
+        }
+    }
 }
 
 /*----------------------------------------------------------------------

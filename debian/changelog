@@ -1,3 +1,9 @@
+amaya (10.1~pre1+dfsg1-1) experimental; urgency=low
+
+  * New upstream release.
+
+ -- Regis Boudin <regis@debian.org>  Wed, 30 Apr 2008 18:57:12 +0100
+
 amaya (10.0.1-1) experimental; urgency=low
 
   * New upstream release. Remove the 2 merged patches (ftbfs on 64bits arches

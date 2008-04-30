@@ -1603,6 +1603,7 @@ void PreferenceDlgWX::OnOk( wxCommandEvent& event )
 
 #ifdef TEMPLATES
   // not necessary to update the list
+  OnTemplateAdd (event);
   GetValueDialog_Templates();
   ThotCallback (GetPrefTemplatesBase() + TemplatesMenu, INTEGER_DATA, (char*) 1);
 #endif /* TEMPLATES */
@@ -1735,6 +1736,7 @@ void PreferenceDlgWX::OnCancel( wxCommandEvent& event )
   ThotCallback (GetPrefPasswordsBase() + PasswordsMenu, INTEGER_DATA, (char*) 0);
 
   ThotCallback (MyRef, INTEGER_DATA, (char*) 0);
+  TtaRedirectFocus();
   m_OnApplyLock = FALSE;
 }
 
@@ -1747,7 +1749,10 @@ void PreferenceDlgWX::OnCancel( wxCommandEvent& event )
 void PreferenceDlgWX::OnClose(wxCloseEvent& event)
 {
   if (!m_OnApplyLock)
-    event.Skip(); // let wxWidgets close the dialog
+    {
+      event.Skip(); // let wxWidgets close the dialog
+      TtaRedirectFocus();
+    }
 }
 
 #endif /* _WX */
