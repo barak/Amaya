@@ -1,8 +1,10 @@
-Index: amaya-10.0.1/configure.in
+Stop forcing the CFLAGS and CXXFLAGS in configure, let autotools set
+a sensible default and the user force them if he wants
+Index: amaya-10.1~pre4+dfsg.0/configure.in
 ===================================================================
---- amaya-10.0.1.orig/configure.in	2008-03-02 22:04:23.000000000 +0000
-+++ amaya-10.0.1/configure.in	2008-03-02 22:04:27.000000000 +0000
-@@ -463,18 +463,8 @@
+--- amaya-10.1~pre4+dfsg.0.orig/configure.in	2008-09-03 20:39:02.000000000 +0100
++++ amaya-10.1~pre4+dfsg.0/configure.in	2008-09-03 20:39:06.000000000 +0100
+@@ -473,18 +473,8 @@
  
  # Check if debug is enable
  AC_ARG_WITH(debug,              [  --with-debug            compiles Amaya with debuging options (-g) ])
@@ -21,7 +23,7 @@ Index: amaya-10.0.1/configure.in
    case "${host}" in
        *-*-irix5* | *-*irix6* )
           CFLAGS="${CFLAGS} -fsigned-char"
-@@ -486,13 +476,8 @@
+@@ -496,13 +486,8 @@
    CFLAGS="${CFLAGS} -DCONST= "
  fi
  

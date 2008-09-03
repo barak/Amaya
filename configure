@@ -13474,10 +13474,21 @@ esac
 
 
 with_wx="yes"
+
 # Check whether --enable-system-wx was given.
 if test "${enable_system_wx+set}" = set; then
-  enableval=$enable_system_wx;
+  enableval=$enable_system_wx; case "${enableval}" in
+      yes) with_system_wx="yes";;
+      no)  with_system_wx="no" ;;
+      *) { { echo "$as_me:$LINENO: error: bad value ${enableval} for --enable-system-wx" >&5
+echo "$as_me: error: bad value ${enableval} for --enable-system-wx" >&2;}
+   { (exit 1); exit 1; }; } ;;
+    esac
+else
+  with_system_wx="no"
 fi
+
+
 
 
 
@@ -13575,7 +13586,7 @@ if test "$with_mesa" = "yes" ; then
 
 fi
 
-if test "$enable_system_wx" = "yes"; then
+if test "$with_system_wx" = "yes"; then
   # Extract the first word of "wx-config", so it can be a program name with args.
 set dummy wx-config; ac_word=$2
 { echo "$as_me:$LINENO: checking for $ac_word" >&5
@@ -13617,11 +13628,11 @@ fi
 
 
   if test -z "$WXCONFIG"; then
-    enable_system_wx="no"
+    with_system_wx="no"
   fi
 fi
 
-if test "$enable_system_wx" != "yes"; then
+if test "$with_system_wx" != "yes"; then
   # WX_SRCDIR is better to understand the code than with_wxsrcdir variable
   if test ! -f $with_wxsrcdir/Makefile.in ; then
     $with_wxsrcdir = ../../wxWidgets
@@ -13722,7 +13733,7 @@ echo "$as_me: error: Cannot find wx-config. Please download wxWidgets (http://ww
   BUILDWXWIDGETS="wxwidgets"
 
 
-fi #!$enable_system_wx
+fi #!$with_system_wx
 
 WX_INCLUDES="$WX_INCLUDES `$WXCONFIG --cxxflags`"
 
@@ -14543,9 +14554,9 @@ fi
 
 
     if test "$RAPTOR_CONFIG" = "" ; then
-	{ echo "$as_me:$LINENO: WARNING: Not using system-provided Raptor library" >&5
+      { echo "$as_me:$LINENO: WARNING: Not using system-provided Raptor library" >&5
 echo "$as_me: WARNING: Not using system-provided Raptor library" >&2;}
-	with_system_raptor="no"
+      with_system_raptor="no"
     fi
 fi
 
@@ -14566,7 +14577,7 @@ fi
 if test "$with_raptor" = "yes" ; then
 	if test "$with_system_raptor" != "yes" ; then
 		AMAYA_ANNOT_OPTIONS="$AMAYA_ANNOT_OPTIONS -I\$(THOTDIR)/../redland/raptor "
-		AMAYA_RAPTOR_LIBS="../redland/raptor/.libs/libraptor.a"
+		AMAYA_RAPTOR_LIBS="../raptor/.libs/libraptor.a"
 		AMAYA_RAPTOR_INCLUDES="-I\$(THOTDIR)/../redland/raptor"
 		BUILDRAPTOR="raptor"
 		CURRENTPATH="`pwd`"
@@ -14590,7 +14601,8 @@ if test "$with_raptor" = "yes" ; then
 		cd ..
 	else
 		raptor_includes=`$RAPTOR_CONFIG --cflags`
-		raptor_libs=`$RAPTOR_CONFIG --libs`
+		raptor_libs="-lraptor"
+		BUILDRAPTOR=""
  		AMAYA_ANNOT_OPTIONS="$AMAYA_ANNOT_OPTIONS"
 		AMAYA_ANNOT_INCLUDES="$raptor_includes -I\$(THOTDIR)/thotlib/include"
 		AMAYA_ANNOT_EXTRA_LIBS="$raptor_libs"
@@ -14841,10 +14853,6 @@ if test "$build_amaya" = "yes" ; then
     if test "$with_dav" = "yes" ; then
        make_output="$make_output davlib/Makefile"
        EXTRA_MAKEFILE_IN="$srcdir/davlib/Makefile.in"
-    fi
-
-    if test "$with_wx" = "yes" -a "enable_system_wx" = "yes" ; then
-       EXTRA_MAKEFILE_IN="$EXTRA_MAKEFILE_IN $WX_SRCDIR/Makefile.in $WX_SRCDIR/configure.in"
     fi
 
 fi
@@ -16161,13 +16169,11 @@ if test "$build_amaya" = "yes" ; then
     fi
     if test "$with_annot" = "yes" ; then
 	echo Amaya configured with Annotations support
-    fi
-    if test "$with_redland" = "yes" ; then
-	if test "$with_system_redland" = "no" ; then
- 	  echo Amaya configured with the Redland RDF library \(local source\)
-	else
-	  echo Amaya configured with the Redland RDF library \(system\)
-	fi
+      if test "$with_system_raptor" = "yes" ; then
+ 	echo Amaya configured with the RaptorF library \(system\)
+      else
+	echo Amaya configured with the Raptor library \(system\)
+      fi
     fi
     if test "$with_templates" = "yes" ; then
 	echo Amaya configured with templates support

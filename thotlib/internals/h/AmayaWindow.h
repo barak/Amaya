@@ -22,6 +22,7 @@ class AmayaToolPanel;
 class AmayaStatusBar;
 
 #include "windowtypes_wx.h"
+#include "AmayaParams.h"
 
 /*
  * =====================================================================================
@@ -130,6 +131,9 @@ class AmayaWindow : public wxFrame
   virtual void HideToolPanels();
   virtual void ShowToolPanels();
   virtual void RefreshShowToolPanelToggleMenu();
+  virtual void SendDataToPanel(int panel_type, AmayaParams& params){}
+  virtual void RaisePanel(int panel_type){}
+  virtual void RaiseDoctypePanels(int doctype){}
 
 
   virtual void SetPageIcon(int page_id, char *iconpath);

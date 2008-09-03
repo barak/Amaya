@@ -73,7 +73,11 @@ void TtaChangeElementType (Element element, int typeNum)
            typeNum > ((PtrElement)element)->ElStructSchema->SsNRules)
     TtaError (ERR_invalid_element_type);
   else
-    ((PtrElement)element)->ElTypeNumber = typeNum;
+    {
+      ((PtrElement)element)->ElTypeNumber = typeNum;
+      if (typeNum < AnyType)
+        ((PtrElement)element)->ElTerminal = TRUE;
+    }
 }
 
 /* ----------------------------------------------------------------------
@@ -85,7 +89,7 @@ void TtaChangeElementType (Element element, int typeNum)
    root:   the concerned element must be the root of the document
    schemaName: the requested schema name.
    ---------------------------------------------------------------------- */
-void TtaUpdateRootElementType (Element root, char *schemaName, Document doc)
+void TtaUpdateRootElementType (Element root, const char *schemaName, Document doc)
 {
   PtrDocument pDoc;
   PtrSSchema  pSS, pSNew;
@@ -215,7 +219,7 @@ Element TtaNewElement (Document document, ElementType elementType)
    Return value:
    the root element of the created tree.
    ---------------------------------------------------------------------- */
-Element TtaNewTree (Document document, ElementType elementType, char* label)
+Element TtaNewTree (Document document, ElementType elementType, const char* label)
 {
   PtrElement          element;
   
@@ -914,7 +918,7 @@ void TtaAttachNewTree (Element tree, Document document)
   function TtaSetSchemaPath.
   ----------------------------------------------------------------------*/
 void TtaExportTree (Element element, Document document,
-                    char *fileName, char *TSchemaName)
+                    const char *fileName, const char *TSchemaName)
 {
 #ifndef NODISPLAY
   UserErrorCode = 0;
@@ -1056,15 +1060,6 @@ void TtaInsertSibling (Element newElement, Element sibling,
 }
 
 /* ----------------------------------------------------------------------
-   TtaAskFirstCreation
-   Asks interactive creation for "UserSpecified" elements
-   ---------------------------------------------------------------------- */
-void TtaAskFirstCreation ()
-{
-  FirstCreation = TRUE;
-}
-
-/* ----------------------------------------------------------------------
    TtaInsertFirstChild
    Inserts an element in a tree, as the first child of a given element.
    The element to be inserted must not yet be part of a document.
@@ -1106,6 +1101,8 @@ void TtaInsertFirstChild (Element *newElement, Element parent, Document document
     {
       pDoc = LoadedDocument[document - 1];
       pParent = (PtrElement) parent;
+      if (pParent->ElStructSchema == NULL)
+        return;
       if (pParent->ElStructSchema->SsRule->SrElem[pParent->ElTypeNumber - 1]->SrConstruct == CsChoice)
         {
 #ifndef NODISPLAY

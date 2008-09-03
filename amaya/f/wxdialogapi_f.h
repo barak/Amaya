@@ -11,7 +11,7 @@ extern void ShowMessage ( const char* message,
 extern void ParseStyleDlgValues ( void *style_widget,
                                   char *cssRule );
 extern void DisplayStyleValue ( const char *property,
-                                char *start_value,
+                                const char *start_value,
                                 char *end_value );
 extern ThotBool CreateSelectOperatorDlgWX ( int ref,
                                             ThotWindow parent );
@@ -24,9 +24,9 @@ extern ThotBool CreateInitConfirmDlgWX ( int ref,
                                          char *title,
                                          char *extrabutton,
                                          char *confirmbutton,
-                                         char *label,
-                                         char *label2,
-                                         char *label3 );
+                                         const char *label,
+                                         const char *label2,
+                                         const char *label3 );
 extern ThotBool CreateOpenDocDlgWX ( int ref,
                                      ThotWindow parent,
                                      const char *title,
@@ -39,7 +39,8 @@ extern ThotBool CreateImageDlgWX ( int ref,
                                    ThotWindow parent,
                                    const char *title,
                                    const char *urlToOpen,
-                                   const char *alt );
+                                   const char *alt,
+                                   ThotBool isSvg );
 extern ThotBool CreateObjectDlgWX ( int ref,
                                     ThotWindow parent,
                                     const char *title,
@@ -130,7 +131,8 @@ extern ThotBool CreateCreateTableDlgWX ( int ref,
                                          int def_border );
 extern ThotBool CreatePreferenceDlgWX ( int ref,
                                         ThotWindow parent,
-                                        const char *url_list );
+                                        const char *url_list,
+                                        const char *rdfa_list );
 extern ThotBool CreateSpellCheckDlgWX ( int ref,
                                         int base,
                                         ThotWindow parent,
@@ -166,6 +168,14 @@ extern void QueryStringFromUser ( const char *label,
                                   const char *title,
                                   char* res,
                                   int sz );
+extern ThotBool QueryTitleAndDescFromUser ( char* title,
+                                            int titleSz,
+                                            char* desc,
+                                            int descSz );
+extern ThotBool QueryNewUseFromUser ( const char* proposed,
+                                      char** label,
+                                      char**types,
+                                      ThotBool* option );
 
 #else /* __STDC__ */
 
@@ -174,7 +184,7 @@ extern void ShowMessage ( const char* message,
 extern void ParseStyleDlgValues ( void *style_widget,
                                     char *cssRule );
 extern void DisplayStyleValue ( const char *property,
-                                  char *start_value,
+                                  const char *start_value,
                                   char *end_value );
 extern ThotBool CreateSelectOperatorDlgWX ( int ref,
                                               ThotWindow parent );
@@ -187,9 +197,9 @@ extern ThotBool CreateInitConfirmDlgWX ( int ref,
                                            char *title,
                                            char *extrabutton,
                                            char *confirmbutton,
-                                           char *label,
-                                           char *label2,
-                                           char *label3 );
+                                           const char *label,
+                                           const char *label2,
+                                           const char *label3 );
 extern ThotBool CreateOpenDocDlgWX ( int ref,
                                        ThotWindow parent,
                                        const char *title,
@@ -202,7 +212,8 @@ extern ThotBool CreateImageDlgWX ( int ref,
                                      ThotWindow parent,
                                      const char *title,
                                      const char *urlToOpen,
-                                     const char *alt );
+                                     const char *alt,
+                                     ThotBool isSvg );
 extern ThotBool CreateObjectDlgWX ( int ref,
                                       ThotWindow parent,
                                       const char *title,
@@ -293,7 +304,8 @@ extern ThotBool CreateCreateTableDlgWX ( int ref,
                                            int def_border );
 extern ThotBool CreatePreferenceDlgWX ( int ref,
                                           ThotWindow parent,
-                                          const char *url_list );
+                                          const char *url_list,
+                                          const char *rdfa_list );
 extern ThotBool CreateSpellCheckDlgWX ( int ref,
                                           int base,
                                           ThotWindow parent,
@@ -329,6 +341,14 @@ extern void QueryStringFromUser ( const char *label,
                                     const char *title,
                                     char* res,
                                     int sz );
+extern ThotBool QueryTitleAndDescFromUser ( char* title,
+                                              int titleSz,
+                                              char* desc,
+                                              int descSz );
+extern ThotBool QueryNewUseFromUser ( const char* proposed,
+                                        char** label,
+                                        char**types,
+                                        ThotBool* option );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

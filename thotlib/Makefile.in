@@ -199,6 +199,11 @@ EDITOR_OBJ = \
 	dialogue/AmayaMovePointEvtHandler.o \
 	dialogue/AmayaMovingBoxEvtHandler.o \
 	dialogue/AmayaResizingBoxEvtHandler.o \
+	dialogue/AmayaCreateShapeEvtHandler.o \
+	dialogue/AmayaCreatePathEvtHandler.o \
+	dialogue/AmayaTransformEvtHandler.o \
+	dialogue/AmayaEditPathEvtHandler.o \
+	dialogue/AmayaEditShapeEvtHandler.o \
 	dialogue/AmayaDialog.o \
 	dialogue/AmayaWindow.o \
 	dialogue/AmayaWindowIterator.o \
@@ -214,11 +219,14 @@ EDITOR_OBJ = \
 	dialogue/AmayaPopupList.o \
 	dialogue/AmayaApplyClassPanel.o \
 	dialogue/AmayaXHTMLPanel.o \
+	dialogue/AmayaElementPanel.o \
 	dialogue/AmayaStylePanel.o \
 	dialogue/AmayaExplorerPanel.o \
 	dialogue/AmayaAttributePanel.o \
 	dialogue/AmayaMathMLPanel.o \
+	dialogue/AmayaSVGPanel.o \
 	dialogue/AmayaXMLPanel.o \
+    dialogue/AmayaTemplatePanel.o \
 	dialogue/AmayaPage.o \
 	dialogue/AmayaFrame.o \
 	dialogue/AmayaCanvas.o \

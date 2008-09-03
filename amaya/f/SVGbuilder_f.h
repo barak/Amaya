@@ -28,6 +28,9 @@ extern void ParseCSSequivAttribute ( int attrType,
                                      Element el,
                                      Document doc,
                                      ThotBool delete_ );
+extern Element CreateGraphicLeaf ( Element el,
+                                   Document doc,
+                                   ThotBool *closed );
 extern void SetGraphicDepths ( Document doc,
                                Element el );
 extern void CopyTRefContent ( Element source,
@@ -54,7 +57,7 @@ extern void UnknownSVGNameSpace ( ParserData *context,
                                   char* content );
 extern void UpdateTransformAttr ( Element el,
                                   Document doc,
-                                  char *operation,
+                                  const char *operation,
                                   float value,
                                   ThotBool firstParam,
                                   ThotBool increment );
@@ -129,6 +132,9 @@ extern void ParseCSSequivAttribute ( int attrType,
                                        Element el,
                                        Document doc,
                                        ThotBool delete_ );
+extern Element CreateGraphicLeaf ( Element el,
+                                     Document doc,
+                                     ThotBool *closed );
 extern void SetGraphicDepths ( Document doc,
                                  Element el );
 extern void CopyTRefContent ( Element source,
@@ -155,7 +161,7 @@ extern void UnknownSVGNameSpace ( ParserData *context,
                                     char* content );
 extern void UpdateTransformAttr ( Element el,
                                     Document doc,
-                                    char *operation,
+                                    const char *operation,
                                     float value,
                                     ThotBool firstParam,
                                     ThotBool increment );

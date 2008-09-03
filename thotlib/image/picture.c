@@ -413,11 +413,13 @@ static void GL_MakeTextureSize (ThotPictInfo *img, int GL_w, int GL_h)
         {
           ptr1 += ix;
           if (y < GL_h)
+           {
             /* copy R,G,B,A */
             if (w < iw)
               memcpy (ptr2, ptr1, w);
             else
               memcpy (ptr2, ptr1, iw);
+           }
           /* jump over the black transparent zone*/
           ptr1 += w;
           ptr2 += iw;
@@ -502,9 +504,9 @@ static void GL_TextureBind (ThotPictInfo *img, ThotBool isPixmap,
       GL_w = (GLfloat) (img->PicWidth - img->PicShiftX)/(GLfloat)p2_w;
       GL_h = (GLfloat) (img->PicHeight - img->PicShiftY)/(GLfloat)p2_h;
       if (GL_w < 0.1)
-        GL_w = 0.1; // avoid nul value
+        GL_w = (GLfloat).1; // avoid nul value
       if (GL_h < 0.1)
-        GL_h = 0.1; // avoid nul value
+        GL_h = (GLfloat).1; // avoid nul value
       /* We give te texture to opengl Pipeline system */	    
       Mode = (img->RGBA)?GL_RGBA:GL_RGB;
       glGenTextures (1,  (GLuint*)&(img->TextureBind));

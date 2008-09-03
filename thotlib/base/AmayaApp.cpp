@@ -252,6 +252,7 @@ bool AmayaApp::OnInit()
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "CreateTableDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "DocInfoDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "FontDlgWX.xrc") );
+  wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "GraphicsInfoDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "HRefDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "ImageDlgWX.xrc") ); 
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "InitConfirmDlgWX.xrc" ) );
@@ -268,7 +269,9 @@ bool AmayaApp::OnInit()
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "Panel_Style.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "Panel_StyleList.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "Panel_Explorer.xrc") );
+  wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "Panel_SVG.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "Panel_XML.xrc") );
+  wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "Panel_Template.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "PreferenceDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "SaveAsDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "SelectIntegralDlgWX.xrc") );
@@ -278,6 +281,7 @@ bool AmayaApp::OnInit()
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "SendByMailDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "SpellCheckDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "StyleDlgWX.xrc") ); 
+  wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "TemplateDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "TitleDlgWX.xrc") );
 #ifdef _MACOS_26
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "Toolbar_mac.xrc") );
@@ -500,8 +504,8 @@ int * AmayaApp::GetGL_AttrList()
   TtaGetEnvBoolean("GL_ACCELERATED", &gl_accelerated);
   if (gl_accelerated)
     AttrList[12] = 0; /* ok enable opengl hardware acceleration */
-  //else
-  //  AttrList[12] = 0;//WX_GL_NOT_ACCELERATED; /* disable opengl hardware acceleration */
+  else
+    AttrList[12] = WX_GL_NOT_ACCELERATED; /* disable opengl hardware acceleration */
 #endif /* _WINDOWS */
   return AttrList;
 }

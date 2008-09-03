@@ -1,5 +1,4 @@
 cflags_cleanup.diff
-rdf_conf_in_conf.diff
-raptor.diff
 enable_system_libwww.diff
 desktop_file_fix.patch
+warnings_fix.diff

@@ -23,6 +23,7 @@
 #include "typemedia.h"
 #include "picture.h"
 #include "appdialogue.h"
+#include "svgedit.h"
 
 #define THOT_EXPORT extern
 #include "boxes_tv.h"
@@ -35,12 +36,14 @@
 #include "boxmoves_f.h"
 #include "buildboxes_f.h"
 #include "displaybox_f.h"
+#include "windowdisplay_f.h"
 #include "displayselect_f.h"
 #include "font_f.h"
 #include "exceptions_f.h"
 #include "memory_f.h"
 #include "picture_f.h"
 #include "registry_f.h"
+#include "selectionapi_f.h"
 #include "stix_f.h"
 #include "units_f.h"
 #include "xwindowdisplay_f.h"
@@ -61,7 +64,10 @@
 
 #include "fileaccess.h"
 
-
+#ifdef _GL
+void DrawRectangle2 (int frame, int thick, int style, int x, int y, int width,
+		     int height, int fg, int bg, int pattern);
+#endif /*_GL*/
 
 /*-------------------------------------------------------------------------
   NextChar returns the previous character of the same buffer according
@@ -153,7 +159,7 @@ static void DisplayImage (PtrBox pBox, int frame, int xmin, int xmax,
                                     pFrame->FrSelectionBegin.VsXPos + 2,
                                     t, pFrame->FrSelectionBegin.VsBox);
           else
-            DisplayPointSelection (frame, pBox, 0);
+            DisplayPointSelection (frame, pBox, 0, TRUE);
         }
     }
 }
@@ -1028,6 +1034,72 @@ void  DisplayGraph (PtrBox pBox, int frame, ThotBool selected,
 
       switch (pAb->AbRealShape)
         {
+        case 'g': /* Line */
+          /* Coords are given by the enclosing box */
+          pAb = pAb->AbEnclosing;
+          if ((pAb->AbHorizPos.PosEdge == Left &&
+               pAb->AbVertPos.PosEdge == Top) ||
+              (pAb->AbHorizPos.PosEdge == Right &&
+               pAb->AbVertPos.PosEdge == Bottom))
+            /* draw a \ */
+            DrawSlash (frame, i, style, xd, yd, width, height, 1, fg);
+          else
+            /* draw a / */
+            DrawSlash (frame, i, style, xd, yd, width, height, 0, fg);
+          break;
+
+	case 1: /* Square */
+	case 'C': /* Rectangle */
+	case 7: /* Square */
+	case 8: /* Rectangle */
+          if (pBox->BxRx == 0 || pBox->BxRy == 0)
+#ifdef _GL
+	    DrawRectangle2(frame, i, style, xd, yd, width, height, fg, bg, pat);
+#else
+	    DrawRectangle(frame, i, style, xd, yd, width, height, fg, bg, pat);
+#endif /*_GL*/
+          else
+            DrawOval (frame, i, style, xd, yd, width, height,
+		      (pBox->BxRx == -1 ? pBox->BxRy : pBox->BxRx),
+                      (pBox->BxRy == -1 ? pBox->BxRx : pBox->BxRy),
+		      fg, bg, pat);
+          break;
+
+        case 'L': /* Diamond */
+          DrawDiamond (frame, i, style, xd, yd, width, height, fg, bg, pat);
+          break;
+
+	case 2: /* Parallelogram */
+	  DrawParallelogram (frame, i, style, xd, yd, width, height, pBox->BxRx,
+			     fg, bg, pat);
+	  break;
+
+	case 3: /* Trapezium */
+	  DrawTrapezium (frame, i, style, xd, yd, width, height,
+			 pBox->BxRx, pBox->BxRy,
+			 fg, bg, pat);
+	    break;
+
+	case 4: /* Equilateral triangle */
+	case 5: /* Isosceles triangle */
+	  DrawTriangle (frame, i, style, fg, bg, pat,
+			xd+width/2,yd,
+			xd,yd+height,
+			xd+width,yd+height);	  
+	  break;
+
+	case 6: /* Rectangled triangle */
+	  DrawTriangle (frame, i, style, fg, bg, pat,
+			xd,yd,
+			xd,yd+height,
+			xd+width,yd);
+	  break;
+
+        case 'a': /* Circle */
+        case 'c': /* Ellipse */
+          DrawEllips (frame, i, style, xd, yd, width, height, fg, bg, pat);
+          break;
+
         case '0':
           DrawRectangle (frame, 0, 0, xd, yd, width, height, fg, bg, pat);
           break;
@@ -1042,33 +1114,6 @@ void  DisplayGraph (PtrBox pBox, int frame, ThotBool selected,
         case 'R':
           DrawRectangle (frame, i, style, xd, yd, width, height,
                          fg, bg, pat);
-          break;
-        case 'g':
-          /* Coords of the line are given by the enclosing box */
-          pAb = pAb->AbEnclosing;
-          if ((pAb->AbHorizPos.PosEdge == Left &&
-               pAb->AbVertPos.PosEdge == Top) ||
-              (pAb->AbHorizPos.PosEdge == Right &&
-               pAb->AbVertPos.PosEdge == Bottom))
-            /* draw a \ */
-            DrawSlash (frame, i, style, xd, yd, width, height, 1, fg);
-          else
-            /* draw a / */
-            DrawSlash (frame, i, style, xd, yd, width, height, 0, fg);
-          break;
-        case 'C':
-          if (pBox->BxRx == 0 && pBox->BxRy == 0)	    
-            DrawRectangle (frame, i, style, xd, yd, width, height, fg, bg, pat);
-          else
-            DrawOval (frame, i, style, xd, yd, width, height, pBox->BxRx,
-                      pBox->BxRy, fg, bg, pat);
-          break;
-        case 'L':
-          DrawDiamond (frame, i, style, xd, yd, width, height, fg, bg, pat);
-          break;
-        case 'a':
-        case 'c':
-          DrawEllips (frame, i, style, xd, yd, width, height, fg, bg, pat);
           break;
         case 'h':
           DrawHorizontalLine (frame, i, style, xd, yd, width, height, 1, fg, pBox,
@@ -1157,15 +1202,17 @@ void  DisplayGraph (PtrBox pBox, int frame, ThotBool selected,
           DrawPoints (frame, xd + width, yd, pBox->BxEndOfBloc, fg);
         }
 
-      /* show the selection on the whole image */
+      /* show the selection on the whole graphics */
       if (selected && !pAb->AbPresentationBox)
-        {
-          if (pFrame->FrSelectOnePosition)
-            DisplayPointSelection (frame, pBox,
-                                   pFrame->FrSelectionBegin.VsIndBox);
-          else
-            DisplayPointSelection (frame, pBox, 0);
-        }
+	{
+	  if (pFrame->FrSelectOnePosition)
+	    DisplayPointSelection (frame, pBox,
+				   pFrame->FrSelectionBegin.VsIndBox, TRUE);
+	  else
+	    DisplayPointSelection (frame, pBox, 0,
+				   pAb->AbSelected &&
+				   TtaIsSelectionUnique ());
+	}
     }
 }
 
@@ -1176,75 +1223,75 @@ void  DisplayGraph (PtrBox pBox, int frame, ThotBool selected,
   to change anything, otherwise, all points are moved using
   Box-Width/Lim-X ratio horizontally and Box-Height/Lim-Y ratio vertically.
   ----------------------------------------------------------------------*/
-static void PolyTransform (PtrBox pBox, int frame)
-{
-  float               xRatio, yRatio, pointIndex;
-  PtrTextBuffer       adbuff;
-  int                 i;
-  int                 j, val;
-  int                 width, height;
-  int                 zoom;
+/* static void PolyTransform (PtrBox pBox, int frame) */
+/* { */
+/*   float               xRatio, yRatio, pointIndex; */
+/*   PtrTextBuffer       adbuff; */
+/*   int                 i; */
+/*   int                 j, val; */
+/*   int                 width, height; */
+/*   int                 zoom; */
   
-  /* box sizes have to be positive */
-  width = pBox->BxW;
-  if (width < 0)
-    width = 0;
-  height = pBox->BxH;
-  if (height < 0)
-    height = 0;
-  zoom = ViewFrameTable[frame - 1].FrMagnification;
-  val = PixelValue (pBox->BxBuffer->BuPoints[0].XCoord, UnPixel, NULL, zoom);
-  /* Compute ratio for axis X */
-  if (val != width && pBox->BxBuffer->BuPoints[0].XCoord > 0)
-    {
-      val = LogicalValue (width, UnPixel, NULL, zoom);
-      pointIndex = (float) pBox->BxBuffer->BuPoints[0].XCoord / pBox->BxXRatio;
-      /* save the new distortion ratio between box and abstract box */
-      pBox->BxXRatio = (float) val / pointIndex;
-      /* ratio applied to the box */
-      xRatio = (float) val / (float) pBox->BxBuffer->BuPoints[0].XCoord;
-      pBox->BxBuffer->BuPoints[0].XCoord = val;
-    }
-  else
-    xRatio = 1.0;
+/*   /\* box sizes have to be positive *\/ */
+/*   width = pBox->BxW; */
+/*   if (width < 0) */
+/*     width = 0; */
+/*   height = pBox->BxH; */
+/*   if (height < 0) */
+/*     height = 0; */
+/*   zoom = ViewFrameTable[frame - 1].FrMagnification; */
+/*   val = PixelValue (pBox->BxBuffer->BuPoints[0].XCoord, UnPixel, NULL, zoom); */
+/*   /\* Compute ratio for axis X *\/ */
+/*   if (val != width && pBox->BxBuffer->BuPoints[0].XCoord > 0) */
+/*     { */
+/*       val = LogicalValue (width, UnPixel, NULL, zoom); */
+/*       pointIndex = (float) pBox->BxBuffer->BuPoints[0].XCoord / pBox->BxXRatio; */
+/*       /\* save the new distortion ratio between box and abstract box *\/ */
+/*       pBox->BxXRatio = (float) val / pointIndex; */
+/*       /\* ratio applied to the box *\/ */
+/*       xRatio = (float) val / (float) pBox->BxBuffer->BuPoints[0].XCoord; */
+/*       pBox->BxBuffer->BuPoints[0].XCoord = val; */
+/*     } */
+/*   else */
+/*     xRatio = 1.0; */
   
-  /* Compute ratio for axis Y */
-  val = PixelValue (pBox->BxBuffer->BuPoints[0].YCoord, UnPixel, NULL, zoom);
-  if (val != height && pBox->BxBuffer->BuPoints[0].YCoord > 0)
-    {
-      val = LogicalValue (height, UnPixel, NULL, zoom);
-      pointIndex = (float) pBox->BxBuffer->BuPoints[0].YCoord / pBox->BxYRatio;
-      /* save the new distortion ratio between box and abstract box */
-      pBox->BxYRatio = (float) val / pointIndex;
-      /* ratio applied to the box */
-      yRatio = (float) val / (float) pBox->BxBuffer->BuPoints[0].YCoord;
-      pBox->BxBuffer->BuPoints[0].YCoord = val;
-    }
-  else
-    yRatio = 1.0;
+/*   /\* Compute ratio for axis Y *\/ */
+/*   val = PixelValue (pBox->BxBuffer->BuPoints[0].YCoord, UnPixel, NULL, zoom); */
+/*   if (val != height && pBox->BxBuffer->BuPoints[0].YCoord > 0) */
+/*     { */
+/*       val = LogicalValue (height, UnPixel, NULL, zoom); */
+/*       pointIndex = (float) pBox->BxBuffer->BuPoints[0].YCoord / pBox->BxYRatio; */
+/*       /\* save the new distortion ratio between box and abstract box *\/ */
+/*       pBox->BxYRatio = (float) val / pointIndex; */
+/*       /\* ratio applied to the box *\/ */
+/*       yRatio = (float) val / (float) pBox->BxBuffer->BuPoints[0].YCoord; */
+/*       pBox->BxBuffer->BuPoints[0].YCoord = val; */
+/*     } */
+/*   else */
+/*     yRatio = 1.0; */
   
-  if (xRatio != 1 || yRatio != 1)
-    {
-      j = 1;
-      adbuff = pBox->BxBuffer;
-      val = pBox->BxNChars;
-      for (i = 1; i < val; i++)
-        {
-          if (j >= adbuff->BuLength)
-            {
-              if (adbuff->BuNext != NULL)
-                {
-                  /* Next buffer */
-                  adbuff = adbuff->BuNext;
-                  j = 0;
-                }
-            }
-          adbuff->BuPoints[j].XCoord = (int) ((float) adbuff->BuPoints[j].XCoord * xRatio);
-          adbuff->BuPoints[j].YCoord = (int) ((float) adbuff->BuPoints[j].YCoord * yRatio);
-          j++;
-        }
-    }
-}
+/*   if (xRatio != 1 || yRatio != 1) */
+/*     { */
+/*       j = 1; */
+/*       adbuff = pBox->BxBuffer; */
+/*       val = pBox->BxNChars; */
+/*       for (i = 1; i < val; i++) */
+/*         { */
+/*           if (j >= adbuff->BuLength) */
+/*             { */
+/*               if (adbuff->BuNext != NULL) */
+/*                 { */
+/*                   /\* Next buffer *\/ */
+/*                   adbuff = adbuff->BuNext; */
+/*                   j = 0; */
+/*                 } */
+/*             } */
+/*           adbuff->BuPoints[j].XCoord = (int) ((float) adbuff->BuPoints[j].XCoord * xRatio); */
+/*           adbuff->BuPoints[j].YCoord = (int) ((float) adbuff->BuPoints[j].YCoord * yRatio); */
+/*           j++; */
+/*         } */
+/*     } */
+/* } */
 
 
 /*----------------------------------------------------------------------
@@ -1267,7 +1314,7 @@ void DisplayPolyLine (PtrBox pBox, int frame, ThotBool selected,
   if (pBox->BxBuffer == NULL || pBox->BxNChars <= 1)
     return;
   /* Transform the polyline if the box size has changed */
-  PolyTransform (pBox, frame);
+  //PolyTransform (pBox, frame);
   pAb = pBox->BxAbstractBox;
   pFrame = &ViewFrameTable[frame - 1];
   if (pAb->AbVisibility >= pFrame->FrVisibility)
@@ -1371,9 +1418,10 @@ void DisplayPolyLine (PtrBox pBox, int frame, ThotBool selected,
         {
           if (pFrame->FrSelectOnePosition)
             DisplayPointSelection (frame, pBox,
-                                   pFrame->FrSelectionBegin.VsIndBox);
+                                   pFrame->FrSelectionBegin.VsIndBox, TRUE);
           else if (pBox->BxNChars > 1)
-            DisplayPointSelection (frame, pBox, 0);
+            DisplayPointSelection (frame, pBox, 0,
+                                   pAb->AbSelected && TtaIsSelectionUnique ());
         }
     }
 }
@@ -1441,14 +1489,15 @@ void DisplayPath (PtrBox pBox, int frame, ThotBool selected,
           DrawPoints (frame, xd + width, yd, pBox->BxEndOfBloc, fg);
         }
       
-      /* show the selection on the whole image */
+      /* show the selection on the whole path */
       if (selected)
         {
           if (pFrame->FrSelectOnePosition)
             DisplayPointSelection (frame, pBox,
-                                   pFrame->FrSelectionBegin.VsIndBox);
+                                   pFrame->FrSelectionBegin.VsIndBox, TRUE);
           else
-            DisplayPointSelection (frame, pBox, 0);
+            DisplayPointSelection (frame, pBox, 0,
+                                   pAb->AbSelected && TtaIsSelectionUnique ());
         }
     }
 }
@@ -2253,9 +2302,8 @@ void DisplayBorders (PtrBox box, PtrAbstractBox pFrom, int frame,
                      int bt, int bb, int bl, int br) 
 {
   PtrBox              from;
-  PtrAbstractBox      child;
   int                 color;
-  int                 t, b, l, r, pos;
+  int                 t, b, l, r;
   int                 xFrame, yFrame, height, width;
 
   if (pFrom == NULL || pFrom->AbBox == NULL ||
@@ -2263,6 +2311,10 @@ void DisplayBorders (PtrBox box, PtrAbstractBox pFrom, int frame,
     /* cell borders are displayed by a presentation box */
     return;
   from = pFrom->AbBox;
+  if (from->BxType == BoTable && pFrom->AbElement &&
+      pFrom->AbElement->ElStructSchema &&
+      !strcmp (pFrom->AbElement->ElStructSchema->SsName, "HTML"))
+    return;
   /* position in the frame */
 #ifdef _GL
   if (box->BxBoundinBoxComputed)
@@ -2280,6 +2332,8 @@ void DisplayBorders (PtrBox box, PtrAbstractBox pFrom, int frame,
       width = box->BxWidth;
       height = box->BxHeight;
     }
+  if (box->BxLMargin < 0)
+    width += box->BxLMargin;
   if (x < xFrame)
     {
       width = width + xFrame - x;
@@ -2303,57 +2357,27 @@ void DisplayBorders (PtrBox box, PtrAbstractBox pFrom, int frame,
 
   if (et < 0)
     yFrame += et;
-  b = y + h - yFrame - height + eb + from->BxBBorder;
+  if (y + h < yFrame + height)
+    b =  eb + from->BxBBorder;
+  else
+    b = y + h - yFrame - height + eb + from->BxBBorder;
   if (b > from->BxBBorder)
     b = from->BxBBorder;
   else if (b < 0)
     b = 0;
 
-  if (box->BxLMargin < 0)
-    width += box->BxLMargin;
   if (er < 0)
     er = 0;
   if (el < 0)
     xFrame += el;
-  r = x + w + 1 - xFrame - width + er + from->BxRBorder;
+  if ( x + w < xFrame + width)
+    r = er + from->BxRBorder;
+  else
+    r = x + w + 1 - xFrame - width + er + from->BxRBorder;
   if (r > from->BxRBorder)
     r = from->BxRBorder;
   else if (r < 0)
     r = 0;
-
-  if (from->BxType == BoTable)
-    {
-      // no border around the caption
-      child = pFrom->AbFirstEnclosed;
-      while (child && child->AbPresentationBox)
-        child = child->AbNext;
-      if (child && child->AbElement && child->AbBox &&
-          TypeHasException (ExcIsCaption, child->AbElement->ElTypeNumber,
-                            child->AbElement->ElStructSchema))
-        {
-          /* there is a caption */
-          if (child->AbVertPos.PosEdge == Bottom)
-            {
-              // displayed on the top of the table
-              pos = child->AbBox->BxYOrg + child->AbBox->BxHeight - from->BxYOrg;
-              yFrame += pos;
-              y += pos;
-              h -= pos;
-              height -= pos;
-            }
-          else
-            {
-              // displayed on the bottom of the table
-              pos = child->AbBox->BxHeight + from->BxBBorder + from->BxBPadding;
-              height -= pos;
-              if (h > height)
-                h = height;
-              b += pos;
-              if (b > from->BxBBorder)
-                b = from->BxBBorder;
-            }
-        }
-    }
 
   if (from->BxTBorder && pFrom->AbTopStyle > 2 &&
       pFrom->AbTopBColor != -2 && t > 0 && bt)
@@ -2496,6 +2520,11 @@ void DisplayBox (PtrBox box, int frame, int xmin, int xmax, int ymin,
                  (mbox->BxType == BoGhost || mbox->BxType == BoFloatGhost));
             }
         }
+      else if (pAb->AbLeafType == LtPicture)
+        // display the selection at the image level
+        selfsel = ((pAb->AbSelected || pAb->AbEnclosing->AbSelected) &&
+                   !pAb->AbPresentationBox &&
+                   (pFrame->FrSelectOnePosition || TtaIsSelectionUnique ()));
     }
   
 #ifdef _GL 
@@ -2518,7 +2547,7 @@ void DisplayBox (PtrBox box, int frame, int xmin, int xmax, int ymin,
               return;
             }
           else if (box->VisibleModification || GL_NotInFeedbackMode ())
-            {      
+            {
               if (glIsList (box->DisplayList))
                 glDeleteLists (box->DisplayList, 1);
               box->DisplayList = glGenLists (1);
@@ -2561,8 +2590,6 @@ void DisplayBox (PtrBox box, int frame, int xmin, int xmax, int ymin,
         {
           if (selfsel)
             DisplayStringSelection (frame, 0, box->BxW, t, box);
-          else
-            /*DisplayEmptyBox (box, frame, selfsel, t, b, l, r)*/;
         }
     }
   else if (pAb->AbLeafType == LtText)
@@ -2583,7 +2610,7 @@ void DisplayBox (PtrBox box, int frame, int xmin, int xmax, int ymin,
     if (pAb->AbShape == EOS)
       DisplayEmptyBox (box, frame, selfsel, t, b, l, r);
     else
-      DisplayGraph (box, frame, selected, t, b, l, r);
+      DisplayGraph (box, frame, selfsel, t, b, l, r);
   else if (pAb->AbLeafType == LtPolyLine)
     /* Polyline */
     DisplayPolyLine (box, frame, selfsel, t, b, l, r);
@@ -2611,7 +2638,7 @@ void DisplayBox (PtrBox box, int frame, int xmin, int xmax, int ymin,
     {
       GL_SetFillOpacity (1000);
       GL_SetStrokeOpacity (1000);
-      box->VisibleModification = FALSE;  
+      box->VisibleModification = FALSE;
       if (isOpenList)
         glEndList ();
     }

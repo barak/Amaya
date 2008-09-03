@@ -529,12 +529,25 @@ int GetPixelValue (int val, TypeUnit unit, int size, PtrAbstractBox pAb,
 void ComputeRadius (PtrAbstractBox pAb, int frame, ThotBool horizRef)
 {
   PtrBox              pBox;
+  int zoom = ViewFrameTable[frame - 1].FrMagnification;
 
   pBox = pAb->AbBox;
   if (horizRef)
-    pBox->BxRx = GetPixelValue (pAb->AbRx, pAb->AbRxUnit, pBox->BxW, pAb, 0);
+    {
+      if(pAb->AbRx == -1)
+	pBox->BxRx = -1;
+      else
+	pBox->BxRx = GetPixelValue (pAb->AbRx, pAb->AbRxUnit,
+				    pBox->BxW, pAb, zoom);
+    }
   else
-    pBox->BxRy = GetPixelValue (pAb->AbRy, pAb->AbRyUnit, pBox->BxH, pAb, 0);
+    {
+      if(pAb->AbRy == -1)
+	pBox->BxRy = -1;
+      else
+	pBox->BxRy = GetPixelValue (pAb->AbRy, pAb->AbRyUnit,
+				    pBox->BxH, pAb, zoom);
+    }
 }
 
 
@@ -1197,7 +1210,6 @@ void ComputePosRelation (AbPosition *rule, PtrBox pBox, int frame,
   pRefBox = NULL;
   pRefAb = rule->PosAbRef;
   pAb = pBox->BxAbstractBox;
-
   if (pRefAb && IsDead (pRefAb))
     {
       fprintf (stderr, "Position refers a dead box");
@@ -1226,7 +1238,7 @@ void ComputePosRelation (AbPosition *rule, PtrBox pBox, int frame,
           }
         rule->PosAbRef = pRefAb;
       }
-	   
+  
   if (pAb->AbFloat != 'N' &&
       (pAb->AbLeafType == LtPicture ||
        (pAb->AbLeafType == LtCompound &&
@@ -1290,7 +1302,8 @@ void ComputePosRelation (AbPosition *rule, PtrBox pBox, int frame,
             pRefAb = pRefAb->AbPrevious;
           pAb->AbHorizPos.PosAbRef = pRefAb;
         }
-      if (parent && parent->AbDisplay == 'I')
+      if (parent && parent->AbDisplay == 'I' &&
+          parent->AbFloat == 'N' &&  !ExtraAbFlow (pAb, frame))
         {
           // force inline display
           pRefAb = NULL;
@@ -1424,7 +1437,8 @@ void ComputePosRelation (AbPosition *rule, PtrBox pBox, int frame,
   else
     {
       /* Vertical rule */
-      if (parent && parent->AbDisplay == 'I')
+      if (parent && parent->AbDisplay == 'I' &&
+          parent->AbFloat == 'N' &&  !ExtraAbFlow (pAb, frame))
         {
           // force inline display
           pRefAb = NULL;
@@ -1653,7 +1667,7 @@ void ComputePosRelation (AbPosition *rule, PtrBox pBox, int frame,
             }
         }
 
-      if (pRefAb == pAb->AbEnclosing)
+      if (pRefAb == pAb->AbEnclosing && pAb->AbVertEnclosing)
         {
           GetExtraMargins (pRefBox, frame, FALSE, &t, &b, &l, &r);
           t += pRefBox->BxTMargin + pRefBox->BxTBorder + pRefBox->BxTPadding;
@@ -2438,21 +2452,8 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
                     pParentAb->AbBox->BxType == BoGhost)))
                 {
                   /* all child heights depend on the parent height */
-#ifdef IV
-                  if (pAb->AbLeafType == LtSymbol)
-                    {
-                      pParentAb->AbHeight.DimValue = 10;
-                      pParentAb->AbHeight.DimUnit = UnRelative;
-                      ResizeHeight (pParentAb->AbBox, pParentAb->AbBox,NULL,
-                                    BoxFontHeight (pBox->BxFont, 'G') - pParentAb->AbBox->BxH,
-                                    0, 0, frame);
-                    }
-                  else
-#endif
-                    {
-                      pDimAb->DimAbRef = NULL;
-                      pDimAb->DimValue = -1;
-                    }
+                  pDimAb->DimAbRef = NULL;
+                  pDimAb->DimValue = -1;
                 }
             }
           else if (!horizRef && pDimAb->DimAbRef == NULL &&

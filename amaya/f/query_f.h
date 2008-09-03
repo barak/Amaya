@@ -17,6 +17,7 @@ extern char *HTTP_headers ( AHTHeaders *me,
 extern AHTReqContext *AHTReqContext_new ( int docid );
 extern ThotBool AHTReqContext_delete ( AHTReqContext * me );
 extern int AHTOpen_file ( HTRequest * request );
+extern ThotBool SafePut_query ( char *url );
 extern int AHTLoadTerminate_handler ( HTRequest *request,
                                       HTResponse *response,
                                       void *param,
@@ -26,7 +27,7 @@ extern void QueryInit ( void );
 extern void QueryClose ( void );
 extern void AHTRequest_setRefererHeader ( AHTReqContext *me );
 extern void AHTRequest_setCustomAcceptHeader ( HTRequest *request,
-                                               char *value );
+                                               const char *value );
 extern void InvokeGetObjectWWW_callback ( int docid,
                                           char *urlName,
                                           char *outputfile,
@@ -36,7 +37,7 @@ extern void InvokeGetObjectWWW_callback ( int docid,
 extern int GetObjectWWW ( int docid,
                           int refdoc,
                           char *urlName,
-                          char *formdata,
+                          const char *formdata,
                           char *outputfile,
                           int mode,
                           TIcbf *incremental_cbf,
@@ -44,7 +45,7 @@ extern int GetObjectWWW ( int docid,
                           TTcbf *terminate_cbf,
                           void *context_tcbf,
                           ThotBool error_html,
-                          char *content_type );
+                          const char *content_type );
 extern int PutObjectWWW ( int docid,
                           char *fileName,
                           char *urlName,
@@ -79,6 +80,7 @@ extern char *HTTP_headers ( AHTHeaders *me,
 extern AHTReqContext *AHTReqContext_new ( int docid );
 extern ThotBool AHTReqContext_delete ( AHTReqContext * me );
 extern int AHTOpen_file ( HTRequest * request );
+extern ThotBool SafePut_query ( char *url );
 extern int AHTLoadTerminate_handler ( HTRequest *request,
                                         HTResponse *response,
                                         void *param,
@@ -88,7 +90,7 @@ extern void QueryInit ( void );
 extern void QueryClose ( void );
 extern void AHTRequest_setRefererHeader ( AHTReqContext *me );
 extern void AHTRequest_setCustomAcceptHeader ( HTRequest *request,
-                                                 char *value );
+                                                 const char *value );
 extern void InvokeGetObjectWWW_callback ( int docid,
                                             char *urlName,
                                             char *outputfile,
@@ -98,7 +100,7 @@ extern void InvokeGetObjectWWW_callback ( int docid,
 extern int GetObjectWWW ( int docid,
                             int refdoc,
                             char *urlName,
-                            char *formdata,
+                            const char *formdata,
                             char *outputfile,
                             int mode,
                             TIcbf *incremental_cbf,
@@ -106,7 +108,7 @@ extern int GetObjectWWW ( int docid,
                             TTcbf *terminate_cbf,
                             void *context_tcbf,
                             ThotBool error_html,
-                            char *content_type );
+                            const char *content_type );
 extern int PutObjectWWW ( int docid,
                             char *fileName,
                             char *urlName,

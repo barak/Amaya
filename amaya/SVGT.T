@@ -20,20 +20,6 @@ VAR
 
 RULES
 
-   Document:
-	BEGIN
-        if Charset
-           Create '<?xml version="1.0"';
-        if Charset and not Charset = 'unknown'
-           BEGIN
-           Create ' encoding="';
-	   Create Charset;
-	   Create '"';
-           END;
-        if Charset
-           Create '?>\12';
-	END;
-
    SVG:
 	BEGIN
         if immediately within use_
@@ -1469,19 +1455,13 @@ RULES
 	BEGIN
 	create SOT;
 	create 'font-face';
-	indent +11;
+	indent +5;
 	create attributes;
-	if empty
-		create CloseEmptyTagNL;
-        indent -11;
-	if not empty
-		BEGIN
-		create CloseTagNL;
-		indent +2;
-		indent -2 after;
-		create SCT after;
-		create 'font-face>\12' after;		
-		END;
+	create CloseTagNL;
+	indent -3;
+	indent -2 after;
+	create SCT after;
+	create 'font-face>\12' after;		
 	END;
 
    font_face_src:

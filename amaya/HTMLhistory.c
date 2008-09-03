@@ -753,7 +753,9 @@ void AddDocHistory (Document doc, char *url, char *initial_url,
 void HelpAmaya (Document document, View view)
 {
   char  localname[MAX_LENGTH];
+#ifndef _MACOS
   char *s = TtaGetEnvString ("THOTDIR");
+#endif /* _MACOS */
   wxString str;
   
 #ifdef AMAYA_CRASH
@@ -970,9 +972,8 @@ static void DisplayHelp (int doc, int index)
   Element     root;
   char        localname[MAX_LENGTH];
   char       *s, *lang;
-  char       *helpdir;
+  const char *helpdir = "WX";
 
-  helpdir = "WX";
   lang = TtaGetVarLANG ();
   s = TtaGetEnvString ("THOTDIR");
   if (s != NULL)

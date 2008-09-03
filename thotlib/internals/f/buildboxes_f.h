@@ -6,6 +6,7 @@
 #ifndef __CEXTRACT__
 #ifdef __STDC__
 
+extern ThotBool IsSVGComponent ( PtrElement pEl );
 extern PtrAbstractBox SearchNextAbsBox ( PtrAbstractBox pAb,
                                          PtrAbstractBox pRoot );
 extern PtrAbstractBox GetParentTable ( PtrBox pBox );
@@ -54,15 +55,15 @@ extern PtrAbstractBox SearchEnclosingType ( PtrAbstractBox pAb,
                                             BoxType type3 );
 extern PtrLine SearchLine ( PtrBox pBox,
                             int frame );
-extern void BoxUpdate ( PtrBox pBox,
-                        PtrLine pLine,
-                        int charDelta,
-                        int spaceDelta,
-                        int wDelta,
-                        int adjustDelta,
-                        int hDelta,
-                        int frame,
-                        ThotBool splitBox );
+extern PtrBox BoxUpdate ( PtrBox pBox,
+                          PtrLine pLine,
+                          int charDelta,
+                          int spaceDelta,
+                          int wDelta,
+                          int adjustDelta,
+                          int hDelta,
+                          int frame,
+                          ThotBool splitBox );
 extern void RemoveBoxes ( PtrAbstractBox pAb,
                           ThotBool rebuild,
                           int frame );
@@ -83,6 +84,7 @@ extern ThotBool ChangeConcreteImage ( int frame,
 
 #else /* __STDC__ */
 
+extern ThotBool IsSVGComponent ( PtrElement pEl );
 extern PtrAbstractBox SearchNextAbsBox ( PtrAbstractBox pAb,
                                            PtrAbstractBox pRoot );
 extern PtrAbstractBox GetParentTable ( PtrBox pBox );
@@ -131,15 +133,15 @@ extern PtrAbstractBox SearchEnclosingType ( PtrAbstractBox pAb,
                                               BoxType type3 );
 extern PtrLine SearchLine ( PtrBox pBox,
                               int frame );
-extern void BoxUpdate ( PtrBox pBox,
-                          PtrLine pLine,
-                          int charDelta,
-                          int spaceDelta,
-                          int wDelta,
-                          int adjustDelta,
-                          int hDelta,
-                          int frame,
-                          ThotBool splitBox );
+extern PtrBox BoxUpdate ( PtrBox pBox,
+                            PtrLine pLine,
+                            int charDelta,
+                            int spaceDelta,
+                            int wDelta,
+                            int adjustDelta,
+                            int hDelta,
+                            int frame,
+                            ThotBool splitBox );
 extern void RemoveBoxes ( PtrAbstractBox pAb,
                             ThotBool rebuild,
                             int frame );

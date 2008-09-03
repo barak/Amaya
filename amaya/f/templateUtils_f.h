@@ -6,10 +6,10 @@
 #ifndef __CEXTRACT__
 #ifdef __STDC__
 
-extern char *GetSchemaFromDocType ( DocumentType docType );
+extern const char *GetSchemaFromDocType ( DocumentType docType );
 extern void SetAttributeStringValue ( Element el,
                                       int att,
-                                      char* value );
+                                      const char* value );
 extern void SetAttributeStringValueWithUndo ( Element el,
                                               int att,
                                               char* value );
@@ -33,16 +33,20 @@ extern void DumpElementSubPath ( Element el,
 extern void DumpElementPath ( Element el );
 extern void DumpTemplateElement ( Element el,
                                   Document doc );
+extern void DumpSubtree ( Element el,
+                          Document doc,
+                          int off );
 extern ThotBool SaveDocumentToNewDoc ( Document doc,
                                        Document newdoc,
                                        char* newpath );
+extern Element TemplateFindHead ( Document doc );
 
 #else /* __STDC__ */
 
-extern char *GetSchemaFromDocType ( DocumentType docType );
+extern const char *GetSchemaFromDocType ( DocumentType docType );
 extern void SetAttributeStringValue ( Element el,
                                         int att,
-                                        char* value );
+                                        const char* value );
 extern void SetAttributeStringValueWithUndo ( Element el,
                                                 int att,
                                                 char* value );
@@ -66,9 +70,13 @@ extern void DumpElementSubPath ( Element el,
 extern void DumpElementPath ( Element el );
 extern void DumpTemplateElement ( Element el,
                                     Document doc );
+extern void DumpSubtree ( Element el,
+                            Document doc,
+                            int off );
 extern ThotBool SaveDocumentToNewDoc ( Document doc,
                                          Document newdoc,
                                          char* newpath );
+extern Element TemplateFindHead ( Document doc );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

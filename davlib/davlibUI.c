@@ -12,9 +12,16 @@
 **
 ** Date : May / 2002
 **
-** $Id: davlibUI.c,v 1.27 2006/04/06 08:38:30 vatton Exp $
-** $Date: 2006/04/06 08:38:30 $
+** $Id: davlibUI.c,v 1.29 2008/05/13 09:30:27 kia Exp $
+** $Date: 2008/05/13 09:30:27 $
 ** $Log: davlibUI.c,v $
+** Revision 1.29  2008/05/13 09:30:27  kia
+** More char* fixes
+**
+** Revision 1.28  2008/05/07 13:49:07  kia
+** char* => const char*
+** (Regis patches + many many others)
+**
 ** Revision 1.27  2006/04/06 08:38:30  vatton
 ** Improve the creation of in-line elements.
 ** Irene
@@ -187,7 +194,7 @@ void DAVSetLockIndicator (Document docid)
 /*----------------------------------------------------------------------
   DAVDisplayMessage: display a message to user.
   ---------------------------------------------------------------------- */
-void DAVDisplayMessage (char *msg, char *arg) 
+void DAVDisplayMessage (const char *msg, const char *arg) 
 {
   if (msg && *msg) 
     {
@@ -239,8 +246,8 @@ BOOL DAVConfirmDialog (Document docid, char *msg1, char *msg2, char *msg3)
 
   THE LIST AND ITS COMPONENTES ARE DESTROYED INSIDE THIS FUNCTION!!!!
   ---------------------------------------------------------------------- */
-void DAVPropertiesVerticalDialog (Document docid, char *title,
-                                  char *rheader, char *lheader, AwList *list) 
+void DAVPropertiesVerticalDialog (Document docid, const char *title,
+    const char *rheader, const char *lheader, AwList *list) 
 {
 #ifdef _GTK
   char   *name, *value;
@@ -624,12 +631,12 @@ AwList * GetPropfindInfoFromNode (AwNode *propnode)
           AwString_delete(info);
 
           /* properties that we don't want, continue */
-          if (!HTStrCaseStr(name,"getetag") && !HTStrCaseStr(name,"executable") 
-              && !HTStrCaseStr(name,"resourcetype") && !HTStrCaseStr(name,"source")
-              && !HTStrCaseStr(name,"supportedlock") && !HTStrCaseStr(name,"status"))
+          if (!HTStrCaseStr(name,(char*)"getetag") && !HTStrCaseStr(name,(char*)"executable") 
+              && !HTStrCaseStr(name,(char*)"resourcetype") && !HTStrCaseStr(name,(char*)"source")
+              && !HTStrCaseStr(name,(char*)"supportedlock") && !HTStrCaseStr(name,(char*)"status"))
             {
               /* lockdiscovery property? */
-              if (HTStrCaseStr(name,"lockdiscovery")) 
+              if (HTStrCaseStr(name,(char*)"lockdiscovery")) 
                 {
                   Nactivelock = AwNode_nextChild(child);
                   Nns = NULL;
@@ -651,11 +658,11 @@ AwList * GetPropfindInfoFromNode (AwNode *propnode)
                           AwString_delete(info);
 			  
                           /* ignore locktoken */
-                          if (HTStrCaseStr (Nns,"locktoken")) 
+                          if (HTStrCaseStr (Nns,(char*)"locktoken")) 
                             continue;
 			  
                           /* if owner, found href child */ 
-                          if (HTStrCaseStr (Nns,"owner")) 
+                          if (HTStrCaseStr (Nns,(char*)"owner")) 
                             {
                               href = NULL;    
                               info = AwString_new (5);

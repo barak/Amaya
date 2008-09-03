@@ -39,12 +39,10 @@ endif
 BUILD_DIR=WX
 
 prune-non-free:
-	rm fonts/ESSTIX*
+	rm -f fonts/ESSTIX*
 	patch -p1 <debian/patches/no_esstix.diff
 	rm -r tools/cextract*
 	patch -p1 <debian/patches/no_cextract.diff
-	rm -r libjpeg libpng
-	patch -p1 <debian/patches/pngjpeg.diff
 	autoconf
 
 apply-patches:

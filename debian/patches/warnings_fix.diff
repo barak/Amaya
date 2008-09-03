@@ -1,0 +1,86 @@
+Index: amaya-10.1~pre4+dfsg.0/thotlib/internals/h/frame.h
+===================================================================
+--- amaya-10.1~pre4+dfsg.0.orig/thotlib/internals/h/frame.h	2008-09-03 20:53:52.000000000 +0100
++++ amaya-10.1~pre4+dfsg.0/thotlib/internals/h/frame.h	2008-09-03 20:54:00.000000000 +0100
+@@ -56,7 +56,7 @@
+ } Frame_Ctl;
+ 
+ 
+-typedef enum
++enum
+ {
+   ToolBarBrowsing,
+   ToolBarEditing,
+Index: amaya-10.1~pre4+dfsg.0/thotlib/base/structlist.c
+===================================================================
+--- amaya-10.1~pre4+dfsg.0.orig/thotlib/base/structlist.c	2008-09-03 21:10:28.000000000 +0100
++++ amaya-10.1~pre4+dfsg.0/thotlib/base/structlist.c	2008-09-03 21:11:06.000000000 +0100
+@@ -3752,6 +3752,7 @@
+                   fprintf (fileDescriptor, " =");
+               }
+           else if (RP->PrPresMode == PresImmediate)
++           {
+             if (RP->PrAttrValue)
+               fprintf (fileDescriptor, "??");
+             else
+@@ -3759,6 +3760,7 @@
+                 fprintf (fileDescriptor, "None");
+               else if (pPSch->PsConstant[RP->PrIntValue-1].PdString)
+                 fprintf (fileDescriptor, pPSch->PsConstant[RP->PrIntValue-1].PdString);
++           }
+           break;
+         case PtListStylePosition:
+           fprintf (fileDescriptor, "ListStylePosition: ");
+Index: amaya-10.1~pre4+dfsg.0/thotlib/content/contentapi.c
+===================================================================
+--- amaya-10.1~pre4+dfsg.0.orig/thotlib/content/contentapi.c	2008-09-03 21:12:27.000000000 +0100
++++ amaya-10.1~pre4+dfsg.0/thotlib/content/contentapi.c	2008-09-03 21:12:56.000000000 +0100
+@@ -1463,7 +1463,7 @@
+   PtrElement pEl;
+   PtrPathSeg          b;
+   int                 length, l, add;
+-  char               *path;
++  char               *path = NULL;
+   int nbPoints;
+ #define SIZE_OF_ONE_SEGMENT 50
+ 
+Index: amaya-10.1~pre4+dfsg.0/thotlib/content/dictionary.c
+===================================================================
+--- amaya-10.1~pre4+dfsg.0.orig/thotlib/content/dictionary.c	2008-09-03 21:15:40.000000000 +0100
++++ amaya-10.1~pre4+dfsg.0/thotlib/content/dictionary.c	2008-09-03 21:16:45.000000000 +0100
+@@ -132,7 +132,7 @@
+       d = 0;
+       while (d < MaxDictionaries && dictTable[d] != pdict)
+         d++;
+-      if (dictTable[d] == pdict)
++      if (d < MaxDictionaries)
+         {
+           TtaFreeMemory (pdict->DictDirectory);
+           /* Releases the string and the list of words */
+@@ -590,7 +590,7 @@
+       d = 0;
+       while (d < MaxDictionaries && dictTable[d] != pdict)
+         d++;
+-      if (dictTable[d] == pdict)
++      if (d < MaxDictionaries)
+         {
+           /* Getting information about the dictionary */
+           strcpy (dictName, pdict->DictName);
+Index: amaya-10.1~pre4+dfsg.0/thotlib/image/picture.c
+===================================================================
+--- amaya-10.1~pre4+dfsg.0.orig/thotlib/image/picture.c	2008-09-03 21:17:34.000000000 +0100
++++ amaya-10.1~pre4+dfsg.0/thotlib/image/picture.c	2008-09-03 21:18:00.000000000 +0100
+@@ -413,11 +413,13 @@
+         {
+           ptr1 += ix;
+           if (y < GL_h)
++           {
+             /* copy R,G,B,A */
+             if (w < iw)
+               memcpy (ptr2, ptr1, w);
+             else
+               memcpy (ptr2, ptr1, iw);
++           }
+           /* jump over the black transparent zone*/
+           ptr1 += w;
+           ptr2 += iw;

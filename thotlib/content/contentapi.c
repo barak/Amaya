@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2007
+ *  (c) COPYRIGHT INRIA, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -10,7 +10,8 @@
  *
  * Authors: V. Quint (INRIA)
  *          I. Vatton (INRIA) - Polylines
- *
+ *          F. Wang - More operations on transform matrix and paths/polyline,
+ *                    shape recognition.
  */
 #include "thot_gui.h"
 #include "thot_sys.h"
@@ -198,7 +199,7 @@ static void InsertText (PtrElement pEl, int position, unsigned char *content,
 /*----------------------------------------------------------------------
   SetContent
   ----------------------------------------------------------------------*/
-static void SetContent (Element element, unsigned char *content,
+static void SetContent (Element element, const unsigned char *content,
                         Language language, Document document)
 {
   PtrTextBuffer       pBuf, pNextBuff;
@@ -369,7 +370,7 @@ static void SetContent (Element element, unsigned char *content,
   language: language of that Text element.
   document: the document containing that element.
   ----------------------------------------------------------------------*/
-void TtaSetTextContent (Element element, unsigned char *content,
+void TtaSetTextContent (Element element, const unsigned char *content,
                         Language language, Document document)
 {
   SetContent (element, content, language, document);
@@ -391,8 +392,8 @@ void TtaSetTextContent (Element element, unsigned char *content,
   document: the document containing that element.
   mime_type: MIME tpye of the picture
   ----------------------------------------------------------------------*/
-void TtaSetPictureContent (Element element, unsigned char *content,
-                           Language language, Document document, char *mime_type)
+void TtaSetPictureContent (Element element, const unsigned char *content,
+                           Language language, Document document, const char *mime_type)
 {
   SetContent (element, content, language, document);
 #ifndef NODISPLAY
@@ -1048,6 +1049,7 @@ void TtaSetGraphicsShape (Element element, char shape, Document document)
   int                 delta;
   ThotBool            polyline;
   PtrElement          pElAsc, pEl;
+  PtrPathSeg pPa, pPaNext;
 
   UserErrorCode = 0;
   if (element == NULL)
@@ -1056,7 +1058,8 @@ void TtaSetGraphicsShape (Element element, char shape, Document document)
     TtaError (ERR_invalid_element_type);
   else if (((PtrElement) element)->ElLeafType != LtSymbol &&
            ((PtrElement) element)->ElLeafType != LtGraphics &&
-           ((PtrElement) element)->ElLeafType != LtPolyLine)
+           ((PtrElement) element)->ElLeafType != LtPolyLine &&
+	   ((PtrElement) element)->ElLeafType != LtPath)
     TtaError (ERR_invalid_element_type);
   else
     {
@@ -1070,7 +1073,29 @@ void TtaSetGraphicsShape (Element element, char shape, Document document)
         {
           delta = 0;
           pEl = (PtrElement) element;
-          if (pEl->ElLeafType == LtSymbol)
+	  if(pEl->ElLeafType == LtPath)
+	    {
+	      if(shape == EOS)
+		return;
+
+	      /* changing path --> simple graphic */
+	      delta = -pEl->ElVolume;
+	      if (shape != EOS)
+		  delta++;
+
+	      pPa = pEl->ElFirstPathSeg;
+	      pEl->ElFirstPathSeg = NULL;
+	      do
+		{
+		  pPaNext = pPa->PaNext;
+		  FreePathSeg (pPa);
+		  pPa = pPaNext;
+		}
+	      while (pPa);
+
+	      pEl->ElLeafType = LtGraphics;
+	    }
+          else if (pEl->ElLeafType == LtSymbol)
             {
               if (pEl->ElGraph == EOS && shape != EOS)
                 delta = 1;
@@ -1117,6 +1142,7 @@ void TtaSetGraphicsShape (Element element, char shape, Document document)
             pEl->ElPolyLineType = shape;
           else
             pEl->ElGraph = shape;
+
           /* Updates the volumes of ancestors */
           if (delta > 0)
             {
@@ -1205,11 +1231,14 @@ static ThotBool PolylineOK (Element element, Document document)
   must be positive or null.
   unit: UnPixel or UnPoint.
   ----------------------------------------------------------------------*/
-void TtaAddPointInPolyline (Element element, int rank, TypeUnit unit,
-                            int x, int y, Document document)
+int TtaAddPointInPolyline (Element element, int rank, TypeUnit unit,
+                            int x, int y, Document document,
+			    ThotBool IsBarycenter)
 {
   PtrTextBuffer       firstBuffer;
   PtrElement          pEl;
+  ThotBool IsClosed;
+  int newpos;
 
   if (PolylineOK (element, document))
     {
@@ -1221,12 +1250,20 @@ void TtaAddPointInPolyline (Element element, int rank, TypeUnit unit,
         TtaError (ERR_invalid_parameter);
       else
         {
-          firstBuffer = ((PtrElement) element)->ElPolyLineBuffer;
+	  pEl = (PtrElement) element;
+	  IsClosed = (pEl->ElPolyLineType == 'p');
+          firstBuffer = pEl->ElPolyLineBuffer;
           /* adds the point to the polyline */
-          AddPointInPolyline (firstBuffer, rank, x, y);
-          ((PtrElement) element)->ElNPoints++;
+          newpos = AddPointInPolyline (firstBuffer, rank, x, y, IsBarycenter, IsClosed);
+
+          pEl->ElNPoints++;
+
+	  /* The new pos is at the end */
+	  if(newpos == -1)
+	    newpos = pEl->ElNPoints - 1;
+
           /* Updates the volumes of ancestors */
-          pEl = ((PtrElement) element)->ElParent;
+          pEl = pEl->ElParent;
           while (pEl != NULL)
             {
               pEl->ElVolume++;
@@ -1235,8 +1272,10 @@ void TtaAddPointInPolyline (Element element, int rank, TypeUnit unit,
 #ifndef NODISPLAY
           RedisplayLeaf ((PtrElement) element, document, 1);
 #endif
+	  return newpos;
         }
     }
+  return 0;
 }
 
 /*----------------------------------------------------------------------
@@ -1377,6 +1416,273 @@ void TtaChangeLimitOfPolyline (Element element, TypeUnit unit, int x, int y,
             }
         }
     }
+}
+
+
+/*----------------------------------------------------------------------
+  TtaRemovePathData
+  Remove the path data attached to an element
+  ----------------------------------------------------------------------*/
+void TtaRemovePathData (Document document, Element element)
+{
+  PtrPathSeg          pPa, pPaNext;
+  PtrElement pEl = ((PtrElement) (TtaGetFirstLeaf(element)));
+  UserErrorCode = 0;
+  if (element == NULL)
+    TtaError (ERR_invalid_parameter);
+  else
+    /* verifies the parameter document */
+    if (document < 1 || document > MAX_DOCUMENTS)
+      TtaError (ERR_invalid_document_parameter);
+    else if (LoadedDocument[document - 1] == NULL)
+      TtaError (ERR_invalid_document_parameter);
+    else
+      {
+        /* parameter document is correct */
+	if(pEl->ElLeafType == LtPath && pEl->ElFirstPathSeg)
+	  {
+	    pPa = pEl->ElFirstPathSeg;
+	    pEl->ElFirstPathSeg = NULL;
+	    do
+	      {
+		pPaNext = pPa->PaNext;
+		FreePathSeg (pPa);
+		pPa = pPaNext;
+	      }
+	    while (pPa);
+	  }
+      }
+}
+
+/*----------------------------------------------------------------------
+  TtaGetPathAttributeValue returns the path attribute value corresponding to
+  the current set of path segments
+  ---------------------------------------------------------------------- */
+char *TtaGetPathAttributeValue (Element el, int width, int height)
+{
+  PtrElement pEl;
+  PtrPathSeg          b;
+  int                 length, l, add;
+  char               *path = NULL;
+  int nbPoints;
+#define SIZE_OF_ONE_SEGMENT 50
+
+  double w = width, h = height;
+
+  pEl = ((PtrElement)el);
+
+  if(pEl)
+    {
+      if(pEl->ElLeafType == LtPath)
+	{
+	  nbPoints = pEl->ElVolume;
+	  length = nbPoints * SIZE_OF_ONE_SEGMENT;
+	  path = (char *)TtaGetMemory (length);
+	  path[0] = EOS;
+	  b = pEl->ElFirstPathSeg;
+	  l = 0;
+	  while (b && l + SIZE_OF_ONE_SEGMENT <= length)
+	    {
+	      if (!b->PaPrevious || b->PaNewSubpath)
+		{
+		  // new position
+		  sprintf (&path[l], "M %d,%d ",
+			   b->XStart, b->YStart);
+		  add = strlen (&path[l]);
+		  l += add;          
+		}
+	      switch (b->PaShape)
+		{
+		case PtLine:
+		  sprintf (&path[l], "L %d,%d",
+			   b->XEnd, b->YEnd);
+		  break;
+		case PtCubicBezier:
+		  sprintf (&path[l], "C %d,%d %d,%d %d,%d",
+			   b->XCtrlStart, b->YCtrlStart,
+			   b->XCtrlEnd, b->YCtrlEnd,
+			   b->XEnd, b->YEnd);
+		  break;
+		case PtQuadraticBezier:
+		  sprintf (&path[l], "Q %d,%d %d,%d",
+			   b->XCtrlStart, b->YCtrlStart,
+			   b->XEnd, b->YEnd);
+		  break;
+		case PtEllipticalArc:
+		  sprintf (&path[l], "A %d %d %d %d %d %d,%d",
+			   b->XRadius,
+			   b->YRadius,
+			   b->XAxisRotation,
+			   b->LargeArc ? 1 : 0,
+			   b->Sweep ? 1 : 0,
+			   b->XEnd, b->YEnd);
+		  break;
+		}
+	      if (b)
+		{
+		  strcat (&path[l], " ");
+		  add = strlen (&path[l]);
+		  l += add;
+		}
+	      /* next path element */
+	      b = b->PaNext;
+	    }
+	}
+      else if(pEl->ElLeafType == LtGraphics)
+	{
+	  /* It's a special graphics */
+
+	  path = (char *)TtaGetMemory (4*SIZE_OF_ONE_SEGMENT);
+
+	  switch(pEl->ElGraph)
+	    {
+  	    case 'L': /* diamond */
+	      sprintf(path, "M %g,%g L %g,%g %g,%g %g,%g z",
+		      w/2, 0.,
+		      w, h/2,
+		      w/2, h,
+		      0., h/2);
+	      break;
+
+	    case 2: /* Parallelogram */
+	      break;
+
+	    case 3: /* Trapezium */
+	      break;
+
+	    case 4: /* Equilateral triangle */
+	    case 5: /* Isosceles triangle */
+	      sprintf(path, "M %g,%g L %g,%g %g,%g z",
+		      w/2,0.,
+		      0.,h,
+		      w,h
+		      );
+	      break;
+
+	    case 6: /* Rectangled triangle */
+	      sprintf(path, "M %g,%g L %g,%g %g,%g z",
+		      0.,0.,
+		      0.,h,
+		      w,0.);
+	      break;
+
+  	    case 7: /* square */
+  	    case 8: /* rectangle */
+	      sprintf(path, "M %g,%g L %g,%g %g,%g %g,%g z",
+		      0., 0.,
+		      w, 0.,
+		      w, h,
+		      0., h);
+	      break;
+	      
+	    default:
+	      break;
+	    }
+	}
+    }
+  return path;
+}
+
+/*----------------------------------------------------------------------
+  TtaGetPointsAttributeValue returns the points attribute value corresponding to
+  the current set of points
+  ---------------------------------------------------------------------- */
+char *TtaGetPointsAttributeValue (Element el, int width, int height)
+{
+  PtrElement pEl;
+  PtrTextBuffer       pBuffer;
+  char *points = NULL;
+  int i, length, l, add, nbPoints;
+#define SIZE_OF_ONE_POINT 20
+
+  double w = width, h = height;
+
+  pEl = ((PtrElement)el);
+  if(pEl)
+    {
+      if(pEl->ElLeafType == LtPolyLine)
+	{
+	  /* It's a polyline, generate the list of coordinates */
+	  pBuffer = pEl->ElPolyLineBuffer;
+	  
+	  nbPoints = pEl->ElNPoints;
+	  length = nbPoints * SIZE_OF_ONE_POINT;
+	  points = (char *)TtaGetMemory (length);
+	  points[0] = EOS;
+	  i = 1;
+	  l = 0;
+	  
+	  while(pBuffer && l + SIZE_OF_ONE_POINT <= length)
+	    {
+	      sprintf (&points[l], "%d,%d ",
+		       pBuffer->BuPoints[i].XCoord,
+		       pBuffer->BuPoints[i].YCoord);
+	      add = strlen (&points[l]);
+	      l += add;
+	      
+	      i++;
+	      if (i == pBuffer->BuLength)
+		{
+		  pBuffer = pBuffer->BuNext;
+		  i = 0;
+		}
+	    }
+	}
+      else if(pEl->ElLeafType == LtGraphics)
+	{
+	  /* It's a special graphics */
+
+	  points = (char *)TtaGetMemory (4*SIZE_OF_ONE_POINT);
+
+	  switch(pEl->ElGraph)
+	    {
+  	    case 'L': /* diamond */
+	      sprintf(points, "%g,%g %g,%g %g,%g %g,%g",
+		      w/2, 0.,
+		      w, h/2,
+		      w/2, h,
+		      0., h/2);
+	      break;
+
+	    case 2: /* Parallelogram */
+	      break;
+
+	    case 3: /* Trapezium */
+	      break;
+
+	    case 4: /* Equilateral triangle */
+	    case 5: /* Isosceles triangle */
+	      sprintf(points, "%g,%g %g,%g %g,%g",
+		      w/2,0.,
+		      0.,h,
+		      w,h
+		      );
+	      break;
+
+	    case 6: /* Rectangled triangle */
+	      sprintf(points, "%g,%g %g,%g %g,%g",
+		      0.,0.,
+		      0.,h,
+		      w,0.);
+	      break;
+
+  	    case 7: /* square */
+  	    case 8: /* rectangle */
+	      sprintf(points, "%g,%g %g,%g %g,%g %g,%g",
+		      0., 0.,
+		      w, 0.,
+		      w, h,
+		      0., h);
+	      break;
+	      
+	    default:
+	      break;
+	    }
+
+	}
+    }
+
+  return points;
 }
 
 /*----------------------------------------------------------------------
@@ -1613,6 +1919,253 @@ PathSegment TtaNewPathSegArc (int xstart, int ystart, int xend, int yend,
   pPa->Sweep = sweep;
   return ((PathSegment) pPa);
 }
+
+/*----------------------------------------------------------------------
+  TtaQuadraticToCubicPathSeg
+  ---------------------------------------------------------------------- */
+void TtaQuadraticToCubicPathSeg (void *quadratic_segment)
+{
+  PtrPathSeg       pPa = (PtrPathSeg)quadratic_segment;
+
+  int x0, y0, x1, y1, x2, y2;
+  x0 = pPa->XStart;
+  y0 = pPa->YStart;
+  x1 = pPa->XCtrlStart;
+  y1 = pPa->YCtrlStart;
+  x2 = pPa->XEnd;
+  y2 = pPa->YEnd;
+
+  pPa->PaShape = PtCubicBezier;
+  pPa->XCtrlStart = (x0 + 2*x1)/3;
+  pPa->YCtrlStart = (y0 + 2*y1)/3;
+  pPa->XCtrlEnd = (2*x1 + 1*x2)/3;
+  pPa->YCtrlEnd = (2*y1 + 1*y2)/3;
+}
+
+/*----------------------------------------------------------------------
+  TtaSplitPathSeg
+  ---------------------------------------------------------------------- */
+void TtaSplitPathSeg (void *segment, Document doc, Element el)
+{
+  PtrPathSeg       pPa = (PtrPathSeg)segment;
+  PtrPathSeg       newSeg;
+  int x0, y0, x1, y1, x2, y2, x3, y3;
+  PtrElement pElAsc;
+  double x1_, y1_, cx, cy, cx_, cy_, rx, ry, theta1, dtheta, f, g;
+  double sinf, cosf, k1, k2, k3, k4, k5;
+
+  if(pPa == NULL)
+    return;
+
+  switch(pPa->PaShape)
+    {
+    case PtLine:
+      x0 = pPa->XStart;
+      y0 = pPa->YStart;
+      x1 = pPa->XEnd;
+      y1 = pPa->YEnd;
+
+      newSeg = (PtrPathSeg)TtaNewPathSegLine ((x0+x1)/2,
+					      (y0+y1)/2,
+					      x1,y1,
+					      FALSE);
+      break;
+
+    case PtQuadraticBezier:
+      x0 = pPa->XStart;
+      y0 = pPa->YStart;
+      x1 = pPa->XCtrlStart;
+      y1 = pPa->YCtrlStart;
+      x2 = pPa->XEnd;
+      y2 = pPa->YEnd;
+
+      newSeg = (PtrPathSeg)TtaNewPathSegQuadratic((x0+2*x1+x2)/4,
+						  (y0+2*y1+y2)/4,
+						  x2,y2,
+						  (x1+x2)/2,
+						  (y1+y2)/2,
+						  FALSE);
+
+      pPa->XCtrlStart = (x0+x1)/2;
+      pPa->YCtrlStart = (y0+y1)/2;
+      pPa->XCtrlEnd = pPa->XCtrlStart;
+      pPa->YCtrlEnd = pPa->YCtrlStart;
+      break;
+
+    case PtCubicBezier:
+      x0 = pPa->XStart;
+      y0 = pPa->YStart;
+      x1 = pPa->XCtrlStart;
+      y1 = pPa->YCtrlStart;
+      x2 = pPa->XCtrlEnd;
+      y2 = pPa->YCtrlEnd;
+      x3 = pPa->XEnd;
+      y3 = pPa->YEnd;
+
+      newSeg = (PtrPathSeg)TtaNewPathSegCubic((x0+3*x1+3*x2+x3)/8,
+					      (y0+3*y1+3*y2+y3)/8,
+					      x3,y3,
+					      (x1+2*x2+x3)/4,
+					      (y1+2*y2+y3)/4,
+					      (x2+x3)/2,
+					      (y2+y3)/2,
+					      FALSE);
+      pPa->XCtrlStart = (x0+x1)/2;
+      pPa->YCtrlStart = (y0+y1)/2;
+      pPa->XCtrlEnd = (x0+2*x1+x2)/4;
+      pPa->YCtrlEnd = (y0+2*y1+y2)/4;
+      break;
+
+      
+    case PtEllipticalArc:
+      x1 = pPa->XStart;
+      y1 = pPa->YStart;
+      x2 = pPa->XEnd;
+      y2 = pPa->YEnd;
+      ry = pPa->YRadius;
+      rx = pPa->XRadius;
+      f = pPa->XAxisRotation*M_PI/180;
+      
+
+      if(x1 == x2 && y1 == y2)
+	return;
+
+      if(rx == 0 || ry == 0)
+	{
+	  newSeg = (PtrPathSeg)TtaNewPathSegLine ((x1+x2)/2,
+						  (y1+y2)/2,
+						  x2,y2,
+						  FALSE);
+	}
+      else
+	{
+	  /****************** See SVG spec: Appendix F ***********/
+	  /* Note: sometimes, argument of sqrt are negative value near zero
+	     (error of approximation) so take the absolute value.
+	   */
+	  
+	  if(rx < 0)rx = -rx;
+	  if(ry < 0)ry = -ry;
+	  sinf = sin(f);
+	  cosf = cos(f);
+	  k1 = ((double)(x1-x2))/2;
+	  k2 = ((double)(y1-y2))/2;
+	  x1_ = cosf*k1 + sinf*k2;
+	  y1_ = -sinf*k1 + cosf*k2;
+	  g = (x1_*x1_)/(rx*rx) + (y1_*y1_)/(ry*ry);
+
+	  if(g > 1)
+	    {
+	      g = sqrt(g);
+	      rx *= g;
+	      ry *= g;
+	    }
+
+	  k5 = rx*rx*y1_*y1_+ry*ry*x1_*x1_;
+	  if(k5 == 0)return;
+	  k1 = sqrt(fabs((rx*rx*ry*ry - rx*rx*y1_*y1_ - ry*ry*x1_*x1_)
+			 /k5));
+
+	  if(pPa->LargeArc == pPa->Sweep)
+	    k1 = -k1;
+
+	  cx_ = k1*rx*y1_/ry;
+	  cy_ = -k1*ry*x1_/rx;
+
+	  cx = cosf*cx_ - sinf*cx_ + ((double)(x1+x2))/2;
+	  cy = sinf*cx_ + cosf*cy_ + ((double)(y1+y2))/2;
+
+	  k1 = (x1_ - cx_)/rx;
+	  k2 = (y1_ - cy_)/ry;
+	  k3 = (-x1_ - cx_)/rx;
+	  k4 = (-y1_ - cy_)/ry;
+
+	  k5 = sqrt(fabs(k1*k1+k2*k2));
+	  if(k5 == 0)return;
+	  k5 = k1/k5;
+	  if(k5 < -1)k5 = -1;
+	  else if(k5 > 1)k5 = 1;
+
+	  theta1 = acos(k5);
+	  if(k2 < 0)theta1 = - theta1;
+
+	  k5 = sqrt(fabs((k1*k1+k2*k2)*(k3*k3+k4*k4)));
+	  if(k5 == 0)return;
+
+	  k5 = (k1*k3+k2*k4)/k5;
+	  if(k5 < -1)k5 = -1;
+	  else if(k5 > 1)k5 = 1;
+
+	  dtheta = acos(k5);
+	  if(k1*k4-k3*k2 < 0)dtheta = -dtheta;
+
+	  if(!pPa->Sweep && dtheta > 0)
+	    dtheta -= 2*M_PI;
+	  else if(pPa->Sweep && dtheta < 0)
+	    dtheta += 2*M_PI;
+
+	  /****************************************************************/
+
+	  /* Now we choose a new point (x3, y3) at theta = dtheta/2
+
+	   */
+
+	  k1 = rx*cos(theta1+dtheta/2);
+	  k2 = ry*sin(theta1+dtheta/2);
+	  x3 = (int)((cosf * k1 - sinf * k2) + cx);
+	  y3 = (int)((sinf * k1 + cosf * k2) + cy);
+
+	  pPa->LargeArc = (fabs(dtheta/2) > M_PI);
+	  pPa->Sweep = (dtheta > 0);
+
+	  newSeg = (PtrPathSeg)TtaNewPathSegArc (x3, y3, x2, y2,
+						 (int)rx,
+						 (int)ry,
+						 (int)f,
+						 pPa->LargeArc,
+						 pPa->Sweep,
+						 FALSE);
+	  pPa->XRadius = (int)rx;
+	  pPa->YRadius = (int)ry;
+
+	}
+
+      break;
+      
+    default:
+	break;
+    }
+
+  /* Insert the new segment */
+  pPa->XEnd = newSeg->XStart;
+  pPa->YEnd = newSeg->YStart;
+  newSeg->PaPrevious = pPa;
+  newSeg->PaNext = pPa->PaNext;
+  pPa->PaNext = newSeg;
+
+  if(newSeg->PaNext)
+    {
+      /* Update the information of the successor, if it exists */
+      newSeg->PaNext->PaPrevious = newSeg;
+      if(!(newSeg->PaNext->PaNewSubpath))
+	{
+	  newSeg->PaNext->XStart = newSeg->XEnd;
+	  newSeg->PaNext->YStart = newSeg->YEnd;
+	}
+    }
+
+  /* Updates the volumes of ancestors */
+  pElAsc = (PtrElement) el;
+  while (pElAsc != NULL)
+    {
+      pElAsc->ElVolume++;
+      pElAsc = pElAsc->ElParent;
+    }
+#ifndef NODISPLAY
+  RedisplayLeaf ((PtrElement) el, doc, 1);
+#endif
+}
+
 
 /*----------------------------------------------------------------------
   TtaAppendPathSeg
@@ -1865,6 +2418,273 @@ void TtaSetStopOffsetColorGradient (float offset, Element el)
 }
 
 
+/* ----------------------------------------------------------------------
+   getPathSegment
+   ---------------------------------------------------------------------- */
+static int getPathSegment (PtrPathSeg *pPa_, int pointselect,
+			    ThotBool before)
+{
+  PtrPathSeg  pPa, pPaStart;
+  int i = 1, i_start;
+
+  pPa = *pPa_;
+  *pPa_ = NULL;
+  if(pointselect == 0)
+    return 0;
+
+  while (pPa)
+    {
+      if ((pPa->PaNewSubpath || !pPa->PaPrevious))
+	{
+	  /* this path segment starts a new subpath */
+	  i_start = i;
+	  pPaStart = pPa;
+	  
+	  if(pointselect == i || /* Current point selected */
+	     
+	     (pointselect == i+1 && /* Next control point selected*/
+	      (pPa->PaShape == PtCubicBezier ||
+	       pPa->PaShape == PtQuadraticBezier))
+	     )
+	    {
+	      /* draw the start point of this path segment */
+	      if(before)
+		{
+		/* check whether the subpath is closed */
+		  i++;
+
+		  while(pPa->PaNext && !(pPa->PaNext->PaNewSubpath))
+		    {
+		      if(pPa->PaShape == PtCubicBezier ||
+			 pPa->PaShape == PtQuadraticBezier)
+			{
+			  /* Skip Bezier handles */
+			  i+=2;
+			}
+
+		      pPa = pPa->PaNext;
+		      i++;
+		    }
+
+		  if(pPa->PaShape == PtCubicBezier ||
+		     pPa->PaShape == PtQuadraticBezier)
+		    {
+		      /* Skip Bezier handles */
+		      i+=2;
+		    }
+		  
+		  if(pPaStart->XStart == pPa->XEnd &&
+		     pPaStart->YStart == pPa->YEnd)
+		    {
+		      *pPa_ = pPa;
+		      return i;
+		    }
+		  else
+		    {
+		      *pPa_ = NULL;
+		      return 0;
+		    }
+		}
+	      else
+		{
+		  *pPa_ = pPa;
+		  return i;
+		}
+	    }
+	  i++;
+	}
+
+      if(pPa->PaShape == PtCubicBezier ||
+	 pPa->PaShape == PtQuadraticBezier)
+	{
+	  /* Skip Bezier handles */
+	  i+=2;
+	}
+
+      if(pointselect == i || /* Current point selected */
+
+	 (pointselect == i-1 && /* Previous control point selected*/
+	  (pPa->PaShape == PtCubicBezier ||
+	   pPa->PaShape == PtQuadraticBezier)) ||
+
+	 (pointselect == i+1 && /* Next control point selected */
+	  pPa->PaNext && !(pPa->PaNext->PaNewSubpath)
+	  && (pPa->PaNext->PaShape == PtCubicBezier ||
+	      pPa->PaNext->PaShape == PtQuadraticBezier)  )
+	 )
+	{
+	/* Draw the end point of the path segment */
+	  if(before)
+	    {
+	      *pPa_ = pPa;
+	      return i;
+	    }
+	  else 
+	    {
+	      if(pPa->PaNext && !(pPa->PaNext->PaNewSubpath))
+		{
+		  *pPa_ = pPa->PaNext;
+		  return (i+1);
+		}
+	      else
+		{
+		/* check whether the subpath is closed */
+		  if(pPaStart->XStart == pPa->XEnd &&
+		     pPaStart->YStart == pPa->YEnd)
+		    {
+		      *pPa_ = pPaStart;
+		      return i_start;
+		    }
+		  else
+		    {
+		      *pPa_ = NULL;
+		      return 0;
+		    }
+		}
+	    
+	    }
+
+	}
+	
+      pPa = pPa->PaNext;
+      i++;
+    }
+  return 0;
+ }
+
+
+/* ----------------------------------------------------------------------
+   TtaDeletePointInCurve
+   ---------------------------------------------------------------------- */
+ThotBool TtaDeletePointInCurve (Document doc, Element el,
+				int point_number)
+{
+  PtrPathSeg pPa, pPaPrevious = NULL, pPaNext = NULL;
+  PtrElement pElAsc, pEl = (PtrElement) el;
+
+  if(pEl == NULL)
+    return FALSE;
+
+  if(pEl->ElLeafType == LtPolyLine)
+    {
+      TtaDeletePointInPolyline (el, point_number, doc);
+      return TRUE;
+    }
+  else if(pEl->ElLeafType == LtPath)
+    {
+      pPa = pEl->ElFirstPathSeg;
+      getPathSegment(&pPa, point_number, TRUE);
+      if(pPa)
+	{
+	  /* we want to delete the first segment */
+	  if(pPa == pEl->ElFirstPathSeg)
+	    pEl->ElFirstPathSeg = pPa->PaNext;
+
+	  /* Remove the references to pPa */
+	  if(pPa->PaPrevious)
+	    pPa->PaPrevious->PaNext = pPa->PaNext;
+
+	  if(pPa->PaNext)
+	    pPa->PaNext->PaPrevious = pPa->PaPrevious;
+
+	  /* Check if the previous/next segment are in the same subpath */
+	  if(pPa->PaPrevious && !(pPa->PaNewSubpath))
+	    pPaPrevious = pPa->PaPrevious;
+
+	  if(pPa->PaNext && !(pPa->PaNext->PaNewSubpath))
+	     pPaNext = pPa->PaNext;
+
+	  /* Update points and handles */
+	  if(pPaNext)
+	    {
+	      if(pPaPrevious)
+		{
+		  pPaNext->XStart = pPaPrevious->XEnd;
+		  pPaNext->YStart = pPaPrevious->YEnd;
+
+		  if((pPaNext->PaShape == PtCubicBezier ||
+		      pPaNext->PaShape == PtQuadraticBezier) &&
+		     (pPa->PaShape == PtCubicBezier || 
+		      pPa->PaShape == PtQuadraticBezier))
+		    {
+		      pPaNext->XCtrlStart = pPaNext->XStart +
+			(pPa->XCtrlStart - pPa->XStart);
+		      pPaNext->YCtrlStart = pPaNext->YStart +
+			(pPa->YCtrlStart - pPa->YStart);
+
+		      if(pPaNext->PaShape == PtQuadraticBezier)
+			{
+			  pPaNext->XCtrlEnd = pPaNext->XCtrlStart;
+			  pPaNext->YCtrlEnd = pPaNext->YCtrlStart;
+			}
+		    }
+	    
+		}
+	      else
+		pPaNext->PaNewSubpath = TRUE;
+	    }
+
+	  /* Remove the segment containing the point */
+	  FreePathSeg (pPa);
+
+	  /* Updates the volumes of ancestors */
+	  pElAsc = (PtrElement) el;
+	  while (pElAsc != NULL)
+	    {
+	      pElAsc->ElVolume--;
+	      pElAsc = pElAsc->ElParent;
+	    }
+#ifndef NODISPLAY
+	  RedisplayLeaf ((PtrElement) el, doc, 1);
+#endif
+	  
+	  return TRUE;
+	}
+
+    }
+  return FALSE;
+}
+
+/* ----------------------------------------------------------------------
+   TtaInsertPointInCurve
+   ---------------------------------------------------------------------- */
+ThotBool TtaInsertPointInCurve (Document doc, Element el,
+				ThotBool before, int *point_number)
+{
+  PtrPathSeg pPa;
+  int p = *point_number;
+  
+  if(((PtrElement) el)->ElLeafType == LtPolyLine)
+    {
+      if(!before)p++;
+      *point_number = TtaAddPointInPolyline (el, p, UnPixel, 1, 1, doc, TRUE);
+      return TRUE;
+    }
+  else if(((PtrElement) el)->ElLeafType == LtPath)
+    {
+      pPa = ((PtrElement)el)->ElFirstPathSeg;
+      p = getPathSegment(&pPa, p, before);
+      if(pPa)
+	{
+	  /* Add a new path segment */
+	  TtaSplitPathSeg ((void *)pPa, doc, el);
+
+	  /* Update the selected point */
+	  if(!before)
+	    {
+	      if(pPa->PaShape == PtQuadraticBezier ||
+		 pPa->PaShape == PtCubicBezier)
+		/* Skip Bezier handles */
+		p+=2;
+	    }
+	  
+	  *point_number = p;
+	  
+	  return TRUE;
+	}
+    }
+  return FALSE;
+}
 
 /*----------------------------------------------------------------------
   TtaAppendTransform
@@ -2041,6 +2861,910 @@ void TtaInsertTransform (Element element, void *transform,
             ((PtrElement) element)->ElTransform = (PtrTransform) transform;
           }
       }
+}
+
+/*----------------------------------------------------------------------
+  TtaRemoveTransform
+
+  Remove the Transform attached to a Graphics element
+  ----------------------------------------------------------------------*/
+void TtaRemoveTransform (Document document, Element element)
+{
+  UserErrorCode = 0;
+  if (element == NULL)
+    TtaError (ERR_invalid_parameter);
+  else
+    /* verifies the parameter document */
+    if (document < 1 || document > MAX_DOCUMENTS)
+      TtaError (ERR_invalid_document_parameter);
+    else if (LoadedDocument[document - 1] == NULL)
+      TtaError (ERR_invalid_document_parameter);
+    else
+      {
+        /* parameter document is correct */
+        TtaFreeTransform(((PtrElement)element)->ElTransform);
+        ((PtrElement)element)->ElTransform = NULL;
+      }
+}
+
+/*----------------------------------------------------------------------
+  TtaSimplifyTransformMatrix
+
+  Return a new transform of type PtElMatrix which represents the
+  composition of all the elements of the list "transform".
+  ---------------------------------------------------------------------- */
+extern void *TtaSimplifyTransformMatrix(void *transform)
+{
+  PtrTransform result, pPa;
+  double T, cosT,sinT, tanT, a, b, c, d, e, f;
+
+  if(transform == NULL)
+    /* Nothing to do */
+    return NULL;
+
+  pPa = (PtrTransform)(transform);
+
+  if(pPa->TransType == PtElMatrix && pPa->Next == NULL)
+    /* The matrix is already simplified, return a copy */
+    return TtaCopyTransform(transform);
+
+  /* result = Identity */
+  result = ((PtrTransform)(TtaNewTransformMatrix(1, 0, 0, 1, 0, 0)));
+  result->Next = NULL;
+
+  while (pPa)
+    {      
+
+      switch (pPa->TransType)
+        {
+        case PtElTranslate:
+        case PtElAnimTranslate:
+	  result->EMatrix += result->AMatrix*pPa->XScale +
+	    result->CMatrix*pPa->YScale;
+	  result->FMatrix += result->BMatrix*pPa->XScale +
+	    result->DMatrix*pPa->YScale;
+          break;
+
+        case PtElScale:
+	  result->AMatrix *= pPa->XScale;
+	  result->CMatrix *= pPa->YScale;
+	  result->BMatrix *= pPa->XScale;
+	  result->DMatrix *= pPa->YScale;
+          break;
+
+        case PtElViewBox:
+	  /* TODO */
+          break;
+
+        case PtElRotate:
+        case PtElAnimRotate:
+	  /* tranlate(XRotate,YRotate) */
+	  result->EMatrix += result->AMatrix*pPa->XRotate +
+	    result->CMatrix*pPa->YRotate;
+	  result->FMatrix += result->BMatrix*pPa->XRotate +
+	    result->DMatrix*pPa->YRotate;
+
+	  /* rotate(TrAngle,0,0) */
+	  T = (pPa->TrAngle * M_PI / 180);
+	  cosT = cos(T);
+	  sinT = sin(T);
+
+	  a = result->AMatrix;
+	  b = result->BMatrix;
+	  c = result->CMatrix;
+	  d = result->DMatrix;
+	  e = result->EMatrix;
+	  f = result->FMatrix;
+
+	  result->AMatrix = (float)(a*cosT + c*sinT);
+	  result->CMatrix = (float)(-a*sinT + c*cosT);
+	  result->BMatrix = (float)(b*cosT + d*sinT);
+	  result->DMatrix = (float)(-b*sinT + d*cosT);
+
+	  /* tranlate(-XRotate,-YRotate) */
+	  result->EMatrix -= result->AMatrix*pPa->XRotate +
+	    result->CMatrix*pPa->YRotate;
+	  result->FMatrix -= result->BMatrix*pPa->XRotate +
+	    result->DMatrix*pPa->YRotate;
+          break;  
+
+        case PtElMatrix:
+	  a = result->AMatrix;
+	  b = result->BMatrix;
+	  c = result->CMatrix;
+	  d = result->DMatrix;
+	  e = result->EMatrix;
+	  f = result->FMatrix;
+
+	  result->AMatrix = (float)(a*pPa->AMatrix + c*pPa->BMatrix);
+	  result->CMatrix = (float)(a*pPa->CMatrix + c*pPa->DMatrix);
+	  result->BMatrix = (float)(b*pPa->AMatrix + d*pPa->BMatrix);
+	  result->DMatrix = (float)(b*pPa->CMatrix + d*pPa->DMatrix);
+	  result->EMatrix += (float)(a*pPa->EMatrix + c*pPa->FMatrix);
+	  result->FMatrix += (float)(b*pPa->EMatrix + d*pPa->FMatrix);
+          break;	  
+
+        case PtElSkewX:
+	  T = pPa->TrAngle * M_PI / 180;
+	  tanT = tan(T);
+
+	  result->CMatrix += (float)(tanT*result->AMatrix);
+	  result->DMatrix += (float)(tanT*result->BMatrix);
+	  break;
+
+        case PtElSkewY:
+	  T = pPa->TrAngle * M_PI / 180;
+	  tanT = tan(T);
+
+	  result->AMatrix += (float)(tanT*result->CMatrix);
+	  result->BMatrix += (float)(tanT*result->DMatrix);
+          break;	  
+
+        default:
+          break;
+        }	       
+ 
+      pPa = pPa->Next;
+   }
+
+  return result;
+}
+
+/*----------------------------------------------------------------------
+  TtaCoordinatesInParentSpace
+
+  Convert the coordinates (x,y) of a point inside the space of the element
+  el into coordinates in its parent space.
+  ---------------------------------------------------------------------- */
+extern void TtaCoordinatesInParentSpace(Element el, float *x, float *y)
+{
+  float newx,newy;
+  PtrTransform transform = (PtrTransform)
+    TtaSimplifyTransformMatrix(((PtrElement) el)->ElTransform);
+
+  if(transform)
+    {
+      newx = transform->AMatrix * *x +
+	     transform->CMatrix * *y +
+	     transform->EMatrix;
+
+      newy = transform->BMatrix * *x +
+	     transform->DMatrix * *y +
+	     transform->FMatrix;
+
+      *x = newx;
+      *y = newy;
+
+      TtaFreeTransform (transform);
+    }
+}
+
+/*----------------------------------------------------------------------
+  TtaGetCurrentTransformMatrix
+
+  Get the CTM that allows to get coordinates of a point in the ancestor
+  space from its coordinates in the element space.
+
+  ( x_in_ancestor_space )         ( x_in_el_space )
+  ( y_in_ancestor_space ) = CTM * ( y_in_el_space )
+  (          1          )         (        1      )
+
+  ---------------------------------------------------------------------- */
+extern void *TtaGetCurrentTransformMatrix(Element el, Element ancestor)
+{
+  PtrTransform CTM = NULL, transform;
+
+  /* Concatenate all simplified transform matrix */
+  while(el && el != ancestor)
+    {
+	  transform = (PtrTransform)
+	    TtaSimplifyTransformMatrix(((PtrElement) el)->ElTransform);
+
+	  if(transform != NULL)
+	    {
+	      transform -> Next = CTM;
+	      CTM = transform;
+	    }
+	  el = TtaGetParent(el);
+    }
+
+
+  /* Simplify the product */
+  if(CTM)
+    {
+      transform = (PtrTransform)
+	TtaSimplifyTransformMatrix(CTM);
+
+      TtaFreeTransform(CTM);
+      CTM = transform;
+    }
+ 
+  return CTM;
+}
+
+/*----------------------------------------------------------------------
+  TtaInverseTransform
+
+  Return the matrix representing the inverse of a transform. If the
+  transform is not inversible, then return NULL.
+  ----------------------------------------------------------------------*/
+extern void *TtaInverseTransform (void *transform)
+{
+  PtrTransform result, pPa;
+  double a,b,c,d,e,f,a2,b2,c2,d2,e2,f2, cosA, sinA, tanA, det;
+  
+  result = (Transform*)TtaNewTransformMatrix (1, 0, 0, 1, 0, 0);
+  pPa = (Transform*)transform;
+
+    while (pPa)
+      {      
+      switch (pPa->TransType)
+        {
+        case PtElScale:
+        case PtElTranslate:
+        case PtElAnimTranslate:
+	  /* Check whether the scale matrix is inversible */
+	  if(pPa -> XScale == 0 || pPa -> YScale == 0)
+	    {
+	      TtaFreeTransform (result);
+	      return NULL;
+	    }
+
+	  /* Multiply by the inverse of scale(XScale, YScale) */
+	  result->AMatrix /= pPa -> XScale;
+	  result->CMatrix /= pPa -> XScale;
+	  result->EMatrix /= pPa -> XScale;
+	  result->BMatrix /= pPa -> YScale;
+	  result->DMatrix /= pPa -> YScale;
+	  result->FMatrix /= pPa -> YScale;
+          break;
+        case PtElViewBox:
+	  /* TODO: inverse matrix of a ViewBox ??? */
+          break;
+        case PtElRotate:
+        case PtElAnimRotate:
+	  /* Multiply result by the inverse of translate(-XRotate,-YRotate) */
+	  result->EMatrix -= pPa -> XRotate;
+	  result->FMatrix -= pPa -> YRotate;
+
+	  /* Multiply result by the inverse of rotate(TrAngle,0,0) */
+	  cosA = cos(pPa->TrAngle);
+	  sinA = sin(pPa->TrAngle);
+
+	  a = result->AMatrix * cosA - result->BMatrix * sinA;
+	  c = result->CMatrix * cosA - result->DMatrix * sinA;
+	  e = result->EMatrix * cosA - result->FMatrix * sinA;
+	  b = result->AMatrix * sinA + result->BMatrix * cosA;
+	  d = result->CMatrix * sinA + result->DMatrix * cosA;
+	  f = result->EMatrix * sinA + result->FMatrix * cosA;
+
+	  result->AMatrix = (float)a;
+	  result->BMatrix = (float)b;
+	  result->CMatrix = (float)c;
+	  result->DMatrix = (float)d;
+	  result->EMatrix = (float)e;
+	  result->FMatrix = (float)f;
+
+	  /* Multiply result by the inverse of translate(+XRotate,+YRotate) */
+	  result->EMatrix += pPa -> XRotate;
+	  result->FMatrix += pPa -> YRotate;
+          break;  
+        case PtElMatrix:
+	  /* Check whether the matrix is inversible */
+	  det = pPa->AMatrix*pPa->DMatrix - pPa->CMatrix*pPa->BMatrix;
+
+	  if(det == 0)
+	    {
+	      TtaFreeTransform (result);
+	      return NULL;
+	    }
+ 
+	  /* Compute the inverse of matrix */
+	  a = pPa->DMatrix / det;
+	  c = -pPa->CMatrix / det;
+	  e = (pPa->CMatrix*pPa->FMatrix - pPa->DMatrix*pPa->EMatrix)/det;
+	  b = -pPa->BMatrix / det;
+	  d = pPa->AMatrix / det;
+	  f = -(pPa->AMatrix*pPa->FMatrix - pPa->BMatrix*pPa->EMatrix)/det;
+
+  	  /* Multiply result by the inverse */
+	  a2 = a*result->AMatrix + c*result->BMatrix;
+	  c2 = a*result->CMatrix + c*result->DMatrix;
+	  e2 = a*result->EMatrix + c*result->FMatrix + e;
+	  b2 = b*result->AMatrix + d*result->BMatrix;
+	  d2 = b*result->CMatrix + d*result->DMatrix;
+	  f2 = b*result->EMatrix + d*result->FMatrix + f;
+
+	  result->AMatrix = (float)a2;
+	  result->BMatrix = (float)b2;
+	  result->CMatrix = (float)c2;
+	  result->DMatrix = (float)d2;
+	  result->EMatrix = (float)e2;
+	  result->FMatrix = (float)f2;
+
+          break;	  
+        case PtElSkewX:
+	  /* Multiply result by the inverse of skewX(TrFactor) */
+	  tanA = tan(pPa->TrFactor);
+	  result->AMatrix -= (float)(result->BMatrix * tanA);
+	  result->CMatrix -= (float)(result->DMatrix * tanA);
+	  result->EMatrix -= (float)(result->FMatrix * tanA);
+        case PtElSkewY:
+	  /* Multiply result by the inverse of skewX(TrFactor) */
+	  tanA = tan(pPa->TrFactor);
+	  result->BMatrix -= (float)(result->AMatrix * tanA);
+	  result->DMatrix -= (float)(result->CMatrix * tanA);
+	  result->FMatrix -= (float)(result->EMatrix * tanA);
+          break;	  
+        default:
+          break;
+        }	       
+      pPa = pPa->Next;
+    }
+  return (void *) result;
+}
+
+/*----------------------------------------------------------------------
+  TtaApplyMatrixTransform
+
+  Apply a transform matrix to an element and simplify its transformation
+  matrix.
+  ---------------------------------------------------------------------- */
+extern void TtaApplyMatrixTransform (Document document, Element element,
+			    float a, float b, float c, float d, float e,
+			    float f)
+{
+  PtrTransform       transform;
+
+  UserErrorCode = 0;
+  if (element == NULL)
+    TtaError (ERR_invalid_parameter);
+  else
+    /* verifies the parameter document */
+    if (document < 1 || document > MAX_DOCUMENTS)
+      TtaError (ERR_invalid_document_parameter);
+    else if (LoadedDocument[document - 1] == NULL)
+      TtaError (ERR_invalid_document_parameter);
+    else
+      /* parameter document is correct */
+      {
+	/* Add a new transform */
+	TtaInsertTransform (element,
+			    TtaNewTransformMatrix (a, b, c, d, e, f),
+                            document);
+
+	/* Simplify the transform matrix */
+	transform = (PtrTransform)
+	  TtaSimplifyTransformMatrix(((PtrElement) element)->ElTransform);
+
+	if(transform)
+	  {
+	    TtaFreeTransform (((PtrElement) element)->ElTransform);
+	    ((PtrElement) element)->ElTransform = transform;
+	  }
+      }
+}
+
+/*----------------------------------------------------------------------
+  TtaAppendMatrixTransform
+
+  Apply a transform matrix to an element and simplify its transformation
+  matrix.
+  ---------------------------------------------------------------------- */
+extern void TtaAppendMatrixTransform (Document document, Element element,
+			    float a, float b, float c, float d, float e,
+			    float f)
+{
+  PtrTransform       transform;
+
+  UserErrorCode = 0;
+  if (element == NULL)
+    TtaError (ERR_invalid_parameter);
+  else
+    /* verifies the parameter document */
+    if (document < 1 || document > MAX_DOCUMENTS)
+      TtaError (ERR_invalid_document_parameter);
+    else if (LoadedDocument[document - 1] == NULL)
+      TtaError (ERR_invalid_document_parameter);
+    else
+      /* parameter document is correct */
+      {
+	/* Add a new transform */
+	TtaAppendTransform (element,
+			    TtaNewTransformMatrix (a, b, c, d, e, f),
+                            document);
+
+	/* Simplify the transform matrix */
+	transform = (PtrTransform)
+	  TtaSimplifyTransformMatrix(((PtrElement) element)->ElTransform);
+
+	if(transform)
+	  {
+	    TtaFreeTransform (((PtrElement) element)->ElTransform);
+	    ((PtrElement) element)->ElTransform = transform;
+	  }
+      }
+}
+
+
+
+/*----------------------------------------------------------------------
+  TtaDecomposeTransform
+
+  Decompose the transform as a product of simple transforms:
+
+  - translate(tx, ty)
+  - rotate(theta, cx, cy)
+  - scale(sx, sy)
+  - skewX(theta)
+  - skewY(theta)
+
+  Each kind of transform is used at most once.
+  ---------------------------------------------------------------------- */
+extern void *TtaDecomposeTransform(void *transform)
+{
+  PtrTransform result = NULL, cursor;
+  PtrTransform matrix = (PtrTransform)TtaSimplifyTransformMatrix(transform);
+  double coeff,coeff1, coeff2, theta1, theta2;
+  double a,b,c,d,e,f,k;
+  ThotBool RemoveTranslate = FALSE;
+  ThotBool decompose;
+  
+  if(matrix == NULL)return NULL;
+
+  if(!TtaGetEnvBoolean ("ENABLE_DECOMPOSE_TRANSFORM", &decompose))
+    decompose = TRUE;
+
+  /* Environnement variable set to false, simply return one matrix */
+  if(!decompose)return matrix;
+
+  a = matrix->AMatrix;
+  b = matrix->BMatrix;
+  c = matrix->CMatrix;
+  d = matrix->DMatrix;
+  e = matrix->EMatrix;
+  f = matrix->FMatrix;
+  
+  TtaFreeTransform(matrix);
+
+  /* Recall that the transform matrix is
+   * 
+   * (a c e)   (1 0 e)(a c 0)
+   * (b d f) = (0 1 f)(b d 0)
+   * (0 0 1)   (0 0 1)(0 0 1)
+   *           \__ __/\__ __/
+   *              v      v
+   *  
+   *     translate(e,f) (a c)
+   * = change of origin (b d) = lineary part
+   */
+
+  /* Add the non-lineary part of the transform
+     Translate(e, f)
+  */
+  result = (PtrTransform)TtaNewTransformTranslate((float)e, (float)f);
+  cursor = result;
+
+  if(b == 0 && c == 0)
+    {
+      /* I/ Diagonal matrix
+       *
+       * (a c)   (a 0)
+       * (b d) = (0 d) = Scale(a, d)
+       *
+       */
+
+      /* Add the scale if it is not the identity */
+      if(!(a == 1 && d == 1))
+	cursor -> Next = (PtrTransform)TtaNewTransformScale((float)a, (float)d);
+    }
+  else if(a == 0 && d == 0)
+    {
+      /* II/ Anti-diagonal matrix
+       *
+       * (0 c)   (0 -1)(b   0)
+       * (b 0) = (1  0)(0  -c) = Rotate(90°)Scale(b, -c)
+       *
+       * (0 c e)
+       * (b 0 f)
+       * (0 0 1) = Rotate(90°, [e-f]/2, [e+f]/2)Scale(b, -c)
+       */
+
+      /* Group the translate and the rotate in one rotate. */
+      RemoveTranslate = TRUE;
+      e/=2;
+      f/=2;
+      cursor -> Next = (PtrTransform)TtaNewTransformRotate(90,(float)(e-f),(float)(e+f));
+      cursor = cursor -> Next;
+
+      /* Add the scale if it is not the identity */
+      if(!(b == 1 && -c == 1))
+	cursor -> Next = (PtrTransform)TtaNewTransformScale((float)b,(float)(-c));
+    }
+  else if(a == d && b == -c)
+    {
+      /* III/ A first case of product of scale and rotation
+       *
+       * (a -b)   (a'  -b')(coeff       )       {coeff = sqrt(a^2 + b^2)
+       * (b  a) = (b'   a')(       coeff)  with {a',b' between -1 and 1
+       *
+       * Hence the second matrix is the one of a rotation of angle
+       * theta1 = sgn(b')*acos(a').
+       *
+       * (a -b e)
+       * (b  a f)
+       * (0  0 1) = Translate(e,f)Rotate(theta)Scale(coeff, coeff)
+       *          = Rotate(theta1,cx,cy)Scale(coeff, coeff)
+       * 
+       * k = sin(theta1)/(1-cos(theta1))
+       *
+       * (cx)	     (e - k*f)	  
+       * (cy) = (1/2)(k*e + f)
+       */
+      coeff = sqrt(a*a + b*b); /* coeff > 0 since b != 0 */
+      theta1 = acos(a/coeff);
+      if(b < 0)theta1 = -theta1;
+
+      /* Group the rotate with the translate if it is possible */
+      if(theta1 != 0)
+	{
+	  RemoveTranslate = TRUE;
+	  k = sin(theta1)/(1 - cos(theta1));
+	  theta1 *= (180 / M_PI);
+	  e/=2;
+	  f/=2;
+	  cursor -> Next = (PtrTransform)TtaNewTransformRotate((float)theta1,
+							       (float)(e - k*f),
+							       (float)(k*e + f));
+	  cursor = cursor -> Next;
+	}
+
+      /* Add the scale if it is not the identity */
+      if(coeff != 1)
+	cursor -> Next = (PtrTransform)TtaNewTransformScale((float)coeff, (float)coeff);
+    }
+  else if(a*b + c*d == 0 && ((b!=0 && c!=0) || (a!=0 && d!=0)))
+	{
+	  /* IV/ A second case of product of scale and rotation
+	   *
+	   * (a  c)   (-1/b     )(-ab  -bc)
+	   * (b  d) = (      1/c)( bc   cd)
+	   *
+	   * or
+	   *
+	   * (a  c)   (1/d     )(ad   cd) 
+	   * (b  d) = (     1/a)(ab   ad)
+	   *
+	   * Since cd = -ab The second matrix can be reduced as in III/
+	   */
+
+	  if(b != 0 && c != 0)
+	    {
+	      a = -a*b;
+	      d = b*c;
+	      coeff = sqrt(a*a + d*d);
+	      coeff1 = -coeff/b;
+	      coeff2 = coeff/c;
+	      theta1 = acos(a/coeff);
+	      if(d < 0)theta1=-theta1;
+	    }
+	  else /* a!= 0 && d != 0 */
+	    {
+	      b = a*d;
+	      c = c*d;
+	      coeff = sqrt(b*b + c*c);
+	      coeff1 = coeff/d;
+	      coeff2 = coeff/a;
+	      theta1 = acos(b/coeff);
+	      if(c < 0)theta1=-theta1;
+	    }
+
+	  /* case coeff1 == coeff2 == 1
+	     has already been treated in II/
+	     so the following scale is never useless */
+	  cursor -> Next = (PtrTransform)TtaNewTransformScale((float)coeff1, (float)coeff2);
+	  cursor = cursor -> Next;
+
+	  /* Group the rotate with the translate if it is possible */
+	  if(theta1 != 0)
+	    {
+	      /* Change the coefficient of the translation, because 
+	         translate(e,f)scale(coeff1,coeff2)
+                 = scale(coeff1,coeff2)translate(e/coeff1,f/coeff2)
+	      */
+	      e /= coeff1;
+	      f /= coeff2;
+
+	      RemoveTranslate = TRUE;
+	      k = sin(theta1)/(1 - cos(theta1));
+	      theta1 *= (180 / M_PI);
+	      e/=2;
+	      f/=2;
+	      cursor -> Next = (PtrTransform)TtaNewTransformRotate((float)theta1,
+								   (float)(e - k*f),
+								   (float)(k*e + f));
+	    }
+	}
+  else if(a*c + b*d == 0 && ((b!=0 && c!=0) || (a!=0 && d!=0)))
+	{
+	  /* V/ A third case of product of scale and rotation
+	   *
+	   * (a  c)   (ac  -bc)(1/c     ) 
+	   * (b  d) = (bc  -bd)(    -1/b)
+	   *
+	   * or 
+	   *
+	   * (a  c)   (ad ac)(1/d    ) 
+	   * (b  d) = (bd ad)(    1/a)
+	   *
+	   * Since ac = -bd, the first matrix can be reduced as in III/
+	   */
+
+	  if(b != 0 && c != 0)
+	    {
+	      a = a*c;
+	      d = b*c;
+	      coeff = sqrt(a*a + d*d);
+	      coeff1 = coeff/c;
+	      coeff2 = -coeff/b;
+	      theta1 = acos(a/coeff);
+	      if(d < 0)theta1=-theta1;
+	    }
+	  else /* a!= 0 && d != 0 */
+	    {
+	      b = a*d;
+	      c = a*c;
+	      coeff = sqrt(b*b + c*c);
+	      coeff1 = coeff/d;
+	      coeff2 = coeff/a;
+	      theta1 = acos(b/coeff);
+	      if(c < 0)theta1=-theta1;
+	    }
+
+	  /* Group the rotate with the translate if it is possible */
+	  if(theta1 != 0)
+	    {
+	      RemoveTranslate = TRUE;
+	      k = sin(theta1)/(1 - cos(theta1));
+	      theta1 *= (180 / M_PI);
+	      e/=2;
+	      f/=2;
+	      cursor -> Next = (PtrTransform)TtaNewTransformRotate((float)theta1,
+								   (float)(e - k*f),
+								   (float)(k*e + f));
+	      cursor = cursor -> Next;
+	    }
+
+
+	  /* case coeff1 == coeff2 == 1
+	     has already been treated in III/
+	     so the following scale is never useless */
+	  cursor -> Next = (PtrTransform)TtaNewTransformScale((float)coeff1,(float)coeff2);
+	}
+  else if(a != 0)
+    {
+      /* VI/ A first case of product of scale and skews
+       *	 
+       * (a c)   (1        0)(a           )(1  tan(T2))
+       * (b d) = (tan(T1)  1)(    d - bc/a)(0        1)
+       *	 
+       */
+      theta1 = atan(b/a) * 180 / M_PI;
+      theta2 = atan(c/a) * 180 / M_PI;
+      d -= b*c/a;
+      
+      /* Add the skew if it is not the identity */
+      if(theta1 != 0)
+	{
+	  cursor -> Next = (PtrTransform)TtaNewTransformSkewY((float)theta1);
+	  cursor = cursor -> Next;
+	}
+      
+      /* Add the scale if it is not the identity */
+      if(!(a == 1 && d == 1))
+	{
+	  cursor -> Next = (PtrTransform)TtaNewTransformScale((float)a, (float)d);
+	  cursor = cursor -> Next;
+	}
+      
+      /* Add the skew if it is not the identity */
+      if(theta2 != 0)
+	cursor -> Next = (PtrTransform)TtaNewTransformSkewX((float)theta2);
+    }
+  else if(d != 0)
+    {
+      /* VII/ A second case of product of scale and skews
+       *
+       * (a c)   (1  tan(T2))(a - bc/d    )(1        0)
+       * (b d) = (0        1)(           d)(tan(T2)  1)
+       * 
+       */
+      theta1 = atan(c/d) * 180 / M_PI;
+      theta2 = atan(b/d) * 180 / M_PI;
+      a -= b*c/d;
+      
+      /* Add the skew if it is not the identity */
+      if(theta1 != 0)
+	{
+	  cursor -> Next = (PtrTransform)TtaNewTransformSkewX((float)theta1);
+	  cursor = cursor -> Next;
+	}
+
+      /* Add the scale if it is not the identity */
+      if(!(a == 1 && d == 1))
+	{
+	  cursor -> Next = (PtrTransform)TtaNewTransformScale((float)a, (float)d);
+	  cursor = cursor -> Next;
+	}
+
+      /* Add the skew if it is not the identity */
+      if(theta2 != 0)
+	cursor -> Next = (PtrTransform)TtaNewTransformSkewY((float)theta2);
+    }
+    
+  if(RemoveTranslate || (e == 0 && f == 0))
+    {
+      /* Remove the initial translation */
+      cursor = result -> Next;
+      result -> Next = NULL;
+      TtaFreeTransform(result);
+      result = cursor;
+    }
+
+  return result;
+}
+
+/*----------------------------------------------------------------------
+  TtaGetTransformAttributeValue
+
+  Get the value of the transform attribute attached to the element el,
+  using a reduced form (i.e. using only rotate, scale, translate and skew)
+
+  ---------------------------------------------------------------------- */
+extern char *TtaGetTransformAttributeValue(Document document, Element el)
+{
+  char buffer[500], buffer2[100], *result;
+
+  ThotBool add;
+  PtrTransform pPa;
+  PtrTransform transform;
+  float a,b,c,d,e,f;
+
+  if(!el)return NULL;
+  transform = (PtrTransform)TtaDecomposeTransform(((PtrElement) el)->ElTransform);
+
+  *buffer = '\0';
+
+  if(transform == NULL)
+    /* No transformation */
+    return NULL;
+
+  pPa = transform;
+
+  while(pPa)
+    {
+      add = FALSE;
+
+      switch(pPa->TransType)
+        {
+        case PtElTranslate:
+	  if(!(pPa->XScale == 0 && pPa->YScale == 0))
+	    {
+	      if(pPa->YScale == 0)
+		sprintf(buffer2, "translate(%g) ", pPa->XScale);
+	      else
+		sprintf(buffer2, "translate(%g,%g) ", pPa->XScale, pPa->YScale);
+
+	      add = TRUE;
+	    }
+          break;
+
+        case PtElScale:
+	  if(!(pPa->XScale == 1 && pPa->YScale == 1))
+	    {
+	      if(pPa->XScale == pPa->YScale)
+		sprintf(buffer2, "scale(%g) ", pPa->XScale);
+	      else
+		sprintf(buffer2, "scale(%g,%g) ", pPa->XScale, pPa->YScale);
+
+	      add = TRUE;
+	    }
+          break;
+
+        case PtElRotate:
+	  if(pPa->TrAngle != 0)
+	    {
+	      if(pPa->XRotate == 0 && pPa->YRotate == 0)
+		sprintf(buffer2, "rotate(%g) ", pPa->TrAngle);
+	      else
+		sprintf(buffer2, "rotate(%g,%g,%g) ",
+			pPa->TrAngle,
+			pPa->XRotate,
+			pPa->YRotate
+			);
+
+	      add = TRUE;
+	    }
+          break;  
+
+        case PtElSkewX:
+	  if(pPa->TrFactor != 0)
+	    {
+	      sprintf(buffer2, "skewX(%g) ", pPa->TrFactor);
+	      add = TRUE;
+	    }
+	  break;
+
+        case PtElSkewY:
+	  if(pPa->TrFactor != 0)
+	    {
+	      sprintf(buffer2, "skewY(%g) ", pPa->TrFactor);
+	      add = TRUE;
+	    }          
+	  break;	  
+
+	case PtElMatrix:
+	  a = pPa->AMatrix;b = pPa->BMatrix;c = pPa->CMatrix;
+	  d = pPa->DMatrix;e = pPa->EMatrix;f = pPa->FMatrix;
+	  if(!(a == 1 && b == 0 && c == 0 && d == 1 && e == 0 && f == 0))
+	    {
+	      sprintf(buffer2, "matrix(%g,%g,%g,%g,%g,%g) ", a, b, c, d, e, f);  
+	      add = TRUE;
+	    }
+	  break;
+
+	default:
+	  break;
+	  }
+	   
+      if(add)strcat(buffer, buffer2);
+      pPa = pPa -> Next;
+    }
+  
+  TtaFreeTransform(transform);
+
+  result = (char *)TtaGetMemory(strlen(buffer) + 1);
+
+  if(result)
+    strcpy(result, buffer);
+
+  return result;
+}
+
+/*----------------------------------------------------------------------
+  TtaGetMatrixTransform
+
+  Get the coefficients of the matrix representing the transform attached to
+  the element el.
+
+  ( a  c  e )
+  ( b  d  f )
+  ( 0  0  1 )
+
+  ---------------------------------------------------------------------- */
+extern void TtaGetMatrixTransform(Document document, Element el,
+				    float *a,
+				    float *b,
+				    float *c,
+				    float *d,
+				    float *e,			    
+				    float *f
+					    )
+{
+  PtrTransform transform;
+
+  if(!el)return;
+  transform = (PtrTransform)TtaSimplifyTransformMatrix(((PtrElement) el)->ElTransform);
+
+
+  *a = transform->AMatrix;
+  *b = transform->BMatrix;
+  *c = transform->CMatrix;
+  *d = transform->DMatrix;
+  *e = transform->EMatrix;
+  *f = transform->FMatrix;
+
+  TtaFreeTransform(transform);
 }
 
 /*----------------------------------------------------------------------
@@ -2442,7 +4166,7 @@ PicType TtaGetPictureType (Element element)
   Parameter:
   mime_type: mime type of an image.
   ----------------------------------------------------------------------*/
-void TtaSetPictureType (Element element, char *mime_type)
+void TtaSetPictureType (Element element, const char *mime_type)
 {
   PicType          typeImage;
   ThotPictInfo    *imageDesc;
@@ -2938,3 +4662,704 @@ int TtaGetPageView (Element pageElement)
   return pageView;
 }
 
+
+/*----------------------------------------------------------------------
+  Almost*
+
+  Used in CheckGeometricProperties to check the approximative equalities
+  of mathematical properties.
+  ----------------------------------------------------------------------*/
+
+/* Error on angles are less than 1° */
+#define EPSILON_MAX M_PI/180
+
+/*----------------------------------------------------------------------
+  IsNull
+  ----------------------------------------------------------------------*/
+static ThotBool IsNull(double dx1, double dy1)
+{
+  return (dx1 == 0 && dy1 == 0);
+}
+
+/*----------------------------------------------------------------------
+  Norm
+  ----------------------------------------------------------------------*/
+static double Norm(double dx1, double dy1)
+{
+  return sqrt(dx1*dx1+dy1*dy1);
+}
+
+/*----------------------------------------------------------------------
+  UnsignedAngle
+  ----------------------------------------------------------------------*/
+static double UnsignedAngle(double dx1, double dy1,
+			    double dx2, double dy2)
+{
+  /*       (dx1) (dx2)
+       s = (dy1).(dy2) = r1*r2*cosA
+
+   */
+
+  double s, r1, r2, cosA;
+  s = dx1*dx2 + dy1*dy2;
+  r1 = Norm(dx1, dy1);
+  r2 = Norm(dx2, dy2);
+
+  if(r1 == 0 || r2 == 0)
+    return -1;
+
+  cosA = s/(r1*r2);
+
+  /* Avoid errors when cosA is slightly greater/lower that 1/-1
+    because of float approximations */
+  if(cosA > 1.)cosA = 1.;
+  if(cosA < -1.)cosA = -1.;
+
+  return acos(cosA);
+}
+
+/*----------------------------------------------------------------------
+  AlmostOrthogonalVectors
+  ----------------------------------------------------------------------*/
+static ThotBool AlmostOrthogonalVectors(double dx1, double dy1,
+					double dx2, double dy2)
+{
+  double epsilon;
+
+  if(IsNull(dx1, dy1) || IsNull(dx2, dy2))return TRUE;
+  
+  epsilon = fabs(UnsignedAngle(dx1, dy1, dx2, dy2) - M_PI/2);
+  return (epsilon < EPSILON_MAX);
+}
+
+/*----------------------------------------------------------------------
+  AlmostColinearVectors
+  same = vectors are indentically oriented
+  ----------------------------------------------------------------------*/
+static ThotBool AlmostColinearVectors(double dx1, double dy1,
+				      double dx2, double dy2,
+				      ThotBool same)
+{
+  double angle;
+
+  if(IsNull(dx1, dy1) || IsNull(dx2, dy2))return TRUE;
+
+  angle = UnsignedAngle(dx1, dy1, dx2, dy2);
+  return (angle < EPSILON_MAX ||
+	  (!same && fabs(angle - M_PI) < EPSILON_MAX));
+}
+
+/*----------------------------------------------------------------------
+  AlmostEqualAngle
+  ----------------------------------------------------------------------*/
+static ThotBool AlmostEqualAngle(double ax, double ay,
+				 double bx, double by,
+				 double cx, double cy,
+				 double dx, double dy,
+				 double ex, double ey,
+				 double fx, double fy)
+{
+  double angle1, angle2;
+
+  if(IsNull(ax - bx, ay - by) || IsNull(cx - bx, cy - by) ||
+     IsNull(dx - ex, dy - ey) || IsNull(fx - ex, fy - ey))
+    return FALSE;
+
+  angle1 = UnsignedAngle(ax - bx, ay - by, cx - bx, cy - by);
+  angle2 = UnsignedAngle(dx - ex, dy - ey, fx - ex, fy - ey);
+
+  return (fabs(angle1 - angle2) < EPSILON_MAX);
+}
+
+/*----------------------------------------------------------------------
+  CircularPermutationOnTriangle
+  ----------------------------------------------------------------------*/
+static void CircularPermutationOnTriangle(int *x1, int *y1,
+					  int *x2, int *y2,
+					  int *x3, int *y3,
+					  int direction)
+{
+  int   tmpx = *x1,tmpy = *y1;
+
+  if(direction > 0)
+    {
+      *x1 = *x2; *y1 = *y2;
+      *x2 = *x3; *y2 = *y3;
+      *x3 = tmpx; *y3 = tmpy;
+    }
+  else
+    {
+      *x1 = *x3; *y1 = *y3;
+      *x3 = *x2; *y3 = *y2;
+      *x2 = tmpx; *y2 = tmpy;
+    }
+}
+
+/*----------------------------------------------------------------------
+  CircularPermutationOnQuadrilateral
+  ----------------------------------------------------------------------*/
+static void CircularPermutationOnQuadrilateral(int *x1, int *y1,
+					       int *x2, int *y2,
+					       int *x3, int *y3,
+					       int *x4, int *y4)
+{
+  int   tmpx = *x1,tmpy = *y1;
+
+  *x1 = *x2; *y1 = *y2;
+  *x2 = *x3; *y2 = *y3;
+  *x3 = *x4; *y3 = *y4;
+  *x4 = tmpx; *y4 = tmpy;
+  
+}
+
+/*----------------------------------------------------------------------
+  IsAcuteAngle
+  ----------------------------------------------------------------------*/
+static ThotBool IsAcuteAngle(double x1, double y1, double x2, double y2,
+			     double x3, double y3)
+{
+  return (UnsignedAngle(x1 - x2, y1 - y2, x3 - x2, y3 - y2) <= M_PI/2);
+}
+
+/*----------------------------------------------------------------------
+  GiveIntersectionPoint
+  ----------------------------------------------------------------------*/
+static void GiveIntersectionPoint(double x1, double y1, double dx1, double dy1,
+				  double x2, double y2, double dx2, double dy2,
+				  double *x0, double *y0)
+{
+  /*                   2
+   *                    \
+   *                     \    (dx1,dy1)         (x1)    (dx1)   (x0)
+   *               1------0------>              (y1) + t(dy1) = (y0)
+   *                       \
+   *                        \ (dx2,dy2)         (x2)    (dx2)   (x0)
+   *                         v                  (y2) + u(dy2) = (y0)
+   *
+   */
+  double t;
+  double a, b, c, d, e, f, det;
+  
+  a = -dx1;
+  b = dx2;
+  c = -dy1;
+  d = dy2;
+  e = x1 - x2;
+  f = y1 - y2;
+  det = a*d - b*c;
+  /*
+   *   (a  b)(t)   (e)
+   *   (c  d)(u) = (f)
+   *
+   */
+
+  if(det == 0)
+    {
+      *x0 = 0;
+      *y0 = 0;
+      return;
+    }
+
+  t = (d*e - b*f)/det;
+  *x0 = x1 + t*dx1;
+  *y0 = y1 + t*dy1;
+}
+
+enum shapes
+  {
+    EQUILATERAL_TRIANGLE,
+    ISOSCELES_TRIANGLE,
+    RECTANGLED_TRIANGLE,
+    TRAPEZIUM,
+    PARALLELOGRAM,
+    DIAMOND,
+    RECTANGLE,
+    SQUARE    
+  };
+
+
+/*----------------------------------------------------------------------
+  PathIsPolygon
+  ----------------------------------------------------------------------*/
+static ThotBool PathIsPolygon(PtrPathSeg pPa, int nbPoints)
+{
+  int nb = 0;
+  int x0, y0;
+  
+  if(pPa == NULL || pPa->PaShape != PtLine)return FALSE;
+  x0 = pPa->XStart;
+  y0 = pPa->YStart;
+  nb++;
+
+  while(pPa && pPa->PaShape == PtLine)
+    {
+      nb++;
+      if(nb == nbPoints + 1)
+	return (pPa->PaNext == NULL && pPa->XEnd == x0 && pPa->YEnd == y0);
+	
+      pPa=pPa->PaNext;
+      if(pPa->PaNewSubpath)
+	return FALSE;
+    }
+  return FALSE;
+}
+
+
+/*----------------------------------------------------------------------
+  CheckGeometricProperties
+  ----------------------------------------------------------------------*/
+ThotBool CheckGeometricProperties(Document doc, Element leaf,
+				  int *width, int *height,
+				  int *rx, int *ry)
+			      
+{
+  PtrPathSeg pPa;
+  PtrElement pLeaf = (PtrElement)leaf;
+  PtrTextBuffer       pBuffer;
+  int x1,y1,x2,y2,x3,y3,x4,y4;
+  int nbPoints;
+  int shape = -1;
+  double w, h;
+  double a = 1,b = 0, c = 0,d = 1, e = 0, f = 0;
+  double x1_,y1_,x2_,y2_,x3_,y3_,x4_,y4_;
+  ThotBool doAnalyse = FALSE;
+
+  if(pLeaf->ElLeafType == LtPolyLine && pLeaf->ElPolyLineType == 'p')
+    {
+      /* A polygon: look if it's a triangle/quadrilateral */
+
+      pBuffer = pLeaf->ElPolyLineBuffer;
+      nbPoints = pLeaf->ElNPoints - 1;
+
+      if(nbPoints == 3 || nbPoints == 4)
+	{
+	  doAnalyse = TRUE;
+	  x1 = pBuffer->BuPoints[1].XCoord;
+	  y1 = pBuffer->BuPoints[1].YCoord;
+	  x2 = pBuffer->BuPoints[2].XCoord;
+	  y2 = pBuffer->BuPoints[2].YCoord;
+	  x3 = pBuffer->BuPoints[3].XCoord;
+	  y3 = pBuffer->BuPoints[3].YCoord;
+	  if(nbPoints == 4)
+	    {
+	      x4 = pBuffer->BuPoints[4].XCoord;
+	      y4 = pBuffer->BuPoints[4].YCoord;
+	    }
+	} 
+    }
+  else if(pLeaf->ElLeafType == LtPath)
+    {
+      /* A path: look if it's a triangle/quadrilateral */
+
+      nbPoints = pLeaf->ElVolume;
+      if(nbPoints == 3 || nbPoints == 4)
+	{
+	  pPa = pLeaf->ElFirstPathSeg;
+	  if(PathIsPolygon(pPa, nbPoints))
+	    {
+	      doAnalyse = TRUE;
+	      x1 = pPa->XStart;
+	      y1 = pPa->YStart;
+	      x2 = pPa->XEnd;
+	      y2 = pPa->YEnd;
+	      pPa = pPa->PaNext;
+	      x3 = pPa->XEnd;
+	      y3 = pPa->YEnd;
+	      if(nbPoints == 4)
+		{
+		  pPa = pPa->PaNext;
+		  x4 = pPa->XEnd;
+		  y4 = pPa->YEnd;
+		}
+	    }
+	}
+    }
+
+  if(doAnalyse)
+    {
+      if(nbPoints == 3)
+	{
+	  /* A triangle
+	   *                2
+	   *             .  /
+	   *         .     /
+	   *      .       /  
+	   *     1_______3
+	   */
+
+	  /* Is 1 a right angle? */
+	  if(AlmostOrthogonalVectors(x2 - x1, y2 - y1, x3 - x1, y3 - y1))
+	    shape = RECTANGLED_TRIANGLE;
+	  /* Is 2 a right angle? */
+	  else if(AlmostOrthogonalVectors(x3 - x2, y3 - y2,
+					  x1 - x2, y1 - y2))
+	    {
+	      CircularPermutationOnTriangle(&x1, &y1, &x2, &y2,
+					    &x3, &y3, +1);
+	      shape = RECTANGLED_TRIANGLE;
+	    }
+	  /* Is 3 a right angle? */
+	  else if(AlmostOrthogonalVectors(x2 - x3, y2 - y3,
+					      x1 - x3, y1 - y3))
+	    {
+	      CircularPermutationOnTriangle(&x1, &y1, &x2, &y2,
+					    &x3, &y3, -1);
+	      shape = RECTANGLED_TRIANGLE;
+	    }
+	  else
+	    {
+	      if(AlmostEqualAngle(x1, y1, x2, y2, x3, y3,
+				  x2, y2, x3, y3, x1, y1))
+		
+		shape = ISOSCELES_TRIANGLE;
+	      /* Is Angle(3,1,2) == Angle(1,2,3)? */
+	      else if(AlmostEqualAngle(x3, y3, x1, y1, x2, y2,
+				       x1, y1, x2, y2, x3, y3))
+		{
+		  CircularPermutationOnTriangle(&x1, &y1, &x2, &y2,
+						&x3, &y3, -1);
+		  shape = ISOSCELES_TRIANGLE;
+		}
+	      /* Is Angle(3,1,2) == Angle(2,3,1)? */
+	      else if(AlmostEqualAngle(x3, y3, x1, y1, x2, y2,
+				       x2, y2, x3, y3, x1, y1))
+		{
+		  CircularPermutationOnTriangle(&x1, &y1, &x2, &y2,
+						&x3, &y3, +1);
+		  shape = ISOSCELES_TRIANGLE;
+		}
+	      
+	      if(shape == ISOSCELES_TRIANGLE)
+		{
+		  /*       /\
+		   *      /  \
+		   *     /    \
+		   *    /      \
+		   *   /________\
+		   */
+
+		  /* Is Angle(3,1,2) == Angle(1,2,3)? */
+		  if(AlmostEqualAngle(x3, y3, x1, y1, x2, y2,
+				      x1, y1, x2, y2, x3, y3))
+		    shape = EQUILATERAL_TRIANGLE;
+		}	  
+	    }
+	}
+      else if(nbPoints == 4)
+	{
+	  /* A quadrilateral
+	   *      4  
+	   *     /   \
+	   *    /      \
+	   *   1         \    
+	   *    \          \  
+	   *     \           \
+	   *      2----------3
+	   */
+
+	  /* Are edges (1-2) and (3-4) parallel?*/
+	  if(AlmostColinearVectors(x2 - x1, y2 - y1,
+				   x3 - x4, y3 - y4, TRUE))
+	    shape = TRAPEZIUM;
+	  /* Are edges (2-3) and (1-4) parallel?*/
+	  else if(AlmostColinearVectors(x3 - x2, y3 - y2,
+					x4 - x1, y4 - y1, TRUE))
+	    {
+	      CircularPermutationOnQuadrilateral(&x1, &y1, &x2, &y2,
+						 &x3, &y3, &x4, &y4);
+	      shape = TRAPEZIUM;
+	    }
+
+	  if(shape == TRAPEZIUM)
+	    {
+	      /*
+	       *
+	       *   1---------2
+	       *  /           \
+	       * /              \
+	       * 4---------------3
+	       */
+
+	      /* Is Angle(1,2,3) == Angle(3,4,1)? */
+	      if(AlmostEqualAngle(x1, y1, x2, y2, x3, y3,
+				  x3, y3, x4, y4, x1, y1))
+		{
+		  /*
+		   *     1----------2 
+		   *      \___    \__\
+		   *       \  \       \
+		   *        4----------3
+		   */
+
+		  shape = PARALLELOGRAM;
+
+		  /* Is Angle(2,4,1) == Angle(1,2,4)? */
+		  if(AlmostEqualAngle(x2, y2, x4, y4, x1, y1,
+				      x1, y1, x2, y2, x4, y4))
+		    {
+		      /*
+		       *           1
+		       *          /\  
+		       *         /  \
+		       *        /\  /\
+		       *       / |  | \
+		       *      /__|__|__\
+		       *     4\        /2
+		       *       \      /
+		       *        \    /
+		       *         \  /
+		       *          \/
+		       *          3
+		       */
+		      shape = DIAMOND;
+		    }
+
+		  if(AlmostOrthogonalVectors(x2 - x1, y2 - y1,
+					     x3 - x2, y3 - y2))
+		    { /*
+		       *    1-------2
+		       *    |       |
+		       *    |       |
+		       *    4-------3
+		       */
+		      if(shape == DIAMOND)
+			shape = SQUARE;
+		      else
+		      shape = RECTANGLE;
+		    }
+
+		  if(shape == PARALLELOGRAM)
+		    {
+		      /* A parallelogram which is not a rectangle/diamond:
+			 make (4,1,2) a obtuse */
+		      if(IsAcuteAngle(x4, y4, x1,
+						      y1, x2, y2))
+			CircularPermutationOnQuadrilateral(&x1, &y1, &x2, &y2,
+							   &x3, &y3, &x4, &y4);
+		    }
+
+		}
+	      /* A trapezium which is not a parallelogram:
+		 make (1-2) smaller than (3-4) */
+	      else if(Norm(x4 - x3, y4 - y3) < Norm(x2 - x1, y2 - y1))
+		{
+		  CircularPermutationOnQuadrilateral(&x1, &y1, &x2, &y2,
+						     &x3, &y3, &x4, &y4);
+		  CircularPermutationOnQuadrilateral(&x1, &y1, &x2, &y2,
+						     &x3, &y3, &x4, &y4);
+		}
+	    }
+
+
+	}
+      
+      /* Now we want to find a transform matrix from the local box to
+	 the current system of coordinates:
+
+	 (a  c  e)
+	 (b  d  f)
+	 (0  0  1)
+	     
+       */
+      switch(shape)
+	{
+	case EQUILATERAL_TRIANGLE:
+	case ISOSCELES_TRIANGLE:
+	  w = Norm(x2 - x3, y2 - y3);
+	  h = Norm(((double) x2+x3)/2 - x1, ((double) y2+y3)/2 - y1);
+	  if(w == 0 || h == 0)
+	    return FALSE;
+
+	  e = ((double) 2*x1 + x3 - x2)/2;
+	  f = ((double) 2*y1 + y3 - y2)/2;
+
+	  a = (x2 - x3)/w;
+	  b = (y2 - y3)/w;
+	  c = (x3 - e)/h;
+	  d = (y3 - f)/h;
+	  if(shape == EQUILATERAL_TRIANGLE)
+	    TtaSetGraphicsShape (leaf, 4, doc);
+	  else
+	    TtaSetGraphicsShape (leaf, 5, doc);
+	  break;
+
+	case RECTANGLED_TRIANGLE:
+	  w = Norm(x2 - x1, y2 - y1);
+	  h = Norm(x3 - x1, y3 - y1);
+	  if(w == 0 || h == 0)
+	    return FALSE;
+
+	  a = (x2 - x1)/w;
+	  b = (y2 - y1)/w;
+	  c = (x3 - x1)/h;
+	  d = (y3 - y1)/h;
+	  e = x1;
+	  f = y1;
+
+	  TtaSetGraphicsShape (leaf, 6, doc);
+	  break;
+
+	case TRAPEZIUM:
+	  /*  We want to determine the bounding box:
+	   *   
+	   *   (1_)--------(2_)
+	   *   |             |
+	   *   |             |
+	   *   (4_)--------(3_)
+	   */
+	  return FALSE;
+
+	  if(IsAcuteAngle(x4, y4, x1, y1, x2, y2))
+	    {
+	      /*   1-------2.
+               *   @\         ..
+               *   @ \           .
+	       *   @@@4-----------3
+	       */
+	      x1_ = x1;
+	      y1_ = y1;
+
+	      GiveIntersectionPoint(x1, y1, -(y2 - y1), x2 - x1, 
+				    x4, y4, x3 - x4, y3 - y4,
+				    &x4_, &y4_);
+	    }
+	  else
+	    {
+	      /*      @@@1--------2
+               *      @ /         |
+               *      @/          |
+	       *      4-----------3
+	       */
+	      x4_ = x4;
+	      y4_ = y4;
+
+	      GiveIntersectionPoint(x1, y1, x2 - x1, y2 - y1,
+				    x4, y4, -(y3 - y4), x3 - x4,
+				    &x1_, &y1_);
+	    }
+
+	  if(IsAcuteAngle(x1, y1, x2, y2, x3, y3))
+	    {
+	      /*   1---------------2 
+               *    \             /@
+               *     \           / @
+	       *      4---------3@@@
+	       */
+	      x2_ = x2;
+	      y2_ = y2;
+
+	      GiveIntersectionPoint(x2, y2, -(y2 - y1), x2 - x1,
+				    x3, y3, x3 - x4, y3 - y4,
+				    &x3_, &y3_);
+	    }
+	  else
+	    {
+	      /*         1--------2@@@
+               *        /          \ @
+               *       /            \@
+	       *      4--------------3
+	       */
+	      x3_ = x3;
+	      y3_ = y3;
+
+	      GiveIntersectionPoint(x2, y2, x2 - x1, y2 - y1,
+				    x3, y3, -(y3 - y4), x3 - x4,
+				    &x2_, &y2_);
+	    }
+
+	  w = Norm(x2_ - x1_, y2_ - y1_);
+	  h = Norm(x4_ - x1_, y4_ - y1_);
+	  if(w == 0 || h == 0)
+	    return FALSE;
+
+	  a = (x2_ - x1_)/w;
+	  b = (y2_ - y1_)/w;
+	  c = (x4_ - x1_)/h;
+	  d = (y4_ - y1_)/h;
+	  e = x1_;
+	  f = y1_;
+	  break;
+
+	case PARALLELOGRAM:
+	  return FALSE;
+	  x4_ = x4;
+	  y4_ = y4;
+
+	  GiveIntersectionPoint(x1, y1, x2 - x1, y2 - y1,
+				x4, y4, -(y3 - y4), x3 - x4,
+				&x1_, &y1_);
+
+	  x2_ = x2;
+	  y2_ = y2;
+
+	  GiveIntersectionPoint(x2, y2, -(y2 - y1), x2 - x1,
+				x3, y3, x3 - x4, y3 - y4,
+				&x3_, &y3_);
+
+	  w = Norm(x2_ - x1_, y2_ - y1_);
+	  h = Norm(x4_ - x1_, y4_ - y1_);
+	  if(w == 0 || h == 0)
+	    return FALSE;
+
+	  a = (x2_ - x1_)/w;
+	  b = (y2_ - y1_)/w;
+	  c = (x4_ - x1_)/h;
+	  d = (y4_ - y1_)/h;
+	  e = x1_;
+	  f = y1_;
+	  TtaSetGraphicsShape (leaf, 2, doc);
+	  *rx = (int)(x1 - x1_);
+	  break;
+
+	case DIAMOND:
+	  w = Norm(x4 - x2, y4 - y2);
+	  h = Norm(x3 - x1, y3 - y1);
+	  if(w == 0 || h == 0)
+	    return FALSE;
+
+	  a = (x2 - x4)/w;
+	  b = (y2 - y4)/w;
+	  c = (x3 - x1)/h;
+	  d = (y3 - y1)/h;
+	  e = x1 - a*w/2;
+	  f = y1 - b*w/2;
+
+	  TtaSetGraphicsShape (leaf, 'L', doc);
+	  break;
+	case RECTANGLE:
+	case SQUARE:
+	  w = Norm(x2 - x1, y2 - y1);
+	  h = Norm(x4 - x1, y4 - y1);
+	  if(w == 0 || h == 0)
+	    return FALSE;
+
+	  a = (x2 - x1)/w;
+	  b = (y2 - y1)/w;
+	  c = (x4 - x1)/h;
+	  d = (y4 - y1)/h;
+	  e = x1;
+	  f = y1;
+
+	  if(shape == SQUARE)
+	    TtaSetGraphicsShape (leaf, 7, doc);
+	  else
+	    TtaSetGraphicsShape (leaf, 8, doc);
+
+	  break;
+	}
+
+      if(shape != -1)
+	{
+	  TtaAppendTransform (TtaGetParent(leaf),
+			      TtaNewTransformMatrix((float)a, (float)b, (float)c, (float)d, (float)e, (float)f),
+			      doc);
+      
+	  *width = (int)(w);
+	  *height = (int)(h);
+
+	  return TRUE;
+	}
+    }
+
+  return FALSE;
+}

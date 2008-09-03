@@ -328,7 +328,7 @@ extern int TtaSetCallback (void (*callbakProcedure) (), int set);
 /*----------------------------------------------------------------------
    TtaSetStatus affiche le status de la vue du document.                      
   ----------------------------------------------------------------------*/
-extern void TtaSetStatus (Document document, View view, char *text, char *name);
+extern void TtaSetStatus (Document document, View view, const char *text, const char *name);
 
 /*----------------------------------------------------------------------
   TtaSetStatusSelectedElement Set the current selected element in the status bar.
@@ -488,7 +488,6 @@ extern void TtaUpdateToolPanelLayout ();
   TtaCloseAllHelpWindows Closes all opened help windows.
   ----------------------------------------------------------------------*/
 extern void TtaCloseAllHelpWindows ();
-
 
 #endif /* __CEXTRACT__  */
 

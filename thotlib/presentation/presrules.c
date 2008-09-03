@@ -1732,7 +1732,9 @@ void FillContent (PtrElement pEl, PtrAbstractBox pAb, PtrDocument pDoc)
   int                 lg, i;
   PtrTextBuffer       pBu1;
   PtrReference        pPR1;
-  
+  PtrPRule            pRSpec;
+  ThotBool            rxRule, ryRule;
+
   if (pEl->ElHolophrast)
     {
       pAb->AbLeafType = LtText;
@@ -1787,11 +1789,36 @@ void FillContent (PtrElement pEl, PtrAbstractBox pAb, PtrDocument pDoc)
         case LtSymbol:
         case LtGraphics:
           pAb->AbShape = pEl->ElGraph;
-          if (pEl->ElLeafType == LtGraphics && pEl->ElGraph == 'C')
+          if (pEl->ElLeafType == LtGraphics &&
+	      (pEl->ElGraph == 1 || pEl->ElGraph == 'C'))
             /* rectangle with rounded corners */
             {
-              pAb-> AbRx = 0;
-              pAb-> AbRy = 0;
+	      /* check specific presentation rules related to rounded corners */
+              rxRule = FALSE;  ryRule = FALSE;
+	      pRSpec = pEl->ElFirstPRule;
+	      while (pRSpec)
+		{
+		  if (pRSpec->PrType == PtXRadius)
+		    rxRule = TRUE;
+		  if (pRSpec->PrType == PtYRadius)
+		    ryRule = TRUE;
+		  pRSpec = pRSpec->PrNextPRule;
+		}
+	      if (rxRule && !ryRule)
+		{
+		  pAb-> AbRx = 0;
+		  pAb-> AbRy = -1;
+		}
+	      else if (ryRule && !rxRule)
+		{
+		  pAb-> AbRx = -1;
+		  pAb-> AbRy = 0;
+		}
+	      else
+		{
+		  pAb-> AbRx = 0;
+		  pAb-> AbRy = 0;
+		}
             }
           pAb->AbGraphScript = 'G';
           if (pAb->AbShape == EOS)
@@ -2017,7 +2044,8 @@ void SearchPresSchema (PtrElement pEl, PtrPSchema *pSchP, int *indexElType,
       /* de presentation (s'il y en a) de la regle nature dans la structure */
       /* englobante. */
       /* on ne traite pas les marques de page */
-      if (!pEl->ElTerminal || pEl->ElLeafType != LtPageColBreak)
+      if ((!pEl->ElTerminal || pEl->ElLeafType != LtPageColBreak) &&
+           *indexElType == (*pSchS)->SsRootElem)
         if (pEl->ElParent != NULL)
           /* il y a un englobant */
           if (pEl->ElParent->ElStructSchema != pEl->ElStructSchema)
@@ -2139,10 +2167,7 @@ static void ApplyPos (AbPosition *PPos, PosRule *positionRule, PtrPRule pPRule,
           PPos->PosUnit = pPosRule->PoDistUnit;
           PPos->PosDeltaUnit = pPosRule->PoDeltaUnit;
           PPos->PosAbRef = pAbbPos;
-          if (FirstCreation)
-            PPos->PosUserSpecified = pPosRule->PoUserSpecified;
-          else
-            PPos->PosUserSpecified = FALSE;
+          PPos->PosUserSpecified = FALSE;
           if (PPos->PosUserSpecified)
             PPos->PosUserSpecified = CheckPPosUser (pAbb1, pDoc);
           *appl = TRUE;
@@ -2272,10 +2297,7 @@ static void ApplyPos (AbPosition *PPos, PosRule *positionRule, PtrPRule pPRule,
               /* c'est la valeur elle meme */
               PPos->PosDistance = pPosRule->PoDistance;
             PPos->PosDistDelta = pPosRule->PoDistDelta;
-            if (FirstCreation)
-              PPos->PosUserSpecified = pPosRule->PoUserSpecified;
-            else
-              PPos->PosUserSpecified = FALSE;
+            PPos->PosUserSpecified = FALSE;
             if (PPos->PosUserSpecified)
               PPos->PosUserSpecified = CheckPPosUser (pAbb1, pDoc);
             PPos->PosUnit = pPosRule->PoDistUnit;
@@ -2351,10 +2373,7 @@ static void ApplyPos (AbPosition *PPos, PosRule *positionRule, PtrPRule pPRule,
               *appl = FALSE;
             PPos->PosUnit = pPosRule->PoDistUnit;
             PPos->PosDeltaUnit = pPosRule->PoDeltaUnit;
-            if (FirstCreation)
-              PPos->PosUserSpecified = pPosRule->PoUserSpecified;
-            else
-              PPos->PosUserSpecified = FALSE;
+            PPos->PosUserSpecified = FALSE;
             if (PPos->PosUserSpecified)
               PPos->PosUserSpecified = CheckPPosUser (pAbb1, pDoc);
             pAbb1->AbVertEnclosing = TRUE;
@@ -4097,14 +4116,6 @@ ThotBool ApplyRule (PtrPRule pPRule, PtrPSchema pSchP, PtrAbstractBox pAb,
               pAb->AbForeground = DefaultFColor;
               appl = TRUE;
             }
-          else if (appl && pAb->AbLineWeight == 0 &&
-                   pAb->AbForeground != -2 /* transparent */ &&
-                   pEl->ElStructSchema && pEl->ElStructSchema->SsName &&
-                   !strcmp (pEl->ElStructSchema->SsName, "SVG"))
-            {
-              pAb->AbLineWeight = 1;
-              pAb->AbLineWeightUnit = UnPoint;
-            }
           break;
         case PtHyphenate:
           pAb->AbHyphenate = BoolRule (pPRule, pEl,
@@ -4249,6 +4260,13 @@ ThotBool ApplyRule (PtrPRule pPRule, PtrPSchema pSchP, PtrAbstractBox pAb,
                   pAb->AbVisibility = 0;
                   pAb->AbDead = TRUE;
                   pAb->AbInLine = FALSE;
+                }
+              else if (pAb->AbDisplay == 'B' &&
+                       pAb->AbElement->ElStructSchema->SsIsXml)
+                /* display: inline */
+                {
+                  pAb->AbInLine = TRUE;
+                  pAb->AbBuildAll = TRUE;
                 }
               else if (pAb->AbDisplay == 'I')
                 /* display: inline */

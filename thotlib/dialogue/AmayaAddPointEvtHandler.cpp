@@ -44,7 +44,7 @@ IMPLEMENT_DYNAMIC_CLASS(AmayaAddPointEvtHandler, wxEvtHandler)
  *  the callbacks are assigned to an event type
  *----------------------------------------------------------------------*/
 BEGIN_EVENT_TABLE(AmayaAddPointEvtHandler, wxEvtHandler)
-  EVT_CHAR( AmayaAddPointEvtHandler::OnChar )
+  EVT_KEY_DOWN( AmayaAddPointEvtHandler::OnChar )
 
   EVT_LEFT_DOWN(	AmayaAddPointEvtHandler::OnMouseDown) // Process a wxEVT_LEFT_DOWN event. 
   EVT_LEFT_UP(		AmayaAddPointEvtHandler::OnMouseUp) // Process a wxEVT_LEFT_UP event. 
@@ -186,12 +186,12 @@ void AmayaAddPointEvtHandler::OnMouseUp( wxMouseEvent& event )
   newy = LogicalValue (m_LastY - m_Y, UnPixel, NULL,
 		       ViewFrameTable[m_FrameId - 1].FrMagnification);
 
-  AddPointInPolyline (m_Bbuffer, m_Point, newx, newy);
+  AddPointInPolyline (m_Bbuffer, m_Point, newx, newy, FALSE, FALSE);
 
   /* update the abstract box buffer */
   newx1 = (int) ((float) newx * m_RatioX);
   newy1 = (int) ((float) newy * m_RatioY);
-  AddPointInPolyline (m_Pbuffer, m_Point, newx1, newy1);
+  AddPointInPolyline (m_Pbuffer, m_Point, newx1, newy1, FALSE, FALSE);
 
   TTALOGDEBUG_4( TTA_LOG_SVGEDIT, _T("AmayaAddPointEvtHandler::OnMouseUp newx=%d newy=%d newx1=%d newy1=%d"),
 		 newx, newy, newx1, newy1 );

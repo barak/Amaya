@@ -14,7 +14,7 @@ LIBWWW	   = libwww
 
 #MKP: adding davlib
 SUBDIRS	= @SUBDIRS@ tools thotlib batch annotlib @DAVDIR@ amaya
-EXTRA_SUBDIRS= raptor $(LIBWWW) $(WX_BUILDDIR) $(GL_BUILDDIR)
+EXTRA_SUBDIRS= $(BUILDRAPTOR) $(LIBWWW) $(WX_BUILDDIR) $(GL_BUILDDIR)
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@
@@ -144,30 +144,6 @@ WebDAV: @BUILDLIBWWW@ force
 raptor: force
 	$(MAKE) -C raptor
 	@($(ECHO) "raptor is installed")
-
-#
-# Rules to rebuild the libjpeg package
-#
-
-libjpeg libjpeg.a : force
-	@($(RM) $(THOTDIR)/libjpeg/*.o)
-	@(cd libjpeg ; $(MAKE) CC="$(CC)" CFLAGS="-O -x c")
-
-#
-# Rules to rebuild the libpng package
-#
-
-libpng libpng.a : force
-	@($(RM) $(THOTDIR)/libpng/*.o)
-	@(cd libpng ; $(MAKE) CC="$(CC)" CFLAGS="-O -x c")
-
-#
-# Rules to rebuild the libpng package
-#
-
-libz libz.a : force
-	@($(RM) $(THOTDIR)/libpng/libz/*.o)
-	@(cd libpng/zlib ; $(MAKE) CC="$(CC)" CFLAGS="-O -x c")
 
 #
 # This section try to maintain the Makefile(s) up-to-date in

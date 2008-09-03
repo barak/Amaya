@@ -10,10 +10,6 @@ extern Element Template_InsertRepeatChildAfter ( Document doc,
                                                  Element el,
                                                  Declaration decl,
                                                  Element elPrev );
-extern Element Template_InsertRepeatChild ( Document doc,
-                                            Element el,
-                                            Declaration decl,
-                                            int pos );
 extern Element Template_InsertBagChild ( Document doc,
                                          Element el,
                                          Declaration decl,
@@ -51,7 +47,8 @@ extern void InstantiateRepeat ( XTigerTemplate t,
                                 Element el,
                                 Document doc,
                                 ThotBool registerUndo );
-extern void DoInstanceTemplate ( char *templatename );
+extern void Template_InsertXTigerPI ( Document doc,
+                                      XTigerTemplate t );
 extern void Template_PreInstantiateComponents ( XTigerTemplate t );
 
 #else /* __STDC__ */
@@ -60,10 +57,6 @@ extern Element Template_InsertRepeatChildAfter ( Document doc,
                                                    Element el,
                                                    Declaration decl,
                                                    Element elPrev );
-extern Element Template_InsertRepeatChild ( Document doc,
-                                              Element el,
-                                              Declaration decl,
-                                              int pos );
 extern Element Template_InsertBagChild ( Document doc,
                                            Element el,
                                            Declaration decl,
@@ -101,7 +94,8 @@ extern void InstantiateRepeat ( XTigerTemplate t,
                                   Element el,
                                   Document doc,
                                   ThotBool registerUndo );
-extern void DoInstanceTemplate ( char *templatename );
+extern void Template_InsertXTigerPI ( Document doc,
+                                        XTigerTemplate t );
 extern void Template_PreInstantiateComponents ( XTigerTemplate t );
 
 #endif /* __STDC__ */

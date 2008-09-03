@@ -739,9 +739,12 @@ STRUCT
             Colgroups = LIST OF (COLGROUP);                     { COLGROUP }
             END;
         Table_head = LIST OF (Column_head);
-      ? thead;                                                   { THEAD }
-        Table_body = LIST OF (tbody);
-      ? tfoot;                                                   { TFOOT }
+	Table_content =
+	    BEGIN
+          ? thead;                                               { THEAD }
+            Table_body = LIST OF (tbody);
+          ? tfoot;                                               { TFOOT }
+	    END;
         END;
 
   CAPTION                                                        { CAPTION }
@@ -755,7 +758,7 @@ STRUCT
     (ATTR Cell_align = Cell_left, Cell_center, Cell_right,
         { align        left       center       right }
                        Cell_justify, Cell_char;
-        {               justify       char }
+        {              justify       char }
           Cell_valign = Cell_top, Cell_middle, Cell_bottom, Cell_baseline;
         { valign        top       middle       bottom       baseline }
           Width__; span_ = Integer)
@@ -817,6 +820,8 @@ STRUCT
          { rowspan             colspan }
            Cell_align; char; charoff; Cell_valign;
          { align       char  charoff  valign }
+	   IntCellAlign = IntCellLeft, IntCellCenter, IntCellRight,
+	                  IntCellJustify, IntCellChar;
            No_wrap = no_wrap; BackgroundColor;
          { nowrap             bgcolor }
            Width__; IntWidthPxl; IntWidthPercent;
@@ -831,6 +836,7 @@ STRUCT
            rowspan_; colspan_;
          { rowspan   colspan }
            Cell_align; char; charoff; Cell_valign;
+	   IntCellAlign;
          { align       char  charoff  valign }
            No_wrap; BackgroundColor;
          { nowrap   bgcolor }
@@ -1018,6 +1024,7 @@ EXCEPT
         IntSizeIncr:    Invisible;
         IntSizeDecr:    Invisible;
         IntSizeRel:     Invisible;
+        IntCellAlign:	Invisible;
         x_coord:        Invisible, NewHPos;
         y_coord:        Invisible, NewVPos;
         Ref_IMG:        Invisible;
@@ -1047,9 +1054,10 @@ EXCEPT
         Column_head:    IsColHead, NoCut, Hidden, NoBreakByReturn;
         Table_head:     NoCut, Hidden, NoSelect, NoBreakByReturn;
         C_Head:         Hidden, NoSelect;
-        ColStruct:           Hidden, NoSelect, NoCreate, NoBreakByReturn;
+        ColStruct:      Hidden, NoSelect, NoCreate, NoBreakByReturn;
         Cols:           Hidden, NoSelect, NoCreate, NoBreakByReturn;
         Colgroups:      Hidden, NoSelect, NoCreate, NoBreakByReturn;
+        Table_content:	PageBreakAllowed, Hidden, NoBreakByReturn;
         Table_body:     PageBreakAllowed, Hidden, NoBreakByReturn;
         thead:          NoBreakByReturn; 
         tbody:          NoBreakByReturn;

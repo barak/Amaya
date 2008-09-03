@@ -24,6 +24,7 @@
 #include "undo.h"
 #include "document.h"
 #include "MENUconf.h"
+#include "paneltypes_wx.h"
 
 #ifdef ANNOTATIONS
 #include "annotlib.h"
@@ -58,13 +59,12 @@
 #include "XHTMLbuilder_f.h"
 #include "wxdialogapi_f.h"
 #include "appdialogue_wx.h"
-
+#include "SVGedit_f.h"
 
 #ifdef DAV
 #define WEBDAV_EXPORT extern
 #include "davlib_f.h"
 #endif /* DAV */
-#include "libmanag_f.h"
 #ifdef _JAVA
   #include "javascript_f.h"
 #endif /* _JAVA */
@@ -367,23 +367,104 @@ void NewCss (Document doc, View view)
   --------------------------------------------------------------------------*/
 static void AddRDFaNS (Document doc)
 {
-  ElementType          elType;
-  Element              docEl, root;
+  ElementType      elType;
+  Element          docEl, root;
+  char            *path, *tempPath, *homePath, *configPath, *ptr;
+  unsigned char    c;
+  FILE            *file;
+  char             line[MAX_LENGTH], prefix[MAX_LENGTH], uri[MAX_LENGTH];
+  int              len;
+  ThotBool         pref;
 
   docEl = TtaGetMainRoot (doc);
   elType = TtaGetElementType (docEl);
   elType.ElTypeNum = HTML_EL_HTML;
   root = TtaSearchTypedElement (elType, SearchInTree, docEl);
+
   if (root)
     {
+      // XHTML namespace
       TtaSetANamespaceDeclaration (doc, root, NULL, XHTML_URI);
-      TtaSetANamespaceDeclaration (doc, root, RDF_PREFIX, RDF_URI);
-      TtaSetANamespaceDeclaration (doc, root, RDFS_PREFIX, RDFS_URI);
-      TtaSetANamespaceDeclaration (doc, root, OWL_PREFIX, OWL_URI);
-      TtaSetANamespaceDeclaration (doc, root, XSD_PREFIX, XSD_URI);
-      TtaSetANamespaceDeclaration (doc, root, FOAF_PREFIX, FOAF_URI);
-      TtaSetANamespaceDeclaration (doc, root, DC_PREFIX, DC_URI);
-    }
+
+      // Open the RDFa config file
+      path = (char *) TtaGetMemory (MAX_LENGTH);
+      configPath = (char *) TtaGetMemory (MAX_LENGTH);
+      tempPath = (char *) TtaGetMemory (MAX_LENGTH);
+      homePath = TtaGetEnvString ("APP_HOME");
+      sprintf (path, "%s%crdfa.dat", homePath, DIR_SEP);
+      sprintf (tempPath, "%s%crdfa-tmp.dat", homePath, DIR_SEP);
+      file = TtaReadOpen ((char *)path);
+      if (!file)
+	{
+	  // open the default file      
+	  ptr = TtaGetEnvString ("THOTDIR");
+	  strcpy (configPath, ptr);
+	  strcat (configPath, DIR_STR);
+	  strcat (configPath, "config");
+	  strcat (configPath, DIR_STR);
+	  strcat (configPath, "rdfa.dat");
+	  file = TtaReadOpen ((char *)configPath);
+	  if (!file)
+	    {
+	      /* The config file doesn't exist, load a static configuration */
+	      file = TtaWriteOpen ((char *)tempPath);
+	      fprintf (file, "rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"\n");
+	      fprintf (file, "rdfs=\"http://www.w3.org/2000/01/rdf-schema#\"\n");
+	      fprintf (file, "owl=\"http://www.w3.org/2002/07/owl#\"\n");
+	      fprintf (file, "xsd=\"http://www.w3.org/2001/XMLSchema#\"\n");
+	      fprintf (file, "foaf=\"http://xmlns.com/foaf/0.1/\"\n");
+	      fprintf (file, "dc=\"http://purl.org/dc/elements/1.1/\"\n");
+	      TtaWriteClose (file);
+	      /* Retry to open it */
+	      file = TtaReadOpen ((char *)tempPath);
+	    }
+	}
+      
+      if (file)
+	{
+	  prefix[0] = EOS;
+	  uri[0] = EOS;
+	  line[0] = EOS;
+	  len = 0;
+	  pref = FALSE;
+
+	  while (TtaReadByte (file, &c))
+	    {
+	      if (c == 13 || c == EOL)
+		{
+		  line[len] = EOS;
+		  strcpy (uri, line);
+		  line[0] = EOS;
+		  len = 0;
+		  if (prefix[0] != EOS && uri[0] != EOS)
+		    {
+		      TtaSetANamespaceDeclaration (doc, root, prefix, uri);
+		      prefix[0] = EOS;
+		      uri[0] = EOS;
+		      pref = FALSE;
+		    }
+		}
+	      else if (c == '=')
+		{
+		  line[len] = EOS;
+		  strcpy (prefix, line);
+		  pref = TRUE;
+		  line[0] = EOS;
+		  len = 0;
+		}
+	      else
+		{
+		  if (c != '"')
+		    line[len++] = (char)c;
+		}
+	    }
+	  TtaReadClose (file);
+	}
+    }  
+
+  TtaFreeMemory(path);
+  TtaFreeMemory(configPath);
+  TtaFreeMemory(tempPath);
 }
 
 /*--------------------------------------------------------------------------
@@ -392,7 +473,7 @@ static void AddRDFaNS (Document doc)
   Parameters useMathML and useSVG determine the XHTML 1.1 profile.
   --------------------------------------------------------------------------*/
 void CreateDoctype (Document doc, Element doctype, int profile, int extraProfile,
-                    ThotBool useMathML, ThotBool useSVG)
+                    ThotBool useMathML, ThotBool useSVG, ThotBool newDoc)
 {
   ElementType     elType, lineType, piType;
   Element         docEl, doctypeLine, text, child, prev;
@@ -512,7 +593,8 @@ void CreateDoctype (Document doc, Element doctype, int profile, int extraProfile
         }
       else if ((profile == L_Xhtml11) && (extraProfile == L_RDFa))
 	{
-	  AddRDFaNS (doc);
+	  if (newDoc)
+	    AddRDFaNS (doc);
 	  TtaSetTextContent (text, (unsigned char*)DOCTYPE1_XHTML_PLUS_RDFa, language, doc);
 	}
       else if (profile == L_Xhtml11)
@@ -554,7 +636,8 @@ void CreateDoctype (Document doc, Element doctype, int profile, int extraProfile
                            doc);
       else if ((profile == L_Xhtml11) && (extraProfile == L_RDFa))
 	{
-	  AddRDFaNS (doc);
+	  if (newDoc)
+	    AddRDFaNS (doc);
 	  TtaSetTextContent (text, (unsigned char*)DOCTYPE2_XHTML_PLUS_RDFa, language, doc);
 	}
       else if (profile == L_Xhtml11)
@@ -681,7 +764,7 @@ void InitializeNewDoc (char *url, int docType, Document doc, int profile,
       elType.ElTypeNum = HTML_EL_DOCTYPE;
       doctype = TtaSearchTypedElement (elType, SearchInTree, docEl);
       if (profile != L_Other)
-        CreateDoctype (doc, doctype, profile, extraProfile, FALSE, FALSE);
+        CreateDoctype (doc, doctype, profile, extraProfile, FALSE, FALSE, TRUE);
       else if (doctype)
         TtaDeleteTree (doctype, doc);
       
@@ -771,10 +854,10 @@ void InitializeNewDoc (char *url, int docType, Document doc, int profile,
       if (SelectionDoc != 0)
         UpdateContextSensitiveMenus (SelectionDoc, 1);
       SelectionDoc = doc;
-      UpdateContextSensitiveMenus (doc, 1);
       /* Activate show areas */
       if (MapAreas[doc])
         ChangeAttrOnRoot (doc, HTML_ATTR_ShowAreas);
+      TtaRaiseDoctypePanels (WXAMAYA_DOCTYPE_XHTML);
     }
   else if (docType == docMath)
     {
@@ -788,7 +871,7 @@ void InitializeNewDoc (char *url, int docType, Document doc, int profile,
       /* create the MathML DOCTYPE element */
       elType.ElTypeNum = MathML_EL_DOCTYPE;
       doctype = TtaSearchTypedElement (elType, SearchInTree, docEl);
-      CreateDoctype (doc, doctype, L_MathML, 0, FALSE, FALSE);
+      CreateDoctype (doc, doctype, L_MathML, 0, FALSE, FALSE, TRUE);
 
       /* Set the namespace declaration */
       root = TtaGetRootElement (doc);
@@ -806,15 +889,16 @@ void InitializeNewDoc (char *url, int docType, Document doc, int profile,
       if (SelectionDoc != 0)
         UpdateContextSensitiveMenus (SelectionDoc, 1);
       SelectionDoc = doc;
-      UpdateContextSensitiveMenus (doc, 1);
+      TtaRaiseDoctypePanels(WXAMAYA_DOCTYPE_MATHML);
     }
   else if (docType == docSVG)
     {
+#ifdef _SVG
       /*-------------  New SVG document ------------*/
       /* create the SVG DOCTYPE element */
       elType.ElTypeNum = SVG_EL_DOCTYPE;
       doctype = TtaSearchTypedElement (elType, SearchInTree, docEl);
-      CreateDoctype (doc, doctype, L_SVG, 0, FALSE, FALSE);
+      CreateDoctype (doc, doctype, L_SVG, 0, FALSE, FALSE, TRUE);
 
       /* Set the namespace declaration */
       root = TtaGetRootElement (doc);
@@ -826,10 +910,25 @@ void InitializeNewDoc (char *url, int docType, Document doc, int profile,
       root = TtaSearchTypedElement (elType, SearchInTree, docEl);
       if (root)
         {
+          // set the new Coordinate System
+          TtaSetElCoordinateSystem (root);
           attrType.AttrTypeNum = SVG_ATTR_version;
           attr = TtaNewAttribute (attrType);
           TtaAttachAttribute (root, attr, doc);
           TtaSetAttributeText (attr, SVG_VERSION, root, doc);
+
+          // fix the width and height
+          attrType.AttrTypeNum = SVG_ATTR_width_;
+          attr = TtaNewAttribute (attrType);
+          TtaAttachAttribute (root, attr, doc);
+          TtaSetAttributeText (attr, "600", root, doc);
+          ParseWidthHeightAttribute (attr, root, doc, FALSE);
+
+          attrType.AttrTypeNum = SVG_ATTR_height_;
+          attr = TtaNewAttribute (attrType);
+          TtaAttachAttribute (root, attr, doc);
+          TtaSetAttributeText (attr, "600", root, doc);
+          ParseWidthHeightAttribute (attr, root, doc, FALSE);
 
           /* create a default title if there is no title element */
           elType.ElTypeNum = SVG_EL_title;
@@ -841,8 +940,9 @@ void InitializeNewDoc (char *url, int docType, Document doc, int profile,
             }
           text = TtaGetFirstChild (title);
           if (text && TtaGetTextLength (text) == 0)
-            TtaSetTextContent (text, (unsigned char*)"No title", language,doc);
+            TtaSetTextContent (text, (unsigned char*)"Draw", language,doc);
           UpdateTitle (title, doc);
+          TtaRaiseDoctypePanels(WXAMAYA_DOCTYPE_SVG);
         }
 
       /* force the XML parsing */
@@ -856,6 +956,7 @@ void InitializeNewDoc (char *url, int docType, Document doc, int profile,
         UpdateContextSensitiveMenus (SelectionDoc, 1);
       SelectionDoc = doc;
       UpdateContextSensitiveMenus (doc, 1);
+#endif /* _SVG */
     }
   else
     {
@@ -902,8 +1003,6 @@ void InitializeNewDoc (char *url, int docType, Document doc, int profile,
       SelectionDoc = doc;
     }
 
-  /* Update the Doctype menu */
-  UpdateDoctypeMenu (doc);
   /* the document should be saved */
   TtaSetDocumentUnmodified (doc);
 #ifdef _WX
@@ -912,6 +1011,7 @@ void InitializeNewDoc (char *url, int docType, Document doc, int profile,
   UpdateStyleList (doc, 1);
 #endif /* _WX */
   UpdateEditorMenus (doc);
+  UpdateContextSensitiveMenus (doc, 1);
 }
 
 /*----------------------------------------------------------------------
@@ -1441,49 +1541,82 @@ void CreateBreak (Document doc, View view)
 {
   ElementType         elType;
   Element             el, br, parent;
+  DisplayMode         dispMode;
   int                 firstChar, lastChar;
 
   TtaGiveLastSelectedElement (doc, &el, &firstChar, &lastChar);
   if (el == NULL)
     return;
   elType = TtaGetElementType (el);
-  if (strcmp(TtaGetSSchemaName (elType.ElSSchema), "HTML") != 0)
-    /* not within HTML element */
-    return;
-
-  elType.ElTypeNum = HTML_EL_BR;
-  if (TtaCreateElement (elType, doc))
-    {
-      TtaGiveLastSelectedElement (doc, &el, &firstChar, &lastChar);
-      br = el;
-      TtaNextSibling (&el);
-      if (el == NULL)
+  if (TtaIsXmlSSchema (elType.ElSSchema))
+    {      
+      elType.ElTypeNum = XML_EL_xmlbr;
+      dispMode = TtaGetDisplayMode (doc);
+      if (dispMode == DisplayImmediately)
+        TtaSetDisplayMode (doc, DeferredDisplay);
+      if (TtaCreateElement (elType, doc))
         {
-          /* Insert a text element after the BR */
-          elType.ElTypeNum = HTML_EL_TEXT_UNIT;
-          el = TtaNewElement (doc, elType);
-          TtaInsertSibling (el, br, FALSE, doc);
-          /* move the selection */
-          TtaSelectString (doc, el, 1, 0);
-        }
-      else
-        {
-          /* move the selection */
-          parent = el;
-          while (el != NULL && !TtaIsLeaf (TtaGetElementType (el)))
-            {
-              parent = el;
-              el = TtaGetFirstChild (parent);
-            }
+          TtaGiveLastSelectedElement (doc, &el, &firstChar, &lastChar);
+          el = TtaGetParent (el);
+          br = el;
+          TtaNextSibling (&el);
           if (el == NULL)
-            TtaSelectElement (doc, parent);
+            {
+              el = br;
+              TtaPreviousSibling (&el);
+              firstChar = TtaGetElementVolume (el) + 1;
+            }
           else
+            firstChar = 1;
+          if (el)
             {
               elType = TtaGetElementType (el);
               if (elType.ElTypeNum == HTML_EL_TEXT_UNIT)
-                TtaSelectString (doc, el, 1, 0);
+                TtaSelectString (doc, el, firstChar, firstChar - 1);
               else
-                TtaSelectString (doc, el, 0, 0);
+                TtaSelectElement (doc, el);
+            }
+        }
+      if (dispMode == DisplayImmediately)
+        TtaSetDisplayMode (doc, dispMode);
+    }
+  else if (!strcmp(TtaGetSSchemaName (elType.ElSSchema), "HTML"))
+    {
+      /* within HTML element */
+      elType.ElTypeNum = HTML_EL_BR;
+      if (TtaCreateElement (elType, doc))
+        {
+          TtaGiveLastSelectedElement (doc, &el, &firstChar, &lastChar);
+          br = el;
+          TtaNextSibling (&el);
+          if (el == NULL)
+            {
+              /* Insert a text element after the BR */
+              elType.ElTypeNum = HTML_EL_TEXT_UNIT;
+              el = TtaNewElement (doc, elType);
+              TtaInsertSibling (el, br, FALSE, doc);
+              /* move the selection */
+              TtaSelectString (doc, el, 1, 0);
+            }
+          else
+            {
+              /* move the selection */
+              parent = el;
+              while (el != NULL && !TtaIsLeaf (TtaGetElementType (el)))
+                {
+                  parent = el;
+                  el = TtaGetFirstChild (parent);
+                }
+              if (el == NULL)
+                TtaSelectElement (doc, parent);
+              else
+                {
+                  elType = TtaGetElementType (el);
+                  if (elType.ElTypeNum == HTML_EL_TEXT_UNIT)
+                    TtaSelectString (doc, el, 1, 0);
+                  else
+                    TtaSelectString (doc, el, 0, 0);
+                }
             }
         }
     }
@@ -1982,7 +2115,7 @@ ThotBool HTMLelementAllowed (Document doc)
 #ifdef _SVG
   else if (strcmp (s, "SVG") == 0)
     {
-      CreateGraphicElement (9);
+      CreateGraphicElement (doc, 2, 9);
       return TRUE;
     }
 #endif /* _SVG */
@@ -2660,17 +2793,20 @@ void CreateTable (Document doc, View view)
           withinTable = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
           inMath = TRUE;
           if (withinTable &&
-              (TtaIsColumnRowSelected (doc) ||
+              (TtaIsColumnSelected (doc) ||
+	       elTypeFirst.ElTypeNum == MathML_EL_MLABELEDTR ||
+               elTypeFirst.ElTypeNum == MathML_EL_MTR ||
                elTypeFirst.ElTypeNum == MathML_EL_MTD))
             return;
         }
       else if (!strcmp (name, "HTML"))
-        /* the current selection starts with a MathML element */
+        /* the current selection starts with a HTML element */
         {
           elType.ElTypeNum = HTML_EL_Table_;
           withinTable = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
           if (withinTable &&
-              (TtaIsColumnRowSelected (doc) ||
+              (TtaIsColumnSelected (doc) ||
+	       elTypeFirst.ElTypeNum == HTML_EL_Table_row ||
                elTypeFirst.ElTypeNum == HTML_EL_Data_cell ||
                elTypeFirst.ElTypeNum == HTML_EL_Heading_cell))
             return;
@@ -2750,7 +2886,7 @@ void CreateCaption (Document doc, View view)
         {
           caption = NULL;
           /* is the selection within a table */
-          if (elType.ElTypeNum != HTML_EL_Table_ && TtaIsSelectionEmpty ())
+          if (elType.ElTypeNum != HTML_EL_Table_)
             {
               /* get the enclosing table element */
               elType.ElTypeNum = HTML_EL_Table_;
@@ -2758,25 +2894,16 @@ void CreateCaption (Document doc, View view)
               if (el == NULL)
                 /* we are not in a table. Stop */
                 return;
-              else
-                {
-                  /* is there already a caption element in this table? */
-                  elType.ElTypeNum = HTML_EL_CAPTION;
-                  caption =  TtaSearchTypedElement (elType, SearchInTree, el);
-                  if (caption)
-                    /* there is a caption. Put the selection in it */
-                    el = TtaGetFirstLeaf (caption);
-                  else
-                    /* no caption yet. Select the first child of the table
-                       tp create a caption element there */
-                    el = TtaGetFirstChild (el);
-                  TtaSelectElement (doc, el);
-                }
             }
+          elType.ElTypeNum = HTML_EL_CAPTION;
+          caption =  TtaSearchTypedElement (elType, SearchInTree, el);
           if (!caption)
-            /* no caption yet. Create one */
             {
-              elType.ElTypeNum = HTML_EL_CAPTION;
+              /* no caption yet. Select the first child of the table
+                 to create a caption element there */
+              el = TtaGetFirstChild (el);
+              TtaSelectElement (doc, el);
+              /* no caption yet. Create one */
               TtaCreateElement (elType, doc);
             }
         }
@@ -4055,9 +4182,7 @@ static void CreateColumn (Document doc, View view, ThotBool before)
           if (dispMode == DisplayImmediately)
             TtaSetDisplayMode (doc, DeferredDisplay);
           /* Create the column */
-          elNew = NewColumnHead (colhead, before, FALSE, NULL, doc, inMath, TRUE);
-          if (elNew && !inMath)
-            NewColElement (elNew, before, doc);
+          elNew = NewColumnHead (colhead, before, FALSE, NULL, doc, inMath, TRUE, TRUE);
           TtaSetDisplayMode (doc, dispMode);
           TtaSetDocumentModified (doc);
         }
@@ -4720,7 +4845,7 @@ void CreateImageInput (Document doc, View view)
           TtaExtendUndoSequence (doc);
         }
       ImgAlt[0] = EOS;
-      AddNewImage (doc, view, TRUE);
+      AddNewImage (doc, view, TRUE, FALSE);
       TtaGiveFirstSelectedElement (doc, &el, &firstchar, &lastchar);
       if (el)
         {

@@ -68,6 +68,7 @@
 
 /* ======> Preference dialog (contains eache sub dialog into tabs) */
 #ifdef _WX
+bool       WarnRestart = false;
 /* Preference dialog (contains eache sub dialog into tabs) */
 static int PreferenceBase;
 #endif /* _WX */
@@ -113,7 +114,7 @@ static Prop_Publish GProp_Publish;
 static int          SafePutStatus;
 static int          CurrentCharset;
 static char         NewCharset[MAX_LENGTH];
-static char        *CharsetTxt[]={
+static const char  *CharsetTxt[]={
   "us-ascii", "iso-8859-1", "utf-8"
 };
 
@@ -159,6 +160,14 @@ Prop_Emails GProp_Emails;
 int            PasswordsBase;
 Prop_Passwords GProp_Passwords;
 
+/* ============> RDFa menu option */
+int            RDFaBase;
+Prop_RDFa      GProp_RDFa;
+Prop_RDFa      GProp_RDFaDef;
+/* Paths from which looking for NS declarations */
+static Prop_RDFa_Path *RDFaNsList;
+static Prop_RDFa_Path *RDFaNsListDef;
+
 
 #include "HTMLsave_f.h"
 #include "init_f.h"
@@ -191,7 +200,7 @@ static ThotBool _GetSysUserName (char *username)
   GetEnvString: front end to TtaGetEnvString. If the variable name doesn't
   exist, it sets the value to an empty ("") string
   ----------------------------------------------------------------------*/
-static void  GetEnvString (char *name, char  *value)
+static void  GetEnvString (const char *name, char  *value)
 {
   char   *ptr;
 
@@ -274,7 +283,7 @@ void InitAmayaDefEnv (void)
     TtaSetDefEnvString ("CACHE_DIR", "", FALSE);
   TtaSetDefEnvString ("ENABLE_CACHE", "yes", FALSE);
 #else /* _MACOS */
-  if (TempFileDirectory)
+  if (TempFileDirectory[0]!=EOS)
     {
       sprintf (s, "%s%clibwww-cache", TempFileDirectory, DIR_SEP);
       TtaSetDefEnvString ("CACHE_DIR", s, FALSE);
@@ -319,6 +328,9 @@ void InitAmayaDefEnv (void)
 
   /* Passwords */
   TtaSetEnvBoolean ("SAVE_PASSWORDS", TRUE, FALSE);
+
+  /* RDFa */
+  LoadRDFaNSList (&RDFaNsList);
   
   /* appearance */
 
@@ -332,7 +344,7 @@ void InitAmayaDefEnv (void)
   care of switching the toggle button according to the status of the
   variable.
   ----------------------------------------------------------------------*/
-static void GetDefEnvToggle (char *name, ThotBool *value, int ref, int entry)
+static void GetDefEnvToggle (const char *name, ThotBool *value, int ref, int entry)
 {
   ThotBool old = *value;
 
@@ -350,7 +362,7 @@ static void GetDefEnvToggle (char *name, ThotBool *value, int ref, int entry)
   GetDefEnvString: front end to TtaGetDefEnvString. If the variable name 
   doesn't exist, it sets the value to an empty ("") string
   ----------------------------------------------------------------------*/
-static void GetDefEnvString (char *name, char  *value)
+static void GetDefEnvString (const char *name, char  *value)
 {
   char  *ptr;
 
@@ -1103,7 +1115,8 @@ static void UpdateShowTargets ()
 void SetGeneralConf (void)
 {
   int         oldVal;
-  ThotBool    old;
+  char       *ptr;
+  ThotBool    old, value;
 
   TtaGetEnvInt ("FontZoom", &oldVal);
   if (oldVal != GProp_General.Zoom)
@@ -1144,30 +1157,59 @@ void SetGeneralConf (void)
   TtaSetEnvBoolean ("INSERT_NBSP", GProp_General.S_NBSP, TRUE);
 
   TtaSetEnvString ("HOME_PAGE", GProp_General.HomePage, TRUE);
-  TtaSetEnvString ("LANG", GProp_General.DialogueLang, TRUE);
+  ptr = TtaGetEnvString ("LANG");
+  if (strcmp (ptr, GProp_General.DialogueLang))
+    {
+      // the dialog language changes
+      WarnRestart = true;
+      TtaSetEnvString ("LANG", GProp_General.DialogueLang, TRUE);
+    }
   if (GProp_General.AccesskeyMod == 0)
     TtaSetEnvString ("ACCESSKEY_MOD", "Alt", TRUE);
   else if (GProp_General.AccesskeyMod == 1)
     TtaSetEnvString ("ACCESSKEY_MOD", "Ctrl", TRUE);
   else
     TtaSetEnvString ("ACCESSKEY_MOD", "None", TRUE);
-#ifndef _WX
-  TtaSetEnvInt ("FontMenuSize", GProp_General.FontMenuSize, TRUE);
-#endif /* _WX */
 
-  if(GProp_General.ToolPanelLayout==2)
-    TtaSetEnvBoolean("ADVANCE_USER_INTERFACE", TRUE, TRUE);
+  if (GProp_General.ToolPanelLayout == 2)
+    {
+      // test the previous value
+      TtaGetEnvBoolean ("ADVANCE_USER_INTERFACE", &value);
+      if (!value)
+        {
+          // new user interface
+          TtaSetEnvBoolean("ADVANCE_USER_INTERFACE", TRUE, TRUE);
+        }
+    }
   else
     {
-      TtaSetEnvBoolean("ADVANCE_USER_INTERFACE", FALSE, TRUE);
-      if(GProp_General.ToolPanelLayout==0)
-        TtaSetEnvString ("TOOLPANEL_LAYOUT", "LEFT", TRUE);
-      else
-        TtaSetEnvString ("TOOLPANEL_LAYOUT", "RIGHT", TRUE);
+      TtaGetEnvBoolean ("ADVANCE_USER_INTERFACE", &value);
+      if (value)
+        {
+          WarnRestart = true;
+          TtaSetEnvBoolean ("ADVANCE_USER_INTERFACE", FALSE, TRUE);
+        }
+      ptr = TtaGetEnvString ("TOOLPANEL_LAYOUT");
+      if (GProp_General.ToolPanelLayout == 0 && strcmp (ptr, "LEFT"))
+        {
+          WarnRestart = true;
+          TtaSetEnvString ("TOOLPANEL_LAYOUT", "LEFT", TRUE);
+        }
+      else if (strcmp (ptr, "RIGHT"))
+        {
+          WarnRestart = true;
+          TtaSetEnvString ("TOOLPANEL_LAYOUT", "RIGHT", TRUE);
+        }
     }
 
   TtaUpdateToolPanelLayout();
   TtaSaveAppRegistry ();
+  if (WarnRestart)
+    {
+      // warn the user that he has to restart the application
+      WarnRestart = false;
+      TtaDisplayMessage (CONFIRM, TtaGetMessage (AMAYA, AM_PROFILE_CHANGE), NULL);
+    }
 }
 
 /*----------------------------------------------------------------------
@@ -1222,7 +1264,7 @@ void GetDefaultGeneralConf ()
   TtaGetDefEnvInt ("FontMenuSize", &(GProp_General.FontMenuSize));
   
   TtaGetDefEnvBoolean("ADVANCE_USER_INTERFACE", &aui);
-  if(aui)
+  if (aui)
     GProp_General.ToolPanelLayout = 2;
   else
     {
@@ -1270,70 +1312,6 @@ static void GeneralCallbackDialog (int ref, int typedata, char *data)
               break;
             }
           break;
-#ifdef IV
-        case mZoom:
-          GProp_General.Zoom = val;
-          break;
-
-        case mHomePage:
-          if (data)
-            strcpy (GProp_General.HomePage, data);
-          else
-            GProp_General.HomePage[0] = EOS;
-          break;
-
-        case mToggleGeneral:
-          switch (val) 
-            {
-            case 0:
-              GProp_General.PasteLineByLine = !(GProp_General.PasteLineByLine);
-              break;
-            case 1:
-              GProp_General.S_AutoSave = !(GProp_General.S_AutoSave);
-              if (GProp_General.S_AutoSave)
-                AutoSave_Interval = DEF_SAVE_INTVL;
-              else
-                AutoSave_Interval = 0;	      
-              break;
-            case 2:
-              GProp_General.S_NBSP = !(GProp_General.S_NBSP);
-              break;
-            case 3:
-              GProp_General.S_Buttons = !(GProp_General.S_Buttons);
-              break;
-            case 4:
-              GProp_General.S_Address = !(GProp_General.S_Address);
-              break;
-            case 5:
-              GProp_General.S_Targets = !(GProp_General.S_Targets);
-              break;
-            case 6:
-              GProp_General.S_DATE = !(GProp_General.S_DATE);
-              break;
-            case 7:
-              GProp_General.S_NoAliasing = !(GProp_General.S_NoAliasing);
-              break;
-            case 8:
-              GProp_General.S_Shortcuts = !(GProp_General.S_Shortcuts);
-              break;
-            }
-          break;
-
-        case mDialogueLang:
-          if (data)
-            strcpy (GProp_General.DialogueLang, data);
-          else
-            GProp_General.DialogueLang[0] = EOS;
-          break;
-	  
-        case mGeneralAccessKey:
-          GProp_General.AccesskeyMod = val;
-          break;
-
-        case mToolPanelLayout:
-          GProp_General.ToolPanelLayout = val;
-          break;
-#endif
         default:
           break;
         }
@@ -1383,9 +1361,9 @@ static void SetPublishConf (void)
   TtaSetEnvBoolean ("EXPORT_CRLF", GProp_Publish.ExportCRLF, TRUE);
   TtaSetEnvBoolean ("GENERATE_MATHPI", GProp_Publish.GenerateMathPI, TRUE);
   TtaSetEnvInt ("EXPORT_LENGTH", GProp_Publish.ExportLength, TRUE);
-  TtaSetEnvString ("DEFAULTNAME", GProp_Publish.DefaultName, TRUE);
-  TtaSetEnvString ("SAFE_PUT_REDIRECT", GProp_Publish.SafePutRedirect, TRUE);
-  TtaSetEnvString ("DOCUMENT_CHARSET", GProp_Publish.CharsetType, TRUE);
+  TtaSetEnvString ("DEFAULTNAME", &(GProp_Publish.DefaultName[0]), TRUE);
+  TtaSetEnvString ("SAFE_PUT_REDIRECT", &(GProp_Publish.SafePutRedirect[0]), TRUE);
+  TtaSetEnvString ("DOCUMENT_CHARSET", &(GProp_Publish.CharsetType[0]), TRUE);
 
   TtaSaveAppRegistry ();
 }
@@ -1422,7 +1400,7 @@ static void BuildCharsetSelector (void)
   int         i, i_default;
   int         nbcharset = sizeof(CharsetTxt) / sizeof(char *);
   int         indx, length;
-  char       *entry;
+  const char *entry;
   char        BufMenu[MAX_LENGTH];
 
   /* recopy the propositions  */
@@ -2127,7 +2105,7 @@ void         ColorConfMenu (Document document, View view)
   Restores the default integer geometry values that are stored in a 
   registry entry under the form "x y w h"
   ----------------------------------------------------------------------*/
-static void RestoreDefEnvGeom (char *env_var, Document doc)
+static void RestoreDefEnvGeom (const char *env_var, Document doc)
 {
   /* in order to read the default values from HTML.conf, we erase the 
      registry entry */
@@ -2184,7 +2162,6 @@ static void SetEnvGeom (const char *view_name, Document doc)
 static void RestoreDefaultGeometryConf (void)
 {
   int   doc;
-
   // restore default save geometry on exit
   GetDefEnvToggle ("SAVE_GEOMETRY", &S_Geometry,
                    GeometryBase + mToggleGeom, 0);
@@ -2693,6 +2670,325 @@ static void PasswordsCallbackDialog (int ref, int typedata, char *data)
 }
 
 /*----------------------------------------------------------------------
+  AllocRDFaNsListElement: allocates an element for the list
+  of NS declarations
+  ----------------------------------------------------------------------*/
+void* AllocRDFaNsListElement (const char* path, void* prevElement)
+{
+  Prop_RDFa_Path *element;
+
+  element  = (Prop_RDFa_Path*)TtaGetMemory (sizeof(Prop_RDFa_Path));
+  memset (element, 0, sizeof(Prop_RDFa_Path));
+  strncpy (element->Path, path, MAX_LENGTH - 1);
+  if (prevElement)
+    {
+      element->NextPath = ((Prop_RDFa_Path*)prevElement)->NextPath;
+      ((Prop_RDFa_Path*)prevElement)->NextPath = element;
+    }
+  return element;
+}
+
+/*----------------------------------------------------------------------
+  FreeRDFaNSList: Free the list of NS declarations
+  ----------------------------------------------------------------------*/
+void FreeRDFaNSList (void* list)
+{
+  Prop_RDFa_Path **l = (Prop_RDFa_Path**) list;
+  Prop_RDFa_Path  *element = *l;
+
+  l = NULL;
+  while (element)
+  {
+    Prop_RDFa_Path* next = element->NextPath;
+    TtaFreeMemory (element);
+    element = next;
+  }
+}
+
+/*----------------------------------------------------------------------
+  CopyRDFaNsList: Copy a list of NS declarations
+  ----------------------------------------------------------------------*/
+static void CopyRDFaNsList (const Prop_RDFa_Path** src, Prop_RDFa_Path** dst)
+{
+  Prop_RDFa_Path *element=NULL, *current=NULL;
+  
+  if (*src)
+  {
+    *dst = (Prop_RDFa_Path*) TtaGetMemory (sizeof(Prop_RDFa_Path));
+    (*dst)->NextPath = NULL;
+    strcpy((*dst)->Path, (*src)->Path);
+    element = (*src)->NextPath;
+    current = *dst;
+  }
+  
+  while (element)
+    {
+      current->NextPath = (Prop_RDFa_Path*) TtaGetMemory (sizeof(Prop_RDFa_Path));
+      current = current->NextPath; 
+      current->NextPath = NULL;
+      strcpy(current->Path, element->Path);
+      element = element->NextPath;
+    }
+}
+
+/*----------------------------------------------------------------------
+  SaveRDFaNsList: Save the list of NS declarations
+  ----------------------------------------------------------------------*/
+static void SaveRDFaNsList (const Prop_RDFa_Path** list)
+{
+  const Prop_RDFa_Path *element;
+  char *path, *homePath;
+  unsigned char *c;
+  FILE *file;
+
+  path = (char *) TtaGetMemory (MAX_LENGTH);
+  homePath       = TtaGetEnvString ("APP_HOME");
+  sprintf (path, "%s%crdfa.dat", homePath, DIR_SEP);
+
+  file = TtaWriteOpen ((char *)path);
+  c = (unsigned char*)path;
+  *c = EOS;
+  if (file)
+  {
+    element = *list;
+    while (element)
+    {
+      fprintf(file, "%s\n", element->Path);
+      element = element->NextPath;
+    }
+    TtaWriteClose (file);
+  }
+}
+
+/*----------------------------------------------------------------------
+  SetRDFaNsList: Set the list of NS declarations
+  ----------------------------------------------------------------------*/
+void SetRDFaNsList (const void* list)
+{
+  const Prop_RDFa_Path** l = (const Prop_RDFa_Path**) list;
+  CopyRDFaNsList((const Prop_RDFa_Path**)l, &RDFaNsList);
+  SaveRDFaNsList((const Prop_RDFa_Path**)&RDFaNsList);
+}
+
+
+/*----------------------------------------------------------------------
+  GetRDFaNsListDef: Get the list of NS declarations
+  list : address of the list (address of the first element).
+  ----------------------------------------------------------------------*/
+static void GetRDFaNsListDef (void* list)
+{
+  Prop_RDFa_Path** l = (Prop_RDFa_Path**) list;
+  CopyRDFaNsList((const Prop_RDFa_Path**)&RDFaNsListDef, l);
+}
+
+/*----------------------------------------------------------------------
+  GetRDFaNsList: Get the list of NS declarations
+  list : address of the list (address of the first element).
+  ----------------------------------------------------------------------*/
+static void GetRDFaNsList (void* list)
+{
+  Prop_RDFa_Path** l = (Prop_RDFa_Path**) list;
+  CopyRDFaNsList((const Prop_RDFa_Path**)&RDFaNsList, l);
+}
+
+/*----------------------------------------------------------------------
+  LoadDefaultNSList: Load the list ofNS declarations
+  ----------------------------------------------------------------------*/
+static void LoadDefaultRDFaNSList (Prop_RDFa_Path** list)
+{
+  Prop_RDFa_Path *element, *current = NULL;
+  char           *path, *homePath, *configPath, *ptr;
+  unsigned char  *urlstring, c;
+  int             len;
+  FILE           *file;
+  
+  urlstring = (unsigned char *) TtaGetMemory (MAX_LENGTH);
+  //clean up the curent list
+  FreeRDFaNSList (list);
+  *list = NULL;
+
+  // open the default file
+  path = (char *) TtaGetMemory (MAX_LENGTH);
+  configPath = (char *) TtaGetMemory (MAX_LENGTH);
+  homePath = TtaGetEnvString ("APP_HOME");
+  sprintf (path, "%s%crdfa.dat", homePath, DIR_SEP);
+
+  ptr = TtaGetEnvString ("THOTDIR");
+  strcpy (configPath, ptr);
+  strcat (configPath, DIR_STR);
+  strcat (configPath, "config");
+  strcat (configPath, DIR_STR);
+  strcat (configPath, "rdfa.dat");
+  file = TtaReadOpen ((char *)configPath);
+  if (!file)
+    {
+      /* The config file doesn't exist, load a static configuration */
+      file = TtaWriteOpen ((char *)path);
+      fprintf (file, "rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"\n");
+
+      fprintf (file, "rdfs=\"http://www.w3.org/2000/01/rdf-schema#\"\n");
+      fprintf (file, "owl=\"http://www.w3.org/2002/07/owl#\"\n");
+      fprintf (file, "xsd=\"http://www.w3.org/2001/XMLSchema#\"\n");
+      fprintf (file, "foaf=\"http://xmlns.com/foaf/0.1/\"\n");
+      fprintf (file, "dc=\"http://purl.org/dc/elements/1.1/\"\n");
+      TtaWriteClose (file);
+      /* Retry to open it */
+      file = TtaReadOpen ((char *)path);
+    }
+  
+
+
+  if (file)
+    {
+      // read the file
+      while (TtaReadByte (file, &c))
+        {
+	  len = 0;
+	  urlstring[len] = EOS;
+	  urlstring[len++] = (char)c;
+	  while (len < MAX_LENGTH && TtaReadByte (file, &c) && c != EOL)
+	    {
+	      if (c == 13)
+		urlstring[len] = EOS;
+	      else
+		urlstring[len++] = (char)c;
+	    }
+	  urlstring[len] = EOS;
+	  if (len)
+	    {
+              element = (Prop_RDFa_Path*) TtaGetMemory (sizeof(Prop_RDFa_Path));
+              element->NextPath = NULL;
+              strcpy (element->Path, (char *)urlstring);
+
+              if (*list == NULL)
+                *list = element; 
+              else
+                current->NextPath = element;
+              current = element;
+	    }
+        }
+      TtaReadClose (file);
+    }
+
+  TtaFreeMemory (urlstring);
+  TtaFreeMemory(path);
+  TtaFreeMemory(configPath);
+}
+
+/*----------------------------------------------------------------------
+  LoadNSList: Load the list ofNS declarations
+  ----------------------------------------------------------------------*/
+void LoadRDFaNSList (Prop_RDFa_Path** list)
+{
+  Prop_RDFa_Path *element, *current = NULL;
+  char           *path, *homePath;
+  unsigned char  *urlstring, c;
+  int             len;
+  FILE           *file;
+  
+  urlstring = (unsigned char *) TtaGetMemory (MAX_LENGTH);
+  // open the file
+  path = (char *) TtaGetMemory (MAX_LENGTH);
+  homePath = TtaGetEnvString ("APP_HOME");
+  sprintf (path, "%s%crdfa.dat", homePath, DIR_SEP);
+  file = TtaReadOpen ((char *)path);
+  if (!file)
+    LoadDefaultRDFaNSList (list);
+  else
+    {
+      // read the file
+      while (TtaReadByte (file, &c))
+        {
+	  len = 0;
+	  urlstring[len] = EOS;
+	  urlstring[len++] = (char)c;
+	  while (len < MAX_LENGTH && TtaReadByte (file, &c) && c != EOL)
+	    {
+	      if (c == 13)
+		urlstring[len] = EOS;
+	      else
+		urlstring[len++] = (char)c;
+	    }
+	  urlstring[len] = EOS;
+	  if (len)
+	    {
+              element = (Prop_RDFa_Path*) TtaGetMemory (sizeof(Prop_RDFa_Path));
+              element->NextPath = NULL;
+              strcpy (element->Path, (char *)urlstring);
+	      
+              if (*list == NULL)
+                *list = element; 
+              else
+                current->NextPath = element;
+              current = element;
+	    }
+	}
+      TtaReadClose (file);
+    }
+
+  TtaFreeMemory(path);
+  TtaFreeMemory (urlstring);
+
+  GetRDFaNsList(&(GProp_RDFa.FirstPath));
+}
+
+/*----------------------------------------------------------------------
+  GetRDFaConf
+  Makes a copy of the current registry RDFa values
+  ----------------------------------------------------------------------*/
+void GetRDFaConf (void)
+{
+  GetRDFaNsList(&(GProp_RDFa.FirstPath));
+}
+
+/*----------------------------------------------------------------------
+  GetDefaultRDFaConf
+  Gets the registry default RDFa values.
+  ----------------------------------------------------------------------*/
+void GetDefaultRDFaConf ()
+{
+  LoadDefaultRDFaNSList (&RDFaNsListDef);
+  GetRDFaNsListDef(&(GProp_RDFaDef.FirstPath));
+}
+
+/*----------------------------------------------------------------------
+  RDFaCallbackDialog
+  callback of the RDFa configuration menu
+  ----------------------------------------------------------------------*/
+static void RDFaCallbackDialog (int ref, int typedata, char *data)
+{
+  intptr_t  val;
+  if (ref==-1)
+    {
+    }
+  else
+    {
+      val = (intptr_t) data;
+      switch (ref - RDFaBase)
+        {
+        case RDFaMenu:
+          switch (val)
+            {
+            case 0: /* CANCEL */
+              TtaDestroyDialogue (ref);
+              break;
+            case 1: /* OK */
+              // TtaDestroyDialogue (ref);
+              break;
+            case 2: /* DEFAULT */
+              GetDefaultRDFaConf();
+              break;
+            default:
+              break;
+            }
+          break;
+        default:
+          break;
+        }
+    }
+}
+
+/*----------------------------------------------------------------------
   Returns a tab dialog reference (used into PreferenceDlgWX callbacks)
   ----------------------------------------------------------------------*/
 int GetPrefGeneralBase()
@@ -2798,6 +3094,15 @@ int GetPrefEmailsBase()
 int GetPrefPasswordsBase()
 {
   return PasswordsBase;
+}
+
+/*----------------------------------------------------------------------
+  Returns a tab dialog reference (used into PreferenceDlgWX callbacks)
+  ----------------------------------------------------------------------*/
+int GetPrefRDFaBase()
+{
+  return RDFaBase;
+
 }
 
 
@@ -3014,6 +3319,38 @@ Prop_Passwords GetProp_Passwords()
 
 
 /*----------------------------------------------------------------------
+  Use to set the Amaya global variables (RDFa preferences)
+  ----------------------------------------------------------------------*/
+void SetProp_RDFa( const Prop_RDFa * prop )
+{
+  GProp_RDFa = *prop;
+}
+
+/*----------------------------------------------------------------------
+  Use to set the Amaya global variables (RDFa Default preferences)
+  ----------------------------------------------------------------------*/
+void SetProp_RDFaDef( const Prop_RDFa * prop )
+{
+  GProp_RDFaDef = *prop;
+}
+
+/*----------------------------------------------------------------------
+  Use to get the Amaya global variables (RDFa preferences)
+  ----------------------------------------------------------------------*/
+Prop_RDFa GetProp_RDFa()
+{
+  return GProp_RDFa;
+}
+
+/*----------------------------------------------------------------------
+  Use to get the Amaya global variables (RDFa Default preferences)
+  ----------------------------------------------------------------------*/
+Prop_RDFa GetProp_RDFaDef()
+{
+  return GProp_RDFaDef;
+}
+
+/*----------------------------------------------------------------------
   PreferenceMenu
   Build and display the preference dialog
   ----------------------------------------------------------------------*/
@@ -3055,22 +3392,27 @@ void PreferenceMenu (Document document, View view)
   /* ---> Annot Tab */
   GetAnnotConf ();
 #endif /* ANNOTATIONS */
+
 #ifdef DAV
   /* ---> WebDAV Tab */
   GetDAVConf ();
 #endif /* DAV */
+
 #ifdef TEMPLATES
   /* ---> Templates Tab */
   GetTemplatesConf ();
 #endif /* TEMPLATES */
 
+  /* ---> Emails Tab */
   GetEmailsConf();
   /* ---> Passwords Tab */
   GetPasswordsConf ();
+  /* ---> RDFa Tab */
+  GetRDFaConf ();
 
   ThotBool created = CreatePreferenceDlgWX ( PreferenceBase,
                                              TtaGetViewFrame (document, view),
-                                             URL_list );
+                                             URL_list, RDFa_list );
   if (created)
     {
       TtaSetDialoguePosition ();
@@ -3140,4 +3482,5 @@ void InitConfMenu (void)
   InitDAVPreferences ();
 #endif /* DAV */
   EmailsBase = TtaSetCallback( (Proc)EmailsCallbackDialog, MAX_EMAILSMENU_DLG );
+  RDFaBase = TtaSetCallback( (Proc)RDFaCallbackDialog, MAX_RDFaMENU_DLG );
 }

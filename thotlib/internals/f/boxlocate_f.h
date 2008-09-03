@@ -11,10 +11,15 @@ extern ThotBool APPgraphicModify ( PtrElement pEl,
                                    int frame,
                                    ThotBool pre,
                                    ThotBool openclose );
+extern PtrBox IsSelectingControlPoint ( int frame,
+                                        int x,
+                                        int y,
+                                        int* ctrlpt );
 extern ThotBool LocateSelectionInView ( int frame,
                                         int x,
                                         int y,
-                                        int button );
+                                        int button,
+                                        ThotBool *Selecting );
 extern ThotPoint *BuildPolygonForPath ( PtrPathSeg pPa,
                                         int frame,
                                         int* npoints,
@@ -45,14 +50,15 @@ extern PtrBox GetClickedLeafBox ( int frame,
                                   int xRef,
                                   int yRef,
                                   PtrFlow *pFlow );
-extern void ApplyDirectTranslate ( int frame,
+extern void ApplyDirectTranslate ( PtrBox pBox,
+                                   int frame,
                                    int xm,
                                    int ym );
-extern void ApplyDirectResize ( int frame,
+extern void ApplyDirectResize ( PtrBox pBox,
+                                int frame,
+                                int pointselect,
                                 int xm,
                                 int ym );
-extern void DirectCreation ( PtrBox pBox,
-                             int frame );
 extern void LocateClickedChar ( PtrBox pBox,
                                 int frame,
                                 ThotBool extend,
@@ -69,10 +75,15 @@ extern ThotBool APPgraphicModify ( PtrElement pEl,
                                      int frame,
                                      ThotBool pre,
                                      ThotBool openclose );
+extern PtrBox IsSelectingControlPoint ( int frame,
+                                          int x,
+                                          int y,
+                                          int* ctrlpt );
 extern ThotBool LocateSelectionInView ( int frame,
                                           int x,
                                           int y,
-                                          int button );
+                                          int button,
+                                          ThotBool *Selecting );
 extern ThotPoint *BuildPolygonForPath ( PtrPathSeg pPa,
                                           int frame,
                                           int* npoints,
@@ -103,14 +114,15 @@ extern PtrBox GetClickedLeafBox ( int frame,
                                     int xRef,
                                     int yRef,
                                     PtrFlow *pFlow );
-extern void ApplyDirectTranslate ( int frame,
+extern void ApplyDirectTranslate ( PtrBox pBox,
+                                     int frame,
                                      int xm,
                                      int ym );
-extern void ApplyDirectResize ( int frame,
+extern void ApplyDirectResize ( PtrBox pBox,
+                                  int frame,
+                                  int pointselect,
                                   int xm,
                                   int ym );
-extern void DirectCreation ( PtrBox pBox,
-                               int frame );
 extern void LocateClickedChar ( PtrBox pBox,
                                   int frame,
                                   ThotBool extend,

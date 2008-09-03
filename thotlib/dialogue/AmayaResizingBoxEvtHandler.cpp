@@ -12,6 +12,8 @@
 #include "libmsg.h"
 #include "message.h"
 #include "typeint.h"
+#include "undo.h"
+#include "picture.h"
 
 #undef THOT_EXPORT
 #define THOT_EXPORT extern
@@ -25,7 +27,6 @@
 #include "geom_f.h"
 #include "font_f.h"
 #include "content_f.h"
-
 #ifdef _GL
 #include "glwindowdisplay.h"
 #endif /* _GL */
@@ -51,8 +52,7 @@ IMPLEMENT_DYNAMIC_CLASS(AmayaResizingBoxEvtHandler, wxEvtHandler)
  *  the callbacks are assigned to an event type
  *----------------------------------------------------------------------*/
 BEGIN_EVENT_TABLE(AmayaResizingBoxEvtHandler, wxEvtHandler)
-  EVT_CHAR( AmayaResizingBoxEvtHandler::OnChar )
-
+  EVT_KEY_DOWN( AmayaResizingBoxEvtHandler::OnChar )
   EVT_LEFT_DOWN( AmayaResizingBoxEvtHandler::OnMouseDown) // Process a wxEVT_LEFT_DOWN event. 
   EVT_LEFT_UP( AmayaResizingBoxEvtHandler::OnMouseUp) // Process a wxEVT_LEFT_UP event. 
   EVT_LEFT_DCLICK( AmayaResizingBoxEvtHandler::OnMouseDbClick) // Process a wxEVT_LEFT_DCLICK event. 
@@ -74,9 +74,9 @@ AmayaResizingBoxEvtHandler::AmayaResizingBoxEvtHandler() : wxEvtHandler()
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-AmayaResizingBoxEvtHandler::AmayaResizingBoxEvtHandler( AmayaFrame * p_frame,
-                                                        int *x, int *y, int *width, int *height,
-                                                        PtrBox box, int xmin, int xmax, int ymin, int ymax,
+AmayaResizingBoxEvtHandler::AmayaResizingBoxEvtHandler (AmayaFrame * p_frame, int x, int y,
+                                                        int *width, int *height, PtrBox box,
+                                                        int xmin, int xmax, int ymin, int ymax,
                                                         int xm, int ym, int percentW, int percentH )
   : wxEvtHandler()
     ,m_IsFinish(false)
@@ -93,16 +93,16 @@ AmayaResizingBoxEvtHandler::AmayaResizingBoxEvtHandler( AmayaFrame * p_frame,
     ,m_Ymax(ymax)
     ,m_Xm(xm)
     ,m_Ym(ym)    
-    ,m_PercentW(percentW)
-    ,m_PercentH(percentH)
 {
   TTALOGDEBUG_0( TTA_LOG_SVGEDIT, _T("AmayaResizingBoxEvtHandler::AmayaResizingBoxEvtHandler"));
-
   if (m_pFrame)
     {
       // attach this handler to the canvas
       AmayaCanvas * p_canvas = m_pFrame->GetCanvas();
       p_canvas->PushEventHandler(this);
+      TtaOpenUndoSequence (FrameTable[m_FrameId].FrDoc, NULL, NULL, 0, 0);
+      // keep the history open until the button is up
+      TtaLockHistory (TRUE);
       
       // assign a cross mouse cursor
       m_pFrame->GetCanvas()->SetCursor( wxCursor(wxCURSOR_CROSS) );
@@ -120,74 +120,25 @@ AmayaResizingBoxEvtHandler::AmayaResizingBoxEvtHandler( AmayaFrame * p_frame,
     pAb = pAb->AbFirstEnclosed;
   m_IsEllipse = (pAb && pAb->AbLeafType == LtGraphics && (pAb->AbShape == 'a' || pAb->AbShape == 'c'));
 
-  /* Use the reference point to move the box */
-  switch (m_Box->BxHorizEdge)
-    {
-    case Right:
-      m_Xref = *m_pWidth;
-      m_RefV = C_RIGHT;
-      /* Box shortened when X delta increase */
-      m_HDirection = -1;
-      break;
-    case VertMiddle:
-      m_Xref = *m_pWidth / 2;
-      m_RefV = C_VCENTER;
-      /* Direction depends of original cursor location in the frame */
-      if (m_Xm < *m_pX + m_Xref)
-        m_HDirection = -1;
-      else
-        m_HDirection = 1;
-      break;
-    case VertRef:
-      m_Xref = m_Box->BxVertRef;
-      m_RefV = C_LEFT;
-      /* Box increased when X delta increase */
-      m_HDirection = 1;
-      break;
-    default:
-      m_Xref = 0;
-      m_RefV = C_LEFT;
-      /* Box increased when X delta increase */
-      m_HDirection = 1;
-      break;
-    }
+  /* locate the mouse position in the box */
+  if (xm < m_Box->BxClipX + *m_pWidth/2 - DELTA_SEL)
+    m_HDirection = -1;
+  else if (xm < m_Box->BxClipX + *m_pWidth/2 + DELTA_SEL)
+    m_HDirection = 0;
+  else
+    m_HDirection = 1;
 
-  switch (m_Box->BxVertEdge)
-    {
-    case Bottom:
-      m_Yref = *m_pHeight;
-      m_RefH = C_BOTTOM;
-      /* Box shortened when Y delta increase */
-      m_VDirection = -1;
-      break;
-    case HorizMiddle:
-      m_Yref = *m_pHeight / 2;
-      m_RefH = C_HCENTER;
-      /* Direction depends of original cursor location in the frame */
-      if (m_Ym < *m_pY + m_Yref)
-        m_VDirection = -1;
-      else
-        m_VDirection = 1;
-      break;
-    case HorizRef:
-      m_Yref = m_Box->BxHorizRef;
-      m_RefH = C_TOP;
-      /* Box increased when Y delta increase */
-      m_VDirection = 1;
-      break;
-    default:
-      m_Yref = 0;
-      m_RefH = C_TOP;
-      /* Box increased when Y delta increase */
-      m_VDirection = 1;
-      break;
-    }
-  
+  if (ym < m_Box->BxClipY + *m_pHeight/2 - DELTA_SEL)
+    m_VDirection = -1;
+  else if (ym < m_Box->BxClipY + *m_pHeight/2 + DELTA_SEL)
+    m_VDirection = 0;
+  else
+    m_VDirection = 1;
   /* Shows the initial box size */
   if (m_IsEllipse)
-    InvertEllipse (m_FrameId, *m_pX, *m_pY, *m_pWidth, *m_pHeight, *m_pX + m_Xref, *m_pY + m_Yref);
+    InvertEllipse (m_FrameId, m_pX, m_pY, *m_pWidth, *m_pHeight, m_pX + m_Xref, m_pY);
   else
-    BoxGeometry (m_FrameId, *m_pX, *m_pY, *m_pWidth, *m_pHeight, *m_pX + m_Xref, *m_pY + m_Yref);
+    BoxGeometry (m_FrameId, m_pX, m_pY, *m_pWidth, *m_pHeight, m_pX + m_Xref, m_pY);
 }
 
 /*----------------------------------------------------------------------
@@ -226,7 +177,8 @@ bool AmayaResizingBoxEvtHandler::IsFinish()
   ----------------------------------------------------------------------*/
 void AmayaResizingBoxEvtHandler::OnChar( wxKeyEvent& event )
 {
-  m_IsFinish = true;
+  if(event.GetKeyCode() !=  WXK_SHIFT)
+    m_IsFinish = true;
 }
 
 /*----------------------------------------------------------------------
@@ -247,6 +199,9 @@ void AmayaResizingBoxEvtHandler::OnMouseDown( wxMouseEvent& event )
   -----------------------------------------------------------------------*/
 void AmayaResizingBoxEvtHandler::OnMouseUp( wxMouseEvent& event )
 {
+  // close the history now
+  TtaLockHistory (FALSE);
+  TtaCloseUndoSequence (FrameTable[m_FrameId].FrDoc);
   m_IsFinish = true;
 }
 
@@ -267,236 +222,80 @@ void AmayaResizingBoxEvtHandler::OnMouseDbClick( wxMouseEvent& event )
   -----------------------------------------------------------------------*/
 void AmayaResizingBoxEvtHandler::OnMouseMove( wxMouseEvent& event )
 {
+  int           dx, dy, dl, dh, warpx, warpy;
+  bool          ratio;
+  ThotPictInfo *imageDesc;
+
   if (IsFinish())
     return;
 
-  int dx, dy, dl, dh, warpx, warpy;
-
   /* compute the deltas */
-  dl = (int) (event.GetX() - m_Xm);
-  dh = (int) (event.GetY() - m_Ym);
-  if (m_PercentW != 0)
+  ratio = m_Box && m_Box->BxType == BoPicture && event.ShiftDown();
+  warpx = (int)event.GetX();
+  warpy = (int)event.GetY();
+  dl = (warpx - m_Xm) * m_HDirection;
+  dh = (warpy - m_Ym) * m_VDirection;
+  m_Xm = warpx;
+  m_Ym = warpy;
+  if (ratio)
     {
       /* keep the greater value */
       if (dl < dh)
-        dl = dh;
-      dh = dl;
-    }
-  else if (m_PercentH != 0)
-    {
-      /* keep the greater value */
-      if (dh < dl)
-        dh = dl;
-      dl = dh;
+        dl = 0;
+      else
+        dh = 0;
     }
   
   /* Check that size can be modified, and stay >= 0    */
   /* depending on base point and cursor position,      */
   /* increase or decreas width or height accordingly   */
-  warpx = -1;
-  warpy = -1;
-  if (dl != 0)
+  if (dl)
     {
       if (m_Xmin == m_Xmax)
         /* X moves frozen */
         dl = 0;
-      else if (m_RefV == C_VCENTER && *m_pWidth + (2 * dl * m_HDirection) < 0)
-        {
-          dl = - TtaGridDoAlign(*m_pWidth / 2) * m_HDirection;
-          warpx = m_Xm + (dl * m_HDirection);
-        }
-      else if (*m_pWidth + (dl * m_HDirection) < 0)
-        {
-          dl = - TtaGridDoAlign(*m_pWidth) * m_HDirection;
-          warpx = m_Xm + (dl * m_HDirection);
-        }
+      else if (*m_pWidth + dl < 2)
+        dl = 0;
     }
   
-  if (dh != 0)
+  if (dh)
     {
       if (m_Ymin == m_Ymax)
         /* Y moves frozen */
         dh = 0;
-      else if (m_RefH == C_HCENTER && *m_pHeight + (2 * dh * m_VDirection) < 0)
-        {
-          dh = - TtaGridDoAlign(*m_pHeight / 2) * m_VDirection;
-          warpy = m_Ym + (dh * m_VDirection);
-        }
-      else if (*m_pHeight + dh < 0)
-        {
-          dh = - TtaGridDoAlign(*m_pHeight) * m_VDirection;
-          warpy = m_Ym + (dh * m_VDirection);
-        }
+      else if (*m_pHeight + dh < 2)
+        dh = 0;
     }
   
-  /* Compute the horizontal move of the origin */
-  if (dl != 0)
-    {
-      dl = dl * m_HDirection;		/* Take care for direction */
-      if (m_RefV == C_VCENTER)
-        {
-          dx = m_Xmin + TtaGridDoAlign(*m_pX - (dl / 2) - m_Xmin) - *m_pX;
-          /* Check the move is within limits */
-          if (*m_pX + dx < m_Xmin)
-            dx = m_Xmin - *m_pX;		/*left side */
-          if (*m_pX + *m_pWidth - dx > m_Xmax)
-            dx = *m_pX + *m_pWidth - m_Xmin - TtaGridDoAlign(m_Xmax - m_Xmin); /*right side */
-          
-          /* modify width for real */
-          dl = -(dx * 2);
-          if (dx != 0)
-            warpx = m_Xm - (dx * m_HDirection);
-        }
-      else if (m_RefV == C_RIGHT)
-        {
-          dx = m_Xmin + TtaGridDoAlign(*m_pX - dl - m_Xmin) - *m_pX;
-          /* Check the move is within limits */
-          if (*m_pX + dx < m_Xmin)
-            dx = m_Xmin - *m_pX;		/*left side */
-          
-          /* modify width for real */
-          dl = -dx;
-          if (dx != 0)
-            warpx = m_Xm + dx;
-        }
-      else
-        {
-          dx = 0;
-          dl = m_Xmin + TtaGridDoAlign(*m_pX + *m_pWidth + dl - m_Xmin) - *m_pX - *m_pWidth;
-          if (*m_pX + *m_pWidth + dl > m_Xmax)
-            dl = m_Xmin + TtaGridDoAlign(m_Xmax - m_Xmin) - *m_pX - *m_pWidth; /*right side */
-          if (dl != 0)
-            warpx = m_Xm + dl;
-        }
-    }
-  else
-    dx = 0;
-  
-  /* Compute vertical move */
-  if (dh != 0)
-    {
-      dh = dh * m_VDirection;	/* Take care for direction */
-      if (m_RefH == C_HCENTER)
-        {
-          dy = m_Ymin + TtaGridDoAlign(*m_pY - (dh / 2) - m_Ymin) - *m_pY;
-          /* Check the move is within limits */
-          if (*m_pY + dy < m_Ymin)
-            dy = m_Ymin - *m_pY;		/*upper border */
-          if (*m_pY + *m_pHeight - dy > m_Ymax)
-            dy = *m_pY + *m_pHeight - m_Ymin - TtaGridDoAlign(m_Ymax - m_Ymin);	/* bottom */
-          /* change the height for real */
-          dh = -(dy * 2);
-          if (dy != 0)
-            warpy = m_Ym - (dy * m_VDirection);
-        }
-      else if (m_RefH == C_BOTTOM)
-        {
-          dy = m_Ymin + TtaGridDoAlign(*m_pY - dh - m_Ymin) - *m_pY;
-          /* Check the move is within limits */
-          if (*m_pY + dy < m_Ymin)
-            dy = m_Ymin - *m_pY;		/* upper border */
-          /* change the height for real */
-          dh = -dy;
-          if (dy != 0)
-            warpy = m_Ym + dy;
-        }
-      else
-        {
-          dy = 0;
-          dh = m_Ymin + TtaGridDoAlign(*m_pY + *m_pHeight + dh - m_Ymin) - *m_pY - *m_pHeight;
-          if (*m_pY + *m_pHeight + dh > m_Ymax)
-            dh = m_Ymin + TtaGridDoAlign(m_Ymax - m_Ymin) - *m_pY - *m_pHeight;	/* bottom */
-          if (dh != 0)
-            warpy = m_Ym + dh;
-        }
-    }
-  else
-    dy = 0;
+  dx = 0;
+  dy = 0;
   
   /* Should we move the box */
-  if ((dl != 0) || (dh != 0))
+  if (dl || dh)
     {
-      /* switch off the old box */
-#ifndef _GL
-      if (m_IsEllipse)
-        InvertEllipse (m_FrameId, *m_pX, *m_pY, *m_pWidth, *m_pHeight, *m_pX + m_Xref, *m_pY + m_Yref);
-      else
-        BoxGeometry (m_FrameId, *m_pX, *m_pY, *m_pWidth, *m_pHeight, *m_pX + m_Xref, *m_pY + m_Yref);
-#endif /* _GL */
       /* is there any dependence between height and width */
       *m_pWidth = *m_pWidth + dl;
       *m_pHeight = *m_pHeight + dh;
-      if (m_PercentW != 0)
-        *m_pWidth = *m_pHeight * m_PercentW / 100;
-      else if (m_PercentH != 0)
-        *m_pHeight = *m_pWidth * m_PercentH / 100;
-      *m_pX = *m_pX + dx;
-      *m_pY = *m_pY + dy;
-      /* switch on the new one */
-      switch (m_Box->BxHorizEdge)
+
+      // apply the ratio
+      if (ratio)
         {
-        case Right:
-          m_Xref = *m_pWidth;
-          break;
-        case VertMiddle:
-          m_Xref = *m_pWidth / 2;
-          break;
-        case VertRef:
-          m_Xref = m_Box->BxVertRef;
-          break;
-        default:
-          m_Xref = 0;
-          break;
+          imageDesc = (ThotPictInfo *) m_Box->BxPictInfo;
+          if (dl)
+            *m_pHeight = *m_pWidth * imageDesc->PicHeight /imageDesc->PicWidth;
+          else
+            *m_pWidth = *m_pHeight * imageDesc->PicWidth /imageDesc->PicHeight;
         }
-      switch (m_Box->BxVertEdge)
-        {
-        case Bottom:
-          m_Yref = *m_pHeight;
-          break;
-        case HorizMiddle:
-          m_Yref = *m_pHeight / 2;
-          break;
-        case HorizRef:
-          m_Yref = m_Box->BxHorizRef;
-          break;
-        default:
-          m_Yref = 0;
-          break;
-        }  
-#ifndef _GL
-      if (m_IsEllipse)
-        InvertEllipse (m_FrameId, *m_pX, *m_pY, *m_pWidth, *m_pHeight, *m_pX + m_Xref, *m_pY + m_Yref);
-      else
-        BoxGeometry (m_FrameId, *m_pX, *m_pY, *m_pWidth, *m_pHeight, *m_pX + m_Xref, *m_pY + m_Yref);
-#else /* _GL */
+
+      m_pX = m_pX + dx;
+      m_pY = m_pY + dy;
       DefBoxRegion (m_FrameId, m_Box, -1, -1, -1, -1);
-      if (m_PercentW)
-        NewDimension (m_Box->BxAbstractBox, 0, *m_pHeight, m_FrameId, TRUE);
-      else if (m_PercentH)
-        NewDimension (m_Box->BxAbstractBox, *m_pWidth, 0, m_FrameId, TRUE);
-      else
-        NewDimension (m_Box->BxAbstractBox, *m_pWidth, *m_pHeight, m_FrameId, TRUE);
+      NewDimension (m_Box->BxAbstractBox, *m_pWidth, *m_pHeight, m_FrameId, TRUE);
       
       FrameTable[m_FrameId].DblBuffNeedSwap = TRUE;
       GL_Swap (m_FrameId);
-#endif /* _GL */
     }
-  
-  /* Should we move the cursor */
-  if (warpx >= 0 || warpy >= 0)
-    {
-      if (warpx >= 0)
-        m_Xm = warpx;
-      if (warpy >= 0)
-        m_Ym = warpy; 
-      /*
-        xwindow = (GdkWindowPrivate*) w;
-        XWarpPointer (GDK_DISPLAY(), 
-        None, 
-        xwindow->xwindow,
-        0, 0, 0, 0, xm, ym);
-      */
-    } 
+
 }
 
 /*----------------------------------------------------------------------

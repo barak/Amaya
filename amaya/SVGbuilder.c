@@ -35,6 +35,7 @@
 #include "styleparser_f.h"
 #include "SVGbuilder_f.h"
 #include "Xml2thot_f.h"
+#include "SVGedit_f.h"
 
 /*----------------------------------------------------------------------
   SVGGetDTDName
@@ -311,10 +312,17 @@ static Element CreateGraphicalLeaf (char shape, Element el, Document doc)
   Returns the created (or existing) element.
   When returning, closed indicates whether the shape is closed or not.
   ----------------------------------------------------------------------*/
-static Element CreateGraphicLeaf (Element el, Document doc, ThotBool *closed)
+Element CreateGraphicLeaf (Element el, Document doc, ThotBool *closed)
 {
   ElementType elType;
   Element     leaf;
+
+  PRule               rule;
+  int w,h;
+  ThotBool             shape_recognition;
+
+  if(!TtaGetEnvBoolean ("ENABLE_SHAPE_RECOGNITION", &shape_recognition))
+    shape_recognition = TRUE;
 
   leaf = NULL;
   *closed = FALSE;
@@ -322,7 +330,20 @@ static Element CreateGraphicLeaf (Element el, Document doc, ThotBool *closed)
   switch (elType.ElTypeNum)
     {
     case SVG_EL_rect:
-      leaf = CreateGraphicalLeaf ('C', el, doc);
+      if(shape_recognition)
+	{
+	  rule = TtaGetPRule(el, PRWidth);
+	  w = TtaGetPRuleValue (rule);
+	  rule = TtaGetPRule(el, PRHeight);
+	  h = TtaGetPRuleValue (rule);
+
+	  if(w == h)
+	    leaf = CreateGraphicalLeaf (1, el, doc);
+	  else
+	    leaf = CreateGraphicalLeaf ('C', el, doc);
+	}
+      else
+	leaf = CreateGraphicalLeaf ('C', el, doc);
       *closed = TRUE;
       break;
 
@@ -604,46 +625,134 @@ static void CheckHrefAttr (Element el, Document doc)
 }
 
 /*----------------------------------------------------------------------
+  NextWhiteSpace
+  ----------------------------------------------------------------------*/
+static void NextWhiteSpace(char **ptr)
+{
+  while (**ptr != EOS && **ptr != SPACE && **ptr != BSPACE &&
+	 **ptr != EOL && **ptr != TAB && **ptr != CR)
+    (*ptr)++;
+}
+
+/*----------------------------------------------------------------------
+  IsSupportedFeature, IsSupportedExtension
+  ----------------------------------------------------------------------*/
+#define CHECK(str) if (!strcmp (ptr, str)) return TRUE
+
+static ThotBool IsSupportedFeature(char *ptr)
+{
+  /* SVG 1.0 feature strings (deprecated) */
+  CHECK("org.w3c.svg");
+  CHECK("org.w3c.svg.static");
+
+  /* SVG 1.1 feature strings */
+  CHECK("http://www.w3.org/TR/SVG11/feature#SVG");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#SVGDOM");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#SVG-static");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#SVGDOM-static")
+  //CHECK("http://www.w3.org/TR/SVG11/feature#SVG-animation")
+  //CHECK("http://www.w3.org/TR/SVG11/feature#SVGDOM-animation")
+  //CHECK("http://www.w3.org/TR/SVG11/feature#SVG-dynamic");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#SVGDOM-dynamic");
+
+  CHECK("http://www.w3.org/TR/SVG11/feature#CoreAttribute");
+  CHECK("http://www.w3.org/TR/SVG11/feature#Structure");
+  CHECK("http://www.w3.org/TR/SVG11/feature#BasicStructure");
+  CHECK("http://www.w3.org/TR/SVG11/feature#ContainerAttribute");
+  CHECK("http://www.w3.org/TR/SVG11/feature#ConditionalProcessing");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#Image");
+  CHECK("http://www.w3.org/TR/SVG11/feature#Style");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#ViewportAttribute");
+  CHECK("http://www.w3.org/TR/SVG11/feature#Shape");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#Text");
+  CHECK("http://www.w3.org/TR/SVG11/feature#BasicText");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#PaintAttribute");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#BasicPaintAttribute");
+  CHECK("http://www.w3.org/TR/SVG11/feature#OpacityAttribute");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#GraphicsAttribute");
+  CHECK("http://www.w3.org/TR/SVG11/feature#BasicGraphicsAttribute");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#Marker");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#ColorProfile");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#Gradient");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#Pattern");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#Clip");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#BasicClip");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#Mask");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#Filter");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#BasicFilter");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#DocumentEventsAttribute");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#GraphicalEventsAttribute");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#AnimationEventsAttribute");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#Cursor");
+  CHECK("http://www.w3.org/TR/SVG11/feature#Hyperlinking");
+  CHECK("http://www.w3.org/TR/SVG11/feature#XlinkAttribute");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#ExternalResourcesRequired");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#View");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#Script");
+  CHECK("http://www.w3.org/TR/SVG11/feature#Animation");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#Font");
+  //CHECK("http://www.w3.org/TR/SVG11/feature#BasicFont");
+  CHECK("http://www.w3.org/TR/SVG11/feature#Extensibility");
+
+  return FALSE;
+}
+
+static ThotBool IsSupportedExtension(char *ptr)
+{
+  printf("%s\n", ptr);
+
+  /* only XHTML and MathML are considered as supported extensions*/
+  CHECK(XHTML_URI);
+  CHECK(MathML_URI);
+  return FALSE;
+}
+
+#undef CHECK
+
+/*----------------------------------------------------------------------
   EvaluateFeatures
   Evaluates the requiredFeatures attribute
   ----------------------------------------------------------------------*/
 static ThotBool EvaluateFeatures (Attribute attr)
 {
   int          length;
-  char         *text, *ptr;
-  ThotBool     ok, supported;
+  char         *text, *ptr, *ptr2;
+  ThotBool     supported;
 
-  ok = False;
+  supported = FALSE;
   length = TtaGetTextAttributeLength (attr);
   if (length > 0)
     {
       text = (char *)TtaGetMemory (length + 2);
       if (text)
         {
+	  supported = TRUE;
           TtaGiveTextAttributeValue (attr, text, &length);
           ptr = text;
-          ptr = TtaSkipBlanks (ptr);
-          supported = True;
+	  ptr = (char*)TtaSkipBlanks (ptr);
           while (*ptr != EOS && supported)
             {
-              /* only SVG static is supported in this version of Amaya */
-              if (strcmp (ptr, "org.w3c.svg") &&
-                  strcmp (ptr, "org.w3c.svg.static"))
-                supported = False;
-              if (supported)
-                /* this feature is supported. Check to the next one */
-                {
-                  while (*ptr != EOS && *ptr != SPACE && *ptr != BSPACE &&
-                         *ptr != EOL && *ptr != TAB && *ptr != CR)
-                    ptr++;
-                  ptr = TtaSkipBlanks (ptr);
-                }
+	      /* Move ptr2 to the next white space */
+	      ptr2 = ptr;
+	      NextWhiteSpace(&ptr2);
+
+	      if(*ptr2 == EOS)
+		{
+		  /* It's the end of the string */
+		  supported = IsSupportedFeature(ptr);
+		  break;
+		}
+
+	      /* Check if the feature is supported */
+	      *ptr2 = EOS; supported = IsSupportedFeature(ptr);
+
+	      /* Move to the next feature */
+	      *ptr2 = ' '; ptr = (char*)TtaSkipBlanks (ptr2);
             }
-          ok = supported;
           TtaFreeMemory (text);
         }
     }
-  return ok;
+  return supported;
 }
 
 /*----------------------------------------------------------------------
@@ -653,39 +762,43 @@ static ThotBool EvaluateFeatures (Attribute attr)
 static ThotBool EvaluateExtensions (Attribute attr)
 {
   int          length;
-  char         *text, *ptr;
-  ThotBool     ok, supported;
+  char         *text, *ptr, *ptr2;
+  ThotBool     supported;
 
-  ok = False;
+  supported = FALSE;
   length = TtaGetTextAttributeLength (attr);
   if (length > 0)
     {
       text = (char *)TtaGetMemory (length + 2);
       if (text)
         {
+	  supported = TRUE;
           TtaGiveTextAttributeValue (attr, text, &length);
           ptr = text;
-          ptr = TtaSkipBlanks (ptr);
-          supported = True;
+	  ptr = (char*)TtaSkipBlanks (ptr);
           while (*ptr != EOS && supported)
             {
-              /* only XHTML and MathML are considered as supported extensions*/
-              if (strcmp (ptr, XHTML_URI) && strcmp (ptr, MathML_URI))
-                supported = False;
-              if (supported)
-                /* this feature is supported. Check to the next one */
-                {
-                  while (*ptr != EOS && *ptr != SPACE && *ptr != BSPACE &&
-                         *ptr != EOL && *ptr != TAB && *ptr != CR)
-                    ptr++;
-                  ptr = TtaSkipBlanks (ptr);
-                }
-            }
-          ok = supported;
+	      /* Move ptr2 to the next white space */
+	      ptr2 = ptr;
+	      NextWhiteSpace(&ptr2);
+
+	      if(*ptr2 == EOS)
+		{
+		  /* It's the end of the string */
+		  supported = IsSupportedExtension(ptr);
+		  break;
+		}
+
+	      /* Check if the extension is supported */
+	      *ptr2 = EOS; supported = IsSupportedExtension(ptr);
+
+	      /* Move to the next extension */
+	      *ptr2 = ' '; ptr = (char*)TtaSkipBlanks (ptr2);
+	    }
           TtaFreeMemory (text);
         }
     }
-  return ok;
+  return supported;
 }
 
 /*----------------------------------------------------------------------
@@ -709,13 +822,13 @@ static ThotBool EvaluateSystemLanguage (Attribute attr)
           acceptLang = TtaGetEnvString ("ACCEPT_LANGUAGES");
           if (!acceptLang)
             return (ok);
-          acceptLang = TtaSkipBlanks (acceptLang);
+          acceptLang = (char*)TtaSkipBlanks (acceptLang);
           if (*acceptLang != EOS)
             /* the list of user's preferred languages is not empty */
             {
               TtaGiveTextAttributeValue (attr, text, &length);
               ptr = text;
-              ptr = TtaSkipBlanks (ptr);
+              ptr = (char*)TtaSkipBlanks (ptr);
               while (*ptr != EOS && !ok)
                 {
                   pref = acceptLang;
@@ -731,7 +844,7 @@ static ThotBool EvaluateSystemLanguage (Attribute attr)
                             pref++;
                           if (*pref == ',')
                             pref++;
-                          pref = TtaSkipBlanks (pref);
+                          pref = (char*)TtaSkipBlanks (pref);
                         }
                     }
                   if (!ok)
@@ -742,7 +855,7 @@ static ThotBool EvaluateSystemLanguage (Attribute attr)
                         ptr++;
                       if (*ptr == ',')
                         ptr++;
-                      ptr = TtaSkipBlanks (ptr);
+                      ptr = (char*)TtaSkipBlanks (ptr);
                     }
                 }
             }
@@ -1170,12 +1283,12 @@ static void ParsePreserveAspectRatioAttribute (Attribute attr, Element el,
       if (*ptr != EOS)
         {
           /* skip space characters */
-          ptr = TtaSkipBlanks (ptr);
+          ptr = (char*)TtaSkipBlanks (ptr);
           if (!strncmp (ptr, "defer", 5))
             /* ignore value "defer" */
             {
               ptr+= 5;
-              ptr = TtaSkipBlanks (ptr);
+              ptr = (char*)TtaSkipBlanks (ptr);
             }
           /* check the <align> value */
           if (!strncmp (ptr, "none", 4))
@@ -1258,6 +1371,7 @@ void      SVGElementCreated (Element el, Document doc)
   char          msgBuffer[100];
 
   elType = TtaGetElementType (el);
+
   if (elType.ElTypeNum == SVG_EL_SVG ||
       elType.ElTypeNum == SVG_EL_symbol_ ||
       elType.ElTypeNum == SVG_EL_image ||
@@ -1370,6 +1484,9 @@ void SVGElementComplete (ParserData *context, Element el, int *error)
   SSchema	             SVGSSchema;
   char                 *href;
   ThotBool		         closedShape, ok;
+  ThotBool             shape_recognition;
+  if(!TtaGetEnvBoolean ("ENABLE_SHAPE_RECOGNITION", &shape_recognition))
+    shape_recognition = TRUE;
 
   *error = 0;
   doc = context->doc;
@@ -1459,6 +1576,10 @@ void SVGElementComplete (ParserData *context, Element el, int *error)
         case SVG_EL_foreignObject:
         case SVG_EL_symbol_:
           /* case SVG_EL_view: */
+          TtaSetElCoordinateSystem (el);
+          break;
+
+        case SVG_EL_g:
           TtaSetElCoordinateSystem (el);
           break;
 
@@ -1591,6 +1712,49 @@ void SVGElementComplete (ParserData *context, Element el, int *error)
                   newPRule = TtaCopyPRule (fillPatternRule);
                   TtaAttachPRule (leaf, newPRule, doc);
                   TtaRemovePRule (el, fillPatternRule, doc);
+                }
+            }
+
+	  
+          /* Check the geometric properties of the leaf */
+          if(shape_recognition && (elType.ElTypeNum == SVG_EL_polygon ||
+                                   elType.ElTypeNum == SVG_EL_path))
+            {
+              int w,h,rx = 0,ry = 0;
+              PresentationContext  ctxt;
+              PresentationValue    pval;
+
+              if (CheckGeometricProperties(doc, leaf, &w, &h, &rx, &ry))
+                {
+                  ctxt = TtaGetSpecificStyleContext (doc);
+                  /* the specific presentation is not a CSS rule */
+                  ctxt->cssSpecificity = 2000;
+                  ctxt->destroy = FALSE;
+                  pval.typed_data.real = FALSE;
+                  pval.typed_data.unit = UNIT_PX;
+
+                  pval.typed_data.value = w;
+                  TtaSetStylePresentation (PRWidth, el, NULL, ctxt, pval);
+                  pval.typed_data.value = h;
+                  TtaSetStylePresentation (PRHeight, el, NULL, ctxt, pval);
+
+                  if(rx)
+                    {
+                      pval.typed_data.value = rx;
+                      TtaSetStylePresentation (PRXRadius, el, NULL, ctxt, pval);
+                    }
+		  
+                  if(ry)
+                    {
+                      pval.typed_data.value = ry;
+                      TtaSetStylePresentation (PRYRadius, el, NULL, ctxt, pval);
+                    }
+
+                  /* Update transform attribute */
+                  UpdateTransformMatrix(doc, el);
+
+                  /* Update points attribute */
+                  UpdatePointsOrPathAttribute(doc, el, w, h, FALSE);
                 }
             }
           break;
@@ -1758,10 +1922,10 @@ static char *GetNumber (char *ptr, int* number, ThotBool *error)
   UpdateTransformAttr
   update the "transform" attribute of element el to shift it by
   delta unit(s) horizontally (if firstParam) or vertically.
-  increment indicates wheter delta is an increment or the total value of
+  increment indicates whether delta is an increment or the total value of
   the translation (only for translations).
   -----------------------------------------------------------------------*/
-void UpdateTransformAttr (Element el, Document doc, char *operation,
+void UpdateTransformAttr (Element el, Document doc, const char *operation,
                           float value, ThotBool firstParam, ThotBool increment)
 {
   ElementType           elType;
@@ -1820,14 +1984,14 @@ void UpdateTransformAttr (Element el, Document doc, char *operation,
                       found = TRUE;
                       strncpy (newPtr, ptr, opLen);
                       ptr += opLen; newPtr += opLen;
-                      ptr = TtaSkipBlanks (ptr);
+                      ptr = (char*)TtaSkipBlanks (ptr);
                       if (*ptr != '(')
                         error = TRUE;
                       else
                         {
                           *newPtr = '('; newPtr++;
                           ptr++;
-                          ptr = TtaSkipBlanks (ptr);
+                          ptr = (char*)TtaSkipBlanks (ptr);
                           if (firstParam)
                             {
                               if (increment || otherValue)
@@ -1858,7 +2022,7 @@ void UpdateTransformAttr (Element el, Document doc, char *operation,
                                   if (*ptr == ',')
                                     {
                                       ptr++;
-                                      ptr = TtaSkipBlanks (ptr);
+                                      ptr = (char*)TtaSkipBlanks (ptr);
                                     }
                                   if (*ptr != ')' && *ptr != EOS &&
                                       (increment || otherValue))
@@ -2017,7 +2181,7 @@ void TranslateElement (Element el, Document doc, int delta, TypeUnit unit,
 void UpdatePositionOfPoly (Element el, Document doc, int minX, int minY,
                            int maxX, int maxY)
 {
-  PRule                pRule;
+  /*PRule                pRule;*/
   Element              leaf;
   Attribute            attr;
   AttributeType        attrType;
@@ -2077,7 +2241,11 @@ void UpdatePositionOfPoly (Element el, Document doc, int minX, int minY,
   pval.typed_data.real = FALSE;
   TtaSetStylePresentation (PRHeight, el, NULL, ctxt, pval);
 
-  if (minX != 0)
+  /*
+    Append a translation rather than setting the presentation rules, otherwise
+    the transform data is incorrect - F.Wang
+
+    if (minX != 0)
     {
       pRule = TtaGetPRule (el, PRHorizPos);
       if (pRule)
@@ -2107,7 +2275,7 @@ void UpdatePositionOfPoly (Element el, Document doc, int minX, int minY,
       pval.typed_data.real = FALSE;
       pval.typed_data.mainValue = TRUE;
       TtaSetStylePresentation (PRVertPos, el, NULL, ctxt, pval);
-    }
+      }*/
 
   TtaFreeMemory (ctxt);
 
@@ -2115,8 +2283,11 @@ void UpdatePositionOfPoly (Element el, Document doc, int minX, int minY,
      translation by (minX, minY) */
   if (minX != 0)
     TranslateElement (el, doc, minX, unit, TRUE, TRUE);
+    
   if (minY != 0)
     TranslateElement (el, doc, minY, unit, FALSE, TRUE);
+
+  TtaAppendTransform (el, TtaNewTransformTranslate((float)minX, (float)minY), doc);
 }
 
 /*----------------------------------------------------------------------
@@ -2141,7 +2312,7 @@ void ParseCoordAttribute (Attribute attr, Element el, Document doc)
       TtaGiveTextAttributeValue (attr, text, &length);
       /* parse the attribute value (a number followed by a unit) */
       ptr = text;
-      ptr = TtaSkipBlanks (ptr);
+      ptr = (char*)TtaSkipBlanks (ptr);
       ptr = ParseCSSUnit (ptr, &pval);
       if (pval.typed_data.unit == UNIT_BOX)
         pval.typed_data.unit = UNIT_PX;
@@ -2276,7 +2447,7 @@ ThotBool ParseWidthHeightAttribute (Attribute attr, Element el, Document doc,
       TtaGiveTextAttributeValue (attr, text, &length); 
       /* parse the attribute value (a number followed by a unit) */
       ptr = text;
-      ptr = TtaSkipBlanks (ptr);
+      ptr = (char*)TtaSkipBlanks (ptr);
       ptr = ParseCSSUnit (ptr, &pval);
       if (pval.typed_data.unit == UNIT_BOX)
         pval.typed_data.unit = UNIT_PX;
@@ -2334,7 +2505,7 @@ void ParseBaselineShiftAttribute (Attribute attr, Element el, Document doc,
       /* parse the attribute value */
       ptr = text;
       /* skip space characters */
-      ptr = TtaSkipBlanks (ptr);
+      ptr = (char*)TtaSkipBlanks (ptr);
       if (!strncmp (ptr, "baseline", 8))
         {
           pval.typed_data.value = 0;
@@ -2418,7 +2589,7 @@ void ParsePointsAttribute (Attribute attr, Element el, Document doc)
       TtaGiveTextAttributeValue (attr, text, &length);
       ptr = text;
       error = FALSE;
-      ptr = TtaSkipBlanks (ptr);
+      ptr = (char*)TtaSkipBlanks (ptr);
       nbPoints = 0;
       minX = minY = 32000;
       maxX = maxY = 0;
@@ -2436,7 +2607,7 @@ void ParsePointsAttribute (Attribute attr, Element el, Document doc)
           if (*ptr == ',')
             {
               ptr++;
-              ptr = TtaSkipBlanks (ptr);
+              ptr = (char*)TtaSkipBlanks (ptr);
             }
           if (!error)
             {
@@ -2448,17 +2619,21 @@ void ParsePointsAttribute (Attribute attr, Element el, Document doc)
               if (!error)
                 {
                   nbPoints++;
-                  TtaAddPointInPolyline (leaf, nbPoints, unit, x, y, doc);
+                  TtaAddPointInPolyline (leaf, nbPoints, unit, x, y, doc,
+					 FALSE);
                   if (*ptr == ',')
                     {
                       ptr++;
-                      ptr = TtaSkipBlanks (ptr);
+                      ptr = (char*)TtaSkipBlanks (ptr);
                     }
                 }
             }
         }
-      if (nbPoints > 0)
-        UpdatePositionOfPoly (el, doc, minX, minY, maxX, maxY);
+      /* This set the top left corner of the polyline to (0,0), and
+	 consequently added a translate attribute. Because the user may
+	 not want the XML structure to change, I removed it. - F.Wang
+	if (nbPoints > 0)
+        UpdatePositionOfPoly (el, doc, minX, minY, maxX, maxY); */
       TtaFreeMemory (text);
     }
 
@@ -2493,46 +2668,46 @@ void ParseTransformAttribute (Attribute attr, Element el, Document doc,
       while (*ptr != EOS && !error)
         {
           /* skip space characters */
-          ptr = TtaSkipBlanks (ptr);
+          ptr = (char*)TtaSkipBlanks (ptr);
           if (!strncmp (ptr, "matrix", 6))
             {
               ptr += 6;
-              ptr = TtaSkipBlanks (ptr);
+              ptr = (char*)TtaSkipBlanks (ptr);
               if (*ptr != '(')
                 error = TRUE;
               else
                 {
                   ptr++;
-                  ptr = TtaSkipBlanks (ptr);
+                  ptr = (char*)TtaSkipBlanks (ptr);
                   ptr = GetFloat (ptr, &a);
                   if (*ptr == ',')
                     {
                       ptr++;
-                      ptr = TtaSkipBlanks (ptr);
+                      ptr = (char*)TtaSkipBlanks (ptr);
                     }
                   ptr = GetFloat (ptr, &b);
                   if (*ptr == ',')
                     {
                       ptr++;
-                      ptr = TtaSkipBlanks (ptr);
+                      ptr = (char*)TtaSkipBlanks (ptr);
                     }
                   ptr = GetFloat (ptr, &c);
                   if (*ptr == ',')
                     {
                       ptr++;
-                      ptr = TtaSkipBlanks (ptr);
+                      ptr = (char*)TtaSkipBlanks (ptr);
                     }
                   ptr = GetFloat (ptr, &d);
                   if (*ptr == ',')
                     {
                       ptr++;
-                      ptr = TtaSkipBlanks (ptr);
+                      ptr = (char*)TtaSkipBlanks (ptr);
                     }
                   ptr = GetFloat (ptr, &e);
                   if (*ptr == ',')
                     {
                       ptr++;
-                      ptr = TtaSkipBlanks (ptr);
+                      ptr = (char*)TtaSkipBlanks (ptr);
                     }
                   ptr = GetFloat (ptr, &f);
                   if (*ptr != ')')
@@ -2541,7 +2716,7 @@ void ParseTransformAttribute (Attribute attr, Element el, Document doc,
                     {
                       ptr++;
 #ifdef _GL
-                      TtaReplaceTransform (el, 
+                      TtaAppendTransform (el, 
                                            TtaNewTransformMatrix (a, b, c,
                                                                   d, e, f),
                                            doc);
@@ -2577,13 +2752,13 @@ void ParseTransformAttribute (Attribute attr, Element el, Document doc,
             {
               x = 0;  y = 0;
               ptr += 9;
-              ptr = TtaSkipBlanks (ptr);
+              ptr = (char*)TtaSkipBlanks (ptr);
               if (*ptr != '(')
                 error = TRUE;
               else
                 {
                   ptr++;
-                  ptr = TtaSkipBlanks (ptr);
+                  ptr = (char*)TtaSkipBlanks (ptr);
                   ptr = GetFloat (ptr, &x);
 #ifndef _GL
                   pval.typed_data.value = 0;
@@ -2602,7 +2777,7 @@ void ParseTransformAttribute (Attribute attr, Element el, Document doc,
                       if (*ptr == ',')
                         {
                           ptr++;
-                          ptr = TtaSkipBlanks (ptr);
+                          ptr = (char*)TtaSkipBlanks (ptr);
                         }
                       ptr = GetFloat (ptr, &y);
                     }
@@ -2611,7 +2786,7 @@ void ParseTransformAttribute (Attribute attr, Element el, Document doc,
                   else
                     error = TRUE;
 #ifdef _GL
-                  TtaReplaceTransform (el, TtaNewTransformTranslate (x, y), doc);
+                  TtaAppendTransform (el, TtaNewTransformTranslate (x, y), doc);
 #else /* _GL */
                   pval.typed_data.value = (int)y;
                   TtaSetStylePresentation (PRVertPos, el, NULL, ctxt, pval);
@@ -2622,13 +2797,13 @@ void ParseTransformAttribute (Attribute attr, Element el, Document doc,
           else if (!strncmp (ptr, "scale", 5))
             {
               ptr += 5;
-              ptr = TtaSkipBlanks (ptr);
+              ptr = (char*)TtaSkipBlanks (ptr);
               if (*ptr != '(')
                 error = TRUE;
               else
                 {
                   ptr++;
-                  ptr = TtaSkipBlanks (ptr);
+                  ptr = (char*)TtaSkipBlanks (ptr);
                   ptr = GetFloat (ptr, &scaleX);
                   if (*ptr == ')')
                     scaleY = scaleX;
@@ -2637,7 +2812,7 @@ void ParseTransformAttribute (Attribute attr, Element el, Document doc,
                       if (*ptr == ',')
                         {
                           ptr++;
-                          ptr = TtaSkipBlanks (ptr);
+                          ptr = (char*)TtaSkipBlanks (ptr);
                         }
                       ptr = GetFloat (ptr, &scaleY);
                     }
@@ -2645,7 +2820,7 @@ void ParseTransformAttribute (Attribute attr, Element el, Document doc,
                     {
                       ptr++;
 #ifdef _GL
-                      TtaReplaceTransform (el, 
+                      TtaAppendTransform (el, 
                                            TtaNewTransformScale (scaleX, 
                                                                  scaleY),
                                            doc);
@@ -2658,13 +2833,13 @@ void ParseTransformAttribute (Attribute attr, Element el, Document doc,
           else if (!strncmp (ptr, "rotate", 6))
             {
               ptr += 6;
-              ptr = TtaSkipBlanks (ptr);
+              ptr = (char*)TtaSkipBlanks (ptr);
               if (*ptr != '(')
                 error = TRUE;
               else
                 {
                   ptr++;
-                  ptr = TtaSkipBlanks (ptr);
+                  ptr = (char*)TtaSkipBlanks (ptr);
                   ptr = GetFloat (ptr, &angle);
                   if (*ptr == ')')
                     {
@@ -2676,13 +2851,13 @@ void ParseTransformAttribute (Attribute attr, Element el, Document doc,
                       if (*ptr == ',')
                         {
                           ptr++;
-                          ptr = TtaSkipBlanks (ptr);
+                          ptr = (char*)TtaSkipBlanks (ptr);
                         }
                       ptr = GetFloat (ptr, &x);
                       if (*ptr == ',')
                         {
                           ptr++;
-                          ptr = TtaSkipBlanks (ptr);
+                          ptr = (char*)TtaSkipBlanks (ptr);
                         }
                       ptr = GetFloat (ptr, &y);
                     }
@@ -2690,7 +2865,7 @@ void ParseTransformAttribute (Attribute attr, Element el, Document doc,
                     {
                       ptr++;
 #ifdef _GL
-                      TtaReplaceTransform (el, 
+                      TtaAppendTransform (el, 
                                            TtaNewTransformRotate (angle, x, y),
                                            doc);
 #endif /* _GL */
@@ -2702,19 +2877,19 @@ void ParseTransformAttribute (Attribute attr, Element el, Document doc,
           else if (!strncmp (ptr, "skewX", 5))
             {
               ptr += 5;
-              ptr = TtaSkipBlanks (ptr);
+              ptr = (char*)TtaSkipBlanks (ptr);
               if (*ptr != '(')
                 error = TRUE;
               else
                 {
                   ptr++;
-                  ptr = TtaSkipBlanks (ptr);
+                  ptr = (char*)TtaSkipBlanks (ptr);
                   ptr = GetFloat (ptr, &x);
                   if (*ptr == ')')
                     {
                       ptr++;
 #ifdef _GL
-                      TtaReplaceTransform (el, 
+                      TtaAppendTransform (el, 
                                            TtaNewTransformSkewX (x),
                                            doc);
 #endif /* _GL */
@@ -2726,19 +2901,19 @@ void ParseTransformAttribute (Attribute attr, Element el, Document doc,
           else if (!strncmp (ptr, "skewY", 5))
             {
               ptr += 5;
-              ptr = TtaSkipBlanks (ptr);
+              ptr = (char*)TtaSkipBlanks (ptr);
               if (*ptr != '(')
                 error = TRUE;
               else
                 {
                   ptr++;
-                  ptr = TtaSkipBlanks (ptr);
+                  ptr = (char*)TtaSkipBlanks (ptr);
                   ptr = GetFloat (ptr, &y);
                   if (*ptr == ')')
                     {
                       ptr++;
 #ifdef _GL
-                      TtaReplaceTransform (el, 
+                      TtaAppendTransform (el, 
                                            TtaNewTransformSkewY (y),
                                            doc);
 #endif /* _GL */
@@ -2754,7 +2929,7 @@ void ParseTransformAttribute (Attribute attr, Element el, Document doc,
           if (!error)
             {
               /* skip spaces and the optional comma */
-              ptr = TtaSkipBlanks (ptr);
+              ptr = (char*)TtaSkipBlanks (ptr);
               if (*ptr == ',')
                 ptr++;
             }
@@ -2786,7 +2961,7 @@ void *ParseValuesDataAttribute (Attribute attr, Element el, Document doc)
       ptr = text;
       while (*ptr != EOS)
         {
-          ptr = TtaSkipBlanks (ptr);
+          ptr = (char*)TtaSkipBlanks (ptr);
           ptr = GetFloat (ptr, &x);
           if (*ptr == ';')
             {
@@ -2794,7 +2969,7 @@ void *ParseValuesDataAttribute (Attribute attr, Element el, Document doc)
             }
           else
             {
-              ptr = TtaSkipBlanks (ptr);
+              ptr = (char*)TtaSkipBlanks (ptr);
               ptr = GetFloat (ptr, &y);
             }
           TtaAnimPathAddPoint (anim_seg, x, y);
@@ -2826,7 +3001,7 @@ void *ParseFromToDataAttribute (Attribute attrfrom, Attribute attrto,
       TtaGiveTextAttributeValue (attrfrom, text, &length);
       /* parse the attribute content */
       ptr = text;
-      ptr = TtaSkipBlanks (ptr);
+      ptr = (char*)TtaSkipBlanks (ptr);
       ptr = GetFloat (ptr, &x);
       ptr = GetFloat (ptr, &y);
       TtaAnimPathAddPoint (anim_seg, x, y);
@@ -2842,7 +3017,7 @@ void *ParseFromToDataAttribute (Attribute attrfrom, Attribute attrto,
       TtaGiveTextAttributeValue (attrto, text, &length);
       /* parse the attribute content */
       ptr = text;
-      ptr = TtaSkipBlanks (ptr);
+      ptr = (char*)TtaSkipBlanks (ptr);
       ptr = GetFloat (ptr, &x);
       ptr = GetFloat (ptr, &y);
       TtaFreeMemory (text);
@@ -2890,7 +3065,7 @@ void *ParsePathDataAttribute (Attribute attr, Element el, Document doc, ThotBool
       TtaGiveTextAttributeValue (attr, text, &length);
       /* parse the attribute content */
       ptr = text;
-      ptr = TtaSkipBlanks (ptr);
+      ptr = (char*)TtaSkipBlanks (ptr);
       command = *ptr;
       ptr++;
       prevCommand = EOS;
@@ -2913,7 +3088,7 @@ void *ParsePathDataAttribute (Attribute attr, Element el, Document doc, ThotBool
               relative = FALSE;
             case 'm':
               /* moveto */
-              ptr = TtaSkipBlanks (ptr);
+              ptr = (char*)TtaSkipBlanks (ptr);
               if (relative)
                 {
                   x = xcur;
@@ -2940,22 +3115,26 @@ void *ParsePathDataAttribute (Attribute attr, Element el, Document doc, ThotBool
             case 'z':
               /* close path */
               /* draw a line from (xcur, ycur) to (xinit, yinit) */
-              seg = TtaNewPathSegLine (xcur, ycur, xinit, yinit, newSubpath);
-              if (IsDrawn)
-                TtaAppendPathSeg (leaf, seg, doc);
-              else
-                TtaAppendPathSegToAnim (anim_seg, seg, doc);
+	      if(!(xcur == xinit && ycur == yinit))
+		{
+		  seg = TtaNewPathSegLine (xcur, ycur, xinit, yinit,
+					   newSubpath);
+		  if (IsDrawn)
+		    TtaAppendPathSeg (leaf, seg, doc);
+		  else
+		    TtaAppendPathSegToAnim (anim_seg, seg, doc);
 
-              newSubpath = FALSE;
-              xcur = xinit;
-              ycur = yinit;
+		  newSubpath = FALSE;
+		  xcur = xinit;
+		  ycur = yinit;
+		}
               break;
 
             case 'L':
               relative = FALSE;
             case 'l':
               /* lineto */
-              ptr = TtaSkipBlanks (ptr);
+              ptr = (char*)TtaSkipBlanks (ptr);
               ptr = GetNumber (ptr, &x, &error);
               if (!error)
                 ptr = GetNumber (ptr, &y, &error);
@@ -2982,7 +3161,7 @@ void *ParsePathDataAttribute (Attribute attr, Element el, Document doc, ThotBool
               relative = FALSE;
             case 'h':
               /* horizontal lineto */
-              ptr = TtaSkipBlanks (ptr);
+              ptr = (char*)TtaSkipBlanks (ptr);
               ptr = GetNumber (ptr, &x, &error);
               if (!error)
                 {
@@ -3003,7 +3182,7 @@ void *ParsePathDataAttribute (Attribute attr, Element el, Document doc, ThotBool
               relative = FALSE;
             case 'v':
               /* vertical lineto */
-              ptr = TtaSkipBlanks (ptr);
+              ptr = (char*)TtaSkipBlanks (ptr);
               ptr = GetNumber (ptr, &y, &error);
               if (!error)
                 {
@@ -3024,7 +3203,7 @@ void *ParsePathDataAttribute (Attribute attr, Element el, Document doc, ThotBool
               relative = FALSE;
             case 'c':
               /* curveto */
-              ptr = TtaSkipBlanks (ptr);
+              ptr = (char*)TtaSkipBlanks (ptr);
               ptr = GetNumber (ptr, &x1, &error);
               if (!error)
                 ptr = GetNumber (ptr, &y1, &error);
@@ -3068,7 +3247,7 @@ void *ParsePathDataAttribute (Attribute attr, Element el, Document doc, ThotBool
               relative = FALSE;
             case 's':
               /* smooth curveto */
-              ptr = TtaSkipBlanks (ptr);
+              ptr = (char*)TtaSkipBlanks (ptr);
               ptr = GetNumber (ptr, &x2, &error);
               if (!error)
                 ptr = GetNumber (ptr, &y2, &error);
@@ -3118,7 +3297,7 @@ void *ParsePathDataAttribute (Attribute attr, Element el, Document doc, ThotBool
               relative = FALSE;
             case 'q':
               /* quadratic Bezier curveto */
-              ptr = TtaSkipBlanks (ptr);
+              ptr = (char*)TtaSkipBlanks (ptr);
               ptr = GetNumber (ptr, &x1, &error);
               if (!error)
                 ptr = GetNumber (ptr, &y1, &error);
@@ -3155,7 +3334,7 @@ void *ParsePathDataAttribute (Attribute attr, Element el, Document doc, ThotBool
               relative = FALSE;
             case 't':
               /* smooth quadratic Bezier curveto */
-              ptr = TtaSkipBlanks (ptr);
+              ptr = (char*)TtaSkipBlanks (ptr);
               ptr = GetNumber (ptr, &x, &error);
               if (!error)
                 ptr = GetNumber (ptr, &y, &error);
@@ -3198,7 +3377,7 @@ void *ParsePathDataAttribute (Attribute attr, Element el, Document doc, ThotBool
               relative = FALSE;
             case 'a':
               /* elliptical arc */
-              ptr = TtaSkipBlanks (ptr);
+              ptr = (char*)TtaSkipBlanks (ptr);
               ptr = GetNumber (ptr, &rx, &error);    /* must be non-negative */
               if (rx < 0)
                 error = TRUE;
@@ -3257,7 +3436,7 @@ void *ParsePathDataAttribute (Attribute attr, Element el, Document doc, ThotBool
                 /* don't expect coordinates after a close path command, only
                    a new command or end of the string */
                 {
-                  ptr = TtaSkipBlanks (ptr);	     
+                  ptr = (char*)TtaSkipBlanks (ptr);	     
                   command = *ptr;
                   ptr++;
                 }
@@ -3304,7 +3483,7 @@ int ParseIntAttribute (Attribute attr)
       TtaGiveTextAttributeValue (attr, text, &length);
       /* parse the attribute value (a number followed by a unit) */
       ptr = text;
-      ptr = TtaSkipBlanks (ptr);
+      ptr = (char*)TtaSkipBlanks (ptr);
       ptr = ParseCSSUnit (ptr, &pval);
       TtaFreeMemory (text);
       return pval.typed_data.value;
@@ -3329,7 +3508,7 @@ float ParseFloatAttribute (Attribute attr)
       TtaGiveTextAttributeValue (attr, text, &length);
       /* parse the attribute value (a number followed by a unit) */
       ptr = text;
-      ptr = TtaSkipBlanks (ptr);
+      ptr = (char*)TtaSkipBlanks (ptr);
       ptr = ParseClampedUnit (ptr, &pval);
       TtaFreeMemory (text);
       return (float) pval.typed_data.value/1000;

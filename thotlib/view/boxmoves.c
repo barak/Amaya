@@ -1136,6 +1136,7 @@ void XMoveAllEnclosed (PtrBox pBox, int delta, int frame)
 #ifdef _GL
           pBox->VisibleModification = TRUE;
 #endif /* _GL */
+
           /* stretched box not already handled */
           if (pBox->BxHorizFlex &&
               (pAb->AbLeafType != LtCompound || pBox->BxPacking == 0))
@@ -2046,6 +2047,7 @@ void ResizeWidth (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox, int delta,
               TtaFreeMemory ((STRING) pBox->BxPictInfo);
               pBox->BxPictInfo = NULL;
             }
+	  
           /* Check the validity of dependency rules */
           toMove = TRUE;
           if (pAb->AbEnclosing && pAb->AbEnclosing->AbBox)
@@ -2110,6 +2112,7 @@ void ResizeWidth (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox, int delta,
             pBox->BxRuleWidth = pBox->BxW;
           /* outside width */
           pBox->BxWidth = pBox->BxWidth + delta + diff;
+          // change the org if the box width increases on the left side
           pBox->BxXOrg += orgTrans;
 
           if (pBox->BxType == BoPicture || pAb->AbLeafType == LtGraphics)
@@ -3547,12 +3550,13 @@ void YMove (PtrBox pBox, PtrBox pFromBox, int delta, int frame)
       if (pAb->AbEnclosing && pAb->AbEnclosing->AbBox)
         checkParent = (pAb->AbEnclosing->AbBox->BxType != BoGhost &&
                        pAb->AbEnclosing->AbBox->BxType != BoFloatGhost);
-      if (pAb->AbNotInLine &&
-          (pAb->AbEnclosing->AbBox->BxType == BoGhost ||
-           pAb->AbEnclosing->AbBox->BxType == BoFloatGhost ||
-           pAb->AbEnclosing->AbBox->BxType == BoBlock ||
-           pAb->AbEnclosing->AbBox->BxType == BoFloatBlock ||
-           pAb->AbEnclosing->AbBox->BxType == BoCellBlock))
+      if (pAb->AbNotInLine ||
+          ((pAb->AbEnclosing &&  pAb->AbEnclosing->AbBox &&
+            (pAb->AbEnclosing->AbBox->BxType == BoGhost ||
+             pAb->AbEnclosing->AbBox->BxType == BoFloatGhost ||
+             pAb->AbEnclosing->AbBox->BxType == BoBlock ||
+             pAb->AbEnclosing->AbBox->BxType == BoFloatBlock ||
+             pAb->AbEnclosing->AbBox->BxType == BoCellBlock))))
         checkParent = FALSE;
       else
         {
@@ -3871,8 +3875,7 @@ void WidthPack (PtrAbstractBox pAb, PtrBox pSourceBox, int frame)
                 pChildAb->AbVisibility >= ViewFrameTable[frame - 1].FrVisibility &&
                 (FrameTable[frame].FrView != 1 ||
                  !TypeHasException (ExcIsMap, pChildAb->AbElement->ElTypeNumber,
-                                    pChildAb->AbElement->ElStructSchema)) &&
-                pChildAb->AbHorizEnclosing)
+                                    pChildAb->AbElement->ElStructSchema)))
               {
                 /* look for the box which relies the box to its enclosing */
                 pRelativeBox = GetHPosRelativeBox (pChildBox, NULL);
@@ -4106,8 +4109,7 @@ void HeightPack (PtrAbstractBox pAb, PtrBox pSourceBox, int frame)
                 pChildAb->AbVisibility >= ViewFrameTable[frame - 1].FrVisibility &&
                 (FrameTable[frame].FrView != 1 ||
                  !TypeHasException (ExcIsMap, pChildAb->AbElement->ElTypeNumber,
-                                    pChildAb->AbElement->ElStructSchema)) &&
-                pChildAb->AbVertEnclosing)
+                                    pChildAb->AbElement->ElStructSchema)))
               {
                 /* look for the box which relies the box to its enclosing */
                 pRelativeBox = GetVPosRelativeBox (pChildBox, NULL);

@@ -17,6 +17,14 @@
 #include "logdebug.h"
 #include "selection.h"
 
+#undef THOT_EXPORT
+#define THOT_EXPORT extern
+#include "edit_tv.h"
+#include "frame_tv.h"
+#include "appdialogue_tv.h"
+#include "select_tv.h"
+
+
 #include "callback_f.h"
 #include "exceptions_f.h"
 #include "structschema_f.h"
@@ -34,6 +42,7 @@ WX_DEFINE_LIST(AmayaPathControlItemList);
 
 static wxString s_sep = wxT(">");
 static wxString s_dots = wxT("...");
+static ThotBool Set_ColumnSelected = FALSE;
 
 /*------------------------------------------------------------------------------
   ----------------------------------------------------------------------------*/
@@ -63,92 +72,116 @@ void AmayaPathControl::SetSelection(Element elem)
   wxString            name;
   wxRect              rect;
   int                 length, kind, i;
-  char               *buffer = NULL, buff[MAX_LENGTH];
-  bool                xtiger, file = false;
+  char                buffer[MAX_LENGTH], buff[MAX_LENGTH];
+  ThotBool            xtiger = FALSE, file = FALSE;
   Document            doc = TtaGetDocument(elem);
   SSchema             htmlSSchema = TtaGetSSchema ("HTML", doc);
   AttributeType       attrType;
   Attribute           attr;
-  
+  const char*         elname;
   
   m_items.DeleteContents(true);
   m_items.clear();
   m_focused = NULL;
   m_height = 0;
-  
+  Set_ColumnSelected = WholeColumnSelected;
   while (pEl)
-    {  
-      /** @see BuildSelectionMessage () */
+    {
+      elType = TtaGetElementType (Element(pEl));
+      xtiger = FALSE;
       if (pEl->ElParent &&
-          !HiddenType(pEl) &&
+          !HiddenType (pEl) &&
+          (!WholeColumnSelected ||
+           pEl == (PtrElement) elem ||
+           pEl->ElParent == NULL || pEl->ElParent->ElParent == NULL ||
+           (!TypeHasException (ExcIsRow, pEl->ElTypeNumber, pEl->ElStructSchema) &&
+           !TypeHasException (ExcIsTable, pEl->ElParent->ElParent->ElTypeNumber,
+                              pEl->ElParent->ElParent->ElStructSchema))) &&     
           (!pEl->ElTerminal ||
            (pEl->ElLeafType != LtText && pEl->ElLeafType != LtPicture)))
         {
-          buffer = NULL;
-          xtiger = (pEl->ElStructSchema && pEl->ElStructSchema->SsName &&
-                    !strcmp (pEl->ElStructSchema->SsName, "Template"));
-          if (xtiger)
+          buffer[0] = EOS;
+          if ((pEl->ElStructSchema && pEl->ElStructSchema->SsName &&
+              !strcmp (pEl->ElStructSchema->SsName, "Template")))
             {
-              // replace the element name byt the attribute value
+              // The element is an XTiger element.
+              // Replace its name by the attribute value
+              xtiger = TRUE;
               pAttr = GetAttrElementWithException (ExcGiveName, pEl);
               if (pAttr)
                 {
-                  length = TtaGetTextAttributeLength ((Attribute)pAttr);
-                  buffer = (char *)TtaGetMemory (length + 1);
                   /* copy the NAME attribute into TargetName */
+                  length = MAX_LENGTH-1;
                   TtaGiveTextAttributeValue ((Attribute)pAttr, buffer, &length);
                 }
-            }
-          else
-            {
-              // display the line number
-              file = (pEl->ElStructSchema && pEl->ElStructSchema->SsName &&
-                      !strcmp (pEl->ElStructSchema->SsName, "TextFile"));
-              if (file)
+              else
                 {
-                  buffer = (char *)TtaGetMemory (20);
-                  sprintf (buffer, "Line: %d", pEl->ElLineNb);
+                  pAttr = GetAttrElementWithException (ExcGiveTypes, pEl);
+                  if (pAttr)
+                    {
+                      /* get the first type name */
+                      length = MAX_LENGTH-1;
+                      TtaGiveTextAttributeValue ((Attribute)pAttr, buff, &length);
+                      for (i = 0; i < length; i++)
+                        if (buff[i] == SPACE)
+                          {
+                            buff[i] = EOS;
+                            i = length;
+                          }
+                      strcat (buffer, buff);
+                    }
                 }
             }
-          if (buffer)
+          else if (pEl->ElStructSchema && pEl->ElStructSchema->SsName &&
+                   !strcmp (pEl->ElStructSchema->SsName, "TextFile"))
             {
-              // replace the element name by the attribute value
-              name = TtaConvMessageToWX(buffer);
-              TtaFreeMemory (buffer);
-              buffer = NULL;
+              // The showed document is a text file.
+              // Display the selection line number
+              file = TRUE;
+              sprintf (buffer, "Line: %d", pEl->ElLineNb);
             }
+          else if (WholeColumnSelected && pEl == (PtrElement) elem &&
+                   pEl->ElStructSchema == (PtrSSchema)htmlSSchema)
+            {
+              // The selection is a table column
+              elname = pEl->ElStructSchema->SsRule->SrElem[pEl->ElTypeNumber - 1]->SrName;
+              if (!strcmp (elname, "td") || !strcmp (elname, "th"))
+                sprintf (buffer, "Column");
+            }
+
+          if (buffer[0] != EOS)
+              // replace the element name by the attribute value
+              name = TtaConvMessageToWX (buffer);
           else
             {
-              elType = TtaGetElementType(Element(pEl));
               name = TtaConvMessageToWX(TtaGetElementTypeName(elType));
               
-              if(elType.ElSSchema==htmlSSchema)
+              if (elType.ElSSchema == htmlSSchema)
                 {
                   TtaGiveAttributeTypeFromName("class", Element(pEl), &attrType, &kind);
                   attr = TtaGetAttribute(Element(pEl), attrType);
-                  if(attr)
+                  if (attr)
                     {
+                      /* get the first class name */
                       length = MAX_LENGTH;
                       TtaGiveTextAttributeValue(attr, buff, &length);
                       name.Alloc(name.Length()+length+1);
-                      for(i=0; i<length; i++)
+                      for (i = 0; i < length; i++)
                         {
-                          if(buff[i]!=' ')
+                          if (buff[i] != SPACE)
                             {
                               name += wxT('.');
-                              while(buff[i]!=0 && buff[i]!=' ')
+                              while (buff[i] != EOS && buff[i] != SPACE)
                                 {
-                                  name += wxChar(buff[i]);
+                                  name += wxChar (buff[i]);
                                   i++;
                                 }
                             }
                         }
                     }
                 }
-              
-              
             }
-          dc.GetTextExtent(name, &rect.width, &rect.height);
+          dc.GetTextExtent (name, &rect.width, &rect.height);
           AmayaPathControlItem* item = new AmayaPathControlItem;
           item->label = name;
           item->elem = Element(pEl);
@@ -158,6 +191,7 @@ void AmayaPathControl::SetSelection(Element elem)
           if (rect.height > m_height)
             m_height = rect.height;
         }
+
       if (file)
         // don't display the hierarchy
         pEl = NULL;
@@ -280,7 +314,7 @@ void AmayaPathControlItem::Draw(wxDC& dc, bool isFocused)
     else if (isXTiger)
     {
       wxColour col = dc.GetTextForeground();
-      dc.SetTextForeground(wxColour(25, 142, 25));
+      dc.SetTextForeground(wxColour(140, 140, 10));
       dc.DrawText(label, rect.x, rect.y);
       dc.SetTextForeground(col);
     }
@@ -352,10 +386,11 @@ void AmayaPathControl::OnMouseLeftUp(wxMouseEvent& event)
   Document            doc;
   PtrElement          pEl;
   wxPoint             pos = event.GetPosition();
-  wxAmayaPathControlItemListNode *node = m_items.GetLast();
+  wxAmayaPathControlItemListNode *node = m_items.GetLast(), *previous;
 
   while (node)
     {
+      previous = node->GetPrevious();
       if (node->GetData()->rect.x >= 0)
         {
           pEl = (PtrElement)node->GetData()->elem;
@@ -365,23 +400,28 @@ void AmayaPathControl::OnMouseLeftUp(wxMouseEvent& event)
               doc = TtaGetDocument(node->GetData()->elem);
               if (doc)
                 {
-                  TtaSelectElementWithoutPath (doc, node->GetData()->elem);
-                  TtaRedirectFocus ();
-                  /* WARNING: just update applied style */
-                  notifyEl.event = TteElemSelect;
-                  notifyEl.document = doc;
-                  notifyEl.element = (Element)pEl;
-                  notifyEl.info = 0; /* not sent by undo */
-                  notifyEl.elementType.ElTypeNum = pEl->ElTypeNumber;
-                  notifyEl.elementType.ElSSchema = (SSchema) (pEl->ElStructSchema);
-                  notifyEl.position = 0;
-                  SynchronizeAppliedStyle (&notifyEl);
+                  if (previous == NULL && Set_ColumnSelected)
+                    TtaSelectEnclosingColumn ((Element)pEl);
+                  else
+                    {
+                      TtaSelectElementWithoutPath (doc, node->GetData()->elem);
+                      TtaRedirectFocus ();
+                      /* WARNING: just update applied style */
+                      notifyEl.event = TteElemSelect;
+                      notifyEl.document = doc;
+                      notifyEl.element = (Element)pEl;
+                      notifyEl.info = 0; /* not sent by undo */
+                      notifyEl.elementType.ElTypeNum = pEl->ElTypeNumber;
+                      notifyEl.elementType.ElSSchema = (SSchema) (pEl->ElStructSchema);
+                      notifyEl.position = 0;
+                      SynchronizeAppliedStyle (&notifyEl);
+                    }
                   return;
                 }
             }
         }
-      node = node->GetPrevious();
-    }  
+      node = previous;
+    }
   TtaRedirectFocus ();
 }
 

@@ -61,7 +61,9 @@
 #include "AmayaStylePanel.h"
 #include "AmayaMathMLPanel.h"
 #include "AmayaXHTMLPanel.h"
+#include "AmayaElementPanel.h"
 #include "AmayaExplorerPanel.h"
+#include "AmayaSVGPanel.h"
 #include "AmayaXMLPanel.h"
 #include "AmayaSpeCharPanel.h"
 
@@ -197,19 +199,28 @@ void AmayaNormalWindow::CleanUp()
  -----------------------------------------------------------------------*/
 void AmayaNormalWindow::RegisterThotToolPanels()
 {
-  TtaSetEnvString("CLASSIC_PANEL_ORDER",
-                  "AmayaXHTMLToolPanel;AmayaStyleToolPanel;AmayaApplyClassToolPanel;"
-                  "StyleListToolPanel;AmayaExplorerToolPanel;AmayaAttributeToolPanel;"
-                  "AmayaMathMLToolPanel;AmayaSpeCharToolPanel;AmayaXMLToolPanel",
-                   FALSE);
+  char         *s;
+
+  s = TtaGetEnvString("CLASSIC_PANEL_ORDER");
+  // detect an old panel configuration
+  if (s && strstr (s, "AmayaXHTMLToolPanel"))
+    TtaSetEnvString("CLASSIC_PANEL_ORDER",
+                    "AmayaElementToolPanel;AmayaStyleToolPanel;AmayaApplyClassToolPanel;"
+                    "StyleListToolPanel;AmayaExplorerToolPanel;AmayaAttributeToolPanel;"
+                    "AmayaSpeCharToolPanel",
+                    TRUE);
+  /*else
+    TtaSetEnvString("CLASSIC_PANEL_ORDER",
+                    "AmayaElementToolPanel;AmayaStyleToolPanel;AmayaApplyClassToolPanel;"
+                    "StyleListToolPanel;AmayaExplorerToolPanel;AmayaAttributeToolPanel;"
+                    "AmayaSpeCharToolPanel",
+                    FALSE);*/
   RegisterToolPanelClass(CLASSINFO(AmayaExplorerToolPanel));
-  RegisterToolPanelClass(CLASSINFO(AmayaXHTMLToolPanel));
+  RegisterToolPanelClass(CLASSINFO(AmayaElementToolPanel));
   RegisterToolPanelClass(CLASSINFO(AmayaAttributeToolPanel));
   RegisterToolPanelClass(CLASSINFO(AmayaApplyClassToolPanel));
   RegisterToolPanelClass(CLASSINFO(AmayaStyleToolPanel));
-  RegisterToolPanelClass(CLASSINFO(AmayaMathMLToolPanel));
   RegisterToolPanelClass(CLASSINFO(AmayaSpeCharToolPanel));
-  RegisterToolPanelClass(CLASSINFO(AmayaXMLToolPanel));
 }
 
 /*----------------------------------------------------------------------
@@ -222,8 +233,10 @@ void AmayaNormalWindow::LoadConfig()
   unsigned int  n;
   wxArrayString arr;
   ClassInfoSet::iterator it;
+  char         *s;
 
-  wxString str = TtaConvMessageToWX(TtaGetEnvString("CLASSIC_PANEL_ORDER"));
+  s = TtaGetEnvString("CLASSIC_PANEL_ORDER");
+  wxString str = TtaConvMessageToWX(s);
   arr = wxStringTokenize(str, wxT(";"));
 
   for( it = g_AmayaToolPanelClassInfoSet.begin();
@@ -239,7 +252,7 @@ void AmayaNormalWindow::LoadConfig()
   for(n = 0; n<arr.GetCount(); n++)
     {
       wxClassInfo *ci = wxClassInfo::FindClass(arr[n]);
-      if(ci)
+      if(ci && g_AmayaToolPanelClassInfoSet.find(ci)!=g_AmayaToolPanelClassInfoSet.end())
         {
           wxString name = ci->GetClassName();
           if(Prof_ShowGUI((const char*)wxString(name).mb_str(wxConvUTF8)))
@@ -288,12 +301,86 @@ void AmayaNormalWindow::SaveConfig()
       TtaSetEnvBoolean("EDIT_TOOLBAR", TRUE, TRUE);
       // and set the default order
       TtaSetEnvString("CLASSIC_PANEL_ORDER",
-                      "AmayaXHTMLToolPanel;AmayaAttributeToolPanel;AmayaStyleToolPanel;"
-                      "StyleListToolPanel;AmayaApplyClassToolPanel;AmayaExplorerToolPanel;"
-                      "AmayaMathMLToolPanel;AmayaSpeCharToolPanel;AmayaXMLToolPanel",
-                      TRUE);
+                      "AmayaElementToolPanel;AmayaStyleToolPanel;AmayaApplyClassToolPanel;"
+                      "StyleListToolPanel;AmayaExplorerToolPanel;AmayaAttributeToolPanel;"
+                      "AmayaSpeCharToolPanel",
+                       TRUE);
     }
   AmayaWindow::SaveConfig();
+}
+
+
+/*----------------------------------------------------------------------
+ *       Class:  AmayaNormalWindow
+ *      Method:  SendDataToPanel
+ * Description:  send data to specified panel
+ -----------------------------------------------------------------------*/
+void AmayaNormalWindow::SendDataToPanel(int panel_type, AmayaParams& params)
+{
+  AmayaToolPanel* panel;
+  
+  switch(panel_type)
+  {
+    case WXAMAYA_PANEL_XHTML:
+    case WXAMAYA_PANEL_MATHML:
+    case WXAMAYA_PANEL_XML:
+    case WXAMAYA_PANEL_SVG:
+      panel = GetToolPanel(WXAMAYA_PANEL_ELEMENTS);
+      if(panel)
+        ((AmayaElementToolPanel*)panel)->SendDataToPanel(panel_type, params);
+      break;
+    default:
+      panel = GetToolPanel(panel_type);
+      if(panel)
+        panel->SendDataToPanel(params);
+      break;      
+  }
+}
+
+/*----------------------------------------------------------------------
+ *       Class:  AmayaNormalWindow
+ *      Method:  RaisePanel
+ * Description:  Raiser the specified panel
+ -----------------------------------------------------------------------*/
+void AmayaNormalWindow::RaisePanel(int panel_type)
+{
+  AmayaToolPanel* panel;
+  
+  switch(panel_type)
+  {
+    case WXAMAYA_PANEL_XHTML:
+    case WXAMAYA_PANEL_MATHML:
+    case WXAMAYA_PANEL_XML:
+    case WXAMAYA_PANEL_SVG:
+      panel = GetToolPanel(WXAMAYA_PANEL_ELEMENTS);
+      if(panel)
+        ((AmayaElementToolPanel*)panel)->RaisePanel(panel_type);
+      break;
+    default:
+      panel = GetToolPanel(panel_type);
+      if(panel)
+        panel->Raise();
+      break;      
+  }
+}
+
+/*----------------------------------------------------------------------
+ *       Class:  AmayaNormalWindow
+ *      Method:  RaiseDoctypePanels
+ * Description:  Raiser the specified panels
+ -----------------------------------------------------------------------*/
+void AmayaNormalWindow::RaiseDoctypePanels(int doctype)
+{
+  AmayaToolPanel* panel;
+  
+  panel = GetToolPanel(WXAMAYA_PANEL_ELEMENTS);
+  if(panel)
+    ((AmayaElementToolPanel*)panel)->RaiseDoctypePanels(doctype);
+  
+  panel = GetToolPanel(WXAMAYA_PANEL_STYLE);
+  if(panel)
+    ((AmayaStyleToolPanel*)panel)->RaiseDoctypePanels(doctype);
+  
 }
 
 

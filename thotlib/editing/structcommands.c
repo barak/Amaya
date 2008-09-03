@@ -38,6 +38,10 @@
 #include "edit_tv.h"
 #include "appdialogue_tv.h"
 #include "platform_tv.h"
+#include "viewapi_f.h"
+#include "svgedit.h"
+
+extern int SelectedPointInPolyline;
 
 /* isomorphism description */
 typedef struct _IsomorphDesc *PtrIsomorphDesc;
@@ -3511,6 +3515,8 @@ void TtaInsertAnyElement (Document document, ThotBool before)
   ThotBool        isList, optional, histOpen;;
   NotifyElement   notifyEl;
 
+  ThotBool newPointCreated;
+
   UserErrorCode = 0;
   if (document < 1 || document > MAX_DOCUMENTS)
     /* Checks the parameter document */
@@ -3547,6 +3553,31 @@ void TtaInsertAnyElement (Document document, ThotBool before)
       else if (pSelDoc->DocReadOnly)
         /* the document can not be modified */
         return;
+
+      if(firstSel == lastSel && firstSel->ElTerminal &&
+	 (firstSel->ElLeafType == LtPolyLine || 
+	  firstSel->ElLeafType == LtPath)
+	 && firstChar >= 1)
+	{
+	  newPointCreated = TtaInsertPointInCurve (document,
+						   (Element)firstSel,
+						   before, &firstChar);
+
+	  ChangeSelection (TtaGiveActiveFrame(),
+			   firstSel->ElAbstractBox[0],
+			   firstChar, FALSE,
+			   TRUE, FALSE, FALSE);
+	  SelectedPointInPolyline = firstChar;
+
+	  /* Update the attribute */
+	  if(newPointCreated)
+	    {
+	    UpdatePointsOrPathAttribute(document,
+					TtaGetParent((Element)firstSel), 0, 0, TRUE);
+	    TtaSetDocumentModified(document);
+	    }
+	  return;
+	}
 
       if (before)
         {

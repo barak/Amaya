@@ -212,7 +212,17 @@ dnl freetype2 is for text drawing (fonts ...)
 dnl wxGLCanvas is for integration of opengl in wxWidgets (WX)
 
 with_wx="yes"
-AC_ARG_ENABLE(system-wx,       [  --enable-system-wx      try the wxWidgets system library ])
+
+AC_ARG_ENABLE([system-wx],
+    AC_HELP_STRING([--enable-system-wx],[try the wxWidgets system library]),
+    [case "${enableval}" in
+      yes) with_system_wx="yes";;
+      no)  with_system_wx="no" ;;
+      *) AC_MSG_ERROR(bad value ${enableval} for --enable-system-wx) ;;
+    esac],
+    [with_system_wx="no"])
+
+
 
 AC_ARG_WITH([gl],
    AC_HELP_STRING([--with-gl],[enable canvas with hardware OpenGL implementation]),
@@ -288,14 +298,14 @@ if test "$with_mesa" = "yes" ; then
   AC_SUBST(GL_LIBRARIES)
 fi
 
-if test "$enable_system_wx" = "yes"; then
+if test "$with_system_wx" = "yes"; then
   AC_PATH_PROG(WXCONFIG, wx-config)
   if test -z "$WXCONFIG"; then
-    enable_system_wx="no"
+    with_system_wx="no"
   fi
 fi
   
-if test "$enable_system_wx" != "yes"; then
+if test "$with_system_wx" != "yes"; then
   # WX_SRCDIR is better to understand the code than with_wxsrcdir variable
   if test ! -f $with_wxsrcdir/Makefile.in ; then
     $with_wxsrcdir = ../../wxWidgets
@@ -390,7 +400,7 @@ if test "$enable_system_wx" != "yes"; then
   BUILDWXWIDGETS="wxwidgets"
   AC_SUBST(BUILDWXWIDGETS)
 
-fi #!$enable_system_wx
+fi #!$with_system_wx
 
 WX_INCLUDES="$WX_INCLUDES `$WXCONFIG --cxxflags`"
 AC_SUBST(WX_INCLUDES)
@@ -823,8 +833,8 @@ if test "$with_raptor" = "yes" -a "$with_system_raptor" = "yes" ; then
     AC_PATH_PROG([RAPTOR_CONFIG],[raptor-config])
 
     if test "$RAPTOR_CONFIG" = "" ; then
-	AC_MSG_WARN(Not using system-provided Raptor library)
-	with_system_raptor="no"
+      AC_MSG_WARN(Not using system-provided Raptor library)
+      with_system_raptor="no"
     fi
 fi
 
@@ -843,7 +853,7 @@ fi
 if test "$with_raptor" = "yes" ; then
 	if test "$with_system_raptor" != "yes" ; then
 		AMAYA_ANNOT_OPTIONS="$AMAYA_ANNOT_OPTIONS -I\$(THOTDIR)/../redland/raptor "
-		AMAYA_RAPTOR_LIBS="../redland/raptor/.libs/libraptor.a"
+		AMAYA_RAPTOR_LIBS="../raptor/.libs/libraptor.a"
 		AMAYA_RAPTOR_INCLUDES="-I\$(THOTDIR)/../redland/raptor"
 		BUILDRAPTOR="raptor"
 		CURRENTPATH="`pwd`"
@@ -867,7 +877,8 @@ if test "$with_raptor" = "yes" ; then
 		cd ..
 	else
 		raptor_includes=`$RAPTOR_CONFIG --cflags`
-		raptor_libs=`$RAPTOR_CONFIG --libs`
+		raptor_libs="-lraptor"
+		BUILDRAPTOR=""
  		AMAYA_ANNOT_OPTIONS="$AMAYA_ANNOT_OPTIONS"
 		AMAYA_ANNOT_INCLUDES="$raptor_includes -I\$(THOTDIR)/thotlib/include"
 		AMAYA_ANNOT_EXTRA_LIBS="$raptor_libs"
@@ -1130,10 +1141,6 @@ if test "$build_amaya" = "yes" ; then
        EXTRA_MAKEFILE_IN="$srcdir/davlib/Makefile.in"
     fi
 
-    if test "$with_wx" = "yes" -a "enable_system_wx" = "yes" ; then
-       EXTRA_MAKEFILE_IN="$EXTRA_MAKEFILE_IN $WX_SRCDIR/Makefile.in $WX_SRCDIR/configure.in"
-    fi
-
 fi
 
 dnl
@@ -1198,13 +1205,11 @@ if test "$build_amaya" = "yes" ; then
     fi
     if test "$with_annot" = "yes" ; then
 	echo Amaya configured with Annotations support
-    fi
-    if test "$with_redland" = "yes" ; then
-	if test "$with_system_redland" = "no" ; then
- 	  echo Amaya configured with the Redland RDF library \(local source\)
-	else
-	  echo Amaya configured with the Redland RDF library \(system\)
-	fi
+      if test "$with_system_raptor" = "yes" ; then
+ 	echo Amaya configured with the RaptorF library \(system\)
+      else
+	echo Amaya configured with the Raptor library \(system\)
+      fi
     fi
     if test "$with_templates" = "yes" ; then
 	echo Amaya configured with templates support

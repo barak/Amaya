@@ -533,7 +533,7 @@ static void ArrowDrawing (int frame, int x1, int y1, int x2, int y2,
   points[2].x = xd;
   points[2].y = yd;
 
-  GL_DrawPolygon (points, 3);
+  GL_DrawPolygon (points, 3, 0);
 }
 
 /*----------------------------------------------------------------------
@@ -550,8 +550,8 @@ static void ArrowDrawing (int frame, int x1, int y1, int x2, int y2,
          
   fg : drawing color
   ----------------------------------------------------------------------*/
-void DrawArrow (int frame, int thick, int style, int x, int y, int l, int h,
-                int orientation, int type, int fg)
+void DrawArrow (int frame, int thick, int style, int x, int y, int l,
+		       int h, int orientation, int type, int fg)
 {
   int                 xm, ym, xf, yf, D1, D2;
 
@@ -1227,6 +1227,29 @@ void DrawBrace (int frame, int thick, int x, int y, int l, int h,
         }
     }
 }
+
+/*----------------------------------------------------------------------
+  DoDrawMesh : Draw Path as lines or polygons
+  ----------------------------------------------------------------------*/
+static void DoDrawMesh (int frame, int thick, int style, void *mesh,
+                        int fg, int bg, int pattern)
+{
+  /* Fill in the polygon */
+  if (pattern == 2) 
+    {
+      /*  InitDrawing (style, thick, bg); */
+      GL_SetForeground (bg, TRUE);
+      // by default mode NONZERO
+      MakeMesh (mesh, 0);
+    }
+  /* Draw the border */
+  if (thick > 0 && fg >= 0)
+    {
+      InitDrawing (style, thick, fg);
+      MakeMeshLines (mesh);
+    }
+}
+
 /*----------------------------------------------------------------------
   DrawRectangle draw a rectangle located at (x, y) in frame,
   of geometry width x height.
@@ -1293,45 +1316,59 @@ void DrawRectangle (int frame, int thick, int style, int x, int y, int width,
 }
 
 /*----------------------------------------------------------------------
-  DrawDiamond draw a diamond.
-  Parameters fg, bg, and pattern are for drawing
-  color, background color and fill pattern.
+  DrawRectangle draw a rectangle located at (x, y) in frame.
   ----------------------------------------------------------------------*/
-void DrawDiamond (int frame, int thick, int style, int x, int y, int width,
-                  int height, int fg, int bg, int pattern)
+void DrawRectangle2 (int frame, int thick, int style, int x, int y, int width,
+                    int height, int fg, int bg, int pattern)
 {
-  ThotPoint           points[5];
+  void        *mesh;  
 
-  if (width > thick + 1)
-    width = width - thick - 1;
-  if (height > thick + 1)
-    height = height - thick - 1;
-  x += thick / 2;
-  y = y + thick / 2 + FrameTable[frame].FrTopMargin;
+  /* Check that width and height are positive */
+  if (width <= 0 || height <= 0)
+    return;
 
-  points[0].x = x + (width / 2);
-  points[0].y = y;
-  points[4].x = points[0].x;
-  points[4].y = points[0].y;
-  points[1].x = x + width;
-  points[1].y = y + (height / 2);
-  points[2].x = points[0].x;
-  points[2].y = y + height;
-  points[3].x = x;
-  points[3].y = points[1].y;
+  /* Build the following shape:
 
-  /* Fill in the diamond */
-  if (pattern == 2)
-    {
-      LoadColor (bg);
-      GL_DrawPolygon (points, 5);
-    }
+    (x,y)
+        1-----width-----2
+        |               |
+    height              |
+        |               |
+        |               |
+        4---------------3  
+  */
 
-  /* Draw the border */
+  mesh = GetNewMesh ();
+
+  /* 1 */
+  MeshNewPoint (x, y, mesh);
+
+  /* 2 */
+  MeshNewPoint (x + width , y, mesh);
+
+  /* 3 */
+  MeshNewPoint (x + width, y + height, mesh);
+
+  /* 4 */
+  MeshNewPoint (x, y + height, mesh);
+
+  /* 1 */
+  MeshNewPoint (x, y, mesh);
+
+  /* Draw the shape and free the memory used */
+  CountourCountAdd (mesh);
+  DoDrawMesh (frame, thick, style, mesh, fg, bg, pattern);
+  FreeMesh (mesh);
+
+  /* Segments are not joined well when using DoDrawMesh,
+     (for instance when thick >= 10) so redraw them using the
+     former function, until the problem is fixed. - F. Wang */
   if (thick > 0 && fg >= 0)
     {
-      InitDrawing (style, thick, fg);
-      GL_DrawPolygon (points, 5);
+      InitDrawing (style, thick, fg); 
+      GL_DrawEmptyRectangle (fg, (float) x, (float) y,
+                             (float) width, (float) height,
+                             (float) thick);
     }
 }
 
@@ -1415,7 +1452,7 @@ static void DoDrawLines (int frame, int thick, int style,
     {
       /*  InitDrawing (style, thick, bg); */
       GL_SetForeground (bg, TRUE);
-      GL_DrawPolygon (points, npoints);
+      GL_DrawPolygon (points, npoints, 0);
     }
 
   /* Draw the border */
@@ -1424,6 +1461,131 @@ static void DoDrawLines (int frame, int thick, int style,
       InitDrawing (style, thick, fg);
       GL_DrawLines (points, npoints);
     }
+}
+
+
+/*----------------------------------------------------------------------
+  DrawDiamond draw a diamond.
+  Parameters fg, bg, and pattern are for drawing
+  color, background color and fill pattern.
+  ----------------------------------------------------------------------*/
+void DrawDiamond (int frame, int thick, int style, int x, int y, int width,
+                  int height, int fg, int bg, int pattern)
+{
+  ThotPoint           points[5];
+
+  if (width > thick + 1)
+    width = width - thick - 1;
+  if (height > thick + 1)
+    height = height - thick - 1;
+  x += thick / 2;
+  y = y + thick / 2 + FrameTable[frame].FrTopMargin;
+
+  points[0].x = x + (width / 2);
+  points[0].y = y;
+  points[4].x = points[0].x;
+  points[4].y = points[0].y;
+  points[1].x = x + width;
+  points[1].y = y + (height / 2);
+  points[2].x = points[0].x;
+  points[2].y = y + height;
+  points[3].x = x;
+  points[3].y = points[1].y;
+
+/*   /\* Fill in the diamond *\/ */
+/*   if (pattern == 2) */
+/*     { */
+/*       LoadColor (bg); */
+/*       GL_DrawPolygon (points, 5, 0); */
+/*     } */
+
+/*   /\* Draw the border *\/ */
+/*   if (thick > 0 && fg >= 0) */
+/*     { */
+/*       InitDrawing (style, thick, fg); */
+/*       GL_DrawPolygon (points, 5, 0); */
+/*     } */
+
+  DoDrawLines (frame, thick, style, points, 5, fg, bg, pattern);
+}
+
+/*----------------------------------------------------------------------
+  DrawParallelogram draw a diamond.
+  Parameters fg, bg, and pattern are for drawing
+  color, background color and fill pattern.
+  ----------------------------------------------------------------------*/
+void DrawParallelogram (int frame, int thick, int style, int x, int y,
+			int width, int height, int e, int fg, int bg,
+			int pattern)
+{
+  ThotPoint           points[5];
+
+  y += FrameTable[frame].FrTopMargin;
+
+  points[0].x = x + e;
+  points[0].y = y;
+  points[4].x = points[0].x;
+  points[4].y = points[0].y;
+  points[1].x = x + width;
+  points[1].y = y;
+  points[2].x = x + width - e;
+  points[2].y = y + height;
+  points[3].x = x;
+  points[3].y = y + height;
+
+  DoDrawLines (frame, thick, style, points, 5, fg, bg, pattern);
+}
+
+/*----------------------------------------------------------------------
+  DrawTrapezium draw a diamond.
+  Parameters fg, bg, and pattern are for drawing
+  color, background color and fill pattern.
+  ----------------------------------------------------------------------*/
+void DrawTrapezium (int frame, int thick, int style, int x, int y,
+		    int width, int height, int e, int f,
+		    int fg, int bg,
+		    int pattern)
+{
+  ThotPoint           points[5];
+
+  y += FrameTable[frame].FrTopMargin;
+
+  if(e < 0)
+    {
+      e=-e;
+      points[0].x = x;
+      points[0].y = y;
+      points[3].x = x + e;
+      points[3].y = y + height;
+    }
+  else
+    {
+      points[0].x = x + e;
+      points[0].y = y;
+      points[3].x = x;
+      points[3].y = y + height;
+    }
+
+  if(f < 0)
+    {
+      f=-f;
+      points[1].x = x + width - f;
+      points[1].y = y;
+      points[2].x = x + width;
+      points[2].y = y + height;
+    }
+  else
+    {
+      points[1].x = x + width;
+      points[1].y = y;
+      points[2].x = x + width - f;
+      points[2].y = y + height;
+    }
+
+  points[4].x = points[0].x;
+  points[4].y = points[0].y;
+
+  DoDrawLines (frame, thick, style, points, 5, fg, bg, pattern);
 }
 
 /*----------------------------------------------------------------------
@@ -1650,40 +1812,18 @@ void DrawSpline (int frame, int thick, int style, int x, int y,
   if (pattern == 2)
     {
       GL_SetForeground (bg, TRUE);
-      GL_DrawPolygon (points, npoints);
+      GL_DrawPolygon (points, npoints, 0);
     }
 
   /* Draw the border */
   if (thick > 0 && fg >= 0)
     {
       InitDrawing (style, thick, fg);
-      GL_DrawPolygon (points, npoints);
+      GL_DrawPolygon (points, npoints, 0);
     }
 
   /* free the table of points */
   TtaFreeMemory (points);
-}
-
-
-/*----------------------------------------------------------------------
-  DoDrawMesh : Draw Path as lines or polygons
-  ----------------------------------------------------------------------*/
-static void DoDrawMesh (int frame, int thick, int style, void *mesh,
-                        int fg, int bg, int pattern)
-{
-  /* Fill in the polygon */
-  if (pattern == 2) 
-    {
-      /*  InitDrawing (style, thick, bg); */
-      GL_SetForeground (bg, TRUE); 
-      MakeMesh (mesh);  
-    }
-  /* Draw the border */
-  if (thick > 0 && fg >= 0)
-    {
-      InitDrawing (style, thick, fg);
-      MakeMeshLines (mesh);
-    }
 }
 
 /*----------------------------------------------------------------------
@@ -1747,8 +1887,10 @@ void DrawPath (int frame, int thick, int style, int x, int y,
               y1 = PixelValueDble (y, pPa->YStart, frame);
               x2 = PixelValueDble (x, pPa->XEnd, frame);
               y2 = PixelValueDble (y, pPa->YEnd, frame);
-              cx1 = (double) pPa->XRadius; 
-              cy1 = (double) pPa->YRadius; 
+              cx1 = (double) PixelValue (pPa->XRadius, UnPixel, NULL,
+					 ViewFrameTable[frame - 1].FrMagnification); 
+              cy1 = (double) PixelValue (pPa->YRadius, UnPixel, NULL,
+					 ViewFrameTable[frame - 1].FrMagnification); 
               EllipticSplit2 (frame, x, y,
                               x1, y1, 
                               x2, y2, 
@@ -1774,15 +1916,15 @@ void DrawPath (int frame, int thick, int style, int x, int y,
 void DrawOval (int frame, int thick, int style, int x, int y, int width,
                int height, int rx, int ry, int fg, int bg, int pattern)
 {
-  float               rayx, rayy, dx, dy;
-  float               xf, yf;
-  int                 i;
-  ThotArc             xarc[4];
-  ThotSegment         seg[4];
-  ThotPoint           point[13];
+  float rayx, rayy;
+  float xmin, xmax, ymin, ymax;
+  void *mesh;
 
-  y += FrameTable[frame].FrTopMargin;
-  /* radius of arcs */
+  /* Check that width and height are positive */
+  if (width <= 0 || height <= 0)
+    return;
+
+  /* Compute the actual radius that are going to be used */
   rayx = width / 2.;
   if (rayx > (float)rx)
     rayx = (float)rx;
@@ -1792,7 +1934,7 @@ void DrawOval (int frame, int thick, int style, int x, int y, int width,
 
   if (rx == 0 && ry)
     {
-      // radius must be equal
+      /* radius must be equal */
       rayx = width / 2.;
       if (rayy > rayx)
         rayy = rayx;
@@ -1801,136 +1943,252 @@ void DrawOval (int frame, int thick, int style, int x, int y, int width,
     }
   else if (ry == 0 && rx)
     {
-      // radius must be equal
+      /* radius must be equal */
       rayy = height / 2.;
       if (rayx > rayy)
         rayx = rayy;
       else
         rayy = rayx;
     }
-  // arcs diameter
-  dx = rayx * 2;
-  dy = rayy * 2;
-  xf = x + width - 1;
-  yf = y + height - 1;
 
-  xarc[0].x = x;
-  xarc[0].y = y;
-  xarc[0].width = dx;
-  xarc[0].height = dy;
-  xarc[0].angle1 = 90;
-  xarc[0].angle2 = 90;
+  /* Compute the coordinates used for the points */
+  xmin = (float)x;
+  xmax = (float)(x+width);
+  ymin = (float)y;
+  ymax = (float)(y+height);
 
-  xarc[1].x = xf - dx;
-  xarc[1].y = xarc[0].y;
-  xarc[1].width = dx;
-  xarc[1].height = dy;
-  xarc[1].angle1 = 0;
-  xarc[1].angle2 = xarc[0].angle2;
+  /* Build the following shape:
 
-  xarc[2].x = xarc[0].x;
-  xarc[2].y = yf - dy;
-  xarc[2].width = dx;
-  xarc[2].height = dy;
-  xarc[2].angle1 = 180;
-  xarc[2].angle2 = xarc[0].angle2;
+                        rayx
+  (xmin,ymin)           <-->
+          2-------------3
+         /               \
+       1/                 \4
+        |                 |
+        |                 |
+        |                 |
+      ^8\                 /5
+  rayy|  \               /
+      v   7-------------6
+                        (xmax,ymax)
+  */
+ 
+  mesh = GetNewMesh ();
 
-  xarc[3].x = xarc[1].x;
-  xarc[3].y = xarc[2].y;
-  xarc[3].width = dx;
-  xarc[3].height = dy;
-  xarc[3].angle1 = 270;
-  xarc[3].angle2 = xarc[0].angle2;
+  /* 1 -> 2 */
+  EllipticSplit2 (frame, 0, 0,
+		  xmin       , ymin+rayy,
+		  xmin + rayx, ymin     ,
+		  rayx, rayy, 0, 0, 1, mesh);
 
-  seg[0].x1 = x + rayx;
-  seg[0].x2 = xf - rayx;
-  seg[0].y1 = y;
-  seg[0].y2 = seg[0].y1;
+  /* 3 -> 4 */
+  EllipticSplit2 (frame, 0, 0,
+		  xmax - rayx, ymin       ,
+		  xmax       , ymin + rayy, 
+		  rayx, rayy, 0, 0, 1, mesh);
 
-  seg[1].x1 = xf;
-  seg[1].x2 = seg[1].x1;
-  seg[1].y1 = y + rayy;
-  seg[1].y2 = yf - rayy;
+  /* 5 -> 6 */
+  EllipticSplit2 (frame, 0, 0,
+		  xmax       , ymax - rayy,
+		  xmax - rayx, ymax       ,
+		  rayx, rayy, 0, 0, 1, mesh);
 
-  seg[2].x1 = seg[0].x1;
-  seg[2].x2 = seg[0].x2;
-  seg[2].y1 = yf;
-  seg[2].y2 = seg[2].y1;
+  /* 7 -> 8 */
+  EllipticSplit2 (frame, 0, 0,
+		  xmin + rayx, ymax       ,
+		  xmin       , ymax - rayy,
+		  rayx, rayy, 0, 0, 1, mesh);
 
-  seg[3].x1 = x;
-  seg[3].x2 = seg[3].x1;
-  seg[3].y1 = seg[1].y1;
-  seg[3].y2 = seg[1].y2;
+  /* 8 -> 1 */
+  MeshNewPoint (xmin, ymin+rayy, mesh);
 
-  InitDrawing (style, thick, fg);
-  /* Fill in the figure */
-  if (pattern == 2)
-    {
-      /* Polygone inscrit: (seg0)       */
-      /*                   0--1         */
-      /*                10-|  |-3       */
-      /*         (seg3) |       |(seg1) */
-      /*                9--|  |-4       */
-      /*                   7--6         */
-      /*                   (seg2)       */
-      point[0].x = seg[0].x1;
-      point[0].y = seg[0].y1;
+  /* Draw the shape and free the memory used */
+  CountourCountAdd (mesh);
+  DoDrawMesh (frame, thick, style, mesh, fg, bg, pattern);
+  FreeMesh (mesh);
 
-      point[1].x = seg[0].x2;
-      point[1].y = point[0].y;
-      point[2].x = point[1].x;
-      point[2].y = seg[1].y1;
+  /* The arcs are not always drawn well using DoDrawMesh,
+     (for instance when thick >= 10) so redraw them using the
+     former function, until the problem is fixed. - F. Wang */
+#ifndef _MACOS
+  GL_DrawArc (xmax-rayx*2, ymin,
+	      rayx*2, rayy*2,
+	      0, 90,
+	      0, FALSE);
 
-      point[3].x = seg[1].x1;
-      point[3].y = point[2].y;
-      point[4].x = point[3].x;
-      point[4].y = seg[1].y2;
+  GL_DrawArc (xmax-rayx*2, ymax-rayy*2,
+	      rayx*2, rayy*2,
+	      270, 90,
+	      0, FALSE);
 
-      point[5].x = seg[2].x2;
-      point[5].y = point[4].y;
-      point[6].x = point[5].x;
-      point[6].y = seg[2].y2;
+  GL_DrawArc (xmin, ymax-rayy*2,
+	      rayx*2, rayy*2,
+	      180, 90,
+	      0, FALSE);
 
-      point[7].x = seg[2].x1;
-      point[7].y = point[6].y;
-      point[8].x = point[7].x;
-      point[8].y = seg[3].y2;
+  GL_DrawArc (xmin, ymin,
+	      rayx*2, rayy*2,
+	      90, 90,
+	      0, FALSE);
+#endif /* _MACOS */
+/*   float               rayx, rayy, dx, dy; */
+/*   float               xf, yf; */
+/*   int                 i; */
+/*   ThotArc             xarc[4]; */
+/*   ThotSegment         seg[4]; */
+/*   ThotPoint           point[13]; */
 
-      point[9].x = seg[3].x2;
-      point[9].y = point[8].y;
-      point[10].x = point[9].x;
-      point[10].y = seg[3].y1;
+/*   y += FrameTable[frame].FrTopMargin; */
+/*   /\* radius of arcs *\/ */
+/*   rayx = width / 2.; */
+/*   if (rayx > (float)rx) */
+/*     rayx = (float)rx; */
+/*   rayy = height / 2.; */
+/*   if (rayy > (float)ry) */
+/*     rayy = (float)ry; */
 
-      point[11].x = point[0].x;
-      point[11].y = point[10].y;
-      point[12].x = point[0].x;
-      point[12].y = point[0].y;
+/*   if (rx == 0 && ry) */
+/*     { */
+/*       // radius must be equal */
+/*       rayx = width / 2.; */
+/*       if (rayy > rayx) */
+/*         rayy = rayx; */
+/*       else */
+/*         rayx = rayy; */
+/*     } */
+/*   else if (ry == 0 && rx) */
+/*     { */
+/*       // radius must be equal */
+/*       rayy = height / 2.; */
+/*       if (rayx > rayy) */
+/*         rayx = rayy; */
+/*       else */
+/*         rayy = rayx; */
+/*     } */
+/*   // arcs diameter */
+/*   dx = rayx * 2; */
+/*   dy = rayy * 2; */
+/*   xf = x + width - 1; */
+/*   yf = y + height - 1; */
 
-      GL_SetForeground (bg, TRUE);
-      GL_DrawPolygon (point, 13);
+/*   xarc[0].x = x; */
+/*   xarc[0].y = y; */
+/*   xarc[0].width = dx; */
+/*   xarc[0].height = dy; */
+/*   xarc[0].angle1 = 90; */
+/*   xarc[0].angle2 = 90; */
 
-      if (rayx || rayy )
-        {
-          for (i = 0; i < 4; i++)
-            {
-              GL_DrawArc (xarc[i].x, xarc[i].y, 
-                          xarc[i].width, xarc[i].height, 
-                          xarc[i].angle1, xarc[i].angle2,
-                          TRUE); 
-            }
-        }
-    }
+/*   xarc[1].x = xf - dx; */
+/*   xarc[1].y = xarc[0].y; */
+/*   xarc[1].width = dx; */
+/*   xarc[1].height = dy; */
+/*   xarc[1].angle1 = 0; */
+/*   xarc[1].angle2 = xarc[0].angle2; */
 
-  /* Draw the border */
-  if (thick > 0 && fg >= 0)
-    {
-      for (i = 0; i < 4; i++)
-        GL_DrawArc (xarc[i].x, xarc[i].y, 
-                    xarc[i].width, xarc[i].height, 
-                    xarc[i].angle1, xarc[i].angle2,
-                    FALSE);
-      GL_DrawSegments (seg, 4);
-    }
+/*   xarc[2].x = xarc[0].x; */
+/*   xarc[2].y = yf - dy; */
+/*   xarc[2].width = dx; */
+/*   xarc[2].height = dy; */
+/*   xarc[2].angle1 = 180; */
+/*   xarc[2].angle2 = xarc[0].angle2; */
+
+/*   xarc[3].x = xarc[1].x; */
+/*   xarc[3].y = xarc[2].y; */
+/*   xarc[3].width = dx; */
+/*   xarc[3].height = dy; */
+/*   xarc[3].angle1 = 270; */
+/*   xarc[3].angle2 = xarc[0].angle2; */
+
+/*   seg[0].x1 = x + rayx; */
+/*   seg[0].x2 = xf - rayx; */
+/*   seg[0].y1 = y; */
+/*   seg[0].y2 = seg[0].y1; */
+
+/*   seg[1].x1 = xf; */
+/*   seg[1].x2 = seg[1].x1; */
+/*   seg[1].y1 = y + rayy; */
+/*   seg[1].y2 = yf - rayy; */
+
+/*   seg[2].x1 = seg[0].x1; */
+/*   seg[2].x2 = seg[0].x2; */
+/*   seg[2].y1 = yf; */
+/*   seg[2].y2 = seg[2].y1; */
+
+/*   seg[3].x1 = x; */
+/*   seg[3].x2 = seg[3].x1; */
+/*   seg[3].y1 = seg[1].y1; */
+/*   seg[3].y2 = seg[1].y2; */
+
+/*   InitDrawing (style, thick, fg); */
+/*   /\* Fill in the figure *\/ */
+/*   if (pattern == 2) */
+/*     { */
+/*       /\* Polygone inscrit: (seg0)       *\/ */
+/*       /\*                   0--1         *\/ */
+/*       /\*                10-|  |-3       *\/ */
+/*       /\*         (seg3) |       |(seg1) *\/ */
+/*       /\*                9--|  |-4       *\/ */
+/*       /\*                   7--6         *\/ */
+/*       /\*                   (seg2)       *\/ */
+/*       point[0].x = seg[0].x1; */
+/*       point[0].y = seg[0].y1; */
+
+/*       point[1].x = seg[0].x2; */
+/*       point[1].y = point[0].y; */
+/*       point[2].x = point[1].x; */
+/*       point[2].y = seg[1].y1; */
+
+/*       point[3].x = seg[1].x1; */
+/*       point[3].y = point[2].y; */
+/*       point[4].x = point[3].x; */
+/*       point[4].y = seg[1].y2; */
+
+/*       point[5].x = seg[2].x2; */
+/*       point[5].y = point[4].y; */
+/*       point[6].x = point[5].x; */
+/*       point[6].y = seg[2].y2; */
+
+/*       point[7].x = seg[2].x1; */
+/*       point[7].y = point[6].y; */
+/*       point[8].x = point[7].x; */
+/*       point[8].y = seg[3].y2; */
+
+/*       point[9].x = seg[3].x2; */
+/*       point[9].y = point[8].y; */
+/*       point[10].x = point[9].x; */
+/*       point[10].y = seg[3].y1; */
+
+/*       point[11].x = point[0].x; */
+/*       point[11].y = point[10].y; */
+/*       point[12].x = point[0].x; */
+/*       point[12].y = point[0].y; */
+
+/*       GL_SetForeground (bg, TRUE); */
+/*       GL_DrawPolygon (point, 13, 0); */
+
+/*       if (rayx || rayy ) */
+/*         { */
+/*           for (i = 0; i < 4; i++) */
+/*             { */
+/*               GL_DrawArc (xarc[i].x, xarc[i].y, */
+/*                           xarc[i].width, xarc[i].height, */
+/*                           xarc[i].angle1, xarc[i].angle2, */
+/*                           0, TRUE); */
+/*             } */
+/*         } */
+/*     } */
+
+/*   /\* Draw the border *\/ */
+/*   if (thick > 0 && fg >= 0) */
+/*     { */
+/*       InitDrawing (style, thick, fg); */
+/*       for (i = 0; i < 4; i++) */
+/*         GL_DrawArc (xarc[i].x, xarc[i].y, */
+/*                     xarc[i].width, xarc[i].height, */
+/*                     xarc[i].angle1, xarc[i].angle2, */
+/*                     0, FALSE); */
+/*       GL_DrawSegments (seg, 4); */
+/*     } */
 }
 
 /*----------------------------------------------------------------------
@@ -1941,6 +2199,74 @@ void DrawOval (int frame, int thick, int style, int x, int y, int width,
 void DrawEllips (int frame, int thick, int style, int x, int y, int width,
                  int height, int fg, int bg, int pattern)
 {
+/*   void        *mesh;   */
+/*   double x1, y1, x2, y2, rx, ry; */
+
+/*   /\* Check that width and height are positive *\/ */
+/*   if (width <= 0 || height <= 0) */
+/*     return; */
+
+/*   /\* Compute the coordinates and radius used *\/ */
+/*   rx = ((double) width)/2; */
+/*   ry = ((double) height)/2; */
+/*   x1 = x; */
+/*   x2 = x+width; */
+/*   y1 = y+ry; */
+/*   y2 = y1; */
+
+/*   /\* Build an ellipse */
+
+/*           --------------- */
+/*          /       |       \ */
+/*         /        ry       \  */
+/*         |        |        | */
+/*  (x1,y1)|---rx---.        |(x2,y2) */
+/*         |                 | */
+/*         \                 /  */
+/*          \               / */
+/*           --------------- */
+
+/*   *\/ */
+ 
+/*   mesh = GetNewMesh (); */
+
+/*   /\* 1 -> 2 *\/ */
+/*   EllipticSplit2 (frame, 0, 0, */
+/* 		  x1, y1, */
+/* 		  x2, y2,  */
+/* 		  rx, ry, */
+/* 		  0, */
+/* 		  0,0, */
+/* 		  mesh); */
+
+/*   /\* 2 -> 1 *\/ */
+/*   EllipticSplit2 (frame, 0, 0, */
+/* 		  x2, y2, */
+/* 		  x1, y1,  */
+/* 		  rx, ry, */
+/* 		  0, */
+/* 		  0,0, */
+/* 		  mesh); */
+
+/*   /\* 1 *\/ */
+/*   MeshNewPoint (x1, y1, mesh); */
+
+/*   CountourCountAdd (mesh); */
+
+/*   /\* Draw the shape and free the memory used *\/ */
+/*   CountourCountAdd (mesh); */
+/*   DoDrawMesh (frame, thick, style, mesh, fg, bg, pattern); */
+/*   FreeMesh (mesh); */
+
+/*   /\* The arcs are not always drawn well using DoDrawMesh, */
+/*      (for instance when thick >= 10) so redraw them using the */
+/*      former function, until the problem is fixed. - F. Wang *\/ */
+/*   if (thick > 0 && fg >= 0) */
+/*     { */
+/*       InitDrawing (style, (thick/2), fg); */
+/*       GL_DrawArc (x, y, width, height, 0, 360, 0, FALSE); */
+/*     } */
+
   /* Fill in the rectangle */
   if (pattern != 2 && thick <= 0 && pattern != fg)
     return;
@@ -1953,13 +2279,13 @@ void DrawEllips (int frame, int thick, int style, int x, int y, int width,
       thick < width && thick < height)
     {
       GL_SetForeground (bg, TRUE);
-      GL_DrawArc (x, y, width, height, 0, 360, TRUE);
+      GL_DrawArc (x, y, width, height, 0, 360, 0, TRUE);
     }
   /* Draw the border */
   if (thick > 0 && fg >= 0)
     {
       InitDrawing (style, thick, fg);
-      GL_DrawArc (x, y, width, height, 0, 360, FALSE);
+      GL_DrawArc (x, y, width, height, 0, 360, 0, FALSE);
     }
 }
 
@@ -2087,7 +2413,7 @@ void DrawHorizontalLine (int frame, int thick, int style, int x, int y,
           else
             {
               GL_SetForeground (fg, TRUE);
-              GL_DrawPolygon (point, 4);
+              GL_DrawPolygon (point, 4, 0);
               if (align != 1 && (style == 7 || style == 8))
                 {
                   // invert light and dark
@@ -2112,7 +2438,7 @@ void DrawHorizontalLine (int frame, int thick, int style, int x, int y,
                       point[2].y = point[1].y - thick;
                     }
                   GL_SetForeground (fg, TRUE);
-                  GL_DrawPolygon (point, 4);
+                  GL_DrawPolygon (point, 4, 0);
                 }
             }
         }
@@ -2157,7 +2483,7 @@ void DrawVerticalLine (int frame, int thick, int style, int x, int y,
           if (align == 1)
             X = x + (l - thick) / 2;// midle
           else if (align == 2)
-            X = x + l - (thick + 1) / 2;// right
+            X = x + l - thick / 2;// right
           else
             X = x + thick / 2;// left
             
@@ -2243,7 +2569,7 @@ void DrawVerticalLine (int frame, int thick, int style, int x, int y,
           else
             {
               GL_SetForeground (fg, TRUE);
-              GL_DrawPolygon (point, 4);
+              GL_DrawPolygon (point, 4, 0);
               if (align != 1 && (style == 7 || style == 8))
                 {
                   // invert light and dark
@@ -2268,7 +2594,7 @@ void DrawVerticalLine (int frame, int thick, int style, int x, int y,
                       point[2].y = point[3].y - bottom;
                     }
                   GL_SetForeground (fg, TRUE);
-                  GL_DrawPolygon (point, 4);
+                  GL_DrawPolygon (point, 4, 0);
                 }
             }
         }
@@ -2339,9 +2665,9 @@ void DrawHorizontalParenthesis (int frame, int thick, int style, int x, int y,
     {
       InitDrawing (style, thick, fg);
       if (align)
-        GL_DrawArc(x, y + h, l, -h, 0, 180, FALSE);
+        GL_DrawArc(x, y + h, l, -h, 0, 180, 0, FALSE);
       else
-        GL_DrawArc(x, y, l, h, 0, 180, FALSE);
+        GL_DrawArc(x, y, l, h, 0, 180, 0, FALSE);
     }
 }
 
@@ -2675,13 +3001,13 @@ void DrawRectangleFrame (int frame, int thick, int style, int x, int y,
       point[12].y = point[0].y;
 
       GL_SetForeground (bg, TRUE);
-      GL_DrawPolygon (point, 13);
+      GL_DrawPolygon (point, 13, 0);
       for (i = 0; i < 4; i++)
         {  
           GL_DrawArc	(xarc[i].x, xarc[i].y, 
                        xarc[i].width, xarc[i].height, 
                        xarc[i].angle1, xarc[i].angle2,
-                       TRUE);
+                       0, TRUE);
         }
     }
 
@@ -2694,7 +3020,7 @@ void DrawRectangleFrame (int frame, int thick, int style, int x, int y,
           GL_DrawArc (xarc[i].x, xarc[i].y, 
                       xarc[i].width, xarc[i].height, 
                       xarc[i].angle1, xarc[i].angle2,
-                      FALSE); 
+                      0, FALSE); 
         }
       if (arc2 < height / 2)
         GL_DrawSegments(seg, 5);
@@ -2727,14 +3053,14 @@ void DrawEllipsFrame (int frame, int thick, int style, int x, int y,
   if (pattern == 2)
     {
       GL_SetForeground (bg, TRUE);
-      GL_DrawArc (x, y, width, height, 0, 360, TRUE);
+      GL_DrawArc (x, y, width, height, 0, 360, 0, TRUE);
     }
 
   /* Draw the border */
   if (thick > 0 && fg >= 0)
     {
       InitDrawing (style, thick, fg);
-      GL_DrawArc(x, y, width, height, 0, 360, FALSE); 
+      GL_DrawArc(x, y, width, height, 0, 360, 0, FALSE); 
       px7mm = (int)((7 * DOT_PER_INCH) / 25.4 + 0.5);
       if (height > 2 * px7mm)
         {
@@ -2749,6 +3075,139 @@ void DrawEllipsFrame (int frame, int thick, int style, int x, int y,
         }
     }
 }
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void DrawBezierControl (int frame, int size, int x_point, int y_point,
+			int x_ctrl, int y_ctrl, int bg, int fg)
+{
+  InitDrawing (5, 1, bg);
+  DoDrawOneLine (frame, x_ctrl, y_ctrl, x_point, y_point);
+  DrawEllipsFrame (frame, 1, 5, x_ctrl - size, y_ctrl - size,
+		   size*2+1, size*2+1, fg, bg, 2);
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void DrawResizeTriangle (int frame, int size, int x_point, int y_point,
+			 int bg, int fg, int direction)
+{
+  ThotPoint points[4];
+  int size2;
+
+  size2 = (int)(size/sqrt(2));
+      
+  switch(direction)
+    {
+    case 0: /* N */
+      points[0].x = x_point;
+      points[0].y = y_point;
+      points[1].x = x_point - size2;
+      points[1].y = y_point + size;
+      points[2].x = x_point + size2;
+      points[2].y = y_point + size;
+      break;
+
+    case 1: /* W */
+      points[0].x = x_point;
+      points[0].y = y_point;
+      points[1].x = x_point + size;
+      points[1].y = y_point - size2;
+      points[2].x = x_point + size;
+      points[2].y = y_point + size2;
+      break;
+
+    case 2: /* S */
+      points[0].x = x_point;
+      points[0].y = y_point;
+      points[1].x = x_point - size2;
+      points[1].y = y_point - size;
+      points[2].x = x_point + size2;
+      points[2].y = y_point - size;
+      break;
+
+    case 3: /* E */
+      points[0].x = x_point;
+      points[0].y = y_point;
+      points[1].x = x_point - size;
+      points[1].y = y_point - size2;
+      points[2].x = x_point - size;
+      points[2].y = y_point + size2;
+      break;
+
+    case 4: /* NW */
+      points[0].x = x_point;
+      points[0].y = y_point + size;
+      points[1].x = x_point;
+      points[1].y = y_point;
+      points[2].x = x_point + size;
+      points[2].y = y_point;
+      break;
+
+    case 5: /* NE */
+      points[0].x = x_point;
+      points[0].y = y_point + size;
+      points[1].x = x_point;
+      points[1].y = y_point;
+      points[2].x = x_point - size;
+      points[2].y = y_point;
+      break;
+
+    case 6: /* SW */
+      points[0].x = x_point + size;
+      points[0].y = y_point;
+      points[1].x = x_point;
+      points[1].y = y_point;
+      points[2].x = x_point;
+      points[2].y = y_point - size;
+      break;
+
+
+    case 7: /* SE */
+      points[0].x = x_point - size;
+      points[0].y = y_point;
+      points[1].x = x_point;
+      points[1].y = y_point;
+      points[2].x = x_point;
+      points[2].y = y_point - size;
+      break;
+
+    default:
+      return;
+      break;
+    }
+
+  points[3] = points[0];
+
+  DoDrawLines (frame, 1, 5,
+	       points, 4, fg, bg,
+	       2);
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void DrawTriangle (int frame, int thick, int style, int fg, int bg, int pattern,
+		   int x1, int y1,
+		   int x2, int y2,
+		   int x3, int y3)
+{
+  ThotPoint points[4];
+
+  y1 += FrameTable[frame].FrTopMargin;
+  y2 += FrameTable[frame].FrTopMargin;
+  y3 += FrameTable[frame].FrTopMargin;
+
+  points[0].x = x1;
+  points[0].y = y1;
+  points[1].x = x2;
+  points[1].y = y2;
+  points[2].x = x3;
+  points[2].y = y3;
+  points[3] = points[0];
+
+  DoDrawLines (frame, thick, style, points, 4, fg, bg, pattern);
+}
+
 
 /*----------------------------------------------------------------------
   WChaine draw a string in frame, at location (x, y) and using font.

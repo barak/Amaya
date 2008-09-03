@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2007
+ *  (c) COPYRIGHT INRIA, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -12,6 +12,7 @@
   #include "wx/wx.h"
 #endif /* _WX */
 
+
 #include "thot_gui.h"
 #include "thot_sys.h"
 #include "constmedia.h"
@@ -21,6 +22,7 @@
 #include "application.h"
 #include "memory_f.h"
 #include "nodialog.h"
+#include "style.h"
 
 /*----------------------------------------------------------------------
   TtaGetPixelValue converts a logical value into a pixel value for
@@ -93,7 +95,7 @@ void DisplayPRule (PtrPRule RP, FILE *fileDescriptor,
 /*----------------------------------------------------------------------
   DisplayStyleValue: update the property in Style dialog
   ----------------------------------------------------------------------*/
-void  DisplayStyleValue (const char *property, char *start_value, char *end_value)
+void  DisplayStyleValue (const char *property, const char *start_value, char *end_value)
 {
 }
 
@@ -165,10 +167,10 @@ void TteFreeAllEventsList (void)
 /*----------------------------------------------------------------------
    GetObjectWWW
   ----------------------------------------------------------------------*/
-int GetObjectWWW (int docid, char *urlName, char *formdata,
+int GetObjectWWW (int docid, char *urlName, const char *formdata,
 		  char *outputfile, int mode, void *incremental_cbf, 
 		  void* context_icbf, void *terminate_cbf, 
-		  void* context_tcbf, ThotBool error_html, char *content_type)
+		  void* context_tcbf, ThotBool error_html, const char *content_type)
 {
   return 0;
 }
@@ -194,7 +196,7 @@ void CloseTextInsertion ()
    or file name path (newName) and the name of the document (docName).        
   ----------------------------------------------------------------------*/
 void NormalizeURL (char* orgName, Document doc, char* newName, char* docName,
-		   char* otherPath)
+		   const char* otherPath)
 {
   TtaExtractName (orgName, newName, docName);
 }
@@ -328,7 +330,7 @@ ThotBool CallEventAttribute (NotifyAttribute * notifyAttr, ThotBool pre)
 /*----------------------------------------------------------------------
    TtaSetStatus affiche le status de la vue du document.                      
   ----------------------------------------------------------------------*/
-void TtaSetStatus (Document document, View view, char *text, char *name)
+void TtaSetStatus (Document document, View view, const char *text, const char *name)
 {
 }
 
@@ -463,7 +465,8 @@ void SelectRange (PtrDocument SelDoc, PtrElement PremSel, PtrElement DerSel,
 /*----------------------------------------------------------------------
   DisplayPointSelection draw characteristics point of the box.
   ----------------------------------------------------------------------*/
-void DisplayPointSelection (int frame, PtrBox pBox, int pointselect)
+void DisplayPointSelection (int frame, PtrBox pBox, int pointselect,
+                            ThotBool could_resize)
 {
 }
 
@@ -541,6 +544,17 @@ ThotBool OpenParsingErrors (Document document)
   return TRUE;
 }
 
+/*----------------------------------------------------------------------
+   TtaIsSelectionUnique
+
+   Returns TRUE if there is a current selection and only one element is
+   selected.
+  ----------------------------------------------------------------------*/
+ThotBool TtaIsSelectionUnique ()
+{
+  return FALSE;
+}
+
 int TtaGiveActiveFrame()
 {
   return -1;
@@ -596,5 +610,13 @@ ThotBool TtaDetachFrame( int frame_id )
   TtaCloseAllHelpWindows Closes all opened help windows.
   ----------------------------------------------------------------------*/
 void TtaCloseAllHelpWindows ()
+{
+}
+
+/*----------------------------------------------------------------------
+  ColApplyCSSRule
+  apply a CSS rule attached to the COL or COLGROUP element el
+  ----------------------------------------------------------------------*/
+void ColApplyCSSRule (Element el, PresentationContext ctxt, char *cssRule, CSSInfoPtr css)
 {
 }

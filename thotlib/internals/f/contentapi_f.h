@@ -7,14 +7,14 @@
 #ifdef __STDC__
 
 extern void TtaSetTextContent ( Element element,
-                                unsigned char *content,
+                                const unsigned char *content,
                                 Language language,
                                 Document document );
 extern void TtaSetPictureContent ( Element element,
-                                   unsigned char *content,
+                                   const unsigned char *content,
                                    Language language,
                                    Document document,
-                                   char *mime_type );
+                                   const char *mime_type );
 extern void TtaAppendTextContent ( Element element,
                                    unsigned char *content,
                                    Document document );
@@ -44,12 +44,13 @@ extern void TtaSetGraphicsShape ( Element element,
 extern void TtaSetSymbolCode ( Element element,
                                wchar_t code,
                                Document document );
-extern void TtaAddPointInPolyline ( Element element,
-                                    int rank,
-                                    TypeUnit unit,
-                                    int x,
-                                    int y,
-                                    Document document );
+extern int TtaAddPointInPolyline ( Element element,
+                                   int rank,
+                                   TypeUnit unit,
+                                   int x,
+                                   int y,
+                                   Document document,
+                                   ThotBool IsBarycenter );
 extern void TtaDeletePointInPolyline ( Element element,
                                        int rank,
                                        Document document );
@@ -64,6 +65,14 @@ extern void TtaChangeLimitOfPolyline ( Element element,
                                        int x,
                                        int y,
                                        Document document );
+extern void TtaRemovePathData ( Document document,
+                                Element element );
+extern char *TtaGetPathAttributeValue ( Element el,
+                                        int width,
+                                        int height );
+extern char *TtaGetPointsAttributeValue ( Element el,
+                                          int width,
+                                          int height );
 extern char *TtaTransformCurveIntoPath ( Element el );
 extern PathSegment TtaNewPathSegLine ( int xstart,
                                        int ystart,
@@ -96,6 +105,10 @@ extern PathSegment TtaNewPathSegArc ( int xstart,
                                       ThotBool largearc,
                                       ThotBool sweep,
                                       ThotBool newSubpath );
+extern void TtaQuadraticToCubicPathSeg ( void *quadratic_segment );
+extern void TtaSplitPathSeg ( void *segment,
+                              Document doc,
+                              Element el );
 extern void TtaAppendPathSeg ( Element element,
                                PathSegment segment,
                                Document document );
@@ -121,6 +134,13 @@ extern void TtaSetStopColorGradient ( unsigned short red,
                                       Element el );
 extern void TtaSetStopOffsetColorGradient ( float offset,
                                             Element el );
+extern ThotBool TtaDeletePointInCurve ( Document doc,
+                                        Element el,
+                                        int point_number );
+extern ThotBool TtaInsertPointInCurve ( Document doc,
+                                        Element el,
+                                        ThotBool before,
+                                        int *point_number );
 extern void TtaAppendTransform ( Element element,
                                  void *transform,
                                  Document document );
@@ -130,6 +150,42 @@ extern void TtaAddTransform ( Element element,
 extern void TtaInsertTransform ( Element element,
                                  void *transform,
                                  Document document );
+extern void TtaRemoveTransform ( Document document,
+                                 Element element );
+extern void *TtaSimplifyTransformMatrix ( void *transform );
+extern void TtaCoordinatesInParentSpace ( Element el,
+                                          float *x,
+                                          float *y );
+extern void *TtaGetCurrentTransformMatrix ( Element el,
+                                            Element ancestor );
+extern void *TtaInverseTransform ( void *transform );
+extern void TtaApplyMatrixTransform ( Document document,
+                                      Element element,
+                                      float a,
+                                      float b,
+                                      float c,
+                                      float d,
+                                      float e,
+                                      float f );
+extern void TtaAppendMatrixTransform ( Document document,
+                                       Element element,
+                                       float a,
+                                       float b,
+                                       float c,
+                                       float d,
+                                       float e,
+                                       float f );
+extern void *TtaDecomposeTransform ( void *transform );
+extern char *TtaGetTransformAttributeValue ( Document document,
+                                             Element el );
+extern void TtaGetMatrixTransform ( Document document,
+                                    Element el,
+                                    float *a,
+                                    float *b,
+                                    float *c,
+                                    float *d,
+                                    float *e,
+                                    float *f );
 extern void TtaSetElCoordinateSystem ( Element element );
 extern void TtaAppendAnim ( Element element,
                             void *anim );
@@ -173,7 +229,7 @@ extern void TtaGivePictureSize ( Element element,
                                  int *height );
 extern PicType TtaGetPictureType ( Element element );
 extern void TtaSetPictureType ( Element element,
-                                char *mime_type );
+                                const char *mime_type );
 extern void TtaGiveBufferContent ( Element element,
                                    CHAR_T *buffer,
                                    int length,
@@ -197,18 +253,24 @@ extern void TtaGivePolylinePoint ( Element element,
                                    int *y );
 extern int TtaGetPageNumber ( Element pageElement );
 extern int TtaGetPageView ( Element pageElement );
+extern ThotBool CheckGeometricProperties ( Document doc,
+                                           Element leaf,
+                                           int *width,
+                                           int *height,
+                                           int *rx,
+                                           int *ry );
 
 #else /* __STDC__ */
 
 extern void TtaSetTextContent ( Element element,
-                                  unsigned char *content,
+                                  const unsigned char *content,
                                   Language language,
                                   Document document );
 extern void TtaSetPictureContent ( Element element,
-                                     unsigned char *content,
+                                     const unsigned char *content,
                                      Language language,
                                      Document document,
-                                     char *mime_type );
+                                     const char *mime_type );
 extern void TtaAppendTextContent ( Element element,
                                      unsigned char *content,
                                      Document document );
@@ -238,12 +300,13 @@ extern void TtaSetGraphicsShape ( Element element,
 extern void TtaSetSymbolCode ( Element element,
                                  wchar_t code,
                                  Document document );
-extern void TtaAddPointInPolyline ( Element element,
-                                      int rank,
-                                      TypeUnit unit,
-                                      int x,
-                                      int y,
-                                      Document document );
+extern int TtaAddPointInPolyline ( Element element,
+                                     int rank,
+                                     TypeUnit unit,
+                                     int x,
+                                     int y,
+                                     Document document,
+                                     ThotBool IsBarycenter );
 extern void TtaDeletePointInPolyline ( Element element,
                                          int rank,
                                          Document document );
@@ -258,6 +321,14 @@ extern void TtaChangeLimitOfPolyline ( Element element,
                                          int x,
                                          int y,
                                          Document document );
+extern void TtaRemovePathData ( Document document,
+                                  Element element );
+extern char *TtaGetPathAttributeValue ( Element el,
+                                          int width,
+                                          int height );
+extern char *TtaGetPointsAttributeValue ( Element el,
+                                            int width,
+                                            int height );
 extern char *TtaTransformCurveIntoPath ( Element el );
 extern PathSegment TtaNewPathSegLine ( int xstart,
                                          int ystart,
@@ -290,6 +361,10 @@ extern PathSegment TtaNewPathSegArc ( int xstart,
                                         ThotBool largearc,
                                         ThotBool sweep,
                                         ThotBool newSubpath );
+extern void TtaQuadraticToCubicPathSeg ( void *quadratic_segment );
+extern void TtaSplitPathSeg ( void *segment,
+                                Document doc,
+                                Element el );
 extern void TtaAppendPathSeg ( Element element,
                                  PathSegment segment,
                                  Document document );
@@ -315,6 +390,13 @@ extern void TtaSetStopColorGradient ( unsigned short red,
                                         Element el );
 extern void TtaSetStopOffsetColorGradient ( float offset,
                                               Element el );
+extern ThotBool TtaDeletePointInCurve ( Document doc,
+                                          Element el,
+                                          int point_number );
+extern ThotBool TtaInsertPointInCurve ( Document doc,
+                                          Element el,
+                                          ThotBool before,
+                                          int *point_number );
 extern void TtaAppendTransform ( Element element,
                                    void *transform,
                                    Document document );
@@ -324,6 +406,42 @@ extern void TtaAddTransform ( Element element,
 extern void TtaInsertTransform ( Element element,
                                    void *transform,
                                    Document document );
+extern void TtaRemoveTransform ( Document document,
+                                   Element element );
+extern void *TtaSimplifyTransformMatrix ( void *transform );
+extern void TtaCoordinatesInParentSpace ( Element el,
+                                            float *x,
+                                            float *y );
+extern void *TtaGetCurrentTransformMatrix ( Element el,
+                                              Element ancestor );
+extern void *TtaInverseTransform ( void *transform );
+extern void TtaApplyMatrixTransform ( Document document,
+                                        Element element,
+                                        float a,
+                                        float b,
+                                        float c,
+                                        float d,
+                                        float e,
+                                        float f );
+extern void TtaAppendMatrixTransform ( Document document,
+                                         Element element,
+                                         float a,
+                                         float b,
+                                         float c,
+                                         float d,
+                                         float e,
+                                         float f );
+extern void *TtaDecomposeTransform ( void *transform );
+extern char *TtaGetTransformAttributeValue ( Document document,
+                                               Element el );
+extern void TtaGetMatrixTransform ( Document document,
+                                      Element el,
+                                      float *a,
+                                      float *b,
+                                      float *c,
+                                      float *d,
+                                      float *e,
+                                      float *f );
 extern void TtaSetElCoordinateSystem ( Element element );
 extern void TtaAppendAnim ( Element element,
                               void *anim );
@@ -367,7 +485,7 @@ extern void TtaGivePictureSize ( Element element,
                                    int *height );
 extern PicType TtaGetPictureType ( Element element );
 extern void TtaSetPictureType ( Element element,
-                                  char *mime_type );
+                                  const char *mime_type );
 extern void TtaGiveBufferContent ( Element element,
                                      CHAR_T *buffer,
                                      int length,
@@ -391,6 +509,12 @@ extern void TtaGivePolylinePoint ( Element element,
                                      int *y );
 extern int TtaGetPageNumber ( Element pageElement );
 extern int TtaGetPageView ( Element pageElement );
+extern ThotBool CheckGeometricProperties ( Document doc,
+                                             Element leaf,
+                                             int *width,
+                                             int *height,
+                                             int *rx,
+                                             int *ry );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

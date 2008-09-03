@@ -7,11 +7,12 @@
 #ifdef __STDC__
 
 extern Document TtaGetNextDocumentIndex ( void );
-extern Document TtaInitDocument ( char *structureSchema,
-                                  char *documentName,
+extern Document TtaInitDocument ( const char *structureSchema,
+                                  const char *documentName,
+                                  const char *nspace,
                                   Document document );
-extern Document TtaNewDocument ( char *structureSchema,
-                                 char *documentName );
+extern Document TtaNewDocument ( const char *structureSchema,
+                                 const char *documentName );
 extern void NewDocument ( PtrDocument *pDoc,
                           char *SSchemaName,
                           char *docName,
@@ -30,11 +31,12 @@ extern void BackupOnFatalErrorLoadResources ( void );
 #else /* __STDC__ */
 
 extern Document TtaGetNextDocumentIndex ( void );
-extern Document TtaInitDocument ( char *structureSchema,
-                                    char *documentName,
+extern Document TtaInitDocument ( const char *structureSchema,
+                                    const char *documentName,
+                                    const char *nspace,
                                     Document document );
-extern Document TtaNewDocument ( char *structureSchema,
-                                   char *documentName );
+extern Document TtaNewDocument ( const char *structureSchema,
+                                   const char *documentName );
 extern void NewDocument ( PtrDocument *pDoc,
                             char *SSchemaName,
                             char *docName,

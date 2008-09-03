@@ -1582,6 +1582,27 @@ void DrawDiamond (int frame, int thick, int style, int x, int y, int width,
 {
 }
 
+void DrawTriangle (int frame, int thick, int style, int fg, int bg, int pattern,
+		   int x1, int y1,
+		   int x2, int y2,
+		   int x3, int y3)
+{
+}
+
+void DrawParallelogram (int frame, int thick, int style, int x, int y,
+			int width, int height, int e, int fg, int bg,
+			int pattern)
+{
+}
+
+void DrawTrapezium (int frame, int thick, int style, int x, int y,
+		    int width, int height, int e, int f,
+		    int fg, int bg,
+		    int pattern)
+{
+}
+
+
 /*----------------------------------------------------------------------
   DoDrawPolygon
   Draw a polygon whose points are stored in buffer points
@@ -2539,6 +2560,17 @@ void DrawEllips (int frame, int thick, int style, int x, int y, int width,
 }
 
 /*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void DrawBezierControl (int frame, int size, int x_point, int y_point,
+			int x_ctrl, int y_ctrl, int bg, int fg)
+{
+  InitDrawing (5, 1, bg);
+  DoDrawOneLine (frame, x_ctrl, y_ctrl, x_point, y_point);
+  DrawEllipsFrame (frame, 1, 5, x_ctrl - size, y_ctrl - size,
+		   size*2+1, size*2+1, fg, bg, 2);
+}
+
+/*----------------------------------------------------------------------
   DrawHorizontalLine draw a vertical line aligned top center or bottom
   depending on align value.
   parameter fg indicates the drawing color
@@ -3228,3 +3260,4 @@ void PaintWithPattern (int frame, int x, int y, int width, int height,
 {
   DrawRectangle (frame, 0, 0, x, y, width, height, fg, bg, 3);
 }
+

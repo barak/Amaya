@@ -1,3 +1,8 @@
+Remove deprecated Encoding field from .desktop file
+Just call straight amaya instead of a long line setting
+multiple environment variable. The script called sets them
+anyway
+
 Index: amaya-10.1~pre1+dfsg1/batch/script_install_gnomekde.in
 ===================================================================
 --- amaya-10.1~pre1+dfsg1.orig/batch/script_install_gnomekde.in	2008-04-30 19:41:23.000000000 +0100

@@ -1803,6 +1803,62 @@ void HighlightVisibleAncestor (PtrElement pEl)
 }
 
 /*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+static void DecorationAfterSeletion (ThotBool withPath)
+{
+#ifdef _WX
+  AmayaParams         p;
+  PtrAbstractBox      pAb = NULL;
+  PtrElement          pEl;
+  int                 doc;
+  int                 size, family, val;
+  TypeUnit            unit;
+
+  if (SelectedDocument == NULL && DocSelectedAttr == NULL)
+    return;
+
+  if (SelectedDocument)
+    {
+      doc = IdentDocument (SelectedDocument);
+      pEl = FirstSelectedElement;
+    }
+  else
+    {
+      doc = IdentDocument (DocSelectedAttr);
+      pEl = AbsBoxSelectedAttr->AbElement;
+    }
+
+  if (pEl && pEl->ElStructSchema &&
+      strcmp (pEl->ElStructSchema->SsName, "TextFile"))
+    {
+      // update the current font
+      TtaGiveBoxFontInfo ((Element)pEl, doc, 1,
+                          &size, &unit, &family);
+      pAb = AbsBoxOfEl (pEl, 1);
+     if (size > 0 && pAb)
+        {
+          if (unit == UnPoint)
+            Current_FontSize = size;
+          else
+            {
+              if (unit != UnPixel)
+                val = PixelValue (size, unit, pAb, 0);
+              else
+                val = size;
+              Current_FontSize = LogicalValue (size, UnPoint, pAb, 0);
+            }
+        }
+      Current_FontFamily = family;
+      p.param1 = doc;
+      TtaSendDataToPanel (WXAMAYA_PANEL_STYLE, p );
+    }
+  if (withPath)
+    // update the status bar
+    TtaSetStatusSelectedElement (doc, 1, (Element) pEl);
+#endif /* _WX */
+}
+
+/*----------------------------------------------------------------------
   SelectStringInAttr
   The new current selection is now the character string contained
   in the text buffer of abstract box pAb, starting at rank firstChar
@@ -1868,52 +1924,11 @@ void SelectStringInAttr (PtrDocument pDoc, PtrAbstractBox pAb, int firstChar,
         (*(Proc1)ThotLocalActions[T_chselect]) ((void *)pDoc);
       if (ThotLocalActions[T_chattr] != NULL)
         (*(Proc1)ThotLocalActions[T_chattr]) ((void *)pDoc);
-    }
-}
-
-/*----------------------------------------------------------------------
-  ----------------------------------------------------------------------*/
-static void DecorationAfterSeletion (ThotBool withPath)
-{
 #ifdef _WX
-  AmayaParams         p;
-  PtrAbstractBox      pAb = NULL;
-  int                 doc;
-  int                 size, family, val;
-  TypeUnit            unit;
-
-  if (SelectedDocument == NULL)
-    return;
-
-  doc = IdentDocument (SelectedDocument);
-  if (FirstSelectedElement && FirstSelectedElement->ElStructSchema &&
-      strcmp (FirstSelectedElement->ElStructSchema->SsName, "TextFile"))
-    {
-      // update the current font
-      TtaGiveBoxFontInfo ((Element)FirstSelectedElement, doc, 1,
-                          &size, &unit, &family);
-      pAb = AbsBoxOfEl (FirstSelectedElement, 1);
-     if (size > 0 && pAb)
-        {
-          if (unit == UnPoint)
-            Current_FontSize = size;
-          else
-            {
-              if (unit != UnPixel)
-                val = PixelValue (size, unit, pAb, 0);
-              else
-                val = size;
-              Current_FontSize = LogicalValue (size, UnPoint, pAb, 0);
-            }
-        }
-      Current_FontFamily = family;
-      p.param1 = doc;
-      TtaSendDataToPanel (WXAMAYA_PANEL_STYLE, p );
-    }
-  if (withPath)
-    // update the status bar
-    TtaSetStatusSelectedElement (doc, 1, (Element) FirstSelectedElement);
+          // update the status bar and style panel
+          DecorationAfterSeletion (TRUE);
 #endif /* _WX */
+    }
 }
 
 /*----------------------------------------------------------------------
@@ -1970,6 +1985,7 @@ static void SelectStringOrPosition (PtrDocument pDoc, PtrElement pEl,
             }
           /* Is the new selection in the same tree as the former selection */
           FirstSelectedElement = pEl;
+          SelPosition = !string;
           if (pDoc != SelectedDocument)
             {
               CancelSelection ();
@@ -1983,13 +1999,21 @@ static void SelectStringOrPosition (PtrDocument pDoc, PtrElement pEl,
               pEl->ElLeafType == LtPath ||
               pEl->ElLeafType == LtGraphics)
             {
-              SelectedPointInPolyline = firstChar;
+	      SelectedPointInPolyline = firstChar;
               FirstSelectedChar = 0;
               LastSelectedChar = 0;
             }
           else if (pEl->ElLeafType == LtPicture)
             {
-              SelectedPictureEdge = firstChar;
+              if (pEl->ElStructSchema && pEl->ElStructSchema->SsName &&
+                  !strcmp (pEl->ElStructSchema->SsName, "SVG"))
+                {
+                  // force the selection of the whole picture
+                  SelectedPictureEdge = 0;
+                  SelPosition = FALSE;
+                }
+              else
+                SelectedPictureEdge = firstChar;
               FirstSelectedChar = 0;
               LastSelectedChar = 0;
             }
@@ -2006,7 +2030,6 @@ static void SelectStringOrPosition (PtrDocument pDoc, PtrElement pEl,
           LastSelectedColumn = NULL;
           WholeColumnSelected = FALSE;
           NSelectedElements = 0;
-          SelPosition = !string;
           /* highlight boxes of current selection */
           elVisible = SelectAbsBoxes (pEl, TRUE);
           if (!elVisible)
@@ -2188,9 +2211,14 @@ void SelectElement (PtrDocument pDoc, PtrElement pEl, ThotBool begin,
       FixedChar = 0;
       /* If the selected element is empty or is a picture, the new */
       /* selection is simply considered as an insertion position */
-      if ((pEl->ElTerminal &&
-           (pEl->ElVolume == 0 || pEl->ElLeafType == LtPicture)) ||
-          (!pEl->ElTerminal && pEl->ElFirstChild == NULL))
+      if (pEl->ElTerminal && pEl->ElLeafType == LtPicture &&
+          pEl->ElStructSchema && pEl->ElStructSchema->SsName &&
+          !strcmp (pEl->ElStructSchema->SsName, "SVG"))
+        // force the selection of the whole picture
+        SelPosition = FALSE;
+      else if ((pEl->ElTerminal &&
+                (pEl->ElVolume == 0 || pEl->ElLeafType == LtPicture)) ||
+               (!pEl->ElTerminal && pEl->ElFirstChild == NULL))
         {
           SelPosition = TRUE;
           if (pEl->ElTerminal && pEl->ElLeafType == LtPicture)
@@ -2715,17 +2743,7 @@ static void DoExtendSelection (PtrElement pEl, int rank, ThotBool fixed,
                                         pCell1->ElStructSchema))
                 pCell1 = pCell1->ElParent;
               /* is element pEl (within) a table cell */
-              pCell2 = pEl;
-              while (pCell2 &&
-                     !TypeHasException (ExcIsCell, pCell2->ElTypeNumber,
-                                        pCell2->ElStructSchema))
-                pCell2 = pCell2->ElParent;
-              if ((pCell1 && !pCell2) || (!pCell1 && pCell2))
-                /* selection has started within a table and is being extended
-                   outside, or it has started outside of a table and the user
-                   tries to extend it in a table. This is invalid */
-                return;
-              if (pCell1 && pCell2)
+              if (pCell1)
                 {
                   /* get the table that contains pCell1 */
                   pTable1 = pCell1;
@@ -2733,16 +2751,108 @@ static void DoExtendSelection (PtrElement pEl, int rank, ThotBool fixed,
                                                       pTable1->ElTypeNumber,
                                                       pTable1->ElStructSchema))
                     pTable1 = pTable1->ElParent;
+                }
+              else
+                pTable1 = NULL;
+              pCell2 = pEl;
+              while (pCell2 &&
+                     !TypeHasException (ExcIsCell, pCell2->ElTypeNumber,
+                                        pCell2->ElStructSchema))
+                pCell2 = pCell2->ElParent;
+              if (pCell2)
+                {
                   /* get the table that contains pCell2 */
                   pTable2 = pCell2;
                   while (pTable2 && !TypeHasException (ExcIsTable,
                                                       pTable2->ElTypeNumber,
                                                       pTable2->ElStructSchema))
                     pTable2 = pTable2->ElParent;
-                  /* do not allow selection extension outside of the current
-                     table */
-                  if (pTable1 != pTable2)
-                    return;
+                }
+              else
+                pTable2 = NULL;
+
+              // check if they are nested tables
+              if (pTable1 && pTable2 && pTable1 != pTable2)
+                {
+                  while (ElemIsAnAncestor (pTable1, pTable2))
+                    {
+                      pCell2 = pTable2->ElParent;
+                      while (pCell2 &&
+                             !TypeHasException (ExcIsCell, pCell2->ElTypeNumber,
+                                                pCell2->ElStructSchema))
+                        pCell2 = pCell2->ElParent;
+                      if (pCell2)
+                        {
+                          /* get the table that contains pCell2 */
+                          pTable2 = pCell2;
+                          while (pTable2 && !TypeHasException (ExcIsTable,
+                                                               pTable2->ElTypeNumber,
+                                                               pTable2->ElStructSchema))
+                            pTable2 = pTable2->ElParent;
+                        }
+                      else
+                        pTable2 = NULL;
+                      pEl = pCell2;
+                    }
+                  while (ElemIsAnAncestor (pTable2, pTable1))
+                    {
+                      pCell1 = pTable1->ElParent;
+                      while (pCell1 &&
+                             !TypeHasException (ExcIsCell, pCell1->ElTypeNumber,
+                                                pCell1->ElStructSchema))
+                        pCell1 = pCell1->ElParent;
+                      if (pCell1)
+                        {
+                          /* get the table that contains pCell1 */
+                          pTable1 = pCell1;
+                          while (pTable1 && !TypeHasException (ExcIsTable,
+                                                               pTable1->ElTypeNumber,
+                                                               pTable1->ElStructSchema))
+                            pTable1 = pTable1->ElParent;
+                        }
+                      else
+                        pTable1 = NULL;
+                      FixedElement = pCell1;
+                    }
+                  FixedChar = 0;
+                  rank = 0;
+                }
+
+              if (pTable1 != pTable2)
+                {
+                  /* selection has started within a table and is being extended
+                     outside, or it has started outside of a table and the user
+                     tries to extend it in a table. Select the whole table */
+                  if (pTable1 && pTable2)
+                    {
+                      if (ElemIsBefore (pTable1, pTable2))
+                        {
+                          FixedElement = pTable1;
+                          FixedChar = 0;
+                          pEl = pTable2;
+                          rank = 0;
+                        }
+                      else
+                        {
+                          FixedElement = pTable2;
+                          FixedChar = 0;
+                          pEl = pTable1;
+                          rank = 0;
+                        }
+                    }
+                  else if (pTable1)
+                    {
+                      FixedElement = pTable1;
+                      FixedChar = 0;
+                    }
+                  else
+                    {
+                      pEl = pTable2;
+                      rank = 0;
+                    }
+                }
+              else if (pCell1 && pCell2)
+                {
                   if (pCell2 == pCell1)
                     /* extending selection within the same cell. We are no
                        longer in table selection mode */
@@ -3342,6 +3452,41 @@ void SelectStringWithEvent (PtrDocument pDoc, PtrElement pEl, int firstChar,
 }
 
 /*----------------------------------------------------------------------
+  GetParentGroup returns the top enclosing IsGroup element or NULL
+  ----------------------------------------------------------------------*/
+PtrAbstractBox GetParentGroup (PtrAbstractBox pAb)
+{
+  PtrAbstractBox      pParent, pFound = NULL;
+  ThotBool            found;
+
+  /* check parents */
+  found = FALSE;
+  if (pAb == NULL)
+    return NULL;
+  if (pAb->AbElement == NULL || pAb->AbElement->ElStructSchema == NULL ||
+      strcmp (pAb->AbElement->ElStructSchema->SsName, "SVG"))
+    return NULL;
+  pParent = pAb->AbEnclosing;
+  while (pParent && !found)
+    {
+      if (pParent->AbElement &&
+          TypeHasException (ExcIsGroup, pParent->AbElement->ElTypeNumber,
+                            pParent->AbElement->ElStructSchema))
+        {
+          found = TRUE;
+          while (pParent)
+            {
+              pFound = pParent;
+              pParent = GetParentGroup (pParent);
+            }
+        }
+      else
+        pParent = pParent->AbEnclosing;
+    }
+  return (pFound);
+}
+
+/*----------------------------------------------------------------------
   ChangeSelection
   The user wants to make a new selection or an extension to the current
   selection, according to parameter extension.
@@ -3364,6 +3509,7 @@ ThotBool ChangeSelection (int frame, PtrAbstractBox pAb, int rank,
   PtrSSchema          pSS;
   PtrElement          pEl, pParent;
   PtrAttribute        pAttr;
+  PtrAbstractBox      pGroup;
   NotifyElement       notifyEl;
   Document            doc;
   int                 view;
@@ -3371,40 +3517,47 @@ ThotBool ChangeSelection (int frame, PtrAbstractBox pAb, int rank,
   ThotBool            graphSel, result;
 
   pEl = NULL;
+  result = FALSE;
+  if (pAb == NULL || pAb->AbElement == NULL)
+    return result;
   /* search the document and the view corresponding to the window */
   GetDocAndView (frame, &pDoc, &view);
   doc = IdentDocument (pDoc);
   /* by default Thot applies its editing changes */
-  result = FALSE;
-  if (doubleClick && pAb)
+  if (doubleClick)
     {
+      /* send event TteElemActivate.Pre to the application */
       pEl = pAb->AbElement;
-      if (pEl)
+      notifyEl.event = TteElemActivate;
+      notifyEl.document = doc;
+      notifyEl.element = (Element) pEl;
+      notifyEl.info = 0; /* not sent by undo */
+      notifyEl.elementType.ElTypeNum = pEl->ElTypeNumber;
+      notifyEl.elementType.ElSSchema = (SSchema) (pEl->ElStructSchema);
+      notifyEl.position = 0;
+      if (CallEventType ((NotifyEvent *) & notifyEl, TRUE))
+        /* the application asks Thot to do nothing */
+        return TRUE;
+      if (pEl->ElHolophrast)
         {
-          /* send event TteElemActivate.Pre to the application */
-          notifyEl.event = TteElemActivate;
-          notifyEl.document = doc;
-          notifyEl.element = (Element) pEl;
-          notifyEl.info = 0; /* not sent by undo */
-          notifyEl.elementType.ElTypeNum = pEl->ElTypeNumber;
-          notifyEl.elementType.ElSSchema = (SSchema) (pEl->ElStructSchema);
-          notifyEl.position = 0;
-          if (CallEventType ((NotifyEvent *) & notifyEl, TRUE))
-            /* the application asks Thot to do nothing */
-            return TRUE;
-          if (pEl->ElHolophrast)
-            {
-              /* avoid to rebuild menus. It will be done by */
-              /* SelectElement */
-              SelectedDocument = NULL;
-              /* switch off the previous selection */
-              CancelSelection ();
-              DeHolophrast (pEl, pDoc);
-              SelectElementWithEvent (pDoc, pEl, TRUE, FALSE);
-              return result;
-            }
+          /* avoid to rebuild menus. It will be done by */
+          /* SelectElement */
+          SelectedDocument = NULL;
+          /* switch off the previous selection */
+          CancelSelection ();
+          DeHolophrast (pEl, pDoc);
+          SelectElementWithEvent (pDoc, pEl, TRUE, FALSE);
+          return result;
         }
     }
+  else if (view == 1)
+    {
+      // do we have to move the selection to an emclosing SVG group
+      pGroup = GetParentGroup (pAb);
+      if (pGroup)
+        pAb = pGroup;
+    }
+  pEl = pAb->AbElement;
 
   error = FALSE;
   doubleClickRef = FALSE;
@@ -3652,7 +3805,6 @@ ThotBool ChangeSelection (int frame, PtrAbstractBox pAb, int rank,
             /* attribute value */
             {
               CancelSelection ();
-              /*if (TtaGetDisplayMode (FrameTable[frame].FrDoc) == DisplayImmediately)*/
               SelectStringInAttr (pDoc, pAb, rank, rank, FALSE);
               FixedChar = rank;
             }
@@ -4018,6 +4170,7 @@ static void SelColumns (PtrElement col1, PtrElement col2)
     }
   while (pRow && !pCell);
   pLast = pCell;
+  
   if (pFirst && pFirst == pLast)
     SelectElementWithEvent (SelectedDocument, pFirst, TRUE, FALSE);
   else
@@ -4040,7 +4193,7 @@ static void SelColumns (PtrElement col1, PtrElement col2)
           DoExtendSelection (pLast, 0, FALSE, TRUE, FALSE, TRUE, FALSE); /* the
           last parameter should be TRUE, but we do not want multiple columns
           to be selected as long as commands Cut, Copy and Paste can not
-          handle mutiple columns at a time */
+          handle multiple columns at a time */
           
           /* send event TteElemExtendSelect.Post to the application */
           notifyEl.event = TteElemExtendSelect;
@@ -4053,9 +4206,11 @@ static void SelColumns (PtrElement col1, PtrElement col2)
           CallEventType ((NotifyEvent *) & notifyEl, FALSE);
         }
     }
+
   WholeColumnSelected = TRUE;
   FirstSelectedColumn = col1;
   LastSelectedColumn = col2;
+  TtaSetStatusSelectedElement (doc, 1, (Element) FirstSelectedElement);  
 }
 
 /*----------------------------------------------------------------------

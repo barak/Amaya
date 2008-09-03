@@ -40,10 +40,11 @@ extern ThotBool RepeatButtonClicked ( NotifyElement *event );
 extern ThotBool UseButtonClicked ( NotifyElement *event );
 extern ThotBool UseSimpleButtonClicked ( NotifyElement *event );
 extern ThotBool OptionButtonClicked ( NotifyElement *event );
-extern void CheckTemplate ( Document doc );
-extern void OpeningInstance ( char *localFileName,
-                              Document doc,
-                              char* docURL );
+extern void Template_FillFromDocument ( Document doc );
+extern ThotBool Template_CheckAndPrepareTemplate ( char* docURL );
+extern void Template_CheckAndPrepareInstance ( char *localFileName,
+                                               Document doc,
+                                               char* docURL );
 extern ThotBool ClosingTemplateDocument ( NotifyDialog* dialog );
 extern ThotBool IsTemplateElement ( Element elem );
 extern Element GetFirstTemplateParentElement ( Element elem );
@@ -65,6 +66,17 @@ extern void TemplateCreateTextBox ( Document doc,
                                     View view );
 extern void TemplateCreateFreeBox ( Document doc,
                                     View view );
+extern void TemplateCreateRepeat ( Document doc,
+                                   View view );
+extern void TemplateCreateRepeatComp ( Document doc,
+                                       View view );
+extern void TemplateCreateUseBox ( Document doc,
+                                   View view );
+extern void TemplateCreateUseCompBox ( Document doc,
+                                       View view );
+extern Element Template_CreateUseFromSelection ( Document doc );
+extern Element Template_CreateComponentFromSelection ( Document doc );
+extern ThotBool TemplateComponentWillBeDeleted ( NotifyElement *event );
 
 #else /* __STDC__ */
 
@@ -102,10 +114,11 @@ extern ThotBool RepeatButtonClicked ( NotifyElement *event );
 extern ThotBool UseButtonClicked ( NotifyElement *event );
 extern ThotBool UseSimpleButtonClicked ( NotifyElement *event );
 extern ThotBool OptionButtonClicked ( NotifyElement *event );
-extern void CheckTemplate ( Document doc );
-extern void OpeningInstance ( char *localFileName,
-                                Document doc,
-                                char* docURL );
+extern void Template_FillFromDocument ( Document doc );
+extern ThotBool Template_CheckAndPrepareTemplate ( char* docURL );
+extern void Template_CheckAndPrepareInstance ( char *localFileName,
+                                                 Document doc,
+                                                 char* docURL );
 extern ThotBool ClosingTemplateDocument ( NotifyDialog* dialog );
 extern ThotBool IsTemplateElement ( Element elem );
 extern Element GetFirstTemplateParentElement ( Element elem );
@@ -127,6 +140,17 @@ extern void TemplateCreateTextBox ( Document doc,
                                       View view );
 extern void TemplateCreateFreeBox ( Document doc,
                                       View view );
+extern void TemplateCreateRepeat ( Document doc,
+                                     View view );
+extern void TemplateCreateRepeatComp ( Document doc,
+                                         View view );
+extern void TemplateCreateUseBox ( Document doc,
+                                     View view );
+extern void TemplateCreateUseCompBox ( Document doc,
+                                         View view );
+extern Element Template_CreateUseFromSelection ( Document doc );
+extern Element Template_CreateComponentFromSelection ( Document doc );
+extern ThotBool TemplateComponentWillBeDeleted ( NotifyElement *event );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

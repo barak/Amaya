@@ -35,13 +35,13 @@ PRINT
 #define LINK_Color Black
 #define COMMENT_Color Black
 #else
-#define TAG_Color DarkIndigo1
-#define ATTR_Color DarkIndigo1
-#define ATTRVALUE_Color DarkMagenta2
+#define TAG_Color DarkMagenta3
+#define ATTR_Color DarkMagenta3
+#define ATTRVALUE_Color DarkBlue2
 #define INVALID_Color Red
 #define UNKNOWNTAG_Color Red
 #define LINK_Color DarkIndigo1
-#define COMMENT_Color DarkLawnGreen3
+#define COMMENT_Color DarkGreen3
 #endif
 
 #define TAG_Font Helvetica
@@ -4409,10 +4409,12 @@ FIELDSET: BEGIN
         CreateBefore(ElementName);
         CreateWith(VerticalLine);
         Visibility: 1;
+        Height: 0;
         IN Structure_view BEGIN
                 VertPos: Top = Previous . Bottom;
                 HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
                 Width: Enclosing . Width - STRUCT_INDENT;
+                Height: Enclosed . Height;
                 Adjust: Left;
                 Visibility: Enclosing =;
                 END;
@@ -4433,10 +4435,31 @@ FIELDSET: BEGIN
         HorizRef: * . Top;
         HorizPos: Left = Enclosing . Left;
         Width: Enclosed . Width;
+        Height : Table_content . Height;
+        VertOverflow : yes;
         VertPos: nil;
 #ifdef PAGE
         PageBreak: No;
 #endif
+        Background: Enclosing =;
+        ShowBox;
+        FillPattern: Enclosing =;
+        MarginTop: Enclosing =;
+        MarginRight: Enclosing =;
+        MarginBottom: Enclosing =;
+        MarginLeft: Enclosing =;
+        BorderTopWidth: Enclosing =;
+        BorderRightWidth: Enclosing =;
+        BorderBottomWidth: Enclosing =;
+        BorderLeftWidth: Enclosing =;
+        BorderTopColor: Enclosing =;
+        BorderRightColor: Enclosing =;
+        BorderBottomColor: Enclosing =;
+        BorderLeftColor: Enclosing =;
+        BorderTopStyle: Enclosing =;
+        BorderRightStyle: Enclosing =;
+        BorderBottomStyle: Enclosing =;
+        BorderLeftStyle: Enclosing =;
         IN Structure_view BEGIN
                 Visibility: 0;
                 END;
@@ -4451,7 +4474,7 @@ FIELDSET: BEGIN
         HorizPos: Left = Previous . Right;
         VertPos: Top = Enclosing . Top;
         Width: Enclosed . Width;
-        Height: 0;
+        Height : Enclosing . Height;
         END;
 
  C_Head:
@@ -4461,6 +4484,36 @@ FIELDSET: BEGIN
         Width: 20 px;
         Height: 0;
         FillPattern: nopattern;
+        END;
+
+ Table_content:
+        BEGIN
+#ifdef PAGE
+        PageBreak: Yes;
+#endif
+        VertPos: Top = Previous Table_head . Top;
+        BorderTopWidth: Enclosing =;
+        BorderRightWidth: Enclosing =;
+        BorderBottomWidth: Enclosing =;
+        BorderLeftWidth: Enclosing =;
+        IN Structure_view BEGIN
+                Visibility: Enclosing =;
+                VertPos: Top = Previous . Bottom;
+                Width: Enclosing . Width;
+                BorderTopWidth: 0;
+                BorderRightWidth: 0;
+                BorderBottomWidth: 0;
+                BorderLeftWidth: 0;
+                END;
+        IN Alternate_view BEGIN
+                Visibility: Enclosing =;
+                VertPos: Top = Previous . Bottom;
+                Width: Enclosing . Width;
+                BorderTopWidth: 0;
+                BorderRightWidth: 0;
+                BorderBottomWidth: 0;
+                BorderLeftWidth: 0;
+                END;
         END;
 
  thead:
@@ -5546,7 +5599,7 @@ ATTRIBUTES
         END;
  PseudoClass = 'visited':
         BEGIN
-        Foreground: DarkBlue3;
+        Foreground: DarkMagenta3;
         IN Structure_view
                 Foreground: Enclosing =;
         IN Alternate_view
@@ -6953,32 +7006,33 @@ ATTRIBUTES
         BEGIN
         CreateBefore(AttrNameAndValue);
         Adjust: Left;
-        IN Structure_view BEGIN
+        IN Structure_view
                 Adjust: Enclosing =;
-                END;
         END;
+ IntCellAlign = IntCellLeft :
+        Adjust: Left;
  Cell_align = Cell_center :
         BEGIN
         CreateBefore(AttrNameAndValue);
         Adjust: VMiddle;
-        IN Structure_view BEGIN
+        IN Structure_view
                 Adjust: Enclosing =;
-                END;
-        IN Alternate_view BEGIN
+        IN Alternate_view
                    Adjust: Left;
-                END;
         END;
+ IntCellAlign = IntCellCenter :
+        Adjust: VMiddle;
  Cell_align = Cell_right :
         BEGIN
         CreateBefore(AttrNameAndValue);
         Adjust: Right;
-        IN Structure_view BEGIN
+        IN Structure_view
                 Adjust: Enclosing =;
-                END;
-        IN Alternate_view BEGIN
+        IN Alternate_view
                    Adjust: Left;
-                END;
         END;
+ IntCellAlign = IntCellRight :
+        Adjust: Right;
  Cell_align = Cell_justify :
         BEGIN
         CreateBefore(AttrNameAndValue);
@@ -6988,24 +7042,25 @@ ATTRIBUTES
         IN Alternate_view
                    Adjust: Left;
         END;
+ IntCellAlign = IntCellJustify :
+        Adjust: Justify;
  Cell_align = Cell_char :
         BEGIN
         CreateBefore(AttrNameAndValue);
         Adjust: Right;
-        IN Structure_view BEGIN
+        IN Structure_view
                 Adjust: Enclosing =;
-                END;
-        IN Alternate_view BEGIN
+        IN Alternate_view
                    Adjust: Left;
-                END;
         END;
+ IntCellAlign = IntCellChar :
+        Adjust: Right;
 
  Cell_align (Table_) = Cell_left :
         BEGIN
         HorizPos: Left = Enclosing . Left;        
-        IN Structure_view BEGIN
+        IN Structure_view
                 HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
-                END;
         END;
  Cell_align (Table_) = Cell_center :
         BEGIN

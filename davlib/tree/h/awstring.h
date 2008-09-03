@@ -7,11 +7,15 @@
  **
  ** Date : 25 / Oct / 2001
  **
- ** $Id: awstring.h,v 1.1 2002/05/31 10:48:47 kirschpi Exp $
- ** $Date: 2002/05/31 10:48:47 $
- ** $Author: kirschpi $
- ** $Revision: 1.1 $
+ ** $Id: awstring.h,v 1.2 2008/05/07 13:49:08 kia Exp $
+ ** $Date: 2008/05/07 13:49:08 $
+ ** $Author: kia $
+ ** $Revision: 1.2 $
  ** $Log: awstring.h,v $
+ ** Revision 1.2  2008/05/07 13:49:08  kia
+ ** char* => const char*
+ ** (Regis patches + many many others)
+ **
  ** Revision 1.1  2002/05/31 10:48:47  kirschpi
  ** Added a new module for WebDAV purposes _ davlib.
  ** Some changes have been done to add this module in the following files:
@@ -59,7 +63,7 @@ typedef char AwStringElement_t;
 
 extern AwString AwString_new (int size);              		/* creates a new string */
 extern int AwString_delete (AwString string);         		/* deletes a string */
-extern int AwString_set (AwString string, char *text);		/* sets a string's content */
+extern int AwString_set (AwString string, const char *text);		/* sets a string's content */
 extern int AwString_copy (AwString dst, AwString src);		/* copy the content of  one string to another */
 extern int AwString_comp (AwString str1, AwString str2);   	/* compare the content of two strings */
 extern int AwString_str (AwString str, AwString sub);     	/* searchs a substring in a string */

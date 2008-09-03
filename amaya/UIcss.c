@@ -28,6 +28,7 @@
 #endif /* _WINGUI */
 #ifdef _WX
 #include "wxdialogapi_f.h"
+#include "HTMLtable_f.h"
 #include "appdialogue_wx.h"
 
 #endif /* _WX */
@@ -37,7 +38,7 @@ static char        CSSpath[500];
 static Document    CSSdocument;
 static Element    *CSSlink = NULL;
 /* Use the same order of CSSCategory defined in css.h */
-static char       *DisplayCategory[]={
+static const char       *DisplayCategory[]={
   "[x] " /*CSS_Unknown*/,
   "[U] " /*CSS_USER_STYLE*/,
   "[S] " /*CSS_DOCUMENT_STYLE*/,
@@ -66,6 +67,7 @@ static char       *DisplayCategory[]={
 #include "styleparser_f.h"
 #include "Xmlbuilder_f.h"
 #include "paneltypes_wx.h"
+#include "SVGbuilder_f.h"
 
 /*----------------------------------------------------------------------
   LoadRemoteStyleSheet loads a remote style sheet into a file.
@@ -420,9 +422,8 @@ void UpdateStyleSheet (char *url, char *tempdoc)
           while (doc < DocumentTableLength)
             {
               /* don't manage a document used by make book */
-              if (DocumentURLs &&
-                  (DocumentMeta[doc] == NULL ||
-                   DocumentMeta[doc]->method != CE_MAKEBOOK))
+              if (DocumentMeta[doc] == NULL ||
+                  DocumentMeta[doc]->method != CE_MAKEBOOK)
                 {
                   pInfo = css->infos[doc];
                   while (pInfo)
@@ -458,14 +459,14 @@ void UpdateStyleSheet (char *url, char *tempdoc)
                                 LoadUserStyleSheet (doc);
                               else
                                 {
-                                LoadStyleSheet (refcss->url, doc, refInfo->PiLink, NULL,
-                                                NULL, (CSSmedia)refInfo->PiMedia,
-                                                refInfo->PiCategory == CSS_USER_STYLE);
- #ifdef _WX
-                                /* Update the list of classes */
-                                TtaExecuteMenuAction ("ApplyClass", doc, 1, FALSE);
+                                  LoadStyleSheet (refcss->url, doc, refInfo->PiLink, NULL,
+                                                  NULL, (CSSmedia)refInfo->PiMedia,
+                                                  refInfo->PiCategory == CSS_USER_STYLE);
+#ifdef _WX
+                                  /* Update the list of classes */
+                                  TtaExecuteMenuAction ("ApplyClass", doc, 1, FALSE);
 #endif /* _WX */
-                               }
+                                }
                               if (CSSErrorsFound)
                                 {
                                   /* the CSS parser detected an error */
@@ -703,16 +704,19 @@ char *CssToPrint (Document doc, char *printdir)
   Apply the current set of CSS properties to the current selection
   Add is TRUE when data is added to the existing style
   -----------------------------------------------------------------------*/
-void GenerateStyle (char * data , ThotBool add)
+static void GenerateStyle (const char * data , ThotBool add)
 {
   Element             el, firstC, lastC;
+  ElementType         elType;
   Attribute           attr = NULL;
   char                 *value;
   int                 doc, i, j, len;
   ThotBool            open;
+  PresentationContext ctxt;
 
   doc = TtaGetSelectedDocument();
   if (doc == 0)
+    /* no selection */
     return;
 
   if (!TtaGetDocumentAccessMode (doc))
@@ -724,11 +728,35 @@ void GenerateStyle (char * data , ThotBool add)
 
   TtaGiveFirstSelectedElement (doc, &el, &i, &j);
   if (el == NULL)
+    /* no selection */
     return;
 
   if (data && data[0] != EOS)
-    GenerateInlineElement (HTML_EL_Span, NULL, HTML_ATTR_Style_, data, !add);
+    // there are style properties to be associated with the current selection
+    {
+      elType = TtaGetElementType (el);
+      if (TtaIsColumnSelected (doc) ||
+          (!strcmp (TtaGetSSchemaName (elType.ElSSchema), "HTML") &&
+	   (elType.ElTypeNum == HTML_EL_COL ||
+	    elType.ElTypeNum == HTML_EL_COLGROUP)))
+	// whole column is selected in a HTML table. Call the table editor
+	{
+	  // create the context of the Specific presentation driver
+	  ctxt = TtaGetSpecificStyleContext (doc);
+	  if (ctxt == NULL)
+	    return;
+	  ctxt->type = elType.ElTypeNum;
+	  ctxt->cssSpecificity = 1;
+	  ctxt->cssLine = TtaGetElementLineNumber (el);
+	  ctxt->destroy = FALSE;
+	  ColApplyCSSRule (NULL, ctxt, (char*)data, NULL);
+	}
+      else
+        GenerateInlineElement (HTML_EL_Span, NULL, HTML_ATTR_Style_, data,
+                               !add);
+    }
   else
+    // remove existing style attached to the selection
     {
       TtaGiveLastSelectedElement (doc, &lastC, &i, &j);
       if (el == lastC)
@@ -761,6 +789,20 @@ void GenerateStyle (char * data , ThotBool add)
 }
 
 /*----------------------------------------------------------------------
+  NoCSSEditing returns TRUE if any CSS editing is available
+  ----------------------------------------------------------------------*/
+ThotBool NoCSSEditing (Document doc)
+{
+  if (!TtaGetDocumentAccessMode (doc))
+    return TRUE;
+  if (DocumentTypes[doc] == docText || DocumentTypes[doc] == docSource ||
+      DocumentTypes[doc] == docXml || DocumentTypes[doc] == docTemplate ||
+      DocumentTypes[doc] == docImage || DocumentTypes[doc] == docLibrary)
+    return TRUE;
+  return FALSE;
+}
+
+/*----------------------------------------------------------------------
   GetEnclosingBlock
   ----------------------------------------------------------------------*/
 static ThotBool GetEnclosingBlock (Document doc)
@@ -770,7 +812,7 @@ static ThotBool GetEnclosingBlock (Document doc)
   int                 i, j;
 
   if (DocumentTypes[doc] == docText || DocumentTypes[doc] == docSource ||
-      DocumentTypes[doc] == docXml)
+      DocumentTypes[doc] == docXml || DocumentTypes[doc] == docTemplate)
     return FALSE;
   TtaGiveFirstSelectedElement (doc, &first, &i, &j);
   if (first == NULL)
@@ -868,7 +910,7 @@ static Element NewSpanElement (Document doc, ThotBool *open)
   DoStyleColor
   Apply color style
   ----------------------------------------------------------------------*/
-void DoStyleColor (char *color)
+void DoStyleColor (char *color, ThotBool isBg)
 {
   Document            doc;
   Element             el = NULL;
@@ -876,26 +918,28 @@ void DoStyleColor (char *color)
   int                 col, bg_col, new_col, firstChar, lastChar;
   unsigned short      red, green, blue;
   DisplayMode         dispMode;
-  ThotBool            open = FALSE, isBg;
+  ThotBool            open = FALSE;
+  ElementType       elType;
+  char buffer[50];
 
   doc = TtaGetSelectedDocument();
-  if (!TtaGetDocumentAccessMode (doc) || color == NULL)
+  if (color == NULL)
     /* document is ReadOnly */
     return;
-  if (DocumentTypes[doc] == docText || DocumentTypes[doc] == docSource ||
-      DocumentTypes[doc] == docXml)
+  if (NoCSSEditing (doc))
     return;
   // new thot color
   ptr = strstr (color, "#");
   if (ptr == NULL)
     return;
-  isBg =  (strstr (color, "background-color") != NULL);
+
   TtaGiveRGB (ptr, &red, &green, &blue);
   new_col = TtaGetThotColor (red, green, blue);
 
   // check the current color
   TtaGiveFirstSelectedElement (doc, &el, &firstChar, &lastChar);
   TtaGiveBoxColors (el, doc, 1, &col, &bg_col);
+
   if ((isBg && new_col == bg_col) || new_col == col)
     // do nothing
     return;
@@ -904,15 +948,56 @@ void DoStyleColor (char *color)
   dispMode = TtaGetDisplayMode (doc);
   if (dispMode == DisplayImmediately)
     TtaSetDisplayMode (doc, DeferredDisplay);
-  el = NewSpanElement (doc, &open);
-  if (el)
-     TtaGiveBoxColors (el, doc, 1, &col, &bg_col);
-  if ((isBg && new_col == bg_col) || new_col != col)
-    GenerateStyle (color, TRUE);
+
+  elType = TtaGetElementType (el);
+  if(elType.ElSSchema == GetSVGSSchema (doc))
+    {
+      /* It's an SVG element */
+      if(elType.ElTypeNum == SVG_EL_g ||
+	 elType.ElTypeNum == SVG_EL_rect ||
+         elType.ElTypeNum == SVG_EL_circle_ ||
+         elType.ElTypeNum == SVG_EL_ellipse ||
+         elType.ElTypeNum == SVG_EL_polyline ||
+         elType.ElTypeNum == SVG_EL_polygon ||
+         elType.ElTypeNum == SVG_EL_path
+         || (!isBg && elType.ElTypeNum == SVG_EL_line_)
+         )
+        {
+          if(isBg)
+            sprintf( buffer, "fill:%s", color);
+          else 
+            sprintf( buffer, "stroke:%s", color);
+
+          TtaSetDisplayMode (doc, DisplayImmediately);
+          if ((isBg && new_col == bg_col) || new_col != col)
+            GenerateStyle (buffer, TRUE);
+          TtaSetDisplayMode (doc, dispMode);
+        }
+    }
+  else
+    {
+      if(isBg)
+        sprintf( buffer, "background-color:%s", color);
+      else 
+        sprintf( buffer, "color:%s", color);
+
+      el = NewSpanElement (doc, &open);
+      if (el)
+        TtaGiveBoxColors (el, doc, 1, &col, &bg_col);
+      if ((isBg && new_col == bg_col) || new_col != col)
+        {
+          GenerateStyle (buffer, TRUE);
+        }
+    }
+      
+
   if (open)
     TtaCloseUndoSequence (doc);
   if (dispMode == DisplayImmediately)
     TtaSetDisplayMode (doc, dispMode);
+
+  // Update menus
+  UpdateContextSensitiveMenus (doc, 1);
 }
 
 
@@ -944,11 +1029,8 @@ void DoSelectFontSize (Document doc, View view)
   ThotBool            open = FALSE;
 
   doc = TtaGetSelectedDocument();
-  if (!TtaGetDocumentAccessMode (doc))
+  if (NoCSSEditing (doc))
     /* document is ReadOnly */
-    return;
-  if (DocumentTypes[doc] == docText || DocumentTypes[doc] == docSource ||
-      DocumentTypes[doc] == docXml)
     return;
 
   TtaGiveFirstSelectedElement (doc, &el, &firstChar, &lastChar);
@@ -983,11 +1065,8 @@ void DoSelectFontFamilly (Document doc, View view)
   ThotBool            open = FALSE;
 
   doc = TtaGetSelectedDocument();
-  if (!TtaGetDocumentAccessMode (doc))
+  if (NoCSSEditing (doc))
     /* document is ReadOnly */
-    return;
-  if (DocumentTypes[doc] == docText || DocumentTypes[doc] == docSource ||
-      DocumentTypes[doc] == docXml)
     return;
 
   TtaGiveFirstSelectedElement (doc, &el, &firstChar, &lastChar);
@@ -1029,11 +1108,8 @@ void DoSelectFont (Document doc, View view)
   int                 family, size;
   ThotBool            open = FALSE;
 
-  if (!TtaGetDocumentAccessMode (doc))
+  if (NoCSSEditing (doc))
     /* document is ReadOnly */
-    return;
-  if (DocumentTypes[doc] == docText || DocumentTypes[doc] == docSource ||
-      DocumentTypes[doc] == docXml)
     return;
 
   TtaGiveFirstSelectedElement (doc, &el, &firstChar, &lastChar);
@@ -1083,11 +1159,8 @@ void DoSelectColor (Document doc, View view)
   unsigned short      green;
   unsigned short      blue;
 
-  if (!TtaGetDocumentAccessMode (doc))
+  if (NoCSSEditing (doc))
     /* document is ReadOnly */
-    return;
-  if (DocumentTypes[doc] == docText || DocumentTypes[doc] == docSource ||
-      DocumentTypes[doc] == docXml)
     return;
 
   if (Current_Color != -1)
@@ -1102,8 +1175,8 @@ void DoSelectColor (Document doc, View view)
       colour_data = dialog.GetColourData();
       c = colour_data.GetColour();
       Current_Color = TtaGetThotColor (c.Red(), c.Green(), c.Blue());
-      sprintf( color_string, "color:#%02x%02x%02x", c.Red(), c.Green(), c.Blue());
-      DoStyleColor (color_string);
+      sprintf( color_string, "#%02x%02x%02x", c.Red(), c.Green(), c.Blue());
+      DoStyleColor (color_string, FALSE);
     }
   UpdateStylePanel (doc, view);
 }
@@ -1121,11 +1194,8 @@ void DoSelectBgColor (Document doc, View view)
   unsigned short      green;
   unsigned short      blue;
 
-  if (!TtaGetDocumentAccessMode (doc))
+  if (NoCSSEditing (doc))
     /* document is ReadOnly */
-    return;
-  if (DocumentTypes[doc] == docText || DocumentTypes[doc] == docSource ||
-      DocumentTypes[doc] == docXml)
     return;
 
   if (Current_BackgroundColor != -1)
@@ -1140,19 +1210,351 @@ void DoSelectBgColor (Document doc, View view)
       colour_data = dialog.GetColourData();
       c = colour_data.GetColour();
       Current_BackgroundColor = TtaGetThotColor (c.Red(), c.Green(), c.Blue());
-      sprintf( color_string, "background-color:#%02x%02x%02x", c.Red(), c.Green(), c.Blue());
-      DoStyleColor (color_string);
+
+      sprintf( color_string, "#%02x%02x%02x",
+               c.Red(), c.Green(), c.Blue());
+      DoStyleColor (color_string, TRUE);
     }
   UpdateStylePanel (doc, view);
+}
+
+/*----------------------------------------------------------------------
+  DoSelectStrokeColor
+  Apply color style
+  ----------------------------------------------------------------------*/
+void DoSelectStrokeColor (Document doc, View view)
+{
+  wxColour            c;
+  wxColourData        colour_data;
+  char                color_string[100];
+  unsigned short      red;
+  unsigned short      green;
+  unsigned short      blue;
+
+  if (NoCSSEditing (doc))
+    /* document is ReadOnly */
+    return;
+
+  if (Current_StrokeColor != -1)
+    TtaGiveThotRGB (Current_StrokeColor, &red, &green, &blue);
+  else
+    TtaGiveThotRGB (0, &red, &green, &blue);
+
+  colour_data.SetColour( wxColour( red, green, blue ) );
+  wxColourDialog dialog (NULL, &colour_data);
+  if (dialog.ShowModal() == wxID_OK)
+    {
+      colour_data = dialog.GetColourData();
+      c = colour_data.GetColour();
+      Current_StrokeColor = TtaGetThotColor (c.Red(), c.Green(), c.Blue());
+      sprintf( color_string, "#%02x%02x%02x", c.Red(), c.Green(), c.Blue());
+      DoStyleColor (color_string, FALSE);
+    }
+  UpdateStylePanel (doc, view);
+}
+
+/*----------------------------------------------------------------------
+  DoSelectFillColor
+  Apply color style
+  ----------------------------------------------------------------------*/
+void DoSelectFillColor (Document doc, View view)
+{
+  wxColour            c;
+  wxColourData        colour_data;
+  char                color_string[100];
+  unsigned short      red;
+  unsigned short      green;
+  unsigned short      blue;
+
+  if (NoCSSEditing (doc))
+    /* document is ReadOnly */
+    return;
+
+  if (Current_FillColor != -1)
+    TtaGiveThotRGB (Current_FillColor, &red, &green, &blue);
+  else
+    TtaGiveThotRGB (0, &red, &green, &blue);
+    
+  colour_data.SetColour( wxColour( red, green, blue ) );
+  wxColourDialog dialog (NULL, &colour_data);
+  if (dialog.ShowModal() == wxID_OK)
+    {
+      colour_data = dialog.GetColourData();
+      c = colour_data.GetColour();
+      Current_FillColor = TtaGetThotColor (c.Red(), c.Green(), c.Blue());
+
+      sprintf( color_string, "#%02x%02x%02x",
+               c.Red(), c.Green(), c.Blue());
+      DoStyleColor (color_string, TRUE);
+    }
+  UpdateStylePanel (doc, view);
+  TtaUpdateAttrMenu(doc);
+}
+
+/*----------------------------------------------------------------------
+  DoSelectGlobalOpacity
+  Change the opacity of the selection
+  ----------------------------------------------------------------------*/
+void DoSelectOpacity(Document doc, View view)
+{
+  DoStyleSVG (doc, view, Current_Opacity, PROpacity);
+}
+
+/*----------------------------------------------------------------------
+  DoSelectFillOpacity
+  Change the opacity of the selection
+  ----------------------------------------------------------------------*/
+void DoSelectFillOpacity(Document doc, View view)
+{
+  DoStyleSVG (doc, view, Current_FillOpacity, PRFillOpacity);
+}
+
+/*----------------------------------------------------------------------
+  DoSelectStrokeOpacity
+  Change the opacity of the selection
+  ----------------------------------------------------------------------*/
+void DoSelectStrokeOpacity(Document doc, View view)
+{
+  DoStyleSVG (doc, view, Current_StrokeOpacity, PRStrokeOpacity);
+}
+
+/*----------------------------------------------------------------------
+  DoSelectStrokeWidth
+  ----------------------------------------------------------------------*/
+void DoSelectStrokeWidth(Document doc, View view)
+{
+  DoStyleSVG (doc, view, Current_StrokeWidth, PRLineWeight);
+}
+
+/*----------------------------------------------------------------------
+  DoStyleSVG
+  ----------------------------------------------------------------------*/
+void DoStyleSVG (Document doc, View view, int current_value, int type)
+{
+  Element             el = NULL;
+  DisplayMode         dispMode;
+  int                 firstChar, lastChar;
+  PRule               rule;
+  int value;
+  char buffer[100];
+  ThotBool open = FALSE;
+
+  doc = TtaGetSelectedDocument();
+  if (NoCSSEditing (doc))
+    /* document is ReadOnly */
+    return;
+
+  TtaGiveFirstSelectedElement (doc, &el, &firstChar, &lastChar);
+  if(el)
+    {
+      rule = TtaGetPRule(el, type);
+      if(rule)
+	value = TtaGetPRuleValue (rule);
+
+      if(value != current_value)
+	{
+	  /* Need to force a redisplay */
+	  dispMode = TtaGetDisplayMode (doc);
+	  if (dispMode == DisplayImmediately)
+	    TtaSetDisplayMode (doc, DeferredDisplay);
+
+	  //	  NewSpanElement (doc, &open);
+	  switch(type)
+	    {
+	    case PROpacity:
+	      sprintf(buffer, "opacity: %g", ((float)current_value) / 100);
+	      TtaSetPRuleValue (el, rule, 10*current_value, doc);
+	      break;
+
+	    case PRStrokeOpacity:
+	      sprintf(buffer, "stroke-opacity: %g", ((float)current_value) / 100);
+	      TtaSetPRuleValue (el, rule, 10*current_value, doc);
+	      break;
+
+	    case PRFillOpacity:
+	      sprintf(buffer, "fill-opacity: %g", ((float)current_value) / 100);
+	      TtaSetPRuleValue (el, rule, 10*current_value, doc);
+	      break;
+
+	    case PRLineWeight:
+	      sprintf(buffer, "stroke-width: %d", current_value);
+	      //TtaSetPRuleValue (el, rule, current_value, doc);
+	      break;
+	    }
+
+	  GenerateStyle (buffer, TRUE);
+	  TtaSetDisplayMode (doc, dispMode);
+
+	  if (open)
+	    TtaCloseUndoSequence (doc);
+	  UpdateStylePanel (doc, view);
+	  TtaUpdateAttrMenu(doc);
+	}
+    }
+
+}
+
+/*----------------------------------------------------------------------
+  UpdateStylePanelSVG
+  Update the style panel to display the properties of el
+  ----------------------------------------------------------------------*/
+void UpdateStylePanelSVG(Document doc, View view, Element el)
+{
+  PRule               rule;
+  int stroke, fill;
+
+  if (NoCSSEditing (doc))
+    /* document is ReadOnly */
+    return;
+
+  if (el)
+    {
+      /* Opacity */
+      rule = TtaGetPRule(el, PROpacity);
+      if(rule)
+        Current_Opacity = TtaGetPRuleValue (rule)/10;
+      else
+        Current_Opacity = 100;
+
+      /* Stroke-Opacity */
+      rule = TtaGetPRule(el, PRStrokeOpacity);
+      if(rule)
+        Current_StrokeOpacity = TtaGetPRuleValue (rule)/10;
+      else
+        Current_StrokeOpacity = 100;
+
+      /* Fill-Opacity */
+      rule = TtaGetPRule(el, PRFillOpacity);
+      if(rule)
+        Current_FillOpacity = TtaGetPRuleValue (rule)/10;
+      else
+        Current_FillOpacity = 100;
+
+      /* Stroke-Width */
+      rule = TtaGetPRule(el, PRLineWeight);
+      if(rule)
+        Current_StrokeWidth = TtaGetPRuleValue (rule);
+      else
+        Current_StrokeWidth = 1;
+
+      /* Stroke and Fill */
+      TtaGiveBoxColors (el, doc, 1, &stroke, &fill);
+      /* TODO: find how to know when stroke and fill values 
+         are None, Inherit or currentColor */
+
+      if (stroke >= 0)
+        {
+          Current_StrokeColor = stroke;
+          StrokeEnabled = TRUE;
+        }
+      else
+        StrokeEnabled = FALSE;
+
+      Current_FillColor = fill;
+      FillEnabled = (fill >= 0);
+      UpdateStylePanel (doc, view);
+    }
+}
+
+/*----------------------------------------------------------------------
+  DoUpdateStrokeStatus
+  ----------------------------------------------------------------------*/
+void DoUpdateStrokeStatus(Document doc, View view)
+{
+  char                color_string[100];
+  unsigned short      red;
+  unsigned short      green;
+  unsigned short      blue;
+  DisplayMode         dispMode;
+
+  dispMode = TtaGetDisplayMode (doc);
+  if (dispMode == DisplayImmediately)
+    TtaSetDisplayMode (doc, DeferredDisplay);
+
+  if(StrokeEnabled)
+    {
+      /* Remove the stroke style */
+      RemoveSpecificStyle (doc, "stroke:");
+      RemoveSpecificStyle (doc, "stroke-width:");
+      RemoveSpecificStyle (doc, "stroke-linecap:");
+      RemoveSpecificStyle (doc, "stroke-linejoin:");
+      RemoveSpecificStyle (doc, "stroke-miterlimit:");
+      RemoveSpecificStyle (doc, "stroke-dasharray:");
+      RemoveSpecificStyle (doc, "stroke-dashoffset:");
+      RemoveSpecificStyle (doc, "stroke-opacity:");
+      GenerateStyle ("stroke: none", TRUE);
+      StrokeEnabled = FALSE;
+    }
+  else
+    {
+      /* Add stroke style */
+      if (Current_StrokeColor != -1)
+	TtaGiveThotRGB (Current_StrokeColor, &red, &green, &blue);
+      else
+	TtaGiveThotRGB (0, &red, &green, &blue);
+      sprintf( color_string, "#%02x%02x%02x", red, green, blue);
+      DoStyleColor (color_string, FALSE);
+
+      DoSelectStrokeOpacity(doc, view);
+      DoSelectStrokeWidth(doc, view);
+      StrokeEnabled = TRUE;
+    }
+
+  UpdateStylePanel (doc, view);
+  TtaUpdateAttrMenu(doc);
+  TtaSetDisplayMode (doc, dispMode);
+}
+
+/*----------------------------------------------------------------------
+  DoUpdateFillStatus
+  ----------------------------------------------------------------------*/
+void DoUpdateFillStatus(Document doc, View view)
+{
+  char                color_string[100];
+  unsigned short      red;
+  unsigned short      green;
+  unsigned short      blue;
+  DisplayMode         dispMode;
+
+  dispMode = TtaGetDisplayMode (doc);
+  if (dispMode == DisplayImmediately)
+    TtaSetDisplayMode (doc, DeferredDisplay);
+
+  if(FillEnabled)
+    {
+      /* Remove the fill style */
+      RemoveSpecificStyle (doc, "fill:");
+      RemoveSpecificStyle (doc, "fill-rule:");
+      RemoveSpecificStyle (doc, "fill-opacity:");
+      GenerateStyle ("fill: none", TRUE);
+      FillEnabled = FALSE;
+    }
+  else
+    {
+      /* Add fill style */
+      if (Current_FillColor != -1)
+	TtaGiveThotRGB (Current_FillColor, &red, &green, &blue);
+      else
+	TtaGiveThotRGB (0, &red, &green, &blue);
+      sprintf( color_string, "#%02x%02x%02x", red, green, blue);
+      DoStyleColor (color_string, TRUE);
+
+      DoSelectFillOpacity(doc, view);
+      FillEnabled = TRUE;
+    }
+
+  UpdateStylePanel (doc, view);
+  TtaUpdateAttrMenu(doc);
+  TtaSetDisplayMode (doc, dispMode);
 }
 
 /*----------------------------------------------------------------------
   CleanUpAttribute removes the CSS rule (data) from the attribute value
   Return TRUE if the selection will change
   -----------------------------------------------------------------------*/
-static ThotBool CleanUpAttribute (Attribute attr, char *data, Element el, Document doc)
+static ThotBool CleanUpAttribute (Attribute attr, const char *data, Element el, Document doc)
 {
-  char     *buffer, *property, *start, *stop, *ptr;
+  char     *buffer, *property, *start, *stop, *ptr, *old;
   int       lg;
   ThotBool  selChange = FALSE;
 
@@ -1199,7 +1601,9 @@ static ThotBool CleanUpAttribute (Attribute attr, char *data, Element el, Docume
               TtaSetAttributeText (attr, buffer, el, doc);
             }
           // unapply the CSS property
-          ParseHTMLSpecificStyle (el, data, doc, 2000, TRUE);
+          old = TtaStrdup(data);
+          ParseHTMLSpecificStyle (el, old, doc, 2000, TRUE);
+          TtaFreeMemory(old);
           TtaSetDocumentModified (doc);
         }
       TtaFreeMemory (buffer);
@@ -1212,7 +1616,7 @@ static ThotBool CleanUpAttribute (Attribute attr, char *data, Element el, Docume
   RemoveSpecificStyle
   Remove a css property
   ----------------------------------------------------------------------*/
-ThotBool RemoveSpecificStyle (Document doc, char *cssproperty)
+ThotBool RemoveSpecificStyle (Document doc, const char *cssproperty)
 {
   Element         el, parent1, parent2;
   ElementType	    elType;
@@ -1223,11 +1627,8 @@ ThotBool RemoveSpecificStyle (Document doc, char *cssproperty)
   DisplayMode     dispMode;
   ThotBool        open = FALSE, selChange = FALSE;
 
-  if (!TtaGetDocumentAccessMode (doc))
+  if (NoCSSEditing (doc))
     /* document is ReadOnly */
-    return selChange;
-  if (DocumentTypes[doc] == docText || DocumentTypes[doc] == docSource ||
-      DocumentTypes[doc] == docXml)
     return selChange;
 
   TtaGiveFirstSelectedElement (doc, &el, &firstChar, &lastChar);
@@ -1299,17 +1700,14 @@ void DoRemoveBgColor (Document doc, View view)
   ----------------------------------------------------------------------*/
 void DoRemoveFont (Document doc, View view)
 {
- Element             el = NULL;
+  Element             el = NULL;
   int                 firstChar, lastChar;
   int                 size = -1, family;
   TypeUnit            unit;
 
   doc = TtaGetSelectedDocument();
-  if (!TtaGetDocumentAccessMode (doc))
+  if (NoCSSEditing (doc))
     /* document is ReadOnly */
-    return;
-  if (DocumentTypes[doc] == docText || DocumentTypes[doc] == docSource ||
-      DocumentTypes[doc] == docXml)
     return;
 
   RemoveSpecificStyle (doc, "font-family: Times");

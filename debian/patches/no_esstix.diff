@@ -1,11 +1,14 @@
+ESSTIX fonts are not free, and come with TTF extension (don't ask).
+Stop trying to install them
+
 Index: Amaya/batch/script_install.in
 ===================================================================
 --- Amaya.orig/batch/script_install.in	2007-03-15 19:13:33.000000000 +0000
 +++ Amaya/batch/script_install.in	2007-03-15 19:57:22.000000000 +0000
 @@ -78,7 +78,7 @@
- DICOFILES="*.ptn *.dic alphabet clavier"
- RESOURCE_XRC_FILES="*.xrc"
  RESOURCE_ICONS_FILES="*.png *.ico *.gif"
+ RESOURCE_PNG_FILES="*.png"
+ RESOURCE_SVG_FILES="*.png *.svg"
 -FONTSFILES="Families.list fonts.dir icones* *.ttf *.TTF"
 +FONTSFILES="Families.list fonts.dir icones* *.ttf"
  

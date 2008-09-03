@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Regis Boudin <regis@debian.org>
 Uploaders: Anand Kumria <wildfire@progsoc.org>
 Build-Depends: debhelper (>= 5.0.0), libpng12-dev, libjpeg62-dev, libglu1-mesa-dev | libglu-dev, libfreetype6-dev, libwxgtk2.8-dev, libraptor1-dev, libwww-dev, libx11-dev
-Standards-Version: 3.7.3
+Standards-Version: 3.8.0
 Homepage: http://www.w3.org/Amaya
 
 Package: amaya

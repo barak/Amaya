@@ -19,7 +19,7 @@
 GetSchemaFromDocType: Returns the name of the schema corresponding to 
 a doc type.
 ----------------------------------------------------------------------*/
-char *GetSchemaFromDocType (DocumentType docType)
+const char *GetSchemaFromDocType (DocumentType docType)
 {
 #ifdef TEMPLATES
 	switch (docType)
@@ -44,7 +44,7 @@ char *GetSchemaFromDocType (DocumentType docType)
 /*----------------------------------------------------------------------
 Set the value of a string attribute 
 ----------------------------------------------------------------------*/
-void SetAttributeStringValue (Element el, int att, char* value)
+void SetAttributeStringValue (Element el, int att, const char* value)
 {
 #ifdef TEMPLATES
   Document      doc = TtaGetDocument(el);
@@ -270,43 +270,6 @@ ThotBool ValidateTemplateAttrInMenu (NotifyAttribute * event)
                          type = TtaGetAttributeValue(attr);
                        else
                          type = Template_ATTR_type_VAL_string;
-#ifdef AMAYA_DEBUG
-#ifdef EK
-/******************************************************************************/
-                       printf("Attribute : %s \n", attrName);
-                       switch(useAt)
-                       {
-                         case Template_ATTR_useAt_VAL_required:
-                           printf("    required");
-                           break;
-                         case Template_ATTR_useAt_VAL_optional:
-                           printf("    optional");
-                           break;
-                         case Template_ATTR_useAt_VAL_prohibited:
-                           printf("    prohibited");
-                           break;
-                         default:
-                           printf("    error");
-                           break;
-                       }
-                       switch(type)
-                       {
-                         case Template_ATTR_type_VAL_string:
-                           printf(" string\n");
-                           break;
-                         case Template_ATTR_type_VAL_number:
-                           printf(" number\n");
-                           break;
-                         case Template_ATTR_type_VAL_listVal:
-                           printf(" list\n");
-                           break;
-                         default:
-                           printf(" error\n");
-                           break;
-                       }
-/******************************************************************************/
-#endif  /* EK */
-#endif /* AMAYA_DEBUG */
                        event->restr.RestrType = (RestrictionContentType)type;
                        /* If attr is prohibited, dont show it.*/
                        if(useAt==Template_ATTR_useAt_VAL_prohibited)
@@ -367,6 +330,7 @@ ThotBool ValidateTemplateAttrInMenu (NotifyAttribute * event)
   ----------------------------------------------------------------------*/
 void DumpElementSubPath(Element el, char* buffer)
 {
+#ifdef AMAYA_DEBUG
   Element parent = TtaGetParent(el);
   if(parent==NULL)
     strcpy(buffer, TtaGetElementTypeName(TtaGetElementType(el)));
@@ -376,6 +340,7 @@ void DumpElementSubPath(Element el, char* buffer)
       strcat(buffer, "/");
       strcat(buffer, TtaGetElementTypeName(TtaGetElementType(el)));
     }
+#endif /* AMAYA_DEBUG */
 }
 
 /*----------------------------------------------------------------------
@@ -383,9 +348,11 @@ void DumpElementSubPath(Element el, char* buffer)
   ----------------------------------------------------------------------*/
 void DumpElementPath(Element el)
 {
+#ifdef AMAYA_DEBUG
   char buffer[MAX_LENGTH];
   DumpElementSubPath(el, buffer);
   printf("%s\n", buffer);
+#endif /* AMAYA_DEBUG */
 }
 
 
@@ -394,13 +361,30 @@ void DumpElementPath(Element el)
   ----------------------------------------------------------------------*/
 void DumpTemplateElement(Element el, Document doc)
 {
-  ElementType elType;
-  SSchema     schema = TtaGetSSchema ("Template", doc);
-  char*       str;
+#ifdef AMAYA_DEBUG
+  ElementType    elType;
+  AttributeType  attType;
+  Attribute      att;
+  SSchema        schema = TtaGetSSchema ("Template", doc);
+  char*          str;
+  char           buffer[MAX_LENGTH];
+  int            len;
+  Language       lang;
+  
   if(el && doc)
     {
       elType = TtaGetElementType(el);
-      printf("%s", TtaGetElementTypeName(elType));
+      printf("- %p %d ", elType.ElSSchema, elType.ElTypeNum);
+      printf(" %s", TtaGetSSchemaName(elType.ElSSchema));
+      printf(":%s", TtaGetElementTypeName(elType));
+      if(elType.ElTypeNum==1)
+        {
+          len = MAX_LENGTH-1;
+          TtaGiveTextContent(el, (unsigned char*)buffer, &len, &lang);
+          buffer[len] = EOS;
+          printf(" \"%s\"", buffer);
+        }
+      
       if(elType.ElSSchema==schema)
         {
           switch(elType.ElTypeNum)
@@ -445,11 +429,6 @@ void DumpTemplateElement(Element el, Document doc)
                 printf(" maxOccurs=%s", str);
                 TtaFreeMemory(str);
                 break;
-              case Template_EL_option:
-                str = GetAttributeStringValueFromNum(el, Template_ATTR_title, NULL);
-                printf(" label=%s", str);
-                TtaFreeMemory(str);
-                break;
               case Template_EL_useSimple:
               case Template_EL_useEl:
                 str = GetAttributeStringValueFromNum(el, Template_ATTR_title, NULL);
@@ -458,6 +437,11 @@ void DumpTemplateElement(Element el, Document doc)
                 str = GetAttributeStringValueFromNum(el, Template_ATTR_types, NULL);
                 printf(" types=%s", str);
                 TtaFreeMemory(str);
+                attType.AttrSSchema = elType.ElSSchema;
+                attType.AttrTypeNum = Template_ATTR_option;
+                att = TtaGetAttribute (el, attType);
+                if (att)
+                  printf(" option");
                 break;
               case Template_EL_bag:
                 str = GetAttributeStringValueFromNum(el, Template_ATTR_title, NULL);
@@ -487,6 +471,29 @@ void DumpTemplateElement(Element el, Document doc)
             }
         }
     }
+#endif /* AMAYA_DEBUG */
+}
+
+/*----------------------------------------------------------------------
+ * Dump subtree
+  ----------------------------------------------------------------------*/
+void DumpSubtree(Element el, Document doc, int off)
+{
+#ifdef AMAYA_DEBUG
+  Element child = TtaGetFirstChild(el);
+  int i;
+  
+  for(i=0; i<off; i++)
+    printf("  ");
+  DumpTemplateElement(el, doc);
+  printf("\n");
+
+  while(child)
+    {
+      DumpSubtree(child, doc, off+1);
+      TtaNextSibling(&child);
+    }
+#endif /* AMAYA_DEBUG */
 }
 
 /*----------------------------------------------------------------------
@@ -504,7 +511,7 @@ ThotBool SaveDocumentToNewDoc(Document doc, Document newdoc, char* newpath)
   
   localFile = GetLocalPath (newdoc, newpath);
   // update all links
-  SetRelativeURLs (doc, newpath, "", FALSE, FALSE, FALSE);
+  SetRelativeURLs (doc, newpath, NULL, FALSE, FALSE, FALSE);
   // prepare the new document view
   TtaExtractName (newpath, DirectoryName, DocumentName);
 
@@ -532,3 +539,20 @@ ThotBool SaveDocumentToNewDoc(Document doc, Document newdoc, char* newpath)
     res = TtaExportDocumentWithNewLineNumbers (doc, localFile, NULL, FALSE);
   return res;
 }
+
+/*----------------------------------------------------------------------
+ * Retrieve the xt:head element.
+  ----------------------------------------------------------------------*/
+Element TemplateFindHead(Document doc)
+{
+#ifdef TEMPLATES
+  ElementType headType;
+  headType.ElSSchema = TtaGetSSchema ("Template", doc);
+  headType.ElTypeNum = Template_EL_head;
+  return TtaSearchTypedElement(headType, SearchInTree, TtaGetMainRoot(doc));
+#else /* TEMPLATES */
+  return NULL;
+#endif /* TEMPLATES */
+}
+
+

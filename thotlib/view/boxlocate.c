@@ -11,6 +11,11 @@
  * Author: I. Vatton (INRIA)
  *
  */
+
+#ifdef _WX
+  #include "wx/wx.h"
+#endif /* _WX */
+
 #include "thot_gui.h"
 #include "ustring.h"
 #include "libmsg.h"
@@ -36,6 +41,7 @@
 #include "appli_f.h"
 #include "boxmoves_f.h"
 #include "boxlocate_f.h"
+#include "boxpositions_f.h"
 #include "boxselection_f.h"
 #include "buildboxes_f.h"
 #include "buildlines_f.h"
@@ -67,11 +73,25 @@
 #include "glwindowdisplay.h"
 #endif /*_GL*/
 
+#ifdef _WX
+  #include "logdebug.h"
+  #include "message_wx.h"
+  #include "AmayaFrame.h"
+  #include "AmayaAddPointEvtHandler.h"
+  #include "AmayaMovePointEvtHandler.h"
+  #include "AmayaMovingBoxEvtHandler.h"
+#endif /* _WX */
+
+
 static ThotBool     SkipClickEvent = FALSE;
 
 #define Y_RATIO 200		/* penalisation en Y */
 #define ALLOC_POINTS    300
 #define ANCHOR_SIZE 3		/* taille des ancres */
+
+
+static PtrBox IsOnShape (PtrAbstractBox pAb, int x, int y, int *selpoint);
+static ThotBool IsInShape (PtrAbstractBox pAb, int x, int y);
 
 /*----------------------------------------------------------------------
   APPgraphicModify sends a message TteElemGraphModif to parent elements
@@ -166,6 +186,92 @@ static ThotBool NotifyClick (int event, ThotBool pre, PtrElement pEl, int doc)
 }
 
 /*----------------------------------------------------------------------
+  IsNear
+  Check if th point (x,y) is near the point (x0,y0)
+  ----------------------------------------------------------------------*/
+static ThotBool IsNear(int x, int y, int x0, int y0)
+{
+  int dx, dy;
+  int d = DELTA_SEL*2;
+  dx = x - x0;
+  dy = y - y0;
+  return ((dx*dx+dy*dy) <= d*d);
+}
+
+
+/*----------------------------------------------------------------------
+  IsSelectingControlPoint
+  The frame must be the formatted view.
+  ----------------------------------------------------------------------*/
+PtrBox IsSelectingControlPoint(int frame, int x, int y, int* ctrlpt)
+{
+  PtrElement      child;
+  PtrAbstractBox  pAb;
+  PtrBox          box;
+  ViewFrame      *pFrame;
+  PtrFlow         pFlow = NULL;
+
+  if (FrameTable[frame].FrView == 1 && FirstSelectedElement &&
+      FirstSelectedElement == LastSelectedElement &&
+
+      /* This function must not be used for SVG */
+      !(
+	/* An SVG component */
+	IsSVGComponent(FirstSelectedElement) ||
+
+	/* A leaf of an SVG component */
+	(FirstSelectedElement->ElTerminal &&
+	 FirstSelectedElement->ElParent &&
+	 IsSVGComponent(FirstSelectedElement->ElParent))
+	)
+
+      )
+    {
+      pAb = FirstSelectedElement->ElAbstractBox[0];
+      // take into account the document scroll
+      pFrame = &ViewFrameTable[frame - 1];
+      x += pFrame->FrXOrg;
+      y += pFrame->FrYOrg;
+      if (pAb && pAb->AbBox)
+        pFlow = GetRelativeFlow (pAb->AbBox, frame);
+      if (pFlow)
+        {
+          /* apply the box shift */
+          x += pFlow->FlXStart;
+          y += pFlow->FlYStart;
+        }
+      if (!FirstSelectedElement->ElTerminal &&
+          FirstSelectedElement->ElFirstChild &&
+          FirstSelectedElement->ElFirstChild->ElTerminal)
+        {
+          child = FirstSelectedElement->ElFirstChild;
+          if (child->ElLeafType == LtPicture ||
+              child->ElLeafType == LtPath ||
+              child->ElLeafType == LtPolyLine ||
+              child->ElLeafType == LtGraphics)
+            {
+              pAb = child->ElAbstractBox[0];
+              box = IsOnShape (pAb, x, y, ctrlpt);
+              if (child->ElLeafType != LtPicture || *ctrlpt != 0)
+              return box;
+            }
+        }
+      else if (FirstSelectedElement->ElAbstractBox[0] &&
+               TypeHasException (ExcIsDraw, FirstSelectedElement->ElTypeNumber,
+                                 FirstSelectedElement->ElStructSchema))
+        {
+          if (pAb && pAb->AbBox)
+            {
+              box = IsOnShape (pAb, x, y, ctrlpt);
+              if (*ctrlpt != 0)
+                return box;
+            }
+        }
+    }
+  return NULL;
+}
+
+/*----------------------------------------------------------------------
   LocateSelectionInView finds out the selected Abstract Box and if it's
   a TEXT element the selected character(s).
   The parameter button says what the editor wants to do with this
@@ -180,7 +286,8 @@ static ThotBool NotifyClick (int event, ThotBool pre, PtrElement pEl, int doc)
   7 -> reset the selection without notification
 // return TRUE if the event is already managed
   ----------------------------------------------------------------------*/
-ThotBool LocateSelectionInView (int frame, int x, int y, int button)
+ThotBool LocateSelectionInView (int frame, int x, int y, int button,
+				ThotBool *Selecting)
 {
   PtrBox              pBox;
   PtrElement          pEl = NULL, firstEl;
@@ -198,6 +305,7 @@ ThotBool LocateSelectionInView (int frame, int x, int y, int button)
   int                 doc, view;
   int                 firstC;
   ThotBool            extend, ok, left = FALSE;
+  PtrDocument         pDoc;
 
   if (frame >= 1)
     {
@@ -214,222 +322,302 @@ ThotBool LocateSelectionInView (int frame, int x, int y, int button)
         y = 0;
       pAb = pFrame->FrAbstractBox;
       nChars = 0;
-      if (button == 6 && SelectedPointInPolyline != 0 &&
-          FirstSelectedElement &&
-          FirstSelectedElement == LastSelectedElement &&
-          FirstSelectedElement->ElTerminal &&
-          FirstSelectedElement->ElLeafType == LtPolyLine)
-        ContentEditing (TEXT_INSERT);
-      else
-        {
-          extend = (button == 0 || button == 1);
-          /* get the selected box */
-          GetClickedBox (&pBox, &pFlow, pAb, frame, x, y, Y_RATIO, &nChars);
-          /* When it's an extended selection, avoid to extend to the
-             enclosing box */
-          if (extend)
-            {
-              if (pBox != pViewSel->VsBox &&
-                  IsParentBox (pBox, pViewSel->VsBox))
-                pBox = GetClickedLeafBox (frame, x, y, &pFlow);
-            }
-          else if (pBox && pBox->BxAbstractBox && FrameTable[frame].FrView == 1)
-            {
-              pEl = pBox->BxAbstractBox->AbElement;
-              if (pEl)
-                pEl = pEl->ElParent;
-              if (pEl && pEl->ElPrevious &&
-                  TypeHasException (ExcIsBreak, pEl->ElTypeNumber, pEl->ElStructSchema) &&
-                  !TypeHasException (ExcIsBreak, pEl->ElPrevious->ElTypeNumber, pEl->ElPrevious->ElStructSchema))
-                pBox = pBox->BxPrevious;
-            }
 
-          if (pBox)
-            {
+      
+      extend = (button == 0 || button == 1);
+
+      /* get the selected box */
+      GetClickedBox (&pBox, &pFlow, pAb, frame, x, y, Y_RATIO, &nChars);
+
+      /* When it's an extended selection, avoid to extend to the
+	 enclosing box */
+      if (extend)
+	{
+	  if (pBox != pViewSel->VsBox &&
+	      IsParentBox (pBox, pViewSel->VsBox))
+	    pBox = GetClickedLeafBox (frame, x, y, &pFlow);
+	}
+      else if (pBox && pBox->BxAbstractBox && FrameTable[frame].FrView == 1)
+	{
+	  pEl = pBox->BxAbstractBox->AbElement;
+	  if (pEl)
+	    pEl = pEl->ElParent;
+	  if (pEl && pEl->ElPrevious &&
+	      TypeHasException (ExcIsBreak, pEl->ElTypeNumber, pEl->ElStructSchema) &&
+	      !TypeHasException (ExcIsBreak, pEl->ElPrevious->ElTypeNumber, pEl->ElPrevious->ElStructSchema))
+	    pBox = pBox->BxPrevious;
+	}
+
+      if (pBox)
+	{
 #ifndef _GL
-              xOrg =  pBox->BxXOrg;
-              yOrg =  pBox->BxYOrg;
-              width = pBox->BxWidth;
-              height = pBox->BxHeight;
+	  xOrg =  pBox->BxXOrg;
+	  yOrg =  pBox->BxYOrg;
+	  width = pBox->BxWidth;
+	  height = pBox->BxHeight;
 #else /* _GL */
-              xOrg =  pBox->BxClipX;
-              yOrg =  pBox->BxClipY;
-              width = pBox->BxClipW;
-              height = pBox->BxClipH;
+	  xOrg =  pBox->BxClipX;
+	  yOrg =  pBox->BxClipY;
+	  width = pBox->BxClipW;
+	  height = pBox->BxClipH;
 #endif /* _GL */
-              if (pFlow)
-                {
-                  /* apply the box shift */
-                  xOrg += pFlow->FlXStart;
-                  yOrg += pFlow->FlYStart;
-                }
-              pAb = pBox->BxAbstractBox;
-              if (pAb->AbLeafType == LtText &&
-                  (!pAb->AbPresentationBox || pAb->AbCanBeModified))
-                {
-                  pos = x - xOrg;
-                  LocateClickedChar (pBox, frame, extend, &pBuffer, &pos,
-                                     &index, &nChars, &nSpaces);
-                  nChars = pBox->BxFirstChar + nChars;
-                  if (extend)
-                    {
-                      pEl = pAb->AbElement;
-                      if (DocSelectedAttr)
-                        {
-                          /* work within an attribute */
-                          firstC = FirstSelectedCharInAttr;
-                          firstEl = NULL;
-                        }
-                      else
-                        {
-                          firstC = FirstSelectedChar;
-                          firstEl = FirstSelectedElement;
-                        }
-                      if (pEl == firstEl && nChars < firstC)
-                        left = TRUE;
-                      else if (ElemIsBefore (pEl, firstEl))
-                        left = TRUE;
-                      else if (nChars == pBox->BxFirstChar &&
-                               pBox->BxFirstChar > 1 && pEl == firstEl)
-                        /* extension until the beginning of this box
-                           select the end of the previous box */
-                        nChars--;
-                      else if (y > yOrg + height &&
-                               pEl == LastSelectedElement &&
-                               LastSelectedElement &&
-                               nChars <= LastSelectedChar)
-                        nChars = LastSelectedElement->ElVolume + 1;
-                    }
-                }
-              else if (pAb->AbLeafType == LtSymbol && !extend)
-                {
-                  pos = x - xOrg;
-                  if (pos < width/2)
-                    nChars = 1;
-                  else
-                    nChars = 2;
-                }
-            }
-          else
-            {
-              pAb = NULL;
-              xOrg =  0;
-              yOrg =  0;
-              width = 0;
-              height = 0;
-            }
+	  if (pFlow)
+	    {
+	      /* apply the box shift */
+	      xOrg += pFlow->FlXStart;
+	      yOrg += pFlow->FlYStart;
+	    }
+	  pAb = pBox->BxAbstractBox;
+	  if (pAb->AbLeafType == LtText &&
+	      (!pAb->AbPresentationBox || pAb->AbCanBeModified))
+	    {
+	      pos = x - xOrg;
+	      LocateClickedChar (pBox, frame, extend, &pBuffer, &pos,
+				 &index, &nChars, &nSpaces);
+	      nChars = pBox->BxFirstChar + nChars;
+	      if (extend)
+		{
+		  pEl = pAb->AbElement;
+		  if (DocSelectedAttr)
+		    {
+		      /* work within an attribute */
+		      firstC = FirstSelectedCharInAttr;
+		      firstEl = NULL;
+		    }
+		  else
+		    {
+		      firstC = FirstSelectedChar;
+		      firstEl = FirstSelectedElement;
+		    }
+		  if (pEl == firstEl && nChars < firstC)
+		    left = TRUE;
+		  else if (ElemIsBefore (pEl, firstEl))
+		    left = TRUE;
+		  else if (nChars == pBox->BxFirstChar &&
+			   pBox->BxFirstChar > 1 && pEl == firstEl)
+		    /* extension until the beginning of this box
+		       select the end of the previous box */
+		    nChars--;
+		  else if (y > yOrg + height &&
+			   pEl == LastSelectedElement &&
+			   LastSelectedElement &&
+			   nChars <= LastSelectedChar)
+		    nChars = LastSelectedElement->ElVolume + 1;
+		}
+	    }
+	  else if (pAb->AbLeafType == LtSymbol && !extend)
+	    {
+	      pos = x - xOrg;
+	      if (pos < width/2)
+		nChars = 1;
+	      else
+		nChars = 2;
+	    }
+	}
+      else
+	{
+	  pAb = NULL;
+	  xOrg =  0;
+	  yOrg =  0;
+	  width = 0;
+	  height = 0;
+	}
 
-          FrameToView (frame, &doc, &view);
-          if (pAb)
-            {
-              /* Initialization of the selection */
-              switch (button)
-                {
-                case 0:
-                  /* Extension of selection */
-                  if (SkipClickEvent)
-                    /* the application asks Thot to do nothing */
-                    return SkipClickEvent;
-                  ChangeSelection (frame, pAb, nChars, TRUE, left, FALSE, FALSE);
-                  break;
-                case 1:
-                  /* Extension of selection */
-                  if (SkipClickEvent)
-                    /* the application asks Thot to do nothing */
-                    return SkipClickEvent;
-                  ChangeSelection (frame, pAb, nChars, TRUE, left, FALSE, TRUE);
-                  break;
-                case 2:
-                  /* send event TteElemLClick.Pre to the application */
-                  el = pAb->AbElement;
-                  SkipClickEvent = NotifyClick (TteElemLClick, TRUE, el, doc);
-                  if (SkipClickEvent)
-                    /* the application asks Thot to do nothing */
-                    return SkipClickEvent;
-                  ChangeSelection (frame, pAb, nChars, FALSE, TRUE, FALSE, FALSE);
-                  // the document can be reloaded
-                  pAb = pFrame->FrAbstractBox;
-                  nChars = 0;
-                  GetClickedBox (&pBox, &pFlow, pAb, frame, x, y, Y_RATIO, &nChars);
-                  if (pBox && pBox->BxAbstractBox)
-                    {
-                      el = pBox->BxAbstractBox->AbElement;
-                      NotifyClick (TteElemLClick, FALSE, el, doc);
-                    }
-                  break;
-                case 3:
-                  if (!ChangeSelection (frame, pAb, nChars, FALSE, TRUE, TRUE, FALSE) &&
-                      pAb->AbLeafType == LtText &&
-                      (!pAb->AbPresentationBox || pAb->AbCanBeModified))
-                    SelectCurrentWord (frame, pBox, nChars, index, pBuffer,
-                                       TRUE);
-                  break;
-                case 4:
-                  if (SkipClickEvent)
-                    /* the application asks Thot to do nothing */
-                    return SkipClickEvent;
-                  /* check if the curseur is within the box */
-                  if ((x >= xOrg && x <= xOrg + width &&
-                       y >= yOrg && y <= yOrg + height) ||
-                      GetParentWithException (ExcClickableSurface, pAb))
-                    {
-                      /* send event TteElemClick.Pre to the application */
-                      el = pAb->AbElement;
-                      if (NotifyClick (TteElemClick, TRUE, el, doc))
-                        /* the application asks Thot to do nothing */
-                        return TRUE;
-                      /* send event TteElemClick.Post to the application */
-                      NotifyClick (TteElemClick, FALSE, el, doc);
-                    }
-                  break;
-                case 5:
-                  /* check if the curseur is within the box */
-                  if (x >= xOrg && x <= xOrg + width &&
-                      y >= yOrg && y <= yOrg + height)
-                    {
-                      /* send event TteElemMClick.Pre to the application */
-                      el = pAb->AbElement;
-                      if (NotifyClick (TteElemMClick, TRUE, el, doc))
-                        /* the application asks Thot to do nothing */
-                        return TRUE;
-                    }
+      FrameToView (frame, &doc, &view);
+      if (pAb)
+	{
+	  /* Initialization of the selection */
+	  switch (button)
+	    {
+	    case 0:
+	      /* Extension of selection */
+	      if (SkipClickEvent)
+		/* the application asks Thot to do nothing */
+		return SkipClickEvent;
+	      ChangeSelection (frame, pAb, nChars, TRUE, left, FALSE, FALSE);
+	      break;
+	    case 1:
+	      /* Extension of selection */
+	      if (SkipClickEvent)
+		/* the application asks Thot to do nothing */
+		return SkipClickEvent;
+	      ChangeSelection (frame, pAb, nChars, TRUE, left, FALSE, TRUE);
+	      break;
+	    case 2:
+	      /* send event TteElemLClick.Pre to the application */
+	      el = pAb->AbElement;
+	      SkipClickEvent = NotifyClick (TteElemLClick, TRUE, el, doc);
+	      if (SkipClickEvent)
+		/* the application asks Thot to do nothing */
+		return SkipClickEvent;
+	  
+	      ChangeSelection (frame, pAb, nChars, FALSE, TRUE, FALSE, FALSE);
+
+	      if(FrameTable[frame].FrView == 1 &&
+		 nChars > 0 && Selecting != NULL && el &&
+		 el->ElParent && IsSVGComponent(el->ElParent))
+		{
+		  if(el->ElLeafType == LtGraphics &&
+		     (pAb->AbShape == 1 || /* Square */
+		      pAb->AbShape == 2 || /* Parallelogram */
+		      pAb->AbShape == 3 || /* Trapezium */
+		      pAb->AbShape == 4 || /* Equilateral triangle */
+		      pAb->AbShape == 5 || /* Isosceles triangle */
+		      pAb->AbShape == 6 || /* Rectangled triangle */
+		      pAb->AbShape == 'C' ||  /* Rectangle */
+		      pAb->AbShape == 'c' ||  /* Ellipse */
+		      pAb->AbShape == 'a' ||  /* Circle */
+		      pAb->AbShape == 'g' ||  /* Line */
+		      pAb->AbShape == 'L' ||  /* Diamond */      
+		      pAb->AbShape == 7   ||  /* Square */
+		      pAb->AbShape == 8   /* Rectangle */      
+		      ))
+		    {
+		      /* Click on a handle */
+		      *Selecting = FALSE;
+		      if(AskShapeEdit(doc,
+				      (Element)(el->ElParent), nChars))
+			{
+			  /* The user has edited an SVG element */
+			  TtaSetDocumentModified(doc);
+			  return FALSE;
+			}
+		      else
+			{
+			  NotifyClick (TteElemLClick, FALSE, el, doc);
+			  return FALSE;
+			}
+
+		    }
+
+		  if(el->ElLeafType == LtPolyLine || el->ElLeafType == LtPath)
+		    {
+		      /* Click on a point of a polyline or Path */
+		      SelectedPointInPolyline = nChars;
+		      *Selecting = FALSE;
+		      if(AskPathEdit(doc,
+				     0, (Element)(el->ElParent), nChars))
+			{
+			  /* The user has edited an SVG element */
+			  TtaSetDocumentModified(doc);
+			  return FALSE;
+			}
+		      else
+			{
+			  NotifyClick (TteElemLClick, FALSE, el, doc);
+			  return FALSE;
+			}
+		    }
+		}
+
+	      /* the document can be reloaded */
+	      pAb = pFrame->FrAbstractBox;
+	      nChars = 0;
+	      GetClickedBox (&pBox, &pFlow, pAb, frame, x, y, Y_RATIO, &nChars);
+
+	      if (pBox && pBox->BxAbstractBox)
+		{
+		  el = pBox->BxAbstractBox->AbElement;
+
+		  if(FrameTable[frame].FrView == 1 &&
+		     Selecting != NULL && el &&
+		     el->ElLeafType != LtText &&
+		     el->ElParent && IsSVGComponent(el->ElParent))
+		    {
+		      /* click on an SVG element. Does the user want to
+			 move it ? */
+		      GetDocAndView (frame, &pDoc, &view);
+		      if(!(pDoc->DocReadOnly) &&
+			 !(ElementIsReadOnly(pEl)))
+			{
+			  *Selecting = FALSE;
+			  if(AskTransform(doc,
+					  NULL,
+					  NULL,
+					  0, (Element)(el->ElParent)))
+			    {
+			      /* The user has moved an SVG element */
+			      TtaSetDocumentModified(doc);
+			      return FALSE;
+			    }
+			}
+		    }
+
+		  NotifyClick (TteElemLClick, FALSE, el, doc);
+		}
+	      break;
+	    case 3:
+	      if (!ChangeSelection (frame, pAb, nChars, FALSE, TRUE, TRUE, FALSE) &&
+		  pAb->AbLeafType == LtText &&
+		  (!pAb->AbPresentationBox || pAb->AbCanBeModified))
+		SelectCurrentWord (frame, pBox, nChars, index, pBuffer,
+				   TRUE);
+	      break;
+	    case 4:
+	      if (SkipClickEvent)
+		/* the application asks Thot to do nothing */
+		return SkipClickEvent;
+	      /* check if the curseur is within the box */
+	      if ((x >= xOrg && x <= xOrg + width &&
+		   y >= yOrg && y <= yOrg + height) ||
+		  GetParentWithException (ExcClickableSurface, pAb))
+		{
+		  /* send event TteElemClick.Pre to the application */
+		  el = pAb->AbElement;
+		  if (NotifyClick (TteElemClick, TRUE, el, doc))
+		    /* the application asks Thot to do nothing */
+		    return TRUE;
+		  /* send event TteElemClick.Post to the application */
+		  NotifyClick (TteElemClick, FALSE, el, doc);
+		}
+	      break;
+	    case 5:
+	      /* check if the curseur is within the box */
+	      if (x >= xOrg && x <= xOrg + width &&
+		  y >= yOrg && y <= yOrg + height)
+		{
+		  /* send event TteElemMClick.Pre to the application */
+		  el = pAb->AbElement;
+		  if (NotifyClick (TteElemMClick, TRUE, el, doc))
+		    /* the application asks Thot to do nothing */
+		    return TRUE;
+		}
 #if defined(_UNIX) && !defined(_MACOS)
-                  if (MenuActionList[CMD_PasteFromClipboard].Call_Action != NULL)
-                    (*(Proc2)MenuActionList[CMD_PasteFromClipboard].Call_Action) (
-                                                                                  (void*)doc,
-                                                                                  (void*)view);
+	      if (MenuActionList[CMD_PasteFromClipboard].Call_Action != NULL)
+		(*(Proc2)MenuActionList[CMD_PasteFromClipboard].Call_Action) (
+									      (void*)doc,
+									      (void*)view);
 #endif /* _UNIX && !_MACOS */
-                  break;
-                case 6:
-                  /* check if the curseur is within the box */
-                  if (x >= xOrg && x <= xOrg + width &&
-                      y >= yOrg && y <= yOrg + height)
-                    {
-                      /* send event TteElemRClick.Pre to the application */
-                      el = pAb->AbElement;
-                      if (NotifyClick (TteElemRClick, TRUE, el, doc))
-                        /* the application asks Thot to do nothing */
-                        return TRUE;
-                    }
-                  TtaSetDialoguePosition ();
-                  if (ThotLocalActions[T_insertpaste] != NULL)
-                    (*(Proc4)ThotLocalActions[T_insertpaste]) (
-                                                               (void *)TRUE,
-                                                               (void *)FALSE,
-                                                               (void *)'R',
-                                                               (void *)&ok);
-                  else if (x >= xOrg && x <= xOrg + pBox->BxW &&
-                           y >= yOrg && y <= yOrg + pBox->BxH)
-                    /* send event TteElemRClick.Post to the application */
-                    NotifyClick (TteElemRClick, FALSE, el, doc);
-                  break;
-                case 7: /* reset the previous selection */
-                  ChangeSelection (frame, pAb, nChars, FALSE, TRUE, FALSE, FALSE);
-                  break;
-                default: break;
-                }
-            }
-        }
+	      break;
+	    case 6:
+	      /* check if the curseur is within the box */
+	      if (x >= xOrg && x <= xOrg + width &&
+		  y >= yOrg && y <= yOrg + height)
+		{
+		  /* send event TteElemRClick.Pre to the application */
+		  el = pAb->AbElement;
+		  if (NotifyClick (TteElemRClick, TRUE, el, doc))
+		    /* the application asks Thot to do nothing */
+		    return TRUE;
+		}
+	      TtaSetDialoguePosition ();
+	      if (ThotLocalActions[T_insertpaste] != NULL)
+		(*(Proc4)ThotLocalActions[T_insertpaste]) (
+							   (void *)TRUE,
+							   (void *)FALSE,
+							   (void *)'R',
+							   (void *)&ok);
+	      else if (x >= xOrg && x <= xOrg + pBox->BxW &&
+		       y >= yOrg && y <= yOrg + pBox->BxH)
+		/* send event TteElemRClick.Post to the application */
+		NotifyClick (TteElemRClick, FALSE, el, doc);
+	      break;
+	    case 7: /* reset the previous selection */
+	      ChangeSelection (frame, pAb, nChars, FALSE, TRUE, FALSE, FALSE);
+	      break;
+	    default: break;
+	    }
+	}
     }
   return FALSE;
 }
@@ -748,6 +936,175 @@ static PtrBox  GetPolylinePoint (PtrAbstractBox pAb, int x, int y, int frame,
 }
 
 /*----------------------------------------------------------------------
+  GetPathPoint
+  Return TRUE if the user is clicking on a point
+  ----------------------------------------------------------------------*/
+static ThotBool GetPathPoint (PtrPathSeg          pPa, int x, int y,
+				     int frame, int *pointselect)
+{
+  int i;
+  int                 xstart, ystart, xctrlstart, yctrlstart;
+  int                 xend, yend, xctrlend, yctrlend;
+  PtrPathSeg          pPaStart = NULL;
+  int i_start;
+
+  i = 1;
+
+  while(pPa)
+    {
+      xstart = PixelValue (pPa->XStart, UnPixel, NULL,
+			   ViewFrameTable[frame - 1].FrMagnification);
+      ystart = PixelValue (pPa->YStart, UnPixel, NULL,
+			   ViewFrameTable[frame - 1].FrMagnification);
+      xctrlstart = PixelValue (pPa->XCtrlStart, UnPixel, NULL,
+			       ViewFrameTable[frame - 1].FrMagnification);
+      yctrlstart = PixelValue (pPa->YCtrlStart, UnPixel, NULL,
+			       ViewFrameTable[frame - 1].FrMagnification);
+      xend = PixelValue (pPa->XEnd, UnPixel, NULL,
+			 ViewFrameTable[frame - 1].FrMagnification);
+      yend = PixelValue (pPa->YEnd, UnPixel, NULL,
+			 ViewFrameTable[frame - 1].FrMagnification);
+      xctrlend = PixelValue (pPa->XCtrlEnd, UnPixel, NULL,
+			     ViewFrameTable[frame - 1].FrMagnification);
+      yctrlend = PixelValue (pPa->YCtrlEnd, UnPixel, NULL,
+			     ViewFrameTable[frame - 1].FrMagnification);
+      
+      if ((pPa->PaNewSubpath || !pPa->PaPrevious))
+	{
+	  /* It's a new subpath */
+	  pPaStart = pPa;
+	  i_start = i;
+
+	  if(IsNear(x, y, xstart, ystart))
+	    {
+	      /* The user is clicking on a point of the path */
+	      *pointselect = i;
+	      return TRUE;
+	    }
+	  i++;
+	}
+
+      if(pPa->PaShape == PtQuadraticBezier || pPa->PaShape == PtCubicBezier)
+	{
+	  if(IsNear(x, y, xctrlstart, yctrlstart))
+	    {
+	      /* The user is clicking on a control point: is the selection
+		 active?
+
+		  i-2      i-1         i
+		  O---------x----------O
+
+	      */
+	      if(SelectedPointInPolyline > 0 && 
+		 (SelectedPointInPolyline == i || /* Current control selected */
+		 SelectedPointInPolyline == i-1 || /* A point is selected */
+		 (SelectedPointInPolyline == i-2 /* Previous control point
+						    selected */
+		  && !(pPa->PaNewSubpath) &&
+		  pPa->PaPrevious &&
+		  (pPa->PaPrevious->PaShape == PtCubicBezier ||
+		   pPa->PaPrevious->PaShape == PtQuadraticBezier)))
+		 )
+		{
+		  *pointselect = i;
+		  return TRUE;
+		}
+	    }
+
+	  i++;
+
+	  if(IsNear(x, y, xctrlend, yctrlend))
+	    {
+	      /* The user is clicking on a control point: is the selection
+		 active?
+
+		  i         i+1       i+2
+		  O---------x----------O
+
+	      */
+	      if(SelectedPointInPolyline > 0 &&
+		 (SelectedPointInPolyline == i ||
+		 SelectedPointInPolyline == i+1 ||
+
+		 (SelectedPointInPolyline == i+2 &&/* Next control selected */
+		  pPa->PaNext && !(pPa->PaNext->PaNewSubpath)
+		  && (pPa->PaNext->PaShape == PtCubicBezier ||
+		      pPa->PaNext->PaShape == PtQuadraticBezier)  )
+		  ))
+		{
+		  *pointselect = i;
+		  return TRUE;
+		}
+	    }
+
+	  i++;
+	}
+
+      if(IsNear(x, y, xend, yend))
+	{
+	  /* The user is clicking on a point of the path */
+	  *pointselect = i;
+	  return TRUE;
+	}
+
+      if(pPaStart && SelectedPointInPolyline > 0 &&
+	 (!pPa->PaNext || pPa->PaNext->PaNewSubpath))
+	{
+	  /* Check if the first and last point of the subpath are
+	     connected using a Bezier fragment */
+	  if((pPaStart->PaShape == PtCubicBezier ||
+	      pPaStart->PaShape == PtQuadraticBezier) &&
+	     (pPa->PaShape == PtCubicBezier ||
+	      pPa->PaShape == PtQuadraticBezier) &&
+	     pPa->XEnd == pPaStart->XStart &&
+	     pPa->YEnd == pPaStart->YStart)
+	    {
+	      if(SelectedPointInPolyline == i ||
+		 SelectedPointInPolyline == i-1)
+		{
+		  /* Last point of the subpath is active, check if the user
+		     is clicking on the first control point of the subpath */
+		  xctrlstart = PixelValue (pPaStart->XCtrlStart,
+					   UnPixel, NULL,
+					   ViewFrameTable[frame - 1].FrMagnification);
+		  yctrlstart = PixelValue (pPaStart->YCtrlStart,
+					   UnPixel, NULL,
+					   ViewFrameTable[frame - 1].FrMagnification);
+
+		  if(IsNear(x, y, xctrlstart, yctrlstart))
+		    {
+		      *pointselect = i_start + 1;
+		      return TRUE;
+		    }
+		}
+	      else if(SelectedPointInPolyline == i_start ||
+		      SelectedPointInPolyline == i_start+1)
+		{
+		  /* First point of the subpath is active, check if the user
+		     is clicking on the last control point of the subpath */
+		  xctrlend = PixelValue (pPa->XCtrlEnd, UnPixel, NULL,
+					 ViewFrameTable[frame - 1].FrMagnification);
+		  yctrlend = PixelValue (pPa->YCtrlEnd, UnPixel, NULL,
+					 ViewFrameTable[frame - 1].FrMagnification);
+		  if(IsNear(x, y, xctrlend, yctrlend))
+		    {
+		      *pointselect = i - 1;
+		      return TRUE;
+		    }
+		}
+	    }
+	}
+
+      i++;
+      pPa = pPa->PaNext;
+    }
+  
+  *pointselect = 0;
+  return FALSE;
+}
+
+
+/*----------------------------------------------------------------------
   BuildPolygonForPath
   Build the polygons that approximate a path
   A different 
@@ -892,6 +1249,7 @@ static ThotBool IsInShape (PtrAbstractBox pAb, int x, int y)
   PtrBox              box;
   ThotBool            ok;
   int                 width, height;
+  int rx,ry;
 
   box = pAb->AbBox;
   x -= box->BxXOrg;
@@ -924,7 +1282,10 @@ static ThotBool IsInShape (PtrAbstractBox pAb, int x, int y)
       point[3][1] = 0;
       max = 3;
       break;
-    case 'C':
+    case 1: /* square */
+    case 'C': /* rectangle */
+    case 7: /* Square */
+    case 8: /* Rectangle */
     case 'P':		/* rectangles with rounded corners */
       arc = (int) ((3 * DOT_PER_INCH) / 25.4 + 0.5);
       point[0][0] = 0;
@@ -945,7 +1306,7 @@ static ThotBool IsInShape (PtrAbstractBox pAb, int x, int y)
       point[7][1] = 0;
       max = 7;
       break;
-    case 'L':		/* losange */
+    case 'L':		/* diamond */
       point[0][0] = 0;
       point[0][1] = height / 2;
       point[1][0] = width / 2;
@@ -970,6 +1331,79 @@ static ThotBool IsInShape (PtrAbstractBox pAb, int x, int y)
       else
         return (FALSE);	/* out of the circle */
       break;
+
+    case 2: /* Parallelogram */
+      rx = box->BxRx;
+      point[0][0] = rx;
+      point[0][1] = 0;
+      point[1][0] = width;
+      point[1][1] = 0;
+      point[2][0] = width - rx;
+      point[2][1] = height;
+      point[3][0] = 0;
+      point[3][1] = height;
+      max = 3;
+      break;
+
+      case 3: /* Trapezium */
+      rx = box->BxRx;
+      ry = box->BxRy;
+      if(rx < 0)
+	{
+	  rx=-rx;
+	  point[0][0] = 0;
+	  point[0][1] = 0;
+	  point[3][0] = rx;
+	  point[3][1] = height;
+	}
+      else
+	{
+	  point[0][0] = rx;
+	  point[0][1] = 0;
+	  point[3][0] = 0;
+	  point[3][1] = height;
+	}
+      
+      if(ry < 0)
+	{
+	  ry=-ry;
+	  point[1][0] = width - ry;
+	  point[1][1] = 0;
+	  point[2][0] = width;
+	  point[2][1] = height;
+	}
+      else
+	{
+	  point[1][0] = width;
+	  point[1][1] = 0;
+	  point[2][0] = width - ry;
+	  point[2][1] = height;
+	}
+
+      max = 3;
+      break;
+
+    case 4: /* Equilateral triangle */
+    case 5: /* Isosceles triangle */
+      point[0][0] = width/2;
+      point[0][1] = 0;
+      point[1][0] = width;
+      point[1][1] = height;
+      point[2][0] = 0;
+      point[2][1] = height;
+      max = 2;
+      break;
+	
+    case 6: /* Rectangled triangle */
+      point[0][0] = 0;
+      point[0][1] = 0;
+      point[1][0] = width;
+      point[1][1] = 0;
+      point[2][0] = 0;
+      point[2][1] = height;
+      max = 2;
+      break;
+      
     default:
       break;
     }
@@ -1058,55 +1492,191 @@ static PtrBox IsOnShape (PtrAbstractBox pAb, int x, int y, int *selpoint)
   int                 arc, xm, xp;
   double              value1, value2, value3;
   int                 width, height;
+  int                 rx,ry;
+  PtrAbstractBox      enc;
+  int x1,y1,x2,y2,x3,y3,x4,y4;
 
   /* relative coords of the box (easy work) */
   pBox = pAb->AbBox;
   x -= pBox->BxXOrg;
   y -= pBox->BxYOrg;
-    width = pBox->BxWidth;
+  width = pBox->BxWidth;
   height = pBox->BxHeight;
   *selpoint = 0;
-  /* Keep in mind the selected caracteristic point       */
-  /*            1-------------2-------------3            */
-  /*            |                           |            */
-  /*            |                           |            */
-  /*            8                           4            */
-  /*            |                           |            */
-  /*            |                           |            */
-  /*            7-------------6-------------5            */
+  
+  /* Keep in mind the selected characteristic point        */
+  /*                                                       */
+  /*                                   9 = Rx handle       */
+  /*                                  /                    */
+  /*            1-------------2------O------3              */
+  /*            |                           O              */
+  /*            |                           |\             */
+  /*            8                           4 \            */
+  /*            |                           |  10 = Ry     */
+  /*            |                           |       Handle */
+  /*            7-------------6-------------5              */
+  /*                                                       */
+  /*                                                       */
 
-  if (x < DELTA_SEL)
-    if (y < DELTA_SEL)
-      controlPoint = 1;
-    else if (y > height / 2 - DELTA_SEL &&
-             y < height / 2 + DELTA_SEL)
-      controlPoint = 8;
-    else if (y > height - 10)
-      controlPoint = 7;
-    else
-      controlPoint = 0;
-  else if (x > width / 2 - DELTA_SEL &&
-           x < width / 2 + DELTA_SEL)
-    if (y < DELTA_SEL)
-      controlPoint = 2;
-    else if (y > height - DELTA_SEL)
-      controlPoint = 6;
-    else
-      controlPoint = 0;
-  else if (x > width - DELTA_SEL)
-    if (y < DELTA_SEL)
-      controlPoint = 3;
-    else if (y > height / 2 - DELTA_SEL &&
-             y < height / 2 + DELTA_SEL)
-      controlPoint = 4;
-    else if (y > height - 10)
-      controlPoint = 5;
-    else
-      controlPoint = 0;
+  if(pAb->AbLeafType == LtGraphics)
+    {
+      controlPoint = 0;      
+
+      if(pAb->AbShape == 'g') /* line */
+	{
+	  enc = pAb->AbEnclosing;
+	  if ((enc->AbHorizPos.PosEdge == Left &&
+	       enc->AbVertPos.PosEdge == Top) ||
+	      (enc->AbHorizPos.PosEdge == Right &&
+	       enc->AbVertPos.PosEdge == Bottom))
+	    {
+	      /* It's a \ */
+	      if(IsNear(x, y, 0, 0))
+		controlPoint = 1;
+	      else if(IsNear(x, y, width, height))
+		controlPoint = 5;
+	    }
+	  else
+	    {
+            /* I's a / */
+	      if(IsNear(x, y, width, 0))
+		controlPoint = 3;
+	      else if(IsNear(x, y, 0, height))
+		controlPoint = 7;
+	    }
+	}
+      else if(pAb->AbShape == 6) /* rectangled triangle */
+	{
+	  if(IsNear(x, y, 0, 0))
+	    controlPoint = 1;
+	  else if(IsNear(x, y, width/2, 0))
+	    controlPoint = 2;
+	  else if(IsNear(x, y, width, 0))
+	    controlPoint = 3;
+	  else if(IsNear(x, y, width/2, height/2))
+	    controlPoint = 5;
+	  else if(IsNear(x, y, 0, height))
+	    controlPoint = 7;
+	  else if(IsNear(x, y, 0, height/2))
+	    controlPoint = 8;
+	}
+      else if(pAb->AbShape == 1 || /* square */
+	      pAb->AbShape == 'C' || /* rectangle */
+	      pAb->AbShape == 7 || /* square */
+	      pAb->AbShape == 8 || /* rectangle */
+	      pAb->AbShape == 'a' || /* circle */
+	      pAb->AbShape == 'c' || /* ellipse */
+	      pAb->AbShape == 'L' || /* diamond */
+	      pAb->AbShape == 4 || /* Equilateral triangle */
+	      pAb->AbShape == 5 || /* Isosceles triangle */
+	      pAb->AbShape == 2 || /* Parallelogram */
+	      pAb->AbShape == 3    /* trapezium   */
+	      )
+	{
+	  /* is the user clicking on a resize handle? */
+	  if(IsNear(x, y, 0, 0))
+	    controlPoint = 1;
+	  else if(IsNear(x, y, width/2, 0))
+	    controlPoint = 2;
+	  else if(IsNear(x, y, width, 0))
+	    controlPoint = 3;
+	  else if(IsNear(x, y, width, height/2))
+	    controlPoint = 4;
+	  else if(IsNear(x, y, width, height))
+	    controlPoint = 5;
+	  else if(IsNear(x, y, width/2, height))
+	    controlPoint = 6;
+	  else if(IsNear(x, y, 0, height))
+	    controlPoint = 7;
+	  else if(IsNear(x, y, 0, height/2))
+	    controlPoint = 8;
+
+	  if(pAb->AbShape == 1 || pAb->AbShape == 'C')
+	    {
+	      /* rect: Is the user clicking on a radius handle? */
+	      rx = pBox->BxRx;
+	      ry = pBox->BxRy;
+	      if(ry == -1)ry = rx;
+	      else if(rx == -1)rx = ry;
+	      
+	      if(IsNear(x, y, width, ry))
+		controlPoint = 10;
+	      else if(IsNear(x, y, width - rx, 0))
+		controlPoint = 9;
+	    }
+	  else if(pAb->AbShape == 2)
+	    {
+	      /* parallelogram */
+	      /*                  9                           */
+	      /*            1-----O-------2-------------3     */
+	      /*            |    /                     /|     */
+	      /*            |   /                     / |     */
+	      /*            8  /                     /  4     */
+	      /*            | /                     /   |     */
+	      /*            |/                     /    |     */
+	      /*            7-------------6-------O-----5     */
+	      /*                                 10           */
+	      rx = pBox->BxRx;
+	      if(IsNear(x, y, rx, 0))
+		controlPoint = 9;
+	      else if(IsNear(x, y, width - rx, height))
+		controlPoint = 10;
+	    }
+	}
+
+      if(controlPoint != 0)
+	{
+	  *selpoint = controlPoint;
+	  return pBox;
+	}
+    }
   else
-    controlPoint = 0;
+    {
+      if (x < DELTA_SEL || ( x < 0  && x > -DELTA_SEL))
+	{
+	  if (y < DELTA_SEL || (y < 0 && y > -DELTA_SEL))
+	    controlPoint = 1;
+	  else if (y > height / 2 - DELTA_SEL &&
+		   y < height / 2 + DELTA_SEL)
+	    controlPoint = 8;
+	  else if (y > height - DELTA_SEL || (y > height && y < height + DELTA_SEL))
+	    controlPoint = 7;
+	  else
+	    controlPoint = 0;
+	}
+      else if (x > width / 2 - DELTA_SEL &&
+	       x < width / 2 + DELTA_SEL)
+	{
+	  if (y < DELTA_SEL || (y < 0 &&  y > -DELTA_SEL))
+	    controlPoint = 2;
+	  else if (y > height - DELTA_SEL || (y > height && y < height + DELTA_SEL))
+	    controlPoint = 6;
+	  else
+	    controlPoint = 0;
+	}
+      else if (x > width - DELTA_SEL || (x > width && x < width + DELTA_SEL))
+	{
+	  if (y < DELTA_SEL || (y < 0 &&  y > -DELTA_SEL))
+	    controlPoint = 3;
+	  else if (y > height / 2 - DELTA_SEL &&
+		   y < height / 2 + DELTA_SEL)
+	    controlPoint = 4;
+	  else if (y > height - DELTA_SEL || (y > height && y < height + DELTA_SEL))
+	    controlPoint = 5;
+	  else
+	    controlPoint = 0;
+	}
+      else
+	controlPoint = 0;
+    }
 
   /* Est-ce un point caracteristique specifique du graphique ? */
+  if ((pAb->AbLeafType == LtPicture || pAb->AbLeafType == LtCompound) &&
+      x>-DELTA_SEL && x<width+DELTA_SEL && y>-DELTA_SEL && y<height+DELTA_SEL)
+    {
+      *selpoint = controlPoint;
+      return pBox;
+    }
   if (pAb->AbLeafType == LtSymbol && pAb->AbShape == 'r')
     {
       GetFontAndIndexFromSpec (32, pBox->BxFont, 1, &font);
@@ -1140,7 +1710,7 @@ static PtrBox IsOnShape (PtrAbstractBox pAb, int x, int y, int *selpoint)
             IsOnSegment (x, y, width, 0, width, height))
           return (pBox);
         break;
-      case 'L':
+      case 'L': /* diamond */
         if (IsOnSegment (x, y, 0, height / 2, width / 2, 0) ||
             IsOnSegment (x, y, 0, height / 2, width / 2,
                          height) ||
@@ -1150,7 +1720,79 @@ static PtrBox IsOnShape (PtrAbstractBox pAb, int x, int y, int *selpoint)
                          width / 2, height))
           return (pBox);
         break;
-      case 'C':
+
+      case 2: /* Parallelogram */
+	rx = pBox->BxRx;
+	if (IsOnSegment (x, y, rx, 0, width, 0) ||
+            IsOnSegment (x, y, width, 0, width - rx, height) ||
+            IsOnSegment (x, y, width - rx, height, 0, height) ||
+	    IsOnSegment (x, y, 0, height, rx, 0)
+	    )
+          return (pBox);
+	break;
+
+      case 3: /* Trapezium */
+	rx = pBox->BxRx;
+	ry = pBox->BxRy;
+	if(rx < 0)
+	  {
+	    rx=-rx;
+	    x1 = 0;
+	    y1 = 0;
+	    x4 = rx;
+	    y4 = height;
+	  }
+	else
+	  {
+	    x1 = rx;
+	    y1 = 0;
+	    x4 = 0;
+	    y4 = height;
+	  }
+
+	if(ry < 0)
+	  {
+	    ry=-ry;
+	    x2 = width - ry;
+	    y2 = 0;
+	    x3 = width;
+	    y3 = height;
+	  }
+	else
+	  {
+	    x2 = width;
+	    y2 = 0;
+	    x3 = width - ry;
+	    y3 = height;
+	  }
+
+        if (IsOnSegment (x, y, x1, y1, x2, y2) ||
+	    IsOnSegment (x, y, x2, y2, x3, y3) ||
+	    IsOnSegment (x, y, x3, y3, x4, y4) ||
+	    IsOnSegment (x, y, x4, y4, x1, y1))
+          return (pBox);
+
+	break;
+
+      case 4: /* Equilateral triangle */
+      case 5: /* Isosceles triangle */
+        if (IsOnSegment (x, y, width / 2, 0, 0, height) ||
+            IsOnSegment (x, y, width / 2, 0, width, height) ||
+            IsOnSegment (x, y, 0, height, width, height))
+          return (pBox);
+	break;
+	
+      case 6: /* Rectangled triangle */
+        if (IsOnSegment (x, y, 0, 0, width, 0) ||
+            IsOnSegment (x, y, 0, 0, 0, height) ||
+            IsOnSegment (x, y, 0, height, width, 0))
+          return (pBox);
+	break;
+
+      case 7: /* square */
+      case 8: /* rectangle */	
+      case 1: /* square */
+      case 'C': /* rectangle */
       case 'P':
         /* rectangle with rounded corners */
         arc = (int) ((3 * DOT_PER_INCH) / 25.4 + 0.5);
@@ -1467,13 +2109,19 @@ PtrBox GetEnclosingClickedBox (PtrAbstractBox pAb, int higherX,
               else
                 /* it's a non-empty path */
                 {
+		  /* Is the user clicking on a control point? */
+                  x = lowerX - pBox->BxXOrg;
+                  y -= pBox->BxYOrg;
+
+		  if(GetPathPoint(pAb->AbFirstPathSeg,
+				  x, y, frame, pointselect))
+		      return pBox;
+
                   /* builds the list of points representing the path */
                   points = BuildPolygonForPath (pAb->AbFirstPathSeg, frame,
                                                 &npoints, &subpathStart);
                   /* is the position of interest on the polyline represented by
                      these points? */
-                  x = lowerX - pBox->BxXOrg;
-                  y -= pBox->BxYOrg;
                   OK = FALSE;
                   sub = 0;
                   /* test every segment comprised between 2 successive points */
@@ -1515,6 +2163,7 @@ PtrBox GetEnclosingClickedBox (PtrAbstractBox pAb, int higherX,
                   free (points);
                   if (subpathStart)
                     free (subpathStart);
+
                   if (OK)
                     return (pBox);
                   else
@@ -2212,18 +2861,14 @@ static ThotBool     CanBeTranslated (PtrAbstractBox pAb, int frame,
 }
 
 /*----------------------------------------------------------------------
-  ApplyDirectTranslate looks for the selected box for a move.
-  If the smallest box containing point (xm, ym) in the window cannot
-  be moved, the function checks the encolsing box, etc.
+  ApplyDirectTranslate applies direct translation to the box.
   ----------------------------------------------------------------------*/
-void ApplyDirectTranslate (int frame, int xm, int ym)
+void ApplyDirectTranslate (PtrBox pBox, int frame, int xm, int ym)
 {
   PtrDocument         pDoc;
-  PtrBox              pBox;
   PtrAbstractBox      pAb;
-  PtrElement	      pEl;
+  PtrElement	        pEl;
   ViewFrame          *pFrame;
-  PtrFlow             pFlow = NULL;
   int                 x, width;
   int                 y, height;
   int                 xmin, xmax;
@@ -2245,16 +2890,6 @@ void ApplyDirectTranslate (int frame, int xm, int ym)
   if (pFrame->FrAbstractBox != NULL)
     {
       /* Get positions in the window */
-#ifndef _GL
-      x = xm + pFrame->FrXOrg;
-      y = ym + pFrame->FrYOrg;
-#else /*_GL*/
-      x = xm;
-      y = ym;
-#endif /* _GL */
-      /* Look for the box displayed at that point */
-      GetClickedBox (&pBox, &pFlow, pFrame->FrAbstractBox,
-                     frame, x, y, Y_RATIO, &pointselect);
       if (pBox)
         {
           pAb = pBox->BxAbstractBox;
@@ -2294,7 +2929,7 @@ void ApplyDirectTranslate (int frame, int xm, int ym)
                 }
             }
           
-          if (pBox != NULL)
+          if (pBox)
             {
               /* A box is found */
               x = pBox->BxXOrg - pFrame->FrXOrg;
@@ -2406,6 +3041,8 @@ void ApplyDirectTranslate (int frame, int xm, int ym)
                 }
               if (send)
                 APPgraphicModify (pEl, pointselect, frame, FALSE, open);
+              // now update attribute panels
+              TtaUpdateAttrMenu (FrameTable[frame].FrDoc);
             }
         }
     }
@@ -2414,8 +3051,8 @@ void ApplyDirectTranslate (int frame, int xm, int ym)
 /*----------------------------------------------------------------------
   CanBeResized teste si un pave est modifiable en Dimension.       
   ----------------------------------------------------------------------*/
-static ThotBool   CanBeResized (PtrAbstractBox pAb, int frame,
-                                ThotBool horizRef, int *min, int *max)
+static ThotBool CanBeResized (PtrAbstractBox pAb, int frame,
+                              ThotBool horizRef, int *min, int *max)
 {
   PtrBox              pBox;
   PtrAbstractBox      pParentAb;
@@ -2450,6 +3087,9 @@ static ThotBool   CanBeResized (PtrAbstractBox pAb, int frame,
   else if (!horizRef && pAb->AbHeight.DimIsPosition)
     /* stretchable box */
     ok = FALSE;
+  else if (pAb->AbLeafType == LtPicture)
+    /* an image is always stretchable.*/
+    ok = TRUE;  
   else if (pAb->AbLeafType == LtText &&
            (pParentAb->AbBox->BxType == BoBlock ||
             pParentAb->AbBox->BxType == BoFloatBlock ||
@@ -2526,40 +3166,25 @@ static ThotBool   CanBeResized (PtrAbstractBox pAb, int frame,
 }
 
 /*----------------------------------------------------------------------
-  ApplyDirectResize looks for a box that can be resized at the current
-  position (xm, ym).
+  ApplyDirectResize apply direct resizing to the box.
   ----------------------------------------------------------------------*/
-void ApplyDirectResize (int frame, int xm, int ym)
+void ApplyDirectResize (PtrBox pBox, int frame, int pointselect, int xm, int ym)
 {
-  PtrBox              pBox;
   PtrAbstractBox      pAb;
   ViewFrame          *pFrame;
-  PtrFlow             pFlow;
   int                 x, width;
   int                 y, height;
   int                 xmin, xmax;
   int                 ymin, ymax;
   int                 percentW, percentH;
-  int                 pointselect;
-  ThotBool            still, okH, okV;
+  ThotBool            still, okH, okV, resHoriz, resVert;
 
-  okH = FALSE;
-  okV = FALSE;
+  resHoriz = pointselect != 2 && pointselect != 6;
+  resVert = pointselect != 4 && pointselect != 8;
   pFrame = &ViewFrameTable[frame - 1];
   if (pFrame->FrAbstractBox != NULL)
     {
       /* On note les coordonnees par rapport a l'image concrete */
-#ifndef _GL
-      x = xm + pFrame->FrXOrg;
-      y = ym + pFrame->FrYOrg;
-#else /* _GL */
-      x = xm;
-      y = ym;
-#endif /* _GL */
-      /* On recherche la boite englobant le point designe */
-      /* designation style Grenoble */
-      GetClickedBox (&pBox, &pFlow, pFrame->FrAbstractBox,
-                     frame, x, y, Y_RATIO, &pointselect);
       if (pBox == NULL)
         pAb = NULL;
       else
@@ -2580,8 +3205,8 @@ void ApplyDirectResize (int frame, int xm, int ym)
           /* On regarde si les modifications sont autorisees */
           else
             {
-              okH = CanBeResized (pAb, frame, TRUE, &xmin, &xmax);
-              okV = CanBeResized (pAb, frame, FALSE, &ymin, &ymax);
+              okH = resHoriz && CanBeResized (pAb, frame, TRUE, &xmin, &xmax);
+              okV = resVert && CanBeResized (pAb, frame, FALSE, &ymin, &ymax);
               if (okH || okV)
                 still = FALSE;
             }
@@ -2601,7 +3226,7 @@ void ApplyDirectResize (int frame, int xm, int ym)
         }
       
       /* Est-ce que l'on a trouve une boite ? */
-      if (pBox != NULL)
+      if (pBox)
         {
           x = pBox->BxXOrg - pFrame->FrXOrg;
           y = pBox->BxYOrg - pFrame->FrYOrg;
@@ -2652,171 +3277,12 @@ void ApplyDirectResize (int frame, int xm, int ym)
             NewDimension (pAb, width, 0, frame, TRUE);
           else
             NewDimension (pAb, width, height, frame, TRUE);
+          // now update attribute panels
+          TtaUpdateAttrMenu (FrameTable[frame].FrDoc);
         }
     }
 }
 
-/*----------------------------------------------------------------------
-  DirectCreation does the direct creation of graphics
-  ----------------------------------------------------------------------*/
-void DirectCreation (PtrBox pBox, int frame)
-{
-  ViewFrame          *pFrame;
-  PtrAbstractBox      pAb;
-  PtrDocument         pDoc;
-  int                 x, y, xref, yref;
-  int                 width, height;
-  int                 xmin, xmax;
-  int                 Ymin, Ymax;
-  int                 percentW, percentH;
-  ThotBool            modPosition, modDimension;
-  ThotBool            histOpen;
-
-  /* Only one interaction at the same time */
-  if (BoxCreating)
-    return;
-  else
-    BoxCreating = TRUE;
-
-  pFrame = &ViewFrameTable[frame - 1];
-  /* Il faut verifier que la boite reste visible dans la fenetre */
-  GetSizesFrame (frame, &width, &height);
-  if (pBox->BxXOrg < pFrame->FrXOrg)
-    x = 0;
-  else if (pBox->BxXOrg > pFrame->FrXOrg + width)
-    x = width;
-  else
-    x = pBox->BxXOrg - pFrame->FrXOrg;
-
-  if (pBox->BxYOrg < pFrame->FrYOrg)
-    y = 0;
-  else if (pBox->BxYOrg > pFrame->FrYOrg + height)
-    y = height;
-  else
-    y = pBox->BxYOrg - pFrame->FrYOrg;
-  width = pBox->BxWidth;
-  height = pBox->BxHeight;
-  pAb = pBox->BxAbstractBox;
-  modPosition = (CanBeTranslated (pAb, frame, TRUE, &xmin, &xmax) ||
-                 CanBeTranslated (pAb, frame, FALSE, &Ymin, &Ymax));
-  if (!modPosition)
-    {
-      pAb->AbHorizPos.PosUserSpecified = FALSE;
-      pAb->AbVertPos.PosUserSpecified = FALSE;
-    }
-  modDimension = (CanBeResized (pAb, frame, TRUE, &xmin, &xmax) ||
-                  CanBeResized (pAb, frame, FALSE, &Ymin, &Ymax));
-  if (!modDimension)
-    {
-      pAb->AbWidth.DimUserSpecified = FALSE;
-      pAb->AbHeight.DimUserSpecified = FALSE;
-    }
-  if (modPosition || modDimension)
-    {
-      /* Determine les limites de deplacement de la boite */
-      GiveMovingArea (pAb, frame, TRUE, &xmin, &xmax);
-      GiveMovingArea (pAb, frame, FALSE, &Ymin, &Ymax);
-      /* On retablit les positions par rapport a la fenetre */
-      xmin -= pFrame->FrXOrg;
-      xmax -= pFrame->FrXOrg;
-      Ymin -= pFrame->FrYOrg;
-      Ymax -= pFrame->FrYOrg;
-      /*
-        calcule les rapports largeur sur hauteur et hauteur sur
-        largeur si une des deux dimensions depend de l'autre
-        percentW = 0 si la largeur ne depend pas de la hauteur
-        percentH = 0 si la hauteur ne depend pas de la largeur
-      */
-      percentW = 0;
-      percentH = 0;
-      if (!pAb->AbWidth.DimUserSpecified &&
-          !pAb->AbWidth.DimIsPosition &&
-          !pAb->AbWidth.DimSameDimension &&
-          pAb->AbWidth.DimAbRef == pAb)
-        {
-          if (pAb->AbWidth.DimUnit == UnPercent)
-            percentW = pAb->AbWidth.DimValue;
-          else if (pAb->AbWidth.DimValue == 0)
-            percentW = 100;
-        }
-      else if (!pAb->AbHeight.DimUserSpecified &&
-               !pAb->AbHeight.DimIsPosition &&
-               !pAb->AbHeight.DimSameDimension &&
-               pAb->AbHeight.DimAbRef == pAb)
-        {
-          if (pAb->AbHeight.DimUnit == UnPercent)
-            percentH = pAb->AbHeight.DimValue;
-          else if (pAb->AbHeight.DimValue == 0)
-            percentH = 100;
-        }
-      GeometryCreate (frame, &x, &y, &width, &height,
-                      xmin, xmax, Ymin, Ymax, pBox,
-                      pAb->AbHorizPos.PosUserSpecified,
-                      pAb->AbVertPos.PosUserSpecified,
-                      pAb->AbWidth.DimUserSpecified,
-                      pAb->AbHeight.DimUserSpecified,
-                      percentW, percentH);
-
-      /* Notification of the new created box */
-      x = x + pFrame->FrXOrg;
-      y = y + pFrame->FrYOrg;
-
-      /* get the position of reference point */
-      switch (pBox->BxHorizEdge)
-        {
-        case Right:
-          xref = width;
-          break;
-        case VertMiddle:
-          xref = width / 2;
-          break;
-        case VertRef:
-          xref = pBox->BxVertRef;
-          break;
-        default:
-          xref = 0;
-          break;
-        }
-      switch (pBox->BxVertEdge)
-        {
-        case Bottom:
-          yref = height;
-          break;
-        case HorizMiddle:
-          yref = height / 2;
-          break;
-        case HorizRef:
-          yref = 0;
-          break;
-        default:
-          yref = 0;
-          break;
-        }
-
-      pDoc = DocumentOfElement (pAb->AbElement);
-      histOpen = pDoc->DocEditSequence;
-      if (!histOpen)
-        OpenHistorySequence (pDoc, pAb->AbElement, pAb->AbElement, NULL, 0, 0);
-      NewPosition (pAb, x, xref, y, yref, frame, TRUE);
-      if (percentW)
-        NewDimension (pAb, 0, height, frame, TRUE);
-      else if (percentH)
-        NewDimension (pAb, width, 0, frame, TRUE);
-      else
-        NewDimension (pAb, width, height, frame, TRUE);
-      DefBoxRegion (frame, pBox, 0, 0, width, height);
-
-      pAb->AbHorizPos.PosUserSpecified = FALSE;
-      pAb->AbVertPos.PosUserSpecified = FALSE;
-      pAb->AbWidth.DimUserSpecified = FALSE;
-      pAb->AbHeight.DimUserSpecified = FALSE;
-      if (!histOpen)
-        CloseHistorySequence (pDoc);	  
-    }
-
-  /* interaction finished */
-  BoxCreating = FALSE;
-}
 
 /*----------------------------------------------------------------------
   LocateClickedChar looks for the character of the box displayed at the

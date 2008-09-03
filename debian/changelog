@@ -1,8 +1,14 @@
-amaya (10.1~pre1+dfsg1-1) experimental; urgency=low
+amaya (10.1~pre4+dfsg.0-1) unstable; urgency=low
 
-  * New upstream release.
+  * New upstream release
+    + The redland and raptor patches have now been merged upstream,
+      finally drop them.
+    + The archive doesn't contain the libpng and libjpeg sources anymore,
+      stop removing them when pruning the tarball.
+  * Include the bashisms patch from Raphael Geissert (Closes: #472907).
+  * Wx 2.8 is in unstable now, upload there.
 
- -- Regis Boudin <regis@debian.org>  Wed, 30 Apr 2008 18:57:12 +0100
+ -- Regis Boudin <regis@debian.org>  Wed, 03 Sep 2008 21:33:31 +0100
 
 amaya (10.0.1-1) experimental; urgency=low
 

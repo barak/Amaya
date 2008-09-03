@@ -1,5 +1,5 @@
 	{ Translation Schema for XTiger Templates
-	  Francesc Campoy Flores & I. Vatton    January 2007 }
+	  Francesc Campoy Flores & I. Vatton    2007 - 2008 }
 
 
 TRANSLATION Template;
@@ -28,6 +28,14 @@ RULES
     Use XLinkT for XLink;
     Use SVGT for SVG;
     Use MathMLT for MathML;
+    create SOT;
+    create 'library';
+    create Attributes;
+    create tagend;
+    indent +2;
+    indent -2 after;
+    create SCT after;
+    create 'library>\12' after;
   end;
 
   head:
@@ -86,7 +94,7 @@ RULES
     create 'repeat>\12' after;
   end;
 
-  option:
+  {option:
     begin
     create SOT;
     create 'option';
@@ -97,7 +105,7 @@ RULES
     create SCT after;
     create 'option>\12' after;
   end;
-
+}
   useEl: 
     begin
     create SOT;
@@ -142,7 +150,49 @@ RULES
     create CloseEmptyTagNL;
   end;
   
+ Comment\240: BEGIN
+        NoLineBreak;
+         Create '<!--';
+        {NoTranslation;}
+        Create '-->\12' after;
+        END;
+
+ Comment_line: BEGIN
+        if not last create '\12' after;
+        END;
+        
+ XMLPI: BEGIN
+        NoLineBreak;
+         Create '<?';
+        {NoTranslation;}
+        Create '?>\12' after;
+        END;
+
+ PI_line: BEGIN
+        if not last create '\12' after;
+        END;
+  
 ATTRIBUTES
+	
+  option = option_set :
+    begin
+      create SAN;
+      create 'option="set"';
+    end;
+  option = option_unset :
+    begin
+      create SAN;
+      create 'option="unset"';
+    end;
+
+  xmlid :
+    begin
+      create SAN;
+      create 'xml:id=';
+      create DoubleQuote;
+      create name;
+      create DoubleQuote;
+    end;
 
   name :
     begin
@@ -264,7 +314,7 @@ ATTRIBUTES
   prompt :
     begin
       create SAN;
-      create 'prompt="prompt"';
+      create 'initial="true"';
     end;
 
   useAt = required:

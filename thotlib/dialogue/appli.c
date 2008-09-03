@@ -110,7 +110,6 @@ static ThotBool TtAppVersion_IsInit = FALSE;
 #include "appdialogue_wx_f.h"
 #include "paneltypes_wx.h"
 
-
 /* defined into amaya directory ...*/
 extern void ZoomIn (Document document, View view);
 extern void ZoomOut (Document document, View view);
@@ -697,7 +696,7 @@ void DisplaySelMessage (char *text, PtrDocument pDoc)
 /*----------------------------------------------------------------------
   TtaSetStatus displays a status message into a document window.
   ----------------------------------------------------------------------*/
-void TtaSetStatus (Document document, View view, char *text, char *name)
+void TtaSetStatus (Document document, View view, const char *text, const char *name)
 {
   int                 frame, length;
   char                *s = NULL;
@@ -808,10 +807,12 @@ ThotBool FrameButtonDownCallback (int frame, int thot_button_id,
                                  int thot_mod_mask, int x, int y )
 {
 #if !defined (_WINDOWS) && !defined (_MACOS)
-  Document   document;
-  View       view;
+  Document       document;
+  View           view;
 #endif /* !_WINDOWS && ! _MACOS */
-  
+  PtrBox         box;
+  int            ctrlpt;
+    
   /* Amaya is waiting for a click selection ? */
   if (ClickIsDone == 1)
     {
@@ -828,73 +829,69 @@ ThotBool FrameButtonDownCallback (int frame, int thot_button_id,
       {
         /* Stop any current insertion of text */
         CloseTextInsertion ();
-        /* Est-ce que la touche modifieur de geometrie est active ? */
-        if ((thot_mod_mask & THOT_MOD_CTRL) == THOT_MOD_CTRL)
+        box = IsSelectingControlPoint (frame, x, y, &ctrlpt);
+        if (box)
           {
-            /* moving a box */     
-            ApplyDirectTranslate (frame, x, y);
-          }
-        else if ((thot_mod_mask & THOT_MOD_SHIFT) == THOT_MOD_SHIFT)
-          {
-            /* a selection extension */
-            TtaAbortShowDialogue ();
-            LocateSelectionInView (frame, x, y, 1);
-#if !defined (_WINDOWS) && !defined (_MACOS)
-            FrameToView (frame, &document, &view);
-            DoCopyToClipboard (document, view, FALSE, TRUE);
-#endif /* _WINDOWS */
+            if (box->BxAbstractBox &&
+                (box->BxAbstractBox->AbLeafType == LtPath ||
+                 box->BxAbstractBox->AbLeafType == LtPolyLine))
+              ApplyDirectTranslate (box, frame, x, y);
+            else
+              ApplyDirectResize(box, frame, ctrlpt, x, y);
           }
         else
           {
-            /* a simple selection */
-            ClickFrame = frame;
-            ClickX = x;
-            ClickY = y;
-            /* it's important to setup Selecting before the call of LocateSelectionInView 
-             * because LocateSelectionInView will handle gui events (keyup) and Selecting variable
-             * will not be unset => cause a infinit selection ! */
-            Selecting = TRUE;
-            if (LocateSelectionInView (frame, ClickX, ClickY, 2))
-              return FALSE;
+            if ((thot_mod_mask & THOT_MOD_SHIFT) == THOT_MOD_SHIFT)
+              {
+                /* a selection extension */
+                TtaAbortShowDialogue ();
+                LocateSelectionInView (frame, x, y, 1, &Selecting);
+#if !defined (_WINDOWS) && !defined (_MACOS)
+                FrameToView (frame, &document, &view);
+                DoCopyToClipboard (document, view, FALSE, TRUE);
+#endif /* _WINDOWS */
+
+		FrameRedraw (frame,
+			     FrameTable[frame].FrWidth,
+			     FrameTable[frame].FrHeight);
+		
+              }
+            else
+              {
+                /* a simple selection */
+                ClickFrame = frame;
+                ClickX = x;
+                ClickY = y;
+                /* it's important to setup Selecting before the call of
+                   LocateSelectionInView because LocateSelectionInView will
+                   handle gui events (keyup) and Selecting variable
+                   * will not be unset => cause a infinit selection ! */
+                Selecting = TRUE;
+                if (LocateSelectionInView (frame, ClickX, ClickY, 2,
+					   &Selecting))
+		  return FALSE;
+             }
           }
       }
       break;
       
     case THOT_MIDDLE_BUTTON:
       {
-        if (thot_mod_mask & THOT_MOD_CTRL)
-          {
-            /* resizing a box */
-            ApplyDirectResize (frame, x, y);
-          }
-        else
-          {
-            ClickFrame = frame;
-            ClickX = x;
-            ClickY = y;
-            if (LocateSelectionInView (frame, ClickX, ClickY, 5))
-              return FALSE;
-          }
+        ClickFrame = frame;
+        ClickX = x;
+        ClickY = y;
+        if (LocateSelectionInView (frame, ClickX, ClickY, 5, &Selecting))
+          return FALSE;
       }
       break;
       
     case THOT_RIGHT_BUTTON:
       {
-#ifdef IV
-        if (thot_mod_mask & THOT_MOD_CTRL)
-          {
-            /* resize a box */
-            ApplyDirectResize (frame, x, y);
-          }
-        else
-#endif
-          {
-            ClickFrame = frame;
-            ClickX = x;
-            ClickY = y;
-            if (LocateSelectionInView (frame, ClickX, ClickY, 6))
-              return FALSE;
-          }
+        ClickFrame = frame;
+        ClickX = x;
+        ClickY = y;
+        if (LocateSelectionInView (frame, ClickX, ClickY, 6, &Selecting))
+          return FALSE;
       }
       break;
     }
@@ -935,7 +932,7 @@ ThotBool FrameButtonUpCallback( int frame, int thot_button_id,
       ClickFrame = frame;
       ClickX = x;
       ClickY = y;
-      if (LocateSelectionInView (frame, ClickX, ClickY, 4))
+      if (LocateSelectionInView (frame, ClickX, ClickY, 4, &Selecting))
         return FALSE;
       // SG: j'ai commente la ligne suivante car si le document est modifie 
       // et qu'on desire suivre un lien, un evenement keyup est generer
@@ -974,7 +971,7 @@ ThotBool FrameButtonDClickCallback( int frame, int thot_button_id,
         ClickFrame = frame;
         ClickX = x;
         ClickY = y;
-        LocateSelectionInView (frame, ClickX, ClickY, 3);
+        LocateSelectionInView (frame, ClickX, ClickY, 3, &Selecting);
 #if !defined (_WINDOWS) && !defined (_MACOS)
         /* a word is probably selected, copy it into clipboard */
         FrameToView (frame, &document, &view);
@@ -990,7 +987,7 @@ ThotBool FrameButtonDClickCallback( int frame, int thot_button_id,
         ClickFrame = frame;
         ClickX = x;
         ClickY = y;
-        LocateSelectionInView (frame, ClickX, ClickY, 5);
+        LocateSelectionInView (frame, ClickX, ClickY, 5, &Selecting);
       }
       break;
     
@@ -1000,7 +997,7 @@ ThotBool FrameButtonDClickCallback( int frame, int thot_button_id,
         ClickFrame = frame;
         ClickX = x;
         ClickY = y;
-        LocateSelectionInView (frame, ClickX, ClickY, 6);
+        LocateSelectionInView (frame, ClickX, ClickY, 6, &Selecting);
       }
       break;
     }
@@ -1093,7 +1090,7 @@ ThotBool FrameMotionCallback (int frame, int thot_mod_mask, int x, int y )
             }
           if (Selecting)
             {
-              LocateSelectionInView (frame,  Motion_x, Motion_y, 0);
+              LocateSelectionInView (frame,  Motion_x, Motion_y, 0, &Selecting);
             }
         }
     }
@@ -1133,6 +1130,10 @@ ThotBool FrameMouseWheelCallback(
           /* if CTRL is down then zoom */
           ZoomOut (document, view);	   
         }
+      else if (thot_mod_mask & THOT_MOD_SHIFT)
+        {
+          HorizontalScroll (frame, -39, 1);
+        }
       else
         { 
           VerticalScroll (frame, -39, 1);
@@ -1146,6 +1147,10 @@ ThotBool FrameMouseWheelCallback(
         {
           /* if CTRL is down then zoom */
           ZoomIn (document, view);
+        }
+      else if (thot_mod_mask & THOT_MOD_SHIFT)
+        {
+          HorizontalScroll (frame, 39, 1);          
         }
       else
         {

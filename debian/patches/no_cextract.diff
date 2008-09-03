@@ -1,3 +1,5 @@
+cextract is not free, stop trying to build the thing as we remove it.
+
 Index: amaya-9.55~dfsg.0/configure.in
 ===================================================================
 --- amaya-9.55~dfsg.0.orig/configure.in	2007-03-31 13:51:41.000000000 +0100

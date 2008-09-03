@@ -234,7 +234,7 @@ static ThotBool      VirtualDoctype = FALSE;
 /* maximum size of error messages */
 #define MaxMsgLength 200
 
-static void StartOfXmlStartElement (char *name);
+static void StartOfXmlStartElement (const char *name);
 static void DisableExpatParser ();
 static void XhtmlCheckInsert (Element *el, Element parent, Document doc,
                               ThotBool *inserted);
@@ -251,7 +251,7 @@ static void XmlParse (FILE *infile, CHARSET charset, ThotBool *xmlDec,
   ChangeXmlParserContextByDTD
   Get the parser context correponding to a given DTD
   ----------------------------------------------------------------------*/
-static void ChangeXmlParserContextByDTD (char *DTDname)
+static void ChangeXmlParserContextByDTD (const char *DTDname)
 {
   CurrentParserCtxt = FirstParserCtxt;
   while (CurrentParserCtxt != NULL &&
@@ -276,13 +276,25 @@ static void ChangeXmlParserContextByDTD (char *DTDname)
 static ThotBool ChangeXmlParserContextByUri (char *uriName)
 
 {
+  ThotBool  found = FALSE;
+
   CurrentParserCtxt = FirstParserCtxt;
-  while (CurrentParserCtxt != NULL &&
-         strcmp ((char *)uriName, CurrentParserCtxt->UriName) &&
-          (strcmp (CurrentParserCtxt->UriName, Template_URI) ||
-           !strcmp ((char *)uriName, Template_URI_o) ||
-           !strcmp ((char *)uriName, Template_URI_f)))
-    CurrentParserCtxt = CurrentParserCtxt->NextParserCtxt;
+
+  while (!found && CurrentParserCtxt != NULL)
+    {
+      if (!strcmp (CurrentParserCtxt->UriName, Template_URI))
+        {
+          /* Templates */
+          if (!strcmp ((char *)uriName, Template_URI) ||
+              !strcmp ((char *)uriName, Template_URI_o) ||
+              !strcmp ((char *)uriName, Template_URI_f))
+            found = TRUE;
+        }
+      else if (!strcmp ((char *)uriName, CurrentParserCtxt->UriName))
+        found = TRUE;
+      if (!found)
+        CurrentParserCtxt = CurrentParserCtxt->NextParserCtxt;
+    }
 
   /* Initialize the corresponding Thot schema */
   if (CurrentParserCtxt != NULL &&
@@ -814,12 +826,12 @@ static ThotBool  XmlWithinStack (int ThotType, SSchema ThotSSchema)
 }
 
 /*----------------------------------------------------------------------
-  InsertSibling
+  InsertingSibling
   Return TRUE if the new element must be inserted in the Thot document
   as a sibling of lastElement;
   Return FALSE if it must be inserted as a child.
   ----------------------------------------------------------------------*/
-static ThotBool     InsertSibling ()
+static ThotBool InsertingSibling ()
 {
   if (stackLevel == 0)
     return FALSE;
@@ -1165,21 +1177,20 @@ static void  XhtmlCheckInsert (Element *el, Element  parent,
   InsertXmlElement   
   Inserts an element el in the Thot abstract tree , at the current position.
   ---------------------------------------------------------------------------*/
-void     InsertXmlElement (Element *el)
+void InsertXmlElement (Element *el)
 {
-  Element   parent;
-  ThotBool  inserted = FALSE;
+  Element       parent;
+  ThotBool      inserted = FALSE;
 
   if (CurrentParserCtxt != NULL)
     {
-      if (InsertSibling ())
+      if (InsertingSibling ())
         {
           if (XMLcontext.lastElement == NULL)
             parent = NULL;
           else
             parent = TtaGetParent (XMLcontext.lastElement);
-          (*((Proc4)CurrentParserCtxt->CheckInsert)) (
-                                                      (void *)el,
+          (*((Proc4)CurrentParserCtxt->CheckInsert)) ((void *)el,
                                                       (void *)parent,
                                                       (void *)XMLcontext.doc,
                                                       (void *)&inserted);
@@ -1206,7 +1217,7 @@ void     InsertXmlElement (Element *el)
             TtaInsertFirstChild (el, XMLcontext.lastElement, XMLcontext.doc);
         }
 
-      if (*el != NULL)
+      if (*el)
         {
           XMLcontext.lastElement = *el;
           XMLcontext.lastElementClosed = FALSE;
@@ -1291,7 +1302,7 @@ static void RemoveTrailingSpaces (Element el)
   XmlCloseElement
   Terminate the corresponding Thot element.
   ----------------------------------------------------------------------*/
-static ThotBool     XmlCloseElement (char *mappedName)
+static ThotBool XmlCloseElement (char *mappedName)
 {
   int              i, error;
   Element          el, parent, pseudo;
@@ -1322,7 +1333,7 @@ static ThotBool     XmlCloseElement (char *mappedName)
           if (XMLcontext.lastElement != NULL)
             {
               /* implicit close. Check the parent of current element */
-              if (InsertSibling ())
+              if (InsertingSibling ())
                 parent = TtaGetParent (XMLcontext.lastElement);
               else
                 parent = XMLcontext.lastElement;
@@ -1548,7 +1559,7 @@ static char *GetDefaultNsUri (ThotBool *def_uri)
   NsGetPrefix
   Get the prefix associated with an uri
   ----------------------------------------------------------------------*/
-static char *NsGetPrefix (char *ns_uri)
+static char *NsGetPrefix (const char *ns_uri)
 
 {
   int     i;
@@ -1825,7 +1836,7 @@ static void   XhtmlCheckContext (char *elName, const ElementType * elType,
   Search in the mapping tables the entry for the element elementName and
   returns the corresponding Thot element type.
   ----------------------------------------------------------------------*/
-static void   GetXmlElType (char *ns_uri, char *elementName,
+static void   GetXmlElType (const char *ns_uri, const char *elementName,
                             ElementType *elType, char **mappedName,
                             char *content, ThotBool *level)
 {
@@ -1833,8 +1844,8 @@ static void   GetXmlElType (char *ns_uri, char *elementName,
   ThotBool      isnew;
   char         *s;
   char         *ns_name;
-  ElementType   parentType;
-  Element       parent;
+//  ElementType   parentType;
+//  Element       parent;
 #endif /* XML_GENERIC */
 
   /* initialize all parser contexts if not done yet */
@@ -1893,29 +1904,11 @@ static void   GetXmlElType (char *ns_uri, char *elementName,
                         TtaChangeGenericSchemaNames (ns_uri, ns_name, XMLcontext.doc);
                       else
                         TtaChangeGenericSchemaNames (ns_uri, elementName, XMLcontext.doc);
+                      // complete the context if needed
+                      if (CurrentParserCtxt && CurrentParserCtxt->XMLSSchema == NULL)
+                        CurrentParserCtxt->XMLSSchema = elType->ElSSchema;
                     }
                 }
-                /*
-              else
-                {
-                  if (XMLcontext.lastElementClosed)
-                    parent = TtaGetParent (XMLcontext.lastElement);
-                  else
-                    parent = XMLcontext.lastElement;
-                  parentType = TtaGetElementType (parent);
-                  if (parentType.ElSSchema == NULL)
-                    {
-                      isnew = FALSE;
-                      elType->ElSSchema = GetGenericXMLSSchemaByUri ("Default_Uri",
-                                                                     XMLcontext.doc, &isnew);
-                      if (isnew)
-                        TtaChangeGenericSchemaNames ("Default_Uri", elementName,
-                                                     XMLcontext.doc);
-                    }
-                  else
-                    elType->ElSSchema = parentType.ElSSchema;
-                }
-                */
               *level = TRUE;
               *content = SPACE;
             }
@@ -1947,7 +1940,7 @@ static void   GetXmlElType (char *ns_uri, char *elementName,
   The name of an element type has been read from a start tag.
   Create the corresponding Thot element according to the mapping table.
   ----------------------------------------------------------------------*/
-static void StartOfXmlStartElement (char *name)
+static void StartOfXmlStartElement (const char *name)
 {
   ElementType     elType;
   Element         newElement;
@@ -2040,8 +2033,10 @@ static void StartOfXmlStartElement (char *name)
   if (CurrentParserCtxt == NULL)
     {
 #ifdef XML_GENERIC
-      /* assign the generic context */
+      /* create a new XML generic context */
       CurrentParserCtxt = GenericXmlParserCtxt;
+      CurrentParserCtxt->UriName = TtaStrdup (nsURI);
+      TtaSetUriSSchema (CurrentParserCtxt->XMLSSchema, CurrentParserCtxt->UriName);
 #else /*XML_GENERIC*/
       CurrentParserCtxt = savParserCtxt;
       UnknownNS = TRUE;
@@ -2363,7 +2358,7 @@ static void EndOfXmlElement (char *name)
   isXML is TRUE if parsing a generic XML
   ----------------------------------------------------------------------*/
 ThotBool  IsLeadingSpaceUseless (Element lastEl, Document doc, 
-				 ThotBool sibling, ThotBool isXML)
+                                 ThotBool sibling, ThotBool isXML)
 {
   ElementType   elType, lastElType, prevType;
   Element       parent, last;
@@ -2385,7 +2380,7 @@ ThotBool  IsLeadingSpaceUseless (Element lastEl, Document doc,
           /* Does the parent element contains a 'Line' presentation rule ? */
           /* if (TtaHasXmlInLineRule (elType, doc))*/
           /* Return FALSE for XML documents */
-	  removeLeadingSpaces = FALSE;
+          removeLeadingSpaces = FALSE;
         }
       else
         {
@@ -2460,43 +2455,6 @@ ThotBool  IsLeadingSpaceUseless (Element lastEl, Document doc,
        of the latest element encountered */
     {
       removeLeadingSpaces = TRUE;
-#ifdef IV
-      parent = lastEl;
-      elType = TtaGetElementType (lastEl);
-      name = TtaGetSSchemaName (elType.ElSSchema);
-      if (!strcmp(name, "HTML") &&
-          elType.ElTypeNum != HTML_EL_Option_Menu &&
-          elType.ElTypeNum != HTML_EL_OptGroup)
-        {
-          // not within an Option menu
-          ancestor = parent;
-          ancestorType = TtaGetElementType (ancestor);
-          while (removeLeadingSpaces && ancestor &&
-                 IsCharacterLevelElement (ancestor))
-            {
-              prev = ancestor;
-              TtaPreviousSibling (&prev);
-              prevType = TtaGetElementType (prev);
-              while (prev &&
-                     !strcmp (TtaGetSSchemaName (prevType.ElSSchema), "HTML") &&
-                     prevType.ElTypeNum == HTML_EL_Comment_ &&
-                      prevType.ElTypeNum == HTML_EL_XMLPI &&
-                      prevType.ElTypeNum != HTML_EL_DOCTYPE)
-                {
-                  TtaPreviousSibling (&prev);
-                  prevType = TtaGetElementType (prev);
-                }
-              if (prev == NULL)
-                {
-                  ancestor = NULL;
-                   ancestor = TtaGetParent (ancestor);
-                  ancestorType = TtaGetElementType (ancestor);
-                }
-              else
-                removeLeadingSpaces = FALSE;
-            }
-        }
-#endif /* IV */
     }
   return removeLeadingSpaces;
 }
@@ -2537,10 +2495,30 @@ void PutInXmlElement (char *data, int length)
         }
     }
  
-  length -= i;
-  if (length == 0 || data[i] == EOS)
+  if (CurrentParserCtxt->XMLSSchema &&
+      TtaIsXmlSSchema (CurrentParserCtxt->XMLSSchema) &&
+      length == 1 && data[0] == EOL)
+    {
+      if (XMLcontext.lastElement)
+        {
+          // don't generate a XML_Element just after a text unit
+          elType = TtaGetElementType (XMLcontext.lastElement);
+          if (elType.ElTypeNum == XML_EL_TEXT_UNIT)
+            return;
+        }
+      // create an empty element
+      elType.ElSSchema = CurrentParserCtxt->XMLSSchema;
+      elType.ElTypeNum = XML_EL_xmlbr;
+      elText = TtaNewElement (XMLcontext.doc, elType);
+      XmlSetElemLineNumber (elText);
+      InsertXmlElement (&elText);
+      XMLcontext.lastElementClosed = TRUE;
+      return;
+    }
+  else if (length == i || data[i] == EOS)
     return;
 
+  length -= i;
   bufferws = (char *)TtaGetMemory (length + 1);
   strncpy (bufferws, &data[i], length);
   bufferws[length] = EOS;
@@ -2562,9 +2540,9 @@ void PutInXmlElement (char *data, int length)
   if (XMLcontext.lastElement)
   {
     /* Suppress the leading spaces in Inline elements */
-    insSibling = InsertSibling ();
+    insSibling = InsertingSibling ();
     uselessSpace = IsLeadingSpaceUseless (XMLcontext.lastElement, XMLcontext.doc, insSibling,
-                                          !strcmp ((char *)CurrentParserCtxt->SSchemaName, "XML"));
+                                          TtaIsXmlSSchema (CurrentParserCtxt->XMLSSchema));
     if (RemoveLeadingSpace && uselessSpace)
       /* suppress leading spaces */
       while (bufferws[i] == SPACE)
@@ -2619,7 +2597,7 @@ void PutInXmlElement (char *data, int length)
               {
                 // avoid to generate an empty pseudo paragraph
                 ok = FALSE;
-                if (InsertSibling ())
+                if (InsertingSibling ())
                   parent = TtaGetParent (XMLcontext.lastElement);
                 else
                   parent = XMLcontext.lastElement;
@@ -2633,27 +2611,52 @@ void PutInXmlElement (char *data, int length)
               }
             else
               ok = TRUE;
-            if (ok)
+            if (ok && CurrentParserCtxt->XMLSSchema)
               {
-                /* create a TEXT element */
-                if (CurrentParserCtxt->XMLSSchema)
-                  elType.ElSSchema = CurrentParserCtxt->XMLSSchema;
-                elType.ElTypeNum = 1;
-                elText = TtaNewElement (XMLcontext.doc, elType);
-                XmlSetElemLineNumber (elText);
-                InsertXmlElement (&elText);
-                XMLcontext.lastElementClosed = TRUE;
-                XMLcontext.mergeText = TRUE;
-                /* put the content of the input buffer into the TEXT element */
-                if (elText)
-                  TtaSetTextContent (elText, (unsigned char *)&(buffer[i1]),
-                                     XMLcontext.language, XMLcontext.doc);
+                // by default insert a new text unit
+                insSibling = TRUE;
+                if (TtaIsXmlSSchema (CurrentParserCtxt->XMLSSchema) &&
+                    XMLcontext.lastElement)
+                  {
+                    // replace the previous XML_Element by  a text unit
+                    elType = TtaGetElementType (XMLcontext.lastElement);
+                    insSibling = (elType.ElTypeNum != XML_EL_xmlbr);
+                    if (!insSibling)
+                      {
+                      elText = XMLcontext.lastElement;
+                      }
+                  }
+                if (insSibling)
+                  {
+                    elType.ElSSchema = CurrentParserCtxt->XMLSSchema;
+                    /* create a TEXT element */
+                    elType.ElTypeNum = HTML_EL_TEXT_UNIT;
+                    elText = TtaNewElement (XMLcontext.doc, elType);
+                    if (elText)
+                      {
+                        XmlSetElemLineNumber (elText);
+                        InsertXmlElement (&elText);
+                        /* put the content of the input buffer into the TEXT element */
+                        TtaSetTextContent (elText, (unsigned char *)&(buffer[i1]),
+                                           XMLcontext.language, XMLcontext.doc);
+                      }
+                  }
+                else
+                  {
+                    // replace the empty element by a text unit
+                    TtaChangeTypeOfElement (elText, XMLcontext.doc, XML_EL_TEXT_UNIT);
+                    XmlSetElemLineNumber (elText);
+                    XMLcontext.lastElement = elText;
+                    XMLcontext.lastElementClosed = FALSE;
+                    TtaSetTextContent (elText, (unsigned char *)"\n",
+                                       XMLcontext.language, XMLcontext.doc);
+                    TtaAppendTextContent (XMLcontext.lastElement,
+                                          (unsigned char *)&(buffer[i1]), XMLcontext.doc);
+                  }
                 /* associate a specific 'Line' presentation rule to the 
                    parent element if we are parsing a generic-XML element */
-#ifdef XML_GENERIC
-                //if (!strcmp ((char *)CurrentParserCtxt->SSchemaName, "XML"))
-                //  CreateXmlLinePRule (elText, XMLcontext.doc);
-#endif /* XML_GENERIC */
+                XMLcontext.lastElementClosed = TRUE;
+                XMLcontext.mergeText = TRUE;
               }
           }
         TtaFreeMemory (buffer);
@@ -3422,7 +3425,7 @@ static void     CreateXmlEntity (char *data, int length)
   ParseDoctypeContent
   Parse the content of a DOCTYPE declaration
   -------------------------------------- -------------------------------*/
-static void ParseDoctypeContent (char *data, int length)
+static void ParseDoctypeContent (const char *data, int length)
 {
   ElementType     elType;
   Element  	  doctypeLine, doctypeLeaf, doctypeLineNew, lastChild;
@@ -3813,7 +3816,8 @@ static void      CreateXmlComment (char *commentValue)
   /* Create a Thot element for the comment */
   elType.ElSSchema = NULL;
   elType.ElTypeNum = 0;
-  GetXmlElType (NULL, "xmlcomment", &elType, &mappedName, &cont, &level);
+  GetXmlElType (CurrentParserCtxt->UriName, "xmlcomment",
+                &elType, &mappedName, &cont, &level);
   if (elType.ElTypeNum > 0)
     {
       commentEl = TtaNewElement (XMLcontext.doc, elType);
@@ -3823,7 +3827,8 @@ static void      CreateXmlComment (char *commentValue)
       /* Element XMLcomment */
       elType.ElSSchema = NULL;
       elType.ElTypeNum = 0;
-      GetXmlElType (NULL, "xmlcomment_line", &elType, &mappedName, &cont, &level);
+      GetXmlElType (CurrentParserCtxt->UriName, "xmlcomment_line",
+                    &elType, &mappedName, &cont, &level);
       commentLineEl = TtaNewElement (XMLcontext.doc, elType);
       XmlSetElemLineNumber (commentLineEl);
       TtaInsertFirstChild (&commentLineEl, commentEl, XMLcontext.doc);
@@ -5143,7 +5148,7 @@ static Element  SetExternalElementType (Element el, Document doc,
   ---------------------------------------------------------------------------*/
 void ParseExternalDocument (char *fileName, char *originalName, Element el,
                             ThotBool isclosed, Document doc, Language lang,
-                            char *typeName)
+                            const char *typeName)
 {
   ElementType   elType;
   Element       parent, oldel;
@@ -5903,7 +5908,7 @@ void StartXmlParser (Document doc, char *fileName,
 
 #ifdef TEMPLATES
   // load the referred template if it's an instance
-  OpeningInstance(fileName, doc, pathURL);
+  Template_CheckAndPrepareInstance(fileName, doc, pathURL);
 #endif /* TEMPLATES */
 
   /* General initialization */
@@ -5994,6 +5999,8 @@ void StartXmlParser (Document doc, char *fileName,
         TtaUpdateRootElementType (RootElement, "SVG", doc);
       else if (DocumentTypes[doc] == docMath && strcmp ((char *)s, "MathML"))
         TtaUpdateRootElementType (RootElement, "MathML", doc);
+      else if (DocumentTypes[doc] == docTemplate && strcmp ((char *)s, "Template"))
+        TtaUpdateRootElementType (RootElement, "Template", doc);
 
       /* Initialize all parser contexts if not done yet */
       if (FirstParserCtxt == NULL)
@@ -6012,6 +6019,8 @@ void StartXmlParser (Document doc, char *fileName,
         ChangeXmlParserContextByDTD ("SVG");
       else if (strcmp ((char *)s, "MathML") == 0)
         ChangeXmlParserContextByDTD ("MathML");
+      else if (strcmp ((char *)s, "Template") == 0)
+        ChangeXmlParserContextByDTD ("Template");
       else
 #ifdef XML_GENERIC
         {

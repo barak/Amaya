@@ -1,5 +1,9 @@
 #ifdef _WX
 #include "wx/wx.h"
+#include "wx/xrc/xmlres.h"
+#include "wx/xrc/xmlres.h"
+#include "wx/tokenzr.h"
+
 #include "file_filters.h"
 #include "registry_wx.h"
 #endif /* _WX */
@@ -16,7 +20,6 @@
 #include "HTMLsave_f.h"
 #include "styleparser_f.h"
 #include "containers.h"
-
 
 #ifdef _WX
   #include "wxdialog/AuthentDlgWX.h"
@@ -111,7 +114,7 @@ void  ParseStyleDlgValues (void *style_widget, char *cssRule)
 /*----------------------------------------------------------------------
   DisplayStyleValue: update the property in Style dialog
   ----------------------------------------------------------------------*/
-void  DisplayStyleValue (const char *property, char *start_value, char *end_value)
+void  DisplayStyleValue (const char *property, const char *start_value, char *end_value)
 {
 #ifdef _WX
   char c = EOS;
@@ -272,7 +275,7 @@ ThotBool CreateSelectIntegralDlgWX ( int ref, ThotWindow parent)
   ----------------------------------------------------------------------*/
 ThotBool CreateInitConfirmDlgWX ( int ref, ThotWindow parent,
 				  char *title, char *extrabutton, char *confirmbutton,
-				  char *label, char *label2, char *label3 )
+				  const char *label, const char *label2, const char *label3 )
 {
 #ifdef _WX
   /* check if the dialog is alredy open */
@@ -333,7 +336,6 @@ ThotBool CreateOpenDocDlgWX ( int ref, ThotWindow parent, const char *title,
                               DocumentType doc_type, int doc, ThotBool newfile)
 {
 #ifdef _WX
-
   /* check if the dialog is alredy open */
   if (TtaRaiseDialogue (ref))
     return FALSE;
@@ -393,15 +395,16 @@ ThotBool CreateOpenDocDlgWX ( int ref, ThotWindow parent, const char *title,
 
 
 /*----------------------------------------------------------------------
-  CreateImageDlgWX create the dialog for creating new image
+  CreateImageDlgWX creates the dialog for creating new image
   params:
     + parent : parent window
     + title : dialog title
     + urlToOpen : suggested url
+    + isSvg is TRUE when creating a SVG image
   returns:
   ----------------------------------------------------------------------*/
 ThotBool CreateImageDlgWX (int ref, ThotWindow parent, const char *title,
-                           const char *urlToOpen, const char *alt)
+                           const char *urlToOpen, const char *alt, ThotBool isSvg)
 {
 #ifdef _WX
   /* check if the dialog is alredy open */
@@ -418,7 +421,8 @@ ThotBool CreateImageDlgWX (int ref, ThotWindow parent, const char *title,
                                        wx_urlToOpen,
                                        wx_alt,
                                        wx_filter,
-                                       &img_Last_used_filter
+                                       &img_Last_used_filter,
+                                       (bool)isSvg
                                        );
 
   if ( TtaRegisterWidgetWX( ref, p_dlg ) )
@@ -677,13 +681,31 @@ ThotBool CreateSaveObject (int ref, ThotWindow parent, char* objectname)
   if (TtaCheckMakeDirectory (SavePath, TRUE))
     {
       strcat (SavePath, objectname);
+      if (TtaFileExist (SavePath))
+	{
+	  char  *suffix;
+          int    i = 1, len;
+          // keep the current suffix
+          len = strlen (SavePath);
+          while (SavePath[len] != '.')
+            len--;
+          suffix = TtaStrdup (&SavePath[len]);
+          do
+            {
+              sprintf (&SavePath[len], "%d%s", i, suffix);
+              i++;
+            }
+          while (TtaFileExist(SavePath));
+          TtaFreeMemory (suffix);
+	}
+      // we can now save the file without any dialog
       DoSaveObjectAs ();
       SavingObject = 0;
       return FALSE;
     }
   #endif /* _MACOS */
   // Create a generic filedialog
-  wxString      wx_filter = APPFILENAMEFILTER;
+  wxString      wx_filter = _T("*|*.*");//APPFILENAMEFILTER;
   wxFileDialog *p_dlg = new wxFileDialog (
                                           parent,
                                           TtaConvMessageToWX( TtaGetMessage (AMAYA, AM_OBJECT_LOCATION) ),
@@ -1086,18 +1108,23 @@ ThotBool CreateCreateTableDlgWX (int ref, ThotWindow parent,
   - Change Amaya configuration options
  ------------------------------------------------------------------------*/
 ThotBool CreatePreferenceDlgWX (int ref, ThotWindow parent,
-                                const char *url_list)
+                                const char *url_list, const char *rdfa_list)
 {
 #ifdef _WX
+
+  wxArrayString wx_items_uri, wx_items_rdfa;
 
   /* check if the dialog is alredy open */
   if (TtaRaiseDialogue (ref))
     return FALSE;
 
-  wxArrayString wx_items = BuildWX_URL_List(url_list);
+  wx_items_uri = BuildWX_URL_List(url_list);
+  if (rdfa_list)
+    wx_items_rdfa = BuildWX_URL_List(rdfa_list);
   PreferenceDlgWX * p_dlg = new PreferenceDlgWX( ref,
 						 parent,
-						 wx_items);
+						 wx_items_uri,
+						 wx_items_rdfa);
   if ( TtaRegisterWidgetWX( ref, p_dlg ) )
       /* the dialog has been sucesfully registred */
       return TRUE;
@@ -1330,3 +1357,122 @@ void QueryStringFromUser(const char *label, const char *title, char* res, int sz
   wxString str = wxGetTextFromUser(TtaConvMessageToWX(label), TtaConvMessageToWX(title));
   strncpy(res, (const char*)str.mb_str(wxConvUTF8), sz);
 }
+
+/*----------------------------------------------------------------------
+  QueryTitleAndDescFromUser
+  Query a title and a description to the user and return them.
+  Return false if the user cancels or if an error occurs.
+  ----------------------------------------------------------------------*/
+ThotBool QueryTitleAndDescFromUser(char* title, int titleSz, char* desc,
+				   int descSz)
+{
+  wxDialog   dialog;
+  wxTextCtrl *titleWidget, *descWidget;
+  wxStaticText *titleLabel, *descLabel;
+  wxButton *cancel, *confirm;
+
+  if(wxXmlResource::Get()->LoadDialog(&dialog, NULL, wxT("GraphicsInfoDlgWX")))
+    {
+      titleLabel = XRCCTRL(dialog, "wxID_LABEL_TITLE", wxStaticText);
+      titleWidget = XRCCTRL(dialog, "wxID_TITLE", wxTextCtrl);
+      descLabel = XRCCTRL(dialog, "wxID_LABEL_DESC", wxStaticText);
+      descWidget  = XRCCTRL(dialog, "wxID_DESC", wxTextCtrl);
+      cancel = XRCCTRL(dialog, "wxID_CANCEL", wxButton);
+      confirm = XRCCTRL(dialog, "wxID_OK", wxButton);
+       
+      if(titleLabel && titleWidget && descWidget && descLabel
+	 && cancel && confirm)
+        {
+	  titleLabel->SetLabel(TtaConvMessageToWX(TtaGetMessage
+						  (AMAYA, AM_BM_TITLE) ));
+	  titleWidget->SetToolTip(TtaConvMessageToWX(TtaGetMessage
+						  (AMAYA, AM_TITLE) ));
+	  titleWidget->SetValue(TtaConvMessageToWX(title));
+
+	  descLabel->SetLabel(TtaConvMessageToWX(TtaGetMessage
+						 (AMAYA, AM_BM_DESCRIPTION) ));
+	  descWidget->SetToolTip(TtaConvMessageToWX(TtaGetMessage
+						    (AMAYA, AM_BM_DESCRIPTION) ));
+	  descWidget->SetValue(TtaConvMessageToWX(desc));
+
+	  cancel->SetLabel(TtaConvMessageToWX(TtaGetMessage
+					      (LIB, TMSG_CANCEL) ));
+	  confirm->SetLabel(TtaConvMessageToWX(TtaGetMessage
+					       (LIB, TMSG_LIB_CONFIRM) ));
+
+
+          if(dialog.ShowModal()==wxID_OK)
+            {
+              strncpy(title, (const char*)titleWidget->GetValue().mb_str(wxConvUTF8), titleSz-1);
+              strncpy(desc, (const char*)descWidget->GetValue().mb_str(wxConvUTF8), descSz-1);
+              return TRUE;
+            }
+        }
+    }
+  return FALSE;
+}
+
+/*----------------------------------------------------------------------
+  QueryNewUseFromUser
+  Query the label, the types and the option value for a new xt:use
+  to a user.
+  Return FALSE if user cancel the query or an error occurs.
+  ----------------------------------------------------------------------*/
+ThotBool QueryNewUseFromUser(const char* proposed, char** label, char**types, ThotBool* option)
+{
+#ifdef TEMPLATES
+  unsigned int i, n;
+  wxDialog dialog;
+  wxString strs = TtaConvMessageToWX(proposed);
+  wxArrayString arr = wxStringTokenize(strs);
+  wxCheckListBox* box;
+  
+  if(wxXmlResource::Get()->LoadDialog(&dialog, NULL, wxT("TemplateNewUseDlgWX")))
+    {
+      dialog.SetTitle(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_TEMPLATE_NEWUSE)));
+      XRCCTRL(dialog, "wxID_LABEL_LABEL", wxStaticText)->
+            SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_TEMPLATE_LABEL)));
+      XRCCTRL(dialog, "wxID_CHECK_OPTIONAL", wxCheckBox)->
+            SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_TEMPLATE_OPTIONAL)));
+      XRCCTRL(dialog, "wxID_CANCEL", wxButton)->
+            SetLabel(TtaConvMessageToWX(TtaGetMessage(LIB, TMSG_CANCEL) ));
+      XRCCTRL(dialog, "wxID_OK", wxButton)->
+            SetLabel(TtaConvMessageToWX(TtaGetMessage(LIB, TMSG_LIB_CONFIRM) ));      
+      
+      wxSizer* sz = dialog.GetSizer();
+      box = XRCCTRL(dialog, "wxID_LIST_TYPES", wxCheckListBox);
+      box->Hide();
+      
+      box = new wxCheckListBox(&dialog, XRCID("wxID_LIST_TYPES"));
+      sz->Insert(2, box, 1, wxEXPAND);
+      
+      
+      box->Append(arr);
+      
+      if(dialog.ShowModal()==wxID_OK)
+        {
+          strs.Clear();
+          n = box->GetCount();
+          for(i=0; i<n; i++)
+            {
+              if(box->IsChecked(i))
+                {
+                  strs += box->GetString(i);
+                  strs += wxT(" ");
+                }
+            }
+          strs.Trim();
+          
+          if(label)
+            *label = TtaStrdup((const char*)XRCCTRL(dialog, "wxID_TEXT_LABEL", wxTextCtrl)->GetValue().mb_str(wxConvUTF8));
+          if(types)
+            *types = TtaStrdup((const char*)strs.mb_str(wxConvUTF8));
+          if(option)
+            *option = XRCCTRL(dialog, "wxID_CHECK_OPTIONAL", wxCheckBox)->GetValue();
+          return TRUE;
+        }
+    }
+#endif /* TEMPLATES */
+  return FALSE;
+}
+

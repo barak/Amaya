@@ -55,6 +55,7 @@
 #include "thotcolor_tv.h"
 
 
+#include "appdialogue_wx.h"
 #include "boxlocate_f.h"
 #include "buildlines_f.h"
 #include "context_f.h"
@@ -236,7 +237,11 @@ void SetBadCard (ThotBool badbuffer)
   ----------------------------------------------------------------------*/
 ThotBool GetBadCard ()
 {
+#ifdef _MACOS
+  return FALSE;
+#else /* _MACOS */
   return BadGLCard;
+#endif /* _MACOS */
 }
 
 /*----------------------------------------------------------------------
@@ -248,15 +253,15 @@ ThotBool GetBadCard ()
   Then we call a redrawframebottom
   ----------------------------------------------------------------------*/
 ThotBool GL_DrawAll ()
-{  
-  int              frame;
+{
+  Document         doc;
   AnimTime         current_time;
   ThotBool         was_animation = FALSE; 
   char             out[128];
   unsigned int     i;
+  int              frame, nb_animated_frame = 0;
   static ThotBool  frame_animating = FALSE;  
   static double    lastime;
-  int              nb_animated_frame = 0;
 
   if (!FrameUpdating)
     {
@@ -289,15 +294,14 @@ ThotBool GL_DrawAll ()
                     }
                   else
                     current_time = FrameTable[frame].LastTime;
-
+                  doc =  FrameTable[frame].FrDoc;
                   if (FrameTable[frame].DblBuffNeedSwap &&
-                      FrameTable[frame].FrDoc &&
-                      documentDisplayMode[FrameTable[frame].FrDoc - 1] != NoComputedDisplay)
+                      doc && LoadedDocument[doc - 1] &&
+                      documentDisplayMode[doc - 1] == DisplayImmediately)
                     {
 #ifdef _WX
                       // do not draw anything if the animated canvas page is not raidsed
-                      //                        if (FrameTable[frame].WdFrame->GetPageParent()->IsSelected())
-                      if (FrameTable[frame].WdFrame->GetPageParent()->IsShown())
+                      if (TtaFrameIsShown (frame))
 #endif /* _WX */
                         if (GL_prepare (frame))
                           {
