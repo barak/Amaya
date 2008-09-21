@@ -1,0 +1,102 @@
+Index: Amaya/configure.in
+===================================================================
+--- Amaya.orig/configure.in	2008-09-19 22:11:14.000000000 +0100
++++ Amaya/configure.in	2008-09-19 22:12:07.000000000 +0100
+@@ -808,12 +808,6 @@
+ 	esac],
+ 	[with_templates="yes"])
+ 
+-if test "$with_templates" = yes -a "$with_wx" != "yes"; then
+-    AC_MSG_WARN(Templates are only available in WX version !!)
+-    AC_MSG_WARN(Disabling templates)
+-    with_templates="no"
+-fi
+-
+ if test "$with_templates" = "yes" ; then
+     TEMPLATES_OPTIONS="-DTEMPLATES"
+ else
+@@ -913,12 +907,6 @@
+   AMAYA_OPTIONS="$AMAYA_OPTIONS -DAMAYA_DEBUG"
+ fi
+ 
+-if test "$with_wx" = "yes" ; then
+-  IMGLIBS=""
+-else
+-  IMGLIBS="-ljpeg -lpng -lz"
+-fi
+-
+ EXTRA_INCLUDES=
+ 
+ # check for malloc.h
+@@ -998,7 +986,6 @@
+ 
+ AC_SUBST(THOT_OPTIONS)
+ AC_SUBST(AMAYA_OPTIONS)
+-AC_SUBST(IMGLIBS)
+ AC_SUBST(EXTRA_INCLUDES)
+ 
+ AC_SUBST(DAVDIR)
+@@ -1175,12 +1162,10 @@
+     fi
+ fi
+ 
+-if test "$with_wx" = "yes" ; then
+-  if test "$with_wxdebug" = "yes" ; then
+-    echo "Amaya configured with wxWidgets {srcdir=$WX_SRCDIR} (debug)"
+-  else
+-    echo "Amaya configured with wxWidgets {srcdir=$WX_SRCDIR}"
+-  fi
++if test "$with_wxdebug" = "yes" ; then
++  echo "Amaya configured with wxWidgets {srcdir=$WX_SRCDIR} (debug)"
++else
++  echo "Amaya configured with wxWidgets {srcdir=$WX_SRCDIR}"
+ fi
+ 
+ 
+Index: Amaya/Options.in
+===================================================================
+--- Amaya.orig/Options.in	2008-09-19 22:12:28.000000000 +0100
++++ Amaya/Options.in	2008-09-19 22:12:40.000000000 +0100
+@@ -39,7 +39,6 @@
+ AMAYA_ANNOT_INCLUDES=@AMAYA_ANNOT_INCLUDES@
+ AMAYA_ANNOT_EXTRA_LIBS=@AMAYA_ANNOT_EXTRA_LIBS@
+ 
+-IMGLIBS=@IMGLIBS@
+ EXTRA_INCLUDES=@EXTRA_INCLUDES@
+ 
+ EXPAT_INCLUDES=
+Index: Amaya/thotlib/Makefile.in
+===================================================================
+--- Amaya.orig/thotlib/Makefile.in	2008-09-19 22:16:18.000000000 +0100
++++ Amaya/thotlib/Makefile.in	2008-09-19 22:22:05.000000000 +0100
+@@ -12,8 +12,8 @@
+ 
+ include ../Options
+ 
+-INCLUDES= -DHAVE_CONFIG_H -I.. -I@top_srcdir@/amaya/xpm ${THOTINCLUDES} $(GUI_INCLUDES) $(GL_INCLUDES) $(GTK_GL_INCLUDES) $(XFT_INCLUDES) $(FREETYPE_INCLUDES) ${EXTRA_INCLUDES}
+-LIBS	= -L. -L.. @LIBS@ $(IMGLIBS) $(GL_LIBRARIES) $(GTK_GL_LIBRARIES) $(XFT_LIBRARIES) $(FREETYPE_LIBRARIES) $(GTK_LIBRARIES) $(WX_LIBRARIES)
++INCLUDES= -DHAVE_CONFIG_H -I.. -I@top_srcdir@/amaya/xpm ${THOTINCLUDES} $(GUI_INCLUDES) $(GL_INCLUDES) $(FREETYPE_INCLUDES) ${EXTRA_INCLUDES}
++LIBS	= -L. -L.. @LIBS@ $(GL_LIBRARIES) $(FREETYPE_LIBRARIES) $(WX_LIBRARIES)
+ 
+ prefix = @prefix@
+ exec_prefix = @exec_prefix@
+Index: Amaya/amaya/Makefile.in
+===================================================================
+--- Amaya.orig/amaya/Makefile.in	2008-09-19 22:17:25.000000000 +0100
++++ Amaya/amaya/Makefile.in	2008-09-19 22:21:18.000000000 +0100
+@@ -13,13 +13,13 @@
+ 
+ include ../Options
+ 
+-INCLUDES= -DHAVE_CONFIG_H $(AMAYA_INCLUDES) $(EXPAT_INCLUDES) $(GUI_INCLUDES) $(EXTRA_INCLUDES) $(GL_INCLUDES) $(GTK_GL_INCLUDES) $(FREETYPE_INCLUDES) $(XFT_INCLUDES)
++INCLUDES= -DHAVE_CONFIG_H $(AMAYA_INCLUDES) $(EXPAT_INCLUDES) $(GUI_INCLUDES) $(EXTRA_INCLUDES) $(GL_INCLUDES) $(FREETYPE_INCLUDES)
+ LIBS	=  $(AMAYA_ANNOT_LIBS) $(AMAYA_DAV_LIBS) \
+ 	   $(AMAYA_MATH_LIBS) $(AMAYA_GRAPH_LIBS) \
+            -L../thotlib -L.. -lThotEditor \
+           $(AMAYA_OPTION_EXTRA_LIBS) $(EXPAT_LIBRARIES) \
+ 	  $(AMAYA_LIBWWW_LIBS) \
+-	  $(GL_LIBRARIES) $(GTK_GL_LIBRARIES) $(FREETYPE_LIBRARIES) $(XFT_LIBRARIES) \
++	  $(GL_LIBRARIES) $(FREETYPE_LIBRARIES) \
+ 	   @AMAYA_RAPTOR_LIBS@ \
+           $(WX_LIBRARIES)
+ 

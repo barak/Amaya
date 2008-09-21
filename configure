@@ -717,12 +717,10 @@ FREETYPE_LIBRARIES
 LIBWWW_CONFIG
 BUILDLIBWWW
 LIBWWW_CFLAGS
-LIBWWW_CXXFLAGS
 LIBWWW_LDFLAGS
-AMAYA_DAV_OPTIONS
-AMAYA_DAV_INCLUDES
-AMAYA_DAV_LIBS
-BUILDWEBDAV
+DAVDIR
+LIBDAV
+WWWDAV
 RAPTOR_CONFIG
 BUILDRAPTOR
 AMAYA_ANNOT_OPTIONS
@@ -743,16 +741,17 @@ APIINCLUDES
 VPATHOPT
 THOT_OPTIONS
 AMAYA_OPTIONS
-IMGLIBS
 EXTRA_INCLUDES
 MAKE_LIBWWW_RDF_PARSER
 LIBWWW_RDF_PARSER
 SUBDIRS
 EXTRA_MAKEFILE_IN
 LTLIBOBJS'
-ac_subst_files='math_frag
+ac_subst_files='www_frag
+math_frag
 svg_frag
 annot_frag
+dav_frag
 templates_frag'
       ac_precious_vars='build_alias
 host_alias
@@ -1362,7 +1361,7 @@ Optional Packages:
   --with-wxdebug          compiles wxWidgets with debuging options
   --with-wxsrcdir=...     compiles Amaya with a specific wxWidgets sources path
   --with-debug            compiles Amaya with debuging options (-g)
-  --with-dav              enable WebDAV support (experimental)
+  --with-dav              enable WebDAV support (default)
 
 Some influential environment variables:
   YACC        The `Yet Another C Compiler' implementation to use. Defaults to
@@ -14339,20 +14338,13 @@ echo "$as_me: WARNING: WebDAV makefile not found" >&2;}
 	fi
 fi
 
-if test "$with_system_libwww" != "yes" ; then
-	if test ! -f $srcdir/../libwww/Makefile.in ; then
-		{ { echo "$as_me:$LINENO: error: libWWW sources not found, stopping the build process" >&5
-echo "$as_me: error: libWWW sources not found, stopping the build process" >&2;}
-   { (exit 1); exit 1; }; }
-	fi
+if test "$with_dav" = "yes" ; then
+   WITHDAV="--with-dav"
+else
+   WITHDAV="--without-dav"
 fi
 
 if test "$enable_system_libwww" != "yes" ; then
-  if test "$with_dav" = "yes" ; then
-    WITH_DAV="--with-dav"
-  else
-    WITH_DAV="--without-dav"
-  fi
   # configure libwww
   CURRENT_PATH="`pwd`"
   mkdir libwww
@@ -14370,7 +14362,7 @@ if test "$enable_system_libwww" != "yes" ; then
     echo "wwwconf.h patched !" ; \
   cd ..
   chmod +x libwww/libwww-config
-  BUILDLIBWWW="libWWW"
+  BUILDLIBWWW="libwww"
   LIBWWW_CONFIG="libwww/libwww-config"
   LIBWWW_LDFLAGS="-L$CURRENT_PATH/libwww/Library/src/.libs -L$CURRENT_PATH/libwww/modules/md5/.libs -L$CURRENT_PATH/libwww/modules/expat/.libs `$LIBWWW_CONFIG --libs`"
   LIBWWW_CFLAGS="-I$CURRENT_PATH/../../libwww/Library/src -I$CURRENT_PATH/libwww"
@@ -14450,19 +14442,19 @@ fi
   fi
 fi
 
-LIBWWW_CXXFLAGS="$LIBWWW_CFLAGS"
-
-
-
-
-
-
 if test "$with_dav" = "yes" ; then
-	AMAYA_DAV_INCLUDES="-I$CURRENT_PATH/../davlib/h -I$CURRENT_PATH/../davlib/tree/h -I$CURRENT_PATH/../davlib/f"
-	AMAYA_DAV_LIBS="../davlib/davlib.a"
-	AMAYA_DAV_OPTIONS="-DDAV"
-	BUILDWEBDAV="WebDAV"
+   DAV_OPTIONS=-DDAV
+   DAVDIR="davlib"
+   LIBWWW_LDFLAGS="$LIBWWW_LDFLAGS -lwwwdav"
+else
+   with_dav="no"
+   DAV_OPTIONS=""
+   DAVDIR=""
 fi
+
+
+
+
 
 
 
@@ -14641,14 +14633,6 @@ else
 fi
 
 
-if test "$with_templates" = yes -a "$with_wx" != "yes"; then
-    { echo "$as_me:$LINENO: WARNING: Templates are only available in WX version !!" >&5
-echo "$as_me: WARNING: Templates are only available in WX version !!" >&2;}
-    { echo "$as_me:$LINENO: WARNING: Disabling templates" >&5
-echo "$as_me: WARNING: Disabling templates" >&2;}
-    with_templates="no"
-fi
-
 if test "$with_templates" = "yes" ; then
     TEMPLATES_OPTIONS="-DTEMPLATES"
 else
@@ -14676,6 +14660,7 @@ else
  GENERIC_XML_OPTIONS=""
 fi
 
+
 if test "$build_amaya" = "yes" ; then
     if test ! -f $srcdir/amaya/MathML.S ; then
 	if test "$with_math" = "yes" ; then
@@ -14699,7 +14684,6 @@ echo "$as_me: WARNING: Disabling SVG build !" >&2;}
 	fi
     fi
 
-
 fi
 
 THOT_OPTIONS="$OS_OPTIONS $GL_OPTIONS $WX_OPTIONS"
@@ -14708,12 +14692,6 @@ AMAYA_OPTIONS="$OS_OPTIONS $MATH_OPTIONS $SVG_OPTIONS $GENERIC_XML_OPTIONS $GL_O
 
 if test "$with_debug" = "yes" ; then
   AMAYA_OPTIONS="$AMAYA_OPTIONS -DAMAYA_DEBUG"
-fi
-
-if test "$with_wx" = "yes" ; then
-  IMGLIBS=""
-else
-  IMGLIBS="-ljpeg -lpng -lz"
 fi
 
 EXTRA_INCLUDES=
@@ -14790,12 +14768,14 @@ AMAYA_INSTALLDIR="Amaya"
 
 
 
-
 #AC_SUBST(ANNOTLIB_COMPILE_BM)
 
 
 
 
+
+
+www_frag=$srcdir/amaya/Makefile.libwww
 
 
 if test "$with_math" = "no" ; then
@@ -14819,6 +14799,13 @@ else
 fi
 
 
+if test "$with_dav" = "yes" ; then
+    dav_frag=$srcdir/davlib/Makefile.dav
+else
+    dav_frag=/dev/null
+fi
+
+
 if test "$with_templates" = "yes" ; then
     templates_frag=$srcdir/amaya/Makefile.templates
 else
@@ -14839,11 +14826,8 @@ make_output="Makefile Options.orig:Options.in tools/Makefile \
 
 if test "$build_amaya" = "yes" ; then
     make_output="$make_output amaya/Makefile"
-    EXTRA_MAKEFILE_IN="$srcdir/amaya/Makefile.in"
-
-    if test "enable_system_libwww" != "yes" ; then
-       EXTRA_MAKEFILE_IN="$EXTRA_MAKEFILE_IN $srcdir/amaya/Makefile.libwww"
-    fi
+    EXTRA_MAKEFILE_IN="$srcdir/amaya/Makefile.in \
+    $srcdir/amaya/Makefile.libwww"
 
     if test "$with_annot" = "yes" ; then
        make_output="$make_output annotlib/Makefile"
@@ -15575,15 +15559,9 @@ MKDIR!$MKDIR$ac_delim
 ECHO!$ECHO$ac_delim
 CAT!$CAT$ac_delim
 CHMOD!$CHMOD$ac_delim
-SED!$SED$ac_delim
-AR!$AR$ac_delim
-DIFF!$DIFF$ac_delim
-GREP!$GREP$ac_delim
-EGREP!$EGREP$ac_delim
-ALLOCA!$ALLOCA$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 85; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 79; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -15603,6 +15581,10 @@ fi
 cat >>$CONFIG_STATUS <<_ACEOF
 cat >"\$tmp/subs-1.sed" <<\CEOF$ac_eof
 /@[a-zA-Z_][a-zA-Z_0-9]*@/!b
+/^[	 ]*@www_frag@[	 ]*$/{
+r $www_frag
+d
+}
 /^[	 ]*@math_frag@[	 ]*$/{
 r $math_frag
 d
@@ -15613,6 +15595,10 @@ d
 }
 /^[	 ]*@annot_frag@[	 ]*$/{
 r $annot_frag
+d
+}
+/^[	 ]*@dav_frag@[	 ]*$/{
+r $dav_frag
 d
 }
 /^[	 ]*@templates_frag@[	 ]*$/{
@@ -15638,6 +15624,12 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+SED!$SED$ac_delim
+AR!$AR$ac_delim
+DIFF!$DIFF$ac_delim
+GREP!$GREP$ac_delim
+EGREP!$EGREP$ac_delim
+ALLOCA!$ALLOCA$ac_delim
 LIBOBJS!$LIBOBJS$ac_delim
 AMAYAOS!$AMAYAOS$ac_delim
 AMAYAGUI!$AMAYAGUI$ac_delim
@@ -15656,12 +15648,10 @@ FREETYPE_LIBRARIES!$FREETYPE_LIBRARIES$ac_delim
 LIBWWW_CONFIG!$LIBWWW_CONFIG$ac_delim
 BUILDLIBWWW!$BUILDLIBWWW$ac_delim
 LIBWWW_CFLAGS!$LIBWWW_CFLAGS$ac_delim
-LIBWWW_CXXFLAGS!$LIBWWW_CXXFLAGS$ac_delim
 LIBWWW_LDFLAGS!$LIBWWW_LDFLAGS$ac_delim
-AMAYA_DAV_OPTIONS!$AMAYA_DAV_OPTIONS$ac_delim
-AMAYA_DAV_INCLUDES!$AMAYA_DAV_INCLUDES$ac_delim
-AMAYA_DAV_LIBS!$AMAYA_DAV_LIBS$ac_delim
-BUILDWEBDAV!$BUILDWEBDAV$ac_delim
+DAVDIR!$DAVDIR$ac_delim
+LIBDAV!$LIBDAV$ac_delim
+WWWDAV!$WWWDAV$ac_delim
 RAPTOR_CONFIG!$RAPTOR_CONFIG$ac_delim
 BUILDRAPTOR!$BUILDRAPTOR$ac_delim
 AMAYA_ANNOT_OPTIONS!$AMAYA_ANNOT_OPTIONS$ac_delim
@@ -15682,7 +15672,6 @@ APIINCLUDES!$APIINCLUDES$ac_delim
 VPATHOPT!$VPATHOPT$ac_delim
 THOT_OPTIONS!$THOT_OPTIONS$ac_delim
 AMAYA_OPTIONS!$AMAYA_OPTIONS$ac_delim
-IMGLIBS!$IMGLIBS$ac_delim
 EXTRA_INCLUDES!$EXTRA_INCLUDES$ac_delim
 MAKE_LIBWWW_RDF_PARSER!$MAKE_LIBWWW_RDF_PARSER$ac_delim
 LIBWWW_RDF_PARSER!$LIBWWW_RDF_PARSER$ac_delim
@@ -15691,7 +15680,7 @@ EXTRA_MAKEFILE_IN!$EXTRA_MAKEFILE_IN$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 51; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 54; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -16193,12 +16182,10 @@ if test "$build_amaya" = "yes" ; then
     fi
 fi
 
-if test "$with_wx" = "yes" ; then
-  if test "$with_wxdebug" = "yes" ; then
-    echo "Amaya configured with wxWidgets {srcdir=$WX_SRCDIR} (debug)"
-  else
-    echo "Amaya configured with wxWidgets {srcdir=$WX_SRCDIR}"
-  fi
+if test "$with_wxdebug" = "yes" ; then
+  echo "Amaya configured with wxWidgets {srcdir=$WX_SRCDIR} (debug)"
+else
+  echo "Amaya configured with wxWidgets {srcdir=$WX_SRCDIR}"
 fi
 
 

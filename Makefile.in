@@ -14,7 +14,7 @@ LIBWWW	   = libwww
 
 #MKP: adding davlib
 SUBDIRS	= @SUBDIRS@ tools thotlib batch annotlib @DAVDIR@ amaya
-EXTRA_SUBDIRS= $(BUILDRAPTOR) $(LIBWWW) $(WX_BUILDDIR) $(GL_BUILDDIR)
+EXTRA_SUBDIRS= $(BUILDRAPTOR) @BUILDLIBWWW@ $(WX_BUILDDIR) $(GL_BUILDDIR)
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@
@@ -23,7 +23,7 @@ bindir = @bindir@
 
 srcdir	= $(THOTDIR)
 
-default : tools gl @BUILDWXWIDGETS@ @BUILDRAPTOR@ thotlib batch amaya_prog print_prog
+default : tools gl @BUILDWXWIDGETS@ @BUILDRAPTOR@ @BUILDLIBWWW@ thotlib batch amaya_prog print_prog
 
 amaya : tools thotlib amaya_prog print_prog
 
@@ -58,7 +58,7 @@ gl: rebuild force
 	@(if test -d "$(GL_BUILDDIR)" ; then cd "$(GL_BUILDDIR)" ; \
 	  $(MAKE) ; fi)
 
-print_prog: rebuild force bin/str @BUILDLIBWWW@
+print_prog: rebuild force bin/str
 	@(if test -d thotlib ; then cd thotlib ; \
   $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" CXX="$(CXX)" CXXFLAGS="$(CXXFLAGS)" print ; fi)
 
@@ -131,12 +131,6 @@ mkid :
 libwww: force
 	$(MAKE) -C libwww
 		@($(ECHO) "libwww is installed")
-
-#
-# Rules to rebuild the WebDAV module
-#
-WebDAV: @BUILDLIBWWW@ force
-	$(MAKE) -C davlib
 
 #
 # Rules to build the raptor RDF library

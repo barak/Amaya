@@ -1,244 +1,26 @@
-add --enable-system-libwww configure flag, to use a shared library
-instead of a built-in static one
-
-Index: amaya-10.1~pre4+dfsg.0/configure.in
+Index: Amaya/Makefile.in
 ===================================================================
---- amaya-10.1~pre4+dfsg.0.orig/configure.in	2008-09-03 20:39:06.000000000 +0100
-+++ amaya-10.1~pre4+dfsg.0/configure.in	2008-09-03 20:42:05.000000000 +0100
-@@ -689,6 +689,113 @@
- 	esac],
- 	[with_svg="yes"])
+--- Amaya.orig/Makefile.in	2008-07-08 12:13:24.000000000 +0100
++++ Amaya/Makefile.in	2008-09-21 21:52:05.000000000 +0100
+@@ -14,7 +14,7 @@
  
-+#################### LibWWW and WebDAV Support ################################
-+
-+AC_ARG_ENABLE([system-libwww],
-+	AC_HELP_STRING([--enable-system-libwww],[try the libWWW system library]),
-+	[case "${enableval}" in
-+	  yes) with_system_libwww="yes" ;;
-+	  no)  with_system_libwww="no" ;;
-+	  *) AC_MSG_ERROR([bad value ${enableval} for --enable-system-libwww]) ;;
-+	esac],
-+	[with_system_libwww="no"])
-+
-+if test "$with_system_libwww" = "yes" ; then
-+    # check to see if we have a libWWW library
-+    AC_PATH_PROG([LIBWWW_CONFIG],[libwww-config])
-+
-+    if test "$LIBWWW_CONFIG" = "" ; then
-+		AC_MSG_WARN(Not using system-provided libWWW, falling back to the builtin version.)
-+		with_system_libwww="no"
-+    fi
-+fi
-+
-+dnl
-+dnl WebDAV support enabled by default
-+dnl
-+AC_ARG_WITH([dav],
-+   AC_HELP_STRING([--with-dav],[enable WebDAV support (experimental)]),
-+   [case "${withval}" in
-+	  yes) with_dav="yes" ;;
-+	  no)  with_dav="no" ;;
-+	  *) AC_MSG_ERROR(bad value ${withval} for --with-dav) ;;
-+	esac],
-+	[with_dav="yes"])
-+
-+# If DAV is enabled, check if the source code is present
-+if test ! -f $srcdir/davlib/Makefile.in ; then
-+	if test "$with_dav" = "yes" ; then
-+	    AC_MSG_WARN(WebDAV makefile not found, disabling WebDAV build)
-+	    with_dav="no"
-+	fi
-+fi
-+
-+if test "$with_system_libwww" != "yes" ; then
-+	if test ! -f $srcdir/../libwww/Makefile.in ; then
-+		AC_MSG_ERROR([libWWW sources not found, stopping the build process])
-+	fi
-+fi
-+
-+if test "$enable_system_libwww" != "yes" ; then
-+  if test "$with_dav" = "yes" ; then
-+    WITH_DAV="--with-dav"
-+  else
-+    WITH_DAV="--without-dav"
-+  fi
-+  # configure libwww
-+  CURRENT_PATH="`pwd`"
-+  mkdir libwww
-+  cd libwww && \
-+    $CURRENT_PATH/../../libwww/configure \
-+    --build=$build_alias --host=$host_alias --target=$target_alias \
-+    --disable-shared \
-+    $WITHDAV \
-+    --with-zlib && \
-+    echo "libwww is configured" ; \
-+    echo "patching wwwconf.h because appkit.h do not compile on macos, and it seems that appkit.h is not used in amaya" ; \
-+    cp wwwconf.h wwwconf.h.orig ; \
-+    sed -e "s/\(\#define HAVE_APPKIT_APPKIT_H 1\)/\/* \1 *\//" \
-+			wwwconf.h.orig > wwwconf.h ; \
-+    echo "wwwconf.h patched !" ; \
-+  cd ..
-+  chmod +x libwww/libwww-config
-+  BUILDLIBWWW="libWWW"
-+  LIBWWW_CONFIG="libwww/libwww-config"
-+  LIBWWW_LDFLAGS="-L$CURRENT_PATH/libwww/Library/src/.libs -L$CURRENT_PATH/libwww/modules/md5/.libs -L$CURRENT_PATH/libwww/modules/expat/.libs `$LIBWWW_CONFIG --libs`"
-+  LIBWWW_CFLAGS="-I$CURRENT_PATH/../../libwww/Library/src -I$CURRENT_PATH/libwww"
-+else
-+  LIBWWW_CFLAGS="`$LIBWWW_CONFIG --cflags`"
-+  LIBWWW_LDFLAGS="`$LIBWWW_CONFIG --libs`"
-+
-+  if test "$with_dav" = "yes" ; then
-+    AC_CHECK_LIB([wwwdav],
-+				 [toto],
-+				 [LIBWWW_LDFLAGS="$LIBWWW_LDFLAGS -lwwwdav"],
-+				 [AC_MSG_WARN([libwwwdav is not available, disabling WebDAV]); with_dav="no"])
-+  fi
-+fi
-+
-+LIBWWW_CXXFLAGS="$LIBWWW_CFLAGS"
-+
-+AC_SUBST(BUILDLIBWWW)
-+AC_SUBST(LIBWWW_CFLAGS)
-+AC_SUBST(LIBWWW_CXXFLAGS)
-+AC_SUBST(LIBWWW_LDFLAGS)
-+
-+if test "$with_dav" = "yes" ; then
-+	AMAYA_DAV_INCLUDES="-I$CURRENT_PATH/../davlib/h -I$CURRENT_PATH/../davlib/tree/h -I$CURRENT_PATH/../davlib/f"
-+	AMAYA_DAV_LIBS="../davlib/davlib.a"
-+	AMAYA_DAV_OPTIONS="-DDAV"
-+	BUILDWEBDAV="WebDAV"
-+fi
-+
-+AC_SUBST(AMAYA_DAV_OPTIONS)
-+AC_SUBST(AMAYA_DAV_INCLUDES)
-+AC_SUBST(AMAYA_DAV_LIBS)
-+AC_SUBST(BUILDWEBDAV)
-+
-+############# end of LibWWW and WebDAV Support ################################
-+
- ##########################Annotations Support####################
- dnl
- dnl annotations are enabled by default
-@@ -839,36 +946,7 @@
-  GENERIC_XML_OPTIONS=""
- fi
+ #MKP: adding davlib
+ SUBDIRS	= @SUBDIRS@ tools thotlib batch annotlib @DAVDIR@ amaya
+-EXTRA_SUBDIRS= $(BUILDRAPTOR) $(LIBWWW) $(WX_BUILDDIR) $(GL_BUILDDIR)
++EXTRA_SUBDIRS= $(BUILDRAPTOR) @BUILDLIBWWW@ $(WX_BUILDDIR) $(GL_BUILDDIR)
  
--dnl
--dnl WebDAV support enabled by default
--dnl
--AC_ARG_WITH(dav,            [  --with-dav              enable WebDAV support (default) ])
--if test "$with_dav" = "" ; then
--  with_dav="yes"
--fi
--if test "$with_dav" = "yes" ; then
--   DAV_OPTIONS=-DDAV
--   DAVDIR="davlib"
--   LIBDAV="libwwwdav"
--   WITHDAV="--with-dav" 
--   WWWDAV="-lwwwdav" 
--else
--   with_dav="no"
--   DAV_OPTIONS=""
--   DAVDIR=""
--   LIBDAV=""
--   WITHDAV="" 
--   WWWDAV="" 
--fi
--
--
- if test "$build_amaya" = "yes" ; then
--    if test ! -f $srcdir/../libwww/Makefile.in ; then
--	AC_MSG_WARN(libwww sources not found !!)
--	AC_MSG_WARN(Disabling Amaya build !)
--	build_amaya="no"
--    fi
--
-     if test ! -f $srcdir/amaya/MathML.S ; then
- 	if test "$with_math" = "yes" ; then
- 	    AC_MSG_WARN(MathML sources not found !!)
-@@ -887,18 +965,6 @@
- 	fi
-     fi
+ prefix = @prefix@
+ exec_prefix = @exec_prefix@
+@@ -23,7 +23,7 @@
  
--    if test ! -f $srcdir/davlib/Makefile.in ; then
--	if test "$with_dav" = "yes" ; then
--	    AC_MSG_WARN(WebDAV makefile not found !!)
--	    AC_MSG_WARN(Disabling WebDAV build !)
--	    with_dav="no"
--            DAVDIR=""
--            LIBDAV=""
--            WITHDAV="" 
--            WWWDAV="" 
--	fi
--    fi
--   
+ srcdir	= $(THOTDIR)
  
- fi
+-default : tools gl @BUILDWXWIDGETS@ @BUILDRAPTOR@ thotlib batch amaya_prog print_prog
++default : tools gl @BUILDWXWIDGETS@ @BUILDRAPTOR@ @BUILDLIBWWW@ thotlib batch amaya_prog print_prog
  
-@@ -1001,11 +1067,6 @@
- AC_SUBST(IMGLIBS)
- AC_SUBST(EXTRA_INCLUDES)
+ amaya : tools thotlib amaya_prog print_prog
  
--AC_SUBST(DAVDIR)
--AC_SUBST(LIBDAV)
--AC_SUBST(WITHDAV)
--AC_SUBST(WWWDAV)
--
- AC_SUBST(MAKE_LIBWWW_RDF_PARSER)
- AC_SUBST(LIBWWW_RDF_PARSER)
- #AC_SUBST(ANNOTLIB_COMPILE_BM)
-@@ -1018,9 +1079,6 @@
- dnl Include the option Makefile.xxx fragment according to the configure options
- dnl
- 
--www_frag=$srcdir/amaya/Makefile.libwww
--AC_SUBST_FILE(www_frag)
--
- if test "$with_math" = "no" ; then
-     math_frag=/dev/null
- else
-@@ -1042,13 +1100,6 @@
- fi
- AC_SUBST_FILE(annot_frag)
- 
--if test "$with_dav" = "yes" ; then
--    dav_frag=$srcdir/davlib/Makefile.dav
--else
--    dav_frag=/dev/null
--fi
--AC_SUBST_FILE(dav_frag)
--
- if test "$with_templates" = "yes" ; then
-     templates_frag=$srcdir/amaya/Makefile.templates
- else
-@@ -1074,8 +1125,11 @@
- 
- if test "$build_amaya" = "yes" ; then
-     make_output="$make_output amaya/Makefile"
--    EXTRA_MAKEFILE_IN="$srcdir/amaya/Makefile.in \
--    $srcdir/amaya/Makefile.libwww"
-+    EXTRA_MAKEFILE_IN="$srcdir/amaya/Makefile.in"
-+
-+    if test "enable_system_libwww" != "yes" ; then
-+       EXTRA_MAKEFILE_IN="$EXTRA_MAKEFILE_IN $srcdir/amaya/Makefile.libwww"
-+    fi
- 
-     if test "$with_annot" = "yes" ; then
-        make_output="$make_output annotlib/Makefile"
-Index: amaya-10.1~pre4+dfsg.0/Makefile.in
-===================================================================
---- amaya-10.1~pre4+dfsg.0.orig/Makefile.in	2008-09-03 20:33:50.000000000 +0100
-+++ amaya-10.1~pre4+dfsg.0/Makefile.in	2008-09-03 20:42:05.000000000 +0100
-@@ -58,7 +58,7 @@
- 	@(if test -d "$(GL_BUILDDIR)" ; then cd "$(GL_BUILDDIR)" ; \
- 	  $(MAKE) ; fi)
- 
--print_prog: rebuild force bin/str
-+print_prog: rebuild force bin/str @BUILDLIBWWW@
- 	@(if test -d thotlib ; then cd thotlib ; \
-   $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" CXX="$(CXX)" CXXFLAGS="$(CXXFLAGS)" print ; fi)
- 
-@@ -128,130 +128,17 @@
+@@ -128,127 +128,8 @@
  #
  # Rules to rebuild the libWWW package
  #
@@ -368,164 +150,172 @@ Index: amaya-10.1~pre4+dfsg.0/Makefile.in
  		@($(ECHO) "libwww is installed")
  
  #
-+# Rules to rebuild the WebDAV module
-+#
-+WebDAV: @BUILDLIBWWW@ force
-+	$(MAKE) -C davlib
-+
-+#
- # Rules to build the raptor RDF library
- #
- raptor: force
-Index: amaya-10.1~pre4+dfsg.0/amaya/Makefile.in
+Index: Amaya/amaya/Makefile.libwww
 ===================================================================
---- amaya-10.1~pre4+dfsg.0.orig/amaya/Makefile.in	2008-08-18 16:13:55.000000000 +0100
-+++ amaya-10.1~pre4+dfsg.0/amaya/Makefile.in	2008-09-03 20:42:05.000000000 +0100
-@@ -6,9 +6,15 @@
+--- Amaya.orig/amaya/Makefile.libwww	2008-09-21 16:10:32.000000000 +0100
++++ Amaya/amaya/Makefile.libwww	2008-09-21 21:54:24.000000000 +0100
+@@ -18,39 +18,14 @@
  
- @VPATHOPT@= @srcdir@
- THOTDIR = @top_srcdir@
--WWWDAV = @WWWDAV@
- LIBWWW_RDF_PARSER = @LIBWWW_RDF_PARSER@
+ AMAYA_LIBWWW_OPTION_LIBS=
  
-+AMAYA_LIBWWW_LIBS = @LIBWWW_LDFLAGS@
-+AMAYA_LIBWWW_INCLUDES = @LIBWWW_CFLAGS@
-+
-+AMAYA_DAV_LIBS = @AMAYA_DAV_LIBS@
-+AMAYA_DAV_OPTIONS = @AMAYA_DAV_OPTIONS@
-+AMAYA_DAV_INCLUDES = @AMAYA_DAV_INCLUDES@
-+
- OBJDIRS = wxdialog
- 
- include ../Options
-@@ -90,8 +96,13 @@
- #									#
- #########################################################################
- 
--#include the fragment "amaya/Makefile.libwww" for libwww if configured in
--@www_frag@
-+AMAYA_LIBWWW_OBJ= \
-+	AHTBridge.o \
-+	AHTFWrite.o \
-+	answer.o \
-+	query.o \
-+	AHTMemConv.o \
-+	AHTInit.o
- 
- #include the fragment "amaya/Makefile.svg" for svg if configured in
- @svg_frag@
-@@ -102,9 +113,6 @@
- #include the fragment "annotlib/Makefile.annot" for annotations if configured in
- @annot_frag@
- 
--#include the fragment "davlib/Makefile.dav" for webdav if configured in
--@dav_frag@
--
- #include the fragment "amaya/Makefile.templates" for templates if configured in
- @templates_frag@
- 
-Index: amaya-10.1~pre4+dfsg.0/annotlib/Makefile.in
-===================================================================
---- amaya-10.1~pre4+dfsg.0.orig/annotlib/Makefile.in	2007-06-05 17:22:06.000000000 +0100
-+++ amaya-10.1~pre4+dfsg.0/annotlib/Makefile.in	2008-09-03 20:42:05.000000000 +0100
-@@ -14,9 +14,7 @@
- 
- INCLUDES= -DHAVE_CONFIG_H -DANNOTATIONS \
- 	  -I.. -I../amaya  -I@srcdir@/f -I@top_srcdir@/amaya \
--	  -I@top_srcdir@/amaya/f -I../libwww \
--	  -I@top_srcdir@/../libwww/Library/src \
--	  -I@top_srcdir@/../libwww/modules/expat/lib \
-+	  -I@top_srcdir@/amaya/f @LIBWWW_CFLAGS@ \
- 	   @AMAYA_RAPTOR_INCLUDES@ @THOTINCLUDES@ $(GUI_INCLUDES)
- 
- 
-Index: amaya-10.1~pre4+dfsg.0/davlib/Makefile.in
-===================================================================
---- amaya-10.1~pre4+dfsg.0.orig/davlib/Makefile.in	2004-09-20 11:23:46.000000000 +0100
-+++ amaya-10.1~pre4+dfsg.0/davlib/Makefile.in	2008-09-03 20:42:05.000000000 +0100
-@@ -13,46 +13,21 @@
- 
- INCLUDES =-DHAVE_CONFIG_H -I.. \
- 	  -I../amaya -I@srcdir@/f -I@top_srcdir@/amaya \
--	  -I@top_srcdir@/amaya/f -I../libwww \
-+	  -I@top_srcdir@/amaya/f \
- 	  -I@top_srcdir@/thotlib/include \
--	  -I@top_srcdir@/../libwww/Library/src \
--	  -I@top_srcdir@/../libwww/modules/expat/lib \
-+	  @LIBWWW_CFLAGS@ \
- 	  -I$(DAVLIB)/tree/h -I$(DAVLIB)/h \
- 	  $(GUI_INCLUDES)
- 
- OPTIONS	= @AMAYA_OPTIONS@ $(AMAYA_DAV_OPTIONS)
- 
--LIBWWW_LIBS= \
+-#MKP: added -lwwwdav
+-AMAYA_LIBWWW_LIBS= \
 -		-L../$(LIBWWW)/Library/src/.libs \
+-			$(LIBWWW_RDF_PARSER) \
+-			-lwwwzip \
 -			-lwwwapp \
--			-lwwwhttp \
--			-lwwwxml \
 -			-lwwwhtml \
+-			-lwwwhttp \
 -			-lwwwmime \
--			-lwwwcache \
--			-lwwwstream \
+-			-lwwwftp \
 -			-lwwwfile \
 -			-lwwwdir \
+-			-lwwwcache \
+-			-lwwwstream \
 -			-lwwwtrans \
 -			-lwwwcore \
 -			-lwwwutils \
--			-lwwwzip \
--			-lwwwftp \
--			-lwwwdav \
+-			$(WWWDAV) \
 -		-L../$(LIBWWW)/modules/md5/.libs \
 -			-lmd5 \
--		-L../$(LIBWWW)/modules/expat/.libs \
--			-lexpat \
--		-ldl -L/usr/lib
--
--
- prefix = @prefix@
- exec_prefix = @exec_prefix@
- libdir = @libdir@
+-			../$(LIBWWW)/modules/expat/.libs/libexpat.a
+-#		-L../$(LIBWWW)/modules/expat/.libs \
+-#			-lexpat \
++AMAYA_LIBWWW_LIBS= @LIBWWW_LDFLAGS@
  
- ############################################
+ AMAYA_LIBWWW_EXTRA_LIBS=
  
--all : tree awparser.o AHTLockBase.o HTHome dav_obj davlib.a
-+all : tree awparser.o AHTLockBase.o dav_obj davlib.a
+-AMAYA_LIBWWW_INCLUDES= -I../libwww \
+-		-I$(THOTDIR)/../libwww/Library/src \
+-		-I$(THOTDIR)../libwww/modules/md5 \
+-		-I$(THOTDIR)/../libwww/modules/expat/lib
++AMAYA_LIBWWW_INCLUDES= @LIBWWW_CFLAGS@
  
- dav_obj : $(AMAYA_DAV_OBJ)
+ # this dependency calls the ../Makefile rule that compiles libwww
+-AMAYA_LIBWWW_SRC= amaya_comp_libwww
++AMAYA_LIBWWW_SRC= @BUILDLIBWWW@
  
-@@ -108,8 +83,7 @@
- 	awnode.o \
- 	awstring.o \
- 	awpair.o \
--	list.o \
--	../$(LIBWWW)/Library/src/HTHome.o
-+	list.o
- 
- #
- # dependencies
-Index: amaya-10.1~pre4+dfsg.0/amaya/Makefile.math
+-amaya_comp_libwww : force
++libwww : force
+ 		@(cd .. ; $(MAKE) libwww)
+Index: Amaya/configure.in
 ===================================================================
---- amaya-10.1~pre4+dfsg.0.orig/amaya/Makefile.math	2007-11-08 13:48:22.000000000 +0000
-+++ amaya-10.1~pre4+dfsg.0/amaya/Makefile.math	2008-09-03 20:42:05.000000000 +0100
-@@ -23,7 +23,7 @@
+--- Amaya.orig/configure.in	2008-09-19 22:22:13.000000000 +0100
++++ Amaya/configure.in	2008-09-21 21:34:28.000000000 +0100
+@@ -689,6 +689,27 @@
+ 	esac],
+ 	[with_svg="yes"])
  
- MATH_SCHEMAS= $(AMAYA)/MathML.S $(AMAYA)/MathMLP.P $(AMAYA)/MathMLT.T
++#################### LibWWW and WebDAV Support ################################
++
++AC_ARG_ENABLE([system-libwww],
++	AC_HELP_STRING([--enable-system-libwww],[try the libWWW system library]),
++	[case "${enableval}" in
++	  yes) with_system_libwww="yes" ;;
++	  no)  with_system_libwww="no" ;;
++	  *) AC_MSG_ERROR([bad value ${enableval} for --enable-system-libwww]) ;;
++	esac],
++	[with_system_libwww="no"])
++
++if test "$with_system_libwww" = "yes" ; then
++    # check to see if we have a libWWW library
++    AC_PATH_PROG([LIBWWW_CONFIG],[libwww-config])
++
++    if test "$LIBWWW_CONFIG" = "" ; then
++		AC_MSG_WARN(Not using system-provided libWWW, falling back to the builtin version.)
++		with_system_libwww="no"
++    fi
++fi
++
+ dnl
+ dnl WebDAV support enabled by default
+ dnl
+@@ -710,30 +731,66 @@
+ fi
  
--math_schema= compMATH compMATHP compMATHT
-+math_schema= compMATH compMATHP compMATHT MathML.h
+ if test "$with_dav" = "yes" ; then
++   WITHDAV="--with-dav"
++else
++   WITHDAV="--without-dav"
++fi
++
++if test "$enable_system_libwww" != "yes" ; then
++  # configure libwww
++  CURRENT_PATH="`pwd`"
++  mkdir libwww
++  cd libwww && \
++    $CURRENT_PATH/../../libwww/configure \
++    --build=$build_alias --host=$host_alias --target=$target_alias \
++    --disable-shared \
++    $WITHDAV \
++    --with-zlib && \
++    echo "libwww is configured" ; \
++    echo "patching wwwconf.h because appkit.h do not compile on macos, and it seems that appkit.h is not used in amaya" ; \
++    cp wwwconf.h wwwconf.h.orig ; \
++    sed -e "s/\(\#define HAVE_APPKIT_APPKIT_H 1\)/\/* \1 *\//" \
++			wwwconf.h.orig > wwwconf.h ; \
++    echo "wwwconf.h patched !" ; \
++  cd ..
++  chmod +x libwww/libwww-config
++  BUILDLIBWWW="libwww"
++  LIBWWW_CONFIG="libwww/libwww-config"
++  LIBWWW_LDFLAGS="-L$CURRENT_PATH/libwww/Library/src/.libs -L$CURRENT_PATH/libwww/modules/md5/.libs -L$CURRENT_PATH/libwww/modules/expat/.libs `$LIBWWW_CONFIG --libs`"
++  LIBWWW_CFLAGS="-I$CURRENT_PATH/../../libwww/Library/src -I$CURRENT_PATH/libwww"
++else
++  LIBWWW_CFLAGS="`$LIBWWW_CONFIG --cflags`"
++  LIBWWW_LDFLAGS="`$LIBWWW_CONFIG --libs`"
++
++  if test "$with_dav" = "yes" ; then
++    AC_CHECK_LIB([wwwdav],
++				 [toto],
++				 [LIBWWW_LDFLAGS="$LIBWWW_LDFLAGS -lwwwdav"],
++				 [AC_MSG_WARN([libwwwdav is not available, disabling WebDAV]); with_dav="no"])
++  fi
++fi
++
++if test "$with_dav" = "yes" ; then
+    DAV_OPTIONS=-DDAV
+    DAVDIR="davlib"
+-   LIBDAV="libwwwdav"
+-   WITHDAV="--with-dav" 
+-   WWWDAV="-lwwwdav" 
++   LIBWWW_LDFLAGS="$LIBWWW_LDFLAGS -lwwwdav"
+ else
+    with_dav="no"
+    DAV_OPTIONS=""
+    DAVDIR=""
+-   LIBDAV=""
+-   WITHDAV="" 
+-   WWWDAV="" 
+ fi
  
- #
- # Structure schema compilation.
-Index: amaya-10.1~pre4+dfsg.0/amaya/Makefile.svg
-===================================================================
---- amaya-10.1~pre4+dfsg.0.orig/amaya/Makefile.svg	2007-11-08 13:48:22.000000000 +0000
-+++ amaya-10.1~pre4+dfsg.0/amaya/Makefile.svg	2008-09-03 20:42:05.000000000 +0100
-@@ -31,7 +31,7 @@
- 	$(AMAYA)/Timeline.S $(AMAYA)/TimelineP.P $(AMAYA)/TimelineT.T
+-CURRENTPATH="`pwd`"
+-LIBWWW_CFLAGS="-I$CURRENTPATH/../../libwww/Library/src -I$CURRENTPATH/../../libwww/modules/expat/lib -I$CURRENTPATH/../../libwww"
++AC_SUBST(BUILDLIBWWW)
  
- svg_schema= compSVG compSVGP compSVGT \
--	compTimeline compTimelineP compTimelineT
-+	compTimeline compTimelineP compTimelineT SVG.h
+ AC_SUBST(LIBWWW_CFLAGS)
++AC_SUBST(LIBWWW_LDFLAGS)
+ 
+ AC_SUBST(DAVDIR)
+ AC_SUBST(LIBDAV)
+-AC_SUBST(WITHDAV)
+ AC_SUBST(WWWDAV)
+ 
++############# end of LibWWW and WebDAV Support ################################
++
+ ##########################Annotations Support####################
+ dnl
+ dnl annotations are enabled by default
+@@ -880,12 +937,6 @@
  
  
- #
+ if test "$build_amaya" = "yes" ; then
+-    if test ! -f $srcdir/../libwww/Makefile.in ; then
+-	AC_MSG_WARN(libwww sources not found !!)
+-	AC_MSG_WARN(Disabling Amaya build !)
+-	build_amaya="no"
+-    fi
+-
+     if test ! -f $srcdir/amaya/MathML.S ; then
+ 	if test "$with_math" = "yes" ; then
+ 	    AC_MSG_WARN(MathML sources not found !!)

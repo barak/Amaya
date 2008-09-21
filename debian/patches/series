@@ -1,4 +1,6 @@
 cflags_cleanup.diff
-enable_system_libwww.diff
 desktop_file_fix.patch
 warnings_fix.diff
+build_cleanup.diff
+libwww_cleanup.diff
+enable_system_libwww.diff

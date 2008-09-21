@@ -6,26 +6,20 @@
 
 @VPATHOPT@= @srcdir@
 THOTDIR = @top_srcdir@
+WWWDAV = @WWWDAV@
 LIBWWW_RDF_PARSER = @LIBWWW_RDF_PARSER@
-
-AMAYA_LIBWWW_LIBS = @LIBWWW_LDFLAGS@
-AMAYA_LIBWWW_INCLUDES = @LIBWWW_CFLAGS@
-
-AMAYA_DAV_LIBS = @AMAYA_DAV_LIBS@
-AMAYA_DAV_OPTIONS = @AMAYA_DAV_OPTIONS@
-AMAYA_DAV_INCLUDES = @AMAYA_DAV_INCLUDES@
 
 OBJDIRS = wxdialog
 
 include ../Options
 
-INCLUDES= -DHAVE_CONFIG_H $(AMAYA_INCLUDES) $(EXPAT_INCLUDES) $(GUI_INCLUDES) $(EXTRA_INCLUDES) $(GL_INCLUDES) $(GTK_GL_INCLUDES) $(FREETYPE_INCLUDES) $(XFT_INCLUDES)
+INCLUDES= -DHAVE_CONFIG_H $(AMAYA_INCLUDES) $(EXPAT_INCLUDES) $(GUI_INCLUDES) $(EXTRA_INCLUDES) $(GL_INCLUDES) $(FREETYPE_INCLUDES)
 LIBS	=  $(AMAYA_ANNOT_LIBS) $(AMAYA_DAV_LIBS) \
 	   $(AMAYA_MATH_LIBS) $(AMAYA_GRAPH_LIBS) \
            -L../thotlib -L.. -lThotEditor \
           $(AMAYA_OPTION_EXTRA_LIBS) $(EXPAT_LIBRARIES) \
 	  $(AMAYA_LIBWWW_LIBS) \
-	  $(GL_LIBRARIES) $(GTK_GL_LIBRARIES) $(FREETYPE_LIBRARIES) $(XFT_LIBRARIES) \
+	  $(GL_LIBRARIES) $(FREETYPE_LIBRARIES) \
 	   @AMAYA_RAPTOR_LIBS@ \
           $(WX_LIBRARIES)
 
@@ -96,13 +90,8 @@ redland:
 #									#
 #########################################################################
 
-AMAYA_LIBWWW_OBJ= \
-	AHTBridge.o \
-	AHTFWrite.o \
-	answer.o \
-	query.o \
-	AHTMemConv.o \
-	AHTInit.o
+#include the fragment "amaya/Makefile.libwww" for libwww if configured in
+@www_frag@
 
 #include the fragment "amaya/Makefile.svg" for svg if configured in
 @svg_frag@
@@ -112,6 +101,9 @@ AMAYA_LIBWWW_OBJ= \
 
 #include the fragment "annotlib/Makefile.annot" for annotations if configured in
 @annot_frag@
+
+#include the fragment "davlib/Makefile.dav" for webdav if configured in
+@dav_frag@
 
 #include the fragment "amaya/Makefile.templates" for templates if configured in
 @templates_frag@

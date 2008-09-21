@@ -59,10 +59,9 @@ configure-stamp:
 	CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS)" \
 	../configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) \
 		     --prefix=/usr/lib --bindir=/usr/bin \
-		     --with-wx --with-gl --without-dav \
+		     --with-gl --without-dav \
+		     --enable-system-wx\
 		     --enable-system-raptor\
-		     --enable-system-redland \
-		     --enable-system-wx \
 		     --enable-system-libwww \
 		     --enable-offical-build && \
 	cd -
@@ -76,7 +75,7 @@ build: build-stamp
 build-stamp: configure-stamp 
 
 	# Add here commands to compile the arch part of the package.
-	HOME=$(CURDIR)/$(BUILD_DIR) $(MAKE) CFLAGS="$(CFLAGS)" -C $(BUILD_DIR)
+	HOME=$(CURDIR)/$(BUILD_DIR) $(MAKE) -C $(BUILD_DIR)
 	touch build-arch-stamp
 
 clean:

@@ -1,3 +1,10 @@
+amaya (10.1~pre4+dfsg.0-2) unstable; urgency=low
+
+  * Split the enable_system_libwww patch to make it easier for upstream to
+    merge.
+
+ -- Regis Boudin <regis@debian.org>  Sun, 21 Sep 2008 23:21:03 +0100
+
 amaya (10.1~pre4+dfsg.0-1) unstable; urgency=low
 
   * New upstream release
