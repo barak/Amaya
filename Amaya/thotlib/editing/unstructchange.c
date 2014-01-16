@@ -1164,12 +1164,14 @@ void PasteCommand ()
                                            CreatedElement[i]->ElStructSchema))
                       pSel = CreatedElement[i];
                 }
-              if (pSel)
-                if (!pSel->ElTerminal)
-                  pSel = LastLeaf (pSel);
-              if (pSel)
+              if (pSel &&
+                  !pSel->ElTerminal && pSel->ElStructSchema &&
+                  strcmp (pSel->ElStructSchema->SsName, "SVG"))
+                pSel = LastLeaf (pSel);
+              if (pSel && pSel->ElTypeNumber == CharString + 1)
                 SelectPositionWithEvent (pDoc, pSel, pSel->ElTextLength+1);
-
+              else
+                SelectElementWithEvent (pDoc, pSel, TRUE, FALSE);
               SetDocumentModified (pDoc, TRUE, 20);
 
               /* update the counter values that follow the pasted elements */
@@ -1641,6 +1643,9 @@ void TtcCreateElement (Document doc, View view)
     }
 
   xmlmode = IsXMLEditMode ();
+  if (!xmlmode && firstSel == lastSel && firstSel->ElStructSchema &&
+      !strcmp (firstSel->ElStructSchema->SsName, "Template"))
+    xmlmode = TRUE;
   if (!xmlmode)
     /* We should perhaps do the following whatever the editing mode,
        AmayaLite or not ... */

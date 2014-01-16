@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2008
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -43,6 +43,7 @@ CSSImageCallbackBlock, *CSSImageCallbackPtr;
 #include "html2thot_f.h"
 #include "init_f.h"
 #include "styleparser_f.h"
+#include "SVGbuilder_f.h"
 #include "wxdialogapi_f.h"
 
 #define MAX_BUFFER_LENGTH 200
@@ -186,7 +187,7 @@ static char *SkipQuotedString (char *ptr, char quote)
   ----------------------------------------------------------------------*/
 static void CSSPrintError (const char *msg, const char *value)
 {
-  if (!DoDialog && !TtaIsPrinting () && ParsedDoc > 0)
+  if (!IgnoreErrors && !DoDialog && !TtaIsPrinting () && ParsedDoc > 0)
     {
       if (!ErrFile)
         {
@@ -546,6 +547,7 @@ char *ParseClampedUnit (char *cssRule, PresentationValue *pval)
   p = cssRule;
   cssRule = ParseNumber (cssRule, pval);
   if (*cssRule != EOS && *cssRule != SPACE && *cssRule != ';' && *cssRule != '}')
+    /* the value contains something after the number. Invalid */
     {
       cssRule++;
       pval->typed_data.unit = UNIT_REL;
@@ -556,6 +558,7 @@ char *ParseClampedUnit (char *cssRule, PresentationValue *pval)
       CSSParseError ("Invalid value", p, cssRule);
     }
   else
+    /* it's a number. Check its value */
     {
       pval->typed_data.unit = UNIT_REL;
       if (pval->typed_data.real)
@@ -4444,6 +4447,30 @@ static char *ParseCSSMargin (Element element, PSchema tsch,
 }
 
 /*----------------------------------------------------------------------
+  ParseCSSOpacity: parse a CSS opacity property
+  ----------------------------------------------------------------------*/
+static char *ParseCSSOpacity (Element element, PSchema tsch,
+                              PresentationContext context, char *cssRule,
+                              CSSInfoPtr css, ThotBool isHTML)
+{
+  PresentationValue     opacity;
+
+  opacity.typed_data.unit = UNIT_INVALID;
+  opacity.typed_data.real = FALSE;
+  if (!strncasecmp (cssRule, "inherit", 7))
+    {
+      opacity.typed_data.unit = VALUE_INHERIT;
+      cssRule += 7;
+    }
+  else
+    cssRule = ParseClampedUnit (cssRule, &opacity);
+  if (DoApply)
+    /* install the new presentation. */
+    TtaSetStylePresentation (PROpacity, element, tsch, context, opacity);
+  return (cssRule);
+}
+
+/*----------------------------------------------------------------------
   ParseCSSPaddingTop: parse a CSS PaddingTop attribute string
   ----------------------------------------------------------------------*/
 static char *ParseCSSPaddingTop (Element element, PSchema tsch,
@@ -4650,6 +4677,7 @@ static char *ParseCSSForeground (Element element, PSchema tsch,
                                  char *cssRule,
                                  CSSInfoPtr css, ThotBool isHTML)
 {
+  ElementType         elType;
   PresentationValue   best;
   char               *p;
 
@@ -4668,7 +4696,14 @@ static char *ParseCSSForeground (Element element, PSchema tsch,
         DisplayStyleValue ("color", p, cssRule);
       else if (DoApply)
         /* install the new presentation */
-        TtaSetStylePresentation (PRForeground, element, tsch, context, best);
+	{
+          elType = TtaGetElementType(element);
+          if (!strcmp(TtaGetSSchemaName (elType.ElSSchema), "SVG"))
+            /* we are working for an SVG element */
+	    TtaSetStylePresentation (PRColor, element, tsch, context, best);
+	  else
+	    TtaSetStylePresentation (PRForeground, element, tsch, context,best);
+	}
     }
   return (cssRule);
 }
@@ -4728,7 +4763,7 @@ static char *ParseSVGStroke (Element element, PSchema tsch,
                              PresentationContext context, char *cssRule,
                              CSSInfoPtr css, ThotBool isHTML)
 {
-  PresentationValue     best;
+  PresentationValue     best, color;
   char                  *url;
 
   best.typed_data.unit = UNIT_INVALID;
@@ -4739,9 +4774,14 @@ static char *ParseSVGStroke (Element element, PSchema tsch,
       best.typed_data.unit = UNIT_REL;
       cssRule = SkipWord (cssRule);
     }
-  else if (!strncasecmp (cssRule, "currentColor", 12))
+  else if (!strncasecmp (cssRule, "inherit", 7))
     {
       best.typed_data.unit = VALUE_INHERIT;
+      cssRule = SkipWord (cssRule);
+    }
+  else if (!strncasecmp (cssRule, "currentColor", 12))
+    {
+      best.typed_data.unit = VALUE_CURRENT;
       cssRule = SkipWord (cssRule);
     }
   else if (!strncasecmp (cssRule, "url", 3))
@@ -4750,8 +4790,15 @@ static char *ParseSVGStroke (Element element, PSchema tsch,
       cssRule = ParseCSSUrl (cssRule, &url);
       /* **** do something with the url ***** */;
       TtaFreeMemory (url);
-      /* **** caution: another color value may follow the uri (in case
-         the uri could ne be dereferenced) *** */
+      /* a color property may follow the url */
+      cssRule = SkipBlanksAndComments (cssRule);
+      if (*cssRule != ';' && *cssRule != '}' && *cssRule != EOS &&
+	  *cssRule != ',')
+	/* we expect a color property here */
+	{
+	  cssRule = ParseCSSColor (cssRule, &color);
+	  /* ***** do something with the color we have just parsed */
+	}
     }
   else
     cssRule = ParseCSSColor (cssRule, &best);
@@ -4769,46 +4816,228 @@ static char *ParseSVGFill (Element element, PSchema tsch,
                            PresentationContext context, char *cssRule,
                            CSSInfoPtr css, ThotBool isHTML)
 {
-  PresentationValue     best;
+  PresentationValue     fill, color;
   char                  *url;
+  int                   pattern;
 
-  best.typed_data.unit = UNIT_INVALID;
-  best.typed_data.real = FALSE;
+  url = NULL;
+  fill.typed_data.unit = UNIT_INVALID;
+  fill.typed_data.real = FALSE;
+  pattern = PATTERN_BACKGROUND;
   if (!strncasecmp (cssRule, "none", 4))
     {
-      best.typed_data.value = PATTERN_NONE;
-      best.typed_data.unit = UNIT_REL;
-      if (DoApply)
-        TtaSetStylePresentation (PRFillPattern, element, tsch, context, best);
+      pattern = PATTERN_NONE;
+      fill.typed_data.value = -2;
+      fill.typed_data.unit = UNIT_REL;
       cssRule = SkipWord (cssRule);
-      return (cssRule);
     }
   else if (!strncasecmp (cssRule, "currentColor", 12))
     {
-      best.typed_data.unit = VALUE_INHERIT;
+      fill.typed_data.unit = VALUE_CURRENT;
       cssRule = SkipWord (cssRule);
     }
   else if (!strncasecmp (cssRule, "url", 3))
     {  
       cssRule += 3;
       cssRule = ParseCSSUrl (cssRule, &url);
-      /* **** do something with the url ***** */;
-      TtaFreeMemory (url);
-      /* **** caution: another color value may follow the uri (in case
-         the uri could ne be dereferenced) *** */
+      fill.typed_data.unit = VALUE_URL;
+      fill.pointer = url;
+      /* a color property may follow the url */
+      cssRule = SkipBlanksAndComments (cssRule);
+      if (*cssRule != ';' && *cssRule != '}' && *cssRule != EOS &&
+	  *cssRule != ',')
+	/* we expect a color property here */
+	{
+	  cssRule = ParseCSSColor (cssRule, &color);
+	  /* @@@@@@ do something with the color we have just parsed */
+	}
+    }
+  else if (!strncasecmp (cssRule, "inherit", 7))
+    {
+      fill.typed_data.unit = VALUE_INHERIT;
+      cssRule = SkipWord (cssRule);
+    }
+  else
+    cssRule = ParseCSSColor (cssRule, &fill);
+
+  if (fill.typed_data.unit != UNIT_INVALID && DoApply)
+    {
+      /* install the new presentation. */
+      TtaSetStylePresentation (PRBackground, element, tsch, context, fill);
+      if (url)
+	TtaFreeMemory (url);
+      /* thot specificity: need to set fill pattern for background color */
+      fill.typed_data.value = pattern;
+      fill.typed_data.unit = UNIT_REL;
+      TtaSetStylePresentation (PRFillPattern, element, tsch, context, fill);
+    }
+  return (cssRule);
+}
+
+/*----------------------------------------------------------------------
+  ParseSVGStopColor: parse a SVG stop-color property
+  ----------------------------------------------------------------------*/
+static char *ParseSVGStopColor (Element element, PSchema tsch,
+				PresentationContext context, char *cssRule,
+				CSSInfoPtr css, ThotBool isHTML)
+{
+  PresentationValue     best;
+
+  best.typed_data.unit = UNIT_INVALID;
+  best.typed_data.real = FALSE;
+  if (!strncasecmp (cssRule, "inherit", 7))
+    {
+      best.typed_data.unit = VALUE_INHERIT;
+      cssRule = SkipWord (cssRule);
+    }
+  else if (!strncasecmp (cssRule, "currentColor", 12))
+    {
+      best.typed_data.unit = VALUE_CURRENT;
+      cssRule = SkipWord (cssRule);
     }
   else
     cssRule = ParseCSSColor (cssRule, &best);
 
   if (best.typed_data.unit != UNIT_INVALID && DoApply)
+    /* install the new presentation */
+    TtaSetStylePresentation (PRStopColor, element, tsch, context, best);
+  return (cssRule);
+}
+
+/*----------------------------------------------------------------------
+  ParseCSSColor: parse a CSS color attribute string    
+  we expect the input string describing the attribute to be     
+  either a color name, a 3 tuple or an hexadecimal encoding.    
+  The color used will be approximed from the current color      
+  table                                                         
+  ----------------------------------------------------------------------*/
+static char *ParseSVGMarkerValue (char *cssRule, PresentationValue *val, char **url)
+{
+  *url = NULL;
+  val->typed_data.unit = UNIT_INVALID;
+  val->typed_data.real = FALSE;
+  if (!strncasecmp (cssRule, "none", 4))
     {
-      /* install the new presentation. */
-      TtaSetStylePresentation (PRBackground, element, tsch, context, best);
-      /* thot specificity: need to set fill pattern for background color */
-      best.typed_data.value = PATTERN_BACKGROUND;
-      best.typed_data.unit = UNIT_REL;
-      TtaSetStylePresentation (PRFillPattern, element, tsch, context, best);
+      val->typed_data.unit = UNIT_REL;
+      val->typed_data.value = 0;
+      cssRule += 4;
     }
+  else if (!strncasecmp (cssRule, "inherit", 7))
+    {
+      val->typed_data.unit = VALUE_INHERIT;
+      cssRule += 7;
+    }
+  else if (!strncasecmp (cssRule, "url", 3))
+    {  
+      cssRule += 3;
+      cssRule = ParseCSSUrl (cssRule, url);
+      val->typed_data.unit = VALUE_URL;
+      val->pointer = *url;
+    }
+  return cssRule;
+}
+
+/*----------------------------------------------------------------------
+  ParseSVGMarker: parse a SVG marker property
+  ----------------------------------------------------------------------*/
+static char *ParseSVGMarker (Element element, PSchema tsch,
+			     PresentationContext context, char *cssRule,
+			     CSSInfoPtr css, ThotBool isHTML)
+{
+  PresentationValue     marker;
+  char                  *url;
+
+  url = NULL;
+  cssRule = ParseSVGMarkerValue (cssRule, &marker, &url);
+  if (marker.typed_data.unit != UNIT_INVALID && DoApply)
+    /* install the new presentation. */
+    TtaSetStylePresentation (PRMarker, element, tsch, context, marker);
+  if (url)
+    TtaFreeMemory (url);
+  return (cssRule);
+}
+
+/*----------------------------------------------------------------------
+  ParseSVGMarkerEnd: parse a SVG marker-end property
+  ----------------------------------------------------------------------*/
+static char *ParseSVGMarkerEnd (Element element, PSchema tsch,
+				PresentationContext context, char *cssRule,
+				CSSInfoPtr css, ThotBool isHTML)
+{
+  PresentationValue     marker;
+  char                  *url;
+
+  url = NULL;
+  cssRule = ParseSVGMarkerValue (cssRule, &marker, &url);
+  if (marker.typed_data.unit != UNIT_INVALID && DoApply)
+    /* install the new presentation. */
+    TtaSetStylePresentation (PRMarkerEnd, element, tsch, context, marker);
+  if (url)
+    TtaFreeMemory (url);
+  return (cssRule);
+}
+
+/*----------------------------------------------------------------------
+  ParseSVGMarkerMid: parse a SVG marker-mid property
+  ----------------------------------------------------------------------*/
+static char *ParseSVGMarkerMid (Element element, PSchema tsch,
+				PresentationContext context, char *cssRule,
+				CSSInfoPtr css, ThotBool isHTML)
+{
+  PresentationValue     marker;
+  char                  *url;
+
+  url = NULL;
+  cssRule = ParseSVGMarkerValue (cssRule, &marker, &url);
+  if (marker.typed_data.unit != UNIT_INVALID && DoApply)
+    /* install the new presentation. */
+    TtaSetStylePresentation (PRMarkerMid, element, tsch, context, marker);
+  if (url)
+    TtaFreeMemory (url);
+  return (cssRule);
+}
+
+/*----------------------------------------------------------------------
+  ParseSVGMarkerStart: parse a SVG marker-start property
+  ----------------------------------------------------------------------*/
+static char *ParseSVGMarkerStart (Element element, PSchema tsch,
+				  PresentationContext context, char *cssRule,
+				  CSSInfoPtr css, ThotBool isHTML)
+{
+  PresentationValue     marker;
+  char                  *url;
+
+  url = NULL;
+  cssRule = ParseSVGMarkerValue (cssRule, &marker, &url);
+  if (marker.typed_data.unit != UNIT_INVALID && DoApply)
+    /* install the new presentation. */
+    TtaSetStylePresentation (PRMarkerStart, element, tsch, context, marker);
+  if (url)
+    TtaFreeMemory (url);
+  return (cssRule);
+}
+
+/*----------------------------------------------------------------------
+  ParseSVGStopOpacity: parse a SVG opacity property
+  ----------------------------------------------------------------------*/
+static char *ParseSVGStopOpacity (Element element, PSchema tsch,
+				  PresentationContext context, char *cssRule,
+				  CSSInfoPtr css, ThotBool isHTML)
+{
+  PresentationValue     opacity;
+
+  opacity.typed_data.unit = UNIT_INVALID;
+  opacity.typed_data.real = FALSE;
+  if (!strncasecmp (cssRule, "inherit", 7))
+    {
+      opacity.typed_data.unit = VALUE_INHERIT;
+      cssRule += 7;
+    }
+  else
+    cssRule = ParseClampedUnit (cssRule, &opacity);
+  if (opacity.typed_data.unit != UNIT_INVALID && DoApply)
+    /* install the new presentation. */
+    TtaSetStylePresentation (PRStopOpacity, element, tsch, context, opacity);
   return (cssRule);
 }
 
@@ -4819,14 +5048,20 @@ static char *ParseSVGOpacity (Element element, PSchema tsch,
                               PresentationContext context, char *cssRule,
                               CSSInfoPtr css, ThotBool isHTML)
 {
-  PresentationValue     best;
+  PresentationValue     opacity;
 
-  best.typed_data.unit = UNIT_INVALID;
-  best.typed_data.real = FALSE;
-  cssRule = ParseClampedUnit (cssRule, &best);
-  if (DoApply)
+  opacity.typed_data.unit = UNIT_INVALID;
+  opacity.typed_data.real = FALSE;
+  if (!strncasecmp (cssRule, "inherit", 7))
+    {
+      opacity.typed_data.unit = VALUE_INHERIT;
+      cssRule += 7;
+    }
+  else
+    cssRule = ParseClampedUnit (cssRule, &opacity);
+  if (opacity.typed_data.unit != UNIT_INVALID && DoApply)
     /* install the new presentation. */
-    TtaSetStylePresentation (PROpacity, element, tsch, context, best);
+    TtaSetStylePresentation (PROpacity, element, tsch, context, opacity);
   return (cssRule);
 }
 
@@ -4837,32 +5072,80 @@ static char *ParseSVGStrokeOpacity (Element element, PSchema tsch,
                                     PresentationContext context, char *cssRule,
                                     CSSInfoPtr css, ThotBool isHTML)
 {
-  PresentationValue     best;
+  PresentationValue     opacity;
 
-  best.typed_data.unit = UNIT_INVALID;
-  best.typed_data.real = FALSE;
-  cssRule = ParseClampedUnit (cssRule, &best);
-  if (DoApply)
+  opacity.typed_data.unit = UNIT_INVALID;
+  opacity.typed_data.real = FALSE;
+  if (!strncasecmp (cssRule, "inherit", 7))
+    {
+      opacity.typed_data.unit = VALUE_INHERIT;
+      cssRule += 7;
+    }
+  else
+    cssRule = ParseClampedUnit (cssRule, &opacity);
+  if (opacity.typed_data.unit != UNIT_INVALID && DoApply)
     /* install the new presentation. */
-    TtaSetStylePresentation (PRStrokeOpacity, element, tsch, context, best);
+    TtaSetStylePresentation (PRStrokeOpacity, element, tsch, context, opacity);
   return (cssRule);
 }
 
 /*----------------------------------------------------------------------
-  ParseSVGFillOpacity: parse a SVG fil-opacityl property
+  ParseSVGFillOpacity: parse a SVG fill-opacityl property
   ----------------------------------------------------------------------*/
 static char *ParseSVGFillOpacity (Element element, PSchema tsch,
                                   PresentationContext context, char *cssRule,
                                   CSSInfoPtr css, ThotBool isHTML)
 {
+  PresentationValue     opacity;
+
+  opacity.typed_data.unit = UNIT_INVALID;
+  opacity.typed_data.real = FALSE;
+  if (!strncasecmp (cssRule, "inherit", 7))
+    {
+      opacity.typed_data.unit = VALUE_INHERIT;
+      cssRule += 7;
+    }
+  else
+    cssRule = ParseClampedUnit (cssRule, &opacity);
+  if (opacity.typed_data.unit != UNIT_INVALID && DoApply)
+    /* install the new presentation. */
+    TtaSetStylePresentation (PRFillOpacity, element, tsch, context, opacity);
+  return (cssRule);
+}
+
+/*----------------------------------------------------------------------
+  ParseSVGFillRule: parse a SVG fill-rule property
+  ----------------------------------------------------------------------*/
+static char *ParseSVGFillRule (Element element, PSchema tsch,
+                               PresentationContext context, char *cssRule,
+                               CSSInfoPtr css, ThotBool isHTML)
+{
   PresentationValue     best;
 
   best.typed_data.unit = UNIT_INVALID;
   best.typed_data.real = FALSE;
-  cssRule = ParseClampedUnit (cssRule, &best);
+  if (!strncasecmp (cssRule, "inherit", 7))
+    {
+      best.typed_data.unit = VALUE_INHERIT;
+      best.typed_data.value = 0;
+      cssRule = SkipWord (cssRule);
+    }
+  else if (!strncasecmp (cssRule, "nonzero", 7))
+    {
+      best.typed_data.unit = VALUE_AUTO;
+      best.typed_data.value = NonZero;
+      cssRule = SkipWord (cssRule);
+    }
+  else if (!strncasecmp (cssRule, "evenodd", 7))
+    {
+      best.typed_data.unit = VALUE_AUTO;
+      best.typed_data.value = EvenOdd;
+      cssRule = SkipWord (cssRule);
+    }
+
   if (DoApply)
     /* install the new presentation. */
-    TtaSetStylePresentation (PRFillOpacity, element, tsch, context, best);
+    TtaSetStylePresentation (PRFillRule, element, tsch, context, best);
   return (cssRule);
 }
 
@@ -5448,7 +5731,11 @@ static char *ParseCSSBackground (Element element, PSchema tsch,
       if (!strncasecmp (cssRule, "url", 3) || !strncasecmp (cssRule, "none", 4))
         {
           if (!strncasecmp (cssRule, "none", 4))
-            repeat = TRUE;
+            {
+              repeat = TRUE;
+              ParseCSSBackgroundColor (element, tsch, ctxt, "transparent",
+                                       css, isHTML);
+            }
           cssRule = ParseCSSBackgroundImage (element, tsch, ctxt, cssRule,
                                              css, isHTML);
           img = TRUE;
@@ -5958,10 +6245,15 @@ static char *ParseCSSZIndex (Element element, PSchema tsch,
   cssRule = SkipBlanksAndComments (cssRule);
   ptr = cssRule;
   /* first parse the attribute string */
-  if (!strncasecmp (cssRule, "auto", 4) ||
-      !strncasecmp (cssRule, "inherit", 7))
+  if (!strncasecmp (cssRule, "auto", 4))
     {
       val.typed_data.unit = VALUE_AUTO;
+      val.typed_data.value = 0;
+      cssRule = SkipWord (cssRule);
+    }
+  else if (!strncasecmp (cssRule, "inherit", 7))
+    {
+      val.typed_data.unit = VALUE_INHERIT;
       val.typed_data.value = 0;
       cssRule = SkipWord (cssRule);
     }
@@ -5973,13 +6265,12 @@ static char *ParseCSSZIndex (Element element, PSchema tsch,
           cssRule = SkipValue ("Invalid z-index value", ptr);
           return (cssRule);
         }
+      val.typed_data.value = - val.typed_data.value;
     }
   if (DoDialog)
-        DisplayStyleValue ("z-index", ptr, cssRule);
-  /***
-      else if (DoApply)
-      TtaSetStylePresentation (PR, element, tsch, context, val);
-  ***/
+    DisplayStyleValue ("z-index", ptr, cssRule);
+  else if (DoApply)
+    TtaSetStylePresentation (PRDepth, element, tsch, context, val);
   return (cssRule);
 }
 
@@ -6049,6 +6340,7 @@ static CSSProperty CSSProperties[] =
     {"margin-right", ParseCSSMarginRight},
     {"margin-left", ParseCSSMarginLeft},
     {"margin", ParseCSSMargin},
+    {"opacity", ParseCSSOpacity},
     {"padding-top", ParseCSSPaddingTop},
     {"padding-right", ParseCSSPaddingRight},
     {"padding-bottom", ParseCSSPaddingBottom},
@@ -6077,8 +6369,15 @@ static CSSProperty CSSProperties[] =
 
     /* SVG extensions */
     {"fill-opacity", ParseSVGFillOpacity},
+    {"fill-rule", ParseSVGFillRule},
     {"fill", ParseSVGFill},
+    {"marker-end", ParseSVGMarkerEnd},
+    {"marker-mid", ParseSVGMarkerMid},
+    {"marker-start", ParseSVGMarkerStart},
+    {"marker", ParseSVGMarker},
     {"opacity", ParseSVGOpacity},
+    {"stop-color", ParseSVGStopColor},
+    {"stop-opacity", ParseSVGStopOpacity},
     {"stroke-opacity", ParseSVGStrokeOpacity},
     {"stroke-width", ParseSVGStrokeWidth},
     {"stroke", ParseSVGStroke}
@@ -6319,7 +6618,8 @@ void  ParseHTMLSpecificStyle (Element el, char *cssRule, Document doc,
     ParseCSSRule (el, NULL, ctxt, cssRule, NULL, isHTML);
 
   /* restore the display mode if necessary */
-  TtaSetDisplayMode (doc, dispMode);
+  if (dispMode != NoComputedDisplay)
+    TtaSetDisplayMode (doc, dispMode);
   /* check if the context can be freed */
   ctxt->uses -= 1;
   if (ctxt->uses == 0)

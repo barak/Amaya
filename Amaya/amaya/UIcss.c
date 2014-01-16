@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2008
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -22,15 +22,12 @@
 #include "css.h"
 #ifdef _SVG
 #include "SVG.h"
+#include "svgedit.h"
 #endif /* _SVG */
-#ifdef _WINGUI
-#include "wininclude.h"
-#endif /* _WINGUI */
 #ifdef _WX
 #include "wxdialogapi_f.h"
 #include "HTMLtable_f.h"
 #include "appdialogue_wx.h"
-
 #endif /* _WX */
 
 static int         CSScase;
@@ -68,6 +65,46 @@ static const char       *DisplayCategory[]={
 #include "Xmlbuilder_f.h"
 #include "paneltypes_wx.h"
 #include "SVGbuilder_f.h"
+#include "SVGedit_f.h"
+#ifdef TEMPLATES
+#include "templateUtils_f.h"
+#endif /* TEMPLATES */
+
+
+/*----------------------------------------------------------------------
+  NoStyleEdit
+  Return TRUE if the style attribute change is not allowed
+  ----------------------------------------------------------------------*/
+static ThotBool NoStyleEdit (Element el, Document doc)
+{
+#ifdef TEMPLATES
+  ElementType         elType;
+  NotifyAttribute     event;
+  AttributeType       attrType;
+  char               *name;
+
+  elType = TtaGetElementType (el);
+  attrType.AttrSSchema = elType.ElSSchema;
+  name = TtaGetSSchemaName (elType.ElSSchema);
+  if (!strcmp (name, "Template"))
+    return FALSE; // doesn't apply
+  if (!strcmp(name, "MathML"))
+    attrType.AttrTypeNum = MathML_ATTR_style_;
+#ifdef _SVG
+  else if (!strcmp(name, "SVG"))
+    attrType.AttrTypeNum = SVG_ATTR_style_;
+#endif /* _SVG */
+  else
+    attrType.AttrTypeNum = HTML_ATTR_Style_;
+
+  event.document = doc;
+  event.element = el;
+  event.attributeType = attrType;
+  return CheckTemplateAttrInMenu (&event);
+#else /* TEMPLATES */
+  return TtaIsReadOnly (el);
+#endif /* TEMPLATES */
+}
 
 /*----------------------------------------------------------------------
   LoadRemoteStyleSheet loads a remote style sheet into a file.
@@ -702,9 +739,10 @@ char *CssToPrint (Document doc, char *printdir)
 /*----------------------------------------------------------------------
   GenerateStyle
   Apply the current set of CSS properties to the current selection
-  Add is TRUE when data is added to the existing style
+  add is TRUE when data is added to the existing style
+  check is TRUE if the function must check that edit is allowed
   -----------------------------------------------------------------------*/
-static void GenerateStyle (const char * data , ThotBool add)
+static void GenerateStyle (const char * data , ThotBool add, ThotBool check)
 {
   Element             el, firstC, lastC, colhead, col;
   ElementType         elType;
@@ -732,7 +770,11 @@ static void GenerateStyle (const char * data , ThotBool add)
     /* no selection */
     return;
 
+  if (check && NoStyleEdit (el, doc))
+    return;
+
   elType = TtaGetElementType (el);
+  attrType.AttrSSchema = elType.ElSSchema;
   name = TtaGetSSchemaName (elType.ElSSchema);
   if (data && data[0] != EOS)
     // there are style properties to be associated with the current selection
@@ -743,39 +785,37 @@ static void GenerateStyle (const char * data , ThotBool add)
         {
           if (elType.ElTypeNum == HTML_EL_COL ||
               elType.ElTypeNum == HTML_EL_COLGROUP)
-            // a COL or COLGROUP element is selected
-            colcolgroup = TRUE;
-          else if (TtaIsColumnSelected (doc))
-            // a whole column is selected. Is there a COL or COLGROUP element
-            // for that column ?
             {
-              if (elType.ElTypeNum == HTML_EL_Data_cell ||
-                  elType.ElTypeNum == HTML_EL_Heading_cell)
+              // a COL or COLGROUP element is selected
+              colcolgroup = TRUE;
+              col = el;
+            }
+          else if (!colcolgroup &&
+              (elType.ElTypeNum == HTML_EL_Data_cell ||
+               elType.ElTypeNum == HTML_EL_Heading_cell))
+            {
+              // get the relevant COL or COLGROUP element
+              attrType.AttrTypeNum = HTML_ATTR_Ref_column;
+              attr = TtaGetAttribute (el, attrType);
+              if (attr)
                 {
-                  // get the relevant COL or COLGROUP element
-                  attrType.AttrSSchema = elType.ElSSchema;
-                  attrType.AttrTypeNum = HTML_ATTR_Ref_column;
-                  attr = TtaGetAttribute (el, attrType);
-                  if (attr)
+                  TtaGiveReferenceAttributeValue (attr, &colhead);
+                  if (colhead)
                     {
-                      TtaGiveReferenceAttributeValue (attr, &colhead);
-                      if (colhead)
+                      attrType.AttrTypeNum = HTML_ATTR_Ref_ColColgroup;
+                      attr = TtaGetAttribute (colhead, attrType);
+                      if (attr)
+                        // this Column-head is linked to a COL or COLGROUP
                         {
-                          attrType.AttrTypeNum = HTML_ATTR_Ref_ColColgroup;
-                          attr = TtaGetAttribute (colhead, attrType);
-                          if (attr)
-                            // this Column-head is linked to a COL or COLGROUP
+                          TtaGiveReferenceAttributeValue (attr, &col);
+                          if (col)
                             {
-                              TtaGiveReferenceAttributeValue (attr, &col);
-                              if (col)
-                                {
-                                  attrType.AttrTypeNum = HTML_ATTR_span_;
-                                  attr = TtaGetAttribute (col, attrType);
-                                  if (!attr ||
-                                      TtaGetAttributeValue (attr) <= 1)
-                                    // no spanning
-                                    colcolgroup = TRUE;
-                                }
+                              //attrType.AttrTypeNum = HTML_ATTR_span_;
+                              //attr = TtaGetAttribute (col, attrType);
+                              //if (!attr ||
+                              //    TtaGetAttributeValue (attr) <= 1)
+                              // no spanning
+                              colcolgroup = TRUE;
                             }
                         }
                     }
@@ -794,7 +834,27 @@ static void GenerateStyle (const char * data , ThotBool add)
           ctxt->cssSpecificity = 1;
           ctxt->cssLine = TtaGetElementLineNumber (el);
           ctxt->destroy = FALSE;
-          ColApplyCSSRule (NULL, ctxt, (char*)data, NULL);
+          if (TtaIsColumnSelected (doc))
+            {
+              open = !TtaHasUndoSequence (doc);
+              if (open)
+                TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
+              attrType.AttrTypeNum = HTML_ATTR_Style_;
+              attr = TtaGetAttribute (col, attrType);
+              if (attr == NULL)
+                {
+                  attr = TtaNewAttribute (attrType);
+                  TtaAttachAttribute (col, attr, doc);
+                }
+              TtaSetAttributeText (attr, (char*)data, col, doc);
+              TtaRegisterAttributeCreate (attr, col, doc);
+              ApplyCSSRuleOneCol (col, ctxt, (char*)data, NULL);
+              TtaSetDocumentModified (doc);
+              if (open)
+                TtaCloseUndoSequence (doc);
+            }
+          else
+            GenerateInlineElement (HTML_EL_Span, NULL, HTML_ATTR_Style_, data, !add);
         }
       else if (strcmp (name, "Template"))
         GenerateInlineElement (HTML_EL_Span, NULL, HTML_ATTR_Style_, data, !add);
@@ -858,6 +918,8 @@ static ThotBool GetEnclosingBlock (Document doc)
     return FALSE;
   TtaGiveFirstSelectedElement (doc, &first, &i, &j);
   if (first == NULL)
+    return FALSE;
+  if (NoStyleEdit (first, doc))
     return FALSE;
   while (IsCharacterLevelElement (first))
     // look for a block element
@@ -980,13 +1042,15 @@ void DoStyleColor (char *color, ThotBool isBg)
 
   // check the current color
   TtaGiveFirstSelectedElement (doc, &el, &firstChar, &lastChar);
+  if (el == NULL)
+    return;
+
   elType = TtaGetElementType (el);
   name = TtaGetSSchemaName (elType.ElSSchema);
   if (!strcmp (name, "Template"))
     return;
 
   TtaGiveBoxColors (el, doc, 1, &col, &bg_col);
-
   if ((isBg && new_col == bg_col) || (!isBg && new_col == col))
     // do nothing
     return;
@@ -1017,7 +1081,7 @@ void DoStyleColor (char *color, ThotBool isBg)
 
           TtaSetDisplayMode (doc, DisplayImmediately);
           if ((isBg && new_col == bg_col) || new_col != col)
-            GenerateStyle (buffer, TRUE);
+            GenerateStyle (buffer, TRUE, TRUE);
           TtaSetDisplayMode (doc, dispMode);
         }
     }
@@ -1031,7 +1095,7 @@ void DoStyleColor (char *color, ThotBool isBg)
       if (el)
         TtaGiveBoxColors (el, doc, 1, &col, &bg_col);
       if ((isBg && new_col == bg_col) || new_col != col)
-          GenerateStyle (buffer, TRUE);
+          GenerateStyle (buffer, TRUE, TRUE);
     }
 
   if (open)
@@ -1078,6 +1142,10 @@ void DoSelectFontSize (Document doc, View view)
     return;
 
   TtaGiveFirstSelectedElement (doc, &el, &firstChar, &lastChar);
+  if (el == NULL)
+    return;
+  if (NoStyleEdit (el, doc))
+    return;
   elType = TtaGetElementType (el);
   name = TtaGetSSchemaName (elType.ElSSchema);
   if (!strcmp (name, "Template"))
@@ -1092,7 +1160,7 @@ void DoSelectFontSize (Document doc, View view)
         TtaSetDisplayMode (doc, DeferredDisplay);
       NewSpanElement (doc, &open);
       sprintf (font_string, "font-size: %dpt", Current_FontSize);
-      GenerateStyle (font_string, TRUE);
+      GenerateStyle (font_string, TRUE, FALSE);
       if (open)
         TtaCloseUndoSequence (doc);
       if (dispMode == DisplayImmediately)
@@ -1121,6 +1189,10 @@ void DoSelectFontFamilly (Document doc, View view)
     return;
 
   TtaGiveFirstSelectedElement (doc, &el, &firstChar, &lastChar);
+  if (el == NULL)
+    return;
+  if (NoStyleEdit (el, doc))
+    return;
   elType = TtaGetElementType (el);
   name = TtaGetSSchemaName (elType.ElSSchema);
   if (!strcmp (name, "Template"))
@@ -1137,13 +1209,13 @@ void DoSelectFontFamilly (Document doc, View view)
       switch (Current_FontFamily)
         {
         case 3:
-          GenerateStyle ("font-family: Courier New,Courier,monospace", TRUE);
+          GenerateStyle ("font-family: Courier New,Courier,monospace", TRUE, FALSE);
           break;
         case 2:
-          GenerateStyle ("font-family: Arial,Helvetica,sans-serif", TRUE);
+          GenerateStyle ("font-family: Arial,Helvetica,sans-serif", TRUE, FALSE);
           break;
         default:
-          GenerateStyle ("font-family: Times New Roman,Times,serif", TRUE);
+          GenerateStyle ("font-family: Times New Roman,Times,serif", TRUE, FALSE);
         }
       if (open)
         TtaCloseUndoSequence (doc);
@@ -1171,6 +1243,10 @@ void DoSelectFont (Document doc, View view)
     return;
 
   TtaGiveFirstSelectedElement (doc, &el, &firstChar, &lastChar);
+  if (el == NULL)
+    return;
+  if (NoStyleEdit (el, doc))
+    return;
   elType = TtaGetElementType (el);
   name = TtaGetSSchemaName (elType.ElSSchema);
   if (!strcmp (name, "Template"))
@@ -1399,7 +1475,7 @@ void DoStyleSVG (Document doc, View view, int current_value, int type)
   PRule               rule;
   DisplayMode         dispMode;
   int                 firstChar, lastChar;
-  int                 value;
+  int                 value = 0;
   char                buffer[100], *name;
   ThotBool            open = FALSE;
 
@@ -1409,6 +1485,8 @@ void DoStyleSVG (Document doc, View view, int current_value, int type)
     return;
 
   TtaGiveFirstSelectedElement (doc, &el, &firstChar, &lastChar);
+  if (el == NULL)
+    return;
   elType = TtaGetElementType (el);
   name = TtaGetSSchemaName (elType.ElSSchema);
   if (strcmp (name, "SVG"))
@@ -1445,11 +1523,15 @@ void DoStyleSVG (Document doc, View view, int current_value, int type)
               
             case PRLineWeight:
               sprintf(buffer, "stroke-width: %d", current_value);
-              //TtaSetPRuleValue (el, rule, current_value, doc);
+              // TtaSetPRuleValue (el, rule, current_value, doc);
               break;
             }
 
-          GenerateStyle (buffer, TRUE);
+          GenerateStyle (buffer, TRUE, TRUE);
+
+          /* SVG stroke width has changed: so does the size of markers */
+          if (type == PRLineWeight)
+            TtaUpdateMarkers(el, doc, TRUE, TRUE);
           TtaSetDisplayMode (doc, dispMode);
           
           if (open)
@@ -1548,7 +1630,7 @@ void DoUpdateStrokeStatus(Document doc, View view)
       RemoveSpecificStyle (doc, "stroke-dasharray:");
       RemoveSpecificStyle (doc, "stroke-dashoffset:");
       RemoveSpecificStyle (doc, "stroke-opacity:");
-      GenerateStyle ("stroke: none", TRUE);
+      GenerateStyle ("stroke: none", TRUE, TRUE);
       StrokeEnabled = FALSE;
     }
   else
@@ -1576,12 +1658,21 @@ void DoUpdateStrokeStatus(Document doc, View view)
   ----------------------------------------------------------------------*/
 void DoUpdateFillStatus(Document doc, View view)
 {
+  Element             el;
+  int                 i, j;
   char                color_string[100];
   unsigned short      red;
   unsigned short      green;
   unsigned short      blue;
   DisplayMode         dispMode;
 
+  TtaGiveFirstSelectedElement (doc, &el, &i, &j);
+  if (el == NULL)
+    /* no selection */
+    return;
+  if (NoStyleEdit (el, doc))
+    return;
+  
   dispMode = TtaGetDisplayMode (doc);
   if (dispMode == DisplayImmediately)
     TtaSetDisplayMode (doc, DeferredDisplay);
@@ -1592,16 +1683,16 @@ void DoUpdateFillStatus(Document doc, View view)
       RemoveSpecificStyle (doc, "fill:");
       RemoveSpecificStyle (doc, "fill-rule:");
       RemoveSpecificStyle (doc, "fill-opacity:");
-      GenerateStyle ("fill: none", TRUE);
+      GenerateStyle ("fill: none", TRUE, FALSE);
       FillEnabled = FALSE;
     }
   else
     {
       /* Add fill style */
       if (Current_FillColor != -1)
-	TtaGiveThotRGB (Current_FillColor, &red, &green, &blue);
+        TtaGiveThotRGB (Current_FillColor, &red, &green, &blue);
       else
-	TtaGiveThotRGB (0, &red, &green, &blue);
+        TtaGiveThotRGB (0, &red, &green, &blue);
       sprintf( color_string, "#%02x%02x%02x", red, green, blue);
       DoStyleColor (color_string, TRUE);
 
@@ -1698,9 +1789,11 @@ ThotBool RemoveSpecificStyle (Document doc, const char *cssproperty)
     return selChange;
 
   TtaGiveFirstSelectedElement (doc, &el, &firstChar, &lastChar);
+  if (el == NULL)
+    return selChange;
   parent1 = TtaGetParent (el);
   attrType.AttrTypeNum = 0;
-  if (TtaIsReadOnly (el))
+  if (NoStyleEdit (el, doc))
     {
       /* the selected element is read-only */
       TtaDisplaySimpleMessage (CONFIRM, AMAYA, AM_READONLY);
@@ -1780,6 +1873,10 @@ void DoRemoveFont (Document doc, View view)
   RemoveSpecificStyle (doc, "font-size: 12pt");
   // update the style panel
   TtaGiveFirstSelectedElement (doc, &el, &firstChar, &lastChar);
+  if (el == NULL)
+    return;
+  if (NoStyleEdit (el, doc))
+    return;
   TtaGiveBoxFontInfo (el, doc, 1, &size, &unit, &family);
   if (size != -1 &&
       (size != Current_FontSize || unit != UnPoint  || family != Current_FontFamily))
@@ -1797,7 +1894,7 @@ void DoRemoveFont (Document doc, View view)
 void DoLeftAlign (Document doc, View view)
 {
   if (GetEnclosingBlock(doc))
-    GenerateStyle ("text-align:left;", TRUE);
+    GenerateStyle ("text-align:left;margin-left:0;margin-right:auto;", FALSE, TRUE);
 }
 
 /*----------------------------------------------------------------------
@@ -1807,7 +1904,9 @@ void DoLeftAlign (Document doc, View view)
 void DoRightAlign (Document doc, View view)
 {
   if (GetEnclosingBlock(doc))
-    GenerateStyle ("text-align:right;", TRUE);
+    {
+    GenerateStyle ("text-align:right;margin-left:auto;margin-right:0;", FALSE, TRUE);
+    }
 }
 
 /*----------------------------------------------------------------------
@@ -1817,7 +1916,7 @@ void DoRightAlign (Document doc, View view)
 void DoCenter (Document doc, View view)
 {
   if (GetEnclosingBlock(doc))
-    GenerateStyle ("text-align:center;", TRUE);
+    GenerateStyle ("text-align:center;margin-left:auto;margin-right:auto;", FALSE, TRUE);
 }
 
 /*----------------------------------------------------------------------
@@ -1827,7 +1926,7 @@ void DoCenter (Document doc, View view)
 void DoJustify (Document doc, View view)
 {
   if (GetEnclosingBlock(doc))
-    GenerateStyle ("text-align:justify;", TRUE);
+    GenerateStyle ("text-align:justify;", TRUE, TRUE);
 }
 
 
@@ -1837,7 +1936,7 @@ void DoJustify (Document doc, View view)
   ----------------------------------------------------------------------*/
 void DoRemoveAlign (Document doc, View view)
 {
-  RemoveSpecificStyle (doc, "text-align: left");
+  RemoveSpecificStyle (doc, "text-align:left");
 }
 
 /*----------------------------------------------------------------------
@@ -1845,7 +1944,7 @@ void DoRemoveAlign (Document doc, View view)
 void LineSpacingSingle (Document doc, View view)
 {
   if (GetEnclosingBlock(doc))
-    GenerateStyle ("line-height:1em;", TRUE);
+    GenerateStyle ("line-height:1em;", TRUE, TRUE);
 }
 
 /*----------------------------------------------------------------------
@@ -1853,7 +1952,7 @@ void LineSpacingSingle (Document doc, View view)
 void LineSpacingHalf (Document doc, View view)
 {
   if (GetEnclosingBlock(doc))
-    GenerateStyle ("line-height:1.5em;", TRUE);
+    GenerateStyle ("line-height:1.5em;", TRUE, TRUE);
 }
 
 /*----------------------------------------------------------------------
@@ -1861,7 +1960,7 @@ void LineSpacingHalf (Document doc, View view)
 void LineSpacingDouble (Document doc, View view)
 {
   if (GetEnclosingBlock(doc))
-    GenerateStyle ("line-height:2em;", TRUE);
+    GenerateStyle ("line-height:2em;", TRUE, TRUE);
 }
 
 /*----------------------------------------------------------------------
@@ -1878,7 +1977,7 @@ void DoRemoveLineSpacing (Document doc, View view)
 void MarginLeftIncrease (Document doc, View view)
 {
   if (GetEnclosingBlock(doc))
-    GenerateStyle ("margin-left:2em;", TRUE);
+    GenerateStyle ("margin-left:2em;", TRUE, TRUE);
 }
 
 /*----------------------------------------------------------------------
@@ -1886,7 +1985,7 @@ void MarginLeftIncrease (Document doc, View view)
 void MarginLeftDecrease (Document doc, View view)
 {
   if (GetEnclosingBlock(doc))
-    GenerateStyle ("margin-left:0;", TRUE);
+    GenerateStyle ("margin-left:0;", TRUE, TRUE);
 }
 
 /*----------------------------------------------------------------------
@@ -2151,7 +2250,7 @@ static void CallbackCSS (int ref, int typedata, char *data)
       break;
     case CSSValue:
       if (data)
-        GenerateStyle (data, FALSE);
+        GenerateStyle (data, FALSE, TRUE);
       else
         TtaDestroyDialogue (ref);
       break;
@@ -2242,6 +2341,8 @@ void ShowAppliedStyle (Document doc, View view)
   if (el == NULL)
     InitInfo (TtaGetMessage (AMAYA, AM_ERROR),
               TtaGetMessage (AMAYA, AM_NO_SELECTION));
+  //else if (NoStyleEdit (el, doc))
+  //  return;
   else
     {
       /* list CSS rules applied to the current selection */
@@ -2527,7 +2628,7 @@ static void InitCSSDialog (Document doc, char *s)
                                      s, nb, buf);
   TtaFreeMemory (buf);
   if (created)
-    TtaShowDialogue (BaseCSS + CSSForm, TRUE);
+    TtaShowDialogue (BaseCSS + CSSForm, TRUE, TRUE);
 #endif /* _WX */
 
 #ifdef _WINGUI
@@ -2551,7 +2652,7 @@ static void InitCSSDialog (Document doc, char *s)
     TtaNewLabel (BaseCSS + CSSSelect, BaseCSS + CSSForm,
                  TtaGetMessage (AMAYA, AM_NO_CSS));
   TtaFreeMemory (buf);
-  TtaShowDialogue (BaseCSS + CSSForm, TRUE);
+  TtaShowDialogue (BaseCSS + CSSForm, TRUE, TRUE);
   if (nb > 0)
     TtaSetSelector (BaseCSS + CSSSelect, select, NULL);
 #endif /* _GTK */
@@ -2627,6 +2728,6 @@ void SetCSSStyle (Document doc, View view)
 
   created = CreateStyleDlgWX (BaseCSS + CSSValue, TtaGetViewFrame (doc, view));
   if (created)
-    TtaShowDialogue (BaseCSS + CSSValue, FALSE);
+    TtaShowDialogue (BaseCSS + CSSValue, FALSE, TRUE);
 #endif /* _WX */
 }

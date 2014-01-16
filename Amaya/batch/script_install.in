@@ -79,12 +79,12 @@ $INSTALL_BIN $AMAYA_SOURCEBINDIR/print $PREFIX/$AMAYA_INSTALLDIR/$AMAYAGUI/bin
 $LN_S $PREFIX/$AMAYA_INSTALLDIR/$AMAYAGUI/bin/amaya $BINDIR/amaya
 
 $ECHO "--> Installing data"
-AMAYAFILES="*.STR *.conf *.trans* *.en *.gif *.png *.PRS *.TRA AmayaPage.html AmayaPage.html.* AmayaPage_WX.html AmayaPage_WX.html.* *.css Amaya.svg COPYRIGHT"
-CONFIGFILES="XKeysymDB unix-thot.rc amaya.keyboard amaya.kb amaya.kb-mac amaya.profiles *-amayadialogue *-amayamsg *-libdialogue amaya.emacs annot.schemas *.rdf *.css fonts.* *.dat gtkrc"
+AMAYAFILES="*.STR *.conf *.trans* *.en *.gif *.png *.PRS *.TRA AmayaPage_WX.html AmayaPage_WX.html.* *.css COPYRIGHT"
+CONFIGFILES="XKeysymDB unix-thot.rc amaya.keyboard amaya.kb amaya.kb-mac amaya.profiles *-amayadialogue *-amayamsg *-libdialogue amaya.emacs annot.schemas *.rdf *.css fonts.* *.dat"
 ANNOTFILES="*.STR *.PRS *.TRA *.en *.gif *.png"
 DICOFILES="*.ptn *.dic alphabet clavier"
 RESOURCE_XRC_FILES="*.xrc"
-RESOURCE_ICONS_FILES="*.png *.ico *.gif"
+RESOURCE_ICONS_FILES="*.png *.ico"
 RESOURCE_PNG_FILES="*.png"
 RESOURCE_SVG_FILES="*.png *.svg"
 FONTSFILES="Families.list fonts.dir icones* *.ttf *.TTF"
@@ -225,7 +225,6 @@ cd - > /dev/null
 
 $ECHO "--> Installing data in $PREFIX/$AMAYA_INSTALLDIR/doc/..."
 $CP -r $AMAYA_SOURCEBINDIR/../../doc/images $PREFIX/$AMAYA_INSTALLDIR/doc/
-$CP -r $AMAYA_SOURCEBINDIR/../../doc/html $PREFIX/$AMAYA_INSTALLDIR/doc/
 $CP -r $AMAYA_SOURCEBINDIR/../../doc/WX $PREFIX/$AMAYA_INSTALLDIR/doc/
 
 

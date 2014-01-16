@@ -126,28 +126,43 @@ extern void TtaSplitPathSeg ( void *segment,
 extern void TtaAppendPathSeg ( Element element,
                                PathSegment segment,
                                Document document );
-extern void AddStopColor ( Element el,
-                           PtrElement Father,
-                           unsigned short red,
-                           unsigned short green,
-                           unsigned short blue );
-extern void AddOffset ( Element el,
-                        PtrElement Father,
-                        float offset );
-extern void TtaSetLinearx1Gradient ( int value,
+extern void TtaNewGradient ( ThotBool linear,
+                             Element el );
+extern void TtaNewGradientStop ( Element stop,
+                                 Element gradient );
+extern void TtaSetGradientUnits ( ThotBool value,
+                                  Element el );
+extern void TtaAppendGradientTransform ( Element el,
+                                         void *transform );
+extern void TtaSetGradientSpreadMethod ( int value,
+                                         Element el );
+extern void TtaSetLinearGradientx1 ( float value,
                                      Element el );
-extern void TtaSetLineary1Gradient ( int value,
+extern void TtaSetLinearGradienty1 ( float value,
                                      Element el );
-extern void TtaSetLinearx2Gradient ( int value,
+extern void TtaSetLinearGradientx2 ( float value,
                                      Element el );
-extern void TtaSetLineary2Gradient ( int value,
+extern void TtaSetLinearGradienty2 ( float value,
                                      Element el );
-extern void TtaSetStopColorGradient ( unsigned short red,
+extern void TtaSetRadialGradientRadius ( float value,
+                                         Element el );
+extern void TtaSetRadialGradientcx ( float value,
+                                     Element el );
+extern void TtaSetRadialGradientcy ( float value,
+                                     Element el );
+extern void TtaSetRadialGradientfx ( float value,
+                                     Element el );
+extern void TtaSetRadialGradientfy ( float value,
+                                     Element el );
+extern void TtaSetGradientStopOffset ( float offset,
+                                       Element el );
+extern void TtaSetGradientStopColor ( unsigned short red,
                                       unsigned short green,
                                       unsigned short blue,
                                       Element el );
-extern void TtaSetStopOffsetColorGradient ( float offset,
-                                            Element el );
+extern void TtaSetGradientStopOpacity ( float opacity,
+                                        Element el );
+extern void TtaCopyGradientUse ( Element el );
 extern ThotBool TtaDeletePointInCurve ( Document doc,
                                         Element el,
                                         int point_number );
@@ -156,8 +171,7 @@ extern ThotBool TtaInsertPointInCurve ( Document doc,
                                         ThotBool before,
                                         int *point_number );
 extern void TtaAppendTransform ( Element element,
-                                 void *transform,
-                                 Document document );
+                                 void *transform );
 extern void TtaAddTransform ( Element element,
                               void *transform,
                               Document document );
@@ -166,7 +180,6 @@ extern void TtaInsertTransform ( Element element,
                                  Document document );
 extern void TtaRemoveTransform ( Document document,
                                  Element element );
-extern void *TtaSimplifyTransformMatrix ( void *transform );
 extern void TtaCoordinatesInParentSpace ( Element el,
                                           float *x,
                                           float *y );
@@ -407,28 +420,43 @@ extern void TtaSplitPathSeg ( void *segment,
 extern void TtaAppendPathSeg ( Element element,
                                  PathSegment segment,
                                  Document document );
-extern void AddStopColor ( Element el,
-                             PtrElement Father,
-                             unsigned short red,
-                             unsigned short green,
-                             unsigned short blue );
-extern void AddOffset ( Element el,
-                          PtrElement Father,
-                          float offset );
-extern void TtaSetLinearx1Gradient ( int value,
+extern void TtaNewGradient ( ThotBool linear,
+                               Element el );
+extern void TtaNewGradientStop ( Element stop,
+                                   Element gradient );
+extern void TtaSetGradientUnits ( ThotBool value,
+                                    Element el );
+extern void TtaAppendGradientTransform ( Element el,
+                                           void *transform );
+extern void TtaSetGradientSpreadMethod ( int value,
+                                           Element el );
+extern void TtaSetLinearGradientx1 ( float value,
                                        Element el );
-extern void TtaSetLineary1Gradient ( int value,
+extern void TtaSetLinearGradienty1 ( float value,
                                        Element el );
-extern void TtaSetLinearx2Gradient ( int value,
+extern void TtaSetLinearGradientx2 ( float value,
                                        Element el );
-extern void TtaSetLineary2Gradient ( int value,
+extern void TtaSetLinearGradienty2 ( float value,
                                        Element el );
-extern void TtaSetStopColorGradient ( unsigned short red,
+extern void TtaSetRadialGradientRadius ( float value,
+                                           Element el );
+extern void TtaSetRadialGradientcx ( float value,
+                                       Element el );
+extern void TtaSetRadialGradientcy ( float value,
+                                       Element el );
+extern void TtaSetRadialGradientfx ( float value,
+                                       Element el );
+extern void TtaSetRadialGradientfy ( float value,
+                                       Element el );
+extern void TtaSetGradientStopOffset ( float offset,
+                                         Element el );
+extern void TtaSetGradientStopColor ( unsigned short red,
                                         unsigned short green,
                                         unsigned short blue,
                                         Element el );
-extern void TtaSetStopOffsetColorGradient ( float offset,
-                                              Element el );
+extern void TtaSetGradientStopOpacity ( float opacity,
+                                          Element el );
+extern void TtaCopyGradientUse ( Element el );
 extern ThotBool TtaDeletePointInCurve ( Document doc,
                                           Element el,
                                           int point_number );
@@ -437,8 +465,7 @@ extern ThotBool TtaInsertPointInCurve ( Document doc,
                                           ThotBool before,
                                           int *point_number );
 extern void TtaAppendTransform ( Element element,
-                                   void *transform,
-                                   Document document );
+                                   void *transform );
 extern void TtaAddTransform ( Element element,
                                 void *transform,
                                 Document document );
@@ -447,7 +474,6 @@ extern void TtaInsertTransform ( Element element,
                                    Document document );
 extern void TtaRemoveTransform ( Document document,
                                    Element element );
-extern void *TtaSimplifyTransformMatrix ( void *transform );
 extern void TtaCoordinatesInParentSpace ( Element el,
                                             float *x,
                                             float *y );

@@ -262,12 +262,8 @@ HelpAtW3C
 ################# AMAYA FUNCTIONS
 ######### DAV MODULES
 [davbase]
-LockDocument
-UnlockDocument
-PropDocument
+LockUnlock
 CopyLockInformation
-LockIndicator
-DAVLockDocument
 
 ######### BROWSING_Lite
 [browsing_lite]

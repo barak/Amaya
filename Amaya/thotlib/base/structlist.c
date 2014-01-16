@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2008
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -262,11 +262,35 @@ static void WrPRuleType (PtrPRule pRule, FILE * fileDescriptor)
     case PtStrokeOpacity:
       fprintf (fileDescriptor, "StrokeOpacity");
       break;
+    case PtStopOpacity:
+      fprintf (fileDescriptor, "StopOpacity");
+      break;
+    case PtMarker:
+      fprintf (fileDescriptor, "Marker");
+      break;
+    case PtMarkerStart:
+      fprintf (fileDescriptor, "MarkerStart");
+      break;
+    case PtMarkerMid:
+      fprintf (fileDescriptor, "MarkerMid");
+      break;
+    case PtMarkerEnd:
+      fprintf (fileDescriptor, "MarkerEnd");
+      break;
+    case PtFillRule:
+      fprintf (fileDescriptor, "FillRule");
+      break;
     case PtBackground:
       fprintf (fileDescriptor, "Background");
       break;
     case PtForeground:
       fprintf (fileDescriptor, "Foreground");
+      break;
+    case PtColor:
+      fprintf (fileDescriptor, "Color");
+      break;
+    case PtStopColor:
+      fprintf (fileDescriptor, "StopColor");
       break;
     case PtHyphenate:
       fprintf (fileDescriptor, "Hyphenate");
@@ -557,7 +581,9 @@ static void WrTree (PtrElement pNode, int Indent, FILE *fileDescriptor,
         }
       if (pNode->ElHolophrast)
         fprintf (fileDescriptor, " Holophrast");
-       
+      if (pNode->ElGradient)
+        fprintf (fileDescriptor, " Gradient");
+	
       /* ecrit les attributs de l'element */
       if (pNode->ElFirstAttr != NULL)
         {
@@ -570,7 +596,7 @@ static void WrTree (PtrElement pNode, int Indent, FILE *fileDescriptor,
               switch (pAttr1->AttrType)
                 {
                 case AtNumAttr:
-                  fprintf (fileDescriptor, "%d", pAttr->AeAttrValue);
+                  fprintf (fileDescriptor, "%d", (int)pAttr->AeAttrValue);
                   break;
                 case AtTextAttr:
                   if (pAttr->AeAttrText)
@@ -1007,6 +1033,7 @@ void ListAbsBoxes (PtrAbstractBox pAb, int Indent, FILE *fileDescriptor)
 {
   int                 i, j;
   PtrAbstractBox      f;
+  PtrAttribute        pAttr;
   PtrBox              pBox;
   ThotBool            root;
   PtrDelayedPRule     pDelPR;
@@ -1014,6 +1041,7 @@ void ListAbsBoxes (PtrAbstractBox pAb, int Indent, FILE *fileDescriptor)
   AbDimension        *pPavDim;
   PtrAttribute        pAt1;
   ThotPictInfo       *image;
+  unsigned char       buffer[100];
 
   if (pAb != NULL)
     {
@@ -1142,16 +1170,72 @@ void ListAbsBoxes (PtrAbstractBox pAb, int Indent, FILE *fileDescriptor)
       for (j = 1; j <= Indent + 6; j++)
         fprintf (fileDescriptor, " ");
       fprintf (fileDescriptor, "Pattern:%d", pAb->AbFillPattern);
-      fprintf (fileDescriptor, " Background:%d", pAb->AbBackground);
+      if (pAb->AbGradientBackground)
+	fprintf (fileDescriptor, " Gradient: Const%d", pAb->AbBackground);
+      else
+	fprintf (fileDescriptor, " Background:%d", pAb->AbBackground);
       fprintf (fileDescriptor, " Foreground:%d", pAb->AbForeground);
-
+      fprintf (fileDescriptor, " Color:%d", pAb->AbColor);
+      fprintf (fileDescriptor, " StopColor:%d", pAb->AbStopColor);
       fprintf (fileDescriptor, "\n");
       for (j = 1; j <= Indent + 6; j++)
         fprintf (fileDescriptor, " ");
       fprintf (fileDescriptor, "Opacity:%d", pAb->AbOpacity);
       fprintf (fileDescriptor, " FillOpacity:%d", pAb->AbFillOpacity);
       fprintf (fileDescriptor, " StrokeOpacity:%d", pAb->AbStrokeOpacity);
-
+      fprintf (fileDescriptor, " StopOpacity:%d", pAb->AbStopOpacity);
+      fprintf (fileDescriptor, " FillRule:%c", pAb->AbFillRule);
+      fprintf (fileDescriptor, "\n");
+      for (j = 1; j <= Indent + 6; j++)
+        fprintf (fileDescriptor, " ");
+      if (pAb->AbMarker == NULL)
+        fprintf (fileDescriptor, "Marker:none");
+      else
+	{
+	  fprintf (fileDescriptor, "Marker:");
+	  pAttr = GetAttrElementWithException (ExcCssId, pAb->AbMarker);
+	  if (pAttr)
+	    {
+	      CopyBuffer2MBs (pAttr->AeAttrText, 0, buffer, 99);
+	      fprintf (fileDescriptor, "%s", buffer);
+	    }
+	}
+      if (pAb->AbMarkerStart == NULL)
+        fprintf (fileDescriptor, " MarkerStart:none");
+      else
+	{
+	  fprintf (fileDescriptor, " MarkerStart:");
+	  pAttr = GetAttrElementWithException (ExcCssId, pAb->AbMarkerStart);
+	  if (pAttr)
+	    {
+	      CopyBuffer2MBs (pAttr->AeAttrText, 0, buffer, 99);
+	      fprintf (fileDescriptor, "%s", buffer);
+	    }
+	}
+      if (pAb->AbMarkerMid == NULL)
+        fprintf (fileDescriptor, " MarkerMid:none");
+      else
+	{
+	  fprintf (fileDescriptor, " MarkerMid:");
+	  pAttr = GetAttrElementWithException (ExcCssId, pAb->AbMarkerMid);
+	  if (pAttr)
+	    {
+	      CopyBuffer2MBs (pAttr->AeAttrText, 0, buffer, 99);
+	      fprintf (fileDescriptor, "%s", buffer);
+	    }
+	}
+      if (pAb->AbMarkerEnd == NULL)
+        fprintf (fileDescriptor, " MarkerEnd:none");
+      else
+	{
+	  fprintf (fileDescriptor, " MarkerEnd:");
+	  pAttr = GetAttrElementWithException (ExcCssId, pAb->AbMarkerEnd);
+	  if (pAttr)
+	    {
+	      CopyBuffer2MBs (pAttr->AeAttrText, 0, buffer, 99);
+	      fprintf (fileDescriptor, "%s", buffer);
+	    }
+	}
       fprintf (fileDescriptor, "\n");
       for (j = 1; j <= Indent + 6; j++)
         fprintf (fileDescriptor, " ");
@@ -2435,6 +2519,9 @@ static void wrdistunit (TypeUnit u, FILE *fileDescriptor)
     case UnAuto:
       fprintf (fileDescriptor, " auto");
       break;
+    case UnGradient:
+      fprintf (fileDescriptor, " gradient");
+      break;
     }
 }
 
@@ -2866,6 +2953,19 @@ static void wrfontstyle (PtrPRule pR, FILE *fileDescriptor)
             fprintf (fileDescriptor, "Outset");
             break;
           }
+      else if (pR->PrType == PtFillRule)
+	switch (pR->PrChrValue)
+          {
+          case 'e':
+            fprintf (fileDescriptor, "EvenOdd");
+            break;
+          case 'n':
+            fprintf (fileDescriptor, "NonZero");
+            break;
+          default:
+            fprintf (fileDescriptor, "%c", pR->PrChrValue);
+            break;
+	  }
       else
         fprintf (fileDescriptor, "%c", pR->PrChrValue);
     }
@@ -2909,11 +3009,18 @@ static void wrnbherit (PtrPRule pR, FILE *fileDescriptor)
               wrnumber (pR->PrInhMinOrMax, fileDescriptor);
           }
       }
+  else if (pR->PrPresMode == PresCurrentColor)
+    fprintf (fileDescriptor, "currentColor");
   else if (pR->PrPresMode == PresImmediate)
-    if (pR->PrAttrValue)
+    if (pR->PrValueType == PrAttrValue)
       wrattrname (pR->PrIntValue, fileDescriptor);
-    else
+    else if (pR->PrValueType == PrNumValue)
       wrnumber (pR->PrIntValue, fileDescriptor);
+    else if (pR->PrValueType == PrConstStringValue)
+      {
+	fprintf (fileDescriptor, "Cste");
+	wrnumber (pR->PrIntValue, fileDescriptor);
+      }
   else
     fprintf (fileDescriptor, "??????");
   fprintf (fileDescriptor, ";");
@@ -3557,7 +3664,7 @@ static void wrprules (PtrPRule RP, FILE *fileDescriptor, PtrPSchema pPSch)
         case PtBorderTopColor:
           fprintf (fileDescriptor, "BorderTopColor: ");
           if (RP->PrPresMode == PresImmediate &&
-              !RP->PrAttrValue && RP->PrIntValue == -2)
+              RP->PrValueType == PrNumValue && RP->PrIntValue == -2)
             fprintf (fileDescriptor, "transparent");
           else
             wrnbherit (RP, fileDescriptor);
@@ -3565,7 +3672,7 @@ static void wrprules (PtrPRule RP, FILE *fileDescriptor, PtrPSchema pPSch)
         case PtBorderRightColor:
           fprintf (fileDescriptor, "BorderRightColor: ");
           if (RP->PrPresMode == PresImmediate &&
-              !RP->PrAttrValue && RP->PrIntValue == -2)
+              RP->PrValueType == PrNumValue && RP->PrIntValue == -2)
             fprintf (fileDescriptor, "transparent");
           else
             wrnbherit (RP, fileDescriptor);
@@ -3573,7 +3680,7 @@ static void wrprules (PtrPRule RP, FILE *fileDescriptor, PtrPSchema pPSch)
         case PtBorderBottomColor:
           fprintf (fileDescriptor, "BorderBottomColor: ");
           if (RP->PrPresMode == PresImmediate &&
-              !RP->PrAttrValue && RP->PrIntValue == -2)
+              RP->PrValueType == PrNumValue && RP->PrIntValue == -2)
             fprintf (fileDescriptor, "transparent");
           else
             wrnbherit (RP, fileDescriptor);
@@ -3581,7 +3688,7 @@ static void wrprules (PtrPRule RP, FILE *fileDescriptor, PtrPSchema pPSch)
         case PtBorderLeftColor:
           fprintf (fileDescriptor, "BorderLeftColor: ");
           if (RP->PrPresMode == PresImmediate &&
-              !RP->PrAttrValue && RP->PrIntValue == -2)
+              RP->PrValueType == PrNumValue && RP->PrIntValue == -2)
             fprintf (fileDescriptor, "transparent");
           else
             wrnbherit (RP, fileDescriptor);
@@ -3670,13 +3777,37 @@ static void wrprules (PtrPRule RP, FILE *fileDescriptor, PtrPSchema pPSch)
           fprintf (fileDescriptor, "Opacity: ");
           wrnbherit (RP, fileDescriptor);
           break;
+        case PtFillOpacity:
+          fprintf (fileDescriptor, "FillOpacity: ");
+          wrnbherit (RP, fileDescriptor);
+          break;
         case PtStrokeOpacity:
           fprintf (fileDescriptor, "StrokeOpacity: ");
           wrnbherit (RP, fileDescriptor);
           break;
-        case PtFillOpacity:
-          fprintf (fileDescriptor, "FillOpacity: ");
+        case PtStopOpacity:
+          fprintf (fileDescriptor, "StopOpacity: ");
           wrnbherit (RP, fileDescriptor);
+          break;
+        case PtMarker:
+          fprintf (fileDescriptor, "Marker: ");
+          wrnbherit (RP, fileDescriptor);
+          break;
+        case PtMarkerStart:
+          fprintf (fileDescriptor, "MarkerStart: ");
+          wrnbherit (RP, fileDescriptor);
+          break;
+        case PtMarkerMid:
+          fprintf (fileDescriptor, "MarkerMid: ");
+          wrnbherit (RP, fileDescriptor);
+          break;
+        case PtMarkerEnd:
+          fprintf (fileDescriptor, "MarkerEnd: ");
+          wrnbherit (RP, fileDescriptor);
+          break;
+        case PtFillRule:
+          fprintf (fileDescriptor, "FillRule: ");
+          wrfontstyle (RP, fileDescriptor);
           break;
         case PtBackground:
           fprintf (fileDescriptor, "Background: ");
@@ -3684,6 +3815,14 @@ static void wrprules (PtrPRule RP, FILE *fileDescriptor, PtrPSchema pPSch)
           break;
         case PtForeground:
           fprintf (fileDescriptor, "Foreground: ");
+          wrnbherit (RP, fileDescriptor);
+          break;
+        case PtColor:
+          fprintf (fileDescriptor, "Color: ");
+          wrnbherit (RP, fileDescriptor);
+          break;
+        case PtStopColor:
+          fprintf (fileDescriptor, "StopColor: ");
           wrnbherit (RP, fileDescriptor);
           break;
         case PtHyphenate:
@@ -3757,7 +3896,7 @@ static void wrprules (PtrPRule RP, FILE *fileDescriptor, PtrPSchema pPSch)
               }
           else if (RP->PrPresMode == PresImmediate)
            {
-            if (RP->PrAttrValue)
+            if (RP->PrValueType != PrNumValue)
               fprintf (fileDescriptor, "??");
             else
               if (RP->PrIntValue == 0)
@@ -4218,7 +4357,7 @@ void DisplayPRule (PtrPRule rule, FILE *fileDescriptor,
 
   PRuleToPresentationSetting (rule, &setting, pSchP);
   buffer[0] = EOS;
-  TtaPToCss (&setting, buffer, 199, (Element) pEl);
+  TtaPToCss (&setting, buffer, 199, (Element) pEl, (void*)pSchP);
   if (buffer[0] == EOS)
     return;
   /* display the rule */

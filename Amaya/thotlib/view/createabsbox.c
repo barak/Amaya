@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2008
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -88,6 +88,7 @@ typedef struct _Cascade
   AllRules     AfterPseudoEl;
 } Cascade;
 
+
 typedef struct _RuleQueue
 {
   PtrPRule         queuePR[MAX_QUEUE_LEN];
@@ -96,6 +97,15 @@ typedef struct _RuleQueue
   PtrAbstractBox   queuePP[MAX_QUEUE_LEN];
   AllRules*        rulesPseudo[MAX_QUEUE_LEN];
 } RuleQueue;
+
+static  PtrPRule         PriorRuleV;
+static  PtrPSchema       PriorschemaOfRuleV;
+static  PtrAttribute     PriorattrOfRuleV;
+static  PtrAttributePres PriorattrBlockOfRuleV;  
+static  PtrPRule         PriorRuleD;
+static  PtrPSchema       PriorschemaOfRuleD;
+static  PtrAttribute     PriorattrOfRuleD;
+static  PtrAttributePres PriorattrBlockOfRuleD;  
 
 static PresRule ListItemVisibility, ListItemListStyleType, ListItemListStyleImage, ListItemListStylePosition, ListItemVertPos, ListItemHorizPos, ListItemMarginRight, ListItemMarginLeft, ListItemSize, ListItemStyle, ListItemPtWeight, ListItemVariant, ListItemFont, ListItemOpacity, ListItemDirection, ListItemBackground, ListItemForeground;
 
@@ -451,11 +461,20 @@ PtrAbstractBox InitAbsBoxes (PtrElement pEl, DocViewNumber view, int Visib,
   pAb->AbLineWeight = 1;
   pAb->AbLineSpacing = 10;
   pAb->AbFillPattern = 0;
-  pAb->AbBackground = DefaultBColor;	/* blanc */
-  pAb->AbForeground = DefaultFColor;	/* noir */
+  pAb->AbBackground = DefaultBColor;	/* white */
+  pAb->AbGradientBackground = FALSE;
+  pAb->AbForeground = DefaultFColor;	/* black */
+  pAb->AbColor = DefaultFColor;         /* black */
+  pAb->AbStopColor = DefaultFColor;
+  pAb->AbStopOpacity = 1000;   /* Full opaque*/
   pAb->AbOpacity = 1000;       /* Full opaque*/
   pAb->AbFillOpacity = 1000;   /* Full opaque*/
   pAb->AbStrokeOpacity = 1000; /* Full opaque*/
+  pAb->AbMarker = NULL;        /* none */
+  pAb->AbMarkerStart = NULL;   /* none */
+  pAb->AbMarkerMid = NULL;     /* none */
+  pAb->AbMarkerEnd = NULL;     /* none */
+  pAb->AbFillRule = 'n';       /* fill-rule: nonzero */
   pAb->AbTopBColor = -1;
   pAb->AbRightBColor = -1;
   pAb->AbBottomBColor = -1;
@@ -764,23 +783,62 @@ int AppliedView (PtrElement pEl, PtrAttribute pAttr, PtrDocument pDoc,
   Si l'englobant est un pave page ou un pave duplique,    
   on met la regle en attente au niveau de la racine.      
   ----------------------------------------------------------------------*/
-void Delay (PtrPRule pR, PtrPSchema pSP, PtrAbstractBox pAbb,
-            PtrAttribute pAttr, PtrAbstractBox pPRP)
+static void Delay (PtrPRule pR, PtrPSchema pSP, PtrAbstractBox pAbb,
+                   PtrAttribute pAttr)
 {
   PtrDelayedPRule     pDelR;
   PtrDelayedPRule     NpDelR;
   PtrAbstractBox      pAb;
+  PtrElement          pAncest;
+  int                 view;
 
   pAb = NULL;
-  if (pPRP->AbEnclosing != NULL)
+  if (pAbb->AbEnclosing)
     {
-      pAb = pPRP->AbEnclosing;
+      if (/* is it a position relatively to a referred element? */
+          ((pR->PrType == PtHorizPos || pR->PrType == PtVertPos) &&
+           pR->PrPosRule.PoRelation == RlReferred) ||
+
+          /* is it the width or height... */
+          ((pR->PrType == PtWidth || pR->PrType == PtHeight) &&
+           /* ... of a rubber band box... */
+           ((pR->PrDimRule.DrPosition &&
+             pR->PrDimRule.DrPosRule.PoRelation == RlReferred) ||
+            /* ... or defined by a reference to another element? */
+            (!pR->PrDimRule.DrPosition && pR->PrDimRule.DrSameDimens &&
+             pR->PrDimRule.DrRelation == RlReferred))))
+        {
+          if (pAttr && pAttr->AeAttrType == AtReferenceAttr &&
+              pAttr->AeAttrReference &&
+              pAttr->AeAttrReference->RdReferred &&
+              pAttr->AeAttrReference->RdReferred->ReReferredElem)
+            /* the rule is associated with a reference attribute that actually
+               refers to an element */
+            {
+              /* get the first ancestor of this referred element that has an
+                 abstract box in the same view */
+              view = pAbb->AbDocView;
+              pAncest = pAttr->AeAttrReference->RdReferred->ReReferredElem->ElParent;
+              while (pAncest && !pAncest->ElAbstractBox[view - 1])
+                pAncest = pAncest->ElParent;
+              if (pAncest)
+                /* link the rule to the abstract box of this ancestor for later
+                   evaluation */
+                pAb = pAncest->ElAbstractBox[view - 1];
+            }
+        }
+      if (pAb == NULL)
+        pAb = pAbb->AbEnclosing;
       /* si ce pave est un pave de presentation cree par la regle */
       /* FnCreateEnclosing, on met la regle en attente sur le pave englobant */
-      if (pAb->AbEnclosing != NULL)
-        if (pAb->AbPresentationBox &&
-            pAb->AbElement == pPRP->AbElement)
-          pAb = pAb->AbEnclosing;
+      if (pAb->AbEnclosing &&
+          (pAb->AbPresentationBox &&
+           pAb->AbElement == pAbb->AbElement))
+        pAb = pAb->AbEnclosing;
+      else if (pR->PrPresMode == PresInherit &&
+               pR->PrInheritMode == InheritGrandFather &&
+               pAb->AbEnclosing)
+        pAb = pAb->AbEnclosing;
     }
 
   if (pAb)
@@ -863,6 +921,72 @@ void GetDelayedRule (PtrPRule *pR, PtrPSchema *pSP, PtrAbstractBox *pAbb,
 }
 
 /*----------------------------------------------------------------------
+  ApplyDelayedRules applies delayed rules of type ruleType (any
+  type if ruleType is -1) attached to the current pAb abstact box.
+  ----------------------------------------------------------------------*/
+ThotBool ApplyDelayedRules (int ruleType, PtrAbstractBox pAb, PtrDocument pDoc)
+{
+  PtrDelayedPRule     pDelR, prev = NULL, next;
+  ThotBool            stop;
+  PtrElement          pEl;
+
+  if (pAb)
+    {
+      /* cherche le pave de l'element dans cette vue */
+      /* saute les paves de presentation */
+      stop = FALSE;
+      pEl = pAb->AbElement;
+      do
+        if (pAb == NULL)
+          stop = TRUE;
+        else if (pAb->AbElement != pEl)
+          {
+            stop = TRUE;
+            pAb = NULL;
+          }
+        else if (!pAb->AbPresentationBox)
+          stop = TRUE;
+        else
+          pAb = pAb->AbNext;
+      while (!stop);
+
+      if (pAb && pAb->AbDelayedPRule)
+        {
+          pDelR = pAb->AbDelayedPRule;
+          while (pDelR)
+            {
+              next = pDelR->DpNext;
+              if (pDelR->DpPRule &&
+                  (ruleType == -1 || pDelR->DpPRule->PrType == ruleType))
+                {
+                  // try to apply that rule
+                  if (ApplyRule (pDelR->DpPRule,
+                                 pDelR->DpPSchema,
+                                 pDelR->DpAbsBox, pDoc,
+                                 pDelR->DpAttribute, pAb))
+                    {
+                      // that rule is now applied
+                      if (prev)
+                        prev->DpNext = pDelR->DpNext;
+                      else
+                        pAb->AbDelayedPRule = pDelR->DpNext;
+                      FreeDifferedRule (pDelR);
+                    }
+                  else
+                    prev = pDelR;
+                }
+              else
+                prev = pDelR;
+              // next delayed rule
+              pDelR = next;
+            }
+        }
+    }
+  return TRUE;
+}
+
+
+/*----------------------------------------------------------------------
   ApplDelayedRule applique les regles retardees conservees pour  
   les paves de l'element El du document pDoc.             
   ----------------------------------------------------------------------*/
@@ -899,28 +1023,8 @@ void ApplDelayedRule (PtrElement pEl, PtrDocument pDoc)
                 if (pRule &&
                     ApplyRule (pRule, pSPres, pAbb, pDoc, pAttr, pAb))
                   if (pAbb->AbElement != pEl && !pAbb->AbNew)
-                    switch (pRule->PrType)
-                      {
-                      case PtWidth:
-                        pAbb->AbWidthChange = TRUE;
-                        break;
-                      case PtHeight:
-                        pAbb->AbHeightChange = TRUE;
-                        break;
-                      case PtHorizPos:
-                        pAbb->AbHorizPosChange = TRUE;
-                        break;
-                      case PtVertPos:
-                        pAbb->AbVertPosChange = TRUE;
-                        break;
-                      case PtHorizRef:
-                        pAbb->AbHorizRefChange = TRUE;
-                        break;
-                      case PtVertRef:
-                        pAbb->AbVertRefChange = TRUE;
-                        break;
-                      default: break;
-                      }
+                    SetChange (pAbb, pDoc, pRule->PrType,
+                               (FunctionType)pRule->PrPresFunction);
               }
             while (pRule);
           }
@@ -1569,12 +1673,14 @@ ThotBool CondPresentation (PtrCondition pCond, PtrElement pEl,
       ok = ok && found;
 
       if (pCond->CoCondition == PcWithin || pCond->CoCondition == PcSibling)
-        if (!pCond->CoImmediate && pCond->CoChangeElem && pAsc)
-          /* The condition we have just processed is the first at its level
-             in the CSS selector. Remember it */
-          firstCondLevel = pCond;
-        else
-          firstCondLevel = NULL;
+	{
+	  if (!pCond->CoImmediate && pCond->CoChangeElem && pAsc)
+	    /* The condition we have just processed is the first at its level
+	       in the CSS selector. Remember it */
+	    firstCondLevel = pCond;
+	  else
+	    firstCondLevel = NULL;
+	}
 
       if (ok)
         pCond = pCond->CoNextCondition;
@@ -1923,8 +2029,8 @@ PtrPRule SearchRuleListItemMarker (PRuleType ruleType, PtrElement pEl,
           pRule->PrMinValue = 0;
           pAb = ListItemAbsBox (pEl, pDoc);
           if (pAb &&
-              (ruleType == PtMarginRight && pAb->AbDirection == 'L' ||
-               ruleType == PtMarginLeft && pAb->AbDirection == 'R'))
+              ((ruleType == PtMarginRight && pAb->AbDirection == 'L') ||
+               (ruleType == PtMarginLeft && pAb->AbDirection == 'R')))
             pRule->PrMinValue = 6;
           break;
         case PtVisibility:
@@ -2257,60 +2363,62 @@ ThotBool CreateListItemMarker (PtrAbstractBox pAb, PtrDocument pDoc,
         }
 
       if (!done)
-        /* set content and size, according to the marker type */
-        if (pAb->AbListStyleType == 'D' ||   /* disc */
-            pAb->AbListStyleType == 'C' ||   /* circle */
-            pAb->AbListStyleType == 'S')   /* square */
-          /* content is a graphic shape */
-          {
-            /* HorizRef: * . Bottom; */
-            pMarkerAb->AbHorizRef.PosEdge = HorizRef;
-            pMarkerAb->AbHorizRef.PosRefEdge = Bottom;
-            pMarkerAb->AbHorizRef.PosAbRef = pMarkerAb;
-            /* Height: 0.4 em */
-            pMarkerAb->AbHeight.DimValue = 4;
-            pMarkerAb->AbHeight.DimAbRef = NULL;
-            pMarkerAb->AbHeight.DimUnit = UnRelative;
-            pMarkerAb->AbHeight.DimSameDimension = FALSE;
-            /* Width: 0.4 em */
-            pMarkerAb->AbWidth.DimValue = 4;
-            pMarkerAb->AbWidth.DimAbRef = NULL;
-            pMarkerAb->AbWidth.DimUnit = UnRelative;
-            pMarkerAb->AbWidth.DimSameDimension = FALSE;	  
-            /* LineWeight: 1 px */
-            pMarkerAb->AbLineWeight = 1;
-            pMarkerAb->AbLineWeightUnit = UnPixel;
-            /* FillPattern: foregroundcolor */
-            if (pAb->AbListStyleType == 'D' ||
-                pAb->AbListStyleType == 'S')
-              /* disc or square */
-              pMarkerAb->AbFillPattern = 1;
-            /* set content */
-            pMarkerAb->AbLeafType = LtGraphics;
-            if (pAb->AbListStyleType == 'S')
-              /* square */
-              pMarkerAb->AbShape = 'R';
-            else
-              /* circle or disc */
-              pMarkerAb->AbShape = 'c';
-            pMarkerAb->AbGraphScript = 'L';
-            pMarkerAb->AbVolume = 1;
-          }
-        else if (pAb->AbListStyleType == '1' ||  /* decimal */
-                 pAb->AbListStyleType == 'Z' ||  /* decimal-leading-zero */
-                 pAb->AbListStyleType == 'i' ||  /* lower-roman */
-                 pAb->AbListStyleType == 'I' ||  /* Upper-Roman */
-                 pAb->AbListStyleType == 'g' ||  /* lower greek */
-                 pAb->AbListStyleType == 'a' ||  /* lower-latin */
-                 pAb->AbListStyleType == 'A')    /* upper-latin */
-          /* it's a counter */
-          {
-            pMarkerAb->AbLeafType = LtText;
-            if (pMarkerAb->AbText == NULL)
-              GetConstantBuffer (pMarkerAb);
-            pMarkerAb->AbLang = TtaGetDefaultLanguage ();
-            ComputeListItemNumber (pMarkerAb);
-          }
+	{
+	  /* set content and size, according to the marker type */
+	  if (pAb->AbListStyleType == 'D' ||   /* disc */
+	      pAb->AbListStyleType == 'C' ||   /* circle */
+	      pAb->AbListStyleType == 'S')   /* square */
+	    /* content is a graphic shape */
+	    {
+	      /* HorizRef: * . Bottom; */
+	      pMarkerAb->AbHorizRef.PosEdge = HorizRef;
+	      pMarkerAb->AbHorizRef.PosRefEdge = Bottom;
+	      pMarkerAb->AbHorizRef.PosAbRef = pMarkerAb;
+	      /* Height: 0.4 em */
+	      pMarkerAb->AbHeight.DimValue = 4;
+	      pMarkerAb->AbHeight.DimAbRef = NULL;
+	      pMarkerAb->AbHeight.DimUnit = UnRelative;
+	      pMarkerAb->AbHeight.DimSameDimension = FALSE;
+	      /* Width: 0.4 em */
+	      pMarkerAb->AbWidth.DimValue = 4;
+	      pMarkerAb->AbWidth.DimAbRef = NULL;
+	      pMarkerAb->AbWidth.DimUnit = UnRelative;
+	      pMarkerAb->AbWidth.DimSameDimension = FALSE;	  
+	      /* LineWeight: 1 px */
+	      pMarkerAb->AbLineWeight = 1;
+	      pMarkerAb->AbLineWeightUnit = UnPixel;
+	      /* FillPattern: foregroundcolor */
+	      if (pAb->AbListStyleType == 'D' ||
+		  pAb->AbListStyleType == 'S')
+		/* disc or square */
+		pMarkerAb->AbFillPattern = 1;
+	      /* set content */
+	      pMarkerAb->AbLeafType = LtGraphics;
+	      if (pAb->AbListStyleType == 'S')
+		/* square */
+		pMarkerAb->AbShape = 'R';
+	      else
+		/* circle or disc */
+		pMarkerAb->AbShape = 'c';
+	      pMarkerAb->AbGraphScript = 'L';
+	      pMarkerAb->AbVolume = 1;
+	    }
+	  else if (pAb->AbListStyleType == '1' ||  /* decimal */
+		   pAb->AbListStyleType == 'Z' ||  /* decimal-leading-zero */
+		   pAb->AbListStyleType == 'i' ||  /* lower-roman */
+		   pAb->AbListStyleType == 'I' ||  /* Upper-Roman */
+		   pAb->AbListStyleType == 'g' ||  /* lower greek */
+		   pAb->AbListStyleType == 'a' ||  /* lower-latin */
+		   pAb->AbListStyleType == 'A')    /* upper-latin */
+	    /* it's a counter */
+	    {
+	      pMarkerAb->AbLeafType = LtText;
+	      if (pMarkerAb->AbText == NULL)
+		GetConstantBuffer (pMarkerAb);
+	      pMarkerAb->AbLang = TtaGetDefaultLanguage ();
+	      ComputeListItemNumber (pMarkerAb);
+	    }
+	}
     }
   return TRUE;
 }
@@ -2335,8 +2443,6 @@ PtrAbstractBox CrAbsBoxesPres (PtrElement pEl, PtrDocument pDoc,
   PtrAbstractBox      pAb, pAbb1, pAbbNext;
   PtrAbstractBox      pAbbCreated;
   PtrElement          pE, pER, pElSibling;
-  PtrPSchema          pSP;
-  PtrAttribute        pSelAttr;
   PtrPresentationBox  pBox;
   FunctionType        funct;
   TypeUnit            unit;
@@ -2375,6 +2481,24 @@ PtrAbstractBox CrAbsBoxesPres (PtrElement pEl, PtrDocument pDoc,
   if (ok && (pEl->ElHolophrast || pEl->ElTerminal))
     if (funct == FnCreateFirst || funct == FnCreateLast || funct == FnContent)
       ok = FALSE;
+
+  if (ok && funct == FnContent && (pRCre->PrBoxType == BtBefore || pRCre->PrBoxType == BtAfter))
+    /* it's a CSS content property. Check if we are allowed to insert some content here: it is
+       for instance forbidden to create content between rows in a table or after a tbody, etc. */
+    {
+      pE = pEl;
+      while (pE && ok)
+	{
+	  if (TypeHasException (ExcIsCell, pE->ElTypeNumber, pE->ElStructSchema) ||
+	      TypeHasException (ExcIsCaption, pE->ElTypeNumber, pE->ElStructSchema))
+	    break;
+	  else if (TypeHasException (ExcIsTable, pE->ElTypeNumber, pE->ElStructSchema))
+	    ok = FALSE;
+	  else
+	    pE = pE->ElParent;
+	}
+    }
+
   /* on ne cree pas de pave de presentation qui soit un frere ou le pere du */
   /* pave racine de la vue. */
   if (ok && pEl->ElAbstractBox[viewIndex]->AbEnclosing == NULL)
@@ -2515,7 +2639,8 @@ PtrAbstractBox CrAbsBoxesPres (PtrElement pEl, PtrDocument pDoc,
           if (view == viewSch)
             {
               /* c'est la regle de la vue traitee */
-              vis = IntegerRule (pR, pEl, viewNb, &ok, &unit, NULL, NULL);
+              vis = IntegerRule (pR, pEl, viewNb, &ok, &unit, NULL, NULL,
+				 pSchP, pDoc);
               /* si la regle de visibilite n'a pas pu etre appliquee, */
               /* on prend la visibilite du pave de l'element createur */
               if (!ok)
@@ -2861,7 +2986,7 @@ PtrAbstractBox CrAbsBoxesPres (PtrElement pEl, PtrDocument pDoc,
 
           if (pAbbCreated != NULL)
             {
-              if (pER != NULL)
+              if (pER)
                 /* change le pointeur de pave de l'element englobant les */
                 /* elements associes a mettre dans la boite */
                 {
@@ -2918,17 +3043,17 @@ PtrAbstractBox CrAbsBoxesPres (PtrElement pEl, PtrDocument pDoc,
                               /* pas encore ete appliquees au pave */
                               /* et le pave cree herite du createur, on */
                               /* differe l'application de la regle */
-                              Delay (pRV, pSchP, pAbbCreated, NULL, pAbbCreated);
+                              Delay (pRV, pSchP, pAbbCreated, NULL);
                             else if (!ApplyRule (pRV, pSchP, pAbbCreated, pDoc,
                                                  NULL, pAbbCreated))
                               /* on n'a pas pu appliquer la regle, on */
                               /* l'appliquera lorsque le pave pere */
                               /* sera  termine' */
-                              Delay (pRV, pSchP, pAbbCreated, NULL, pAbbCreated);
+                              Delay (pRV, pSchP, pAbbCreated, NULL);
                           }
                       }
                 }
-              while (pR != NULL);
+              while (pR);
 
               pAbbCreated->AbPresentationBox = TRUE;
               /* met le contenu dans le pave cree */
@@ -2976,17 +3101,11 @@ PtrAbstractBox CrAbsBoxesPres (PtrElement pEl, PtrDocument pDoc,
                       break;
                     }
                 }
-              while (pR != NULL);
-              do		/* applique les regles retardees */
-                {
-                  pAbb1 = pAbbCreated;
-                  GetDelayedRule (&pR, &pSP, &pAbb1, &pSelAttr);
-                  if (pR != NULL)
-                    if (!ApplyRule (pR, pSP, pAbb1, pDoc, pSelAttr,
-                                    pAbbCreated))
-                      Delay (pR, pSP, pAbb1, pSelAttr, pAbbCreated);
-                }
-              while (pR != NULL);
+              while (pR);
+
+              /* apply delayed rules */
+              ApplyDelayedRules (-1, pAbbCreated, pDoc);
+
               /* retablit AbPresentationBox qui a ete modifie' pour les boites de */
               /* haut ou de bas de page qui regroupent des elements associes */
               pAbbCreated->AbPresentationBox = TRUE;
@@ -4166,8 +4285,48 @@ PtrPRule GetNextAttrPresRule (PtrPRule *pR, PtrSSchema pSS,
 }
 
 /*----------------------------------------------------------------------
+  CascadeVisibility
+  If rule pRule is a candidate for the cascade, register it.
+  ----------------------------------------------------------------------*/
+static void CascadeVisibility (PtrPRule pRule, PtrPSchema pSchP,
+                                PtrAttribute pAttr, PtrAttributePres pAttrBlk)
+{
+  if (pRule)
+    {
+      /* register the rule in the appropriate rule table */
+      if (pRule->PrType == PtVisibility)
+	{
+	  if (RuleHasHigherPriority (pRule, pSchP, pAttrBlk,
+				     PriorRuleV,
+				     PriorschemaOfRuleV, PriorattrBlockOfRuleV))
+	    {
+	      // keep the right rule
+	      PriorRuleV = pRule;
+	      PriorschemaOfRuleV = pSchP;      
+	      PriorattrOfRuleV = pAttr;
+	      PriorattrBlockOfRuleV = pAttrBlk;
+	    }
+	}
+      else
+	{
+	  if (RuleHasHigherPriority (pRule, pSchP, pAttrBlk,
+				     PriorRuleD,
+				     PriorschemaOfRuleD, PriorattrBlockOfRuleD))
+	    {
+	      // keep the right rule
+	      PriorRuleD = pRule;
+	      PriorschemaOfRuleD = pSchP;      
+	      PriorattrOfRuleD = pAttr;
+	      PriorattrBlockOfRuleD = pAttrBlk;
+	    }
+	}
+    }
+}
+
+/*----------------------------------------------------------------------
   ApplyVisibRuleAttr modifie le parametre vis selon la regle de   
-  visibilite de pAttr.                                    
+  visibilite de pAttr.
+  Compare thre priority with previous visibility and display rules
   ----------------------------------------------------------------------*/
 static ThotBool ApplyVisibRuleAttr (PtrElement pEl, PtrAttribute pAttr,
                                     PtrElement pElAttr, PtrDocument pDoc,
@@ -4178,7 +4337,6 @@ static ThotBool ApplyVisibRuleAttr (PtrElement pEl, PtrAttribute pAttr,
   PtrPSchema          pSchP;
   PtrHandlePSchema    pHd;
   PtrAttributePres    attrBlock;
-  TypeUnit            unit;
   int                 view, valNum, match;
   ThotBool            stop, useView1, cssUndisplay = FALSE;
 
@@ -4210,6 +4368,9 @@ static ThotBool ApplyVisibRuleAttr (PtrElement pEl, PtrAttribute pAttr,
                   stop = FALSE;
                   useView1 = TRUE;
                   pRuleView1 = NULL;
+                    /* si on n'a pas trouve de regle specifique pour la vue view */
+                    /* On utilise la regle de visibilite de la vue 1 si elle
+                       existe */
                   /* cherche s'il y a une regle de visibilite pour la vue */
                   while (!stop)
                     {
@@ -4222,8 +4383,7 @@ static ThotBool ApplyVisibRuleAttr (PtrElement pEl, PtrAttribute pAttr,
                             if (view == 1)
                               stop = TRUE;
                             else
-                              /* saute les regles de visibilite suivantes
-                                 de la vue 1 */
+                              /* saute les regles de visibilite suivantes de la vue 1 */
                               while (pR->PrNextPRule &&
                                      pR->PrNextPRule->PrType == PtVisibility &&
                                      pR->PrNextPRule->PrViewNum == 1)
@@ -4235,9 +4395,9 @@ static ThotBool ApplyVisibRuleAttr (PtrElement pEl, PtrAttribute pAttr,
                               CondPresentation (pR->PrCond, pEl, pAttr, pElAttr,
                                                 pR, view, pAttr->AeAttrSSchema, pDoc))
                             {
+
                               /* regle trouvee, on l'evalue */
-                              *vis = IntegerRule (pR, pEl, viewNb, ok, &unit,
-                                                  pAttr, NULL);
+                              CascadeVisibility (pR, pSchP, pAttr, attrBlock);
                               useView1 = FALSE;
                               stop = TRUE;
                             }
@@ -4253,11 +4413,7 @@ static ThotBool ApplyVisibRuleAttr (PtrElement pEl, PtrAttribute pAttr,
                     }
 		
                   if (useView1 && pRuleView1)
-                    /* on n'a pas trouve de regle specifique pour la vue view */
-                    /* On utilise la regle de visibilite de la vue 1 si elle
-                       existe */
-                    *vis = IntegerRule (pRuleView1, pEl, viewNb, ok, &unit,
-                                        pAttr, NULL);
+                    CascadeVisibility (pRuleView1, pSchP, pAttr, attrBlock);
                 }
               else if (pR->PrType == PtDisplay && pR->PrBoxType == BtElement)
                 /* this is a Display rule that applies to the element itslef,
@@ -4266,12 +4422,7 @@ static ThotBool ApplyVisibRuleAttr (PtrElement pEl, PtrAttribute pAttr,
                   if (pR->PrViewNum == view &&
                       CondPresentation (pR->PrCond, pEl, pAttr, pElAttr,
                                         pR, view, pAttr->AeAttrSSchema, pDoc))
-                    if (CharRule (pR, pEl, viewNb, ok) == 'N')
-                      {
-                        /* display: none */
-                        *vis = 0;
-                        cssUndisplay = TRUE;
-                      }
+                    CascadeVisibility (pR, pSchP, pAttr, attrBlock);
                 }
               pR = pR->PrNextPRule;
             }
@@ -4320,8 +4471,13 @@ static ThotBool ComputeVisib (PtrElement pEl, PtrDocument pDoc,
   InheritAttrTable   *inheritTable;
   TypeUnit            unit;
   int                 view, l;
+  char                val;
   ThotBool            ok, stop, cssUndisplay;
 
+ PriorRuleV = PriorRuleD = NULL;
+ PriorschemaOfRuleV = PriorschemaOfRuleD = NULL;
+ PriorattrOfRuleV = PriorattrOfRuleD = NULL;
+ PriorattrBlockOfRuleV = PriorattrBlockOfRuleD = NULL;
   *vis = 0;
   cssUndisplay = FALSE;
   /* if an ancestor is hidden (Thot Access), the element is invisible */
@@ -4333,6 +4489,7 @@ static ThotBool ComputeVisib (PtrElement pEl, PtrDocument pDoc,
       pAsc = pAsc->ElParent;
 
   /* first, look at specific presentation rules attached ot the element */
+  pSP = PresentationSchema (pEl->ElStructSchema, pDoc);
   pRule = pEl->ElFirstPRule;
   while (pRule)
     /* apply a rule if it is related to the view */
@@ -4356,26 +4513,8 @@ static ThotBool ComputeVisib (PtrElement pEl, PtrDocument pDoc,
                 else
                   pAttr = pAttr->AeNext;
             }
-          if (pRule->PrType == PtVisibility)
-            *vis = IntegerRule (pRule, pEl, viewNb, &ok, &unit, pAttr, NULL);
-          if (pRule->PrType == PtDisplay && pRule->PrBoxType == BtElement)
-            /* this is a Display rule that applies to the element itslef,
-               not to a pseudo belement generated by :before or :after */
-            {
-              if (CharRule (pRule, pEl, viewNb, &ok) == 'N')
-                {
-                  if (ok)
-                    {
-                      /* rule "display: none" */
-                      *vis = 0;
-                      cssUndisplay = TRUE;
-                    }
-                }
-              else
-                ok = FALSE;
-            }
-          if (ok)
-            return cssUndisplay;
+          // keep the right rule
+          CascadeVisibility (pRule, pSP, NULL, NULL);
         }
       pRule = pRule->PrNextPRule;
     }
@@ -4384,7 +4523,6 @@ static ThotBool ComputeVisib (PtrElement pEl, PtrDocument pDoc,
   pRule = GetRule (pRSpec, pRDef, pEl, NULL, pEl->ElStructSchema, pDoc);
   /* first rule to be applied */
   /* the first rule is the visibility rule for view 1 (formatted view) */
-  *vis = 0;
   /* check all views defined in the presentation schema, to find the visibility
      rule for the view of interest */
   for (view = 1; view <= MAX_VIEW; view++)
@@ -4398,31 +4536,23 @@ static ThotBool ComputeVisib (PtrElement pEl, PtrDocument pDoc,
       if (view == viewSch && DoesViewExist (pEl, pDoc, viewNb))
         {
           /* if there is a visibility rule for this view, we take it */
+          if (pRuleV == NULL)
+            pRuleV = pRule;
           if (pRuleV)
-            *vis = IntegerRule (pRuleV, pEl, viewNb, &ok, &unit, NULL, NULL);
-          /* otherwise, we take the visibility rule for view 1 */
-          else
-            *vis = IntegerRule (pRule, pEl, viewNb, &ok, &unit, NULL, NULL);
+            // keep the right rule
+            CascadeVisibility (pRuleV, pSP, NULL, NULL);
+
           /* is there a display rule with value none? */
           pRuleDisplay = GetRuleView (pRSpec, pRDef, PtDisplay, view, pEl,
                                       NULL, pEl->ElStructSchema, pDoc);
           if (pRuleDisplay && pRuleDisplay->PrBoxType == BtElement)
             /* this is a Display rule that applies to the element itslef,
                not to a pseudo element generated by :before or :after */
-            {
-              if (CharRule (pRuleDisplay, pEl, viewNb, &ok) == 'N')
-                if (ok)
-                  {
-                    /* display: none */
-                    *vis = 0;
-                    cssUndisplay = TRUE;
-                  }
-            }
+            CascadeVisibility (pRuleDisplay, pSP, NULL, NULL);
         }
     }
 
   pHd = NULL;
-  pSP = PresentationSchema (pEl->ElStructSchema, pDoc);
   while (pSP)
     {
       if (viewSch == 1 && pHd)
@@ -4442,20 +4572,7 @@ static ThotBool ComputeVisib (PtrElement pEl, PtrDocument pDoc,
                                         1, pEl->ElStructSchema, pDoc))
                     /* conditions are ok */
                     {
-                      /* consider that rule only if it has a higher priority
-                         than the rule for the same property we have already
-                         encountered */
-                      /* @@@@ */
-                      if (pRule->PrType == PtVisibility)
-                        *vis = IntegerRule (pRule, pEl, 1, &ok, &unit, NULL,
-                                            NULL);
-                      else
-                        if (CharRule (pRule, pEl, 1, &ok) == 'N' && ok)
-                          /* CSS display: none */
-                          {
-                            *vis = 0;
-                            cssUndisplay = TRUE;
-                          }
+                      CascadeVisibility (pRule, pSP, NULL, NULL);
                     }
                 }
               /* next rule for the element type in the same P schema extens. */
@@ -4463,7 +4580,7 @@ static ThotBool ComputeVisib (PtrElement pEl, PtrDocument pDoc,
             }
         }
 
-      /* do the inherited attributes change visibility? */
+      /* do the inherited attributes change visibility ? */
       if (pSP->PsNInheritedAttrs->Num[pEl->ElTypeNumber - 1])
         {
           /* there is a possibility of inheritance */
@@ -4546,6 +4663,21 @@ static ThotBool ComputeVisib (PtrElement pEl, PtrDocument pDoc,
       cssUndisplay = ApplyVisibRuleAttr (pEl, pAttr, pEl, pDoc, vis,
                                          viewNb, &ok, FALSE);
       pAttr = pAttr->AeNext;	/* next attribute for the element */
+    }
+
+  // apply the selected rule
+  if (PriorRuleV)
+    *vis = IntegerRule (PriorRuleV, pEl, viewNb, &ok, &unit, PriorattrOfRuleV,
+			NULL, NULL, pDoc);
+  if (PriorRuleD)
+    {
+      val = CharRule (PriorRuleD, pEl, viewNb, &ok);
+      if (val == 'N' && ok)
+        {
+          /* rule "display: none" */
+          *vis = 0;
+          cssUndisplay = TRUE;
+        }
     }
 
   /* if it's the root element and its visibility has not been set yet,
@@ -4900,14 +5032,16 @@ static void GetRulesFromInheritedAttributes (PtrElement pEl,
                       if (viewSch != 1 ||
                           !CascRegistered (pRule, pSchPres, pAttr, attrBlock,
                                            casc))
-                        if (fileDescriptor)
-                          DisplayPRule (pRule, fileDescriptor, pEl, pSchPres,
-                                        0);
-                        else if (!ApplyRule (pRule, pSchPres, pNewAbbox, pDoc,
-                                             pAttr, pNewAbbox))
-                          /* not the main view, apply the rule now */
-                          WaitingRule (pRule, pNewAbbox, pSchPres, pAttr, NULL,
-                                       queue, lqueue);
+			{
+			  if (fileDescriptor)
+			    DisplayPRule (pRule, fileDescriptor, pEl, pSchPres,
+					  0);
+			  else if (!ApplyRule (pRule, pSchPres, pNewAbbox, pDoc,
+					       pAttr, pNewAbbox))
+			    /* not the main view, apply the rule now */
+			    WaitingRule (pRule, pNewAbbox, pSchPres, pAttr, NULL,
+					 queue, lqueue);
+			}
                     }
                   /* next rule associated with this value of the attribute */
                   pR = pR->PrNextPRule;
@@ -4973,6 +5107,7 @@ void ApplyPresRules (PtrElement pEl, PtrDocument pDoc,
       /* get the rule to be applied for view 1 (main view) */
       pRule = GetRule (pRSpec, pRDef, pEl, NULL, pSchS, pDoc);
       if (pRule)
+        {
         /* if its a rule that creates a presentation box, apply it */
         if (!ApplCrRule (pRule, pSchS, pSchP, NULL, pAbbReturn, viewNb, pDoc,
                          pEl, forward, lqueue, queue, pNewAbbox,
@@ -4986,7 +5121,7 @@ void ApplyPresRules (PtrElement pEl, PtrDocument pDoc,
               else
                 pRuleView = GetRuleView (pRSpec, pRDef, pRule->PrType, view,
                                          pEl, NULL, pSchS, pDoc);
-              if (view == viewSch && pNewAbbox != NULL &&
+              if (view == viewSch && pNewAbbox &&
                   DoesViewExist (pEl, pDoc, viewNb))
                 {
                   if (pRuleView == NULL)
@@ -4994,6 +5129,7 @@ void ApplyPresRules (PtrElement pEl, PtrDocument pDoc,
                     pRuleView = pRule;
                   /* if it's the main view, register the rule for the cascade*/
                   if (!CascRegistered (pRuleView, pSchP, NULL, NULL, casc))
+                    {
                     if (fileDescriptor)
                       DisplayPRule (pRuleView, fileDescriptor, pEl, pSchP, 0);
                     else if (!ApplyRule (pRuleView, pSchP, pNewAbbox, pDoc,
@@ -5001,12 +5137,14 @@ void ApplyPresRules (PtrElement pEl, PtrDocument pDoc,
                       /* it's a presentation function, apply the rule now */
                       WaitingRule (pRuleView, pNewAbbox, pSchP, NULL, NULL,
                                    queue, lqueue);
+                    }
                 }
             }
+        } 
     }
   while (pRule);
 
-  if (!pNewAbbox)
+  if (pNewAbbox == NULL && fileDescriptor == NULL)
     return;
 
   /* fetch all rules that apply to any element type in all extensions of the
@@ -5035,17 +5173,19 @@ void ApplyPresRules (PtrElement pEl, PtrDocument pDoc,
                      the rule for the same property we have already
                      encountered */
                   if (!CascRegistered (pRule, pSchPres, NULL, NULL, casc))
-                    if (fileDescriptor)
-                      DisplayPRule (pRule, fileDescriptor, pEl, pSchPres, 0);
-                    else 
-                      /* if it's a creation rule, apply it now */
-                      if (!ApplCrRule (pRule, pSchS, pSchPres, NULL,pAbbReturn,
-                                       viewNb, pDoc, pEl, forward, lqueue,
-                                       queue, pNewAbbox, fileDescriptor))
-                        if (!ApplyRule (pRule, pSchPres, pNewAbbox, pDoc, NULL,
-                                        pNewAbbox))
-                          WaitingRule (pRule, pNewAbbox, pSchPres, NULL, NULL,
-                                       queue, lqueue);
+		    {
+		      if (fileDescriptor)
+			DisplayPRule (pRule, fileDescriptor, pEl, pSchPres, 0);
+		      else 
+			/* if it's a creation rule, apply it now */
+			if (!ApplCrRule (pRule, pSchS, pSchPres, NULL,pAbbReturn,
+					 viewNb, pDoc, pEl, forward, lqueue,
+					 queue, pNewAbbox, fileDescriptor) &&
+			    !ApplyRule (pRule, pSchPres, pNewAbbox, pDoc, NULL,
+					pNewAbbox))
+			  WaitingRule (pRule, pNewAbbox, pSchPres, NULL, NULL,
+				       queue, lqueue);
+		    }
                 }
               /* next rule for all element types in the same P schema
                  extension */
@@ -5085,17 +5225,18 @@ void ApplyPresRules (PtrElement pEl, PtrDocument pDoc,
                   /* keep that rule only if it has a higher priority than the
                      rule for the same property we have already encountered */
                   if (!CascRegistered (pRule, pSchPres, NULL, NULL, casc))
-                    if (fileDescriptor)
-                      DisplayPRule (pRule, fileDescriptor, pEl, pSchPres, 0);
-                    else
-                      /* if it's a creation rule, apply it now */
-                      if (!ApplCrRule (pRule, pSchS, pSchPres, NULL,pAbbReturn,
-                                       viewNb, pDoc, pEl, forward, lqueue, queue, pNewAbbox,
-                                       fileDescriptor))
-                        if (!ApplyRule (pRule, pSchPres, pNewAbbox, pDoc, NULL,
-                                        pNewAbbox))
+		    {
+		      if (fileDescriptor)
+			DisplayPRule (pRule, fileDescriptor, pEl, pSchPres, 0);
+		      else
+			/* if it's a creation rule, apply it now */
+			if (!ApplCrRule (pRule, pSchS, pSchPres, NULL,pAbbReturn,
+					 viewNb, pDoc, pEl, forward, lqueue, queue, pNewAbbox,
+					 fileDescriptor) && 
+			    !ApplyRule (pRule, pSchPres, pNewAbbox, pDoc, NULL, pNewAbbox))
                           WaitingRule (pRule, pNewAbbox, pSchPres, NULL, NULL,
                                        queue, lqueue);
+		    }
                 }
               /* next rule for the element type in the same P schema extens. */
               pRule = pRule->PrNextPRule;
@@ -5207,14 +5348,16 @@ void ApplyPresRules (PtrElement pEl, PtrDocument pDoc,
                           if (viewSch != 1 ||
                               !CascRegistered (pRule, pSchPattr, pAttr,
                                                attrBlock, casc))
-                            if (fileDescriptor)
-                              DisplayPRule (pRule, fileDescriptor, pEl,
-                                            pSchPattr, 0);
-                            else if (!ApplyRule (pRule, pSchPattr,
-                                                 pNewAbbox, pDoc, pAttr, pNewAbbox))
-                              /* not the main view, apply the rule now */
-                              WaitingRule (pRule, pNewAbbox, pSchPattr,
-                                           pAttr, NULL, queue, lqueue);
+			    {
+			      if (fileDescriptor)
+				DisplayPRule (pRule, fileDescriptor, pEl,
+					      pSchPattr, 0);
+			      else if (!ApplyRule (pRule, pSchPattr,
+						   pNewAbbox, pDoc, pAttr, pNewAbbox))
+				/* not the main view, apply the rule now */
+				WaitingRule (pRule, pNewAbbox, pSchPattr,
+					     pAttr, NULL, queue, lqueue);
+			    }
                         }
                       /* next rule associated with this value of the attr*/
                       pR = pR->PrNextPRule;
@@ -5643,7 +5786,7 @@ PtrAbstractBox AbsBoxesCreate (PtrElement pEl, PtrDocument pDoc,
   PtrPRule            pRule = NULL, pRDef, pRSpec;
   PtrElement          pElChild, pElParent, pAsc;
   PtrAbstractBox      pAbChild, pNewAbbox, pAbReturn, pAbPres;
-  PtrAbstractBox      pPRP, pAb, pAbParent;
+  PtrAbstractBox      pAb, pAbParent;
   PtrSSchema          pSchS, savePSS;
   PtrAttribute        pAttr;
   RuleQueue           queue;
@@ -6350,10 +6493,10 @@ PtrAbstractBox AbsBoxesCreate (PtrElement pEl, PtrDocument pDoc,
                             break;
                           }
                       }
-                    if (!crAbsBox)
-                      /* ce n'est pas une regle de creation */
-                      if (!ApplyRule (pRule, pSPres, pAb, pDoc, pAttr, pAb))
-                        Delay (pRule, pSPres, pAb, pAttr, pAb);
+                    if (!crAbsBox &&
+                        /* not a creation rule */
+                        !ApplyRule (pRule, pSPres, pAb, pDoc, pAttr, pAb))
+                      Delay (pRule, pSPres, pAb, pAttr);
                   }
               }
             while (pRule);
@@ -6375,18 +6518,9 @@ PtrAbstractBox AbsBoxesCreate (PtrElement pEl, PtrDocument pDoc,
                 else
                   pAb = pAb->AbNext;
               while (!stop);
-              do
-                {
-                  pPRP = pAb;
-                  GetDelayedRule (&pRule, &pSPres, &pPRP, &pAttr);
-                  if (pRule != NULL)
-                    if (!ApplyRule (pRule, pSPres, pPRP, pDoc, pAttr, pAb))
-                      /* cette regle n'a pas pu etre appliquee. C'est  */
-                      /* une regle correspondant a un attribut, on */
-                      /* l'appliquera lorsque l'englobant sera complete */
-                      Delay (pRule, pSPres, pPRP, pAttr, pAb);
-                }
-              while (pRule != NULL);
+
+              /* apply delayed rules */
+              ApplyDelayedRules (-1, pAb, pDoc);
             }
         }
       /* fin de !ignoreDescent */

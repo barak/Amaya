@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA  1996-2005
+ *  (c) COPYRIGHT INRIA  1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -86,6 +86,19 @@ static void WriteBoolean (ThotBool b)
     TtaWriteByte (outfile, '\1');
   else
     TtaWriteByte (outfile, EOS);
+}
+
+/*----------------------------------------------------------------------
+  WriteValueType							
+  ----------------------------------------------------------------------*/
+static void WriteValueType (PrValType t)
+{
+  if (t == PrConstStringValue)
+    TtaWriteByte (outfile, 'C');
+  else if (t == PrAttrValue)
+    TtaWriteByte (outfile, 'A');
+  else
+    TtaWriteByte (outfile, 'N');
 }
 
 /*----------------------------------------------------------------------
@@ -280,11 +293,35 @@ void                WritePRuleType (PRuleType ruleType)
     case PtFillOpacity:
       TtaWriteByte (outfile, C_PR_FILL_OPACITY);
       break;
+    case PtStopOpacity:
+      TtaWriteByte (outfile, C_PR_STOPOPACITY);
+      break;
+    case PtMarker:
+      TtaWriteByte (outfile, C_PR_MARKER);
+      break;
+    case PtMarkerStart:
+      TtaWriteByte (outfile, C_PR_MARKERSTART);
+      break;
+    case PtMarkerMid:
+      TtaWriteByte (outfile, C_PR_MARKERMID);
+      break;
+    case PtMarkerEnd:
+      TtaWriteByte (outfile, C_PR_MARKEREND);
+      break;
+    case PtFillRule:
+      TtaWriteByte (outfile, C_PR_FILL_RULE);
+      break;
     case PtBackground:
       TtaWriteByte (outfile, C_PR_BACKGROUND);
       break;
     case PtForeground:
       TtaWriteByte (outfile, C_PR_FOREGROUND);
+      break;
+    case PtColor:
+      TtaWriteByte (outfile, C_PR_COLOR);
+      break;
+    case PtStopColor:
+      TtaWriteByte (outfile, C_PR_STOPCOLOR);
       break;
     case PtHyphenate:
       TtaWriteByte (outfile, C_PR_HYPHENATE);
@@ -335,6 +372,9 @@ static void WritePresMode (PresMode mode)
       break;
     case PresInherit:
       TtaWriteByte (outfile, C_INHERIT);
+      break;
+    case PresCurrentColor:
+      TtaWriteByte (outfile, C_CURRENT_COLOR);
       break;
     case PresFunction:
       TtaWriteByte (outfile, C_PRES_FUNCTION);
@@ -1012,6 +1052,7 @@ void                WritePRules (PtrPRule pPRule, PtrSSchema pSS)
       switch (currentRule->PrPresMode)
 	      {
         case PresInherit:
+        case PresCurrentColor:
           WriteInheritMode (currentRule->PrInheritMode);
           WriteBoolean (currentRule->PrInhPercent);
           WriteBoolean (currentRule->PrInhAttr);
@@ -1047,6 +1088,8 @@ void                WritePRules (PtrPRule pPRule, PtrSSchema pSS)
             case PtFillPattern:
             case PtBackground:
             case PtForeground:
+            case PtColor:
+            case PtStopColor:
             case PtBorderTopColor:
             case PtBorderRightColor:
             case PtBorderBottomColor:
@@ -1054,8 +1097,13 @@ void                WritePRules (PtrPRule pPRule, PtrSSchema pSS)
             case PtOpacity:
             case PtFillOpacity:
             case PtStrokeOpacity:
+            case PtStopOpacity:
+            case PtMarker:
+            case PtMarkerStart:
+            case PtMarkerMid:
+            case PtMarkerEnd:
             case PtListStyleImage:
-              WriteBoolean (currentRule->PrAttrValue);
+              WriteValueType (currentRule->PrValueType);
               WriteSignedShort (currentRule->PrIntValue);
               break;
             case PtFont:
@@ -1076,6 +1124,7 @@ void                WritePRules (PtrPRule pPRule, PtrSSchema pSS)
             case PtBorderRightStyle:
             case PtBorderBottomStyle:
             case PtBorderLeftStyle:
+	    case PtFillRule:
               TtaWriteByte (outfile, currentRule->PrChrValue);
               break;
             case PtBreak1:

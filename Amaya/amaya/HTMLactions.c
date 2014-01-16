@@ -36,6 +36,14 @@
 #include "templateDeclarations_f.h"
 #endif /* TEMPLATES */
 
+#ifdef DAV
+#define WEBDAV_EXPORT extern
+#include "davlib.h"
+#include "davlib_f.h"
+#include "davlibRequests_f.h"
+#include "davlibUI_f.h"
+#endif /* DAV */
+
 #include "XML.h"
 #include "MENUconf.h"
 #include "anim_f.h"
@@ -1979,9 +1987,9 @@ static ThotBool ActivateElement (Element element, Document doc)
   ----------------------------------------------------------------------*/
 ThotBool CanFollowTheLink (Document doc)
 {
-  if (Right_ClikedElement && TtaGetDocument(Right_ClikedElement) == doc)
+  if (Right_ClickedElement && TtaGetDocument(Right_ClickedElement) == doc)
     {
-      if (WithinLinkElement (Right_ClikedElement, doc))
+      if (WithinLinkElement (Right_ClickedElement, doc))
         return TRUE;
     }
   return FALSE;
@@ -1993,9 +2001,9 @@ ThotBool CanFollowTheLink (Document doc)
 void FollowTheLink (Document doc, View view)
 {
   DontReplaceOldDoc = FALSE;
-  if (Right_ClikedElement)
-    ActivateElement (Right_ClikedElement, doc);
-  Right_ClikedElement = NULL;
+  if (Right_ClickedElement)
+    ActivateElement (Right_ClickedElement, doc);
+  Right_ClickedElement = NULL;
 }
 
 /*----------------------------------------------------------------------
@@ -2004,9 +2012,9 @@ void FollowTheLinkNewWin (Document doc, View view)
 {
   DontReplaceOldDoc = TRUE;
   InNewWindow       = TRUE;
-  if (Right_ClikedElement)
-    ActivateElement (Right_ClikedElement, doc);
-  Right_ClikedElement = NULL;
+  if (Right_ClickedElement)
+    ActivateElement (Right_ClickedElement, doc);
+  Right_ClickedElement = NULL;
 }
 
 /*----------------------------------------------------------------------
@@ -2015,9 +2023,9 @@ void FollowTheLinkNewTab (Document doc, View view)
 {
   DontReplaceOldDoc = TRUE;
   InNewWindow       = FALSE;
-  if (Right_ClikedElement)
-    ActivateElement (Right_ClikedElement, doc);
-  Right_ClikedElement = NULL;
+  if (Right_ClickedElement)
+    ActivateElement (Right_ClickedElement, doc);
+  Right_ClickedElement = NULL;
 }
 
 /*----------------------------------------------------------------------
@@ -2206,7 +2214,7 @@ void NextLinkOrFormElement (Document doc, View view)
             case HTML_EL_Button_Input:
             case HTML_EL_BUTTON_:
             case HTML_EL_Anchor:
-              /* no included text: select the element itself */
+		    /* no included text: select the element itself */
               TtaSelectElement (doc, el);
               found =TRUE;
               break;
@@ -2232,10 +2240,11 @@ void NextLinkOrFormElement (Document doc, View view)
                   i = TtaGetTextLength (child);
                   TtaSelectString (doc, child, i+1, i);
                 }
-              found =TRUE;
+              found = TRUE;
               break;
 
             default:
+              attr = NULL;
               break;
             }
         }
@@ -2523,6 +2532,7 @@ ThotBool SimpleClick (NotifyElement *event)
 ThotBool SimpleLClick (NotifyElement *event)
 {
   /* let Thot perform normal operation */
+  Right_ClickedElement = NULL;
   return FALSE;
 }
 
@@ -2535,36 +2545,36 @@ ThotBool SimpleRClick (NotifyElement *event)
   ElementType         elType;
   Element             el;
 
-  Right_ClikedElement = event->element;
+  Right_ClickedElement = event->element;
 #ifdef TEMPLATES
-  elType = TtaGetElementType (Right_ClikedElement);
+  elType = TtaGetElementType (Right_ClickedElement);
   if (!strcmp (TtaGetSSchemaName (elType.ElSSchema), "Template"))
     {
       if (elType.ElTypeNum == Template_EL_repeat ||
           elType.ElTypeNum == Template_EL_bag)
         {
-          el = TtaGetFirstChild (Right_ClikedElement);
+          el = TtaGetFirstChild (Right_ClickedElement);
           if (el)
-            Right_ClikedElement = el;
+            Right_ClickedElement = el;
         }
       else
         {
           /* select the following use element in the repeat */
-           el = TtaGetParent (Right_ClikedElement);
+           el = TtaGetParent (Right_ClickedElement);
            if (el)
              {
                elType = TtaGetElementType (el);
                if (!strcmp (TtaGetSSchemaName (elType.ElSSchema), "Template") &&
                    elType.ElTypeNum == Template_EL_repeat)
                  {
-                   el = Right_ClikedElement;
+                   el = Right_ClickedElement;
                    TtaNextSibling (&el);
                    if (el)
-                     Right_ClikedElement = el;
+                     Right_ClickedElement = el;
                  }
              }
         }
-      TtaSelectElement (event->document, Right_ClikedElement);
+      TtaSelectElement (event->document, Right_ClickedElement);
     }
 #endif /* _TEMPLATES */
   /* let Thot perform normal operation */
@@ -2754,6 +2764,11 @@ void FocusChanged (Document doc)
   if (GoToSection)
     return;
   UpdateStyleList (doc, 1);
+#ifdef DAV
+  if (DocumentMeta[doc])
+    DAVSetLockIndicator (doc, DocumentMeta[doc]->lockState);
+#endif /* DAV */
+  
   for (i = 1; i < DocumentTableLength; i++)
     if (DocumentURLs[i] && DocumentSource[i] != doc &&
         DocumentTypes[i] == docLog)
@@ -2864,7 +2879,10 @@ void FreeDocumentResource (Document doc)
               }
           /* avoid to free images of backup documents */
           if (BackupDocument != doc)
-            RemoveDocumentImages (doc);
+            {
+              RemoveLoadedResources (doc, &ImageURLs);
+              RemoveLoadedResources (doc, &LoadedResources);
+            }
         }
       /* restore the default document type */
       DocumentTypes[doc] = docFree;
@@ -2955,6 +2973,7 @@ void UpdateContextSensitiveMenus (Document doc, View view)
     return;
   /* check if there are HTML elements in the document */
   sch = TtaGetSSchema ("HTML", doc);
+  elType.ElSSchema = sch;
   withHTML = (DocumentTypes[doc] == docHTML && DocumentURLs[doc]);
   if (!withHTML)
     /* this is not a HTML document */
@@ -3353,6 +3372,25 @@ void UpdateContextSensitiveMenus (Document doc, View view)
     {
       SelectionInBDO = newSelInElem;
       TtaSetToggleItem (doc, 1, Types, TBDO, newSelInElem);
+    }
+
+  // Is it an annotation ?
+  if (firstSel)
+    {
+      elType = TtaGetElementType (firstSel);
+      if ((!strcmp (TtaGetSSchemaName (elType.ElSSchema), "XLink")) &&
+	  (elType.ElTypeNum == HTML_EL_PICTURE_UNIT))
+	{
+          TtaSetItemOn (doc, 1, Tools, BDeleteAnnot);
+          TtaSetItemOn (doc, 1, Tools, BReplyToAnnotation);
+          TtaSetItemOn (doc, 1, Tools, BPostAnnot);
+	}
+      else
+	{
+          TtaSetItemOff (doc, 1, Tools, BDeleteAnnot);
+          TtaSetItemOff (doc, 1, Tools, BReplyToAnnotation);
+          TtaSetItemOff (doc, 1, Tools, BPostAnnot);
+	}
     }
 }
 
@@ -3999,6 +4037,8 @@ void SelectionChanged (NotifyElement *event)
 
   if (DocumentTypes[doc] != docLog)
     {
+      TtaGiveFirstSelectedElement (doc, &el, &index, &i);
+      child = el;
       if (DocumentTypes[doc] != docSource && DocumentTypes[doc] != docCSS)
         {
           // update the XML list
@@ -4008,20 +4048,20 @@ void SelectionChanged (NotifyElement *event)
           if (!TtaIsTextInserting ())
             // no current text insertion
             CheckPromptIndicator (el, doc);
+          if (!IsTemplateDocument (doc))
 #endif /* TEMPLATES */
-          TtaGiveFirstSelectedElement (doc, &child, &index, &i);
-          elType = TtaGetElementType (el);
-          s = TtaGetSSchemaName (elType.ElSSchema);
-          if (!strcmp (s, "HTML"))
-            TtaRaiseDoctypePanels (WXAMAYA_DOCTYPE_XHTML);
+            {
+              elType = TtaGetElementType (child);
+              s = TtaGetSSchemaName (elType.ElSSchema);
+              if (!strcmp (s, "HTML"))
+                TtaRaiseDoctypePanels (WXAMAYA_DOCTYPE_XHTML);
+            }
         }
 #ifdef _WX
       else
         {
           // manage the selection in source or css file
-          TtaGiveFirstSelectedElement (doc, &child, &index, &i);
           elType = TtaGetElementType (el);
-          child = el;
           if (elType.ElTypeNum == TextFile_EL_TEXT_UNIT)
             {
               TtaPreviousSibling (&child);

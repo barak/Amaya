@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2008
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -631,3 +631,27 @@ void TtaCloseAllHelpWindows ()
 void ColApplyCSSRule (Element el, PresentationContext ctxt, char *cssRule, CSSInfoPtr css)
 {
 }
+
+void SVGhandleFillUrl (Element el, Document doc, char *text)
+{
+}
+
+char *SVGhandleStopColor (Element el, char *color)
+{
+  return NULL;
+}
+
+/*----------------------------------------------------------------------
+  GenerateMarkers
+  Apply a CSS rule marker* to element el in document doc.
+  Parameter marker is the marker element to be used.
+  Parameter position indicates where the marker has to be put on element pEl:
+    0: all vertices
+    1: start vertex
+    2: mid vertices
+    3: end vertex
+  ----------------------------------------------------------------------*/
+void GenerateMarkers (Element el, Document doc, Element marker, int position)
+{
+}
+

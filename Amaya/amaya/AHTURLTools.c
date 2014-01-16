@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2008
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -849,7 +849,56 @@ ThotBool IsXTiger (const char *path)
 }
 
 /*----------------------------------------------------------------------
-  IsUndisplayedName                                                         
+  IsResourceName 
+  returns TRUE if path points to an undisplayed resource.
+  ----------------------------------------------------------------------*/
+ThotBool IsResourceName (const char *path)
+{
+  char               *temppath, *suffix = NULL, *ptr = NULL;
+  ThotBool            ret = FALSE;
+
+  temppath = TtaStrdup ((char *)path);
+  if (temppath == NULL)
+    return FALSE;
+
+  if (!strncmp (temppath, "http://", 7))
+    ptr = &temppath[7];
+  else if (!strncmp (temppath, "http://", 8))
+    ptr = &temppath[8];
+  else
+    ptr = temppath;
+  if (ptr != temppath)
+    {
+      // skip the host name
+      while (*ptr != EOS && *ptr != '/')
+        ptr++;
+    }
+  if (*ptr == EOS)
+    // no name
+    return FALSE;
+
+  suffix = (char *)TtaGetMemory (strlen (ptr) + 1);
+  TtaExtractSuffix (ptr, suffix);
+  if (*suffix == EOS || *suffix == '/' ||
+      strstr (suffix, "#") || strstr (suffix, "?") ||
+      !strncasecmp (suffix, "htm", 3) ||
+      !strncasecmp (suffix, "shtm", 4) ||
+      !strncasecmp (suffix,"xhtm", 4) ||
+      !strncasecmp (suffix, "php", 3) ||
+      !strncasecmp (suffix, "mml", 3) ||
+      !strncasecmp (suffix, "svg", 3) ||
+      !strncasecmp (suffix, "xml", 3))
+    ret = FALSE;
+  else
+    ret = TRUE;
+      
+  TtaFreeMemory (temppath);
+  TtaFreeMemory (suffix);
+  return ret;
+}
+
+/*----------------------------------------------------------------------
+  IsUndisplayedName 
   returns TRUE if path points to an undisplayed resource.
   ----------------------------------------------------------------------*/
 ThotBool IsUndisplayedName (const char *path)
@@ -881,6 +930,8 @@ ThotBool IsUndisplayedName (const char *path)
       !strcasecmp (suffix, "rpm") ||
       !strcasecmp (suffix, "wmv") ||
       !strcasecmp (suffix, "wma") ||
+      !strcasecmp (suffix, "doc") ||
+      !strcasecmp (suffix, "odt") ||
       !strcasecmp (suffix, "o"))
     ret = TRUE;
   else if (!strcmp (suffix, "gz"))
@@ -900,6 +951,8 @@ ThotBool IsUndisplayedName (const char *path)
           !strcasecmp (suffix, "mpeg") ||
           !strcasecmp (suffix, "wmv") ||
           !strcasecmp (suffix, "wma") ||
+          !strcasecmp (suffix, "doc") ||
+          !strcasecmp (suffix, "odt") ||
           !strcasecmp (suffix, "o"))
         ret = TRUE;
       else
@@ -2172,7 +2225,7 @@ char   *AmayaParseUrl (const char *aName, const char *relatedName, int wanted)
   which might be the old one or a new one.
   
   ----------------------------------------------------------------------*/
-static char   *HTCanon (char **filename, char *host)
+static char *HTCanon (char **filename, char *host)
 {
   char   *newname = NULL;
   char    used_sep;
@@ -2291,7 +2344,7 @@ static char   *HTCanon (char **filename, char *host)
   
   Returns: A string which might be the old one or a new one.
   ----------------------------------------------------------------------*/
-void         SimplifyUrl (char **url)
+void SimplifyUrl (char **url)
 {
   char   *path;
   char   *access;
@@ -2336,10 +2389,13 @@ void         SimplifyUrl (char **url)
     path += 2;
   else
     path = *url;
+#ifndef _WINDOWS
   if (*path == used_sep && *(path+1) == used_sep)
     /* Some URLs start //<foo> */
     path += 1;
-  else if (IsFilePath (path))
+  else
+#endif /* _WINDOWS */
+  if (IsFilePath (path))
     {
       /* doesn't need to do anything more */
       return;
@@ -2387,7 +2443,7 @@ void         SimplifyUrl (char **url)
           if (!ddot_simplify && *p != '.' && *p != used_sep)
             ddot_simplify = TRUE;
 
-          if (*p==used_sep)
+          if (*p == used_sep)
             {
               if (p > *url && *(p+1) == '.' && (*(p+2) == used_sep || !*(p+2)))
                 {
@@ -2412,7 +2468,7 @@ void         SimplifyUrl (char **url)
                   /* Start again with prev slash */
                   p = newptr;
                 }
-              else if (*(p+1) == used_sep)
+              else if (p != path && *(p+1) == used_sep)
                 {
                   while (*(p+1) == used_sep)
                     {
@@ -2472,17 +2528,12 @@ ThotBool NormalizeFile (char *src, char *target, ConvertionType convertion)
       if (strncmp (&src[start_index], "//localhost/", 12) == 0)
         start_index += 11;
        
-#ifdef _IV
       /* remove the first two slashes in / / /path */
-      while (src[start_index] &&
-             src[start_index] == '/' 
-             && src[start_index + 1] == '/')
-        start_index++;
-#endif /* IV */
-
-#ifdef _IV
+      if (src[start_index] == '/' && src[start_index + 1] == '/')
+        start_index +=2;
+#ifdef _WINDOWS
       /* remove any extra slash before the drive name */
-      if (src[start_index] == '/' &&src[start_index+2] == ':')
+      if (src[start_index] == '/' && src[start_index+2] == ':')
         start_index++;
 #endif /* _WINDOWS */
 

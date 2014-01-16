@@ -1139,7 +1139,6 @@ void XMoveAllEnclosed (PtrBox pBox, int delta, int frame)
 #ifdef _GL
           pBox->VisibleModification = TRUE;
 #endif /* _GL */
-
           /* stretched box not already handled */
           if (pBox->BxHorizFlex &&
               (pAb->AbLeafType != LtCompound || pBox->BxPacking == 0))
@@ -1795,7 +1794,8 @@ void MoveHorizRef (PtrBox pBox, PtrBox pFromBox, int delta, int frame)
                            pParent->AbBox->BxType == BoGhost ||
                            pParent->AbBox->BxType == BoFloatGhost)
                     {
-                      if (Propagate == ToAll)
+                      if (Propagate == ToAll &&
+                          !IsParentBox (pParent->AbBox, pRefBox))
                         EncloseInLine (pBox, frame, pParent);
                     }
                   else if (!IsParentBox (pParent->AbBox, pRefBox)
@@ -2125,8 +2125,6 @@ void ResizeWidth (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox, int delta,
                   pAb->AbWidth.DimUnit == UnPercent)
                 LoadPicture (frame, pBox, (ThotPictInfo *) (pAb->AbPictBackground));
             }
-          //else if (pBox->BxMaxWidth < pBox->BxWidth)
-          //  pBox->BxMaxWidth = pBox->BxWidth;
 
           /* Moving sibling boxes and the parent? */
           pPosRel = pBox->BxPosRelations;
@@ -2397,8 +2395,9 @@ void ResizeWidth (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox, int delta,
                           if (box->BxType == BoCell || box->BxType == BoCellBlock ||
                               (pRefAb->AbWidth.DimUnit == UnPercent && pRefAb->AbWidth.DimValue == 100))
                             {
+                              val = GetPercentDim (pRefAb, pAb, TRUE);
                               // transmit the column width to table cells
-                              val = pBox->BxW - box->BxW;
+                              val -= box->BxW;
                               if (box->BxLMargin > 0)
                                 val -= box->BxLMargin;
                               if (box->BxRMargin > 0)
@@ -2413,7 +2412,7 @@ void ResizeWidth (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox, int delta,
                             {
                               if (pRefAb->AbEnclosing == pAb)
                                 /* refer the inside width */
-                                val = pBox->BxW;
+                                val = GetPercentDim (pRefAb, pAb, TRUE);
                               else
                                 /* refer the outside width */
                                 val = pBox->BxWidth;
@@ -2695,7 +2694,7 @@ void ResizeHeight (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox,
                pAb->AbFillBox || pAb->AbPictBackground ||
                pBox->BxTBorder ||  pBox->BxBBorder ||  pBox->BxLBorder ||  pBox->BxBBorder))
             /* update the clipping region */
-            UpdateBoxRegion (frame, pBox, 0, orgTrans, 0, delta);
+            UpdateBoxRegion (frame, pBox, 0, orgTrans, 0, delta + diff);
 
           /* inside height */
           pBox->BxH += delta;
@@ -2974,7 +2973,7 @@ void ResizeHeight (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox,
                                     }
                                   else
                                     /* refer the inside height */
-                                    val = pBox->BxH;
+                                    val = GetPercentDim (pRefAb, pAb, FALSE);
                                 }
                               else
                                 /* refer the outside height */
@@ -3332,12 +3331,14 @@ void XMove (PtrBox pBox, PtrBox pFromBox, int delta, int frame)
         checkParent = (pAb->AbEnclosing->AbBox->BxType != BoGhost &&
                        pAb->AbEnclosing->AbBox->BxType != BoFloatGhost);
       
-      if (pAb->AbNotInLine &&
-          (pAb->AbEnclosing->AbBox->BxType == BoGhost ||
-           pAb->AbEnclosing->AbBox->BxType == BoFloatGhost ||
-           pAb->AbEnclosing->AbBox->BxType == BoBlock ||
-           pAb->AbEnclosing->AbBox->BxType == BoFloatBlock ||
-           pAb->AbEnclosing->AbBox->BxType == BoCellBlock))
+      if (pAb->AbNotInLine ||
+          ((pAb->AbEnclosing &&  pAb->AbEnclosing->AbBox &&
+            pAb->AbFloat == 'N' &&
+            (pAb->AbEnclosing->AbBox->BxType == BoGhost ||
+             pAb->AbEnclosing->AbBox->BxType == BoFloatGhost ||
+             pAb->AbEnclosing->AbBox->BxType == BoBlock ||
+             pAb->AbEnclosing->AbBox->BxType == BoFloatBlock ||
+             pAb->AbEnclosing->AbBox->BxType == BoCellBlock))))
         checkParent = FALSE;
       else
         {
@@ -3563,6 +3564,7 @@ void YMove (PtrBox pBox, PtrBox pFromBox, int delta, int frame)
                        pAb->AbEnclosing->AbBox->BxType != BoFloatGhost);
       if (pAb->AbNotInLine ||
           ((pAb->AbEnclosing &&  pAb->AbEnclosing->AbBox &&
+            pAb->AbFloat == 'N' &&
             (pAb->AbEnclosing->AbBox->BxType == BoGhost ||
              pAb->AbEnclosing->AbBox->BxType == BoFloatGhost ||
              pAb->AbEnclosing->AbBox->BxType == BoBlock ||

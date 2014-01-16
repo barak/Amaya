@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2007
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -258,7 +258,7 @@ static void ModifyGraphics (PtrElement pEl, PtrDocument pDoc,
       /* this rule will be translated into style attribute for the element */
       pPRule->PrSpecificity = 100;
       pPRule->PrPresMode = PresImmediate;
-      pPRule->PrAttrValue = FALSE;
+      pPRule->PrValueType = PrNumValue;
       pPRule->PrIntValue = ColorBackground;
       if (!PRuleMessagePre (pEl, pPRule, ColorBackground, pDoc, isNew))
         {
@@ -304,8 +304,7 @@ static void ModifyGraphics (PtrElement pEl, PtrDocument pDoc,
       /* this rule will be translated into style attribute for the element */
       pPRule->PrSpecificity = 100;
       pPRule->PrPresMode = PresImmediate;
-      pPRule->PrAttrValue = FALSE;
-
+      pPRule->PrValueType = PrNumValue;
       value = pPRule->PrIntValue;
       pPRule->PrIntValue = FillPattern;
       pPRule->PrIntValue = FillPattern;
@@ -351,7 +350,7 @@ static void ModifyGraphics (PtrElement pEl, PtrDocument pDoc,
       /* this rule will be translated into style attribute for the element */
       pPRule->PrSpecificity = 100;
       pPRule->PrPresMode = PresImmediate;
-      pPRule->PrAttrValue = FALSE;
+      pPRule->PrValueType = PrNumValue;
       pPRule->PrIntValue = LineColor;
       if (!PRuleMessagePre (pEl, pPRule, LineColor, pDoc, isNew))
         {
@@ -2072,7 +2071,7 @@ void TtcChangeGraphics (Document document, View view)
 #endif /* _GTK */
           DocModPresent = pDoc;
 #ifdef _GTK
-          TtaShowDialogue (NumFormPresGraphics, TRUE);
+          TtaShowDialogue (NumFormPresGraphics, TRUE, TRUE);
 #endif /* _GTK */
         }
     }

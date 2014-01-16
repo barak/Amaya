@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2008
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -167,6 +167,17 @@ extern Element TtaCopyTree (Element sourceElement, Document sourceDocument,
    ---------------------------------------------------------------------- */
 extern Element TtaCopyElement (Element sourceElement, Document sourceDocument,
 		               Document destinationDocument, Element parent);
+
+/* ----------------------------------------------------------------------
+   TtaCopyGradient
+   Copy the gradient attached to sourceElement as a gradient attached to the
+   destinationElement (copy also all gradientStop elements)
+   Parameters:
+   sourceElement: element from which the gradient is to be copied.
+   destinationElement: element that will receive the copy of the gradient.
+   No return value.
+   ---------------------------------------------------------------------- */
+void TtaCopyGradient (Element sourceElement, Element destinationElement);
 
 /* ----------------------------------------------------------------------
    TtaCreateDescent
@@ -776,7 +787,7 @@ extern int TtaIsConstant (ElementType elementType);
    Return value:
    1 if the type is a leaf, 0 if the type is not a leaf.
    ---------------------------------------------------------------------- */
-extern ThotBool          TtaIsLeaf (ElementType elementType);
+extern ThotBool TtaIsLeaf (ElementType elementType);
 
 /* ----------------------------------------------------------------------
    TtaGetConstructOfType
@@ -890,6 +901,16 @@ extern int TtaIsHolophrasted (Element element);
 extern int TtaIsReadOnly (Element element);
 
 /* ----------------------------------------------------------------------
+   TtaIsSetReadOnly
+   Tests whether the given element itself is ReadOnly.
+   Parameter:
+   element: the element to be tested.
+   Return Value:
+   1 if the element is protected, 0 if not.
+   ---------------------------------------------------------------------- */
+extern int TtaIsSetReadOnly (Element element);
+
+/* ----------------------------------------------------------------------
    TtaIsHidden
 
    Tests whether a given element is hidden to the user.
@@ -907,9 +928,20 @@ extern int TtaIsHidden (Element element);
    element: the element to be tested.
    Return Value:
    1 if the element is a copy, 0 if not.
-
    ---------------------------------------------------------------------- */
 extern int TtaIsCopy (Element element);
+
+
+/* ----------------------------------------------------------------------
+   TtaIsGaphics
+   Tests whether a given element is a graphics.
+   Parameter:
+   element: the element to be tested.
+   Return Value:
+   1 if the element is a graphics, 0 if not.
+
+   ---------------------------------------------------------------------- */
+extern int TtaIsGraphics (Element element);
 
 /* ----------------------------------------------------------------------
    TtaIsInAnInclusion

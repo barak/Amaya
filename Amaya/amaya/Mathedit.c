@@ -33,7 +33,7 @@
 #include "SVG.h"
 #endif /* _SVG */
 #include "document.h"
-
+#include "mathedit.h"
 
 /* Global variables for dialogues */
 static int Math_occurences = 0;
@@ -53,6 +53,7 @@ static Document DocMathElementSelected = 0;
 #include "HTMLedit_f.h"
 #include "HTMLpresentation_f.h"
 #include "MathMLbuilder_f.h"
+#include "Mathedit_parser_f.h"
 #include "styleparser_f.h"
 #include "trans_f.h"
 #include "UIcss_f.h"
@@ -67,6 +68,10 @@ static Document DocMathElementSelected = 0;
 #endif /* _WINDOWS */
 #include "XLinkedit_f.h"
 #include "templateUtils_f.h"
+#include "templates.h"
+#include "templates_f.h"
+
+int CurrentMathEditMode = DEFAULT_MODE;
 
 /* Function name table */
 typedef char     functName[10];
@@ -711,7 +716,7 @@ void InsertSymbol (Element *el, int TypeNum, int symbol, Document doc)
   child = TtaNewElement (doc, newType);
   TtaInsertFirstChild (&child, op, doc);
   text[0] = symbol;
-  text[1] = EOS;	  
+  text[1] = EOS;
   TtaSetBufferContent (child, text, TtaGetLanguageIdFromScript('L'), doc);
   *el = op;
 }
@@ -1199,7 +1204,10 @@ void MathSelectionChanged (NotifyElement *event)
     }
   UpdateXmlElementListTool (event->element,event->document);
   TtaSetStatusSelectedElement (event->document, 1, event->element);
-  TtaRaiseDoctypePanels(WXAMAYA_DOCTYPE_MATHML);
+#ifdef TEMPLATES
+  if (!IsTemplateDocument (event->document))
+#endif /* TEMPLATES */
+    TtaRaiseDoctypePanels(WXAMAYA_DOCTYPE_MATHML);
 }
 
 /*----------------------------------------------------------------------
@@ -1215,7 +1223,7 @@ static void GetIntegralType(Document doc)
   if (created)
     {
       TtaSetDialoguePosition ();
-      TtaShowDialogue (MathsDialogue + FormMathIntegral, FALSE);
+      TtaShowDialogue (MathsDialogue + FormMathIntegral, FALSE, TRUE);
       /* wait for an answer */
       TtaWaitShowDialogue ();
     }
@@ -1235,7 +1243,7 @@ static void GetFenceAttributes(Document doc)
   if (created)
     {
       TtaSetDialoguePosition ();
-      TtaShowDialogue (MathsDialogue + FormMathFenceAttributes, FALSE);
+      TtaShowDialogue (MathsDialogue + FormMathFenceAttributes, FALSE, TRUE);
       /* wait for an answer */
       TtaWaitShowDialogue ();
     }
@@ -1258,7 +1266,7 @@ static int GetOccurrences(Document doc, char *label, int val, int mini)
   if (created)
     {
       TtaSetDialoguePosition ();
-      TtaShowDialogue (MathsDialogue + FormMaths, FALSE);
+      TtaShowDialogue (MathsDialogue + FormMaths, FALSE, TRUE);
       /* wait for an answer */
       TtaWaitShowDialogue ();
       val = Math_occurences;
@@ -1286,7 +1294,7 @@ static int GetOperatorType(Document doc)
   if (created)
     {
       TtaSetDialoguePosition ();
-      TtaShowDialogue (MathsDialogue + FormMathOperator, FALSE);
+      TtaShowDialogue (MathsDialogue + FormMathOperator, FALSE, TRUE);
       /* wait for an answer */
       TtaWaitShowDialogue ();
     }
@@ -3422,6 +3430,16 @@ static void CallbackMaths (int ref, int typedata, char *data)
     }
 }
 
+/*----------------------------------------------------------------------
+  SetOnOffChemistry
+  ----------------------------------------------------------------------*/
+void SetOnOffChemistry(Document document, View view)
+{
+  if(CurrentMathEditMode == CHEMISTRY_MODE)
+    CurrentMathEditMode = DEFAULT_MODE;
+  else
+    CurrentMathEditMode = CHEMISTRY_MODE;
+}
 
 /*----------------------------------------------------------------------
   CreateMath
@@ -5311,7 +5329,7 @@ ThotBool  GlobalMathAttrInMenu (NotifyAttribute *event)
       event->attributeType.AttrTypeNum != MathML_ATTR_xml_space)
     /* it's not a global attribute. Accept it */
 #ifdef TEMPLATES
-    return ValidateTemplateAttrInMenu(event);
+    return CheckTemplateAttrInMenu(event);
 #else /* TEMPLATES */
     return FALSE;
 #endif /* TEMPLATES */
@@ -5331,7 +5349,7 @@ ThotBool  GlobalMathAttrInMenu (NotifyAttribute *event)
         return TRUE;
     }
 #ifdef TEMPLATES
-  return ValidateTemplateAttrInMenu(event);
+  return CheckTemplateAttrInMenu(event);
 #else /* TEMPLATES */
   return FALSE;
 #endif /* TEMPLATES */
@@ -6179,23 +6197,42 @@ static void SeparateFunctionNames (Element *firstEl, Element lastEl,
   -----------------------------------------------------------------------*/
 static void ParseMathString (Element theText, Element theElem, Document doc)
 {
-  Element	      el, selEl, prevEl, nextEl, textEl, newEl, lastEl;
-	Element	      firstEl, newSelEl, prev, next, parent, placeholderEl;
-  ElementType	  elType, elType2;
+  Element       el, selEl, prevEl, nextEl, textEl, newEl, lastEl;
+  Element       firstEl, newSelEl, prev, next, parent, placeholderEl;
+  ElementType   elType, elType2;
   AttributeType attrType;
   Attribute     attr;
-  SSchema	      MathMLSchema;
-  int		        firstSelChar, lastSelChar, newSelChar, len, totLen, i, j;
-	int           start, trailingSpaces;
+  SSchema	MathMLSchema;
+  int		firstSelChar, lastSelChar, newSelChar, len, totLen, i, j;
+  int           start, trailingSpaces;
   char	        script;
   CHAR_T        c;
-  Language	    lang;
+  Language	lang;
 #define TXTBUFLEN 100
   CHAR_T        text[TXTBUFLEN];
   Language      language[TXTBUFLEN];
   char          mathType[TXTBUFLEN];
   ThotBool      oldStructureChecking;
   ThotBool      empty, closeUndoSeq, separate, ok, leadingSpace;
+
+  /************************************************************/
+  if (CurrentMathEditMode != DEFAULT_MODE)
+    {
+      TtaSetDisplayMode (doc, DeferredDisplay);
+      oldStructureChecking = TtaGetStructureChecking (doc);
+      TtaSetStructureChecking (FALSE, doc);
+      newEl = InsertMathElementFromText(theElem, theText, doc);
+      if(newEl)
+	{
+	  nextEl = InsertPlaceholder (newEl, FALSE, doc, TRUE);
+	  TtaSelectElement (doc, nextEl);
+	}
+	
+      TtaSetStructureChecking (oldStructureChecking, doc);
+      TtaSetDisplayMode (doc, DisplayImmediately);
+      return;
+    }
+  /**************************************************************/
 
   elType = TtaGetElementType (theElem);
   MathMLSchema = elType.ElSSchema;
@@ -7030,7 +7067,7 @@ void CreateMathEntity (Document document, View view)
                    TtaGetMessage (AMAYA, AM_MATH_ENTITY_NAME),
                    "");
   TtaSetDialoguePosition ();
-  TtaShowDialogue (BaseDialog + MathEntityForm, FALSE);
+  TtaShowDialogue (BaseDialog + MathEntityForm, FALSE, TRUE);
   TtaWaitShowDialogue ();
 #endif /* _WX */
 

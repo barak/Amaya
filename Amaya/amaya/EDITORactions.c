@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2008
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -275,7 +275,11 @@ void RemoveDeprecatedElements (Document doc, View view)
             {
               elType = TtaGetElementType (el);
               if (strcmp (TtaGetSSchemaName (elType.ElSSchema), "HTML") ||
-                  (/*elType.ElTypeNum != HTML_EL_Division && */
+                  (elType.ElTypeNum != HTML_EL_Division &&
+                   elType.ElTypeNum != HTML_EL_Table_ &&
+                   elType.ElTypeNum != HTML_EL_IMG &&
+                   elType.ElTypeNum != HTML_EL_COL &&
+                   elType.ElTypeNum != HTML_EL_COLGROUP &&
                    elType.ElTypeNum != HTML_EL_Span))
                 {
                   parent = TtaGetParent (el);
@@ -387,8 +391,7 @@ static void AddRDFaNS (Document doc)
   elType = TtaGetElementType (docEl);
   elType.ElTypeNum = HTML_EL_HTML;
   root = TtaSearchTypedElement (elType, SearchInTree, docEl);
-
-  if (root)
+   if (root)
     {
       // XHTML namespace
       TtaSetANamespaceDeclaration (doc, root, NULL, XHTML_URI);
@@ -468,11 +471,10 @@ static void AddRDFaNS (Document doc)
             }
           TtaReadClose (file);
         }
-    }  
-
-  TtaFreeMemory(path);
-  TtaFreeMemory(configPath);
-  TtaFreeMemory(tempPath);
+      TtaFreeMemory(path);
+      TtaFreeMemory(configPath);
+      TtaFreeMemory(tempPath);
+    }
 }
 
 /*--------------------------------------------------------------------------
@@ -1600,7 +1602,7 @@ void UpdateNSDeclaration (Document document, View view)
 	{
 	  NSList = p_dlg;
 	  TtaSetDialoguePosition ();
-	  TtaShowDialogue (BaseDialog + ListNSForm, FALSE);
+	  TtaShowDialogue (BaseDialog + ListNSForm, FALSE, TRUE);
 	  /* wait for an answer */
 	  TtaWaitShowDialogue ();
 	}
@@ -1942,10 +1944,70 @@ void CreateBase (Document doc, View view)
 void CreateMeta (Document doc, View view)
 {
   Element             el;
+  ElementType         elType;
+  AttributeType       attrType;
+  Attribute           attr;
+  ThotBool            created;
 
   el = InsertWithinHead (doc, view, HTML_EL_META);
   if (el)
-    TtaSelectElement (doc, el);
+    {
+      created = CreateMetaDlgWX (BaseDialog + TitleForm,
+                                 TtaGetViewFrame (doc, view));
+      if (created)
+        {
+          TtaSetDialoguePosition ();
+          TtaShowDialogue (BaseDialog + TitleForm, FALSE, TRUE);
+          /* wait for an answer */
+          TtaWaitShowDialogue ();
+        }
+      if (MetaContent && (MetaEquiv || MetaName))
+        {
+          // add meta attributes
+          TtaExtendUndoSequence (doc);
+          // re-register the created element
+          TtaCancelLastRegisteredOperation (doc);
+          elType = TtaGetElementType (el);
+          attrType.AttrSSchema = elType.ElSSchema;
+          if (MetaName)
+            attrType.AttrTypeNum = HTML_ATTR_meta_name;
+          else
+            attrType.AttrTypeNum = HTML_ATTR_http_equiv;
+          attr = TtaGetAttribute (el, attrType);
+          if (attr == NULL)
+            {
+              attr = TtaNewAttribute (attrType);
+              TtaAttachAttribute (el, attr, doc);
+            }
+          if (MetaName)
+            TtaSetAttributeText (attr, MetaName, el, doc);
+          else
+            TtaSetAttributeText (attr, MetaEquiv, el, doc);
+          attrType.AttrTypeNum = HTML_ATTR_meta_content;
+          attr = TtaGetAttribute (el, attrType);
+          if (attr == NULL)
+            {
+              attr = TtaNewAttribute (attrType);
+              TtaAttachAttribute (el, attr, doc);
+            }
+          TtaSetAttributeText (attr, MetaContent, el, doc);
+          TtaRegisterElementCreate (el, doc);
+          TtaCloseUndoSequence (doc);
+          TtaSelectElement (doc, el);
+        }
+      else
+        {
+          // not a valid meta
+          TtaDeleteTree (el, doc);
+          TtaCancelLastRegisteredSequence (doc);
+        }
+      TtaFreeMemory (MetaContent);
+      MetaContent = NULL;
+      TtaFreeMemory (MetaEquiv);
+      MetaEquiv = NULL;
+      TtaFreeMemory (MetaName);
+      MetaName = NULL;
+    }
 #ifdef _WX
   TtaRedirectFocus();
 #endif /* _WX */
@@ -1987,17 +2049,22 @@ void CreateStyle (Document doc, View view)
   if (el)
     {
       /* create an attribute type="text/css" */
+      TtaExtendUndoSequence (doc);
+      // re-register the created element
+      TtaCancelLastRegisteredOperation (doc);
       elType = TtaGetElementType (el);
       attrType.AttrSSchema = elType.ElSSchema;
       attrType.AttrTypeNum = HTML_ATTR_Notation;
       attr = TtaNewAttribute (attrType);
       TtaAttachAttribute (el, attr, doc);
       TtaSetAttributeText (attr, "text/css", el, doc);
+      TtaRegisterElementCreate (el, doc);
       child = TtaGetFirstChild (el);
       if (child)
         TtaSelectElement (doc, child);
       else
         TtaSelectElement (doc, el);
+      TtaCloseUndoSequence (doc);
     }
 #ifdef _WX
   TtaRedirectFocus();
@@ -3188,7 +3255,7 @@ void CreateTable (Document doc, View view)
   SSchema             sch;
   int                 firstChar, lastChar;
   char               *name;
-  ThotBool            withinTable, inMath;
+  ThotBool            withinTable, inMath, created;
 
   withinTable = FALSE;
   inMath = FALSE;
@@ -3239,16 +3306,15 @@ void CreateTable (Document doc, View view)
       if (TtaIsSelectionEmpty ())
         /* selection empty.  Display the Table dialogue box */
         {
-          NumberRows = 2;
-          NumberCols = 5;
-          TBorder = 1;
-          ThotBool created;
+          TtaGetEnvInt ("TABLE_ROWS", &NumberRows);
+          TtaGetEnvInt ("TABLE_COLUMNS", &NumberCols);
+          TtaGetEnvInt ("TABLE_BORDER", &TBorder);
           created = CreateCreateTableDlgWX (BaseDialog + TableForm,
                                             TtaGetViewFrame (doc, view),
                                             NumberCols, NumberRows, TBorder);
           if (created)
             {
-              TtaShowDialogue (BaseDialog + TableForm, FALSE);
+              TtaShowDialogue (BaseDialog + TableForm, FALSE, TRUE);
               /* wait for an answer */
               TtaWaitShowDialogue ();
             }
@@ -5849,42 +5915,6 @@ void MoveItem (Document doc, View view)
 
 
 /*----------------------------------------------------------------------
-  LockDocument
-  Lock document using WebDAV protocol
-  ----------------------------------------------------------------------*/
-void LockDocument (Document doc, View view)
-{
-#ifdef DAV
-  DAVLockDocument (doc, view);
-#endif /* DAV */
-}
-
-
-/*----------------------------------------------------------------------
-  UnlockDocument
-  Unlock document using WebDAV protocol
-  ----------------------------------------------------------------------*/
-void UnlockDocument (Document doc, View view)
-{
-#ifdef DAV 
-  DAVUnlockDocument (doc, view);
-#endif /* DAV */
-}
-
-
-/*----------------------------------------------------------------------
-  PropDocument
-  Get the document properties using WebDAV protocol
-  ----------------------------------------------------------------------*/
-void PropDocument (Document doc, View view)
-{
-#ifdef DAV
-  DAVProfindDocument (doc, view);
-#endif /* DAV */
-}
-
-
-/*----------------------------------------------------------------------
   CopyLockInformation
   Get the lock information of the document 
   ----------------------------------------------------------------------*/
@@ -5896,10 +5926,10 @@ void CopyLockInformation (Document doc, View view)
 }
 
 /*----------------------------------------------------------------------
-  LockIndicator
+  LockUnlock
   A toggle that indicates whether the document is locked.
   ----------------------------------------------------------------------*/
-void LockIndicator (Document doc, View view) 
+void LockUnlock (Document doc, View view) 
 {
 #ifdef DAV
   DAVLockIndicator (doc, view);

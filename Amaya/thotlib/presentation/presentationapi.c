@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2008
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -1314,9 +1314,12 @@ void TtaAttachPRule (Element element, PRule pRule, Document document)
   PRFillPattern: rank of the pattern in file thot.pattern.
   PRBackground: rank of the background color in file thot.color.
   PRForeground: rank of the foreground color in file thot.color.
+  PRColor: rank of the color in file thot.color.
+  PRStopColor: rank of the stop-color in file thot.color.
   PRBorderTopColor, PRBorderRightColor, PRBorderBottomColor,PRBorderLeftColor:
   if value >= 0: rank of the color in file thot.color.
-  if value < 0 : -2 means transparent and -1 means same color as foreground
+  if value < 0 : -2 means transparent, -1 means same color as foreground, -3
+                 means undefined
   PRFont: FontTimes, FontHelvetica, FontCourier.
   PRStyle: StyleRoman, StyleItalics, StyleOblique.
   PRWeight: WeightNormal, WeightBold.
@@ -1352,6 +1355,8 @@ void TtaAttachPRule (Element element, PRule pRule, Document document)
   PRWidth, PRHeight: an integer (size in points)
   PRHyphenate: Hyphenation, NoHyphenation.
   PRAdjust: AdjustLeft, AdjustRight, Centered, LeftWithDots, Justify.
+  PROpacity, PRStrokeOpacity, PRFillOpacity, PRStopOpacity: an integer.
+  PRFillRule: NonZero, EvenOdd.
   ----------------------------------------------------------------------*/
 void TtaSetPRuleValue (Element element, PRule pRule, int value, Document document)
 {
@@ -1385,24 +1390,38 @@ void TtaSetPRuleValue (Element element, PRule pRule, int value, Document documen
         case PtDepth:
           ((PtrPRule) pRule)->PrPresMode = PresImmediate;
           ((PtrPRule) pRule)->PrIntValue = value;
-          ((PtrPRule) pRule)->PrAttrValue = FALSE;
+          ((PtrPRule) pRule)->PrValueType = PrNumValue;
           break;
         case PtVisibility:
         case PtFillPattern:
         case PtOpacity:
         case PtFillOpacity:
         case PtStrokeOpacity:
+        case PtStopOpacity:
         case PtBackground:
         case PtForeground:
+        case PtColor:
+        case PtStopColor:
           if (value < 0)
             TtaError (ERR_invalid_parameter);
           else
             {
               ((PtrPRule) pRule)->PrPresMode = PresImmediate;
               ((PtrPRule) pRule)->PrIntValue = value;
-              ((PtrPRule) pRule)->PrAttrValue = FALSE;
+              ((PtrPRule) pRule)->PrValueType = PrNumValue;
             }
           break;
+	case PtMarker:
+	case PtMarkerStart:
+	case PtMarkerMid:
+	case PtMarkerEnd:
+          if (value == 0)
+	    ((PtrPRule) pRule)->PrValueType = PrNumValue;
+          else
+	    ((PtrPRule) pRule)->PrValueType = PrConstStringValue;
+	  ((PtrPRule) pRule)->PrPresMode = PresImmediate;
+	  ((PtrPRule) pRule)->PrIntValue = value;
+	  break;
         case PtVis:
           ((PtrPRule) pRule)->PrPresMode = PresImmediate;
           switch (value)
@@ -1438,7 +1457,7 @@ void TtaSetPRuleValue (Element element, PRule pRule, int value, Document documen
             {
               ((PtrPRule) pRule)->PrPresMode = PresImmediate;
               ((PtrPRule) pRule)->PrIntValue = value;
-              ((PtrPRule) pRule)->PrAttrValue = FALSE;
+              ((PtrPRule) pRule)->PrValueType = PrNumValue;
             }
           break;
 
@@ -1909,6 +1928,25 @@ void TtaSetPRuleValue (Element element, PRule pRule, int value, Document documen
               break;
             case LeftWithDots:
               ((PtrPRule) pRule)->PrAdjust = AlignLeftDots;
+              break;
+            default:
+#ifndef NODISPLAY
+              done = FALSE;
+#endif
+              TtaError (ERR_invalid_parameter);
+              break;
+            }
+          break;
+
+        case PtFillRule:
+          ((PtrPRule) pRule)->PrPresMode = PresImmediate;
+          switch (value)
+            {
+            case NonZero:
+              ((PtrPRule) pRule)->PrChrValue = 'n';
+              break;
+            case EvenOdd:
+              ((PtrPRule) pRule)->PrChrValue = 'e';
               break;
             default:
 #ifndef NODISPLAY
@@ -2967,9 +3005,12 @@ int                 TtaGetPRuleType (PRule pRule)
   PRFillPattern: rank of the pattern in file thot.pattern.
   PRBackground: rank of the background color in file thot.color.
   PRForeground: rank of the foreground color in file thot.color.
+  PRColor: rank of the color in file thot.color.
+  PRStopColor: rank of the stop-color in file thot.color.
   PRBorderTopColor, PRBorderRightColor, PRBorderBottomColor,PRBorderLeftColor:
   if value >= 0: rank of the color in file thot.color.
-  if value < 0 : -2 means transparent and -1 means same color as foreground
+  if value < 0 : -2 means transparent, -1 means same color as foreground, -3
+                 means undefined
   PRFont: FontTimes, FontHelvetica, FontCourier.
   PRStyle: StyleRoman, StyleItalics, StyleOblique.
   PRWeight: WeightNormal, WeightBold.
@@ -3004,6 +3045,8 @@ int                 TtaGetPRuleType (PRule pRule)
   PtWidth, PtHeight: distance
   PRHyphenate: Hyphenation, NoHyphenation.
   PRAdjust: AdjustLeft, AdjustRight, Centered, LeftWithDots, Justify.
+  PROpacity, PRStrokeOpacity, PRFillOpacity, PRStopOpacity: an integer.
+  PRFillRule: NonZero, EvenOdd.
   ----------------------------------------------------------------------*/
 int TtaGetPRuleValue (PRule pRule)
 {
@@ -3022,8 +3065,15 @@ int TtaGetPRuleValue (PRule pRule)
       case PtOpacity:
       case PtFillOpacity:
       case PtStrokeOpacity:
+      case PtStopOpacity:
+      case PtMarker:
+      case PtMarkerStart:
+      case PtMarkerMid:
+      case PtMarkerEnd:
       case PtBackground:
       case PtForeground:
+      case PtColor:
+      case PtStopColor:
       case PtBorderTopColor:
       case PtBorderRightColor:
       case PtBorderBottomColor:
@@ -3431,6 +3481,21 @@ int TtaGetPRuleValue (PRule pRule)
           }
         break;
 
+      case PtFillRule:
+        switch (((PtrPRule) pRule)->PrChrValue)
+          {
+          case 'n':
+            value = NonZero;
+            break;
+          case 'e':
+            value = EvenOdd;
+            break;
+          default:
+            TtaError (ERR_invalid_parameter);
+            break;
+          }
+        break;
+
       default:
         TtaError (ERR_invalid_parameter);
         break;
@@ -3601,13 +3666,20 @@ int TtaSamePRules (PRule pRule1, PRule pRule2)
                     case PtOpacity:
                     case PtStrokeOpacity:
                     case PtFillOpacity:
+                    case PtStopOpacity:
+		    case PtMarker:
+		    case PtMarkerStart:
+		    case PtMarkerMid:
+		    case PtMarkerEnd:
                     case PtBackground:
                     case PtForeground:
+                    case PtColor:
+                    case PtStopColor:
                     case PtBorderTopColor:
                     case PtBorderRightColor:
                     case PtBorderBottomColor:
                     case PtBorderLeftColor:
-                      if (pR1->PrAttrValue == pR2->PrAttrValue)
+                      if (pR1->PrValueType == pR2->PrValueType)
                         if (pR1->PrIntValue == pR2->PrIntValue)
                           result = 1;
                       break;
@@ -3628,6 +3700,7 @@ int TtaSamePRules (PRule pRule1, PRule pRule2)
                     case PtBorderRightStyle:
                     case PtBorderBottomStyle:
                     case PtBorderLeftStyle:
+		    case PtFillRule:
                       if (pR1->PrChrValue == pR2->PrChrValue)
                         result = 1;
                       break;

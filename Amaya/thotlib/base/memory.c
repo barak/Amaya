@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2008
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -721,7 +721,10 @@ void GetElement (PtrElement * pEl)
       pNewEl->ElTerminal = FALSE;
       pNewEl->ElSystemOrigin = FALSE;
       pNewEl->ElTransform = NULL;
-      pNewEl->ElAnimation = NULL;       
+      pNewEl->ElAnimation = NULL;
+      pNewEl->ElGradient = NULL;
+      pNewEl->ElGradientCopy = NULL;
+      pNewEl->ElGradientDef = FALSE;
       pNewEl->ElFirstChild = NULL;
 
       NbUsed_Element++;
@@ -734,6 +737,7 @@ void GetElement (PtrElement * pEl)
 void FreeElement (PtrElement pEl)
 {
   PtrPathSeg       pPa, pPaNext;
+  GradientStop     *gstop, *next;
 
   if (pEl->ElTransform)
     {
@@ -745,6 +749,23 @@ void FreeElement (PtrElement pEl)
       TtaFreeAnimation (pEl->ElAnimation);
       pEl->ElAnimation = NULL;
     }
+  if (pEl->ElGradient && pEl->ElGradientDef)
+    {
+      gstop = pEl->ElGradient->firstStop;
+      while (gstop)
+	{
+	  next = gstop->next;
+	  TtaFreeMemory (gstop);
+	  gstop = next;
+	}
+      if (pEl->ElGradient->gradTransform)
+	{
+	  TtaFreeTransform (pEl->ElGradient->gradTransform);
+	  pEl->ElGradient->gradTransform = NULL;
+	}
+      TtaFreeMemory (pEl->ElGradient);
+    }
+  pEl->ElGradient = NULL;
   if (pEl->ElLeafType == LtText && pEl->ElText)
     {
       FreeTextBuffer (pEl->ElText);
@@ -1802,10 +1823,6 @@ void GetDifferedRule (PtrDelayedPRule * pRR)
   if (pNewRR)
     {
       memset (*pRR, 0, sizeof (DelayedPRule));
-      pNewRR->DpPRule = NULL;
-      pNewRR->DpPSchema = NULL;
-      pNewRR->DpAbsBox = NULL;
-      pNewRR->DpNext = NULL;
       NbUsed_DelayR++;
     }
 }
@@ -2052,6 +2069,7 @@ PtrBox FreeBox (PtrBox pBox)
 #endif
       /* Don't use BxNext field because it's used when removing break lines */
       pBox->BxNexChild = PtFree_Box;
+      pBox->BxAbstractBox = NULL;
       pBox->BxType = BoComplete;
       PtFree_Box = pBox;
       NbFree_Box++;

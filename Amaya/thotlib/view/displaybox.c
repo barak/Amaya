@@ -135,7 +135,7 @@ static void DisplayImage (PtrBox pBox, int frame, int xmin, int xmax,
       width = pBox->BxW;
       height = pBox->BxH;
       DrawPicture (pBox, (ThotPictInfo *) pBox->BxPictInfo, frame, xd, yd,
-                   width, height, t, l);
+                   width, height, t, l, TRUE);
       /* Should the end of de line be filled with dots */
       if (pBox->BxEndOfBloc > 0)
         {
@@ -980,7 +980,7 @@ void  DisplayGraph (PtrBox pBox, int frame, ThotBool selected,
         }
       else
         {
-          bg = pAb->AbBackground;
+	  bg = pAb->AbBackground;
           fg = pAb->AbForeground;
           pat = pAb->AbFillPattern;
         }
@@ -1030,67 +1030,52 @@ void  DisplayGraph (PtrBox pBox, int frame, ThotBool selected,
 
       switch (pAb->AbRealShape)
         {
-#ifdef IV
-        case 'g': /* Line */
-          /* Coords are given by the enclosing box */
-          pAb = pAb->AbEnclosing;
-          if ((pAb->AbHorizPos.PosEdge == Left &&
-               pAb->AbVertPos.PosEdge == Top) ||
-              (pAb->AbHorizPos.PosEdge == Right &&
-               pAb->AbVertPos.PosEdge == Bottom))
-            /* draw a \ */
-            DrawSlash (frame, i, style, xd, yd, width, height, 1, fg);
-          else
-            /* draw a / */
-            DrawSlash (frame, i, style, xd, yd, width, height, 0, fg);
-          break;
-#endif
-	case 1: /* Square */
-	case 'C': /* Rectangle */
-	case 7: /* Square */
-	case 8: /* Rectangle */
+        case 1: /* Square */
+        case 'C': /* Rectangle */
+        case 7: /* Square */
+        case 8: /* Rectangle */
           if (pBox->BxRx == 0 || pBox->BxRy == 0)
 #ifdef _GL
-	    DrawRectangle2(frame, i, style, xd, yd, width, height, fg, bg, pat);
+            DrawRectangle2(frame, i, style, xd, yd, width, height, fg, bg, pat);
 #else
-	    DrawRectangle(frame, i, style, xd, yd, width, height, fg, bg, pat);
+            DrawRectangle(frame, i, style, xd, yd, width, height, fg, bg, pat);
 #endif /*_GL*/
           else
             DrawOval (frame, i, style, xd, yd, width, height,
-		      (pBox->BxRx == -1 ? pBox->BxRy : pBox->BxRx),
+                      (pBox->BxRx == -1 ? pBox->BxRy : pBox->BxRx),
                       (pBox->BxRy == -1 ? pBox->BxRx : pBox->BxRy),
-		      fg, bg, pat);
+                      fg, bg, pat);
           break;
 
         case 'L': /* Diamond */
           DrawDiamond (frame, i, style, xd, yd, width, height, fg, bg, pat);
           break;
 
-	case 2: /* Parallelogram */
-	  DrawParallelogram (frame, i, style, xd, yd, width, height, pBox->BxRx,
-			     fg, bg, pat);
-	  break;
+        case 2: /* Parallelogram */
+          DrawParallelogram (frame, i, style, xd, yd, width, height, pBox->BxRx,
+                             fg, bg, pat);
+          break;
 
-	case 3: /* Trapezium */
-	  DrawTrapezium (frame, i, style, xd, yd, width, height,
-			 pBox->BxRx, pBox->BxRy,
-			 fg, bg, pat);
-	    break;
+        case 3: /* Trapezium */
+          DrawTrapezium (frame, i, style, xd, yd, width, height,
+                         pBox->BxRx, pBox->BxRy,
+                         fg, bg, pat);
+          break;
 
-	case 4: /* Equilateral triangle */
-	case 5: /* Isosceles triangle */
-	  DrawTriangle (frame, i, style, fg, bg, pat,
-			xd+width/2,yd,
-			xd,yd+height,
-			xd+width,yd+height);	  
-	  break;
+        case 4: /* Equilateral triangle */
+        case 5: /* Isosceles triangle */
+          DrawTriangle (frame, i, style, fg, bg, pat,
+                        xd+width/2,yd,
+                        xd,yd+height,
+                        xd+width,yd+height);	  
+          break;
 
-	case 6: /* Rectangled triangle */
-	  DrawTriangle (frame, i, style, fg, bg, pat,
-			xd,yd,
-			xd,yd+height,
-			xd+width,yd);
-	  break;
+        case 6: /* Rectangled triangle */
+          DrawTriangle (frame, i, style, fg, bg, pat,
+                        xd,yd,
+                        xd,yd+height,
+                        xd+width,yd);
+          break;
 
         case 'a': /* Circle */
         case 'c': /* Ellipse */
@@ -1304,8 +1289,7 @@ void DisplayPolyLine (PtrBox pBox, int frame, ThotBool selected,
   int                 i, xd, yd;
   int                 fg, bg;
   int                 pat;
-  int                 style, arrow;
-  int                 width;
+  int                 style, arrow, mode, width;
 
   /* If no point is defined, no need to draw it */
   if (pBox->BxBuffer == NULL || pBox->BxNChars <= 1)
@@ -1344,6 +1328,12 @@ void DisplayPolyLine (PtrBox pBox, int frame, ThotBool selected,
         default:
           style = 5; /* solid */
         }
+
+      // set the current fill mode
+      if (pAb->AbFillRule == 'e')
+        mode = 1;
+      else
+        mode = 0;
 
       switch (pAb->AbPolyLineShape)
         {
@@ -1389,8 +1379,13 @@ void DisplayPolyLine (PtrBox pBox, int frame, ThotBool selected,
                      (C_points *) pBox->BxPictInfo);
           break;
         case 'p':	/* polygon */
-          DrawPolygon (frame, i, style, xd, yd, pBox->BxBuffer,
-                       pBox->BxNChars, fg, bg, pat);
+          if (SVGCreating)
+            // draw only lines
+            DrawSegments (frame, i, style, xd, yd, pBox->BxBuffer,
+                          pBox->BxNChars, fg, 0, bg, pat);
+          else
+            DrawPolygon (frame, i, style, xd, yd, pBox->BxBuffer,
+                         pBox->BxNChars, fg, bg, pat, mode);
           break;
         case 's':	/* closed spline */
           /* compute control points */
@@ -1436,10 +1431,8 @@ void DisplayPath (PtrBox pBox, int frame, ThotBool selected,
   PtrAbstractBox      pAb;
   ViewFrame          *pFrame;
   int                 i, xd, yd;
-  int                 fg, bg;
-  int                 pat;
-  int                 style;
-  int                 width;
+  int                 fg, bg, pat;
+  int                 style, mode, width;
 
   /* If the path does not contain any segment, return */
   if (!pBox->BxFirstPathSeg)
@@ -1474,8 +1467,13 @@ void DisplayPath (PtrBox pBox, int frame, ThotBool selected,
           style = 5; /* solid */
         }
 
+      // set the current fill mode
+      if (pAb->AbFillRule == 'e')
+        mode = 1;
+      else
+        mode = 0;
       DrawPath (frame, i, style, xd, yd, pBox->BxFirstPathSeg, fg,
-                bg, pat);
+                bg, pat, mode);
 
       if (pBox->BxEndOfBloc > 0)
         {
@@ -1642,9 +1640,8 @@ static void DisplayJustifiedText (PtrBox pBox, PtrBox mbox, int frame,
   ThotBool            hyphen, rtl, showSpecial = FALSE;
 #ifdef _GL
   int                 texture_id, showtab_id = 0, underline_id = 0;
-
-  texture_id = SetTextureScale (IsBoxDeformed(pBox));
 #endif /* _GL */
+
   indmax = 0;
   buffleft = 0;
   adbuff = NULL;
@@ -1663,6 +1660,9 @@ static void DisplayJustifiedText (PtrBox pBox, PtrBox mbox, int frame,
     }
   if (pBox->BxNChars < 0)
     return;
+#ifdef _GL
+  texture_id = SetTextureScale (IsBoxDeformed(pBox));
+#endif /* _GL */
   if (pAb->AbElement && pAb->AbElement->ElStructSchema &&
       !strcmp (pAb->AbElement->ElStructSchema->SsName, "TextFile"))
     /* only for TextFile documents */
@@ -1704,7 +1704,12 @@ static void DisplayJustifiedText (PtrBox pBox, PtrBox mbox, int frame,
       FrameTable[frame].FrView == 1)
     {
       bgbox = pAb->AbForeground;
-      fgbox = pAb->AbBackground;
+      if (pAb->AbGradientBackground)
+	/* this chunk of text should be painted with a gradient */
+	/* this is not yet implemented. Just paint it in black */
+	fgbox = 1;
+      else
+	fgbox = pAb->AbBackground;
     }
   else
     {

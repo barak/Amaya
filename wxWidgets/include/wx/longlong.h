@@ -103,6 +103,8 @@
 #include "wx/iosfwrap.h"
 
 #if wxUSE_LONGLONG_NATIVE
+// patch to fix insure compiling
+class WXDLLIMPEXP_BASE wxTextOutputStream;
 
 class WXDLLIMPEXP_BASE wxLongLongNative
 {

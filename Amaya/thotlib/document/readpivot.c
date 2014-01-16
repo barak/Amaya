@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -1361,11 +1361,35 @@ void ReadPRulePiv (PtrDocument pDoc, BinFile pivFile, PtrElement pEl,
     case C_PR_STROKE_OPACITY:
       TypeRP = PtStrokeOpacity;
       break;
+    case C_PR_STOPOPACITY:
+      TypeRP = PtStopOpacity;
+      break;
+    case C_PR_MARKER:
+      TypeRP = PtMarker;
+      break;
+    case C_PR_MARKERSTART:
+      TypeRP = PtMarkerStart;
+      break;
+    case C_PR_MARKERMID:
+      TypeRP = PtMarkerMid;
+      break;
+    case C_PR_MARKEREND:
+      TypeRP = PtMarkerEnd;
+      break;
+    case C_PR_FILL_RULE:
+      TypeRP = PtFillRule;
+      break;
     case C_PR_BACKGROUND:
       TypeRP = PtBackground;
       break;
     case C_PR_FOREGROUND:
       TypeRP = PtForeground;
+      break;
+    case C_PR_COLOR:
+      TypeRP = PtColor;
+      break;
+    case C_PR_STOPCOLOR:
+      TypeRP = PtStopColor;
       break;
     case C_PR_BORDERTOPCOLOR:
       TypeRP = PtBorderTopColor;
@@ -1502,12 +1526,19 @@ void ReadPRulePiv (PtrDocument pDoc, BinFile pivFile, PtrElement pEl,
       case PtOpacity:
       case PtStrokeOpacity:
       case PtFillOpacity:
+      case PtStopOpacity:
       case PtDepth:
       case PtListStyleImage:
+      case PtMarker:
+      case PtMarkerStart:
+      case PtMarkerMid:
+      case PtMarkerEnd:
         TtaReadShort (pivFile, &val);
         break;
       case PtBackground:
       case PtForeground:
+      case PtColor:
+      case PtStopColor:
       case PtBorderTopColor:
       case PtBorderRightColor:
       case PtBorderBottomColor:
@@ -1544,6 +1575,7 @@ void ReadPRulePiv (PtrDocument pDoc, BinFile pivFile, PtrElement pEl,
       case PtBorderRightStyle:
       case PtBorderBottomStyle:
       case PtBorderLeftStyle:
+      case PtFillRule:
         if (!TtaReadByte (pivFile, (unsigned char *)&ch))
           PivotError (pivFile, "PivotError: PresRule 3");
         break;
@@ -1742,17 +1774,36 @@ void ReadPRulePiv (PtrDocument pDoc, BinFile pivFile, PtrElement pEl,
           case PtOpacity:
           case PtFillOpacity:
           case PtStrokeOpacity:
+          case PtStopOpacity:
           case PtListStyleImage:
-            pPRule->PrAttrValue = FALSE;
+            pPRule->PrValueType = PrNumValue;
             pPRule->PrIntValue = val;
             break;
+	  case PtMarker:
+	  case PtMarkerStart:
+	  case PtMarkerMid:
+	  case PtMarkerEnd:
+	    if (val == 0)
+	      {
+		pPRule->PrValueType = PrNumValue;
+		pPRule->PrIntValue = 0;
+	      }
+	    else
+	      {
+		pPRule->PrValueType = PrConstStringValue;
+		pPRule->PrIntValue = val;
+	      }
+            break;
+
           case PtBackground:
           case PtForeground:
+          case PtColor:
+          case PtStopColor:
           case PtBorderTopColor:
           case PtBorderRightColor:
           case PtBorderBottomColor:
           case PtBorderLeftColor:
-            pPRule->PrAttrValue = FALSE;
+            pPRule->PrValueType = PrNumValue;
             /* convertit les couleurs des anciennes versions */
             if (pDoc->DocPivotVersion < 4)
               val = newColor[val];
@@ -1786,6 +1837,7 @@ void ReadPRulePiv (PtrDocument pDoc, BinFile pivFile, PtrElement pEl,
           case PtBorderRightStyle:
           case PtBorderBottomStyle:
           case PtBorderLeftStyle:
+	  case PtFillRule:
             pPRule->PrChrValue = ch;
             break;
           case PtHyphenate:

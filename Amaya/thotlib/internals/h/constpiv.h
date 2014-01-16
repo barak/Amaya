@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -38,6 +38,14 @@
 #define C_PIV_DOC_END 28	/* document ending mark */
 
 /* specific presentation rule type codes */
+#define C_PR_MARKER '&'
+#define C_PR_MARKERSTART 39
+#define C_PR_MARKERMID '('
+#define C_PR_MARKEREND ')'
+#define C_PR_VIS '*'
+#define C_PR_COLOR '+'
+#define C_PR_STOPCOLOR ','
+#define C_PR_STOPOPACITY '-'
 #define C_PR_POSITION '0'
 #define C_PR_BREAK1 '1'
 #define C_PR_BREAK2 '2'
@@ -85,6 +93,7 @@
 #define C_PR_FILL_OPACITY ']'
 #define C_PR_BORDERTOPSTYLE '^'
 #define C_PR_BORDERBOTTOMSTYLE '_'
+#define C_PR_FILL_RULE '`'
 #define C_PR_MARGINTOP 'a'
 #define C_PR_BACKGROUND 'b'
 #define C_PR_MARGINRIGHT 'c'
@@ -113,7 +122,7 @@
 #define C_PR_DISPLAY 'z'
 #define C_PR_CLEAR '|'
 #define C_PR_FLOAT '~'
-#define C_PR_VIS '*'
+
 /* more presentation rule types are defined in constprs.h */
 
 /* picture presentation codes */

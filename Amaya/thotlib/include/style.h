@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT MIT and INRIA, 1996-2005
+ *  (c) COPYRIGHT MIT and INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -192,7 +192,7 @@ extern char *TtaGetStyledAttributeValues (PSchema tsch, int attrType);
   described in thotlib/include/presentation.h
  -----------------------------------------------------------------------*/
 extern void TtaPToCss (PresentationSetting settings, char *buffer, int len,
-		       Element el);
+		       Element el, void* pSchP);
 
 /*----------------------------------------------------------------------
    TtaListStyleSchemas

@@ -42,8 +42,15 @@ extern void CopyTRefContent ( Element source,
 extern ThotBool CopyUseContent ( Element el,
                                  Document doc,
                                  char *href );
-extern void ProcessMarkers ( Element el,
-                             Document doc );
+extern void CopyAMarker ( Element marker,
+                          Element el,
+                          Element leaf,
+                          int vertex,
+                          Document doc );
+extern void GenerateMarkers ( Element el,
+                              Document doc,
+                              Element marker,
+                              int position );
 extern void EvaluateTestAttrs ( Element el,
                                 Document doc );
 extern void SetTextAnchor ( Attribute attr,
@@ -63,6 +70,10 @@ extern void ParsePointsBuffer ( char *text,
 extern char *ConvertLineAttributesToPath ( Element el );
 extern void GraphicLeafComplete ( Document doc,
                                   Element el );
+extern void SVGCheckInsert ( Element *el,
+                             Element parent,
+                             Document doc,
+                             ThotBool *inserted );
 extern void SVGElementComplete ( ParserData *context,
                                  Element el,
                                  int *error );
@@ -104,7 +115,8 @@ extern void ParsePointsAttribute ( Attribute attr,
 extern void ParseTransformAttribute ( Attribute attr,
                                       Element el,
                                       Document doc,
-                                      ThotBool delete_ );
+                                      ThotBool delete_,
+                                      ThotBool gradient );
 extern void *ParseValuesDataAttribute ( Attribute attr,
                                         Element el,
                                         Document doc );
@@ -116,8 +128,7 @@ extern void *ParsePathDataAttribute ( Attribute attr,
                                       Element el,
                                       Document doc,
                                       ThotBool IsDrawn );
-extern int ParseIntAttribute ( Attribute attr );
-extern float ParseFloatAttribute ( Attribute attr );
+extern float ParseNumberPercentAttribute ( Attribute attr );
 extern void SVGAttributeComplete ( Attribute attr,
                                    Element el,
                                    Document doc );
@@ -160,8 +171,15 @@ extern void CopyTRefContent ( Element source,
 extern ThotBool CopyUseContent ( Element el,
                                    Document doc,
                                    char *href );
-extern void ProcessMarkers ( Element el,
-                               Document doc );
+extern void CopyAMarker ( Element marker,
+                            Element el,
+                            Element leaf,
+                            int vertex,
+                            Document doc );
+extern void GenerateMarkers ( Element el,
+                                Document doc,
+                                Element marker,
+                                int position );
 extern void EvaluateTestAttrs ( Element el,
                                   Document doc );
 extern void SetTextAnchor ( Attribute attr,
@@ -181,6 +199,10 @@ extern void ParsePointsBuffer ( char *text,
 extern char *ConvertLineAttributesToPath ( Element el );
 extern void GraphicLeafComplete ( Document doc,
                                     Element el );
+extern void SVGCheckInsert ( Element *el,
+                               Element parent,
+                               Document doc,
+                               ThotBool *inserted );
 extern void SVGElementComplete ( ParserData *context,
                                    Element el,
                                    int *error );
@@ -222,7 +244,8 @@ extern void ParsePointsAttribute ( Attribute attr,
 extern void ParseTransformAttribute ( Attribute attr,
                                         Element el,
                                         Document doc,
-                                        ThotBool delete_ );
+                                        ThotBool delete_,
+                                        ThotBool gradient );
 extern void *ParseValuesDataAttribute ( Attribute attr,
                                           Element el,
                                           Document doc );
@@ -234,8 +257,7 @@ extern void *ParsePathDataAttribute ( Attribute attr,
                                         Element el,
                                         Document doc,
                                         ThotBool IsDrawn );
-extern int ParseIntAttribute ( Attribute attr );
-extern float ParseFloatAttribute ( Attribute attr );
+extern float ParseNumberPercentAttribute ( Attribute attr );
 extern void SVGAttributeComplete ( Attribute attr,
                                      Element el,
                                      Document doc );

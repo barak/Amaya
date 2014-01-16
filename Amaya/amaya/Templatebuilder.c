@@ -116,7 +116,7 @@ ThotBool NeedAMenu (Element el, Document doc)
   ThotBool         res = FALSE;
   ForwardIterator  iter;
 
-  if(!TtaGetDocumentAccessMode(doc))
+  if (!TtaGetDocumentAccessMode(doc))
     return FALSE;
 
   // look for the list of types
@@ -135,21 +135,30 @@ ThotBool NeedAMenu (Element el, Document doc)
   if (ptr)
     // there are several types
     res = TRUE;
+  else if (!strcmp (types, "string") || !strcmp (types, "number"))
+    {
+      TtaFreeMemory (types);
+      return FALSE;
+    }
   else
     {
       t = GetXTigerDocTemplate (doc);
       if (t)
         {
           dec = Template_GetDeclaration (t, types);
-          if (dec && dec->nature == UnionNat)
+          if (dec == NULL && elType.ElTypeNum == Template_EL_useEl)
+            res =  (TtaGetFirstChild (el) == NULL);
+          else if (dec && dec->nature == UnionNat)
             {
-              /* TODO utiliser la liste étendue plutot que la liste d'inclusion.*/ 
+              /* check the extended list of the union */ 
               iter = SearchSet_GetForwardIterator(dec->unionType.include);
-              if(ForwardIterator_GetCount(iter)>1)
+              if(ForwardIterator_GetCount(iter) > 1)
                 res = TRUE;
               TtaFreeMemory(iter);
             }
         }
+      else if (elType.ElTypeNum == Template_EL_useEl)
+        res =  TRUE;
     }
 
   // When only one type is possible add the currentType attribute
@@ -165,7 +174,7 @@ ThotBool NeedAMenu (Element el, Document doc)
           TtaAttachAttribute (el, att, doc);
           TtaSetAttributeText(att, types, el, doc);
         }
-      else if (att)
+      else if (att && ptr == NULL)
         // the use is already instantiated
         res = FALSE;
     }
@@ -221,7 +230,7 @@ void CheckNotEmptyComponent (Element el, Document doc)
             return;
           else
             elType.ElTypeNum = XML_EL_XML_Element;
-printf ("==>Complete component %s:%d\n",s,elType.ElTypeNum);
+          //printf ("==>Complete component %s:%d\n",s,elType.ElTypeNum);
           child = TtaNewElement (doc, elType);
           TtaInsertFirstChild (&child, el, doc);
         }
@@ -242,7 +251,8 @@ void TemplateElementComplete (ParserData *context, Element el, int *error)
   Attribute        att;
   char            *name, *ancestor_name, *ptr, *types;
   char             msgBuffer[MaxMsgLength];
-  int              len;
+  int              len, option;
+  ThotBool         hidden;
 
   doc = context->doc;
   elType = TtaGetElementType (el);
@@ -332,6 +342,23 @@ void TemplateElementComplete (ParserData *context, Element el, int *error)
         XmlParseError (errorParsing,
                        (unsigned char *)"Missing mandatory attribute types for use element",
                        TtaGetElementLineNumber(el));
+      child = TtaGetFirstChild (el);
+      if (child == NULL)
+        {
+          // insert almost a pseudo element
+          elType.ElTypeNum = Template_EL_TemplateObject;
+          child = TtaNewElement (doc, elType);
+          TtaInsertFirstChild (&child, el, doc);
+          hidden = ElementIsOptional (el);
+          if (hidden)
+            {
+              // check the current option value
+              option = GetAttributeIntValueFromNum (el, Template_ATTR_option);
+              hidden = (option == Template_ATTR_option_VAL_option_unset);
+            }
+          if (hidden)
+            TtaSetAccessRight (child, ReadOnly, doc);
+        }
       break;
 
     case Template_EL_bag:
@@ -391,10 +418,6 @@ void TemplateElementComplete (ParserData *context, Element el, int *error)
       CheckMandatoryAttribute (el, doc, Template_ATTR_ref_name);
       break;
 
-      /*case Template_EL_option :
-      CheckMandatoryAttribute (el, doc, Template_ATTR_title);
-      break;
-      */
     case Template_EL_repeat :
       // children must be use elements
       CheckMandatoryAttribute (el, doc, Template_ATTR_title);

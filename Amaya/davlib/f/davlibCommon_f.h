@@ -9,23 +9,18 @@
 extern const char * DAVFQDN ( void );
 extern char * DAVDefaultEmail ( void );
 extern char * DAVBreakString ( char *original );
-extern BOOL DAVAddResource ( char *new_resource,
-                             char *list,
-                             char sep,
-                             int len );
 extern time_t DAVTimeoutValue ( char *timeout );
 extern char * DAVCopyFile ( char * filename,
                             int size );
-extern BOOL DAVAllowResource ( char *davlist,
-                               char *url );
+extern ThotBool DAVAllowResource ( char *url );
 extern char * DAVFindLockToken ( char *hostname,
                                  char *relative );
 extern LockLine * DAVGetLockFromTree ( AwTree * tree,
                                        char *owner );
-extern void DAVAddIfHeader ( AHTReqContext *context,
-                             char *url );
+extern ThotBool DAVAddIfHeader ( AHTReqContext *context,
+                                 char *url );
 extern void DAVRemoveIfHeader ( AHTReqContext *context );
-extern AHTDAVContext * AHTDAVContext_new ( const char *DocURL );
+extern AHTDAVContext * AHTDAVContext_new ( const char *url );
 extern void AHTDAVContext_delete ( AHTDAVContext * me );
 extern AHTReqContext * DAVCreateDefaultContext ( int doc,
                                                  char *url,
@@ -42,23 +37,18 @@ extern AHTReqContext * DAVCopyContext ( AHTReqContext *context );
 extern const char * DAVFQDN ( void );
 extern char * DAVDefaultEmail ( void );
 extern char * DAVBreakString ( char *original );
-extern BOOL DAVAddResource ( char *new_resource,
-                               char *list,
-                               char sep,
-                               int len );
 extern time_t DAVTimeoutValue ( char *timeout );
 extern char * DAVCopyFile ( char * filename,
                               int size );
-extern BOOL DAVAllowResource ( char *davlist,
-                                 char *url );
+extern ThotBool DAVAllowResource ( char *url );
 extern char * DAVFindLockToken ( char *hostname,
                                    char *relative );
 extern LockLine * DAVGetLockFromTree ( AwTree * tree,
                                          char *owner );
-extern void DAVAddIfHeader ( AHTReqContext *context,
-                               char *url );
+extern ThotBool DAVAddIfHeader ( AHTReqContext *context,
+                                   char *url );
 extern void DAVRemoveIfHeader ( AHTReqContext *context );
-extern AHTDAVContext * AHTDAVContext_new ( const char *DocURL );
+extern AHTDAVContext * AHTDAVContext_new ( const char *url );
 extern void AHTDAVContext_delete ( AHTDAVContext * me );
 extern AHTReqContext * DAVCreateDefaultContext ( int doc,
                                                    char *url,

@@ -1,3 +1,10 @@
+/*
+ *
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2009
+ *  Please first read the full copyright statement in file COPYRIGHT.
+ *
+ */
+
 #ifdef _WX
 #include "wx/wx.h"
 #include "wx/xrc/xmlres.h"
@@ -34,6 +41,7 @@
   #include "wxdialog/ListEditDlgWX.h"
   #include "wxdialog/ListNSDlgWX.h"
   #include "wxdialog/MakeIdDlgWX.h"
+  #include "wxdialog/MetaDlgWX.h"
   #include "wxdialog/ObjectDlgWX.h"
   #include "wxdialog/OpenDocDlgWX.h"
   #include "wxdialog/PreferenceDlgWX.h"
@@ -143,12 +151,16 @@ wxArrayString BuildWX_URL_List( const char * url_list )
   /* Create the url list array */
   /* will stop on double EOS */
   wxArrayString wx_items;
-  int index = 0;
-  while (url_list[index] != EOS)
-    {
-      wx_items.Add( TtaConvMessageToWX( &url_list[index] ) );
-      index += strlen (&url_list[index]) + 1; /* one entry length */
-    }
+  int           index = 0;
+
+  if (url_list == NULL)
+    wx_items.Add( TtaConvMessageToWX("") );
+  else
+    while (url_list[index] != EOS)
+      {
+        wx_items.Add( TtaConvMessageToWX( &url_list[index] ) );
+        index += strlen (&url_list[index]) + 1; /* one entry length */
+      }
   return wx_items;
 }
 #endif /* _WX */
@@ -483,6 +495,31 @@ ThotBool CreateObjectDlgWX (int ref, ThotWindow parent, const char *title,
 }
 
 /*----------------------------------------------------------------------
+  CreateMetaDlgWX create the dialog to set meta attributes
+  ----------------------------------------------------------------------*/
+ThotBool CreateMetaDlgWX (int ref, ThotWindow parent)
+{
+#ifdef _WX
+  /* check if the dialog is alredy open */
+  if (TtaRaiseDialogue (ref))
+    return FALSE;
+
+  MetaDlgWX * p_dlg = new MetaDlgWX (ref, parent);
+  if ( TtaRegisterWidgetWX( ref, p_dlg ) )
+      /* the dialog has been sucesfully registred */
+      return TRUE;
+  else
+    {
+      /* an error occured durring registration */
+      p_dlg->Destroy();
+      return FALSE;
+    }
+#else /* _WX */
+  return FALSE;
+#endif /* _WX */
+}
+
+/*----------------------------------------------------------------------
   CreateTitleDlgWX create the dialog to change the document title
   params:
     + doc_title : the current document title
@@ -638,8 +675,8 @@ ThotBool CreatePrintDlgWX (int ref, ThotWindow parent, char* printer_file,
     + pathname : file location
   returns:
   ----------------------------------------------------------------------*/
-ThotBool CreateSaveAsDlgWX (int ref, ThotWindow parent, char* pathname,
-                            int doc, ThotBool saveImgs, ThotBool checkTemplate)
+ThotBool CreateSaveAsDlgWX (int ref, ThotWindow parent, char* pathname, int doc,
+                            ThotBool saveImgs, ThotBool saveRes, ThotBool checkTemplate)
 {
 #ifdef _WX
   /* check if the dialog is alredy open */
@@ -648,7 +685,7 @@ ThotBool CreateSaveAsDlgWX (int ref, ThotWindow parent, char* pathname,
 
   wxString wx_pathname = TtaConvMessageToWX( pathname );
   SaveAsDlgWX * p_dlg = new SaveAsDlgWX( ref, parent, wx_pathname, doc,
-                                         saveImgs, checkTemplate);
+                                         saveImgs, saveRes, checkTemplate);
 
   if ( TtaRegisterWidgetWX( ref, p_dlg ) )
       /* the dialog has been sucesfully registred */
@@ -748,17 +785,17 @@ ThotBool CreateSaveObject (int ref, ThotWindow parent, char* objectname)
   ----------------------------------------------------------------------*/
 ThotBool CreateAuthentDlgWX (int ref, ThotWindow parent,
                              char *auth_realm, char *server,
-			     char *name, char *pwd)
+                             char *name, char *pwd)
 {
 #ifdef _WX
   /* check if the dialog is alredy open */
   if (TtaRaiseDialogue (ref))
     return FALSE;
 
-  AuthentDlgWX * p_dlg = new AuthentDlgWX( ref,
-					   parent,
-					   auth_realm, server,
-					   name, pwd);
+  AuthentDlgWX * p_dlg = new AuthentDlgWX (ref,
+                                           parent,
+                                           auth_realm, server,
+                                           name, pwd);
   if ( TtaRegisterWidgetWX( ref, p_dlg ) )
       /* the dialog has been sucesfully registred */
       return TRUE;

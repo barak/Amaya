@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2008
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -380,7 +380,8 @@ char *UpdateCSSURLs (Document doc, char *oldpath, char *newpath,
                           /* save to a remote server */
                           if (src_is_local)
                             /* add the existing localfile to images list to be saved */
-                            AddLocalImage (old_url, imgname, new_url, doc, &pImage);
+                            AddLocalResource (old_url, imgname, new_url, doc,
+                                              &pImage, &ImageURLs, FALSE);
                           else
                             {
                               /* it was a remote image:
@@ -394,9 +395,9 @@ char *UpdateCSSURLs (Document doc, char *oldpath, char *newpath,
                                     TtaFreeMemory (pImage->originalName);
                                   pImage->originalName = TtaStrdup (new_url);
                                   if (TtaFileExist(pImage->localName))
-                                    pImage->status = IMAGE_MODIFIED;
+                                    pImage->status = RESOURCE_MODIFIED;
                                   else
-                                    pImage->status = IMAGE_NOT_LOADED;
+                                    pImage->status = RESOURCE_NOT_LOADED;
                                 }
                             }
                         }
@@ -1146,11 +1147,11 @@ static void SpecificSettingsToCSS (Element el, Document doc,
       else
         ptr = MakeRelativeURL ((char *)settings->value.pointer, DocumentURLs[doc]);
       settings->value.pointer = ptr;
-      TtaPToCss (settings, string, sizeof(string), el);
+      TtaPToCss (settings, string, sizeof(string), el, NULL);
       TtaFreeMemory (ptr);
     }
   else
-    TtaPToCss (settings, string, sizeof(string), el);
+    TtaPToCss (settings, string, sizeof(string), el, NULL);
 
   if (string[0] != EOS && *css_rules != EOS)
     strcat (css_rules, "; ");
@@ -2040,7 +2041,7 @@ void CreateClass (Document doc, View view)
 
           /* pop-up the dialogue box. */
           TtaSetDialoguePosition ();
-          TtaShowDialogue (BaseDialog + ClassForm, TRUE);
+          TtaShowDialogue (BaseDialog + ClassForm, TRUE, TRUE);
         }
     }
 }

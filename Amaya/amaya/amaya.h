@@ -390,6 +390,10 @@ THOT_EXPORT char      *RDFa_list; /* list of Namespace declarations for RDFa */
 #ifdef _SVG
 THOT_EXPORT char      *SVGlib_list;
 #endif /* _SVG */
+THOT_EXPORT char      *MetaName;
+THOT_EXPORT char      *MetaContent;
+THOT_EXPORT char      *MetaEquiv;
+
 THOT_EXPORT char       TempFileDirectory[MAX_LENGTH];
 THOT_EXPORT char       Answer_text[MAX_LENGTH];
 THOT_EXPORT char       Answer_name[NAME_LENGTH];
@@ -454,14 +458,14 @@ THOT_EXPORT Document   SelectionDoc;
 THOT_EXPORT Document   W3Loading; /* the document being loaded */
 THOT_EXPORT Document   BackupDocument; /* the current backup */
 THOT_EXPORT Element    AttrHREFelement;
-THOT_EXPORT Element    Right_ClikedElement;
+THOT_EXPORT Element    Right_ClickedElement;
 THOT_EXPORT Document	 HighlightDocument;
 THOT_EXPORT Element	   HighlightElement;
 THOT_EXPORT Attribute  HighLightAttribute;
 
 THOT_EXPORT FILE      *ErrFile;
 THOT_EXPORT FILE      *CSSErrFile;
-
+THOT_EXPORT ThotBool   IgnoreErrors;
 THOT_EXPORT ThotBool   URL_list_keep;
 THOT_EXPORT ThotBool   Answer_save_password;
 THOT_EXPORT ThotBool   TMAX_Width;
@@ -475,7 +479,7 @@ THOT_EXPORT ThotBool   SaveAsHTML;
 THOT_EXPORT ThotBool   SaveAsXML;
 THOT_EXPORT ThotBool   SaveAsText;
 THOT_EXPORT ThotBool   CopyImages;	    /* should amaya copy images in Save As? */
-THOT_EXPORT ThotBool   CopyCss;         /* should amaya copy CSS in Save As? */
+THOT_EXPORT ThotBool   CopyResources;   /* should amaya copy resource in Save As? */
 THOT_EXPORT ThotBool   UpdateURLs;	    /* should amaya update URLs in Save As? */
 THOT_EXPORT ThotBool   RemoveTemplate;	/* should amaya remove template in Save As? */
 THOT_EXPORT ThotBool   UserAnswer;
@@ -580,6 +584,7 @@ typedef struct _DocumentMetaDataElement
   char      *reason;           /* http_headers reason*/
   int        method;           /* method used to send this data */
   Element    link_icon;        /* there is a link to an icon */
+  int        lockState;        /* 0=not webDAV, 1=unlocked, 2=locked */
   ThotBool   xmlformat;        /* the document should be exported in xml format */
   ThotBool   compound;         /* the document is a compound document */
 #ifdef ANNOTATIONS
@@ -621,20 +626,17 @@ THOT_EXPORT int                      FilesLoading[DocumentTableLength];
 THOT_EXPORT int                      DocNetworkStatus[DocumentTableLength];
 
 
-#define IMAGE_NOT_LOADED        0
-#define IMAGE_LOCAL		          1
-#define IMAGE_LOADED		        2
-#define IMAGE_MODIFIED		      3
-
-
+#define RESOURCE_NOT_LOADED       0
+#define RESOURCE_LOADED		        1
+#define RESOURCE_MODIFIED		      2
 typedef void (*LoadedImageCallback)(Document doc, Element el, char *file,
 				    void *extra, ThotBool isnew);
 typedef struct _ElemImage
   {
-     Element             currentElement;/* first element using this image */
-     struct _ElemImage  *nextElement;
-     LoadedImageCallback callback;	/* Callback for non-standard handling */
-     void		*extra;		/* any extra info for the CallBack */
+     Element              currentElement;/* first element using this image */
+     struct _ElemImage   *nextElement;
+     LoadedImageCallback  callback;	/* Callback for non-standard handling */
+     void		             *extra;		/* any extra info for the CallBack */
   }
 ElemImage;
 
@@ -646,10 +648,10 @@ typedef struct _LoadedImageDesc
      char               *content_type;  /* the MIME type as sent by the server      */
      struct _LoadedImageDesc *prevImage;/* double linked list                       */
      struct _LoadedImageDesc *nextImage;/* easier to unchain                        */
-     Document            document;	/* document concerned                       */
-     struct _ElemImage  *elImage;	/* first element using this image           */
+     Document            document;	    /* document concerned                       */
+     struct _ElemImage  *elImage;       /* first element using this image           */
      int                 imageType;     /* the type of the image                    */
-     int                 status;	/* the status of the image loading          */
+     int                 status;        /* the status of the image loading          */
   }
 LoadedImageDesc;
 
@@ -662,7 +664,7 @@ typedef struct _FetchImage_context {
 
 
 THOT_EXPORT LoadedImageDesc *ImageURLs;
-THOT_EXPORT LoadedImageDesc *ImageLocal;
+THOT_EXPORT LoadedImageDesc *LoadedResources;
 
 /* The default Amaya HOME pages (page shown at boot time */
 #ifdef _WX

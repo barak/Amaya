@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2008
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -3361,10 +3361,18 @@ void SetChange (PtrAbstractBox pAb, PtrDocument pDoc, PRuleType typeRule,
     case PtOpacity:
     case PtFillOpacity:
     case PtStrokeOpacity:
+    case PtStopOpacity:
+    case PtMarker:
+    case PtMarkerStart:
+    case PtMarkerMid:
+    case PtMarkerEnd:
     case PtBackground:
     case PtForeground:
+    case PtColor:
+    case PtStopColor:
     case PtXRadius:
     case PtYRadius:
+    case PtFillRule:
       pAb->AbAspectChange = TRUE;
       break;
     case PtFloat:
@@ -3445,8 +3453,16 @@ static void ApplyInheritPresRule (PtrAbstractBox pAb, PRuleType typeRule,
       || typeRule == PtOpacity
       || typeRule == PtStrokeOpacity
       || typeRule == PtFillOpacity
+      || typeRule == PtStopOpacity
+      || typeRule == PtMarker
+      || typeRule == PtMarkerStart
+      || typeRule == PtMarkerMid
+      || typeRule == PtMarkerEnd
+      || typeRule == PtFillRule
       || typeRule == PtBackground
-      || typeRule == PtForeground)
+      || typeRule == PtForeground
+      || typeRule == PtColor
+      || typeRule == PtStopColor)
     /* cherche la regle de ce type qui s'applique au pave' */
     {
       pRPres = SearchRulepAb (pDoc, pAb, &pSPR, typeRule, FnAny, TRUE, &pA);
@@ -3859,7 +3875,8 @@ void UpdatePresAttr (PtrElement pEl, PtrAttribute pAttr,
                           /* the abstract box doesn't exist and it's a Visibility
                              rule */
                           if (typeRule == PtVisibility)
-                            val = IntegerRule (pR, pEl, view, &appl, &unit, pAttr, NULL);
+                            val = IntegerRule (pR, pEl, view, &appl, &unit,
+					       pAttr, NULL, pSchP, pDoc);
                           else if (typeRule == PtDisplay)
                             {
                               if (CharRule (pR, pEl, view, &appl) == 'N')

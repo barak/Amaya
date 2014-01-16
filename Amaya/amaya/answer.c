@@ -202,14 +202,17 @@ BOOL AHTConfirm (HTRequest * request, HTAlertOpcode op, int msgnum,
     {
     case HT_MSG_RETRY_PROXY_AUTH:
     case HT_MSG_RETRY_AUTHENTICATION:
-      InitConfirm (0, 0, TtaGetMessage (AMAYA, AM_AUTHENTICATION_CONFIRM));
+      if (!TtaTestWaitShowDialogue ())
+        // avoid to close the current authentication dialog
+        InitConfirm (0, 0, TtaGetMessage (AMAYA, AM_AUTHENTICATION_CONFIRM));
       break;
     case HT_MSG_REDIRECTION:
       if (me)
         {
           TtaSetStatus (0, 1, TtaGetMessage (AMAYA, AM_REDIRECTION_CONFIRM), NULL);
-          if (!SafePut_query(me->urlName))
-	    InitConfirm (0, 0, TtaGetMessage (AMAYA, AM_REDIRECTION_CONFIRM));
+          if (!SafePut_query(me->urlName) && !TtaTestWaitShowDialogue ())
+            // no more than one redirect confirm message
+            InitConfirm (0, 0, TtaGetMessage (AMAYA, AM_REDIRECTION_CONFIRM));
         }
       break;
     case HT_MSG_FILE_REPLACE:
@@ -281,7 +284,7 @@ BOOL AHTPrompt (HTRequest * request, HTAlertOpcode op, int msgnum, const char *d
   if (reply && msgnum >= 0)
     {
       TtaSetTextForm (BaseDialog + AnswerText, "");
-      TtaShowDialogue (BaseDialog + FormAnswer, FALSE);
+      TtaShowDialogue (BaseDialog + FormAnswer, FALSE, TRUE);
       TtaWaitShowDialogue ();
 
       /* give back the reply to the libwww */
@@ -340,31 +343,26 @@ BOOL AHTPromptUsernameAndPassword (HTRequest *request, HTAlertOpcode op,
         me->reqStatus = old_reqStatus;
 
       /* handle the user's answers back to the library */
-      if (UserAnswer)
+      if (UserAnswer && !ExtraChoice)
         {
           /* set the user name */
           HTAlert_setReplyMessage (reply, Answer_name);
           /* set the password */
           HTAlert_setReplySecret (reply, Answer_password);
-	  /* Add the new password in the password table if asked */
-          if (Answer_save_password)
-	      NewPasswordTable ((char *)realm, server, Answer_name,
-		    	         Answer_password, i_auth, TRUE);
-	  if (server)
-	    TtaFreeMemory (server);
+          /* Add the new password in the password table if asked */
+          if (Answer_save_password && Answer_name[0] != EOS)
+            NewPasswordTable ((char *)realm, server, Answer_name,
+                              Answer_password, i_auth, TRUE);
+          if (server)
+            TtaFreeMemory (server);
           return YES;
         }
       else
-	{
-	  if (server)
-	    TtaFreeMemory (server);
-	  return NO;
-	}
-
-      /* free allocated memory */
-      if (server)
-        TtaFreeMemory (server);
-
+        {
+          if (server)
+            TtaFreeMemory (server);
+          return NO;
+        }
     }
   return NO;
 }

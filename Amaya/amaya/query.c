@@ -610,7 +610,7 @@ ThotBool  AHTReqContext_delete (AHTReqContext * me)
 
 #ifdef DAV /* if there is a DAV context object, delete it */
       if (me->dav_context)
-        AHTDAVContext_delete ((AHTDAVContext*)me->dav_context);
+        AHTDAVContext_delete ((AHTDAVContext*)(me->dav_context));
       me->dav_context = NULL;
 #endif /* DAV */
 
@@ -663,7 +663,7 @@ ThotBool  AHTReqContext_delete (AHTReqContext * me)
         {
           if (me->outputfile && me->outputfile[0] != EOS)
             {
-              TtaFileUnlink (me->outputfile);
+              TtaFileUnlink ((const char *) &(me->outputfile[0]));
               me->outputfile[0] = EOS;
             }
         }
@@ -759,7 +759,7 @@ static void Thread_deleteAll (void)
 /*----------------------------------------------------------------------
   AHTOpen_file
   ----------------------------------------------------------------------*/
-int                 AHTOpen_file (HTRequest * request)
+int AHTOpen_file (HTRequest * request)
 {
   AHTReqContext      *me;      /* current request */
 
@@ -1764,7 +1764,7 @@ static void         AHTAcceptLanguagesInit (HTList *c)
   Bindings between a source media type and a destination media type
   (conversion).
   ----------------------------------------------------------------------*/
-static void         AHTConverterInit (HTList *c)
+static void  AHTConverterInit (HTList *c)
 {
   /* Handler for custom http error messages */
   HTConversion_add (c, "*/*", "www/debug", AHTMemConverter, 1.0, 0.0, 0.0);
@@ -1838,8 +1838,6 @@ static void         AHTProtocolInit (void)
 #ifdef AMAYA_WWW_CACHE
   HTProtocol_add("cache",  "local", 0, YES, HTLoadCache, NULL);
 #endif /* AMAYA_WWW_CACHE */
-#if 0 /* experimental code */
-#endif
   HTProtocol_add ("ftp", "tcp", FTP_PORT, NO, HTLoadFTP, NULL);
 
   /* initialize pipelining */
@@ -1921,7 +1919,7 @@ static void         AHTAlertInit (void)
   RecCleanCache
   Clears an existing cache directory
   ----------------------------------------------------------------------*/
-static void RecCleanCache (char *dirname)
+static ThotBool RecCleanCache (char *dirname)
 {
   char     buf[MAX_LENGTH];
   wxString name, path;
@@ -1930,7 +1928,7 @@ static void RecCleanCache (char *dirname)
 
   /* try to delete the current directory */
   if (wxRmdir(wx_dir_name))
-    return;
+    return TRUE;
 
   /* try to delete the files & directorys inside */
   wxDir wx_dir(wx_dir_name);
@@ -1954,7 +1952,9 @@ static void RecCleanCache (char *dirname)
 	wxRemoveFile(path);
     }
   /* try to delete the current directory */
-  wxRmdir(wx_dir_name);
+  if (wxRmdir(wx_dir_name))
+    return TRUE;
+  return FALSE;
 }
 #endif /* AMAYA_WWW_CACHE */
 
@@ -1966,9 +1966,8 @@ void libwww_CleanCache (void)
 {
 #ifdef AMAYA_WWW_CACHE
   char    *real_dir, *cache_dir, *tmp, *ptr;
-  int      cache_size;
-  int      cache_expire;
-  int      cache_disconnect;
+  int      cache_size, cache_expire, cache_disconnect;
+  int      retry = 20;
 
   if (!HTCacheMode_enabled ())
     /* don't do anything if we're not using a cache */
@@ -2003,8 +2002,9 @@ void libwww_CleanCache (void)
   clear_cachelock ();
   HTCacheTerminate ();
   HTCacheMode_setEnabled (FALSE);
-  
-  RecCleanCache (real_dir);
+  // On Mac OS X it's necessary to relaunch the clean cache
+  while (retry > 0 && !RecCleanCache (real_dir))
+    retry --;
   HTCacheMode_setExpires ((HTExpiresMode)cache_expire);
   HTCacheMode_setDisconnected ((HTDisconnectedMode)cache_disconnect);
   HTCacheInit (cache_dir, cache_size);
@@ -2095,7 +2095,7 @@ static void CacheInit (void)
   cache_dir = HTLocalToWWW (real_dir, "file:");
   /* get the cache size (or use a default one) */
   ptr = TtaGetEnvString ("CACHE_SIZE");
-  if (ptr && *ptr) 
+  if (ptr && *ptr)
     cache_size = atoi (ptr);
   else
     cache_size = DEFAULT_CACHE_SIZE;
@@ -2109,28 +2109,31 @@ static void CacheInit (void)
       strcpy (cache_lockfile, real_dir);
       strcat (cache_lockfile, ".lock");
       cache_locked = FALSE;
-      if ( TtaFileExist(cache_lockfile) &&
-           !(cache_locked = (test_cachelock(cache_lockfile) != 0))
-           )
-        {
+      if (TtaFileExist(cache_lockfile))
+	{
+	  cache_locked = (test_cachelock(cache_lockfile) != 0);
+	  if (!cache_locked)
+	    {
 #ifdef DEBUG_LIBWWW
-          fprintf (stderr, "found a stale cache, removing it\n");
+	      fprintf (stderr, "found a stale cache, removing it\n");
 #endif /* DEBUG_LIBWWW */
-          /* remove the lock and clean the cache (the clean cache 
-             will remove all, making the following call unnecessary */
-          /* little trick to win some memory */
-          ptr = strrchr (cache_lockfile, '.');
-          *ptr = EOS;
-          RecCleanCache (cache_lockfile);
-          *ptr = '.';
-        }
+	      /* remove the lock and clean the cache (the clean cache 
+		 will remove all, making the following call unnecessary */
+	      /* little trick to win some memory */
+	      ptr = strrchr (cache_lockfile, '.');
+	      *ptr = EOS;
+	      RecCleanCache (cache_lockfile);
+	      *ptr = '.';
+	    }
+	}
 
       if (!cache_locked) 
         {
           /* initialize the cache if there's no other amaya
              instance running */
           HTCacheMode_setMaxCacheEntrySize (cache_entry_size);
-          if (TtaGetEnvBoolean ("CACHE_EXPIRE_IGNORE", &tmp_bool) && tmp_bool)
+	  TtaGetEnvBoolean ("CACHE_EXPIRE_IGNORE", &tmp_bool);
+          if (tmp_bool)
             HTCacheMode_setExpires (HT_EXPIRES_IGNORE);
           else
             HTCacheMode_setExpires (HT_EXPIRES_AUTO);
@@ -3217,35 +3220,27 @@ int PutObjectWWW (int docid, char *fileName, char *urlName,
 {
   AHTReqContext      *me;
   CHARSET             charset;
+  HTParentAnchor     *dest_anc_parent;
   int                 status;
   unsigned long       file_size = 0;
   char               *fileURL;
   char               *etag = NULL;
-  HTParentAnchor     *dest_anc_parent;
   char               *esc_url;
   int                 UsePreconditions;
   char                url_name[MAX_LENGTH];
   char               *resource_name, *localfilename;
   char               *tmp2;
   char                file_name[MAX_LENGTH];
-  ThotBool            lost_update_check = TRUE;
+  ThotBool            lost_update_check = FALSE;
 
   if (mode & AMAYA_SIMPLE_PUT)
     {
-      lost_update_check = FALSE;
       UsePreconditions = FALSE;
       if (!outputfile)
         return HT_ERROR;
     }
   else
-    {
-      /* should we protect the PUT against lost updates? */
-      const char *tmp = TtaGetEnvString ("ENABLE_LOST_UPDATE_CHECK");
-      if (tmp && *tmp && strcasecmp (tmp, "yes"))
-        lost_update_check = FALSE;
-
-      UsePreconditions = mode & AMAYA_USE_PRECONDITIONS;
-    }
+    UsePreconditions = mode & AMAYA_USE_PRECONDITIONS;
 
   AmayaLastHTTPErrorMsg [0] = EOS;
   if (urlName == NULL || docid == 0 || fileName == NULL 
@@ -3432,34 +3427,30 @@ int PutObjectWWW (int docid, char *fileName, char *urlName,
     HTRequest_setFlush(me->request, YES);
    
   /* Should we use preconditions? */
-  if (lost_update_check)
+  if (UsePreconditions)
     {
-      if (UsePreconditions) 
-        etag = HTAnchor_etag (HTAnchor_parent (me->dest));
-       
-      if (etag) 
-        {
-          HTRequest_setPreconditions(me->request, HT_MATCH_THIS);
-        }
-      else
-        {
-          HTRequest_setPreconditions(me->request, HT_NO_MATCH);
-          HTRequest_addAfter(me->request, check_handler, NULL, NULL, HT_ALL,
-                             HT_FILTER_MIDDLE, YES);
-          HTRequest_addAfter (me->request, HTAuthFilter, "http://*", NULL, 
-                              HT_NO_ACCESS, HT_FILTER_MIDDLE, YES);
-          HTRequest_addAfter (me->request, HTAuthFilter, "http://*", NULL,
-                              HT_REAUTH, HT_FILTER_MIDDLE, YES);
-          HTRequest_addAfter (me->request, HTAuthInfoFilter, "http://*", NULL,
-                              HT_ALL, HT_FILTER_MIDDLE, YES);
-          HTRequest_addAfter (me->request, HTUseProxyFilter, "http://*", NULL,
-                              HT_USE_PROXY, HT_FILTER_MIDDLE, YES);
-        }
+      HTRequest_setPreconditions(me->request, HT_NO_MATCH);
+      HTRequest_addAfter(me->request, check_handler, NULL, NULL, HT_ALL,
+                         HT_FILTER_MIDDLE, YES);
+      HTRequest_addAfter (me->request, HTAuthFilter, "http://*", NULL, 
+                          HT_NO_ACCESS, HT_FILTER_MIDDLE, YES);
+      HTRequest_addAfter (me->request, HTAuthFilter, "http://*", NULL,
+                          HT_REAUTH, HT_FILTER_MIDDLE, YES);
+      HTRequest_addAfter (me->request, HTAuthInfoFilter, "http://*", NULL,
+                          HT_ALL, HT_FILTER_MIDDLE, YES);
+      HTRequest_addAfter (me->request, HTUseProxyFilter, "http://*", NULL,
+                          HT_USE_PROXY, HT_FILTER_MIDDLE, YES);
     }
   else
     {
-      /* don't use preconditions */
-      HTRequest_setPreconditions(me->request, HT_NO_MATCH);
+      //TtaGetEnvBoolean ("ENABLE_LOST_UPDATE_CHECK", &lost_update_check);
+      if (lost_update_check)
+        etag = HTAnchor_etag (HTAnchor_parent (me->dest));
+      if (etag)
+        HTRequest_setPreconditions(me->request, HT_MATCH_THIS);
+      else
+        /* don't use preconditions */
+        HTRequest_setPreconditions(me->request, HT_NO_MATCH);
     }
    
   /* don't use the cache while saving a document */
@@ -3478,13 +3469,13 @@ int PutObjectWWW (int docid, char *fileName, char *urlName,
 #ifdef DAV
   /* MKP: for a PUT request, try to add an "If" header (lock information)
    * for a HEAD request, leave this for check_handler */
-  if ( !(lost_update_check && (!UsePreconditions || !etag)) )
-    DAVAddIfHeader (me,HTAnchor_address(me->dest));   
+  //if (!UsePreconditions)
+  DAVAddIfHeader (me,HTAnchor_address(me->dest));   
 #endif /* DAV */
 
    
   /* make the request */
-  if (lost_update_check && (!UsePreconditions || !etag))
+  if (UsePreconditions)
     status = HTHeadAnchor (me->dest, me->request);
   else
     status = HTPutDocumentAnchor (HTAnchor_parent (me->source), me->dest, me->request);
@@ -3499,7 +3490,6 @@ int PutObjectWWW (int docid, char *fileName, char *urlName,
     AHTReqContext_delete (me);
    
   TtaHandlePendingEvents ();
-
   return (status == YES ? 0 : -1);
 }
 
@@ -3586,8 +3576,8 @@ void StopAllRequests (int docid)
                       else
                         {
                           if (me->terminate_cbf)
-                            (*me->terminate_cbf) (me->docid, -1, me->urlName,
-                                                  me->outputfile,
+                            (*me->terminate_cbf) (me->docid, -1, &(me->urlName[0]),
+                                                  &(me->outputfile[0]),
                                                   NULL, NULL,
                                                   me->context_tcbf);
 			   

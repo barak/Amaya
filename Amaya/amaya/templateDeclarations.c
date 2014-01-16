@@ -58,7 +58,7 @@ const char* XTigerHTMLElements = "em strong cite dfn code var samp kbd abbr acro
                     "input option optgroup select button label "
                     "a font span img br object "
                     "p h1 h2 h3 h4 h5 h6 textarea ol ul li dd dl dt "
-                    "address fieldset legend ins del div"
+                    "address fieldset legend ins del div "
                     "table thead tbody tfoot caption tr th td";
                     
 
@@ -272,10 +272,13 @@ ThotBool NewXTigerTemplatePath (Document doc, const char *templatePath)
 void Template_Close (XTigerTemplate t)
 {
 #ifdef TEMPLATES
-  if (t)
+  if (t && (t->uri || t->base_uri))
     {
-      HashMap_DestroyElement (Templates_Map, t->uri);
+	  if (Template_IsInstance (t))
+        HashMap_DestroyElement (Templates_Map, t->uri);
       t->uri = NULL; // the uri was freed
+      TtaFreeMemory (t->base_uri);
+      t->base_uri = NULL; // the uri was freed
       Template_Clear (t);
     }
 #endif /* TEMPLATES */
@@ -438,13 +441,19 @@ Declaration Declaration_Clone (Declaration dec)
 void Declaration_Destroy (Declaration dec)
 {
 #ifdef TEMPLATES
+  Element          el;
+
   if (dec->nature == XmlElementNat)
     {
       TtaFreeMemory (dec->elementType.name);
       dec->elementType.name = NULL;
     }
   else if (dec->nature == ComponentNat)
-    dec->componentType.content = NULL;
+    {
+      el = dec->componentType.content;
+      TtaDeleteTree (el, 0);
+      dec->componentType.content = NULL;
+    }
   else if (dec->nature==UnionNat)
     {
     SearchSet_Destroy (dec->unionType.include);
@@ -602,6 +611,7 @@ void Declaration_CalcBlockLevel (XTigerTemplate t, Declaration dec)
                       // check the blocklevel of the component
                       name = GetUsedTypeName (elem);
                       sub_dcl = Template_GetDeclaration (t, name);
+                      TtaFreeMemory(name);
                       if (sub_dcl && sub_dcl->blockLevel == 0)
                         Declaration_CalcBlockLevel (t, sub_dcl);
                       if (sub_dcl)
@@ -610,7 +620,6 @@ void Declaration_CalcBlockLevel (XTigerTemplate t, Declaration dec)
                           if (dec->blockLevel == 2)
                             break;
                         }
-                      TtaFreeMemory(name);
                     }
                   else if (!IsCharacterLevelType (elType))
                     {
@@ -1282,9 +1291,10 @@ void Template_Clear (XTigerTemplate t)
       TtaFreeMemory(t->uri);
       TtaFreeMemory(t->version);
       TtaFreeMemory(t->templateVersion);
-      t->uri = NULL; 
+      t->uri = NULL;
       t->version = NULL;
       t->templateVersion = NULL;
+	  t->ref = 0;
     }
 #endif /* TEMPLATES */
 }
@@ -1339,7 +1349,7 @@ void Template_Destroy (XTigerTemplate t)
       t->errorList = NULL;
     
       //Freeing the document
-      if (t->doc>0)
+      if (t->doc > 0)
         {
           TtaRemoveDocumentReference(t->doc);
           t->doc = 0;
@@ -1396,6 +1406,7 @@ static void Template_FillDeclarationContent(XTigerTemplate t, Declaration decl)
               SearchSet_Insert(decl->unionType.include, Template_GetDeclaration(decl->usedIn, (char*)((Declaration)node)->name));
             }
           TtaFreeMemory(iter);
+          StringSet_Destroy(set);
           break;
         default:
           break;
@@ -1937,10 +1948,10 @@ void Template_AddReference (XTigerTemplate t)
 void Template_RemoveReference (XTigerTemplate t)
 {
 #ifdef TEMPLATES
-  if (t)
+  if (t && t->ref > 0)
   {
     t->ref--;
-    if (t->ref <= 0 && !Template_IsPredefined(t))
+    if (t->ref == 0 && !Template_IsPredefined(t))
       Template_Close (t);
   }  
 #endif /* TEMPLATES */

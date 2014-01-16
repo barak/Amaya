@@ -431,6 +431,7 @@ ThotBool ShapeCreation (int frame, Document doc,  void *inverseCTM,
 
   // register the current svg canvas
   BoxCanvas = NULL;
+  SVGCreating = TRUE;
 
   /* Create the handler */
   canvasWidth = svgBox->BxW;
@@ -439,7 +440,7 @@ ThotBool ShapeCreation (int frame, Document doc,  void *inverseCTM,
     {
       // MBP apply to the leaf box and not control points
       ancestorX += svgBox->BxLMargin + svgBox->BxLBorder + svgBox->BxLPadding;
-      ancestorY +=  svgBox->BxTMargin + svgBox->BxTBorder + svgBox->BxTPadding;
+      ancestorY += svgBox->BxTMargin + svgBox->BxTBorder + svgBox->BxTPadding;
     }
   p_frame = FrameTable[frame].WdFrame;
   // 
@@ -465,12 +466,30 @@ ThotBool ShapeCreation (int frame, Document doc,  void *inverseCTM,
   while(!p_CreateShapeEvtHandler->IsFinish())
     TtaHandleOneEvent (&ev);
   
+  SVGCreating = FALSE;
   delete p_CreateShapeEvtHandler;
   if (!created)
     {
       BoxCanvas = NULL;
       return FALSE;
     }
+
+  /* Compute the position of point (2) and (3) */
+  *x2 = *x4;
+  *y2 = *y1;
+  *x3 = *x1;
+  *y3 = *y4;
+  /* Convert the coordinates x1,y1 x2,y2 x3,y3 x4,y4 */
+  MouseCoordinatesToSVG(doc, p_frame, ancestorX, ancestorY, canvasWidth, canvasHeight,
+                        inverseCTM, TRUE, NULL, x1, y1, FALSE);
+  MouseCoordinatesToSVG(doc, p_frame, ancestorX, ancestorY, canvasWidth, canvasHeight,
+                        inverseCTM, TRUE, NULL, x2, y2, FALSE);
+  MouseCoordinatesToSVG(doc, p_frame, ancestorX, ancestorY, canvasWidth, canvasHeight,
+                        inverseCTM, TRUE, NULL, x3, y3, FALSE);
+  MouseCoordinatesToSVG(doc, p_frame, ancestorX, ancestorY, canvasWidth, canvasHeight,
+                        inverseCTM, TRUE, NULL, x4, y4, FALSE);
+  MouseCoordinatesToSVG(doc, p_frame, ancestorX, ancestorY, canvasWidth, canvasHeight,
+                        inverseCTM, TRUE, NULL, lx, ly, FALSE);
 
   /* Size of the construct */
   *lx = abs(*x4 - *x1);
@@ -495,20 +514,20 @@ ThotBool ShapeCreation (int frame, Document doc,  void *inverseCTM,
     {
       /* selection, svg, template (a bounding box is expected) */
       if(*x4 < *x1)
-	{
-	  *x1 = *x4;
-	  *x4 = *x1 + *lx;
-	}
+        {
+          *x1 = *x4;
+          *x4 = *x1 + *lx;
+        }
 
       if(*y4 < *y1)
-	{
-	  *y1 = *y4;
-	  *y4 = *y1 + *ly;
-	}
+        {
+          *y1 = *y4;
+          *y4 = *y1 + *ly;
+        }
 
       created = TRUE;
     }
-  else if (shape != 0 && shape < 12 && shape > 14)
+  else if (shape != 0 && (shape < 12 || shape > 14))
     {
       /* Shape */
       if (shape == 20)
@@ -549,20 +568,6 @@ ThotBool ShapeCreation (int frame, Document doc,  void *inverseCTM,
       BoxCanvas = NULL;
       return FALSE;
     }
-  /* Compute the position of point (2) and (3) */
-  *x2 = *x4;
-  *y2 = *y1;
-  *x3 = *x1;
-  *y3 = *y4;
-  /* Convert the coordinates x1,y1 x2,y2 x3,y3 x4,y4 */
-  MouseCoordinatesToSVG(doc, p_frame, ancestorX, ancestorY, canvasWidth, canvasHeight,
-                        inverseCTM, TRUE, NULL, x1, y1, FALSE);
-  MouseCoordinatesToSVG(doc, p_frame, ancestorX, ancestorY, canvasWidth, canvasHeight,
-                        inverseCTM, TRUE, NULL, x2, y2, FALSE);
-  MouseCoordinatesToSVG(doc, p_frame, ancestorX, ancestorY, canvasWidth, canvasHeight,
-                        inverseCTM, TRUE, NULL, x3, y3, FALSE);
-  MouseCoordinatesToSVG(doc, p_frame, ancestorX, ancestorY, canvasWidth, canvasHeight,
-                        inverseCTM, TRUE, NULL, x4, y4, FALSE);
   TtaSetStatus (doc, 1, "", NULL);
   BoxCanvas = NULL;
   return TRUE;
@@ -688,8 +693,8 @@ ThotBool PathEdit (int frame, Document doc,  void *inverse, PtrBox svgBox,
 /*----------------------------------------------------------------------
   PathCreation
   ----------------------------------------------------------------------*/
-ThotBool PathCreation (int frame, Document doc,  void *inverse, PtrBox svgBox,
-                       int ancestorX, int ancestorY,
+ThotBool PathCreation (int frame, Document doc,  void *inverseCTM,
+                       PtrBox svgBox, int ancestorX, int ancestorY,
                        int shape, Element el)
 {
   AmayaFrame                *p_frame;
@@ -700,6 +705,7 @@ ThotBool PathCreation (int frame, Document doc,  void *inverse, PtrBox svgBox,
 
   // register the current svg canvas
   BoxCanvas = NULL;
+  SVGCreating = TRUE;
 
   canvasWidth = svgBox->BxW;
   canvasHeight = svgBox->BxH;
@@ -707,16 +713,17 @@ ThotBool PathCreation (int frame, Document doc,  void *inverse, PtrBox svgBox,
     {
       // MBP apply to the leaf box and not control points
       ancestorX += svgBox->BxLMargin + svgBox->BxLBorder + svgBox->BxLPadding;
-      ancestorY +=  svgBox->BxTMargin + svgBox->BxTBorder + svgBox->BxTPadding;
+      ancestorY += svgBox->BxTMargin + svgBox->BxTBorder + svgBox->BxTPadding;
     }
   p_frame = FrameTable[frame].WdFrame;
-  p_CreatePathEvtHandler = new AmayaCreatePathEvtHandler(p_frame, doc, inverse,
+  p_CreatePathEvtHandler = new AmayaCreatePathEvtHandler(p_frame, doc, inverseCTM,
                                                           ancestorX, ancestorY,
                                                          canvasWidth, canvasHeight,
                                                          shape, el, &created);
   while(!p_CreatePathEvtHandler->IsFinish())
     TtaHandleOneEvent (&ev);
   
+  SVGCreating = FALSE;
   delete p_CreatePathEvtHandler;
   BoxCanvas = NULL;
   return created;
@@ -734,7 +741,7 @@ ThotBool MouseCoordinatesToSVG (Document doc, AmayaFrame *p_frame,
                                 int x0, int y0, int width, int height,
                                 void *inverseCTM, ThotBool convert,
                                 char *msg, int *x, int *y,
-				ThotBool displayCoordinates)
+                                ThotBool displayCoordinates)
 {
   int      frame;
   int      newx, newy;
@@ -746,12 +753,12 @@ ThotBool MouseCoordinatesToSVG (Document doc, AmayaFrame *p_frame,
   if (inverseCTM)
     {
       /* Get the coefficients of the Matrix */
-      a = ((PtrTransform)(inverseCTM)) -> AMatrix;
-      b = ((PtrTransform)(inverseCTM)) -> BMatrix;
-      c = ((PtrTransform)(inverseCTM)) -> CMatrix;
-      d = ((PtrTransform)(inverseCTM)) -> DMatrix;
-      e = ((PtrTransform)(inverseCTM)) -> EMatrix;
-      f = ((PtrTransform)(inverseCTM)) -> FMatrix;
+      a = ((PtrTransform)(inverseCTM))->AMatrix;
+      b = ((PtrTransform)(inverseCTM))->BMatrix;
+      c = ((PtrTransform)(inverseCTM))->CMatrix;
+      d = ((PtrTransform)(inverseCTM))->DMatrix;
+      e = ((PtrTransform)(inverseCTM))->EMatrix;
+      f = ((PtrTransform)(inverseCTM))->FMatrix;
     }
   else
     {
@@ -762,10 +769,9 @@ ThotBool MouseCoordinatesToSVG (Document doc, AmayaFrame *p_frame,
   if (BoxCanvas)
     {
       // take into account MBP of the canvas
-      x0 = x0 - BoxCanvas->BxLMargin - BoxCanvas->BxLBorder - BoxCanvas->BxLPadding;
-      y0 = y0 - BoxCanvas->BxTMargin - BoxCanvas->BxTBorder - BoxCanvas->BxTPadding;
+      x0 = x0 + BoxCanvas->BxLMargin + BoxCanvas->BxLBorder + BoxCanvas->BxLPadding;
+      y0 = y0 + BoxCanvas->BxTMargin + BoxCanvas->BxTBorder + BoxCanvas->BxTPadding;
     }
-
   frame = p_frame->GetFrameId();
   width = LogicalValue (width, UnPixel, NULL,
                         ViewFrameTable[frame - 1].FrMagnification);
@@ -779,7 +785,6 @@ ThotBool MouseCoordinatesToSVG (Document doc, AmayaFrame *p_frame,
   /* SVG ancestor coordinates to SVG canvas */
   newx2 = (int)(a * newx + c * newy + e);
   newy2 = (int)(b * newx + d * newy + f);
-
   /* Modify x and y if asked */
   if (convert)
     {
@@ -810,16 +815,15 @@ ThotBool MouseCoordinatesToSVG (Document doc, AmayaFrame *p_frame,
     }
 
   /* Display the coordinates in the status bar */
-  if(msg != NULL)
+  if (msg)
     {
-      if(displayCoordinates)
-	{
-	  sprintf(buffer, "(%d,%d) - ", newx2, newy2);
-	  strcat(buffer, msg);
-	}
+      if (displayCoordinates)
+        {
+          sprintf(buffer, "(%d,%d) - ", newx2, newy2);
+          strcat(buffer, msg);
+        }
       else
-	strcpy(buffer, msg);
-
+        strcpy(buffer, msg);
       TtaSetStatus (doc, 1, buffer, NULL);
     }
   return inside;
@@ -840,12 +844,12 @@ void SVGToMouseCoordinates (Document doc, AmayaFrame *p_frame,
   if (CTM)
     {
       /* Get the coefficients of the Matrix */
-      a = ((PtrTransform)(CTM)) -> AMatrix;
-      b = ((PtrTransform)(CTM)) -> BMatrix;
-      c = ((PtrTransform)(CTM)) -> CMatrix;
-      d = ((PtrTransform)(CTM)) -> DMatrix;
-      e = ((PtrTransform)(CTM)) -> EMatrix;
-      f = ((PtrTransform)(CTM)) -> FMatrix;
+      a = ((PtrTransform)(CTM))->AMatrix;
+      b = ((PtrTransform)(CTM))->BMatrix;
+      c = ((PtrTransform)(CTM))->CMatrix;
+      d = ((PtrTransform)(CTM))->DMatrix;
+      e = ((PtrTransform)(CTM))->EMatrix;
+      f = ((PtrTransform)(CTM))->FMatrix;
     }
   else
     {

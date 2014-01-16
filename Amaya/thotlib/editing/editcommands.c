@@ -92,15 +92,11 @@ static ThotBool           NewInsert;
 #include "ustring_f.h"
 #include "units_f.h"
 #include "undo_f.h"
+#include "undoapi_f.h"
 #include "unstructchange_f.h"
 #include "viewapi_f.h"
 #include "views_f.h"
 #include "windowdisplay_f.h"
-
-#ifdef _WINGUI 
-#include "wininclude.h"
-#endif /* _WINGUI */
-
 #ifdef _GL
 #include "glwindowdisplay.h"
 #endif /*_GL*/
@@ -382,16 +378,13 @@ static void GiveInsertPoint (PtrAbstractBox pAb, char script, int frame,
 static ThotBool CloseTextInsertionWithControl (ThotBool toNotify)
 {
   PtrElement          pEl;
-  PtrBox              pBox;
-  PtrBox              pSelBox;
-  PtrTextBuffer       pBuffer;
-  PtrTextBuffer       pbuff;
+  PtrBox              pBox, pSelBox;
+  PtrAbstractBox      pCell = NULL, table;
+  PtrTextBuffer       pBuffer, pbuff;
   ViewFrame          *pFrame;
-  ViewSelection      *pViewSel;
-  ViewSelection      *pViewSelEnd;
+  ViewSelection      *pViewSel, *pViewSelEnd;
   int                 nChars;
-  int                 i, j;
-  int                 ind;
+  int                 i, j, ind;
   int                 frame, docview;
   ThotBool            notified, presentBox;
 
@@ -459,7 +452,7 @@ static ThotBool CloseTextInsertionWithControl (ThotBool toNotify)
           pBox = pSelBox->BxAbstractBox->AbBox;
           if (j == 0)
             {
-              if (pSelBox->BxBuffer->BuLength != 0 &&
+              if (pSelBox->BxBuffer && pSelBox->BxBuffer->BuLength != 0 &&
                   pSelBox->BxIndChar > pSelBox->BxBuffer->BuLength &&
                   pSelBox->BxNChars > 0)
                 {
@@ -555,6 +548,14 @@ static ThotBool CloseTextInsertionWithControl (ThotBool toNotify)
             {
               /* end of text insertion */
               pEl = LastInsertElText;
+              // check if the table must be reformatted
+              pCell = GetParentCell (pViewSel->VsBox);
+              if (pCell)
+                {
+                  table = SearchEnclosingType (pCell, BoTable, BoTable, BoTable);
+                  if (table)
+                    SetTableWidths (table, frame);
+                }
               LastInsertElText = NULL;
               LastInsertAttr = NULL;
               LastInsertAttrElem = NULL;
@@ -566,6 +567,7 @@ static ThotBool CloseTextInsertionWithControl (ThotBool toNotify)
                 }
               if (SelectedDocument)
                 CloseHistorySequence (SelectedDocument);
+              // check if a table must be reformatted
             }
           else if (LastInsertAttr)
             {
@@ -1898,7 +1900,7 @@ ThotBool AskShapePoints (Document doc, Element svgAncestor, Element svgCanvas,
     return FALSE;
 
   /* Get the current transform matrix */
-  CTM = (PtrTransform)TtaGetCurrentTransformMatrix(svgCanvas, svgAncestor);
+  CTM = (PtrTransform)TtaGetCurrentTransformMatrix (svgCanvas, svgAncestor);
   if(CTM == NULL)
     inverse = NULL;
   else
@@ -1961,7 +1963,7 @@ ThotBool AskSurroundingBox (Document doc, Element svgAncestor,
 
   *x1 = *y1 = *x2 = *y2 = *x3 = *y3 = *x4 = *y4 = *lx = * ly = 0;
   /* Get the current transform matrix */
-  CTM = (PtrTransform)TtaGetCurrentTransformMatrix(svgCanvas, svgAncestor);
+  CTM = (PtrTransform)TtaGetCurrentTransformMatrix (svgCanvas, svgAncestor);
   if (CTM == NULL)
     inverse = NULL;
   else
@@ -2015,7 +2017,7 @@ ThotBool AskTransform (Document doc, Element svgAncestor, Element svgCanvas,
   PtrTransform        CTM, inverse;
   int                 frame;
   int                 ancestorX, ancestorY;
-  ThotBool            transformApplied;
+  ThotBool            transformApplied, open;
 
   frame = ActiveFrame;
   if(frame <= 0)
@@ -2060,19 +2062,89 @@ ThotBool AskTransform (Document doc, Element svgAncestor, Element svgCanvas,
   ancestorX = pBox->BxXOrg - pFrame->FrXOrg;
   ancestorY = pBox->BxYOrg - pFrame->FrYOrg;
 
+
+  // lock the undo sequence
+  open = TtaHasUndoSequence (doc);
+  if (!open)
+    TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
+  // keep the history open until the button is up
+  TtaLockHistory (TRUE);
+
   /* Call the interactive module */
   transformApplied = TransformSVG (frame, doc, CTM, inverse, svgBox,
                                    ancestorX, ancestorY, transform_type, el);
 
   /* Free the transform matrix */
-  if(CTM)TtaFreeTransform(CTM);
-  if(inverse)TtaFreeTransform(inverse);
+  if (CTM)
+    TtaFreeTransform(CTM);
 
+  if (inverse)
+    TtaFreeTransform(inverse);
+
+  TtaLockHistory (FALSE);
   /* Update the transform */
   if(transformApplied)
     UpdateTransformMatrix(doc, el);
-
+  // close the history now
+  if (!open)
+    TtaCloseUndoSequence (doc);
   return transformApplied;
+}
+
+/*----------------------------------------------------------------------
+  TtaUpdateMarkers
+  Remove all the markers attached to an element and rebuild them.
+  ----------------------------------------------------------------------*/
+void TtaUpdateMarkers (Element el, Document doc, ThotBool clear, ThotBool rebuild)
+{
+  PtrElement     pEl = (PtrElement) el, child, next;
+  PtrAbstractBox pAb;
+  SSchema        svgSchema;
+  DisplayMode    dispMode = TtaGetDisplayMode (doc);
+  ThotBool       oldStructureChecking = TtaGetStructureChecking (doc);
+
+  if (pEl == NULL)
+    return;
+  // Prepare the update
+  if (oldStructureChecking)
+    TtaSetStructureChecking (FALSE, doc);
+  if (dispMode == DisplayImmediately)
+    TtaSetDisplayMode (doc, DeferredDisplay);
+  svgSchema = TtaGetSSchema ("SVG", doc);
+
+  if (clear)
+    {
+      /* Clear all the markers */
+      child = pEl->ElFirstChild;
+      while (child)
+        {
+          next = child->ElNext;
+          if (TypeHasException (ExcIsMarker, child->ElTypeNumber, child->ElStructSchema))
+            {
+              TtaRegisterElementDelete ((Element)child, doc);
+              TtaDeleteTree((Element)child, doc);
+            }
+          child = next;
+        }
+    }
+
+  /* Rebuild the markers */
+  if (rebuild)
+    {
+      pAb = pEl->ElAbstractBox[0];
+      if (pAb->AbMarker)
+        GenerateMarkers (el, doc, (Element)pAb->AbMarker, 0);
+      if (pAb->AbMarkerStart)
+        GenerateMarkers (el, doc, (Element)pAb->AbMarkerStart, 1);
+      if (pAb->AbMarkerMid)
+        GenerateMarkers (el, doc, (Element)pAb->AbMarkerMid, 2);
+      if (pAb->AbMarkerEnd)
+        GenerateMarkers (el, doc, (Element)pAb->AbMarkerEnd, 3);
+    }
+
+  TtaSetStructureChecking (oldStructureChecking, doc);
+  if (dispMode == DisplayImmediately)
+    TtaSetDisplayMode (doc, dispMode);
 }
 
 /*----------------------------------------------------------------------
@@ -2081,13 +2153,14 @@ ThotBool AskTransform (Document doc, Element svgAncestor, Element svgCanvas,
 ThotBool AskPathEdit (Document doc, int edit_type, Element el, int point)
 {
   Element        svgCanvas = NULL, svgAncestor = NULL, el2;
+  PtrElement     pEl = (PtrElement) el;
   PtrAbstractBox pAb;
   PtrBox         pBox, svgBox;
   ViewFrame     *pFrame;
   PtrTransform   CTM, inverse;
   int            frame;
   int            ancestorX, ancestorY;
-  ThotBool       transformApplied;
+  ThotBool       transformApplied, usemarkers, open;
 
   frame = ActiveFrame;
   if(frame <= 0)
@@ -2095,7 +2168,6 @@ ThotBool AskPathEdit (Document doc, int edit_type, Element el, int point)
 
   /* Get the ancestor and svg canvas */
   el2 = el;
-
   if (!GetAncestorCanvasAndObject (doc, &el, &svgAncestor, &svgCanvas))
     return FALSE;
 
@@ -2104,7 +2176,7 @@ ThotBool AskPathEdit (Document doc, int edit_type, Element el, int point)
        transforming it is forbidden. */
     return FALSE;
 
-  if (ElementIsReadOnly ((PtrElement) el))
+  if (ElementIsReadOnly (pEl))
     return FALSE;
 
   /* Get the current transform matrix */
@@ -2141,19 +2213,41 @@ ThotBool AskPathEdit (Document doc, int edit_type, Element el, int point)
   ancestorX = pBox->BxXOrg - pFrame->FrXOrg;
   ancestorY = pBox->BxYOrg - pFrame->FrYOrg;
 
+  /* Clear the markers before the edition of the element */
+  usemarkers = TypeHasException (ExcUseMarkers, pEl->ElTypeNumber, pEl->ElStructSchema);
+  if (usemarkers)
+    TtaUpdateMarkers(el, doc, TRUE, FALSE);
+
+  open = !TtaHasUndoSequence (doc);
+  if (open)
+    TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
+
+  // register current
+  UpdatePointsOrPathAttribute(doc, el, 0, 0, TRUE);
   /* Call the interactive module */
   transformApplied = PathEdit (frame, doc,  inverse, svgBox,
                                ancestorX, ancestorY, el, point);
   /* Free the transform matrix */
-  if(inverse)
+  if (inverse)
     TtaFreeTransform(inverse);
 
   /* Update the attribute */
-  if(transformApplied)
+  if (transformApplied)
     {
-      UpdatePointsOrPathAttribute(doc, el, 0, 0, TRUE);
-      UpdateMarkers(el, doc);
+      UpdatePointsOrPathAttribute(doc, el, 0, 0, FALSE);
+      if (open)
+        TtaCloseUndoSequence (doc);
     }
+  else
+    {
+      if (open)
+        TtaCloseUndoSequence (doc);
+      TtaCancelLastRegisteredSequence (doc);
+    }
+
+  /* Restore the markers */
+  if (usemarkers)
+    TtaUpdateMarkers(el, doc, FALSE, TRUE);
 
   return transformApplied;
 }
@@ -2172,7 +2266,7 @@ ThotBool AskShapeEdit (Document doc, Element el, int point)
   char           shape;
   int            frame, x, y, w, h, rx, ry;
   int            ancestorX, ancestorY;
-  ThotBool       hasBeenEdited;
+  ThotBool       hasBeenEdited = FALSE, open;
 
   frame = ActiveFrame;
   if(frame <= 0)
@@ -2224,58 +2318,92 @@ ThotBool AskShapeEdit (Document doc, Element el, int point)
   ancestorX = pBox->BxXOrg - pFrame->FrXOrg;
   ancestorY = pBox->BxYOrg - pFrame->FrYOrg;
 
-  /* Call the interactive module */
-  hasBeenEdited = ShapeEdit (frame, doc, inverse, svgBox,
-                             ancestorX, ancestorY, el, point);
+  // lock the undo sequence
+  open = TtaHasUndoSequence (doc);
+  if (!open)
+    TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
+  // keep the history open until the button is up
+  TtaLockHistory (TRUE);
+
+  leaf =  TtaGetLastChild(el);
+  if (leaf && 
+      ((PtrElement)leaf)->ElAbstractBox[0])
+    {
+      pAb = ((PtrElement)leaf)->ElAbstractBox[0];
+      pBox = pAb->AbBox;
+      shape = pAb->AbShape;          
+      if (shape == 1 || shape == 'C')
+        {
+          rx = pBox->BxRx;
+          ry = pBox->BxRy;
+        }
+      else
+        {
+          rx = -1;
+          ry = -1;
+        }
+      x = pBox->BxXOrg;
+      y = pBox->BxYOrg;
+      w = pBox->BxW;
+      h = pBox->BxH;
+    
+      /* Call the interactive module */
+      hasBeenEdited = ShapeEdit (frame, doc, inverse, svgBox,
+                                 ancestorX, ancestorY, el, point);
+    }
 
   /* Free the transform matrix */
   if (inverse)
     TtaFreeTransform(inverse);
 
+  TtaLockHistory (FALSE);
   /* Update the attribute */
-  if (hasBeenEdited)
+  if (hasBeenEdited && pBox)
     {
-      leaf =  TtaGetLastChild(el);
-      if (leaf && 
-          ((PtrElement)leaf)->ElAbstractBox[0])
+      if ((shape == 1 || shape == 'C') &&
+          (rx != pBox->BxRx || ry != pBox->BxRy))
         {
-          pAb = ((PtrElement)leaf)->ElAbstractBox[0];
-          pBox = pAb->AbBox;
-          shape = pAb->AbShape;          
-          if (pBox)
+          rx = pBox->BxRx;
+          ry = pBox->BxRy;
+          UpdateShapeElement(doc, el, shape, -1, -1, -1, -1, rx, ry);
+        }
+      else
+        {
+          if (x != pBox->BxXOrg)
+            x = pBox->BxXOrg;
+          else if (shape != 'g' || w == pBox->BxW)
+            x = -1;
+          if (y != pBox->BxYOrg)
+            y = pBox->BxYOrg;
+          else if (shape != 'g' || h == pBox->BxH)
+            y = -1;
+          if (w != pBox->BxW)
+            w = pBox->BxW;
+          else if (shape != 'g' || x == -1)
+            w = -1;
+          if (h != pBox->BxH)
+            h = pBox->BxH;
+          else if (shape != 'g' || y == -1)
+            h = -1;
+          if (shape == 'g')
             {
-              if (shape == 1 || shape == 'C')
-                {
-                  rx = pBox->BxRx;
-                  ry = pBox->BxRy;
-                }
+              if ((pAb->AbEnclosing->AbHorizPos.PosEdge == Left &&
+                   pAb->AbEnclosing->AbVertPos.PosEdge == Top) ||
+                  (pAb->AbEnclosing->AbHorizPos.PosEdge == Right &&
+                   pAb->AbEnclosing->AbVertPos.PosEdge == Bottom))
+                /* draw a \ */
+                UpdateShapeElement(doc, el, shape, x, y, x+w, y+h, -1, -1);
               else
-                {
-                  rx = 0;
-                  ry = 0;
-                }
-
-              x = pBox->BxXOrg;
-              y = pBox->BxYOrg;
-              w = pBox->BxW;
-              h = pBox->BxH;
-              if (shape == 'g')
-                {
-                  if ((pAb->AbEnclosing->AbHorizPos.PosEdge == Left
-                      && pAb->AbEnclosing->AbVertPos.PosEdge == Top) ||
-                     (pAb->AbEnclosing->AbHorizPos.PosEdge == Right
-                      && pAb->AbEnclosing->AbVertPos.PosEdge == Bottom))
-                    /* draw a \ */
-                    UpdateShapeElement(doc, el, shape, x,y,x+w,y+h, 0, 0);
-                  else
-                    /* draw a / */
-                    UpdateShapeElement(doc, el, shape, x+w,y,x,y+h, 0, 0);
-                }
-              else
-                UpdateShapeElement(doc, el, shape, x,y,w,h, rx, ry);
+                /* draw a / */
+                UpdateShapeElement(doc, el, shape, x+w, y, x, y+h, -1, -1);
             }
+          else
+            UpdateShapeElement(doc, el, shape, x, y, w, h, -1, -1);
         }
     }
+  // close the history now
+  if (!open)
+    TtaCloseUndoSequence (doc);
   return hasBeenEdited;
 }
 
@@ -2425,7 +2553,7 @@ ThotBool ContentEditing (int editType)
 			    {
 			      Element el = TtaGetParent((Element)FirstSelectedElement);
 			      UpdatePointsOrPathAttribute(doc, el, 0, 0, TRUE);
-			      UpdateMarkers(el, doc);
+			      TtaUpdateMarkers(el, doc, TRUE, TRUE);
 			      TtaSetDocumentModified(doc);
 			    }
 		    }
@@ -3079,7 +3207,8 @@ ThotBool InsertChar (int frame, CHAR_T c, int keyboard)
                       pFrame->FrReady = FALSE;
                       variant = pAb->AbFontVariant;
                       /* initialise l'insertion */
-                      if (!TextInserting)
+                      if (!TextInserting || pBuffer == NULL ||
+                          ind < pBuffer->BuLength)
                         {
                         if (!StartTextInsertion (pAb, frame, pSelBox,
                                                 pBuffer, ind,
@@ -3196,36 +3325,49 @@ ThotBool InsertChar (int frame, CHAR_T c, int keyboard)
                                   pViewSelEnd->VsIndBuf--;
                                 }
                               if (pBuffer->BuLength == 0)
-                                if (pBuffer->BuPrevious)
-                                  {
-                                    /* free that buffer */
-                                    if (pSelBox->BxBuffer == pBuffer)
-                                      {
-                                        /* and update the box */
+                                {
+                                  if (pBuffer->BuPrevious)
+                                    {
+                                      /* free that buffer */
+                                      if (pSelBox->BxBuffer == pBuffer)
+                                        {
+                                          /* and update the box */
+                                          pBuffer = DeleteBuffer (pBuffer, frame);
+                                          pSelBox->BxBuffer = pBuffer;
+                                          /* the index will be decremented */
+                                          pSelBox->BxIndChar = pBuffer->BuLength + 1;
+                                          if (pSelBox->BxFirstChar == 1)
+                                            {
+                                              pAb->AbText = pBuffer;
+                                              if (pBox && pBox != pSelBox)
+                                                {
+                                                  /* update the split box */
+                                                  pBox->BxBuffer = pBuffer;
+                                                  if (pBox->BxNexChild != pSelBox &&
+                                                      pBox->BxNexChild)
+                                                    /* there is an empty box before */
+                                                    pBox->BxNexChild->BxBuffer = pBuffer;
+                                                }
+                                            }
+                                          else if (pSelBox->BxPrevious->BxNChars == 0)
+                                            /* update the previous box */
+                                            pSelBox->BxPrevious->BxBuffer = pBuffer;
+                                        }
+                                      else
                                         pBuffer = DeleteBuffer (pBuffer, frame);
-                                        pSelBox->BxBuffer = pBuffer;
-                                        /* the index will be decremented */
-                                        pSelBox->BxIndChar = pBuffer->BuLength + 1;
-                                        if (pSelBox->BxFirstChar == 1)
-                                          {
-                                            pAb->AbText = pBuffer;
-                                            if (pBox && pBox != pSelBox)
-                                              {
-                                                /* update the split box */
-                                                pBox->BxBuffer = pBuffer;
-                                                if (pBox->BxNexChild != pSelBox &&
-                                                    pBox->BxNexChild)
-                                                  /* there is an empty box before */
-                                                  pBox->BxNexChild->BxBuffer = pBuffer;
-                                              }
-                                          }
-                                        else if (pSelBox->BxPrevious->BxNChars == 0)
-                                          /* update the previous box */
-                                          pSelBox->BxPrevious->BxBuffer = pBuffer;
-                                      }
-                                    else
+                                    }
+                                  else if (pBuffer->BuNext)
+                                    {
+                                      if (pAb->AbText == pBuffer && pBox != pAb->AbBox)
+                                        {
+                                          pAb->AbText = pBuffer->BuNext;
+                                          pAb->AbBox->BxBuffer = pBuffer->BuNext;
+                                        }
+                                      if (pSelBox->BxBuffer == pBuffer)
+                                        pSelBox->BxBuffer = NULL;
                                       pBuffer = DeleteBuffer (pBuffer, frame);
-                                  }
+                                    }
+                                }
 
                               if (c == SPACE && pBuffer && pBuffer->BuLength)
                                 {
@@ -3924,6 +4066,12 @@ void TtcInsertChar (Document doc, View view, CHAR_T c)
 
       if (pDoc && pViewSel->VsBox)
         {
+          if (firstEl == lastEl &&
+              firstEl->ElTypeNumber != 1 &&
+              firstEl->ElStructSchema &&
+              !strcmp (firstEl->ElStructSchema->SsName, "SVG"))
+            // only SVG text can be edited
+            return;
           /* avoid to redisplay step by step */
           dispMode = TtaGetDisplayMode (doc);
           if (dispMode == DisplayImmediately)
@@ -4059,13 +4207,6 @@ void TtcCutSelection (Document doc, View view)
   DisplayMode         dispMode;
   int                 frame;
   ThotBool            lock = TRUE;
-#ifdef _WINGUI
-  HANDLE              hMem   = 0;
-  LPTSTR              lpData = 0;
-  char               *ptrData;
-  LPTSTR              pBuff;
-  int                 ndx;
-#endif /* _WINGUI */
 
   if (doc == 0)
     return;
@@ -4098,26 +4239,6 @@ void TtcCutSelection (Document doc, View view)
 
   // set a structured copy
   DoCopyToClipboard (doc, view, TRUE, FALSE);
-#ifdef _WINGUI
-  if (!OpenClipboard (FrRef[frame]))
-    WinErrorBox (FrRef [frame], "TtcCutSelection (1)");
-  else
-    {
-      EmptyClipboard ();
-      hMem   = GlobalAlloc (GHND, ClipboardLength + 1);
-      lpData = (LPTSTR) GlobalLock (hMem);
-      ptrData = lpData;
-      pBuff  = (LPTSTR) Xbuffer;
-      for (ndx = 0; ndx < ClipboardLength; ndx++)
-        *ptrData++ = *pBuff++;
-      *ptrData = 0;
-       
-      GlobalUnlock (hMem);
-      SetClipboardData (CF_TEXT, hMem);
-      /* add Unicode clipboard here (CF_UNICODETEXT) */
-      CloseClipboard ();
-    }
-#endif /* _WINGUI */
   ContentEditing (TEXT_CUT);
 
   if (!lock)
@@ -4287,6 +4408,8 @@ void TtcDeleteSelection (Document doc, View view)
     /* table formatting is not loked, lock it now */
     TtaLockTableFormatting ();
    
+  /* close the current text insertion without notification */
+  CloseTextInsertionWithControl (FALSE);
   ContentEditing (TEXT_DEL);
    
   if (!lock)
@@ -4415,12 +4538,6 @@ void TtcInsert (Document doc, View view)
 void TtcCopySelection (Document doc, View view)
 {
   int                frame;
-#ifdef _WINGUI
-  HANDLE             hMem   = 0;
-  char              *lpData = NULL;
-  char              *pBuff;
-  HWND               activeWnd;
-#endif /* _WINGUI */
 
   if (doc == 0)
     return;
@@ -4435,31 +4552,7 @@ void TtcCopySelection (Document doc, View view)
     }
   if (SelPosition && FirstSelectedElement->ElTerminal)
     return;
-#ifdef _WINGUI
-  activeWnd = GetFocus ();
-  if (activeWnd == FrRef [frame])
-    {
-      DoCopyToClipboard (doc, view, TRUE, FALSE);
-      if (OpenClipboard (FrRef[frame]))
-        {
-          EmptyClipboard ();
-          /* if the clipboard buffer is empty, don't copy anything into it */
-          if (Xbuffer)
-            {
-              hMem   = GlobalAlloc (GHND, ClipboardLength + 1);
-              lpData = GlobalLock (hMem);
-              pBuff  = Xbuffer;
-              lstrcpy (lpData, Xbuffer);
-              GlobalUnlock (hMem);
-              if (!SetClipboardData (CF_TEXT, hMem))
-                WinErrorBox (NULL, "");
-              CloseClipboard ();
-            }
-        } 
-    }
-#else /* _WINGUI */
   DoCopyToClipboard (doc, view, TRUE, FALSE);
-#endif /* _WINGUI */
   ContentEditing (TEXT_COPY);
 }
 
@@ -4470,11 +4563,6 @@ void TtcCopySelection (Document doc, View view)
 void TtcPaste (Document doc, View view)
 {
   DisplayMode         dispMode;
-#ifdef _WINGUI
-  HANDLE              hMem;
-  char               *lpData;
-  int                 lpDatalength;
-#endif /* _WINGUI */
   PtrDocument         pDoc;
   PtrElement          firstEl, lastEl;
   int                 firstChar, lastChar;
@@ -4535,38 +4623,6 @@ void TtcPaste (Document doc, View view)
                strcmp (firstEl->ElStructSchema->SsName, "SVG")))
             /* delete the current selection */
             ContentEditing (TEXT_SUP);
-#ifdef _WINGUI
-          OpenClipboard (FrRef [frame]);
-          /* check if the clipboard comes from Amaya */
-          if (hMem = GetClipboardData (CF_UNICODETEXT))
-            {
-              wchar_t* lpData = (wchar_t*) GlobalLock (hMem);
-              char *dest;
-              lpDatalength = wcslen (lpData);
-              /* dest = TtaConvertWCToByte (lpData, UTF_8); */
-              dest = TtaConvertWCToByte (lpData, TtaGetDefaultCharset ());
-              if (Xbuffer == NULL || dest == NULL || strncmp (Xbuffer, dest, 100))
-                PasteXClipboardW (lpData, lpDatalength);
-              else 
-                ContentEditing (TEXT_PASTE);
-              TtaFreeMemory (dest);
-              GlobalUnlock (hMem);
-            }
-          else if (hMem = GetClipboardData (CF_TEXT))
-            {
-              lpData = GlobalLock (hMem);
-              lpDatalength = strlen (lpData);	      
-              if (Xbuffer == NULL || strcmp (Xbuffer, lpData)) /****/
-                PasteXClipboard (lpData, lpDatalength, TtaGetDefaultCharset ());
-              else 
-                ContentEditing (TEXT_PASTE);
-              GlobalUnlock (hMem);
-            }
-          else 
-            ContentEditing (TEXT_PASTE);
-          CloseClipboard ();
-#endif /* _WINGUI */
-
 #ifdef _WX
           wxTheClipboard->UsePrimarySelection(false);
           if (wxTheClipboard->Open())
@@ -4579,7 +4635,7 @@ void TtcPaste (Document doc, View view)
 	      
                       int len = strlen((const char *)text.mb_str(wxConvUTF8));
                       int i = ClipboardLength;
-                      if (len==0)
+                      if (len == 0)
                       {
                          ContentEditing (TEXT_PASTE);
                       }

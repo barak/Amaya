@@ -36,6 +36,10 @@ extern Element NewColumnHead ( Element lastcolhead,
                                ThotBool generateEmptyCells,
                                ThotBool generateCol );
 extern Element NextTableRow ( Element row );
+extern void TransmitWidthToColhead ( Element col,
+                                     Document doc,
+                                     char *value,
+                                     int oldwidth );
 extern void CheckAllRows ( Element table,
                            Document doc,
                            ThotBool placeholder,
@@ -59,6 +63,10 @@ extern ThotBool ModifySpan ( NotifyAttribute * event );
 extern void SpanModified ( NotifyAttribute * event );
 extern void SpanCreated ( NotifyAttribute * event );
 extern ThotBool DeleteSpan ( NotifyAttribute * event );
+extern void ApplyCSSRuleOneCol ( Element col,
+                                 PresentationContext ctxt,
+                                 char *cssRule,
+                                 CSSInfoPtr css );
 extern void ColApplyCSSRule ( Element el,
                               PresentationContext ctxt,
                               char *cssRule,
@@ -141,6 +149,10 @@ extern Element NewColumnHead ( Element lastcolhead,
                                  ThotBool generateEmptyCells,
                                  ThotBool generateCol );
 extern Element NextTableRow ( Element row );
+extern void TransmitWidthToColhead ( Element col,
+                                       Document doc,
+                                       char *value,
+                                       int oldwidth );
 extern void CheckAllRows ( Element table,
                              Document doc,
                              ThotBool placeholder,
@@ -164,6 +176,10 @@ extern ThotBool ModifySpan ( NotifyAttribute * event );
 extern void SpanModified ( NotifyAttribute * event );
 extern void SpanCreated ( NotifyAttribute * event );
 extern ThotBool DeleteSpan ( NotifyAttribute * event );
+extern void ApplyCSSRuleOneCol ( Element col,
+                                   PresentationContext ctxt,
+                                   char *cssRule,
+                                   CSSInfoPtr css );
 extern void ColApplyCSSRule ( Element el,
                                 PresentationContext ctxt,
                                 char *cssRule,

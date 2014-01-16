@@ -104,7 +104,7 @@
               <object class="sizeritem">
                 <object class="wxChoice" name="wxID_CHOICE_LG">
                   <content>
-                    <item/>
+                    <item></item>
                     <item>de (German)</item>
                     <item>en (English)</item>
                     <item>es (Spanish)</item>
@@ -114,11 +114,13 @@
                     <item>it (Italian)</item>
                     <item>ja (Japanese)</item>
                     <item>ka (Georgian)</item>
+                    <item>nl (Dutch)</item>
                     <item>no (Norwegian)</item>
                     <item>pt (Portuguese)</item>
                     <item>ru (Russian)</item>
                     <item>sk (Slovak)</item>
                     <item>tr (Turkish)</item>
+                    <item>uk (Ukrainian)</item>
                     <item>zh-cn (Simplified Chinese)</item>
                     <item>zh-tw (Traditional Chinese)</item>
                   </content>
@@ -1202,28 +1204,6 @@
         <object class="wxBoxSizer">
           <orient>wxVERTICAL</orient>
           <object class="sizeritem">
-            <object class="wxCheckBox" name="wxID_CHECK_GENERAL">
-              <label>*Notification generale*</label>
-            </object>
-            <option>1</option>
-            <flag>wxALL|wxEXPAND</flag>
-          </object>
-          <object class="sizeritem">
-            <object class="wxCheckBox" name="wxID_EXIT_AWARENESS">
-              <label>*Notification quand on quitte*</label>
-            </object>
-            <option>1</option>
-            <flag>wxALL|wxEXPAND</flag>
-          </object>
-        </object>
-        <option>0</option>
-        <flag>wxALL|wxEXPAND</flag>
-        <border>10</border>
-      </object>
-      <object class="sizeritem">
-        <object class="wxBoxSizer">
-          <orient>wxVERTICAL</orient>
-          <object class="sizeritem">
             <object class="wxStaticText" name="wxID_LABEL_RESOURCES">
               <label>*Liste des ressources de l'utilisateur WebDAV*</label>
             </object>
@@ -1232,9 +1212,25 @@
             <size>0,5</size>
           </object>
           <object class="sizeritem">
-            <object class="wxTextCtrl" name="wxID_VALUE_DAV_RESOURCES"/>
+            <object class="wxBoxSizer">
+              <object class="sizeritem">
+                <object class="wxBitmapButton" name="wxID_BUTTON_DELETE_DAV">
+                  <bitmap>../icons/16x16/editdelete.png</bitmap>
+                </object>
+                <option>0</option>
+              </object>
+              <object class="spacer">
+                <size>0,5</size>
+              </object>
+              <object class="sizeritem">
+                <object class="wxComboBox" name="wxID_VALUE_DAV_RESOURCES"/>
+                <option>1</option>
+                <flag>wxEXPAND</flag>
+              </object>
+              <orient>wxHORIZONTAL</orient>
+            </object>
             <option>0</option>
-            <flag>wxALL|wxEXPAND</flag>
+            <flag>wxEXPAND</flag>
           </object>
         </object>
         <option>0</option>

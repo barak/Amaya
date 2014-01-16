@@ -112,8 +112,10 @@ extern ConstructType TtaGetConstruct ( Element element );
 extern AccessRight TtaGetAccessRight ( Element element );
 extern int TtaIsHolophrasted ( Element element );
 extern int TtaIsReadOnly ( Element element );
+extern int TtaIsSetReadOnly ( Element element );
 extern int TtaIsHidden ( Element element );
 extern int TtaIsCopy ( Element element );
+extern int TtaIsGraphics ( Element element );
 extern int TtaIsInAnInclusion ( Element element );
 extern int TtaIsAncestor ( Element element,
                            Element ancestor );
@@ -251,8 +253,10 @@ extern ConstructType TtaGetConstruct ( Element element );
 extern AccessRight TtaGetAccessRight ( Element element );
 extern int TtaIsHolophrasted ( Element element );
 extern int TtaIsReadOnly ( Element element );
+extern int TtaIsSetReadOnly ( Element element );
 extern int TtaIsHidden ( Element element );
 extern int TtaIsCopy ( Element element );
+extern int TtaIsGraphics ( Element element );
 extern int TtaIsInAnInclusion ( Element element );
 extern int TtaIsAncestor ( Element element,
                              Element ancestor );

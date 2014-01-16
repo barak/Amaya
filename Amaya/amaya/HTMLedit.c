@@ -694,7 +694,7 @@ ThotBool GenerateInlineElement (int eType, SSchema eSchema, int aType, const cha
           
           /* register this element in the editing history */
           elType = TtaGetElementType (firstSel);
-          if (eSchema!=NULL)
+          if (eSchema)
             newType.ElSSchema = eSchema;
           else
             newType.ElSSchema = elType.ElSSchema;
@@ -720,7 +720,7 @@ ThotBool GenerateInlineElement (int eType, SSchema eSchema, int aType, const cha
               if (eType == HTML_EL_Anchor)
                 newType.ElTypeNum = SVG_EL_a;
               else
-                newType.ElTypeNum = 0;
+                newType.ElTypeNum = SVG_EL_tspan;
               if (aType == HTML_ATTR_HREF_)
                 attrType.AttrTypeNum = SVG_ATTR_xlink_href;
               else if (aType == HTML_ATTR_Class)
@@ -931,9 +931,17 @@ ThotBool GenerateInlineElement (int eType, SSchema eSchema, int aType, const cha
                         }
                     }
                   // remove the current inline element to extend it
-                  removed = (aType != HTML_ATTR_Style_  &&
-                             elType.ElTypeNum == newType.ElTypeNum &&
-                             elType.ElSSchema == newType.ElSSchema);
+                  name = TtaGetSSchemaName (elType.ElSSchema);
+                  if (!strcmp (name, "HTML"))
+                    removed = (aType != HTML_ATTR_Style_  &&
+                               elType.ElTypeNum == newType.ElTypeNum &&
+                               elType.ElSSchema == newType.ElSSchema);
+#ifdef _SVG
+                  else if (!strcmp (name, "SVG"))
+                    removed = (aType != SVG_ATTR_style_  &&
+                               elType.ElTypeNum == newType.ElTypeNum &&
+                               elType.ElSSchema == newType.ElSSchema);
+#endif /* _SVG */
                   if (removed)
                     {
                       attr = NULL;
@@ -947,7 +955,6 @@ ThotBool GenerateInlineElement (int eType, SSchema eSchema, int aType, const cha
                           done = TRUE; // action done
                         }
                     }
-                  name = TtaGetSSchemaName (elType.ElSSchema);
                   lg =  TtaGetElementVolume (el);
                   split = ((el == firstSel || el == lastSel) &&
                            !strcmp(name, "HTML") &&
@@ -1521,8 +1528,10 @@ void SetREFattribute (Element element, Document doc, char *targetURL,
   AttributeType       attrType;
   Attribute           attr;
   Element             piEl;
+  LoadedImageDesc   *desc;
   char               *value, *base, *s, *utf8val;
   char                tempURL[MAX_LENGTH];
+  char                resname[MAX_LENGTH];
   char                buffer[MAX_LENGTH];
   int                 length, piNum;
   ThotBool            new_, oldStructureChecking;
@@ -1560,9 +1569,7 @@ void SetREFattribute (Element element, Document doc, char *targetURL,
         }
 #ifdef _SVG
       else if (isSVG)
-        {
           attrType.AttrTypeNum = SVG_ATTR_xlink_href;
-        }
 #endif /* _SVG */
       else
         {
@@ -1610,7 +1617,19 @@ void SetREFattribute (Element element, Document doc, char *targetURL,
 
   /* build the complete target URL */
   if (targetURL && strcmp(targetURL, DocumentURLs[doc]))
-    strcpy (tempURL, targetURL);
+    {
+      if (!IsHTTPPath (targetURL) && IsHTTPPath (DocumentURLs[doc]))
+        {
+          /* link a local resource to a remote document */
+          /* copy the file into the temporary directory of the document */
+          TtaExtractName (targetURL, tempURL, resname);
+          NormalizeURL (resname, doc, tempURL, resname, NULL);
+          AddLocalResource (targetURL, resname, tempURL, doc,  &desc,
+                            &LoadedResources, FALSE);
+        }
+      else
+        strcpy (tempURL, targetURL);
+    }
   else
     tempURL[0] = EOS;
   if (targetName != NULL)
@@ -1823,7 +1842,7 @@ void ChangeTitle (Document doc, View view)
       if (created)
         {
           TtaSetDialoguePosition ();
-          TtaShowDialogue (BaseDialog + TitleForm, FALSE);
+          TtaShowDialogue (BaseDialog + TitleForm, FALSE, TRUE);
         }
     }   
 }
@@ -2058,7 +2077,7 @@ void SelectDestination (Document doc, Element el, ThotBool withUndo,
       if (created)
         {
           TtaSetDialoguePosition ();
-          TtaShowDialogue (BaseDialog + AttrHREFForm, TRUE);
+          TtaShowDialogue (BaseDialog + AttrHREFForm, TRUE, TRUE);
         }
 #endif /* _WX */
     }
@@ -4678,29 +4697,35 @@ ThotBool AttrWidthDelete (NotifyAttribute *event)
   StoreWidth (event);
   el = event->element;
   elType = TtaGetElementType (el);
-  if (elType.ElTypeNum == HTML_EL_Object)
-    /* the width attribute is attached to an Object element */
+  if (elType.ElSSchema == TtaGetSSchema ("HTML", event->document))
     {
-      child = TtaGetFirstChild (el);
-      if (child)
+      if (elType.ElTypeNum == HTML_EL_COL ||
+          elType.ElTypeNum == HTML_EL_COLGROUP)
+        TransmitWidthToColhead (el, event->document, NULL, -1);
+      else if (elType.ElTypeNum == HTML_EL_Object)
+        /* the width attribute is attached to an Object element */
         {
-          childType = TtaGetElementType (child);
-          if (childType.ElTypeNum == HTML_EL_PICTURE_UNIT)
-            /* the Object element is of type image. Apply the width
-               attribute to the actual image element */
-            el = child;
+          child = TtaGetFirstChild (el);
+          if (child)
+            {
+              childType = TtaGetElementType (child);
+              if (childType.ElTypeNum == HTML_EL_PICTURE_UNIT)
+                /* the Object element is of type image. Apply the width
+                   attribute to the actual image element */
+                el = child;
+            }
         }
-    }
-  attrType = event->attributeType;
-  attrType.AttrTypeNum = HTML_ATTR_IntWidthPxl;
-  attr = TtaGetAttribute (el, attrType);
-  if (attr == NULL)
-    {
-      attrType.AttrTypeNum = HTML_ATTR_IntWidthPercent;
+      attrType.AttrSSchema = event->attributeType.AttrSSchema;
+      attrType.AttrTypeNum = HTML_ATTR_IntWidthPxl;
       attr = TtaGetAttribute (el, attrType);
+      if (attr == NULL)
+        {
+          attrType.AttrTypeNum = HTML_ATTR_IntWidthPercent;
+          attr = TtaGetAttribute (el, attrType);
+        }
+      if (attr)
+        TtaRemoveAttribute (el, attr, event->document);
     }
-  if (attr != NULL)
-    TtaRemoveAttribute (el, attr, event->document);
   return FALSE;		/* let Thot perform normal operation */
 }
 
@@ -4712,6 +4737,7 @@ ThotBool AttrWidthDelete (NotifyAttribute *event)
   ----------------------------------------------------------------------*/
 void AttrWidthModified (NotifyAttribute *event)
 {
+  ElementType         elType;
   char               *buffer;
   int                 length;
 
@@ -4720,6 +4746,11 @@ void AttrWidthModified (NotifyAttribute *event)
   TtaGiveTextAttributeValue (event->attribute, buffer, &length);
   CreateAttrWidthPercentPxl (buffer, event->element, event->document,
                              OldWidth);
+  elType = TtaGetElementType (event->element);
+  if (elType.ElSSchema == TtaGetSSchema ("HTML", event->document) &&
+       (elType.ElTypeNum == HTML_EL_COL ||
+        elType.ElTypeNum == HTML_EL_COLGROUP))
+    TransmitWidthToColhead (event->element, event->document, buffer, -1);
   TtaFreeMemory (buffer);
   OldWidth = -1;
 }
@@ -4955,7 +4986,7 @@ ThotBool GlobalAttrInMenu (NotifyAttribute * event)
       event->attributeType.AttrTypeNum != HTML_ATTR_xml_space)
 #ifdef TEMPLATES
     /* it's not a global attribute. Accept it */
-    return ValidateTemplateAttrInMenu(event);
+    return CheckTemplateAttrInMenu(event);
 #else /* TEMPLATES */
   /* it's not a global attribute. Accept it */
     return FALSE;
@@ -4978,7 +5009,7 @@ ThotBool GlobalAttrInMenu (NotifyAttribute * event)
         {
           if (event->attributeType.AttrTypeNum == HTML_ATTR_ID)
 #ifdef TEMPLATES
-            return ValidateTemplateAttrInMenu(event);
+            return CheckTemplateAttrInMenu(event);
 #else /* TEMPLATES */
             return FALSE;
 #endif /* TEMPLATES */
@@ -5004,7 +5035,7 @@ ThotBool GlobalAttrInMenu (NotifyAttribute * event)
           else
             /* let Thot perform normal operation */
 #ifdef TEMPLATES
-            return ValidateTemplateAttrInMenu(event);
+            return CheckTemplateAttrInMenu(event);
 #else /* TEMPLATES */
             return FALSE;
 #endif /* TEMPLATES */
@@ -5022,7 +5053,7 @@ ThotBool GlobalAttrInMenu (NotifyAttribute * event)
             return TRUE;
           else
 #ifdef TEMPLATES
-            return ValidateTemplateAttrInMenu(event);
+            return CheckTemplateAttrInMenu(event);
 #else /* TEMPLATES */
             return FALSE;
 #endif /* TEMPLATES */
@@ -5063,7 +5094,7 @@ ThotBool GlobalAttrInMenu (NotifyAttribute * event)
           return TRUE;
         }
 #ifdef TEMPLATES
-      return ValidateTemplateAttrInMenu(event);
+      return CheckTemplateAttrInMenu(event);
 #else /* TEMPLATES */
       return FALSE;
 #endif /* TEMPLATES */
@@ -5096,7 +5127,7 @@ ThotBool AttrNAMEinMenu (NotifyAttribute * event)
   else
     /* let Thot perform normal operation */
 #ifdef TEMPLATES
-    return ValidateTemplateAttrInMenu(event);
+    return CheckTemplateAttrInMenu(event);
 #else /* TEMPLATES */
     /* it's not a global attribute. Accept it */
     return FALSE;
@@ -5117,7 +5148,7 @@ ThotBool  AttrScriptLanguageinMenu (NotifyAttribute * event)
   else
     /* let Thot perform normal operation */
 #ifdef TEMPLATES
-    return ValidateTemplateAttrInMenu(event);
+    return CheckTemplateAttrInMenu(event);
 #else /* TEMPLATES */
     /* it's not a global attribute. Accept it */
     return FALSE;
