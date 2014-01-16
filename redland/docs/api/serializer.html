@@ -1,0 +1,338 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>RDF Serializer</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Redland RDF Application Framework API Reference Manual"
+HREF="index.html"><LINK
+REL="PREVIOUS"
+TITLE="librdf_query_triples_close"
+HREF="r8533.html"><LINK
+REL="NEXT"
+TITLE="librdf_serializer_register_factory"
+HREF="r8567.html"></HEAD
+><BODY
+CLASS="CHAPTER"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Redland RDF Application Framework API Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="r8533.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="r8567.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="SERIALIZER"
+></A
+>RDF Serializer</H1
+><P
+>This module provides RDF graph to syntax serialization support
+via factory classes providing one or more particular target syntaxes.</P
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN8565"
+></A
+>RDF Serializer Class</H1
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+><A
+HREF="r8567.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_serializer_register_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Register a serializer factory 
+ </DT
+><DT
+><A
+HREF="r8619.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_get_serializer_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get a serializer factory by name
+ </DT
+><DT
+><A
+HREF="r8670.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_serializer</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_serializer object
+ </DT
+><DT
+><A
+HREF="r8718.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_serializer_from_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_serializer object
+ </DT
+><DT
+><A
+HREF="r8752.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_free_serializer</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Destructor - destroys a librdf_serializer object
+ </DT
+><DT
+><A
+HREF="r8775.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_serializer_serialize_model</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Turn a librdf_model into a serialized form
+ </DT
+><DT
+><A
+HREF="r8823.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_serializer_serialize_model_to_file</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Write a librdf_model into a serialized form to a file
+ </DT
+><DT
+><A
+HREF="r8871.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_init_serializer</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Initialise the librdf_serializer class
+ </DT
+><DT
+><A
+HREF="r8894.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_finish_serializer</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Terminate the librdf_serializer class
+ </DT
+><DT
+><A
+HREF="r8917.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_serializer_set_error</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Set the serializer error handling function
+ </DT
+><DT
+><A
+HREF="r8958.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_serializer_set_warning</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Set the serializer warning handling function
+ </DT
+><DT
+><A
+HREF="r8999.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_serializer_get_feature</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the value of a serializer feature
+ </DT
+><DT
+><A
+HREF="r9032.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_serializer_set_feature</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Set the value of a serializer feature
+ </DT
+><DT
+><A
+HREF="r9072.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_serializer_set_namespace</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Set a namespace URI/prefix mapping
+ </DT
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="r8533.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="r8567.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_query_triples_close</SPAN
+></SPAN
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_serializer_register_factory</SPAN
+></SPAN
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

@@ -1,0 +1,424 @@
+# encoding= latin1
+0 X11 Fehler: %s\n
+1 OK
+2 Keine Alphabetdatei
+3 Neue Ansicht kann bisherige nicht ersetzen
+4 Inkompatible Schemen. Kompiliere %s neu
+5 Fataler Fehler: Schriften nicht gefunden
+6 Arbeitsspeicher erschöpft
+7 Fataler Fehler: kein Zugriff zum X-Server
+8 Ansicht wird vor der Erzeugung modifiziert
+9 Regeltabelle voll.
+10 Fehlerhafte Datei: %s.STR
+11 Fehlerhafte Datei: %s.PRS
+12 Dokument %s wird gedruckt
+13 Einteilung (%)
+14 1 Seite/Blatt
+15 2 Seiten/Blatt
+16 4 Seiten/Blatt
+17 %s
+18 Nicht genügend Arbeitsspeicher
+19 *** Amaya: Nicht behebbarer Fehler ***
+20 Geänderte Dokumente werden gespeichert
+21 Fehlerhafte Datei %s.TRA
+22 %s ist kein gültiges Geschwister von %s (%s)
+23 %s ist kein gültiges Kind von %s (%s)
+24 %s, Seite %d
+25 Sprache
+26 Attribut
+27 Standarddarstellung
+28 Übernehmen
+29 Schrift
+30 Darstellung
+31 Grafiken
+32 Ausrichtung
+33 Fehlwert
+34 Ausrichten
+35 Einrücken
+36 Druckvorgang läuft
+37 Drucken
+38 manueller Papiereinzug
+39 Optionen
+40 A4
+41 US
+42 Papierformat
+43 Registerkarte
+44 Verzeichnisse
+45 %s existiert bereits. Überschreiben?
+46 Maustaste 1 setzt die Textfarbe
+46 Textfarbe einstellen
+47 Hintergrundfarbe einstellen
+48 Familie
+49 Normal
+50 Fett
+51 Kursiv
+52 Geneigt
+53 Normal
+54 Stärke
+55 Normal
+56 Unterstrichen
+57 Durchgestrichen
+58 Größe
+59 Ohne Einrücken
+60 Einzelne Zeile Abstand
+61 Mittlere Zeile Abstand
+62 Doppelte Zeile Abstand
+63 Speichern
+64 Nicht Speichern
+65 Schräge
+66 Farbe
+67 Elemente
+68 Löschen
+69 Ausgabe
+70 PostScript-Datei
+71 Drucker
+72 Suchen nach
+73 Buchstabenlage ignorieren
+74 Ersetzen durch
+75 Modus
+76 Nicht ersetzen
+77 Bestätigen
+78 Alle ersetzen
+79 Suchraum
+80 Oberhalb der Markierung
+81 Innerhalb der Markierung
+82 Unterhalb der Markierung
+83 Im gesamten Dokument
+84 Überspringen
+85 vorher speichern?
+86 Dokument schließen
+87 Formelsatz
+88 Grafik
+89 Lateinisches Alphabet
+90 Griechiches Alphabet
+91 Speichern
+92 Text
+93 Zeichnung
+94 Symbol
+95 Bild
+96 Elemente XML
+97 nach
+98 vor
+99 um
+100 Einfügen
+101 Einfügen
+102 Erzeugen
+103 Einfügen
+104 Seitenumbruch
+105 Sprache des Elements
+106 Sprachvoreinstellung:
+107 Suche beendet
+108 Suche in
+109 Suche
+110 Schreibgeschütztes Dokument
+111 Suche beendet
+112 Standardzeichensatz
+113 Standardgrafik
+114 Standardformat
+115 Standardgeometrie
+116 pt
+117 Linienart
+118 Linienstärke
+119 Füllmuster
+120 Teilen
+121 Objekttyp
+122 Gehe zu Seite Nr.:
+123 egal
+124 Attribut suchen
+125 Suche nach Typ
+126 Dokumenttyp
+127 Name
+128 Wert
+129 Wert des Attributs
+130 Unbekanntes Attribut
+131 Abbrechen
+132 Fehler in der PostScript-Erkennung
+133 Auftrag vom Druckspooler "%s" zurückgewiesen
+134 Kann "%s" nicht erzeugen
+135 Überstrichen
+136 Format
+137 Löschen
+138 Hintergrundfarbe wählen
+139 Vordergrundfarbe wählen
+140 Wählen Sie eine generische XML-Struktur
+141 Überprüfe
+142 Suchen
+143 Ersetzen (PW)
+144 Ersetzen
+145 Sprache
+146 Lernen
+147 Worte mit
+148 Rechtschreibprüfung
+149 Römische Zahlen
+150 Ignorieren
+151 Worte in Großbuchstaben
+152 Worte mit Ziffern
+153 Fehler in der Parameterdatei
+154 Tastaturdatei fehlt
+155 Kann das Dokumentwörterbuch nicht speichern
+156 Fehlerhaftes Wort "%s" im Wörterbuch zurückgewiesen
+157 Wort "%s" zum Dokumentwörterbuch hinzugefügt
+158 Rechtschreibprüfung beendet
+159 Rechtschreibprüfung abgebrochen
+160 Bitte ein Dokument auswählen
+161 Dokumentwörterbuch unter %s gespeichert
+162 In dieser Version nicht verfügbar
+163 Palette aktivieren/deaktivieren
+164 Hilfsmittel
+165 Obligatorisches Attribut, kann nicht entfernt werden
+166 Erneuern
+167 Links
+168 Rechts
+169 Zur Mitte flanken
+170 Gerechtfertigt
+171 Klasse übernehnem
+172 Klasse oder Pseudoklasse wählen
+173 Auswählen
+174 Verwerfen
+175 Formel
+176 Verschiedene
+177 Binäre Relationen
+178 Binäre negierte Relationen
+179 Operatoren
+180 Griechisches Alphabet (Großbuchstaben)
+181 Pfeile
+182 Sonderzeichen
+183 Stop
+184 Zurück
+185 Vorwärts
+186 Aktualisieren
+187 Speichern
+188 Speichern
+189 Neu Dokument
+190 Öffnen
+191 Drucken
+192 Suchen/Ersetzen
+193 Startseite
+194 Betont On/Off
+195 Hervorgehoben On/Off
+196 Code On/Off
+197 Bild
+198 Überschrift Ebene 1
+199 Überschrift Ebene 2
+200 Überschrift Ebene 3
+201 Überschrift Ebene 4
+202 Absatz
+203 Ungeordnete Liste
+204 Geordnete Liste
+205 Definitionsliste
+206 Verweis
+207 Tabelle
+208 Sie sind dabei, %d geöffnete Seiten zu schließen. Sind Sie sicher, dass Sie fortfahren möchten?
+209 Warnung anzeigen, wenn mehrere Seiten geschlossen werden sollen
+210 Seiten schließen
+211 Kein Fehler gefunden
+212 Parserfehler anzeigen
+213 Umrisse
+214 Ábschnitt
+215 Erzeugen
+216 Eingefügter Text On/Off
+217 Gelöschter Text On/Off
+218 Tiefgestellt On/Off
+219 Hochgestellt On/Off
+220 Begriff
+221 Definition
+222 Objekt
+223 Stil
+224 Durchsuchen
+225 Ansicht horizontal teilen
+226 Ansicht vertikal teilen
+227 Hilfsmittel anzeigen
+228 Rückgängig
+229 Erneut
+230 Ausschneiden
+231 Kopieren
+232 Einfügen
+233 Rechtschreibprüfung
+234 Verschiedene Konstruktionen
+235 Abhängigkeiten, Aufträge und Verknüpfungssteuerungen
+236 Datensätze und Funktionen
+237 arithmetisch, Abläufe, Verzweigungen und Konstante
+238 Analyse, lineare Algebra und Statistik
+239 Trigonometrie und Logarithmen
+240 Schrift vergrößern
+241 Schrift verkleinern
+242 Thema
+243 XML
+244 Text
+245 Keine neuen Dokumente
+246 Klicken Sie auf ein Element um es auszuwählen
+247 Klicken Sie um den Editmodus zu wechseln
+248 Zusammenfügen die Zellen
+249 Verkleinern der Breite
+250 Verkleinern der Breite
+251 Zeile einfügen (davor)
+252 Zeile inzufügen (danach)
+253 Spalte einfügen (davor)
+254 Spalte inzufügen (danach)
+255 Tip des Tages
+256 Tips bei Programmstart anzeigen
+257 Vorhergehender Tipp
+258 Nächster Tip
+259 Haben Sie schon gewusst?
+260 Schließen
+261 Amaya kann auf Ihre Bedürfnisse angepasst werden: fünf verschiedene Profile mit verschiedenen Kombinationen von Menu Einträgen und Bedienelementen. Für weitere Informationen werfen Sie bitte einen Blick in die Einstellungen.
+262 Bedienelemente können links, rechts oder benutzerdefiniert angezeigt werden. Siehe Einstellungen.
+263 Mit F2 oder der Escape Taste können Sie das Elternelement in der Struktur auswählen und Editier Funktionen (kopieren, einfügen,Attribute usw.) auf dieses Element anzuwenden.
+264 Sie können zwei Dokumente nebeneinander im Fenster darstellen indem Sie ein Dokumenten-Tab an die Begrenzung des dargestellten Dokumentes ziehen.
+265 Im benutzerdefinierten Modus können Sie Bedienelemente verschieben um ihre Anordnung zu verändern oder um sie frei zu platzieren.
+266 Im benutzerdefinierten Modus können Sie können Sie durch das Verschieben von Bedienelementen auf beiden Seiten Leisten mit Bedienelementen erstellen.
+267 Sie können zwischen den Editiermodi (Text/XML) wechseln indem Sie auf das entsprechende Bedienfeld in der Statusleiste klicken.
+268 Bemerken Sie einen roten Button in der Statusleiste können Sie sich mit einem Klick darauf Fehler im Dokument anzeigen lassen.
+269 Sie können Vorgängerelemente durch einen Klick auf deren Bezeichnung in der Pfadanzeige unten in der Statusleiste auswählen.
+270 Sie können zu einer anderen Registerkarte wechseln indem Sie auf das Pfeil-nach-unten Symbol rechts neben den Registerleisten klicken.
+271 Falls Sie "Ziele anzeigen" im "Darstellungen"-Menü wählen, werde sie formatiert dargestellt. Dies ist günstig bei der Erzeugung von Verweisen: Ein Ziel kan durch Klicken ausgewählt werden 
+272 Wenn Sie  ein SVG-Objekt drehen, wird der Drehpunkt durch ein Kreuz angezeigt. Sie können die Maus zum Bewegen verwenden.
+273 SVG-Grundformen haben Marker die zur Bearbeitung der Form verwendet werden können. Blaue Dreiecke oder grüne Quadrate ermöglichen es die Größe der Form zu ändern. Bei 
+274 Bei SVG-Zeichnungen werden Linien mit einer Genauigkeit von 15º erstellt wenn Sie dei Hochtaste drücken. Das ist sehr nützlich, wenn Sie gerade Linien zeichnen wollen.
+275 Beim Vergrößern und Verkleinern von Bildern oder SVG-Objekten erhält das Drücken der Hochtaste die Seitenverhältnisse
+276 Verwenden Sie Bearbeiten>Einstellungen>Sprache zur Auswahl der Sprache
+277 Klassisch
+278 Modern
+279 Kein Motiv
+280 Titel / Beschreibung
+281 Erstelle eine Beschreibung
+282 Quadrat
+283 Quadrat mit abgerundeten Ecken
+284 Rechteck
+285 Rechteck mit abgerundeten Ecken
+286 Raute
+287 Parallelogramm
+288 Trapezoid
+289 Gleichseitiges Dreieck
+290 Gleichschenkeliges Dreieck
+291 Rechtwinkeliges Dreieck
+292 Kreis
+293 Elipse
+294 Linie
+295 Pfeil
+296 Doppelpfeil
+297 Zickzack
+298 Gruppe
+299 Untergruppe
+300 Ganz nach vorn
+301 Ganz nach hinten
+302 Eine Ebene höher
+303 Eine Ebene tiefer
+304 90° links herum
+305 90° rechts herum
+306 Drehen
+307 Vertikal Spiegeln
+308 Horizontal Spiegeln
+309 Skalieren
+310 Schrägstellen
+311 Verschieben
+312 Am unteren Rand ausrichten
+313 Mittig ausrichten
+314 Am linken Rand ausrichten
+315 Mittig ausrichten
+316 Am rechten Rand ausrichten
+317 Am oberen Rand ausrichten
+318 Verteilen Sie Unterseite
+319 Verteilen Sie Mitte
+320 Verteilen Sie sich nach links
+321 Verteilen Sie Mitte
+322 Verteilen Sie sich nach rechts
+323 Verteilen Sie Oberseite
+324 Verteilen Sie Zeilenvorschub
+325 Verteilen Sie horizontalen Zeichenabstand
+326 Geschlossene Bezierkurve
+327 Bezierkurve
+328 Linienzug
+329 Vieleck
+330 fremdes Objekt
+331 Bild
+332 SVG Leinwand
+333 Text
+334 Kegel
+335 Würfel
+336 Zylinder
+337 Oktaeder
+338 Spat
+339 Pyramide
+340 Becher
+341 Trichter
+342 Bunsenbrenner
+343 Büchnerflasche
+344 Kochkolben
+345 Bürette
+346 Erlenmeyer Kolben
+347 Reagenzglas
+348 Pipette
+349 Rechteck
+350 Rechteck mit abgerundeten Ecken
+351 Rund
+352 Schrei
+353 Gedanke
+354 Kondensator
+355 Stromquelle
+356 Diode
+357 Masse
+358 Induktor
+359 LED
+360 Operationsverstärker
+361 Widerstand
+362 Schalter
+363 Transistor
+364 Spannungsquelle
+365 Zener-Diode
+366 Fünfeck
+367 Sechseck
+368 Siebeneck
+369 Achteck
+370 Stern (4 Zacken)
+371 Stern (5 Zacken)
+372 Stern (6 Zacken)
+373 AND
+374 NAND
+375 OR
+376 NOR
+377 XOR
+378 XNOR
+379 NOT
+380 Kreuz
+381 Rand
+382 Ring
+383 Wolke
+384 Papierrolle
+385 Sonne
+386 Blitz
+387 Mond
+388 Smiley
+389 Herz
+390 Blume
+391 Verboten
+392 gerundeter Doppelpfeil
+393 Hinweispfeil in 3 Richtungen
+394 Pfeil in 3 Richtungen
+395 Hinweispfeil in 4 Richtungen
+396 Pfeil in 4 Richtungen
+397 Winkel
+398 Pfeil im Kreis
+399 Winkelpfeil
+400 Hinweispfeil über Eck
+401 Pfeil über Eck
+402 Hinweisdoppelpfeil
+403 Doppelpfeil
+404 Eingekerbter Pfeil
+405 Abgerundeter Pfeil
+406 Einfacher Hinweispfeil
+407 Einfacher Pfeil
+408 Aufgesplitteter Pfeil
+409 S-förmiger Pfeil
+410 Gestreifter Pfeil
+411 Eine Vorlage aus dem aktuellen Dokument erstellen
+412 Ein Textfeld erstellen
+413 Eine Komponente oder Element verwenden
+414 Erstellen und Verwenden einer Komponente
+415 Aktuelle Anwendung wiederholen
+416 Erstellen und vervielfältigen einer Komponente
+417 Eine freie Editierbox erstellen
+418 Verursachen Sie neue Typen Anschluss
+419 Knopf bis zum Abschluss
+420 Doppeltes Klicken zum zu schließen
+421 Klicken zum zu schließen

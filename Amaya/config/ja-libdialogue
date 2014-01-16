@@ -1,0 +1,423 @@
+# encoding= utf8
+0 X11 エラー : %s\n
+1 確認
+2 ノーアルファベットファイル
+3 新規ビューは古いビューと置換できません
+4 スキーマに互換性がありません。 %s をリコンパイルします。
+5 致命的なエラー: フォントが見つかりません
+6 メモリ不足
+7 致命的なエラー: X に接続できません
+8 ビューは作成される前に修正されています。
+9 ルール表がいっぱいです。
+10 誤ったファイル: %s.STR
+11 誤ったファイル: %s.PRS
+12 %s 文章は印刷されました
+13 配置
+14 一枚に一ページ
+15 一枚に二ページ
+16 一枚に四ページ
+17 %s
+18 メモリが足りません
+19 *** Amaya: 回復できないエラーです ***
+20 変更を保存します
+21 誤った .TRA ファイル: %s
+22 %s は %s (%s)　と正当な兄弟関係ではありません
+23 %s は %s (%s)　と正当な子関係ではありません
+24 %s, ページ %d
+25 言語
+26 属性
+27 標準プレゼンテーション
+28 適用
+29 文字
+30 下線
+31 グラフィックス
+32 フォーマット
+33 デフォルト
+34 整列
+35 インデントを増やす
+36 印刷中
+37 印刷
+38 手送り
+39 オプション
+40 A4
+41 US
+42 用紙の書式設定
+43 閉じる
+44 ディレクトリ
+45 このドキュメント %s はすでに存在します。上書きしますか？
+46 文字色
+47 背景の色
+48 フォントファミリー
+49 普通
+50 太字
+51 斜体 (italic)
+52 斜体 (Oblique)
+53 普通
+54 太さ
+55 普通
+56 下線
+57 取り消し線
+58 サイズ
+59 インデントを減らす
+60 １行間
+61 １．５行間
+62 ２行間
+63 文章の保存
+64 保存しないで閉じる
+65 文字スタイル
+66 色
+67 要素
+68 削除
+69 出力
+70 ポストスクリプトファイル
+71 プリンター
+72 検索
+73 大文字と小文字を区別しない
+74 次で置換
+75 置換
+76 置換しない
+77 一つずつ置換
+78 自動的に置換
+79 検索箇所
+80 選択箇所より前
+81 選択箇所の中
+82 選択箇所より後ろ
+83 ドキュメント全体
+84 置換しない
+85 閉じる前に
+86 ドキュメントを閉じる
+87 数学記号
+88 グラフィックス
+89 ラテン文字
+90 ギリシャ文字
+91 保存
+92 テキスト
+93 グラフィックス
+94 シンボル
+95 イメージ
+96 XML 要素
+97 後
+98 前
+99 周囲
+100 インクルード
+101 貼り付け
+102 作成
+103 挿入
+104 改ページ
+105 要素の言語
+106 引き継いでいる言語:
+107 見つかりません
+108 ファイル内を検索
+109 検索
+110 読み取り専用要素
+111 置換するものがありません
+112 標準のキャラクタ
+113 標準のグラフィックス
+114 標準のフォーマット
+115 標準配置
+116 pt
+117 線のスタイル
+118 線の太さ
+119 フィル・パターン
+120 分割
+121 オブジェクトタイプ
+122 移動先ページ番号:
+123 その他
+124 属性を検索
+125 検索の種類
+126 種類
+127 名前
+128 値
+129 属性値
+130 未知の属性
+131 キャンセル
+132 ポストスクリプト翻訳におけるエラー
+133 スプーラ"%s"によってコマンドが拒否されました
+134 "%s"を作成できません
+135 オーバライン
+136 ドキュメント形式
+137 属性の消去
+138 背景色を選択
+139 文字色を選択
+140 一般的なXML 構造を選択
+141 チェック
+142 検索
+143 置換 (+ dic)
+144 置換して次へ
+145 他の言語
+146 記憶する
+147 以下を含む単語
+148 スペルをチェックしています ...
+149 ロマン数字
+150 無視
+151 全て大文字の単語
+152 数字入りの単語
+153 パラメータファイルエラー
+154 キーボードファイルがありません
+155 このドキュメントディクショナリは保存できません
+156 不正な単語 "%s" がこのディクショナリに拒否されました
+157 単語 "%s" がドキュメントディクショナリに追加されました
+158 スペルチェックが完了しました
+159 スペルチェックが中断されました
+160 ドキュメントを選択してください
+161 ドキュメント辞書を保存しました: %s
+162 このバージョンでは利用できません
+163 パレットの有効/無効
+164 ツール
+165 義務的な属性。それを取り除くことができません
+166 更新
+167 文字列を左に揃える
+168 文字列を右に揃える
+169 中央揃え
+170 両端揃え
+171 クラスを適用
+172 クラスまたは擬似クラスを選択
+173 選択
+174 破棄
+175 数式 / Math
+176 その他
+177 バイナリー関係
+178 バイナリー否定の関係
+179 オペレータ
+180 ギリシャ文字 (大文字)
+181 矢印
+182 特殊文字
+183 転送中止
+184 戻る
+185 進む
+186 更新
+187 保存
+188 すべて保存
+189 新しいXHTML文書
+190 開く
+191 印刷
+192 検索
+193 ホーム
+194 斜体
+195 強調
+196 ソースコード
+197 画像の挿入/置換
+198 見出しの大きさ 1
+199 見出しの大きさ 2
+200 見出しの大きさ 3
+201 見出しの大きさ 4
+202 段落
+203 箇条書き
+204 段落番号
+205 リスト（定義）
+206 リンク
+207 表
+208 このウィンドウでは %d 個のタブが開かれています。すべてのタブを閉じてよろしいですか？
+209 一度に複数のタブを閉じるときに警告する
+210 タブを閉じる
+211 エラーは発見されませんでした
+212 解析したエラーを表示
+213 ボックス
+214 分割
+215 ターゲット
+216 引用文
+217 打ち消し線
+218 サブスクリプト
+219 スーパースクリプト
+220 定義語
+221 定義の説明
+222 オブジェクト
+223 スタイル
+224 ファイル
+225 横向きの　分割/結合
+226 縦向きの　分割/結合
+227 ツールを表示/隠す
+228 元に戻す
+229 やり直し
+230 切り取り
+231 コピー
+232 貼り付け
+233 スペルチェック
+234 様々な構成
+235 道理と論理の関係
+236 集合と関数
+237 複素数と定数の計算、演算
+238 線形代数と統計の解析
+239 三角法と対数
+240 拡大
+241 縮小
+242 テーマ
+243 XML
+244 テキスト
+245 現在の文書はありません
+246 要素を選択してください
+247 編集モードの変更
+248 セルの結合
+249 セルを列に分割する
+250 セルを行に分割する
+251 上に行を挿入
+252 下に行を挿入
+253 左に列を挿入
+254 右に列を挿入
+255 今日のTips
+256 スタートアップ時にTips を表示
+257 **Previous tip
+258 次のTips
+259 知っていますか...
+260 閉じる
+261 Amaya はあなたの要求に適応できます：5つのパラメータがメニューとパネルの異なる組み合わせで実現できます。詳しくは「編集」→「設定」→「一般」を参照してください。
+262 パネルの表示位置はウィンドウの左右から選ぶか、もしくはカスタマイズできます。「設定」を参照してください。
+263 F2もしくはエスケープキーで、編集機能（コピー、ペースト、属性、スタイルなど）に適応させるために文書中の現在の要素を選択できます。
+264 表示されている文書の左右に文書タブをドラッグすることで、２つの文書を並べて表示することができます
+265 カスタムモードでは、ドラッグすることでパネルの順番を変えたりフローティング状態にできます
+266 カスタムモードでは、ドラッグするだけでパネルをウィンドウの両サイドに移動できます
+267 右下のボタンをクリックして編集モードをテキストかXML か変えられます
+268 右下に赤いボタンがあるなら、クリックすることでエラーが見れます
+269 ウィンドウの下部に表示されているパスコントロールを使うことで、現在の要素の親要素を選ぶことができます。
+270 文書タブ右にあるボタンで、表示されているメニューの異なるタブへ移動することができます
+271 **If you enable "Show Targets" in the "Views" menu, targets are displayed in formatted view. This is convenient for the creation of link: a target can be chosen by clicking on it.
+272 **When you rotate an SVG object, the center is indicated by a cross. You can use the mouse to move it.
+273 **Basic SVG shapes have handles that can be used to edit them. Blue triangles or green square allow to change their size. For <rect/> element, red circles give a control on radius of rounded corners.
+274 **For SVG drawing, lines are created with a precision of 15� if you press the shift button. It is useful when you want to draw straight lines.
+275 **When you resize an image or an SVG object, pressing the shift button allows to preserve aspect ratio.
+276 **Use Edit>Preferences>Dialogue Language to choose the language of the user interface.
+277 クラシック
+278 モダン
+279 テーマなし
+280 **Title/Description
+281 **Generate a description
+282 **Square
+283 **Rounded Square
+284 **Rectangle
+285 **Rounded rectangle
+286 **Diamond
+287 **Parallelogram
+288 **Trapezium
+289 **Equilateral triangle
+290 **Isosceles triangle
+291 **Right triangle
+292 **Circle
+293 **Ellipse
+294 **Line
+295 **Arrow
+296 **Double Arrow
+297 **Zigzag
+298 **Group
+299 **Ungroup
+300 **Bring to front
+301 **Send to back
+302 **One level up
+303 **One level down
+304 **90� left
+305 **90� right
+306 **Rotate
+307 **Vertical symmetry
+308 **Horizontal symmetry
+309 **Scale
+310 **Skew
+311 **Move
+312 **Align bottom
+313 **Align center
+314 **Align left
+315 **Align middle
+316 **Align right
+317 **Align top
+318 **Distribute bottom
+319 **Distribute center
+320 **Distribute left
+321 **Distribute middle
+322 **Distribute right
+323 **Distribute top
+324 **Distribute vertical spacing
+325 **Distribute horizontal spacing
+326 **Closed Bezier curve
+327 **Bezier curve
+328 **Polyline
+329 **Polygon
+330 **Foreign Object
+331 **Image
+332 **SVG Canvas
+333 **Text
+334 **Cone
+335 **Cube
+336 **Cylinder
+337 **Octahedron
+338 **Parallelepiped
+339 **Pyramid
+340 **Beaker
+341 **Funnel
+342 **Bunsen burner
+343 **Buchner flask
+344 **Boiling flask
+345 **Burette
+346 **Erlenmeyer flask
+347 **Test tube
+348 **Pipette
+349 **Rectangular
+350 **Rounded rectangular
+351 **Round
+352 **Scream
+353 **Thought
+354 **Capacitor
+355 **Power source
+356 **Diode
+357 **Ground Point
+358 **Inductor
+359 **LED
+360 **Op-amp
+361 **Resistor
+362 **Switch
+363 **Transistor
+364 **Voltage source
+365 **Zener diode
+366 **Pentagon
+367 **Hexagon
+368 **Heptagon
+369 **Octogon
+370 **Star (4 branches)
+371 **Star (5 branches)
+372 **Star (6 branches)
+373 AND
+374 NAND
+375 OR
+376 NOR
+377 XOR
+378 XNOR
+379 NOT
+380 **Cross
+381 **Frame
+382 **Ring
+383 **Cloud
+384 **Scroll
+385 **Sun
+386 **Lightning_Bolt
+387 **Moon
+388 **Smiley
+389 **Heart
+390 **Flower
+391 **Prohibited
+392 **2-Way Rounded Arrow
+393 **3-Way Arrow Callout
+394 **3-Way Arrow
+395 **4-Way_Arrow_Callout
+396 **4-Way Arrow
+397 **Chevron
+398 **Circular Arrow
+399 **Corner Arrow
+400 **Corner Double Arrow Callout
+401 **Corner Double Arrow
+402 **Double Arrow Callout
+403 **Double Arrow
+404 **Notched Arrow
+405 **Rounded Arrow
+406 **Simple Arrow Callout
+407 **Simple Arrow
+408 **Split Arrow
+409 **S-Shape Arrow
+410 **Striped Arrow
+411 **Create template from current document
+412 **Create a text area
+413 **Use a component or an element
+414 **Create and use a component
+415 **Repeat the current use
+416 **Create and repeat a component
+417 **Create a free editing box
+418 **Create a new types union
+419 **Button up to close
+420 **Double click to close
+421 **Click to close

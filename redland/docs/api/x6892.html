@@ -1,0 +1,370 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>Berkeley DB Hash Implementation Class</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Redland RDF Application Framework API Reference Manual"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Hashes"
+HREF="hash.html"><LINK
+REL="PREVIOUS"
+TITLE="librdf_free_hash_cursor"
+HREF="r6866.html"><LINK
+REL="NEXT"
+TITLE="librdf_hash_bdb_create"
+HREF="r6894.html"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Redland RDF Application Framework API Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="r6866.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Hashes</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="r6894.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN6892"
+></A
+>Berkeley DB Hash Implementation Class</H1
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+><A
+HREF="r6894.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_create</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Create a BerkeleyDB hash
+ </DT
+><DT
+><A
+HREF="r6928.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_destroy</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Destroy a BerkeleyDB hash
+ </DT
+><DT
+><A
+HREF="r6954.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_open</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Open and maybe create a BerkeleyDB hash
+ </DT
+><DT
+><A
+HREF="r7015.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_close</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Close the hash
+ </DT
+><DT
+><A
+HREF="r7044.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_clone</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Clone the BerkeleyDB hash
+ </DT
+><DT
+><A
+HREF="r7095.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_values_count</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the number of values in the hash
+ </DT
+><DT
+><A
+HREF="r7121.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_cursor_init</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Initialise a new bdb cursor
+ </DT
+><DT
+><A
+HREF="r7154.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_cursor_get</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Retrieve a hash value for the given key
+ </DT
+><DT
+><A
+HREF="r7201.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_cursor_finish</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Finish the serialisation of the hash bdb get
+ </DT
+><DT
+><A
+HREF="r7224.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_put</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Store a key/value pair in the hash
+ </DT
+><DT
+><A
+HREF="r7264.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_exists</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Test the existence of a key/value in the hash
+ </DT
+><DT
+><A
+HREF="r7307.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_delete_key</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Delete all values for given key from the hash
+ </DT
+><DT
+><A
+HREF="r7340.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_delete_key_value</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Delete given key/value from the hash
+ </DT
+><DT
+><A
+HREF="r7380.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_sync</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Flush the hash to disk
+ </DT
+><DT
+><A
+HREF="r7406.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_get_fd</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the file description representing the hash
+ </DT
+><DT
+><A
+HREF="r7432.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_register_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Register the BerkeleyDB hash module with the hash factory
+ </DT
+><DT
+><A
+HREF="r7455.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_init_hash_bdb</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Initialise the BerkeleyDB hash module
+ </DT
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="r6866.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="r6894.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_free_hash_cursor</SPAN
+></SPAN
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="hash.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_create</SPAN
+></SPAN
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

@@ -1,0 +1,328 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>Lists</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Redland RDF Application Framework API Reference Manual"
+HREF="index.html"><LINK
+REL="PREVIOUS"
+TITLE="librdf_iterator_add_map"
+HREF="r12750.html"><LINK
+REL="NEXT"
+TITLE="librdf_new_list"
+HREF="r12808.html"></HEAD
+><BODY
+CLASS="CHAPTER"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Redland RDF Application Framework API Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="r12750.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="r12808.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="LIST"
+></A
+>Lists</H1
+><P
+>The list module provides a simple in-memory list.</P
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN12805"
+></A
+>List Class</H1
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+><A
+HREF="r12808.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_list</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Constructor - create a new librdf_list
+ </DT
+><DT
+><A
+HREF="r12835.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_free_list</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Destructor - destroy a librdf_list object
+ </DT
+><DT
+><A
+HREF="r12859.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_list_clear</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      empty an librdf_list
+ </DT
+><DT
+><A
+HREF="r12883.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_list_add</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      add a data item to the end of a librdf_list
+ </DT
+><DT
+><A
+HREF="r12921.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_list_unshift</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      add a data item to the start of a librdf_list
+ </DT
+><DT
+><A
+HREF="r12959.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_list_remove</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      remove a data item from an librdf_list
+ </DT
+><DT
+><A
+HREF="r12997.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_list_shift</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      remove and return the data at the start of the list
+ </DT
+><DT
+><A
+HREF="r13024.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_list_pop</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      remove and return the data at the end of the list
+ </DT
+><DT
+><A
+HREF="r13051.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_list_contains</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      check for presence of data item in list
+ </DT
+><DT
+><A
+HREF="r13089.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_list_size</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the length of the list
+ </DT
+><DT
+><A
+HREF="r13116.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_list_set_equals</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      set the equals function for the list
+ </DT
+><DT
+><A
+HREF="r13153.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_list_get_iterator</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      get an iterator for the list
+ </DT
+><DT
+><A
+HREF="r13181.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_list_foreach</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      apply a function for each data item in a librdf_list
+ </DT
+></DL
+></DIV
+><P
+>This class is implemented as a stack, new items are added to the front
+of the list.</P
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="r12750.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="r12808.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_iterator_add_map</SPAN
+></SPAN
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_list</SPAN
+></SPAN
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

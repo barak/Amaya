@@ -1,0 +1,290 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>librdf_utf8_to_latin1</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Redland RDF Application Framework API Reference Manual"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="UTF8 Class"
+HREF="utf8.html#AEN13811"><LINK
+REL="PREVIOUS"
+TITLE="librdf_utf8_to_unicode_char"
+HREF="r13856.html"><LINK
+REL="NEXT"
+TITLE="librdf_latin1_to_utf8"
+HREF="r13943.html"></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Redland RDF Application Framework API Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="r13856.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="r13943.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><H1
+><A
+NAME="AEN13899"
+></A
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_utf8_to_latin1</SPAN
+></SPAN
+></H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN13903"
+></A
+><H2
+>Name</H2
+>librdf_utf8_to_latin1&nbsp;--&nbsp;      Convert a UTF-8 string to ISO Latin-1
+ </DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN13906"
+></A
+><H2
+>Synopsis</H2
+><DIV
+CLASS="FUNCSYNOPSIS"
+><A
+NAME="AEN13908"
+></A
+><P
+></P
+><P
+><CODE
+><CODE
+CLASS="FUNCDEF"
+>byte* <TT
+CLASS="FUNCTION"
+>librdf_utf8_to_latin1 </TT
+></CODE
+>(const byte * <TT
+CLASS="PARAMETER"
+><I
+>input</I
+></TT
+>, int <TT
+CLASS="PARAMETER"
+><I
+>length</I
+></TT
+>, int * <TT
+CLASS="PARAMETER"
+><I
+>output_length</I
+></TT
+>);</CODE
+></P
+><P
+></P
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN13918"
+></A
+><H2
+>Arguments</H2
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>input</I
+></TT
+></DT
+><DD
+><P
+>      UTF-8 string buffer
+    </P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>length</I
+></TT
+></DT
+><DD
+><P
+>      buffer size
+    </P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>output_length</I
+></TT
+></DT
+><DD
+><P
+>      Pointer to variable to store resulting string length or NULL
+    </P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN13936"
+></A
+><H2
+>Description</H2
+><P
+>   Converts the given UTF-8 string to the ISO Latin-1 subset of
+   Unicode (characters 0x00-0xff), discarding any out of range
+   characters.
+   </P
+><P
+>&#13;   If the output_length pointer is not NULL, the returned string
+   length will be stored there.
+ </P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN13940"
+></A
+><H2
+>Return value</H2
+><P
+>    pointer to new ISO Latin-1 string or NULL on failure
+ </P
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="r13856.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="r13943.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_utf8_to_unicode_char</SPAN
+></SPAN
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="utf8.html#AEN13811"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_latin1_to_utf8</SPAN
+></SPAN
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

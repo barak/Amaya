@@ -1,0 +1,423 @@
+# encoding= utf8
+0 X11 错误 : %s\n
+1 确定
+2 无字母表文件
+3 新视图无法取代原始视图
+4 不兼容的 schemas. 重新编译 %s
+5 致命错误: 字体未找到
+6 内存耗尽
+7 致命错误: 无法连接 X 服务器
+8 视图已改变
+9 规则表已满
+10 错误文件: %s.STR
+11 错误文件: %s.PRS
+12 %s个文档已打印
+13 设置
+14 1 版/页
+15 2 版/页
+16 4 版/页
+17 %s
+18 内存不足
+19 *** Amaya: 无法修复的错误 ***
+20 所有被更改的文档将被保存
+21 TRA文件错误: %s
+22 %s is not a valid sibling for %s (%s)
+23 %s 不是有效的 %s 子节点 (%s)
+24 %s, page %d
+25 语言
+26 属性
+27 标准布局
+28 应用
+29 字符
+30 下划线
+31 图形
+32 格式
+33 默认
+34 布局
+35 缩进
+36 正在打印
+37 打印
+38 手动加纸
+39 选项
+40 A4
+41 US
+42 纸张类型
+43 关闭
+44 目录
+45 %s 文档已存在，确认要覆盖吗?
+46 **Set the text color
+47 **Set the background color
+48 字体
+49 常规
+50 加粗
+51 倾斜
+52 斜体
+53 常规
+54 粗体
+55 常规
+56 下划线
+57 删除线
+58 大小 
+59 **Unindent
+60 **Single line spacing
+61 **Middle line spacing
+62 **Double line spacing
+63 保存文档
+64 不保存直接关闭
+65 字符样式
+66 颜色
+67 **Elements
+68 删除
+69 输出
+70 PostScript 文件
+71 打印机
+72 搜索
+73 忽略大小写
+74 替换为
+75 替换
+76 无替换
+77 询问是否替换
+78 自动替换
+79 搜索范围
+80 选定区域前
+81 选定区域中
+82 选定区域后
+83 整个文档
+84 不替换
+85 关闭前
+86 关闭文档
+87 数学符号
+88 图形
+89 拉丁文字母表
+90 希腊文字母表
+91 保存
+92 文本
+93 图形
+94 符号
+95 图片
+96 XML
+97 后
+98 前
+99 外
+100 包含
+101 粘贴
+102 创建
+103 插入
+104 分页符
+105 元素语言
+106 继承语言:
+107 未发现
+108 搜索
+109 搜索
+110 只读元素
+111 未替换
+112 标准字符
+113 标准图形
+114 标准格式
+115 Standard geometry
+116 pt
+117 样式
+118 粗度
+119 填充样式
+120 分割
+121 对象类型
+122 跳转到:
+123 任意
+124 搜索属性
+125 搜索类型
+126 Natures
+127 Name
+128 值
+129 属性值
+130 为之属性
+131 取消
+132 转换为 PostScript 时发生错误
+133 命令被拒绝 "%s"
+134 无法创建 "%s"
+135 Overline
+136 文档格式
+137 移除属性
+138 背景色
+139 前景色
+140 选择一般性 XML 框架
+141 检查
+142 查找/跳过
+143 替换 (+ dic)
+144 更正并查找写一个
+145 其他语言
+146 学习
+147 包含词语:
+148 拼写检查 ...
+149 罗马数字
+150 忽略
+151 全为大写的词语
+152 含数字的词语
+153 参数文件错误
+154 无键盘文件
+155 无法保存文档字典
+156 错误词语 "%s" 已被本字典拒绝
+157 词语 "%s" 已加入字典
+158 拼写检查完成
+159 拼写检查已终止
+160 请选择文档
+161 文档字典已保存: %s
+162 此版本尚未提供此功能
+163 启用/禁用小面板
+164 工具
+165 无法移出强制性属性
+166 刷新
+167 左
+168 中
+169 右
+170 对齐
+171 应用 class
+172 选择一个 class 或 pseudo-class
+173 选择
+174 放弃
+175 Maths
+176 杂项
+177 二元关系
+178 负二元关系
+179 算符
+180 希腊字母(大写)
+181 键头
+182 特殊字符
+183 终止传输
+184 上一文档
+185 下一文档
+186 重新载入
+187 保存
+188 保存
+189 新建 文档
+190 打开文档
+191 打印
+192 搜索
+193 主页
+194 强调 On/Off
+195 加强 On/Off
+196 代码 On/Off
+197 插入图片
+198 标题1
+199 标题2
+200 标题3
+201 标题4
+202 段落
+203 无序列表
+204 有序列表
+205 定义性列表
+206 链接
+207 表格
+208 正要关闭%d个标签页,确定要这么做吗?
+209 关闭多个标签页的时候显示警告
+210 关闭标签
+211 没有检测到错误
+212 显示解析错误
+213 表格
+214 Div层
+215 目标
+216 插入 On/Off
+217 删除 On/Off
+218 桥表 On/Off
+219 上标 On/Off
+220 条目
+221 说明
+222 Object
+223 样式
+224 文件
+225 水平排列视图
+226 垂直排列视图
+227 显示工具栏
+228 撤销
+229 重做
+230 剪切
+231 复制
+232 粘贴
+233 拼写检查
+234 **Various constructs
+235 **Relations, orders and logic
+236 **Sets and functions
+237 **Arithmetic, operations, complexes and constants
+238 **Analysis, linear algebra and statistic
+239 **Trigonometry and logarithms
+240 放大
+241 缩小
+242 **Theme
+243 XML
+244 Text
+245 **No recent document
+246 **Click an element to select it
+247 **Click to change the editing mode
+248 **Merge cells
+249 收缩水平范围
+250 收缩垂直范围
+251 插入新行
+252 附加一行
+253 插入新列
+254 附加一列
+255 **Tip of the day
+256 **Show tip at startup
+257 **Previous tip
+258 **Next tip
+259 **Did you know...
+260 **Close
+261 **Amaya can be adapted to your own needs: five profiles are provided with different sets of menus and panels. See Preferences/General.
+262 **Panels can be displayed on the left or on the right side of the window or even customized panel by panel. See Preferences.
+263 **With the F2 or Escape key you can select the parent element in the document structure, to apply editing functions (copy, paste, attributes, style, etc.) to the right element.
+264 **You can display two documents side by side in the window by dragging a document tab to the left or right side of the displayed document.
+265 **In customizable mode, you can drag panels to change their order or to make them floating.
+266 **With the customizable mode, you can move panels on both sides of the window just by dragging.
+267 **You can switch editing mode (Text/XML) by clicking on the corresponding button in the bottom right corner.
+268 **When there is red button in the bottom right corner, you can display errors by clicking on it.
+269 **You can select an ancestor of the current selection by clicking on its name on the path control displayed at the bottom of the window.
+270 **You can move to another tab with the menu displayed by the arrow button at right of document tabs.
+271 **If you enable "Show Targets" in the "Views" menu, targets are displayed in formatted view. This is convenient for the creation of link: a target can be chosen by clicking on it.
+272 **When you rotate an SVG object, the center is indicated by a cross. You can use the mouse to move it.
+273 **Basic SVG shapes have handles that can be used to edit them. Blue triangles or green square allow to change their size. For <rect/> element, red circles give a control on radius of rounded corners.
+274 **For SVG drawing, lines are created with a precision of 15� if you press the shift button. It is useful when you want to draw straight lines.
+275 **When you resize an image or an SVG object, pressing the shift button allows to preserve aspect ratio.
+276 **Use Edit>Preferences>Dialogue Language to choose the language of the user interface.
+277 **Classic
+278 **Modern
+279 **No theme
+280 **Title/Description
+281 **Generate a description
+282 **Square
+283 **Rounded Square
+284 **Rectangle
+285 **Rounded rectangle
+286 **Diamond
+287 **Parallelogram
+288 **Trapezium
+289 **Equilateral triangle
+290 **Isosceles triangle
+291 **Right triangle
+292 **Circle
+293 **Ellipse
+294 **Line
+295 **Arrow
+296 **Double Arrow
+297 **Zigzag
+298 **Group
+299 **Ungroup
+300 **Bring to front
+301 **Send to back
+302 **One level up
+303 **One level down
+304 **90� left
+305 **90� right
+306 **Rotate
+307 **Vertical symmetry
+308 **Horizontal symmetry
+309 **Scale
+310 **Skew
+311 **Move
+312 **Align bottom
+313 **Align center
+314 **Align left
+315 **Align middle
+316 **Align right
+317 **Align top
+318 **Distribute bottom
+319 **Distribute center
+320 **Distribute left
+321 **Distribute middle
+322 **Distribute right
+323 **Distribute top
+324 **Distribute vertical spacing
+325 **Distribute horizontal spacing
+326 **Closed Bezier curve
+327 **Bezier curve
+328 **Polyline
+329 **Polygon
+330 **Foreign Object
+331 **Image
+332 **SVG Canvas
+333 **Text
+334 **Cone
+335 **Cube
+336 **Cylinder
+337 **Octahedron
+338 **Parallelepiped
+339 **Pyramid
+340 **Beaker
+341 **Funnel
+342 **Bunsen burner
+343 **Buchner flask
+344 **Boiling flask
+345 **Burette
+346 **Erlenmeyer flask
+347 **Test tube
+348 **Pipette
+349 **Rectangular
+350 **Rounded rectangular
+351 **Round
+352 **Scream
+353 **Thought
+354 **Capacitor
+355 **Power source
+356 **Diode
+357 **Ground Point
+358 **Inductor
+359 **LED
+360 **Op-amp
+361 **Resistor
+362 **Switch
+363 **Transistor
+364 **Voltage source
+365 **Zener diode
+366 **Pentagon
+367 **Hexagon
+368 **Heptagon
+369 **Octogon
+370 **Star (4 branches)
+371 **Star (5 branches)
+372 **Star (6 branches)
+373 AND
+374 NAND
+375 OR
+376 NOR
+377 XOR
+378 XNOR
+379 NOT
+380 **Cross
+381 **Frame
+382 **Ring
+383 **Cloud
+384 **Scroll
+385 **Sun
+386 **Lightning_Bolt
+387 **Moon
+388 **Smiley
+389 **Heart
+390 **Flower
+391 **Prohibited
+392 **2-Way Rounded Arrow
+393 **3-Way Arrow Callout
+394 **3-Way Arrow
+395 **4-Way_Arrow_Callout
+396 **4-Way Arrow
+397 **Chevron
+398 **Circular Arrow
+399 **Corner Arrow
+400 **Corner Double Arrow Callout
+401 **Corner Double Arrow
+402 **Double Arrow Callout
+403 **Double Arrow
+404 **Notched Arrow
+405 **Rounded Arrow
+406 **Simple Arrow Callout
+407 **Simple Arrow
+408 **Split Arrow
+409 **S-Shape Arrow
+410 **Striped Arrow
+411 **Create template from current document
+412 **Create a text area
+413 **Use a component or an element
+414 **Create and use a component
+415 **Repeat the current use
+416 **Create and repeat a component
+417 **Create a free editing box
+418 **Create a new types union
+419 **Button up to close
+420 **Double click to close
+421 **Click to close

@@ -1,0 +1,735 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>RDF Model</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Redland RDF Application Framework API Reference Manual"
+HREF="index.html"><LINK
+REL="PREVIOUS"
+TITLE="librdf_destroy_world"
+HREF="r310.html"><LINK
+REL="NEXT"
+TITLE="librdf_init_model"
+HREF="r343.html"></HEAD
+><BODY
+CLASS="CHAPTER"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Redland RDF Application Framework API Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="r310.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="r343.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="MODEL"
+></A
+>RDF Model</H1
+><P
+>This module provides the RDF model support which is a bag of statements
+(duplicates are allowed).  Models can have statements added and removed,
+be queries and stored which is implemented by the storage classes.</P
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN341"
+></A
+>RDF Model Class</H1
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+><A
+HREF="r343.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_init_model</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Initialise librdf_model class
+ </DT
+><DT
+><A
+HREF="r366.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_finish_model</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Terminate librdf_model class
+ </DT
+><DT
+><A
+HREF="r389.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_register_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Register a model factory
+ </DT
+><DT
+><A
+HREF="r420.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_get_model_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get a model factory by name
+ </DT
+><DT
+><A
+HREF="r446.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_model</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new storage librdf_model object
+ </DT
+><DT
+><A
+HREF="r492.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_model_with_options</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - Create a new librdf_model with storage
+ </DT
+><DT
+><A
+HREF="r538.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_model_from_model</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Copy constructor - create a new librdf_model from an existing one
+ </DT
+><DT
+><A
+HREF="r569.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_free_model</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Destructor - Destroy a librdf_model object
+ </DT
+><DT
+><A
+HREF="r593.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_size</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      get the number of statements in the model
+ </DT
+><DT
+><A
+HREF="r623.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_add_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Add a statement to the model
+ </DT
+><DT
+><A
+HREF="r659.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_add_statements</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Add a stream of statements to the model
+ </DT
+><DT
+><A
+HREF="r692.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_add</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Create and add a new statement about a resource to the model
+ </DT
+><DT
+><A
+HREF="r746.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_add_typed_literal_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Create and add a new statement about a typed literal to the model
+ </DT
+><DT
+><A
+HREF="r814.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_add_string_literal_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Create and add a new statement about a literal to the model
+ </DT
+><DT
+><A
+HREF="r881.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_remove_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Remove a known statement from the model
+ </DT
+><DT
+><A
+HREF="r917.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_contains_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Check for a statement in the model
+ </DT
+><DT
+><A
+HREF="r956.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_as_stream</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      list the model contents as a stream of statements
+ </DT
+><DT
+><A
+HREF="r983.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_serialise</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      serialise the entire model as a stream (DEPRECATED)
+ </DT
+><DT
+><A
+HREF="r1013.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_find_statements</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      find matching statements in the model
+ </DT
+><DT
+><A
+HREF="r1050.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_get_sources</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the sources (subjects) of arc in an RDF graph given arc (predicate) and target (object)
+ </DT
+><DT
+><A
+HREF="r1099.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_get_arcs</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the arcs (predicates) of an arc in an RDF graph given source (subject) and target (object)
+ </DT
+><DT
+><A
+HREF="r1148.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_get_targets</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the targets (objects) of an arc in an RDF graph given source (subject) and arc (predicate)
+ </DT
+><DT
+><A
+HREF="r1197.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_get_source</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return one source (subject) of arc in an RDF graph given arc (predicate) and target (object)
+ </DT
+><DT
+><A
+HREF="r1245.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_get_arc</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return one arc (predicate) of an arc in an RDF graph given source (subject) and target (object)
+ </DT
+><DT
+><A
+HREF="r1293.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_get_target</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return one target (object) of an arc in an RDF graph given source (subject) and arc (predicate)
+ </DT
+><DT
+><A
+HREF="r1341.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_add_submodel</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      add a sub-model to the model
+ </DT
+><DT
+><A
+HREF="r1377.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_remove_submodel</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      remove a sub-model from the model
+ </DT
+><DT
+><A
+HREF="r1413.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_get_arcs_in</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the properties pointing to the given resource
+ </DT
+><DT
+><A
+HREF="r1450.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_get_arcs_out</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the properties pointing from the given resource
+ </DT
+><DT
+><A
+HREF="r1487.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_has_arc_in</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      check if a node has a given property pointing to it
+ </DT
+><DT
+><A
+HREF="r1530.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_has_arc_out</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      check if a node has a given property pointing from it
+ </DT
+><DT
+><A
+HREF="r1573.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_print</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      print the model
+ </DT
+><DT
+><A
+HREF="r1606.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_context_add_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Add a statement to a model with a context
+ </DT
+><DT
+><A
+HREF="r1654.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_context_add_statements</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Add statements to a model with a context
+ </DT
+><DT
+><A
+HREF="r1701.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_context_remove_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Remove a statement from a model in a context
+ </DT
+><DT
+><A
+HREF="r1749.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_context_remove_statements</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Remove statements from a model with the given context
+ </DT
+><DT
+><A
+HREF="r1784.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_context_as_stream</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      list all statements in a model context
+ </DT
+><DT
+><A
+HREF="r1820.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_context_serialize</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      List all statements in a model context
+ </DT
+><DT
+><A
+HREF="r1859.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_query</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Run a query against the model returning matching statements
+ </DT
+><DT
+><A
+HREF="r1900.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_query_string</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Run a query string against the model returning matching statements
+ </DT
+><DT
+><A
+HREF="r1954.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_sync</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Synchronise the model to the model implementation
+ </DT
+><DT
+><A
+HREF="r1978.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_get_storage</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the storage of this model
+ </DT
+><DT
+><A
+HREF="r2010.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_find_statements_in_context</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      search the model for matching statements in a given context
+ </DT
+><DT
+><A
+HREF="r2060.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_get_contexts</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the list of contexts in the graph
+ </DT
+><DT
+><A
+HREF="r2092.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_get_feature</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      get the value of a graph feature 
+ </DT
+><DT
+><A
+HREF="r2128.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_set_feature</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      set the value of a graph feature
+ </DT
+><DT
+><A
+HREF="r2171.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_find_statements_with_options</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      search the model for matching statements with match options
+ </DT
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="r310.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="r343.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_destroy_world</SPAN
+></SPAN
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_init_model</SPAN
+></SPAN
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

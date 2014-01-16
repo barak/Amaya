@@ -1,0 +1,514 @@
+# encoding= utf8
+0 Dosyalar
+1 Aç
+2 Yeni MathML dosyası
+3 Yeni SVG dosyası
+4 Yeni CSS düz dizayn
+5 Model
+6 **In new tab
+7 Yeni pencerede aç
+8 Temizle
+9 **Click
+10 %s belgesi kaydedildi
+11 Özellik
+12 URL
+13 Metin
+14 İsim
+15 Parola
+16 Sınıf olarak kullan
+17 %s alınıyor
+18 %s yüklenemiyor
+19 Bitti!
+20 Hedefi seçin
+21 Geçersiz hedef
+22 Adres
+23 Başlık
+24 Başlığı değiştir
+25 **Document modified - Do you want to save it?
+26 %s aranıyor
+27 Yeniden yönlerdirme zamanı dolmuştur
+28 Yerel dosya %s yaratılamıyor
+29 Yerel repertuar %s yaratılamıyor
+30 Boş bir soket bekleniyor
+31 %s okunuyor
+32 %s yazılıyor
+33 Bağlantı bekleniyor
+34 %s: bağlanılıyor
+35 %s: aranıyor
+36 Belirsiz durum
+37 Güvenlik istemi
+38 Kendinizi tanıtın
+39 %s için yetkilendirme başarısız
+40 %s yüklendi, ancak veri içermiyor
+41 Aktarım kesildi!
+42 %s: şu anda erişilemiyor, başka bir zaman deneyin
+43 %s yüklendi
+44 %s kaydediliyor
+45 %s kaydedilemedi
+46 Türkçe sistem hata mesajları
+47 <a> tanımlaması bu unsurları içeremez
+48 <a> tanımlaması içinde bir başka <a> tanımı yer alamaz
+49 %s tipi URL\'ler için GET desteği henüz yok, üzgünüm
+50 %s tipi URL\'ler için PUT desteği henüz yok, üzgünüm
+51 Amaya\'nın bu sürümü, bu özelliği desteklemiyor
+52 %s\'in yazımı tamamlandı
+53 %s normale dönüştürülemedi
+54 %s geçici dosya dizini yaratılamadı
+55 Seçili bölge için hiç bir dönüşüm kullanılamaz
+56 Dönüşüm başarısız
+57 HTML.trans dosyası, %s satırında yazım hatası
+58 Matematik
+59 Grafik
+60 İsimle kaydet
+61 Lütfen kendinizi \'%s\' alanı, \'%s\'servör için resmileştirin
+62 Alan : %s
+63 Servör : %s
+64 Editör/Tarayıcı
+65 Zaman dolmuştur - servör cevap vermedi
+66 %s mevcuttur. Yazıyı zorlayalımmı?
+67 %s değişti. Yazıyı zorlayalımmı?
+68 Arka plan
+69 Burda arka plan yasaktır
+70 CSS
+71 Bi sonraki görüntülerde kayıt edilecektir
+72 URL kaydedilemedi
+73 Diske kayıt?
+74 Görüntüleri kopyala
+75 URL\'leri dönüştür
+76 Belgenin adresi
+77 Görüntü dizini
+78 Nesne konumu
+79 CSS dosyası 1
+80 Aç CSS
+81 Olumsuzla CSS
+82 Olumla CSS
+83 Sil CSS
+84 W3C için tarayıcı ve belge düzenleyici
+85 Sorularınızı www-amaya@w3.org adreine gönderin
+86 Copyright  ©  1994-%s INRIA et W3C® (MIT, ERCIM, Keio)
+87 w3.org/Amaya/
+88 %s karakterden uzun URL\'ler şimdilik işlenemiyor
+89 Sadece öntanımlı tip kullanılabilir
+90 Bağlantı güncellemesi: %s%% tamamlandı
+91 Kaydedilecek bir şey yok
+92 y\'de tekrar
+93 Kullanıcı ismini girin:
+94 %d istek var sırada
+95 Olumlu CSS dosyası yoktur
+96 **Don't save
+97 tekrar yok
+98 Belgenin bir ismi yok. Şu isimle kaydediyorum:
+99 Plugin\'ler
+100 %s URL\'ini kaydederken, belirsiz hata
+101 Sunucuya bağlantı yapılamıyor
+102 %s erişimi kural gereği engellenmiş
+103 %s için işlem başarılı
+104 %s yaratıldı
+105 %s güncellendi
+106 İşlem %s durum kodu ile tamamlandı
+107 Sunucu istem yazımını anlamadı
+108 Sunucunun gönderecek yeni bilgisi
+109 Bu yöntem %s için kullanılamaz
+110 %s erişimi için lütfen kendinizi tanıtın
+111 Doğrulanıyor...
+112 %s\'e kaydedilemedi, Diske kaydedeyim mi?
+113 %s bozuk görünüyor, devam edeyim mi?
+114 URL %s %s e yönlendirilmiş, devam edeyim mi?
+115 %s yeniden yüklenemedi, devam edeyim mi?
+116 Sunucu hatası veriyor: %s
+117 Sunucu bu istem yöntemini kabul etmiyor
+118 Süzgeç
+119 etkin aktarımlar
+120 kuyruktaki aktarımlar
+121 İçindekiler
+122 Bağlantı tablosu
+123 Tekrar modu
+124 tekrar
+125 x\'te tekrar
+126 Son Amaya oturumu kötü bitmiştir. Değiştirilen dosyaları yüklemek istiyormusunuz?
+127 Resmileştirme hatasi. Tekrar?
+128 Operasion yönlendirilecek. Devam?
+129 Sıra sayısı
+130 Sütün
+131 çerçeve (pixel)
+132 Yeniden yerleştirme metini
+133 Yeniden yerleştirme metini mecburdur
+134 URL\'i yazdır
+135 Tatbik et
+136 Öntanımlar
+137 Gizli bölümü boşalt
+138 Önbellekleme
+139 Gizli bölümün hızlandırmak
+140 Korunması gereken belgeleri gizli bölüme kayıt edin
+141 Bağlantıda çıkma modu
+142 Expires yazıyı önemsemeyin
+143 Gizli bölümün repertuarı
+144 Gizli bölümün büyüklüğü (Mb)
+145 Gizli bölümün maksimum kapasitesi (Mb)
+146 Önbellekleme
+147 HTTP proxy (e.g., www.w3.org:1234)
+148 Proxy\'nin alan listesi (e.g., lists.w3.org)
+149 Genel
+150 başlangıç sayfası
+151 Bigi süresi (ms)
+152 Iki kere tıklama süresi(ms)
+153 Yazıtipi ailesi büyüklüğü
+154 Karakterleri büyüt
+155 Yazıların dili
+156 **Preserve lines when pasting
+157 **Generate backup files
+158 **Save geometry on exit
+159 Arka görüntülerini göster
+160 Tusları göster
+161 Adres göster
+162 Hedefi göster
+163 CR/LF ihraç et
+164 Tarama
+165 Görüntüyü yükle (img)
+166 Bağlantıyı izlemek için iki kere tuşlayın
+167 Derleme
+168 ETAGS\'ları ve ön-şartları kullanının
+169 Her PUT ve GET\' leri kontrol edin
+170 '/'\'le biten URL\'leri öntanımlı isim
+171 Geometri
+172 Yakın geometriyi kaydet
+173 Öntanımlı geometriye yeniden biçim ver
+174 Bu değişiklikler yeniden pencere açtığınızda gerçerli olurlar
+175 Belgenin ön-plan rengi
+176 Belgenin arka-plan rengi
+177 Menünün ön-plan rengi
+178 Menünün arka-plan rengi
+179 Gizli bölümü sıfırlama imkansızdır. Belkide geçersiz bir repertuar kullandınız veya aynı zamanda başka bir amaya kullandınız
+180 Istenilen dillerin listesi (mesela "en, fr"):
+181 Bu değişiklikler yeniden Amaya\'yı açtığınız taktirde geçerli olurlar
+182 Bu alanlarda PUT otomatik olarak yeniden yönlerdirmesini kabul edin
+183 Sayfasız
+184 Dönüşüm türü
+185 Her Enter\'ü boşlukla değiştirin
+186 Bu alanlarda Proxy\'yi kullanmayın
+187 Bu alanlarda sadece Proxy\'yi kullanın
+188 Karakterin ismi
+189 Kullanıyıcı repertuarı
+190 Süreli repertuarı
+191 Palet (palette)
+192 Ülke dilleri
+193 Eklemeler
+194 Bağlantı
+195 Kullanıyıcı ismi
+196 Dağıtım servörü
+197 Not servörü
+198 Lokal notları otomatik olarak yükleyin
+199 Dıştan notları otomatik olarak yükleyin
+200 Amaya\'nın başlangıcında otomatik dıştan notları yüklemesini durdurun
+201 Renk seçimi
+202 **Selection background color
+203 Yön
+204 Portre
+205 Peysaj
+206 **Keep multiple spaces
+207 **Error(s) in the source code
+208 **Fatal error - Fix the source code to continue
+209 **Try the 'File/Read as' entry
+210 Yanlış karakter
+211 Belgenin profili:
+212 Hata - Dosya > Hataları göster bakın
+213 Bu belgenin kodlaması Amaya tarafından yapılamıyor
+214 Yazmak ve kaydetmek bu belgenin tipini değiştirir
+215 Kullanıma hazır değil
+216 Tarayıcı
+217 Tarayıcı dosyası
+218 Seçim
+219 Notların lokal filtresi
+220 Göster
+221 Gizle
+222 Hepsini göster
+223 Hepsini gizle
+224 * gizlemek anlamında, - süreli gizlemek anlamında
+225 Filtrage opsionları
+226 Sahip
+227 Tip
+228 Servör
+229 Hızlı giriş
+230 Geç
+231 **Panel bar position: 
+232 **left
+233 **right
+234 Verilerin dizaynı
+235 XPointer yaratılamıyor
+236 Amaya tarafından eklenen XPointer başlanamıyor
+237 Amaya tarafından eklenen XPointer bitiremiyor
+238 Eklemeler yerinden oynatılamıyor
+239 Eklemeler başka bir belgeye konamıyor
+240 Kunlayıcı ismi verilmemiştir. Ekleme/Ayarlar menüsüne bakın
+241 Bu not için XPointer yaratmak imkansızdır
+242 Yeni not yap
+243 Notun yayın hatası
+244 Notun iptal hatası
+245 Not iptal edildi!
+246 Notların içeriğini yüklemek imkansızdır
+247 Hata
+248 Charset seçin
+249 MIME tipi seçin
+250 Charset\'i değiştir
+251 MIME tipini değiştir
+252 Değiştir
+253 Bu tip belgenin charset\'i yoktur
+254 URL\'i kullanmak için HTTP tipten olması gerekiyor
+255 Hata: MIME tipi doğru değil
+256 Yabancı
+257 Dizayn bilinmiyor - Hataları göster bakın
+258 Bu belge başka bir pencerede açılmıştır
+259 Bu belgeleri kayıt etmek güncelleştirme problemleri çıkara bilir
+260 **Adding or changing the doctype will remove some elements or attributes
+261 **Please confirm operation
+262 XHTML belgeleri için MIME tipi uygulama/xhtml+xml \'li kullanın
+263 **Charset for new documents
+264 Kilitleme başarılı olmuştur!
+265 Kilitleme başarısız olmuştur!
+266 %s için kilit bekleniyor...
+267 %s belgesi kilitlenmiştir!
+268 %s belgesi %s tarafından kilitlenmiştir (son kullanma süresi %s)
+269 Kilidi geçin?
+270 Kilit bilgilerini kaydet?
+271 Belgenin kilidini açmayı deneyin...
+272 Kilit açma başarılı olmuştur!
+273 Kilit açma başarısız olmuştur!
+274 %s kilidini aç...
+275 %s belgenin kilidi açıldı!
+276 Belgenin kilidini aç?
+277 Belge özellikleri
+278 Belgenin özellikleri kullanamazsınız
+279 Belgenin özellikleri şu an kullanamazsınız. Biraz sonra yeniden deneyin...
+280 Belgenin özellikleri bekleniyor...
+281 Malesef, WebDav URL\'leri %s gibi desteklemiyor
+282 Kilidin lokal temelde kayıtı başarısız olmuştur
+283 Kilidin lokal temelde silinmesi imkansızdır
+284 Malesef bu operasion %s için yasaktır
+285 Operasion başarısız olmuştur! Neden: bağımlılık hatası
+286 Operasion başarısız olmuştur! Neden: %s
+287 Yeniden dene?
+288 WebDAV
+289 Kullanıyıcının özel referansı (URL)
+290 Kullanıyıcının referans listesi (URL URL)
+291 Kilit derinliği
+292 Sonsuz
+293 Bitiş süresi
+294 Sonsuz
+295 Diyer (Saniye)
+296 Kilit tipi
+297 Uyuşmaz
+298 paylaş
+299 Bildiri
+300 Genel bildiri
+301 çıkış bildirisi
+302 Hareket
+303 SVG kütüphanesi
+304 Kopya opsionu
+305 Kopyala
+306 Referans et
+307 Kütüphanede yeni model ekle
+308 Yeni SVG dosyasının URL\'i...
+309 Kütüphane başlıgı
+310 URL Kütüphanesi
+311 Kütüphane yarat
+312 Kütüphane tara
+313 Kütüphane yarat veya ara
+314 Vu seçimde SVG olmayan veriler içeriyor. Lütfen başka seçim yapın
+315 Kütüphane başlıgı mecburdur
+316 Açılan belgede yeni anahtar durum tanımlamak için durum kürsörünü oynatın ...
+317 Anahtar durum tanımlaştı. Hareket zamanını tanımlamak için zaman kürsörünü oynatın...
+318 Elemanın başlangıç rengini seçin
+319 Başlangıç rengini seçin. Hareket zamanını tanımlamak için zaman kürsörünü oynatın...
+320 Bitiş rengini seçin...
+321 Hareket tanımlaştı
+322 Hareketli özellikler
+323 Tanımsız eleman
+324 **Add ID
+325 **Remove ID
+326 **Add/Remove IDs
+327 **Apply operation
+328 **Enter an element name
+329 **Apply CSS
+330 **Current screen type
+331 **New Topic
+332 **Bookmark Properties
+333 **Topic Properties
+334 **Topic hierarchy:
+335 Başlık:
+336 **Recalls:
+337 Sahip:
+338 **Created:
+339 **Last modified:
+340 **Description:
+341 **Please select an element
+342 **All CSS
+343 **CSS style rules applied to the <%s> element\n
+344 **Colored lines are links activated by a double (or a single) click\n
+345 **Load objects (object, embed, iframe)
+346 **No style rule for this element
+347 **No insert position defined. Please select first
+348 **Document information
+349 **Document Type
+350 **MIME Type
+351 **Charset
+352 **Content Length
+353 **Content Location
+354 Tercih
+355 Karakter (&xxx;)
+356 **Create Object
+357 **Directory
+358 **File
+359 **Replace current
+360 **In new Window
+361 Anti-aliasing
+362 **ISO format for date
+363 **New documents location
+364 **Opening location
+365 **Warn when closing multiple tabs
+366 **Max url number in history
+367 **Clear url list
+368 **Display all shortcuts
+369 **Fixed line length (0 = default value)
+370 **Template
+371 **Save the document as...
+372 **Template not found
+373 **Show template's boxes
+374 **Apply closes the dialogue
+375 **Not allowed
+376 **Protected element
+377 **The selection should not cross an element of this type
+378 **No heading found
+379 **Save anyway
+380 **Cannot locate host
+381 **Document has changed (412)
+382 **Conflict with the current state of the resource
+383 **Invalid selection
+384 **Unknown element
+385 **%d updated elements
+386 **The title is mandatory
+387 **Templates
+388 **Number of occurrences
+389 **Maximum number of occurrences reached
+390 **Minimum number of occurrences reached
+391 **Check duplicated IDs
+392 **Add the xsl stylesheet for MathML elements
+393 **Insert operator
+394 **Select the way the operator has to be displayed
+395 **Insert an integral
+396 **Select the type of integral
+397 **Attributes of the fence
+398 **Select open, separator and close symbols
+399 **Number of operator symbols
+400 **Number of coordinates
+401 **Length of the N-tuples
+402 **Number of elements
+403 **Number of variables
+404 **Degree
+405 **Degree of the variable number %d
+406 **Compound document
+407 **Copy resources (styles and scripts)
+408 **Where to save resources
+409 **Where to save images
+410 **Document
+411 **Images, Styles and Scripts
+412 **Mail
+413 **Common parameters for sending mails:
+414 **SMTP server address:
+415 **Server port:
+416 **(25 by default)
+417 **Sending address (From field):
+418 **To:
+419 **Send by mail
+420 **Subject:
+421 **Send as:
+422 **Message body
+423 **Attachment
+424 **Zip archive
+425 **Don't send
+426 **Send
+427 **The server address and port must be set in Preferences
+428 **Message:
+429 **Alternate textual message:
+430 **The server is unreachable or does not respond
+431 **The server has reject you
+432 **The sender address is misformatted
+433 **A recipient address is misformatted
+434 **The mail content is misformatted
+435 **Mail not sent
+436 **Mail sent
+437 **Passwords
+438 **Do you want Amaya to remember this password?
+439 **Remember passwords for sites
+440 **Sites
+441 **Remove all
+442 **XML namespaces generated for new XHTML+RDFa documents
+443 **Select a namespace in the list below or add a new one (syntax prefix="uri")
+444 **An error occured during the building of the javascript/DOM objects
+445 **A script is still running but will be aborted as soon as possible. Please try later.
+446 **Javascript/DOM can not be enabled in this view.
+447 **Enter a javascript command:
+448 **The command returned the value: %s
+449 **The command returned no value
+450 **SpiderMonkey returned the following error:\n\nFile: %s\nLine: %d\n\n%s
+451 Yeni
+452 **Customizable
+453 **Create
+454 **Create the link by click
+455 tanımı sil
+456 **Save without template
+457 **With theme ...
+458 **Full width
+459 **With caption
+460 **Size
+461 **Position
+462 **XML editing mode
+463 **List of style sheets
+464 **Add a style sheet...
+465 **Remove selected style sheets
+466 **Activate selected style sheets
+467 **Desactivate selected style sheets
+468 **Open selected style sheets
+469 Amaya profili:
+470 **Show "Tip of the day" at startup
+471 **Choose font family and size:
+472 **Template has error(s), it will not be used:
+473 **Close
+474 **Component '%s' has multiple definition.
+475 **Library '%s' can not be loaded.
+476 **Can not convert an instance document to template.
+477 **The document is already a template
+478 **Template creation fails
+479 **Text area
+480 **Element label:
+481 **Bag area
+482 **Repeat element
+483 **New component
+484 **Component is used, you can not remove it.
+485 **at the top left corner
+486 **at the bottom left corner
+487 **on the left
+488 **at the top right corner
+489 **at the bottom right corner
+490 **on the right
+491 **at the top
+492 **at the bottom
+493 **in the center
+494 **to the left and above
+495 **to the left and below
+496 **to the left of
+497 **to the right and above
+498 **to the right and below
+499 **to the right of
+500 **above
+501 **below
+502 **in front of
+503 **There are %d objects: 
+504 **New use
+505 **Optional use
+506 **Color source code
+507 **Repeat label:
+508 **New union
+509 **Union
+510 **Union name:
+511 **Use elements
+512 **Label
