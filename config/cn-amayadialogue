@@ -1,0 +1,328 @@
+# encoding= utf8
+0 文件(&F)
+1 上下文
+2 编辑(&E)
+3 XHTML(&T)
+4 XML(&X)
+5 链接(&L)
+6 视图(&V)
+7 样式(&S)
+8 属性(&A)
+9 注释
+10 协作(&O)
+11 帮助(&H)
+12 新建
+13 新建 XHTML 文档(&X)...
+14 新建 X(&T)HTML 1.1 文...
+15 新建 XHTML 1.0 Transitional 文档(&T)...
+16 新建 XHTML 1.0 Strict 文档(&R)...
+17 新建 XHTML 1.0 Basic 文档(&B)...
+18 新建 MathML 文档(&M)...
+19 新建 SVG 文档(&G)...
+20 新建 CSS 样式表(&T)...
+21 来自模板(&E)...
+22 打开文档(&O)...
+23 在新窗口打开...
+24 重新载入文档(&R)
+25 强制字符编码
+26 Unicode (UTF-8)
+27 Western (ISO-8859-1)
+28 Western (ISO-8859-15)
+29 Western (Windows-1252)
+30 Central Europe (ISO-8859-2)
+31 Central Europe (Windows-1250)
+32 South Europe (ISO-8859-3)
+33 Baltic (ISO-8859-4)
+34 Baltic (Windows-1257)
+35 Cyrillic (ISO-8859-5)
+36 Cyrillic (Windows-1251)
+37 Cyrillic (KOI8-R)
+38 Arabic (ISO-8859-6)
+39 Arabic (Windows-1256)
+40 Greek (ISO-8859-7)
+41 Greek (Windows-1253)
+42 Hebrew (ISO-8859-8)
+43 Hebrew (Windows-1255)
+44 Turkish (ISO-8859-9)
+45 Turkish (Windows-1254)
+46 Chinese Simplified (GB-2312)
+47 Japanese (ISO-2022-JP)
+48 Japanese (EUC-JP)
+49 Japanese (Shift-JIS)
+50 后退(&B)
+51 前进(&F)
+52 显示解析错误
+53 文档信息(&I)
+54 保存(&S)
+55 另存为(&A)...
+56 同步(&Y)
+57 改变文档类型
+58 删除doctype声明
+59 添加doctype声明
+60 改为XHTML 1.1
+61 改为 XHTML 1.0 Transitional
+62 改为 XHTML 1.0 Strict
+63 改为 XHTML 1.0 Basic
+64 改为 HTML 4.01 Transitional
+65 改为 HTML 4.01 Strict
+66 打印设置(&U)...
+67 打印(&P)
+68 关闭标签(&C)
+69 关闭窗口(&W)
+70 退出(&X)
+71 撤销(&U)
+72 重做(&R)
+73 剪切(&T)
+74 复制(&C)
+75 粘贴(&P)
+76 删除(&D)
+77 插入(&I)
+78 附加(&A)
+79 查找(&F)...
+80 拼写检查(&K)...
+81 转换(&M)...
+82 跳转
+83 父元素
+84 第一个子元素
+85 上一元素
+86 下一元素
+87 使用偏好(&P)
+88 使用偏好(&P)
+89 一般(&G)...
+90 浏览(&B)...
+91 发布(&U)...
+92 缓存(&C)...
+93 代理(&X)...
+94 颜色(&O)...
+95 窗口位置(&W)...
+96 注释
+97 协作(&O)
+98 更改标题...
+99 标题
+100 h1
+101 h2
+102 h3
+103 h4
+104 h5
+105 h6
+106 列表
+107 无序列表 (ul)
+108 有序列表 (ol)
+109 定义性列表 (dl)
+110 条目 (dt)
+111 说明 (dd)
+112 FORM 表单
+113 插入 FORM 表单
+114 Button (input)
+115 Checkbox (input)
+116 File selector (input)
+117 Hidden (input)
+118 Image (input)...
+119 Password (input)
+120 Radio (input)
+121 Reset (input)
+122 Submit (input)
+123 Text (input)
+124 fieldset
+125 label
+126 Menu (option)
+127 Submenu (optgroup)
+128 textarea
+129 OBJECT 对象
+130 object
+131 Parameter (param)
+132 TABLE 表格
+133 table
+134 caption
+135 colgroup
+136 col
+137 thead
+138 tbody
+139 tfoot
+140 改为数据单元格 (td)
+141 改为表头单元格 (th)
+142 与右侧单元格合并
+143 与下方单元格合并
+144 收缩水平范围
+145 收缩垂直范围
+146 选择该行
+147 插入新行
+148 附加一行
+149 选择该列
+150 插入新列
+151 附加一列
+152 粘贴在前
+153 粘贴在后
+154 MAP 区域
+155 插入 MAP
+156 圆形区域
+157 多边形区域
+158 矩形区域
+159 框架(&S)
+160 style
+161 Comment
+162 base
+163 meta
+164 link
+165 script
+166 noscript
+167 段落 (p)
+168 预格式化 (pre)
+169 ADDRESS (address)
+170 水平标尺 (hr)
+171 图片 (img)...
+172 换行 (br)
+173 层 (div)
+174 区域引用 (blockquote)
+175 内嵌 frame (iframe)
+176 ruby
+177 信息类型
+178 强调 (em)
+179 加强 (strong)
+180 引用 (cite)
+181 定义 (dfn)
+182 代码 (code)
+183 变量 (var)
+184 样例 (samp)
+185 键盘 (kbd)
+186 所写 (abbr)
+187 首字母 (acronym)
+188 插入 (ins)
+189 删除 (del)
+190 字符元素
+191 斜体 (i)
+192 粗体 (b)
+193 打字机风格 (tt)
+194 大号
+195 小号
+196 桥表 (sub)
+197 上标 (sup)
+198 Quotation 引用 (q)
+199 文字反排 (bdo)
+200 区域统计(&S)
+201 生成内容列表(&G)
+202 插入时间戳
+203 制作书籍(&M)
+204 新建数学公式 (math)
+205 基本元素(&E)
+206 普通文本 (mtext)
+207 识别符 (mi)
+208 数字 (mn)
+209 算符 (mo)
+210 空格 (mspace)
+211 特殊字符 (&&xxx;)
+212 不可见次数
+213 采用函数
+214 构架(&C)
+215 根 (mroot)
+216 平方根 (msqrt)
+217 封装 (menclose)
+218 分数 (mfrac)
+219 上标下标 (msubsup)
+220 下标 (msub)
+221 上标 (msup)
+222 顶部底部标记 (munderover)
+223 底部标记 (munder)
+224 顶部标记 (mover)
+225 括号 (mrow)
+226 多重标记 (mmultiscripts)
+227 矩阵
+228 新建矩阵 (mtable)
+229 与右侧单元格
+230 与下方单元格
+231 收缩水平范围
+232 收缩垂直范围
+233 选择该行
+234 插入新行
+235 附加一行
+236 选择该列
+237 插入新列
+238 附加一列
+239 粘贴在前
+240 粘贴在后
+241 显示图形库
+242 添加选中图形
+243 注释
+244 XML 元素...
+245 复制地址
+246 粘贴地址
+247 链接到上个目标(&L)
+248 创建或更改链接(&C)...
+249 创建目标(&T)
+250 删除 anchor(&D)
+251 添加/删除 ID(&A)...
+252 显示工具栏(&T)
+253 全屏显示(&F)
+254 显示按钮栏(&B)
+255 显示 ADDRESS(&D)
+256 显示 MAP 区域(&M)
+257 显示目标 (&T)
+258 放大
+259 缩小
+260 显示格式化的视图(&F)
+261 显示结构(&S)
+262 显示源文件(&U)
+263 显示链接(&K)
+264 显示候选(&A)
+265 显示表格内容(&O)
+266 显示时间排列
+267 水平排列视图
+268 垂直排列视图
+269 字符样式(&H)...
+270 颜色(&O)...
+271 CSS样式(&S)...
+272 格式(&F)...
+273 背景图片(&B)...
+274 创建规则(&R)...
+275 应用CLASS(&C)...
+276 显示已应用的样式...
+277 链接(&K)...
+278 打开(&N)...
+279 禁用(&D)...
+280 启用(&E)...
+281 移除(&V)...
+282 为选择区作注释
+283 为文档作注释
+284 移动到选择区
+285 存储选择区为 XPointer(&X)
+286 移动到已存储的 XPointer
+287 答复注释
+288 提交到服务器
+289 删除
+290 载入
+291 自定义查询...
+292 本地过滤器...
+293 锁定资源...
+294 取消锁定资源...
+295 查看资源属性...
+296 复制锁定信息...
+297 锁定了吗?
+298 关于 Amaya
+299 关于 Amaya at W3C
+300 索引
+301 Browsing
+302 Views
+303 Selecting
+304 Document
+305 Creating elements
+306 Attributes
+307 Characters
+308 Restructuring
+309 Links
+310 Tables
+311 Image maps
+312 Math
+313 Graphics
+314 XML support
+315 Style sheets
+316 Searching
+317 Spell Checking
+318 Publishing
+319 WebDAV
+320 Printing
+321 Numbering
+322 Making books
+323 Annotations
+324 Configuring Amaya
+325 ShortCuts
+326 Accessibility in Amaya

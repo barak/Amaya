@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+
+<!-- This XTiger template defines the structure of a deliverable
+     for the FP6 project Palette
+-->
+
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:t="http://wam.inrialpes.fr/xtiger" xml:lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
+  <title>Palette FP6-028038</title>
+  <link rel="stylesheet" type="text/css" href="Palette-Deliv.css" />
+  <t:head>
+
+    <t:component name="figure">
+      <div class="figure topfigure">
+        <t:attribute name="id" use="optional"/>
+        <img>
+           <t:attribute name="width" use="optional"/>
+        </img>
+        <p><t:use types="string">Caption</t:use></p>
+      </div>
+    </t:component>
+
+    <t:component name="codeExample">
+      <div class="example">
+        <t:attribute name="id" use="optional"/>
+        <pre><t:use types="string">Some code</t:use></pre>
+        <p><t:use types="string">Caption</t:use></p>
+      </div>
+    </t:component>
+
+    <t:component name="section">
+      <div class="section">
+        <h2 id="Intro"><t:use types="string">Section Heading</t:use></h2>
+        <t:bag types="anyElement codeExample figure">
+          <p>First paragraph of section ...</p>
+        </t:bag>
+      </div>
+    </t:component>
+
+  </t:head>
+</head>
+<body>
+
+  <div class="cover">
+    <div class="logos">
+     <img alt="Palette logo" src="PaletteLogoWording.png" width="128" style="float: left"/>
+     <img alt="IST logo" src="ISTlogo.png" style="float: right" />
+    </div>
+
+    <div class="cover-project">
+      <p class="projnum">Project no. FP6-028038</p>
+
+      <p class="projacronym">PALETTE</p>
+
+      <p class="projname">Pedagogically sustained Adaptive LEarning Through the
+exploitation of Tacit and Explicit knowledge</p>
+
+      <p class="projtype">Integrated Project</p>
+
+      <p class="programme">Technology-enhanced learning</p>
+
+      <p class="startdate">Start date of project: February 1st, 2006</p>
+
+      <p class="duration">Duration: 36 months</p>
+    </div>
+
+    <div class="cover-deliverable">
+      <h1 class="delivname">
+        <t:use types="string">D.XXX.nn: Title of Deliverable</t:use>
+      </h1>
+
+      <p class="duedate">Due date of deliverable: 
+        <t:use types="string">Month dd, 2006</t:use>
+      </p>
+
+      <p class="actualdate">Actual submission date: 
+        <t:use types="string">Month dd, 2006</t:use>
+      </p>
+
+      <p class="orgname">Organisation name of lead contractor for this deliverable:
+        <t:use types="string">Partner name</t:use>
+      </p>
+
+      <p class="status">Final version</p>
+
+      <table border="1" class="dissemination">
+        <tbody>
+           <tr>
+             <td colspan="2" class="dissemhead">Project co-funded by the European
+            Commission within the Sixth Framework Programme (2002-2006)</td>
+           </tr>
+           <tr>
+             <td colspan="2" class="dissemlevel">Dissemination Level</td>
+           </tr>
+           <tr>
+             <td class="dissemlev1"><t:use types="string">PP</t:use></td>
+             <td class="dissemlev2"><t:use types="string">Restricted to other programme
+             participants (including the Commission Services)</t:use></td>
+           </tr>
+        </tbody>
+      </table>
+
+      <p class="keywords">Keywords: 
+        <t:use types="string">list of comma-separated keywords.</t:use>
+      </p>
+
+      <p class="authors">Authors: <t:use types="string">list of authors</t:use></p>
+    </div>
+  </div>
+
+  <div class="summary">
+    <h2>Summary</h2>
+    <t:bag types="anyElement codeExample figure">
+      <p>First paragraph of summary ...</p>
+    </t:bag>
+  </div>
+
+  <div class="toc">
+    <h2>Contents</h2>
+  </div>
+
+  <div class="body">
+    <t:repeat>
+    <t:use types="section"/>
+  </t:repeat>
+
+  </div>
+</body>
+</html>

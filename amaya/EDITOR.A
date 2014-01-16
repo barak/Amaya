@@ -1,0 +1,583 @@
+APPLICATION EDITOR;
+
+USES
+	HTML, TextFile
+#ifdef XML_GENERIC
+       , XML
+#endif
+#ifdef ANNOTATIONS
+       , Annot
+       , XLink
+#endif
+#ifdef _SVG
+       , SVG
+       , Timeline
+#endif
+#ifdef BOOKMARKS
+       , Topics
+#endif
+#ifdef TEMPLATES
+       , Template
+#endif
+       , MathML;
+
+
+
+DEFAULT
+   BEGIN
+   	Init.Post -> InitAmaya;
+    DocClose.Pre -> ClosingInstance;
+	  DocClose.Post -> DocumentClosed;
+	  DocSave.Pre -> DocumentToSave;
+	  ViewOpen.Pre -> RequestView;
+    ViewClose.Pre -> ViewToClose;
+   END;
+
+MENUS
+   Document Windows:
+	BEGIN
+	File.New1 button:BHtml -> NewXHTML icon:document_html.png;
+	File.New1 button:BHtml11 -> NewXHTML11 icon:document_html.png;
+	File.New1 button:BHtmlTransitional -> NewXHTMLTransitional icon:document_html.png;
+	File.New1 button:BHtmlStrict -> NewXHTMLStrict icon:document_html.png;
+	File.New1 button:BHtmlBasic -> NewXHTMLBasic icon:document_html.png;
+	File.New1 button:BMathml -> NewMathML icon:document_math.png;
+	File.New1 button:BSvg -> NewSVG icon:document_svg.png;
+	File.New1 button:BCss -> NewCss icon:document_css.png;
+	File.New1 button:BTemplate -> NewTemplate icon:document_default.png;
+
+	File button:BOpenDoc -> OpenDoc icon:open.png;
+	File button:BOpenInNewWindow -> OpenDocInNewWindow icon:open.png;
+	File button:BReload -> Reload icon:reload.png;
+	File.Charset1 button:BUTF_8 -> ReadAsUTF_8;
+	File.Charset1 button:BISO_8859_1 -> ReadAsISO_8859_1;
+	File.Charset1 button:BISO_8859_15 -> ReadAsISO_8859_15;
+	File.Charset1 button:BWINDOWS_1252 -> ReadAsWINDOWS_1252;
+	File.Charset1 button:BISO_8859_2 -> ReadAsISO_8859_2;
+	File.Charset1 button:BWINDOWS_1250 -> ReadAsWINDOWS_1250;
+	File.Charset1 button:BISO_8859_3 -> ReadAsISO_8859_3;
+	File.Charset1 button:BISO_8859_4 -> ReadAsISO_8859_4;
+	File.Charset1 button:BWINDOWS_1257 -> ReadAsWINDOWS_1257;
+	File.Charset1 button:BISO_8859_5 -> ReadAsISO_8859_5;
+	File.Charset1 button:BWINDOWS_1251 -> ReadAsWINDOWS_1251;
+	File.Charset1 button:BKOI8_R -> ReadAsKOI8_R;
+	File.Charset1 button:BISO_8859_6 -> ReadAsISO_8859_6;
+	File.Charset1 button:BWINDOWS_1256 -> ReadAsWINDOWS_1256;
+	File.Charset1 button:BISO_8859_7 -> ReadAsISO_8859_7;
+	File.Charset1 button:BWINDOWS_1253 -> ReadAsWINDOWS_1253;
+	File.Charset1 button:BISO_8859_8 -> ReadAsISO_8859_8;
+	File.Charset1 button:BWINDOWS_1255 -> ReadAsWINDOWS_1255;
+	File.Charset1 button:BISO_8859_9 -> ReadAsISO_8859_9;
+	File.Charset1 button:BWINDOWS_1254 -> ReadAsWINDOWS_1254;
+	File.Charset1 button:BGB_2312 -> ReadAsGB_2312;
+	File.Charset1 button:BISO_2022_JP -> ReadAsISO_2022_JP;
+	File.Charset1 button:BEUC_JP -> ReadAsEUC_JP;
+	File.Charset1 button:BSHIFT_JIS -> ReadAsSHIFT_JIS;
+	File button:BBack -> GotoPreviousHTML icon:back.png;
+	File button:BForward -> GotoNextHTML icon:forward.png;
+	File button:BShowLogFile -> ShowLogFile icon:ledred.png;
+	File button:BDocInfo -> DocumentInfo icon:document_info.png;
+	File Separator;
+	File button:BSave -> SaveDocument icon:save.png;
+	File button:BSaveAs -> SaveDocumentAs icon:saveas.png;
+	File button:BSynchro -> Synchronize icon:synchronize.png;
+	File.Doctype1 button:BRemoveDoctype -> RemoveDoctype;
+	File.Doctype1 button:BAddDoctype -> AddDoctype;
+	File.Doctype1 Separator;
+	File.Doctype1 button:BDoctypeXhtml11 -> CreateDoctypeXhtml11;
+	File.Doctype1 button:BDoctypeXhtmlTransitional -> CreateDoctypeXhtmlTransitional;
+	File.Doctype1 button:BDoctypeXhtmlStrict -> CreateDoctypeXhtmlStrict;
+	File.Doctype1 button:BDoctypeXhtmlBasic -> CreateDoctypeXhtmlBasic;
+	File.Doctype1 button:BDoctypeHtmlTransitional -> CreateDoctypeHtmlTransitional;
+	File.Doctype1 button:BDoctypeHtmlStrict -> CreateDoctypeHtmlStrict;
+	File Separator;
+	File button:BSetUpandPrint -> SetupAndPrint icon:setup_and_print.png;
+	File button:BPrint -> PrintAs icon:print.png;
+	File Separator;
+	File button:BCloseTab -> AmayaCloseTab icon:close_tab.png;
+	File button:BCloseWindow -> AmayaCloseWindow;
+	File button:BExit -> AmayaClose icon:exit.png;
+
+	Context_ button:BOpenDoc -> OpenDoc icon:open.png;
+	Context_ button:BCloseTab -> AmayaCloseTab icon:close_tab.png;
+
+	Edit_ button:BUndo -> TtcUndo icon:undo.png;
+	Edit_ button:BRedo -> TtcRedo icon:redo.png;
+	Edit_ Separator;
+	Edit_ button:BCut -> TtcCutSelection icon:cut.png;
+	Edit_ button:BCopy -> TtcCopySelection icon:copy.png;
+	Edit_ button:BPaste -> PasteBuffer icon:paste.png;
+	Edit_ button:BClear -> TtcDeleteSelection icon:editdelete.png;
+	Edit_ button:BInsertBefore -> InsertBefore icon:insert.png;
+	Edit_ button:BInsertAfter -> InsertAfter icon:append.png;
+	Edit_ Separator;
+	Edit_ button:BFind -> TtcSearchText icon:find.png;
+	Edit_ button:BSpellCheck -> SpellCheck icon:spellcheck.png;
+	Edit_ button:BTransform -> TransformType;
+	Edit_.NavGoto button:BParentElement -> TtcParentElement;
+	Edit_.NavGoto button:BChildElement -> TtcChildElement;
+	Edit_.NavGoto button:BPreviousElement -> TtcPreviousElement;
+	Edit_.NavGoto button:BNextElement -> TtcNextElement;
+	Edit_ Separator;
+	Edit_ button:BConfigure -> ConfigAmaya icon:preferences.png;
+	Edit_.Coptions button:BConfigGeneral -> ConfigGeneral;
+	Edit_.Coptions button:BConfigBrowse -> ConfigBrowse;
+	Edit_.Coptions button:BConfigPublish -> ConfigPublish;
+	Edit_.Coptions button:BConfigCache -> ConfigCache;
+	Edit_.Coptions button:BConfigProxy -> ConfigProxy;
+	Edit_.Coptions button:BConfigColor -> ConfigColor;
+	Edit_.Coptions button:BConfigGeometry -> ConfigGeometry;
+	Edit_.Coptions button:BConfigAnnotations -> ConfigAnnot;
+	Edit_.Coptions button:BCoopConfig -> CooperationConfig;
+
+	Types button:BTitle -> ChangeTitle;
+	Types Separator;
+	Types.Heading button:BH1 -> CreateHeading1 icon:XHTML_H1.png;
+	Types.Heading button:BH2 -> CreateHeading2 icon:XHTML_H2.png;
+	Types.Heading button:BH3 -> CreateHeading3 icon:XHTML_H3.png;
+	Types.Heading button:BH4 -> CreateHeading4;
+	Types.Heading button:BH5 -> CreateHeading5;
+	Types.Heading button:BH6 -> CreateHeading6;
+
+	Types.Lists button:BBulletedList -> CreateList icon:XHTML_Bullet.png;
+	Types.Lists button:BNumberedList -> CreateNumberedList icon:XHTML_Num.png;
+	Types.Lists button:BDefinitionList -> CreateDefinitionList icon:XHTML_DL.png;
+	Types.Lists Separator;
+	Types.Lists button:BTerm -> CreateDefinitionTerm icon:XHTML_DT.png;
+	Types.Lists button:BDefinition -> CreateDefinitionDef icon:XHTML_DD.png;
+
+	Types.Form button:BForm -> CreateForm icon:XHTML_form.png;
+	Types.Form Separator;
+	Types.Form button:BPushButton -> CreatePushButton;
+	Types.Form button:BToggle -> CreateToggle icon:XHTML_check.png;
+	Types.Form button:BFileInput -> CreateFileInput;
+	Types.Form button:BHiddenInput -> CreateHiddenInput;
+	Types.Form button:BImageInput -> CreateImageInput;
+	Types.Form button:BPasswordInput -> CreatePasswordInput;
+	Types.Form button:BRadio -> CreateRadio icon:XHTML_radio.png;
+	Types.Form button:BReset -> CreateReset;
+	Types.Form button:BSubmit -> CreateSubmit icon:XHTML_submit.png;
+	Types.Form button:BTextInput -> CreateTextInput icon:XHTML_text.png;
+	Types.Form button:BFieldset -> CreateFieldset;
+	Types.Form button:BLabel -> CreateLabel;
+	Types.Form button:BOption -> CreateOption icon:XHTML_menu.png;
+	Types.Form button:BOptionGroup -> CreateOptGroup;
+	Types.Form button:BTextArea -> CreateTextArea;
+
+	Types.Object button:BObject -> CreateObject icon:XHTML_object.png;
+	Types.Object button:BParameter -> CreateParameter;
+
+	Types.Table button:BTable -> CreateTable icon:XHTML_Table.png;
+	Types.Table Separator;
+	Types.Table button:BCaption -> CreateCaption;
+	Types.Table button:BColgroup -> CreateColgroup;
+	Types.Table button:BCol -> CreateCol;
+	Types.Table button:BTHead -> CreateTHead;
+	Types.Table button:BTBody -> CreateTBody;
+	Types.Table button:BTFoot -> CreateTFoot;
+	Types.Table Separator;
+	Types.Table button:BDataCell -> ChangeToDataCell;
+	Types.Table button:BHeadingCell -> ChangeToHeadingCell;
+	Types.Table button:BCellHExtend -> CellHorizExtend;
+	Types.Table button:BCellVExtend -> CellVertExtend;
+	Types.Table button:BCellHShrink -> CellHorizShrink;
+	Types.Table button:BCellVShrink -> CellVertShrink;
+	Types.Table button:BSelectRow -> SelectRow;
+	Types.Table button:BCreateRowB -> CreateRowBefore icon:insert_table_row_before.png;
+	Types.Table button:BCreateRowA -> CreateRowAfter icon:insert_table_row_after.png;
+	Types.Table button:BSelectColumn -> SelectColumn;
+	Types.Table button:BCreateColumnB -> CreateColumnBefore icon:insert_table_col_before.png;
+	Types.Table button:BCreateColumnA -> CreateColumnAfter icon:insert_table_col_after.png;
+	Types.Table button:BPasteBefore -> PasteBefore icon:insert.png;
+	Types.Table button:BPasteAfter -> PasteAfter icon:append.png;
+	
+	Types.AreaMap button:BMap -> CreateMap;
+	Types.AreaMap button:BCircle -> CreateAreaCircle icon:circle.png;
+	Types.AreaMap button:BPoly -> CreateAreaPoly icon:polygon.png;
+	Types.AreaMap button:BRectangle -> CreateAreaRect icon:rectangle.png;
+
+	Types.StructTypes button:BStyle -> CreateStyle;
+	Types.StructTypes button:BComment -> CreateComment icon:XHTML_Comment.png;
+	Types.StructTypes button:BBase -> CreateBase;
+	Types.StructTypes button:BMeta -> CreateMeta;
+	Types.StructTypes button:BLink -> CreateLinkInHead;
+	Types.StructTypes button:BScript -> CreateScript;
+	Types.StructTypes button:BNoScript -> CreateNOSCRIPT;
+
+	Types button:BParagraph -> CreateParagraph;
+	Types button:BPreformatted -> CreatePreformatted;
+	Types button:BAddress -> CreateAddress  icon:XHTML_add.png;
+	Types button:BRule -> CreateHorizontalRule icon:XHTML_hr.png;
+	Types button:BImage -> CreateImage icon:XHTML_Image.png;
+	Types button:BBreak -> CreateBreak icon: XHTML_br.png;
+	Types button:BDivision -> CreateDivision icon:XHTML_Div.png;
+	Types button:BBlockQuote -> CreateBlockQuote icon:XHTML_quote.png;
+	Types button:BIFrame -> CreateIFrame;
+	Types button:BRuby -> CreateRuby;
+  Types.Phrase toggle:TEmphasis -> SetOnOffEmphasis;
+  Types.Phrase toggle:TStrong -> SetOnOffStrong;
+  Types.Phrase toggle:TCite -> SetOnOffCite;
+  Types.Phrase toggle:TDefinition -> SetOnOffDefinition;
+  Types.Phrase toggle:TCode -> SetOnOffCode;
+  Types.Phrase toggle:TVariable -> SetOnOffVariable;
+  Types.Phrase toggle:TSample -> SetOnOffSample;
+  Types.Phrase toggle:TKeyboard -> SetOnOffKeyboard;
+	Types.Phrase toggle:TAbbreviation -> SetOnOffAbbr;
+	Types.Phrase toggle:TAcronym -> SetOnOffAcronym;
+	Types.Phrase toggle:TInsertion -> SetOnOffINS;
+	Types.Phrase toggle:TDeletion -> SetOnOffDEL;
+
+  Types.Font toggle:TItalic -> SetOnOffItalic;
+  Types.Font toggle:TBold -> SetOnOffBold;
+  Types.Font toggle:TTeletype -> SetOnOffTeletype;
+  Types.Font toggle:TBig -> SetOnOffBig;
+  Types.Font toggle:TSmall -> SetOnOffSmall;
+  Types.Font toggle:TSub -> SetOnOffSub;
+  Types.Font toggle:TSup -> SetOnOffSup;
+  Types.Font toggle:TQuotation -> SetOnOffQuotation;
+  Types.Font toggle:TBDO -> SetOnOffBDO;
+  Types Separator;
+
+	Types button:TSectionNumber -> SectionNumbering;
+	Types button:BMakeToc -> MakeToc;
+	Types button:BDate -> CreateDate icon:XHTML_date.png;
+	Types button:BMakeBook -> MakeBook;
+
+  XMLTypes button:BDisplayMath -> CreateMath icon:MATHML_Bmath.png;
+  XMLTypes.MathElement button:BMText -> CreateMTEXT;
+  XMLTypes.MathElement button:BMIdentifier -> CreateMI;
+  XMLTypes.MathElement button:BMNumber -> CreateMN;
+  XMLTypes.MathElement button:BMOperator -> CreateMO;
+  XMLTypes.MathElement button:BMSpace -> CreateMSPACE;
+  XMLTypes.MathElement button:BMEntity -> CreateMathEntity icon:MATHML_greek.png;
+  XMLTypes.MathElement button:BMInvisibleTimes -> CreateInvisibleTimes;
+  XMLTypes.MathElement button:BMApplyFunction -> CreateApplyFunction;
+  XMLTypes.MathConstruct button:BNthRoot -> CreateMROOT icon:MATHML_root.png;
+  XMLTypes.MathConstruct button:BSquareRoot -> CreateMSQRT icon:MATHML_sqrt.png;
+  XMLTypes.MathConstruct button:BEnclose -> CreateMENCLOSE icon:MATHML_enclose.png;
+  XMLTypes.MathConstruct button:BFraction -> CreateMFRAC icon:MATHML_frac.png;
+  XMLTypes.MathConstruct button:BSubscriptAndSuperscript -> CreateMSUBSUP icon:MATHML_subsup.png;
+  XMLTypes.MathConstruct button:BSubscript -> CreateMSUB icon:MATHML_sub.png;
+  XMLTypes.MathConstruct button:BSuperscript -> CreateMSUP icon:MATHML_sup.png;
+  XMLTypes.MathConstruct button:BUnderAndOver -> CreateMUNDEROVER icon:MATHML_overunder.png;
+  XMLTypes.MathConstruct button:BUnder -> CreateMUNDER icon:MATHML_under.png;
+  XMLTypes.MathConstruct button:BOver -> CreateMOVER icon:MATHML_over.png;
+  XMLTypes.MathConstruct button:BParentheses -> CreateMPARENTHESIS icon:MATHML_parenthesis.png;
+  XMLTypes.MathConstruct button:BMultiscripts -> CreateMMULTISCRIPTS icon:MATHML_mscript.png;
+  XMLTypes.MathMatrics button:BMatrix -> CreateMTABLE icon:MATHML_matrix.png;
+  XMLTypes.MathMatrics Separator;
+	XMLTypes.MathMatrics button:BMCellHExtend -> CellHorizExtend;
+	XMLTypes.MathMatrics button:BMCellVExtend -> CellVertExtend;
+	XMLTypes.MathMatrics button:BMCellHShrink -> CellHorizShrink;
+	XMLTypes.MathMatrics button:BMCellVShrink -> CellVertShrink;
+	XMLTypes.MathMatrics button:BMSelectRow -> SelectRow;
+	XMLTypes.MathMatrics button:BMCreateRowB -> CreateRowBefore;
+	XMLTypes.MathMatrics button:BMCreateRowA -> CreateRowAfter;
+	XMLTypes.MathMatrics button:BMSelectColumn -> SelectColumn;
+	XMLTypes.MathMatrics button:BMCreateColumnB -> CreateColumnBefore;
+	XMLTypes.MathMatrics button:BMCreateColumnA -> CreateColumnAfter;
+	XMLTypes.MathMatrics button:BMPasteBefore -> PasteBefore;
+	XMLTypes.MathMatrics button:BMPasteAfter -> PasteAfter;
+	XMLTypes Separator;
+  XMLTypes button:BShowLibrary -> ShowLibrary;
+	XMLTypes button:BAddNewModel -> AddNewModelIntoLibraryForm;
+	XMLTypes Separator;
+	XMLTypes button:BXMLComment -> CreateComment icon:XHTML_Comment.png;
+	XMLTypes button:BXMLElement -> CreateXMLElementMenu;
+
+	Links button:BCopyLocation -> CopyLocation;
+	Links button:BPasteLocation -> PasteLocation;
+	Links button:BLinkTarget -> LinkToPreviousTarget;
+	Links button:BCreateLink -> CreateOrChangeLink icon:XHTML_Link.png;
+	Links button:BCreateTarget -> CreateTarget icon:XHTML_Target.png;
+	Links button:BDeleteAnchor -> DeleteAnchor icon:XHTML_DelTarget.png;
+	Links button:BMakeID -> MakeIDMenu;
+
+	Views toggle:TShowPanel -> ShowPanel icon:panel_on_off.png;
+	Views button:BFullScreen -> FullScreen icon:fullscreen.png;
+	Views toggle:TShowButtonbar -> ShowButtons;
+	Views toggle:TShowTextZone -> ShowAddress;
+	Views toggle:TShowMapAreas -> ShowMapAreas;
+	Views toggle:TShowTargets -> ShowTargets;
+	Views toggle:TZoomIn -> ZoomIn icon:zoom_plus.png;
+	Views toggle:TZoomOut -> ZoomOut icon:zoom_minus.png;
+	Views Separator;
+	Views button:BShowFormatted -> ShowFormatted;
+	Views button:BShowStructure -> ShowStructure;
+	Views button:BShowSource -> ShowSource;
+	Views button:BShowLinks -> ShowLinks;
+	Views button:BShowAlternate -> ShowAlternate;
+	Views button:BShowToC -> ShowToC;
+	Views button:BShowTimeLine -> ShowTimeLineWindow;
+	Views toggle:TSplitHorizontally -> SplitHorizontally;
+	Views toggle:TSplitVertically -> SplitVertically;
+
+  Style button:BCharacterStyle -> TtcChangeCharacters;
+  Style button:BColors -> TtcChangeColors;
+  Style button:BCSSStyle -> SetCSSStyle icon:css.png;
+  Style button:BFormat -> TtcChangeFormat;
+	Style button:BBackgroundImage -> ChangeBackgroundImage icon:BG_repeat.png;
+	Style Separator;
+
+	Style button:BCreateClass -> CreateClass;
+	Style button:BApplyClass -> ApplyClass;
+	Style button:BShowAppliedStyle -> ShowAppliedStyle;
+  Style Separator;
+	Style button:BLinkCSS -> LinkCSS;
+	Style button:BOpenCSS -> OpenCSS;
+	Style button:BDisableCSS -> DisableCSS;
+	Style button:BEnableCSS -> EnableCSS;
+	Style button:BRemoveCSS -> RemoveCSS;
+
+	Attributes_;
+
+	Annotations_ button:BAnnotateSelection -> AnnotateSelection;
+	Annotations_ button:BAnnotateDocument -> AnnotateDocument;
+	Annotations_ Separator;
+	Annotations_ button:BMoveAnnotSel -> MoveAnnotationSel;
+	Annotations_ button:BMemorizeXPtr -> XPointer_bufferStore;
+	Annotations_ button:BMoveAnnotXPtr -> MoveAnnotationXPtr;
+	Annotations_ Separator;
+	Annotations_ button:BReplyToAnnotation -> ReplyToAnnotation;
+	Annotations_ Separator;
+	Annotations_ button:BPostAnnot -> PostAnnotation;
+	Annotations_ button:BDeleteAnnot -> DeleteAnnotation;
+	Annotations_ button:BLoadAnnotations -> LoadAnnotations;
+	Annotations_ Separator;
+	Annotations_ button:BCustomQuery -> CustomQuery;
+	Annotations_ button:BFilterAnnotations -> FilterAnnot;
+
+	Cooperation_ button:BLock -> LockDocument;
+	Cooperation_ button:BUnlock -> UnlockDocument;
+	Cooperation_ button:BProp -> PropDocument;
+	Cooperation_ button:BCopyLock -> CopyLockInformation;
+	Cooperation_ Separator;
+  Cooperation_ toggle:BLockIndicator -> LockIndicator;
+
+	Help_ button:BInformation -> HelpAmaya icon:about.png;
+	Help_ button:BAtW3C -> HelpAtW3C;
+	Help_ button:BHelpIndex -> HelpIndex;
+	Help_ Separator;
+	Help_ button:BHelpBrowsing -> HelpBrowsing;
+	Help_ button:BHelpViews -> HelpViews;
+	Help_ button:BHelpSelecting -> HelpSelecting;
+	Help_ button:BHelpDocument -> HelpDocument;
+	Help_ button:BHelpCreating -> HelpCreating;
+	Help_ button:BHelpAttributes -> HelpAttributes;
+	Help_ button:BHelpText -> HelpEditChar;
+	Help_ button:BHelpChanging -> HelpChanging;
+	Help_ button:BHelpLinks -> HelpLinks;
+	Help_ button:BHelpTables -> HelpTables;
+	Help_ button:BHelpImageMaps -> HelpImageMaps;
+	Help_ button:BHelpMath -> HelpMath;
+	Help_ button:BHelpSVG -> HelpSVG;
+	Help_ button:BHelpXml -> HelpXml;
+	Help_ button:BHelpStyleSheets -> HelpStyleSheets;
+	Help_ button:BSearching -> HelpSearching;
+	Help_ button:BHelpSpellChecking -> HelpSpellChecking;
+	Help_ button:BHelpPublishing -> HelpPublishing;
+	Help_ button:BHelpWebDAV -> HelpWebDAV;
+	Help_ button:BHelpPrinting -> HelpPrinting;
+	Help_ button:BHelpNumbering -> HelpNumbering;
+	Help_ button:BHelpMakeBook -> HelpMakeBook;
+	Help_ button:BHelpAnnotation -> HelpAnnotation;
+	Help_ button:BHelpConfigure -> HelpConfigure;
+	Help_ button:BHelpShortCuts -> HelpShortCuts;
+	Help_ button:BHelpAccess -> HelpAccess;
+	END;
+
+FUNCTIONS
+  HelpLocal,
+  DoAction,
+  NextLinkOrFormElement,
+  PreviousLinkOrFormElement,
+  StopTransfer,
+  GoToHome,
+  ShowLibrary,
+  AddNewModelIntoLibraryForm,
+  DoLeftAlign,
+  DoCenter,
+  DoRightAlign,
+  DoJustify,
+  ShowHSplitToggle,
+  ShowVSplitToggle,
+  HideHSplitToggle,
+  HideVSplitToggle,
+  CreateMIntegral,
+  CreateMSum,
+  CreateMOVERARROW,
+  CreateMOVERBAR,
+  CreateMOVERBREVE,
+  CreateMOVERCHECK,
+  CreateMOVERDOT,
+  CreateMOVERHAT,
+  CreateMOVERTILDE,
+  CreateMABS,
+  CreateMALEPHSUB,
+  CreateMAND,
+  CreateMANDBINARY,
+  CreateMAPPROX,
+  CreateMARG,
+  CreateMARROW1,
+  CreateMARROW2,
+  CreateMCARD,
+  CreateMCARD2,
+  CreateMCARTESIANPRODUCT,
+  CreateMCARTESIANPRODUCTBINARY,
+  CreateMCEILING,
+  CreateMCODOMAIN,
+  CreateMCOMBINATION,
+  CreateMCOMPLEMENT,
+  CreateMCOMPLEMENTSUB,
+  CreateMCOMPLEXCARTESIAN,
+  CreateMCOMPLEXCARTESIAN2,
+  CreateMCOMPLEXES,
+  CreateMCOMPLEXPOLAR,
+  CreateMCOMPOSE,
+  CreateMCOMPOSEBINARY,
+  CreateMCONGRU,
+  CreateMCONJUGATE,
+  CreateMCOUPLE,
+  CreateMCURL,
+  CreateMDETERMINANT,
+  CreateMDETERMINANT2,
+  CreateMDIAGONALINTERSECTION,
+  CreateMDIFF2,
+  CreateMDIFF,
+  CreateMDIRECTSUM,
+  CreateMDIVERGENCE,
+  CreateMDIVIDE,
+  CreateMDOMAIN,
+  CreateMCLASSICALFUNCTIONS,
+  CreateMEMPTYSET,
+  CreateMEQ,  CreateMLEQBINARY,
+  CreateMEQUIVALENT,
+  CreateMEQUIVALENT2,
+  CreateMEQUIVALENT2BINARY,
+  CreateMEQUIVALENTBINARY,
+  CreateMEQUIVALENTUNDER,
+  CreateMENCLOSE,
+  CreateMEULERGAMMA,
+  CreateMEXISTS,
+  CreateMEXISTS2,
+  CreateMEXPONENTIALE,
+  CreateMFACTORIAL,
+  CreateMFACTOROF,
+  CreateMFALSE,
+  CreateMFENCE,
+  CreateMFLOOR,
+  CreateMFORALL,
+  CreateMGCD,
+  CreateMGEQ,  CreateMGEQBINARY,
+  CreateMGRAD,
+  CreateMGT,
+  CreateMIDENT,
+  CreateMIMAGE,
+  CreateMIMAGINARY,
+  CreateMIMAGINARYI,
+  CreateMIMPLIES,
+  CreateMIN,
+  CreateMINF,
+  CreateMINFINITY,
+  CreateMINFUNDER,
+  CreateMINT2,
+  CreateMINTEGERS,
+  CreateMINTERSECT,
+  CreateMINTERSECTBINARY,
+  CreateMINTERSECTUNDER,
+  CreateMINTUNDER,
+  CreateMINVERSE,
+  CreateMINVERSE,
+  CreateMISOMORPHIC,
+  CreateMLCM,
+  CreateMLEQ,
+  CreateMLAPLACIAN,
+  CreateMLAMBDA,
+  CreateMLIM,
+  CreateMLIMTENDSTO,
+  CreateMLISTEXTENSION,
+  CreateMLISTSEPARATION,
+  CreateMLT,
+  CreateMMAP,
+  CreateMMATRIX,
+  CreateMMAX,
+  CreateMMAXUNDER,
+  CreateMMEAN,
+  CreateMMEDIAN,
+  CreateMMIN,
+  CreateMMINUNDER,
+  CreateMMINUSBINARY,
+  CreateMMINUSUNARY,
+  CreateMMODE,
+  CreateMMOMENT,
+  CreateMNATURALS,
+  CreateMNEQ,
+  CreateMNOT,
+  CreateMNOTANUMBER,
+  CreateMNOTIN,
+  CreateMNOTPRSUBSET,
+  CreateMNOTSUBSET,
+  CreateMNUPLET,
+  CreateMOMEGASUB,
+  CreateMOR,
+  CreateMORBINARY,
+  CreateMORTHOGONAL,
+  CreateMORTHOGONALCOMPLEMENT,
+  CreateMOUTERPRODUCT,
+  CreateMPARTIALDIFF,
+  CreateMPARTIALDIFF2,
+  CreateMPI,
+  CreateMPIECEWISE,
+  CreateMPLUS,
+  CreateMPOWER,
+  CreateMPOWERSET,
+  CreateMPRIMES,
+  CreateMPRODUNDER,
+  CreateMPRODUNDEROVER,
+  CreateMPRSUBSET,
+  CreateMPRSUBSETBINARY,
+  CreateMQUOTIENT,
+  CreateMRATIONNALS,
+  CreateMREAL,
+  CreateMREALS,
+  CreateMREM,
+  CreateMSCALARPRODUCT,
+  CreateMSDEV,
+  CreateMSELECTOR,
+  CreateMSETDIFF,
+  CreateMSETEXTENSION,
+  CreateMSETSEPARATION,
+  CreateMSETSYMDIFF,
+  CreateMSUBSET,
+  CreateMSUBSETBINARY,
+  CreateMSUMUNDER,
+  CreateMSUP2,
+  CreateMSUPMINUS,
+  CreateMSUPPLUS,
+  CreateMSUPUNDER,
+  CreateMTENDSTO,
+  CreateMTENDSTOTENDSTO,
+  CreateMTIMES,
+  CreateMTIMESBINARY,
+  CreateMTRANSPOSE,
+  CreateMTRUE,
+  CreateMUNION,
+  CreateMUNIONUNARY,
+  CreateMUNIONUNDER,
+  CreateMUNIONBINARY,
+  CreateMVARIANCE,
+  CreateMVECTORPRODUCT,
+  CreateMVECTORROW,
+  CreateMVECTORCOLUMN,
+  CreateMXOR,
+  CreateMLL,
+  CreateMGG,
+  CreateMNORM,
+  CreateMSYMBOLOO,
+  CreateMSYMBOLO,
+  CreateMPARALLEL,
+  CreateMQUATERNIONS,
+  CreateMOVERFROWN,
+  CreateMROW,
+  CreateMXORBINARY;
+END
