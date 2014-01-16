@@ -1,0 +1,311 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>librdf_stream_add_map</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Redland RDF Application Framework API Reference Manual"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="RDF Statement Stream Class"
+HREF="stream.html#AEN12117"><LINK
+REL="PREVIOUS"
+TITLE="librdf_stream_get_context"
+HREF="r12297.html"><LINK
+REL="NEXT"
+TITLE="librdf_new_stream_from_node_iterator"
+HREF="r12376.html"></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Redland RDF Application Framework API Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="r12297.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="r12376.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><H1
+><A
+NAME="AEN12324"
+></A
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_stream_add_map</SPAN
+></SPAN
+></H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN12328"
+></A
+><H2
+>Name</H2
+>librdf_stream_add_map&nbsp;--&nbsp;      Add a librdf_stream mapping function
+ </DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN12331"
+></A
+><H2
+>Synopsis</H2
+><DIV
+CLASS="FUNCSYNOPSIS"
+><A
+NAME="AEN12333"
+></A
+><P
+></P
+><P
+><CODE
+><CODE
+CLASS="FUNCDEF"
+>int <TT
+CLASS="FUNCTION"
+>librdf_stream_add_map </TT
+></CODE
+>(librdf_stream* <TT
+CLASS="PARAMETER"
+><I
+>stream</I
+></TT
+>, librdf_stream_map_handler <TT
+CLASS="PARAMETER"
+><I
+>map_function</I
+></TT
+>, librdf_stream_map_free_context_handler <TT
+CLASS="PARAMETER"
+><I
+>free_context</I
+></TT
+>, void * <TT
+CLASS="PARAMETER"
+><I
+>map_context</I
+></TT
+>);</CODE
+></P
+><P
+></P
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN12345"
+></A
+><H2
+>Arguments</H2
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>stream</I
+></TT
+></DT
+><DD
+><P
+>      the stream
+    </P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>map_function</I
+></TT
+></DT
+><DD
+><P
+>     -- undescribed --
+    </P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>free_context</I
+></TT
+></DT
+><DD
+><P
+>      the function to use to free the context (or NULL)
+    </P
+></DD
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>map_context</I
+></TT
+></DT
+><DD
+><P
+>      the context to pass to the map function
+    </P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN12368"
+></A
+><H2
+>Description</H2
+><P
+>   Adds an stream mapping function which operates over the stream to
+   select which elements are returned; it will be applied as soon as
+   this method is called.
+   </P
+><P
+>&#13;   Several mapping functions can be added and they are applied in
+   the order given
+   </P
+><P
+>&#13;   The mapping function should return non 0 to allow the element to be
+   returned.
+ </P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN12373"
+></A
+><H2
+>Return value</H2
+><P
+>    Non 0 on failure
+ </P
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="r12297.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="r12376.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_stream_get_context</SPAN
+></SPAN
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="stream.html#AEN12117"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_stream_from_node_iterator</SPAN
+></SPAN
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

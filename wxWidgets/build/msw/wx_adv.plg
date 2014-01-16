@@ -1,0 +1,566 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: adv - Win32 DLL Unicode Release--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxmsw28u_adv_vc_custom.dll - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: adv - Win32 DLL Unicode Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxmsw28ud_adv_vc_custom.dll - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: adv - Win32 Universal Unicode Release--------------------
+</h3>
+<h3>Command Lines</h3>
+Build : warning : failed to (or don't know how to) build 'C:\src\wxWidgets\lib\vc_lib\wxmswuniv28u_core.lib'
+
+Build : warning : failed to (or don't know how to) build 'C:\src\wxWidgets\lib\vc_lib\wxexpat.lib'
+
+Build : warning : failed to (or don't know how to) build 'C:\src\wxWidgets\lib\vc_lib\wxregexu.lib'
+
+Creating temporary file "C:\DOCUME~1\amaya\LOCALS~1\Temp\RSP3A0.tmp" with contents
+[
+/nologo /out:"..\..\lib\vc_lib\wxmswuniv28u_adv.lib" 
+.\vc_mswunivu\adv\animatecmn.obj
+.\vc_mswunivu\adv\datavcmn.obj
+.\vc_mswunivu\adv\dummy.obj
+.\vc_mswunivu\adv\taskbarcmn.obj
+.\vc_mswunivu\adv\aboutdlg.obj
+.\vc_mswunivu\adv\joystick.obj
+.\vc_mswunivu\adv\sound.obj
+.\vc_mswunivu\adv\taskbar.obj
+.\vc_mswunivu\adv\aboutdlgg.obj
+.\vc_mswunivu\adv\animateg.obj
+.\vc_mswunivu\adv\bmpcboxg.obj
+.\vc_mswunivu\adv\calctrl.obj
+.\vc_mswunivu\adv\datavgen.obj
+.\vc_mswunivu\adv\datectlg.obj
+.\vc_mswunivu\adv\grid.obj
+.\vc_mswunivu\adv\gridctrl.obj
+.\vc_mswunivu\adv\gridsel.obj
+.\vc_mswunivu\adv\helpext.obj
+.\vc_mswunivu\adv\hyperlink.obj
+.\vc_mswunivu\adv\laywin.obj
+.\vc_mswunivu\adv\odcombo.obj
+.\vc_mswunivu\adv\propdlg.obj
+.\vc_mswunivu\adv\sashwin.obj
+.\vc_mswunivu\adv\splash.obj
+.\vc_mswunivu\adv\tipdlg.obj
+.\vc_mswunivu\adv\wizard.obj
+\src\wxWidgets\lib\vc_lib\wxtiff.lib
+\src\wxWidgets\lib\vc_lib\wxjpeg.lib
+\src\wxWidgets\lib\vc_lib\wxpng.lib
+\src\wxWidgets\lib\vc_lib\wxregexu.lib
+\src\wxWidgets\lib\vc_lib\wxexpat.lib
+\src\wxWidgets\lib\vc_lib\wxmswuniv28u_core.lib
+]
+Creating command line "link.exe -lib @C:\DOCUME~1\amaya\LOCALS~1\Temp\RSP3A0.tmp"
+<h3>Output Window</h3>
+Creating library...
+Microsoft (R) Library Manager Version 6.00.8168
+Copyright (C) Microsoft Corp 1992-1998. All rights reserved.
+
+/nologo "/out:..\..\lib\vc_lib\wxmswuniv28u_adv.lib" 
+.\vc_mswunivu\adv\animatecmn.obj 
+.\vc_mswunivu\adv\datavcmn.obj 
+.\vc_mswunivu\adv\dummy.obj 
+.\vc_mswunivu\adv\taskbarcmn.obj 
+.\vc_mswunivu\adv\aboutdlg.obj 
+.\vc_mswunivu\adv\joystick.obj 
+.\vc_mswunivu\adv\sound.obj 
+.\vc_mswunivu\adv\taskbar.obj 
+.\vc_mswunivu\adv\aboutdlgg.obj 
+.\vc_mswunivu\adv\animateg.obj 
+.\vc_mswunivu\adv\bmpcboxg.obj 
+.\vc_mswunivu\adv\calctrl.obj 
+.\vc_mswunivu\adv\datavgen.obj 
+.\vc_mswunivu\adv\datectlg.obj 
+.\vc_mswunivu\adv\grid.obj 
+.\vc_mswunivu\adv\gridctrl.obj 
+.\vc_mswunivu\adv\gridsel.obj 
+.\vc_mswunivu\adv\helpext.obj 
+.\vc_mswunivu\adv\hyperlink.obj 
+.\vc_mswunivu\adv\laywin.obj 
+.\vc_mswunivu\adv\odcombo.obj 
+.\vc_mswunivu\adv\propdlg.obj 
+.\vc_mswunivu\adv\sashwin.obj 
+.\vc_mswunivu\adv\splash.obj 
+.\vc_mswunivu\adv\tipdlg.obj 
+.\vc_mswunivu\adv\wizard.obj 
+\src\wxWidgets\lib\vc_lib\wxtiff.lib 
+\src\wxWidgets\lib\vc_lib\wxjpeg.lib 
+\src\wxWidgets\lib\vc_lib\wxpng.lib 
+\src\wxWidgets\lib\vc_lib\wxregexu.lib 
+LINK : fatal error LNK1181: cannot open input file "\src\wxWidgets\lib\vc_lib\wxregexu.lib"
+Error executing link.exe.
+
+
+
+<h3>Results</h3>
+wxmswuniv28u_adv.lib - 1 error(s), 3 warning(s)
+<h3>
+--------------------Configuration: aui - Win32 DLL Unicode Release--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxmsw28u_aui_vc_custom.dll - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: aui - Win32 DLL Unicode Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxmsw28ud_aui_vc_custom.dll - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: base - Win32 DLL Unicode Release--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxbase28u_vc_custom.dll - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: base - Win32 DLL Unicode Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxbase28ud_vc_custom.dll - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: core - Win32 DLL Unicode Release--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxmsw28u_core_vc_custom.dll - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: core - Win32 DLL Unicode Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxmsw28ud_core_vc_custom.dll - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: dbgrid - Win32 DLL Unicode Release--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\DOCUME~1\amaya\LOCALS~1\Temp\RSP3A1.tmp" with contents
+[
+wxtiff.lib wxjpeg.lib wxpng.lib wxzlib.lib wxregexu.lib wxexpat.lib kernel32.lib user32.lib gdi32.lib comdlg32.lib winspool.lib winmm.lib shell32.lib comctl32.lib ole32.lib oleaut32.lib uuid.lib rpcrt4.lib advapi32.lib wsock32.lib odbc32.lib ..\..\lib\vc_dll\wxmsw28u_adv.lib ..\..\lib\vc_dll\wxbase28u_odbc.lib ..\..\lib\vc_dll\wxmsw28u_core.lib ..\..\lib\vc_dll\wxbase28u.lib /nologo /dll /incremental:no /pdb:"..\..\lib\vc_dll/wxmsw28u_dbgrid_vc_custom.pdb" /machine:I386 /out:"..\..\lib\vc_dll\wxmsw28u_dbgrid_vc_custom.dll" /implib:"..\..\lib\vc_dll\wxmsw28u_dbgrid.lib" /libpath:"..\..\lib\vc_dll" 
+.\vc_mswudll\dbgrid\dbgrid.obj
+.\vc_mswudll\dbgrid\dummy.obj
+.\vc_mswudll\dbgrid\version.res
+\src\wxWidgets\lib\vc_dll\wxbase28u_odbc.lib
+\src\wxWidgets\lib\vc_dll\wxtiff.lib
+\src\wxWidgets\lib\vc_dll\wxjpeg.lib
+\src\wxWidgets\lib\vc_dll\wxpng.lib
+\src\wxWidgets\lib\vc_dll\wxmsw28u_adv.lib
+]
+Creating command line "link.exe @C:\DOCUME~1\amaya\LOCALS~1\Temp\RSP3A1.tmp"
+<h3>Output Window</h3>
+Linking...
+LINK : fatal error LNK1181: cannot open input file "..\..\lib\vc_dll\wxbase28u_odbc.lib"
+Error executing link.exe.
+
+
+
+<h3>Results</h3>
+wxmsw28u_dbgrid_vc_custom.dll - 1 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: dbgrid - Win32 DLL Unicode Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\DOCUME~1\amaya\LOCALS~1\Temp\RSP3A2.tmp" with contents
+[
+wxtiffd.lib wxjpegd.lib wxpngd.lib wxzlibd.lib wxregexud.lib wxexpatd.lib kernel32.lib user32.lib gdi32.lib comdlg32.lib winspool.lib winmm.lib shell32.lib comctl32.lib ole32.lib oleaut32.lib uuid.lib rpcrt4.lib advapi32.lib wsock32.lib odbc32.lib ..\..\lib\vc_dll\wxmsw28ud_adv.lib ..\..\lib\vc_dll\wxbase28ud_odbc.lib ..\..\lib\vc_dll\wxmsw28ud_core.lib ..\..\lib\vc_dll\wxbase28ud.lib /nologo /dll /incremental:yes /pdb:"..\..\lib\vc_dll/wxmsw28ud_dbgrid_vc_custom.pdb" /debug /machine:I386 /out:"..\..\lib\vc_dll\wxmsw28ud_dbgrid_vc_custom.dll" /implib:"..\..\lib\vc_dll\wxmsw28ud_dbgrid.lib" /libpath:"..\..\lib\vc_dll" 
+.\vc_mswuddll\dbgrid\dbgrid.obj
+.\vc_mswuddll\dbgrid\dummy.obj
+.\vc_mswuddll\dbgrid\version.res
+\src\wxWidgets\lib\vc_dll\wxbase28ud_odbc.lib
+\src\wxWidgets\lib\vc_dll\wxtiffd.lib
+\src\wxWidgets\lib\vc_dll\wxjpegd.lib
+\src\wxWidgets\lib\vc_dll\wxpngd.lib
+\src\wxWidgets\lib\vc_dll\wxmsw28ud_adv.lib
+]
+Creating command line "link.exe @C:\DOCUME~1\amaya\LOCALS~1\Temp\RSP3A2.tmp"
+<h3>Output Window</h3>
+Linking...
+LINK : fatal error LNK1104: cannot open file "..\..\lib\vc_dll\wxbase28ud_odbc.lib"
+Error executing link.exe.
+
+
+
+<h3>Results</h3>
+wxmsw28ud_dbgrid_vc_custom.dll - 1 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: gl - Win32 DLL Unicode Release--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxmsw28u_gl_vc_custom.dll - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: gl - Win32 DLL Unicode Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxmsw28ud_gl_vc_custom.dll - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: html - Win32 DLL Unicode Release--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxmsw28u_html_vc_custom.dll - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: html - Win32 DLL Unicode Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxmsw28ud_html_vc_custom.dll - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: media - Win32 DLL Unicode Release--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxmsw28u_media_vc_custom.dll - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: media - Win32 DLL Unicode Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxmsw28ud_media_vc_custom.dll - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: net - Win32 DLL Unicode Release--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxbase28u_net_vc_custom.dll - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: net - Win32 DLL Unicode Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxbase28ud_net_vc_custom.dll - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: odbc - Win32 DLL Unicode Release--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxbase28u_odbc_vc_custom.dll - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: odbc - Win32 DLL Unicode Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxbase28ud_odbc_vc_custom.dll - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: odbc - Win32 Unicode Release--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\DOCUME~1\amaya\LOCALS~1\Temp\RSP3A3.tmp" with contents
+[
+/nologo /MD /W4 /GR /O2 /I "..\..\lib\vc_lib\mswu" /I "..\..\include" /I "..\..\src\tiff" /I "..\..\src\jpeg" /I "..\..\src\png" /I "..\..\src\zlib" /I "..\..\src\regex" /I "..\..\src\expat\lib" /D "WIN32" /D "_LIB" /D "__WXMSW__" /D "_UNICODE" /D wxUSE_GUI=0 /Fp"vc_mswu\wxprec_odbclib.pch" /Yu"wx/wxprec.h" /Fo"vc_mswu\odbc/" /Fd"..\..\lib\vc_lib\wxbase28u_odbc.pdb" /FD /EHsc /c 
+"C:\src\wxWidgets\src\common\db.cpp"
+"C:\src\wxWidgets\src\common\dbtable.cpp"
+]
+Creating command line "cl.exe @C:\DOCUME~1\amaya\LOCALS~1\Temp\RSP3A3.tmp" 
+Creating temporary file "C:\DOCUME~1\amaya\LOCALS~1\Temp\RSP3A4.tmp" with contents
+[
+/nologo /MD /W4 /GR /O2 /I "..\..\lib\vc_lib\mswu" /I "..\..\include" /I "..\..\src\tiff" /I "..\..\src\jpeg" /I "..\..\src\png" /I "..\..\src\zlib" /I "..\..\src\regex" /I "..\..\src\expat\lib" /D "WIN32" /D "_LIB" /D "__WXMSW__" /D "_UNICODE" /D wxUSE_GUI=0 /Fp"vc_mswu\wxprec_odbclib.pch" /Yc"wx/wxprec.h" /Fo"vc_mswu\odbc/" /Fd"..\..\lib\vc_lib\wxbase28u_odbc.pdb" /FD /EHsc /c 
+"C:\src\wxWidgets\src\common\dummy.cpp"
+]
+Creating command line "cl.exe @C:\DOCUME~1\amaya\LOCALS~1\Temp\RSP3A4.tmp" 
+Creating temporary file "C:\DOCUME~1\amaya\LOCALS~1\Temp\RSP3A5.tmp" with contents
+[
+/nologo /out:"..\..\lib\vc_lib\wxbase28u_odbc.lib" 
+.\vc_mswu\odbc\db.obj
+.\vc_mswu\odbc\dbtable.obj
+.\vc_mswu\odbc\dummy.obj
+\src\wxWidgets\lib\vc_lib\wxzlib.lib
+\src\wxWidgets\lib\vc_lib\wxregexu.lib
+\src\wxWidgets\lib\vc_lib\wxexpat.lib
+\src\wxWidgets\lib\vc_lib\wxbase28u.lib
+]
+Creating command line "link.exe -lib @C:\DOCUME~1\amaya\LOCALS~1\Temp\RSP3A5.tmp"
+<h3>Output Window</h3>
+Compiling...
+dummy.cpp
+..\..\lib\vc_lib\mswu\wx/setup.h(1350) : fatal error C1070: mismatched #if/#endif pair in file '..\..\lib\vc_lib\mswu\wx/setup.h'
+Error executing cl.exe.
+
+
+
+<h3>Results</h3>
+wxbase28u_odbc.lib - 1 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: qa - Win32 DLL Unicode Release--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxmsw28u_qa_vc_custom.dll - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: qa - Win32 DLL Unicode Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxmsw28ud_qa_vc_custom.dll - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: richtext - Win32 DLL Unicode Release--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxmsw28u_richtext_vc_custom.dll - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: richtext - Win32 DLL Unicode Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxmsw28ud_richtext_vc_custom.dll - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: wxexpat - Win32 DLL Unicode Release--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxexpat.lib - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: wxexpat - Win32 DLL Unicode Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxexpatd.lib - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: wxjpeg - Win32 DLL Unicode Release--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxjpeg.lib - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: wxjpeg - Win32 DLL Unicode Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxjpegd.lib - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: wxjpeg - Win32 Release--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxjpeg.lib - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: wxpng - Win32 DLL Unicode Release--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxpng.lib - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: wxpng - Win32 DLL Unicode Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxpngd.lib - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: wxpng - Win32 Unicode Release--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxpng.lib - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: wxregex - Win32 DLL Unicode Release--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxregexu.lib - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: wxregex - Win32 DLL Unicode Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxregexud.lib - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: wxtiff - Win32 DLL Unicode Release--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxtiff.lib - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: wxtiff - Win32 DLL Unicode Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxtiffd.lib - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: wxtiff - Win32 Release--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxtiff.lib - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: wxzlib - Win32 DLL Unicode Release--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxzlib.lib - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: wxzlib - Win32 DLL Unicode Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxzlibd.lib - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: wxzlib - Win32 Universal Unicode Release--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxzlib.lib - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: xml - Win32 DLL Unicode Release--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxbase28u_xml_vc_custom.dll - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: xml - Win32 DLL Unicode Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxbase28ud_xml_vc_custom.dll - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: xrc - Win32 DLL Unicode Release--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxmsw28u_xrc_vc_custom.dll - 0 error(s), 0 warning(s)
+<h3>
+--------------------Configuration: xrc - Win32 DLL Unicode Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+
+
+
+<h3>Results</h3>
+wxmsw28ud_xrc_vc_custom.dll - 0 error(s), 0 warning(s)
+</pre>
+</body>
+</html>

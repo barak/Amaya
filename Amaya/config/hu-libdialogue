@@ -1,0 +1,423 @@
+# encoding= utf8
+0 X11 hiba: %s\n
+1 Megerősítés
+2 Nincs ábécéfájl
+3 Az új nézet nem válthatja fel a régit
+4 Összegyeztethetetlen leírók. %s újrafordítása
+5 Végzetes huba: a betűkészlet nem található
+6 A memória megtelt
+7 Végzetes hiba: Nem lehet csatlakozni X-hez
+8 A nézet módosult létrehozása előtt
+9 Szabályok tábla megtelt.
+10 Érvénytelen fájl: %s.STR
+11 Érvénytelen fájl: %s.PRS
+12 Dokumentum %s nyomtatása
+13 Disposition
+14 1 oldal/lap
+15 2 oldal/lap
+16 4 oldal/lap
+17 %s
+18 kevés a memória
+19 *** Amaya: helyreállíthatatlan hiba ***
+20 A módosult dokumentumok (ha van) mentése
+21 Érvénytelen .TRA fájl: %s
+22 %s érvénytelen testvére ennek: %s (%s)
+23 %s érvénytelen utóda ennek az elődnek: %s (%s)
+24 %s, oldal %d
+25 Nyelv
+26 Attribútumok
+27 Szabványos bemutató
+28 Alkalmaz
+29 Karakterek
+30 Aláhúzás
+31 Grafika
+32 Formátum
+33 Alap
+34 Igazítás
+35 Behúzás
+36 Nyomtatás folyamatban
+37 Nyomtatás
+38 Kézi lapadagolás
+39 Beállítások
+40 A4
+41 US
+42 Papírfajta
+43 Bezár
+44 Mappák
+45 A dokumentum (%s) már létezik. Felülírjuk?
+46 Szöveg színének beállítása
+47 Háttér színének beállítása
+48 Betűkészlet
+49 Normál
+50 Félkövér
+51 Dőlt
+52 Kurzív
+53 Normál
+54 Vastagság
+55 Normál
+56 Aláhúzott
+57 Áthúzott
+58 Betűméret
+59 Behúzás csökkentése
+60 Egyes sortávolság
+61 Közepes sortávolság
+62 Kettős sortávolság
+63 Dokumentum mentése
+64 Bezárás mentés nélkül
+65 Karakter stílus
+66 Színek
+67 **Elements
+68 Törlés
+69 Kimenet
+70 PostScript fájl
+71 Nyomtató
+72 Keresés
+73 Ignore case
+74 Csere
+75 Csere
+76 Nincs csere
+77 Csere kérésre
+78 Automatikus csere
+79 Keresés helye
+80 Kijelölés előtt
+81 Kijelölésben
+82 Kijelölés után
+83 A teljes dokumentumban
+84 Ne cseréljen
+85 bezárás előtt
+86 Dokumentum bezárása
+87 Matematikai szimbólumok
+88 Grafika
+89 Latin ábécé
+90 Görög ábécé
+91 Mentés
+92 Szöveg
+93 Grafika
+94 szimbólum
+95 Kép
+96 XML
+97 után
+98 előtt
+99 körül
+100 Include
+101 Beilleszt
+102 létrehozni
+103 Beilleszt
+104 Lapdobás
+105 Nyelvi elem
+106 Örökölt nyelv:
+107 nem található
+108 Keresés helye
+109 Keresés
+110 Csak olvasható elem
+111 Nincs mit cserélni
+112 Szabványos karakterek
+113 Szabványos grafika
+114 Szabványos formátum
+115 Szabványos elhelyezkedés
+116 pt
+117 Sor stílus
+118 Sor magasság
+119 Kitöltési mintázat
+120 Osztás
+121 Objektum típus
+122 Ugrás oldalszámra:
+123 Bármely
+124 Keresendő attribútum
+125 Keresendő típus
+126 Natures
+127 Név
+128 Érték
+129 Attribútum érték
+130 Ismeretlen attribútum
+131 Mégsem
+132 HIba a PostScript fordításban
+133 A parancsot visszautasította a sorkezelő "%s"
+134 "%s" nem hozható létre
+135 Felülvonás
+136 Dokumentum formátum
+137 Attribútum eltávolítása
+138 Háttérszín
+139 Szín
+140 Adjon meg egy általános XML szerkezetet
+141 Ellenőrzés
+142 Keresés/Kihagyás
+143 Csere (+ dic)
+144 Csere és következő
+145 Másik nyelv
+146 Kihagyás (+ dic)
+147 ha tartalmazza:
+148 Szóellenőrző...
+149 római számok
+150 Kihagyandó
+151 csupa nagybetűs szavak
+152 számokat tartalmazó szavak
+153 Parameter fájl hiba
+154 Nincs billentyűzet fájl
+155 A dokumentum szótár nem menthető
+156 Ezt az érvénytelen szót (%s) elutasította a szótár
+157 Szó (%s) hozzáadva a dokumentum szótárhoz
+158 Szóellenőrzés vége
+159 Szóellenőrzés megszakadt
+160 Adjon meg egy dokumentumot
+161 Dokumentum szótár mentve: %s
+162 Ebben a változatban nem elérhető
+163 Dokkoló rögzítése/úsztatása
+164 Eszközök
+165 Kötelező attribútum, nem távolítható el
+166 Frissítés
+167 Balra zárt
+168 Jobbra zárt
+169 Középre zárt
+170 Sorkizárt
+171 Osztály alkalmazása
+172 Adja meg az osztályt vagy álosztályt
+173 Kijelöl
+174 Kihagy
+175 Matematika
+176 Egyéb
+177 Bináris műveletek
+178 Bináris műveletek vagy negálás
+179 Műveletek
+180 Görög ábécé (nagybetűs)
+181 Nyilak
+182 Különleges karakterek
+183 Átvitel megszakítása
+184 Előző dokumentum
+185 Következő dokumentum
+186 Újratöltés
+187 Mentés
+188 Mentés
+189 Új dokumentum...
+190 Dokumentum megnyitása
+191 Nyomtatás
+192 Keresés
+193 Kezdőlap
+194 Hangsúlyozott On/Off
+195 Vastag On/Off
+196 Kód On/Off
+197 Kép beillesztése
+198 1. szint
+199 2. szint
+200 3. szint
+201 4. szint
+202 &Bekezdés
+203 Listajeles lista
+204 Számozott lista
+205 Meghatározás lista
+206 Kapocs
+207 Táblázat
+208 %d lap bezárására készül. Valóban folytatni kívánja?
+209 Figyelmeztessen több lap bezárásakor
+210 Lapok bezárása
+211 Nincs hiba
+212 Elemzési hibák mutatása
+213 Dobozok
+214 Felosztás
+215 Célpont
+216 &Beillesztés On/Off
+217 &Törlés On/Off
+218 &Alsó index On/Off
+219 Felső index On/Off
+220 Szócikk
+221 Meghatározás
+222 Objektum
+223 Stílus
+224 Fájl
+225 Vízszintes felosztás
+226 Függőleges felosztás
+227 Eszközsor mutatása
+228 Visszavonás
+229 Újra
+230 Kivágás
+231 Másolás
+232 Beillesztés
+233 Szóelemző
+234 Különböző szerkezetek
+235 Relációk, rendek és logika
+236 Halmazok és függvények
+237 Számelmélet, műveletek, komplexek és állandók
+238 Analízis, lineáris algebra és statisztika
+239 Trigonometria és logaritmusok
+240 Nagyítás
+241 Kicsinyítés
+242 Téma
+243 XML
+244 Szöveg
+245 Nincs korábbi dokumentum
+246 Elem kijelölése kattintással
+247 Szerkesztési mód váltása kattintással
+248 Egyesítés
+249 Shrink &horizontal extend
+250 Shrink &vertical extend
+251 Sor &beillesztése
+252 Sor &hozzáadása
+253 Oszlop be&illesztése
+254 Oszlop hozzá&adása
+255 A nap tippje
+256 Tipp mutatása a program indulásakor
+257 **Previous tip
+258 Következő tipp
+259 Tudta-e..
+260 **Close
+261 Az Amaya testreszabható: öt különböző profilban különböző menü- készletek és panelkészlet áll rendelkezésére. Lásd a Beállításokban.
+262 A panelek az ablak bal vagy jobb szélére helyezhetők, vagy akár panelenként beállíthatók. Lásd a Beállításokban.
+263 Az F2 vagy Esc billentyűvel kijelölhetjük a szerkezeti elem elődelemét, amivel ezután szerkesztési műveletek (másolás, beillesztés, tulajdonságok stb.) végezhetők.
+264 Két dokumentumot egymás mellé vagy alá helyezhetünk, ha az egyiket fülénél fogva a nyitva lévő másik dokumentum keretéhez húzzuk.
+265 Egyedi módban a panelek húzásásal megváltoztatható a sorrendjük, vagy lebegővé tehetők.
+266 Egyedi módban mindkét oldalon több paneltárat is készíthetünk a panelek húzásával.
+267 A szerkesztési mód (Szöveg/XML) váltása az állapotsorban lévő hasonló feliratú gombra kattintva is lehetséges.
+268 Ha az állapotsorban piros gomb látható, rákattintva megkapjuk a hibákat.
+269 Kijelölhetjük az aktuális kijelölés valamely elődelemét, ha az állapotsorban annak a nevére kattintunk.
+270 A dokumentumfüleken lévő nyíl gomb megnyásakor megjelenő menü segítségével átválthatunk másik fülre.
+271 **If you enable "Show Targets" in the "Views" menu, targets are displayed in formatted view. This is convenient for the creation of link: a target can be chosen by clicking on it.
+272 **When you rotate an SVG object, the center is indicated by a cross. You can use the mouse to move it.
+273 **Basic SVG shapes have handles that can be used to edit them. Blue triangles or green square allow to change their size. For <rect/> element, red circles give a control on radius of rounded corners.
+274 **For SVG drawing, lines are created with a precision of 15� if you press the shift button. It is useful when you want to draw straight lines.
+275 **When you resize an image or an SVG object, pressing the shift button allows to preserve aspect ratio.
+276 **Use Edit>Preferences>Dialogue Language to choose the language of the user interface.
+277 Klasszikus
+278 Modern
+279 Téma nélkül
+280 **Title/Description
+281 **Generate a description
+282 **Square
+283 **Rounded Square
+284 **Rectangle
+285 **Rounded rectangle
+286 **Diamond
+287 **Parallelogram
+288 **Trapezium
+289 **Equilateral triangle
+290 **Isosceles triangle
+291 **Right triangle
+292 **Circle
+293 **Ellipse
+294 **Line
+295 **Arrow
+296 **Double Arrow
+297 **Zigzag
+298 **Group
+299 **Ungroup
+300 **Bring to front
+301 **Send to back
+302 **One level up
+303 **One level down
+304 **90� left
+305 **90� right
+306 **Rotate
+307 **Vertical symmetry
+308 **Horizontal symmetry
+309 **Scale
+310 **Skew
+311 **Move
+312 **Align bottom
+313 **Align center
+314 **Align left
+315 **Align middle
+316 **Align right
+317 **Align top
+318 **Distribute bottom
+319 **Distribute center
+320 **Distribute left
+321 **Distribute middle
+322 **Distribute right
+323 **Distribute top
+324 **Distribute vertical spacing
+325 **Distribute horizontal spacing
+326 **Closed Bezier curve
+327 **Bezier curve
+328 **Polyline
+329 **Polygon
+330 **Foreign Object
+331 **Image
+332 **SVG Canvas
+333 **Text
+334 **Cone
+335 **Cube
+336 **Cylinder
+337 **Octahedron
+338 **Parallelepiped
+339 **Pyramid
+340 **Beaker
+341 **Funnel
+342 **Bunsen burner
+343 **Buchner flask
+344 **Boiling flask
+345 **Burette
+346 **Erlenmeyer flask
+347 **Test tube
+348 **Pipette
+349 **Rectangular
+350 **Rounded rectangular
+351 **Round
+352 **Scream
+353 **Thought
+354 **Capacitor
+355 **Power source
+356 **Diode
+357 **Ground Point
+358 **Inductor
+359 **LED
+360 **Op-amp
+361 **Resistor
+362 **Switch
+363 **Transistor
+364 **Voltage source
+365 **Zener diode
+366 **Pentagon
+367 **Hexagon
+368 **Heptagon
+369 **Octogon
+370 **Star (4 branches)
+371 **Star (5 branches)
+372 **Star (6 branches)
+373 AND
+374 NAND
+375 OR
+376 NOR
+377 XOR
+378 XNOR
+379 NOT
+380 **Cross
+381 **Frame
+382 **Ring
+383 **Cloud
+384 **Scroll
+385 **Sun
+386 **Lightning_Bolt
+387 **Moon
+388 **Smiley
+389 **Heart
+390 **Flower
+391 **Prohibited
+392 **2-Way Rounded Arrow
+393 **3-Way Arrow Callout
+394 **3-Way Arrow
+395 **4-Way_Arrow_Callout
+396 **4-Way Arrow
+397 **Chevron
+398 **Circular Arrow
+399 **Corner Arrow
+400 **Corner Double Arrow Callout
+401 **Corner Double Arrow
+402 **Double Arrow Callout
+403 **Double Arrow
+404 **Notched Arrow
+405 **Rounded Arrow
+406 **Simple Arrow Callout
+407 **Simple Arrow
+408 **Split Arrow
+409 **S-Shape Arrow
+410 **Striped Arrow
+411 **Create template from current document
+412 **Create a text area
+413 **Use a component or an element
+414 **Create and use a component
+415 **Repeat the current use
+416 **Create and repeat a component
+417 **Create a free editing box
+418 **Create a new types union
+419 **Button up to close
+420 **Double click to close
+421 **Click to close

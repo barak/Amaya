@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <title>Redland RDF Application Framework</title>
+</head>
+<body>
+
+<h1>Redland RDF Application Framework</h1>
+<h2><a href="http://purl.org/net/dajobe/">Dave Beckett</a><br /><a href="http://www.ilrt.bris.ac.uk/">Institute for Learning and Research Technology</a><br /><a href="http://www.bristol.ac.uk/">University of Bristol</a></h2>
+  
+
+<h2>Overview</h2>
+
+<p><a href="http://www.redland.opensource.ac.uk/">Redland</a> is a
+library that provides a high-level interface for
+the Resource Description Framework (RDF) allowing the RDF
+graph to be parsed from XML, stored, queried and manipulated.
+Redland implements each of the RDF concepts in its own class via an
+object based API, reflected into the language APIs, currently Java,
+Perl, PHP, Python, Ruby and Tcl.  Several classes providing functionality
+such as for parsers, storage are built as modules that can be loaded
+at compile or run-time as required.</p>
+
+<p>This is a mature and stable RDF library developed since 2000
+<a href="using.html">used in multiple projects</a>.
+See the <a href="TODO.html">todo list</a> and the
+<a href="FAQS.html">FAQS</a> for general information.  A summary
+of the changes can be found in the <a href="NEWS.html">NEWS</a> file,
+detailed API changes in the <a href="RELEASE.html">release notes</a>
+and file-by-file changes in the CVS <a href="ChangeLog">ChangeLog</a>.</p>
+
+<p>Redland provides:</p>
+<ul>
+<li>A modular, <a href="docs/api/objects.html">object based</a> library written in C</li>
+<li><a href="docs/java.html">Java</a>, <a href="docs/perl.html">Perl</a>, <a href="docs/php.html">PHP</a>, <a href="docs/python.html">Python</a>, <a href="docs/ruby.html">Ruby</a> and <a href="docs/tcl.html">Tcl</a> interfaces for manipulating the RDF <a href="docs/api/model.html">graph</a> and parts - <a href="docs/api/statement.html">Statements</a>, <a href="docs/api/node.html">Resources and Literals</a></li>
+<li><a href="docs/api/parser.html">Parsers</a> and <a href="docs/api/serializer.html">Serializers</a> for reading and writing RDF as <a href="http://www.w3.org/TR/rdf-syntax-grammar/">RDF/XML</a>, <a href="http://www.w3.org/TR/rdf-testcases/#ntriples">N-Triples</a> and <a href="http://www.ilrt.bris.ac.uk/discovery/2004/01/turtle/">Turtle Terse RDF Triple Language</a> syntax via the <a href="http://www.redland.opensource.ac.uk/raptor/">Raptor RDF Parser Toolkit</a>.</li>
+<li><a href="docs/api/storage.html">Storage</a> for graphs in memory and on disk with Sleepycat/Berkeley DB, MySQL 3/4, <a href="http://triplestore.aktors.org/">AKT Triplestore</a> library, files or URIs.</li>
+<li>Query APIs for the graph by Statement (triples) or by Nodes and Arcs</li>
+<li>Redland contexts for managing aggregating graphs and recording provenance.</li>
+<li><a href="docs/api/stream.html">Statement Streams</a> for construction, parsing, de/serialisation of graphs</li>
+<li>Start of <a href="docs/api/query.html">query language</a> support.</li>
+<li>No memory leaks.</li>
+<li><a href="utils/rdfproc.html">rdfproc</a> RDF processor utility program</li>
+</ul>
+
+
+<h2>Sources and Binaries</h2>
+
+<p>The packaged sources are available from
+<a href="http://www.redland.opensource.ac.uk/dist/source/">http://www.redland.opensource.ac.uk/dist/source/</a> (master site) and also from the
+<a href="http://sourceforge.net/projects/librdf/">SourceForge site</a>.
+There are 
+<a href="http://www.redland.opensource.ac.uk/dist/snapshots/source/">nightly snapshots</a> of the development version which is can also be browsed via
+<a href="http://cvs.ilrt.org/cvsweb/redland/librdf/">CVSweb</a>.
+Binary packages of redland and related libraries are available from the
+<a href="http://www.redland.opensource.ac.uk/dist/">download area</a>.
+</p>
+
+
+<h2>License</h2>
+
+<p>This library is free software / open source software released
+under the LGPL or MPL licenses.  See 
+<a href="LICENSE.html">LICENSE.html</a> for full details.</p>
+
+
+<h2>Installation and Documentation</h2>
+
+<p>See <a href="INSTALL.html">INSTALL.html</a> for general
+installation and configuration information and the
+language specific documents for installing the interfaces in
+the current available APIs:
+<a href="docs/java.html">Java</a>,
+<a href="docs/perl.html">Perl</a>,
+<a href="docs/php.html">PHP</a>,
+<a href="docs/python.html">Python</a>,
+<a href="docs/ruby.html">Ruby</a>
+or
+<a href="docs/tcl.html">Tcl</a>.</p>
+
+<p>Further documentation is available in the
+<a href="docs/README.html">documents area</a> including the
+<a href="docs/api/index.html">API reference document</a> and
+<a href="docs/storage.html">detailed storage modules information</a>.
+</a>
+</p>
+
+
+<h2>Mailing Lists</h2>
+
+<p>The
+<a href="http://www.redland.opensource.ac.uk/lists/">Redland mailing lists</a>
+discuss the development and use of Redland and Raptor as well as
+future plans and announcement of releases.</p>
+
+
+<hr />
+
+<p>Copyright 2000-2004 <a href="http://purl.org/net/dajobe/">Dave Beckett</a>, <a href="http://www.ilrt.bris.ac.uk/">Institute for Learning and Research Technology</a>, <a href="http://www.bristol.ac.uk/">University of Bristol</a></p>
+
+</body>
+</html>

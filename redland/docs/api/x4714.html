@@ -1,0 +1,352 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>Raptor RDF Parser Implementation Class</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Redland RDF Application Framework API Reference Manual"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="RDF Parsers"
+HREF="parser.html"><LINK
+REL="PREVIOUS"
+TITLE="RDF Parsers"
+HREF="parser.html"><LINK
+REL="NEXT"
+TITLE="librdf_parser_raptor_init"
+HREF="r4716.html"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Redland RDF Application Framework API Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="parser.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>RDF Parsers</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="r4716.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN4714"
+></A
+>Raptor RDF Parser Implementation Class</H1
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+><A
+HREF="r4716.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_init</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Initialise the raptor RDF parser
+ </DT
+><DT
+><A
+HREF="r4749.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_terminate</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Terminate the raptor RDF parser
+ </DT
+><DT
+><A
+HREF="r4772.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_parse_file_as_stream</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Retrieve the RDF/XML content at URI and parse it into a librdf_stream
+ </DT
+><DT
+><A
+HREF="r4814.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_parse_as_stream_common</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Retrieve the content at URI/string and parse it into a librdf_stream
+ </DT
+><DT
+><A
+HREF="r4863.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_parse_uri_as_stream</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Retrieve the content at URI and parse it into a librdf_stream
+ </DT
+><DT
+><A
+HREF="r4905.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_parse_string_as_stream</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Parse the content in a string and return a librdf_stream
+ </DT
+><DT
+><A
+HREF="r4946.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_parse_into_model_common</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Retrieve the RDF/XML content at URI and store it into a librdf_model
+ </DT
+><DT
+><A
+HREF="r5006.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_parse_uri_into_model</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Retrieve the RDF/XML content at URI and store it into a librdf_model
+ </DT
+><DT
+><A
+HREF="r5059.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_parse_string_into_model</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Parse the RDF/XML content in a string and store it into a librdf_model
+ </DT
+><DT
+><A
+HREF="r5111.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_serialise_end_of_stream</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Check for the end of the stream of statements from the raptor RDF parser
+ </DT
+><DT
+><A
+HREF="r5138.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_serialise_next_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Move to the next librdf_statement in the stream of statements from the raptor RDF parse
+ </DT
+><DT
+><A
+HREF="r5165.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_serialise_get_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the current librdf_statement from the stream of statements from the raptor RDF parse
+ </DT
+><DT
+><A
+HREF="r5200.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_serialise_finished</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Finish the serialisation of the statement stream from the raptor RDF parse
+ </DT
+><DT
+><A
+HREF="r5224.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_register_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Register the raptor RDF parser with the RDF parser factory
+ </DT
+><DT
+><A
+HREF="r5247.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_constructor</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Initialise the raptor RDF parser module
+ </DT
+><DT
+><A
+HREF="r5270.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_destructor</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Terminate the raptor RDF parser module
+ </DT
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="parser.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="r4716.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>RDF Parsers</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="parser.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_init</SPAN
+></SPAN
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>
