@@ -1463,7 +1463,7 @@ char *TtaGetPathAttributeValue (Element el, int width, int height)
   PtrElement pEl;
   PtrPathSeg          b;
   int                 length, l, add;
-  char               *path = NULL;
+  char               *path;
   int nbPoints;
 #define SIZE_OF_ONE_SEGMENT 50
 

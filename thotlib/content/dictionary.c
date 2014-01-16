@@ -132,7 +132,7 @@ static void ReleaseDictionary (PtrDict *pDictionary)
       d = 0;
       while (d < MaxDictionaries && dictTable[d] != pdict)
         d++;
-      if (d < MaxDictionaries)
+      if (dictTable[d] == pdict)
         {
           TtaFreeMemory (pdict->DictDirectory);
           /* Releases the string and the list of words */
@@ -590,7 +590,7 @@ ThotBool ReloadDictionary (PtrDict *pDictionary)
       d = 0;
       while (d < MaxDictionaries && dictTable[d] != pdict)
         d++;
-      if (d < MaxDictionaries)
+      if (dictTable[d] == pdict)
         {
           /* Getting information about the dictionary */
           strcpy (dictName, pdict->DictName);
