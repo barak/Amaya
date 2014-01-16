@@ -1,0 +1,261 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>librdf_new_storage_from_storage</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Redland RDF Application Framework API Reference Manual"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="RDF Model Storage Class"
+HREF="storage.html#AEN9196"><LINK
+REL="PREVIOUS"
+TITLE="librdf_new_storage_with_options"
+HREF="r9404.html"><LINK
+REL="NEXT"
+TITLE="librdf_new_storage_from_factory"
+HREF="r9487.html"></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Redland RDF Application Framework API Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="r9404.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="r9487.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><H1
+><A
+NAME="AEN9456"
+></A
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_storage_from_storage</SPAN
+></SPAN
+></H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN9460"
+></A
+><H2
+>Name</H2
+>librdf_new_storage_from_storage&nbsp;--&nbsp;      Copy constructor - create a new librdf_storage object from an existing one
+ </DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN9463"
+></A
+><H2
+>Synopsis</H2
+><DIV
+CLASS="FUNCSYNOPSIS"
+><A
+NAME="AEN9465"
+></A
+><P
+></P
+><P
+><CODE
+><CODE
+CLASS="FUNCDEF"
+>librdf_storage* <TT
+CLASS="FUNCTION"
+>librdf_new_storage_from_storage </TT
+></CODE
+>(librdf_storage* <TT
+CLASS="PARAMETER"
+><I
+>old_storage</I
+></TT
+>);</CODE
+></P
+><P
+></P
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN9471"
+></A
+><H2
+>Arguments</H2
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="PARAMETER"
+><I
+>old_storage</I
+></TT
+></DT
+><DD
+><P
+>      the existing storage <SPAN
+CLASS="STRUCTNAME"
+>librdf_storage</SPAN
+> to use
+    </P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN9480"
+></A
+><H2
+>Description</H2
+><P
+>   Should create a new storage in the same context as the existing one
+   as appropriate for the storage.  For example, in a RDBMS storage
+   it would be a new database, or in on disk it would be a new
+   set of files.  This will mean automatically generating
+   a new identifier for the storage, maybe based on the existing
+   storage identifier.
+ </P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN9483"
+></A
+><H2
+>Return value</H2
+><P
+>    a new <SPAN
+CLASS="STRUCTNAME"
+>librdf_storage</SPAN
+> object or NULL on failure
+ </P
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="r9404.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="r9487.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_storage_with_options</SPAN
+></SPAN
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="storage.html#AEN9196"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_storage_from_factory</SPAN
+></SPAN
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

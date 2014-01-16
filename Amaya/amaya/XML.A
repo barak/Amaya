@@ -1,0 +1,45 @@
+APPLICATION XML;
+
+DEFAULT
+   BEGIN
+        ElemSelect.Post -> XmlSelectionChanged;
+	ElemExtendSelect.Post -> XmlSelectionChanged;
+        ElemActivate.Pre -> DoubleClick;
+        ElemClick.Pre -> SimpleClick;
+        ElemRClick.Pre -> SimpleRClick;
+   END;
+
+ELEMENTS
+
+   doctype:
+	ElemMenu.Pre -> XmlElementTypeInMenu;
+
+   xmlpi:
+	BEGIN
+	ElemTextModify.Pre -> XmlStyleSheetWillBeModified;
+	ElemTextModify.Post -> XmlStyleSheetModified;
+	END;
+
+   TEXT_UNIT:
+	BEGIN
+	ElemPaste.Post -> XmlStyleSheetPasted;
+	ElemDelete.Pre -> XmlStyleSheetDeleted;
+	END;
+
+ATTRIBUTES
+
+   Language:
+	BEGIN
+	AttrCreate.Post -> AttrLangCreated;
+	AttrDelete.Pre  -> AttrLangShouldBeDeleted;
+	AttrDelete.Post -> AttrLangDeleted;
+	AttrModify.Pre ->  AttrLangModified;
+	END;
+
+   xmlid:
+	BEGIN
+	AttrCreate.Post -> UpdateAttrID;
+	AttrModify.Post -> UpdateAttrID;	
+	AttrDelete.Post -> UpdateAttrID;
+	END;
+END

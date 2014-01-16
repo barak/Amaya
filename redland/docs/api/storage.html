@@ -1,0 +1,614 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>RDF Model Storage</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Redland RDF Application Framework API Reference Manual"
+HREF="index.html"><LINK
+REL="PREVIOUS"
+TITLE="librdf_serializer_raptor_constructor"
+HREF="r9170.html"><LINK
+REL="NEXT"
+TITLE="librdf_init_storage"
+HREF="r9198.html"></HEAD
+><BODY
+CLASS="CHAPTER"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Redland RDF Application Framework API Reference Manual</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="r9170.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="r9198.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="STORAGE"
+></A
+>RDF Model Storage</H1
+><P
+>This module provides storage for RDF models either in memory or
+persistant storage.</P
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN9196"
+></A
+>RDF Model Storage Class</H1
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+><A
+HREF="r9198.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_init_storage</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Initialise the librdf_storage module
+ </DT
+><DT
+><A
+HREF="r9225.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_finish_storage</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Terminate the librdf_storage module
+ </DT
+><DT
+><A
+HREF="r9248.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_register_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Register a storage factory
+ </DT
+><DT
+><A
+HREF="r9286.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_get_storage_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get a storage factory by name
+ </DT
+><DT
+><A
+HREF="r9312.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_enumerate</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get information on storages
+ </DT
+><DT
+><A
+HREF="r9352.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_storage</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_storage object
+ </DT
+><DT
+><A
+HREF="r9404.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_storage_with_options</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_storage object
+ </DT
+><DT
+><A
+HREF="r9456.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_storage_from_storage</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Copy constructor - create a new librdf_storage object from an existing one
+ </DT
+><DT
+><A
+HREF="r9487.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_storage_from_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_storage object
+ </DT
+><DT
+><A
+HREF="r9539.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_free_storage</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Destructor - destroy a librdf_storage object
+ </DT
+><DT
+><A
+HREF="r9563.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_open</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Start a model / storage association
+ </DT
+><DT
+><A
+HREF="r9601.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_close</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      End a model / storage association
+ </DT
+><DT
+><A
+HREF="r9628.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_size</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the number of statements stored
+ </DT
+><DT
+><A
+HREF="r9655.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_add_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Add a statement to a storage
+ </DT
+><DT
+><A
+HREF="r9693.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_add_statements</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Add a stream of statements to the storage
+ </DT
+><DT
+><A
+HREF="r9728.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_remove_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Remove a statement from the storage
+ </DT
+><DT
+><A
+HREF="r9763.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_contains_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Test if a given statement is present in the storage
+ </DT
+><DT
+><A
+HREF="r9798.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_serialise</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Serialise the storage as a librdf_stream of statemetns
+ </DT
+><DT
+><A
+HREF="r9826.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_find_statements</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      search the storage for matching statements
+ </DT
+><DT
+><A
+HREF="r9868.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_get_sources</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the sources (subjects) of arc in an RDF graph given arc (predicate) and target (object)
+ </DT
+><DT
+><A
+HREF="r9917.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_get_arcs</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the arcs (predicates) of an arc in an RDF graph given source (subject) and target (object)
+ </DT
+><DT
+><A
+HREF="r9966.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_get_targets</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the targets (objects) of an arc in an RDF graph given source (subject) and arc (predicate)
+ </DT
+><DT
+><A
+HREF="r10015.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_get_arcs_in</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the properties pointing to the given resource
+ </DT
+><DT
+><A
+HREF="r10052.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_get_arcs_out</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the properties pointing from the given resource
+ </DT
+><DT
+><A
+HREF="r10089.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_has_arc_in</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      check if a node has a given property pointing to it
+ </DT
+><DT
+><A
+HREF="r10132.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_has_arc_out</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      check if a node has a given property pointing from it
+ </DT
+><DT
+><A
+HREF="r10175.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_context_add_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Add a statement to a storage in a context
+ </DT
+><DT
+><A
+HREF="r10222.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_context_add_statements</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Add statements to a storage with a context
+ </DT
+><DT
+><A
+HREF="r10269.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_context_remove_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Remove a statement from a storage in a context
+ </DT
+><DT
+><A
+HREF="r10316.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_context_remove_statements</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Remove statements from a storage with the given context
+ </DT
+><DT
+><A
+HREF="r10355.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_context_as_stream</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      List all statements in a storage context
+ </DT
+><DT
+><A
+HREF="r10391.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_context_serialise</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      List all statements in a storage context (DEPRECATED)
+ </DT
+><DT
+><A
+HREF="r10430.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_find_statements_in_context</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      search the storage for matching statements in a given context
+ </DT
+><DT
+><A
+HREF="r10480.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_get_contexts</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the list of contexts in the store
+ </DT
+><DT
+><A
+HREF="r10512.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_get_feature</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      get the value of a storage feature
+ </DT
+><DT
+><A
+HREF="r10548.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_set_feature</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      set the value of a storage feature
+ </DT
+><DT
+><A
+HREF="r10591.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_find_statements_with_options</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      search the storage for matching statements with match options
+ </DT
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="r9170.html"
+ACCESSKEY="P"
+>&#60;&#60;&#60; Previous</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="r9198.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_serializer_raptor_constructor</SPAN
+></SPAN
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_init_storage</SPAN
+></SPAN
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

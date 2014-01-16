@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resource version="2.3.0.1" xmlns="http://www.wxwindows.org/wxxrc">
+  <object class="wxPanel" name="wxID_PANEL">
+    <object class="wxBoxSizer">
+      <orient>wxVERTICAL</orient>
+      <object class="sizeritem">
+        <object class="wxBoxSizer">
+          <orient>wxHORIZONTAL</orient>
+          <object class="sizeritem">
+            <object class="wxStaticText" name="wxID_LABEL_TOOLS">
+              <label>Tools</label>
+            </object>
+            <option>0</option>
+            <flag>wxALIGN_CENTRE</flag>
+          </object>
+          <object class="spacer">
+            <option>1</option>
+            <flag>wxEXPAND</flag>
+          </object>
+          <object class="sizeritem">
+            <object class="wxBitmapButton" name="wxID_BUTTON_CLOSE">
+              <bitmap stock_id="wxART_CROSS_MARK"></bitmap>
+              <style platform="unix|win">wxNO_BORDER</style>
+            </object>
+            <option>0</option>
+            <flag>wxALIGN_CENTRE</flag>
+          </object>
+        </object>
+        <flag>wxALL|wxEXPAND</flag>
+        <border>4</border>
+      </object>
+      <object class="sizeritem">
+        <object class="wxStaticLine"/>
+        <flag>wxALL|wxEXPAND</flag>
+        <border>4</border>
+      </object>
+      <object class="sizeritem">
+        <object class="wxScrolledWindow" name="wxID_PANEL_SWIN"/>
+        <option>1</option>
+        <flag>wxALL|wxEXPAND</flag>
+        <border>4</border>
+      </object>
+    </object>
+    <style>wxTAB_TRAVERSAL|wxRAISED_BORDER</style>
+  </object>
+</resource>

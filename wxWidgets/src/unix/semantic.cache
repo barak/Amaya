@@ -1,0 +1,15 @@
+;; Object unix/
+;; SEMANTICDB Tags save file
+(semanticdb-project-database-file "unix/"
+  :tables (list 
+   (semanticdb-table "stackwalk.cpp"
+    :major-mode 'c++-mode
+    :tags '(("wx/wxprec.h" include nil nil [839 861]) ("wx/string.h" include nil nil [957 979]) ("wx/app.h" include nil nil [984 1003]) ("wx/log.h" include nil nil [1008 1027]) ("wx/utils.h" include nil nil [1032 1053]) ("wx/stackwalk.h" include nil nil [1062 1087]) ("execinfo.h" include (:system-flag t) nil [1089 1110]) ("cxxabi.h" include (:system-flag t) nil [1141 1160]) ("wxStdioPipe" type (:members (("public" label nil (reparse-symbol classsubparts) [1416 1423]) ("wxStdioPipe" function (:constructor-flag t :arguments (("command" variable (:pointer 1 :constant-flag t :type "char") (reparse-symbol arg-sub-list) [1485 1505]) ("type" variable (:pointer 1 :constant-flag t :type "char") (reparse-symbol arg-sub-list) [1506 1523])) :type ("wxStdioPipe" type "class")) (reparse-symbol classsubparts) [1473 1572]) ("wxStdioPipe" function (:destructor-flag t :type "void") (reparse-symbol classsubparts) [1684 1756]) ("private" label nil (reparse-symbol classsubparts) [1758 1766]) ("m_fp" variable (:pointer 1 :type ("FILE" type (:type "class") nil nil)) (reparse-symbol classsubparts) [1771 1782])) :type "class") nil [1396 1825]) ("wxStackWalker::ms_exepath" variable (:type ("wxString" type (:type "class") nil nil)) nil [2006 2041]) ("OnGetName" function (:parent "wxStackFrame" :type "void") nil [2220 4112]) ("OnGetLocation" function (:parent "wxStackFrame" :type "void") nil [4114 5948]) ("Walk" function (:parent "wxStackWalker" :arguments (("skip" variable (:type ("size_t" type (:type "class") nil nil)) (reparse-symbol arg-sub-list) [6153 6165])) :type "void") nil [6128 6615]))
+    :file "stackwalk.cpp"
+    :pointmax 6645
+    )
+   )
+  :file "semantic.cache"
+  :semantic-tag-version "2.0beta3"
+  :semanticdb-version "2.0beta3"
+  )

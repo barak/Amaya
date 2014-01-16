@@ -1,0 +1,5199 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>Redland RDF Application Framework API Reference Manual</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="NEXT"
+TITLE="Introduction to Objects in C"
+HREF="objects.html"></HEAD
+><BODY
+CLASS="BOOK"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="BOOK"
+><A
+NAME="REDLANDAPI"
+></A
+><DIV
+CLASS="TITLEPAGE"
+><H1
+CLASS="TITLE"
+><A
+NAME="AEN2"
+></A
+>Redland RDF Application Framework API Reference Manual</H1
+><H3
+CLASS="AUTHOR"
+><A
+NAME="AEN6"
+></A
+>Dave Beckett</H3
+><DIV
+CLASS="AFFILIATION"
+><SPAN
+CLASS="ORGNAME"
+>University of Bristol<BR></SPAN
+><SPAN
+CLASS="ORGDIV"
+>Institute for Learning and Research Technology (ILRT)<BR></SPAN
+><DIV
+CLASS="ADDRESS"
+><P
+CLASS="ADDRESS"
+>	&nbsp;&nbsp;&nbsp;&nbsp;Dave.Beckett@bristol.ac.uk<br>
+	&nbsp;&nbsp;</P
+></DIV
+></DIV
+><P
+CLASS="COPYRIGHT"
+><A
+HREF="ln25.html"
+>Copyright</A
+> &copy; 2000-2003 by Dave Beckett, University of Bristol, UK</P
+><HR></DIV
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+><A
+HREF="objects.html"
+>Introduction to Objects in C</A
+></DT
+><DT
+><A
+HREF="world.html"
+>RDF World</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="world.html#AEN64"
+>RDF World Class</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r66.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_world</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Creates a new Redland execution environment
+ </DT
+><DT
+><A
+HREF="r89.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_free_world</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Terminate the library
+ </DT
+><DT
+><A
+HREF="r115.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_world_init_mutex</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   </DT
+><DT
+><A
+HREF="r138.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_world_open</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Open an environment
+ </DT
+><DT
+><A
+HREF="r161.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_world_set_error</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Set the world error handling function
+ </DT
+><DT
+><A
+HREF="r202.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_world_set_warning</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Set the world warning handling function
+ </DT
+><DT
+><A
+HREF="r243.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_world_set_digest</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Set the default digest name
+ </DT
+><DT
+><A
+HREF="r276.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_init_world</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Initialise the library (DEPRECATED)
+ </DT
+><DT
+><A
+HREF="r310.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_destroy_world</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Terminate the library (DEPRECATED)
+ </DT
+></DL
+></DD
+></DL
+></DD
+><DT
+><A
+HREF="model.html"
+>RDF Model</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="model.html#AEN341"
+>RDF Model Class</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r343.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_init_model</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Initialise librdf_model class
+ </DT
+><DT
+><A
+HREF="r366.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_finish_model</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Terminate librdf_model class
+ </DT
+><DT
+><A
+HREF="r389.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_register_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Register a model factory
+ </DT
+><DT
+><A
+HREF="r420.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_get_model_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get a model factory by name
+ </DT
+><DT
+><A
+HREF="r446.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_model</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new storage librdf_model object
+ </DT
+><DT
+><A
+HREF="r492.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_model_with_options</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - Create a new librdf_model with storage
+ </DT
+><DT
+><A
+HREF="r538.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_model_from_model</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Copy constructor - create a new librdf_model from an existing one
+ </DT
+><DT
+><A
+HREF="r569.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_free_model</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Destructor - Destroy a librdf_model object
+ </DT
+><DT
+><A
+HREF="r593.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_size</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      get the number of statements in the model
+ </DT
+><DT
+><A
+HREF="r623.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_add_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Add a statement to the model
+ </DT
+><DT
+><A
+HREF="r659.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_add_statements</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Add a stream of statements to the model
+ </DT
+><DT
+><A
+HREF="r692.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_add</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Create and add a new statement about a resource to the model
+ </DT
+><DT
+><A
+HREF="r746.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_add_typed_literal_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Create and add a new statement about a typed literal to the model
+ </DT
+><DT
+><A
+HREF="r814.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_add_string_literal_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Create and add a new statement about a literal to the model
+ </DT
+><DT
+><A
+HREF="r881.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_remove_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Remove a known statement from the model
+ </DT
+><DT
+><A
+HREF="r917.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_contains_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Check for a statement in the model
+ </DT
+><DT
+><A
+HREF="r956.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_as_stream</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      list the model contents as a stream of statements
+ </DT
+><DT
+><A
+HREF="r983.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_serialise</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      serialise the entire model as a stream (DEPRECATED)
+ </DT
+><DT
+><A
+HREF="r1013.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_find_statements</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      find matching statements in the model
+ </DT
+><DT
+><A
+HREF="r1050.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_get_sources</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the sources (subjects) of arc in an RDF graph given arc (predicate) and target (object)
+ </DT
+><DT
+><A
+HREF="r1099.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_get_arcs</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the arcs (predicates) of an arc in an RDF graph given source (subject) and target (object)
+ </DT
+><DT
+><A
+HREF="r1148.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_get_targets</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the targets (objects) of an arc in an RDF graph given source (subject) and arc (predicate)
+ </DT
+><DT
+><A
+HREF="r1197.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_get_source</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return one source (subject) of arc in an RDF graph given arc (predicate) and target (object)
+ </DT
+><DT
+><A
+HREF="r1245.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_get_arc</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return one arc (predicate) of an arc in an RDF graph given source (subject) and target (object)
+ </DT
+><DT
+><A
+HREF="r1293.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_get_target</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return one target (object) of an arc in an RDF graph given source (subject) and arc (predicate)
+ </DT
+><DT
+><A
+HREF="r1341.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_add_submodel</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      add a sub-model to the model
+ </DT
+><DT
+><A
+HREF="r1377.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_remove_submodel</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      remove a sub-model from the model
+ </DT
+><DT
+><A
+HREF="r1413.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_get_arcs_in</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the properties pointing to the given resource
+ </DT
+><DT
+><A
+HREF="r1450.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_get_arcs_out</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the properties pointing from the given resource
+ </DT
+><DT
+><A
+HREF="r1487.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_has_arc_in</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      check if a node has a given property pointing to it
+ </DT
+><DT
+><A
+HREF="r1530.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_has_arc_out</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      check if a node has a given property pointing from it
+ </DT
+><DT
+><A
+HREF="r1573.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_print</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      print the model
+ </DT
+><DT
+><A
+HREF="r1606.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_context_add_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Add a statement to a model with a context
+ </DT
+><DT
+><A
+HREF="r1654.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_context_add_statements</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Add statements to a model with a context
+ </DT
+><DT
+><A
+HREF="r1701.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_context_remove_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Remove a statement from a model in a context
+ </DT
+><DT
+><A
+HREF="r1749.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_context_remove_statements</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Remove statements from a model with the given context
+ </DT
+><DT
+><A
+HREF="r1784.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_context_as_stream</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      list all statements in a model context
+ </DT
+><DT
+><A
+HREF="r1820.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_context_serialize</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      List all statements in a model context
+ </DT
+><DT
+><A
+HREF="r1859.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_query</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Run a query against the model returning matching statements
+ </DT
+><DT
+><A
+HREF="r1900.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_query_string</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Run a query string against the model returning matching statements
+ </DT
+><DT
+><A
+HREF="r1954.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_sync</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Synchronise the model to the model implementation
+ </DT
+><DT
+><A
+HREF="r1978.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_get_storage</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the storage of this model
+ </DT
+><DT
+><A
+HREF="r2010.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_find_statements_in_context</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      search the model for matching statements in a given context
+ </DT
+><DT
+><A
+HREF="r2060.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_get_contexts</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the list of contexts in the graph
+ </DT
+><DT
+><A
+HREF="r2092.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_get_feature</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      get the value of a graph feature 
+ </DT
+><DT
+><A
+HREF="r2128.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_set_feature</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      set the value of a graph feature
+ </DT
+><DT
+><A
+HREF="r2171.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_model_find_statements_with_options</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      search the model for matching statements with match options
+ </DT
+></DL
+></DD
+></DL
+></DD
+><DT
+><A
+HREF="statement.html"
+>RDF Statement / Assertion / Triple</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="statement.html#AEN2235"
+>RDF Statement Class</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r2237.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_init_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Initialise the librdf_statement module
+ </DT
+><DT
+><A
+HREF="r2260.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_finish_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Terminate the librdf_statement module
+ </DT
+><DT
+><A
+HREF="r2283.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new empty librdf_statement
+ </DT
+><DT
+><A
+HREF="r2310.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_statement_from_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Copy constructor - create a new librdf_statement from an existing librdf_statement
+ </DT
+><DT
+><A
+HREF="r2338.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_statement_from_nodes</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_statement from existing librdf_node objects
+ </DT
+><DT
+><A
+HREF="r2392.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_init</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      initialise a statically declared librdf_statement
+ </DT
+><DT
+><A
+HREF="r2430.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_clear</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      empty a librdf_statement of nodes
+ </DT
+><DT
+><A
+HREF="r2454.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_free_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Destructor - destroy a librdf_statement
+ </DT
+><DT
+><A
+HREF="r2478.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_get_subject</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the statement subject
+ </DT
+><DT
+><A
+HREF="r2506.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_set_subject</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Set the statement subject
+ </DT
+><DT
+><A
+HREF="r2541.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_get_predicate</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the statement predicate
+ </DT
+><DT
+><A
+HREF="r2569.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_set_predicate</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Set the statement predicate
+ </DT
+><DT
+><A
+HREF="r2604.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_get_object</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the statement object
+ </DT
+><DT
+><A
+HREF="r2632.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_set_object</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Set the statement object
+ </DT
+><DT
+><A
+HREF="r2667.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_is_complete</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Check if statement has all subject, predicate, object fields present
+ </DT
+><DT
+><A
+HREF="r2694.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_to_string</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Format the librdf_statement as a string
+ </DT
+><DT
+><A
+HREF="r2723.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_print</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      pretty print the statement to a file descriptor
+ </DT
+><DT
+><A
+HREF="r2756.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_equals</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Check if two statements are equal
+ </DT
+><DT
+><A
+HREF="r2791.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_match</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Match a statement against a 'partial' statement
+ </DT
+><DT
+><A
+HREF="r2828.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_encode</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Serialise a statement into a buffer
+ </DT
+><DT
+><A
+HREF="r2871.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_encode_parts</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Serialise parts of a statement into a buffer
+ </DT
+><DT
+><A
+HREF="r2931.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_decode</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Decodes a statement from a buffer
+ </DT
+><DT
+><A
+HREF="r2975.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_statement_decode_parts</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Decodes a statement + context node from a buffer
+ </DT
+></DL
+></DD
+></DL
+></DD
+><DT
+><A
+HREF="node.html"
+>RDF Resource / Predicate / Literal</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="node.html#AEN3032"
+>RDF Node Class</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r3034.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_init_node</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Initialise the node module.
+ </DT
+><DT
+><A
+HREF="r3057.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_finish_node</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Terminate the librdf_node module
+ </DT
+><DT
+><A
+HREF="r3080.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_node</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_node object with a private identifier
+ </DT
+><DT
+><A
+HREF="r3110.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_node_from_uri_string</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_node object from a URI string
+ </DT
+><DT
+><A
+HREF="r3144.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_node_from_uri</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new resource librdf_node object with a given URI
+ </DT
+><DT
+><A
+HREF="r3179.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_node_from_uri_local_name</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new resource librdf_node object with a given URI and local name
+ </DT
+><DT
+><A
+HREF="r3221.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_node_from_normalised_uri_string</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_node object from a URI string normalised to a new base URI
+ </DT
+><DT
+><A
+HREF="r3269.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_node_from_literal</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;       Constructor - create a new literal librdf_node object
+ </DT
+><DT
+><A
+HREF="r3320.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_node_from_typed_literal</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;       Constructor - create a new typed literal librdf_node object
+ </DT
+><DT
+><A
+HREF="r3368.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_node_from_blank_identifier</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;       Constructor - create a new literal librdf_node object from a blank node identifier
+ </DT
+><DT
+><A
+HREF="r3405.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_node_from_node</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Copy constructor - create a new librdf_node object from an existing librdf_node object
+ </DT
+><DT
+><A
+HREF="r3433.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_free_node</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Destructor - destroy an librdf_node object
+ </DT
+><DT
+><A
+HREF="r3457.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_node_get_uri</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the URI for a node object
+ </DT
+><DT
+><A
+HREF="r3486.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_node_get_type</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the type of the node
+ </DT
+><DT
+><A
+HREF="r3512.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_node_get_literal_value</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the string literal value of the node
+ </DT
+><DT
+><A
+HREF="r3541.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_node_get_literal_value_as_counted_string</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the string literal value of the node as a counted string
+ </DT
+><DT
+><A
+HREF="r3577.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_node_get_literal_value_as_latin1</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the string literal value of the node as ISO Latin-1
+ </DT
+><DT
+><A
+HREF="r3606.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_node_get_literal_value_language</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the XML language of the node
+ </DT
+><DT
+><A
+HREF="r3635.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_node_get_literal_value_is_wf_xml</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the XML well-formness property of the node
+ </DT
+><DT
+><A
+HREF="r3661.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_node_get_literal_value_datatype_uri</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the typed literal datatype URI of the literal node
+ </DT
+><DT
+><A
+HREF="r3687.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_node_get_li_ordinal</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the node li object ordinal value
+ </DT
+><DT
+><A
+HREF="r3713.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_node_get_blank_identifier</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the blank node identifier
+ </DT
+><DT
+><A
+HREF="r3739.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_node_is_resource</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;       Check node is a resource
+ </DT
+><DT
+><A
+HREF="r3765.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_node_is_literal</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;       Check node is a literal
+ </DT
+><DT
+><A
+HREF="r3791.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_node_is_blank</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;       Check node is a blank nodeID
+ </DT
+><DT
+><A
+HREF="r3817.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_node_to_string</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Format the node as a string
+ </DT
+><DT
+><A
+HREF="r3846.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_node_to_counted_string</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Format the node as a counted string
+ </DT
+><DT
+><A
+HREF="r3882.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_node_print</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      pretty print the node to a file descriptor
+ </DT
+><DT
+><A
+HREF="r3915.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_node_get_digest</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get a digest representing a librdf_node
+ </DT
+><DT
+><A
+HREF="r3945.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_node_equals</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Compare two librdf_node objects for equality
+ </DT
+><DT
+><A
+HREF="r3983.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_node_encode</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Serialise a node into a buffer
+ </DT
+><DT
+><A
+HREF="r4026.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_node_decode</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Deserialise a node from a buffer
+ </DT
+><DT
+><A
+HREF="r4077.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_node_static_iterator_create</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Create an iterator over an array of nodes
+ </DT
+></DL
+></DD
+></DL
+></DD
+><DT
+><A
+HREF="parser.html"
+>RDF Parsers</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="parser.html#AEN4118"
+>RDF Parser Class</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r4120.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_register_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Register a parser factory 
+ </DT
+><DT
+><A
+HREF="r4172.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_get_parser_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get a parser factory by name
+ </DT
+><DT
+><A
+HREF="r4223.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_parser</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_parser object
+ </DT
+><DT
+><A
+HREF="r4275.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_parser_from_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_parser object
+ </DT
+><DT
+><A
+HREF="r4309.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_free_parser</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Destructor - destroys a librdf_parser object
+ </DT
+><DT
+><A
+HREF="r4332.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_parse_as_stream</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Parse a URI to a librdf_stream of statements
+ </DT
+><DT
+><A
+HREF="r4373.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_parse_into_model</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Parse a URI of content into an librdf_model
+ </DT
+><DT
+><A
+HREF="r4420.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_parse_string_as_stream</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Parse a string of content to a librdf_stream of statements
+ </DT
+><DT
+><A
+HREF="r4461.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_parse_string_into_model</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Parse a string of content into an librdf_model
+ </DT
+><DT
+><A
+HREF="r4508.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_init_parser</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Initialise the librdf_parser class
+ </DT
+><DT
+><A
+HREF="r4531.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_finish_parser</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Terminate the librdf_parser class
+ </DT
+><DT
+><A
+HREF="r4554.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_set_error</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Set the parser error handling function
+ </DT
+><DT
+><A
+HREF="r4595.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_set_warning</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Set the parser warning handling function
+ </DT
+><DT
+><A
+HREF="r4636.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_get_feature</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      get the value of a parser feature
+ </DT
+><DT
+><A
+HREF="r4671.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_set_feature</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      set the value of a parser feature
+ </DT
+></DL
+></DD
+><DT
+><A
+HREF="x4714.html"
+>Raptor RDF Parser Implementation Class</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r4716.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_init</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Initialise the raptor RDF parser
+ </DT
+><DT
+><A
+HREF="r4749.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_terminate</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Terminate the raptor RDF parser
+ </DT
+><DT
+><A
+HREF="r4772.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_parse_file_as_stream</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Retrieve the RDF/XML content at URI and parse it into a librdf_stream
+ </DT
+><DT
+><A
+HREF="r4814.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_parse_as_stream_common</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Retrieve the content at URI/string and parse it into a librdf_stream
+ </DT
+><DT
+><A
+HREF="r4863.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_parse_uri_as_stream</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Retrieve the content at URI and parse it into a librdf_stream
+ </DT
+><DT
+><A
+HREF="r4905.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_parse_string_as_stream</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Parse the content in a string and return a librdf_stream
+ </DT
+><DT
+><A
+HREF="r4946.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_parse_into_model_common</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Retrieve the RDF/XML content at URI and store it into a librdf_model
+ </DT
+><DT
+><A
+HREF="r5006.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_parse_uri_into_model</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Retrieve the RDF/XML content at URI and store it into a librdf_model
+ </DT
+><DT
+><A
+HREF="r5059.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_parse_string_into_model</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Parse the RDF/XML content in a string and store it into a librdf_model
+ </DT
+><DT
+><A
+HREF="r5111.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_serialise_end_of_stream</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Check for the end of the stream of statements from the raptor RDF parser
+ </DT
+><DT
+><A
+HREF="r5138.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_serialise_next_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Move to the next librdf_statement in the stream of statements from the raptor RDF parse
+ </DT
+><DT
+><A
+HREF="r5165.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_serialise_get_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the current librdf_statement from the stream of statements from the raptor RDF parse
+ </DT
+><DT
+><A
+HREF="r5200.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_serialise_finished</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Finish the serialisation of the statement stream from the raptor RDF parse
+ </DT
+><DT
+><A
+HREF="r5224.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_register_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Register the raptor RDF parser with the RDF parser factory
+ </DT
+><DT
+><A
+HREF="r5247.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_constructor</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Initialise the raptor RDF parser module
+ </DT
+><DT
+><A
+HREF="r5270.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_parser_raptor_destructor</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Terminate the raptor RDF parser module
+ </DT
+></DL
+></DD
+></DL
+></DD
+><DT
+><A
+HREF="digest.html"
+>Content Digests</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="digest.html#AEN5296"
+>Digest Class</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r5298.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_digest_register_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Register a hash factory
+ </DT
+><DT
+><A
+HREF="r5336.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_get_digest_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      get a digest factory
+ </DT
+><DT
+><A
+HREF="r5369.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_digest</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_digest object
+ </DT
+><DT
+><A
+HREF="r5403.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_digest_from_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_digest object
+ </DT
+><DT
+><A
+HREF="r5437.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_free_digest</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Destructor- destroy a librdf_digest object
+ </DT
+><DT
+><A
+HREF="r5460.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_digest_init</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      (Re)initialise the librdf_digest object
+ </DT
+><DT
+><A
+HREF="r5483.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_digest_update</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Add more data to the librdf_digest object
+ </DT
+><DT
+><A
+HREF="r5520.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_digest_final</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Finish the digesting of data
+ </DT
+><DT
+><A
+HREF="r5547.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_digest_get_digest</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the calculated digested value.
+ </DT
+><DT
+><A
+HREF="r5573.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_digest_to_string</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get a string representation of the digest object
+ </DT
+><DT
+><A
+HREF="r5600.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_digest_print</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Print the digest to a FILE handle
+ </DT
+><DT
+><A
+HREF="r5630.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_init_digest</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Initialise the librdf_digest class
+ </DT
+><DT
+><A
+HREF="r5653.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_finish_digest</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Terminate the librdf_digest class
+ </DT
+></DL
+></DD
+><DT
+><A
+HREF="x5676.html"
+>OpenSSL Digests Implementation</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r5678.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_digest_openssl_constructor</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Initialise the OpenSSL digest module
+ </DT
+></DL
+></DD
+><DT
+><A
+HREF="x5701.html"
+>Local MD5 Digest Implementation</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r5703.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_digest_md5_constructor</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Initialise the MD5 digest factory
+ </DT
+></DL
+></DD
+></DL
+></DD
+><DT
+><A
+HREF="hash.html"
+>Hashes</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="hash.html#AEN5729"
+>Hash Class</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r5731.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_init_hash</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Initialise the librdf_hash module
+ </DT
+><DT
+><A
+HREF="r5759.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_finish_hash</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Terminate the librdf_hash module
+ </DT
+><DT
+><A
+HREF="r5782.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_hash_datum</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - Create a new hash datum object
+ </DT
+><DT
+><A
+HREF="r5823.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_free_hash_datum</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Destructor - destroy a hash datum object
+ </DT
+><DT
+><A
+HREF="r5846.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_register_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Register a hash factory
+ </DT
+><DT
+><A
+HREF="r5884.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_get_hash_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get a hash factory by name
+ </DT
+><DT
+><A
+HREF="r5920.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_hash</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;       Constructor - create a new librdf_hash object
+ </DT
+><DT
+><A
+HREF="r5954.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_hash_from_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;       Constructor - create a new librdf_hash object from a factory
+ </DT
+><DT
+><A
+HREF="r5988.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_hash_from_hash</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;       Copy Constructor - create a new librdf_hash object from an existing one
+ </DT
+><DT
+><A
+HREF="r6015.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_free_hash</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Destructor - destroy a librdf_hash object
+ </DT
+><DT
+><A
+HREF="r6041.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_open</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Start a hash association 
+ </DT
+><DT
+><A
+HREF="r6105.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_close</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      End a hash association
+ </DT
+><DT
+><A
+HREF="r6131.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_values_count</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the number of values in the hash
+ </DT
+><DT
+><A
+HREF="r6157.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_get</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Retrieve one value from hash for a given key as string
+ </DT
+><DT
+><A
+HREF="r6193.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_get_one</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Retrieve one value from hash for a given key
+ </DT
+><DT
+><A
+HREF="r6229.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_get_all</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Retrieve all values from hash for a given key
+ </DT
+><DT
+><A
+HREF="r6274.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_get_del</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Retrieve one value from hash for a given key as string and remove all values with that key
+ </DT
+><DT
+><A
+HREF="r6310.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_put</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Insert key/value pairs into the hash according to flags
+ </DT
+><DT
+><A
+HREF="r6353.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_exists</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Check if a given key/value is in the hash
+ </DT
+><DT
+><A
+HREF="r6393.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_delete</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Delete a key/value pair from the hash
+ </DT
+><DT
+><A
+HREF="r6433.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_delete_all</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Delete a key and all values from the hash
+ </DT
+><DT
+><A
+HREF="r6466.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_keys</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the hash keys
+ </DT
+><DT
+><A
+HREF="r6504.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_sync</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Flush any cached information to disk if appropriate
+ </DT
+><DT
+><A
+HREF="r6530.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_get_fd</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the file descriptor for the hash
+ </DT
+><DT
+><A
+HREF="r6559.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_print</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      pretty print the hash to a file descriptor
+ </DT
+><DT
+><A
+HREF="r6589.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_print_keys</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      pretty print the keys to a file descriptor
+ </DT
+><DT
+><A
+HREF="r6619.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_print_values</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      pretty print the values of one key to a file descriptor
+ </DT
+><DT
+><A
+HREF="r6656.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_from_string</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Initialise a hash from a string
+ </DT
+><DT
+><A
+HREF="r6693.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_from_array_of_strings</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Initialise a hash from an array of strings
+ </DT
+><DT
+><A
+HREF="r6726.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_get_as_boolean</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      lookup a hash key and decode value as a boolean
+ </DT
+><DT
+><A
+HREF="r6760.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_get_as_long</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      lookup a hash key and decode value as a long
+ </DT
+><DT
+><A
+HREF="r6794.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_put_strings</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Insert key/value pairs into the hash as strings
+ </DT
+></DL
+></DD
+><DT
+><A
+HREF="x6837.html"
+>Hash Cursor Implementation Class</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r6839.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_hash_cursor</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Constructor - Create a new hash cursor over a hash
+ </DT
+><DT
+><A
+HREF="r6866.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_free_hash_cursor</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Destructor - destroy a librdf_hash_cursor object
+ </DT
+></DL
+></DD
+><DT
+><A
+HREF="x6892.html"
+>Berkeley DB Hash Implementation Class</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r6894.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_create</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Create a BerkeleyDB hash
+ </DT
+><DT
+><A
+HREF="r6928.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_destroy</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Destroy a BerkeleyDB hash
+ </DT
+><DT
+><A
+HREF="r6954.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_open</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Open and maybe create a BerkeleyDB hash
+ </DT
+><DT
+><A
+HREF="r7015.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_close</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Close the hash
+ </DT
+><DT
+><A
+HREF="r7044.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_clone</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Clone the BerkeleyDB hash
+ </DT
+><DT
+><A
+HREF="r7095.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_values_count</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the number of values in the hash
+ </DT
+><DT
+><A
+HREF="r7121.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_cursor_init</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Initialise a new bdb cursor
+ </DT
+><DT
+><A
+HREF="r7154.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_cursor_get</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Retrieve a hash value for the given key
+ </DT
+><DT
+><A
+HREF="r7201.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_cursor_finish</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Finish the serialisation of the hash bdb get
+ </DT
+><DT
+><A
+HREF="r7224.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_put</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Store a key/value pair in the hash
+ </DT
+><DT
+><A
+HREF="r7264.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_exists</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Test the existence of a key/value in the hash
+ </DT
+><DT
+><A
+HREF="r7307.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_delete_key</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Delete all values for given key from the hash
+ </DT
+><DT
+><A
+HREF="r7340.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_delete_key_value</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Delete given key/value from the hash
+ </DT
+><DT
+><A
+HREF="r7380.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_sync</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Flush the hash to disk
+ </DT
+><DT
+><A
+HREF="r7406.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_get_fd</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the file description representing the hash
+ </DT
+><DT
+><A
+HREF="r7432.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_bdb_register_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Register the BerkeleyDB hash module with the hash factory
+ </DT
+><DT
+><A
+HREF="r7455.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_init_hash_bdb</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Initialise the BerkeleyDB hash module
+ </DT
+></DL
+></DD
+><DT
+><A
+HREF="x7478.html"
+>In Memory Hash Implementation Class</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r7480.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_memory_find_node</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Find the node for the given key or value
+ </DT
+><DT
+><A
+HREF="r7539.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_memory_create</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Create a new memory hash
+ </DT
+><DT
+><A
+HREF="r7573.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_memory_destroy</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Destroy a memory hash
+ </DT
+><DT
+><A
+HREF="r7599.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_memory_open</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Open memory hash with given parameters
+ </DT
+><DT
+><A
+HREF="r7661.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_memory_close</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Close the hash
+ </DT
+><DT
+><A
+HREF="r7687.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_memory_values_count</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the number of values in the hash
+ </DT
+><DT
+><A
+HREF="r7713.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_memory_cursor_init</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Initialise a new hash cursor
+ </DT
+><DT
+><A
+HREF="r7746.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_memory_cursor_get</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Retrieve a hash value for the given key
+ </DT
+><DT
+><A
+HREF="r7793.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_memory_cursor_finish</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Finish the serialisation of the hash memory get
+ </DT
+><DT
+><A
+HREF="r7816.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_memory_put</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Store a key/value pair in the hash
+ </DT
+><DT
+><A
+HREF="r7856.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_memory_exists</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Test the existence of a key in the hash
+ </DT
+><DT
+><A
+HREF="r7896.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_memory_delete_key_value</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Delete a key/value pair from the hash
+ </DT
+><DT
+><A
+HREF="r7936.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_memory_delete_key</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Delete a key and all its values from the hash
+ </DT
+><DT
+><A
+HREF="r7969.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_memory_sync</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Flush the hash to disk
+ </DT
+><DT
+><A
+HREF="r7998.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_memory_get_fd</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the file descriptor representing the hash
+ </DT
+><DT
+><A
+HREF="r8027.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_hash_memory_register_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Register the memory hash module with the hash factory
+ </DT
+><DT
+><A
+HREF="r8050.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_init_hash_memory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Initialise the memory hash module
+ </DT
+></DL
+></DD
+></DL
+></DD
+><DT
+><A
+HREF="query.html"
+>RDF Query</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="query.html#AEN8080"
+>RDF Query Class</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r8082.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_init_query</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Initialise the librdf_query module
+ </DT
+><DT
+><A
+HREF="r8109.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_finish_query</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Terminate the librdf_query module
+ </DT
+><DT
+><A
+HREF="r8132.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_query_register_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Register a query factory
+ </DT
+><DT
+><A
+HREF="r8170.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_get_query_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get a query factory by name
+ </DT
+><DT
+><A
+HREF="r8203.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_query</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_query object
+ </DT
+><DT
+><A
+HREF="r8251.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_query_from_query</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Copy constructor - create a new librdf_query object from an existing one
+ </DT
+><DT
+><A
+HREF="r8282.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_query_from_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_query object
+ </DT
+><DT
+><A
+HREF="r8337.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_free_query</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Destructor - destroy a librdf_query object
+ </DT
+><DT
+><A
+HREF="r8361.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_query_open</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Start a query
+ </DT
+><DT
+><A
+HREF="r8392.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_query_close</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      End a model / query association
+ </DT
+><DT
+><A
+HREF="r8419.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_query_run</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Run the query on a model giving matching statements
+ </DT
+></DL
+></DD
+><DT
+><A
+HREF="x8459.html"
+>RDF Query Triples Class</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r8461.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_query_triples_init</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Initialise a triples query from the string
+ </DT
+><DT
+><A
+HREF="r8533.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_query_triples_close</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   </DT
+></DL
+></DD
+></DL
+></DD
+><DT
+><A
+HREF="serializer.html"
+>RDF Serializer</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="serializer.html#AEN8565"
+>RDF Serializer Class</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r8567.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_serializer_register_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Register a serializer factory 
+ </DT
+><DT
+><A
+HREF="r8619.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_get_serializer_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get a serializer factory by name
+ </DT
+><DT
+><A
+HREF="r8670.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_serializer</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_serializer object
+ </DT
+><DT
+><A
+HREF="r8718.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_serializer_from_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_serializer object
+ </DT
+><DT
+><A
+HREF="r8752.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_free_serializer</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Destructor - destroys a librdf_serializer object
+ </DT
+><DT
+><A
+HREF="r8775.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_serializer_serialize_model</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Turn a librdf_model into a serialized form
+ </DT
+><DT
+><A
+HREF="r8823.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_serializer_serialize_model_to_file</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Write a librdf_model into a serialized form to a file
+ </DT
+><DT
+><A
+HREF="r8871.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_init_serializer</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Initialise the librdf_serializer class
+ </DT
+><DT
+><A
+HREF="r8894.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_finish_serializer</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Terminate the librdf_serializer class
+ </DT
+><DT
+><A
+HREF="r8917.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_serializer_set_error</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Set the serializer error handling function
+ </DT
+><DT
+><A
+HREF="r8958.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_serializer_set_warning</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Set the serializer warning handling function
+ </DT
+><DT
+><A
+HREF="r8999.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_serializer_get_feature</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the value of a serializer feature
+ </DT
+><DT
+><A
+HREF="r9032.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_serializer_set_feature</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Set the value of a serializer feature
+ </DT
+><DT
+><A
+HREF="r9072.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_serializer_set_namespace</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Set a namespace URI/prefix mapping
+ </DT
+></DL
+></DD
+><DT
+><A
+HREF="x9112.html"
+>RDF Serializer Raptor Class</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r9114.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_serializer_raptor_init</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Initialise the N-Triples RDF serializer
+ </DT
+><DT
+><A
+HREF="r9147.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_serializer_raptor_register_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Register the N-riples serializer with the RDF serializer factory
+ </DT
+><DT
+><A
+HREF="r9170.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_serializer_raptor_constructor</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Initialise the raptor RDF serializer module
+ </DT
+></DL
+></DD
+></DL
+></DD
+><DT
+><A
+HREF="storage.html"
+>RDF Model Storage</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="storage.html#AEN9196"
+>RDF Model Storage Class</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r9198.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_init_storage</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Initialise the librdf_storage module
+ </DT
+><DT
+><A
+HREF="r9225.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_finish_storage</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Terminate the librdf_storage module
+ </DT
+><DT
+><A
+HREF="r9248.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_register_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Register a storage factory
+ </DT
+><DT
+><A
+HREF="r9286.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_get_storage_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get a storage factory by name
+ </DT
+><DT
+><A
+HREF="r9312.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_enumerate</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get information on storages
+ </DT
+><DT
+><A
+HREF="r9352.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_storage</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_storage object
+ </DT
+><DT
+><A
+HREF="r9404.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_storage_with_options</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_storage object
+ </DT
+><DT
+><A
+HREF="r9456.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_storage_from_storage</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Copy constructor - create a new librdf_storage object from an existing one
+ </DT
+><DT
+><A
+HREF="r9487.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_storage_from_factory</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_storage object
+ </DT
+><DT
+><A
+HREF="r9539.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_free_storage</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Destructor - destroy a librdf_storage object
+ </DT
+><DT
+><A
+HREF="r9563.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_open</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Start a model / storage association
+ </DT
+><DT
+><A
+HREF="r9601.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_close</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      End a model / storage association
+ </DT
+><DT
+><A
+HREF="r9628.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_size</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the number of statements stored
+ </DT
+><DT
+><A
+HREF="r9655.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_add_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Add a statement to a storage
+ </DT
+><DT
+><A
+HREF="r9693.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_add_statements</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Add a stream of statements to the storage
+ </DT
+><DT
+><A
+HREF="r9728.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_remove_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Remove a statement from the storage
+ </DT
+><DT
+><A
+HREF="r9763.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_contains_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Test if a given statement is present in the storage
+ </DT
+><DT
+><A
+HREF="r9798.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_serialise</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Serialise the storage as a librdf_stream of statemetns
+ </DT
+><DT
+><A
+HREF="r9826.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_find_statements</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      search the storage for matching statements
+ </DT
+><DT
+><A
+HREF="r9868.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_get_sources</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the sources (subjects) of arc in an RDF graph given arc (predicate) and target (object)
+ </DT
+><DT
+><A
+HREF="r9917.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_get_arcs</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the arcs (predicates) of an arc in an RDF graph given source (subject) and target (object)
+ </DT
+><DT
+><A
+HREF="r9966.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_get_targets</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the targets (objects) of an arc in an RDF graph given source (subject) and arc (predicate)
+ </DT
+><DT
+><A
+HREF="r10015.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_get_arcs_in</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the properties pointing to the given resource
+ </DT
+><DT
+><A
+HREF="r10052.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_get_arcs_out</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the properties pointing from the given resource
+ </DT
+><DT
+><A
+HREF="r10089.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_has_arc_in</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      check if a node has a given property pointing to it
+ </DT
+><DT
+><A
+HREF="r10132.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_has_arc_out</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      check if a node has a given property pointing from it
+ </DT
+><DT
+><A
+HREF="r10175.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_context_add_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Add a statement to a storage in a context
+ </DT
+><DT
+><A
+HREF="r10222.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_context_add_statements</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Add statements to a storage with a context
+ </DT
+><DT
+><A
+HREF="r10269.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_context_remove_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Remove a statement from a storage in a context
+ </DT
+><DT
+><A
+HREF="r10316.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_context_remove_statements</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Remove statements from a storage with the given context
+ </DT
+><DT
+><A
+HREF="r10355.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_context_as_stream</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      List all statements in a storage context
+ </DT
+><DT
+><A
+HREF="r10391.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_context_serialise</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      List all statements in a storage context (DEPRECATED)
+ </DT
+><DT
+><A
+HREF="r10430.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_find_statements_in_context</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      search the storage for matching statements in a given context
+ </DT
+><DT
+><A
+HREF="r10480.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_get_contexts</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the list of contexts in the store
+ </DT
+><DT
+><A
+HREF="r10512.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_get_feature</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      get the value of a storage feature
+ </DT
+><DT
+><A
+HREF="r10548.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_set_feature</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      set the value of a storage feature
+ </DT
+><DT
+><A
+HREF="r10591.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_find_statements_with_options</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      search the storage for matching statements with match options
+ </DT
+></DL
+></DD
+><DT
+><A
+HREF="x10650.html"
+>In Memory List RDF Model Storage Implementation Class</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r10652.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_list_close</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   </DT
+><DT
+><A
+HREF="r10681.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_list_find_statements</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   </DT
+><DT
+><A
+HREF="r10719.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_list_context_add_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Add a statement to a storage context
+ </DT
+><DT
+><A
+HREF="r10762.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_list_context_remove_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Remove a statement from a storage context
+ </DT
+><DT
+><A
+HREF="r10805.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_list_context_serialise</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      List all statements in a storage context
+ </DT
+><DT
+><A
+HREF="r10841.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_list_get_contexts</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      List all context nodes in a storage
+ </DT
+><DT
+><A
+HREF="r10869.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_list_get_feature</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      get the value of a storage feature
+ </DT
+></DL
+></DD
+><DT
+><A
+HREF="x10905.html"
+>Multiple Hashes RDF Model Storage Implementation Class</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r10907.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_hashes_close</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   </DT
+><DT
+><A
+HREF="r10936.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_hashes_find_statements</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   </DT
+><DT
+><A
+HREF="r10974.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_hashes_context_add_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Add a statement to a storage context
+ </DT
+><DT
+><A
+HREF="r11017.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_hashes_context_remove_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Remove a statement from a storage context
+ </DT
+><DT
+><A
+HREF="r11060.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_hashes_context_serialise</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      List all statements in a storage context
+ </DT
+><DT
+><A
+HREF="r11096.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_hashes_get_contexts</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      List all context nodes in a storage
+ </DT
+><DT
+><A
+HREF="r11124.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_hashes_get_feature</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      get the value of a storage feature
+ </DT
+></DL
+></DD
+><DT
+><A
+HREF="x11160.html"
+>MySQL RDF Model Storage Implementation Class</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r11162.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_mysql_hash</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   </DT
+><DT
+><A
+HREF="r11212.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_mysql_init</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   </DT
+><DT
+><A
+HREF="r11255.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_mysql_terminate</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   </DT
+><DT
+><A
+HREF="r11284.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_mysql_open</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   </DT
+><DT
+><A
+HREF="r11320.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_mysql_close</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   </DT
+><DT
+><A
+HREF="r11349.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_mysql_size</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   </DT
+><DT
+><A
+HREF="r11378.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_mysql_add_statements</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   </DT
+><DT
+><A
+HREF="r11414.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_mysql_node_hash</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   </DT
+><DT
+><A
+HREF="r11457.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_mysql_context_add_statements</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   </DT
+><DT
+><A
+HREF="r11501.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_mysql_context_add_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Add a statement to a storage context
+ </DT
+><DT
+><A
+HREF="r11544.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_mysql_contains_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   </DT
+><DT
+><A
+HREF="r11580.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_mysql_context_remove_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Remove a statement from a storage context
+ </DT
+><DT
+><A
+HREF="r11623.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_mysql_context_remove_statements</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Remove all statement from a storage context
+ </DT
+><DT
+><A
+HREF="r11658.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_mysql_serialise</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   </DT
+><DT
+><A
+HREF="r11688.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_mysql_find_statements</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   </DT
+><DT
+><A
+HREF="r11725.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_mysql_context_serialise</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      List all statements in a storage context
+ </DT
+><DT
+><A
+HREF="r11761.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_mysql_find_statements_in_context</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   </DT
+><DT
+><A
+HREF="r11805.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_mysql_find_statements_with_options</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   </DT
+><DT
+><A
+HREF="r11857.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_mysql_get_contexts</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   </DT
+><DT
+><A
+HREF="r11887.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_mysql_get_feature</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      get the value of a storage feature
+ </DT
+></DL
+></DD
+><DT
+><A
+HREF="x11923.html"
+>3store RDF Model Storage Implementation Class</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r11925.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_tstore_close</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   </DT
+><DT
+><A
+HREF="r11954.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_tstore_find_statements</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   </DT
+><DT
+><A
+HREF="r11992.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_tstore_context_add_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Add a statement to a storage context
+ </DT
+><DT
+><A
+HREF="r12035.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_tstore_context_remove_statement</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Remove a statement from a storage context
+ </DT
+><DT
+><A
+HREF="r12078.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_storage_tstore_context_serialise</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      List all statements in a storage context
+ </DT
+></DL
+></DD
+></DL
+></DD
+><DT
+><A
+HREF="stream.html"
+>RDF Model Serialisation</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="stream.html#AEN12117"
+>RDF Statement Stream Class</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r12119.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_stream</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Constructor - create a new librdf_stream
+ </DT
+><DT
+><A
+HREF="r12191.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_free_stream</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Destructor - destroy an libdf_stream object
+ </DT
+><DT
+><A
+HREF="r12215.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_stream_end</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Test if the stream has ended
+ </DT
+><DT
+><A
+HREF="r12242.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_stream_next</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Move to the next librdf_statement in the stream
+ </DT
+><DT
+><A
+HREF="r12269.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_stream_get_object</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the current librdf_statement in the stream
+ </DT
+><DT
+><A
+HREF="r12297.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_stream_get_context</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the context of the current object on the stream
+ </DT
+><DT
+><A
+HREF="r12324.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_stream_add_map</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Add a librdf_stream mapping function
+ </DT
+><DT
+><A
+HREF="r12376.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_stream_from_node_iterator</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_stream from an iterator of nodes
+ </DT
+><DT
+><A
+HREF="r12426.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_stream_print</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      print the stream
+ </DT
+></DL
+></DD
+></DL
+></DD
+><DT
+><A
+HREF="iterator.html"
+>Data Iterators</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="iterator.html#AEN12466"
+>Iterator Class</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r12468.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_iterator</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Constructor - create a new librdf_iterator object
+ </DT
+><DT
+><A
+HREF="r12534.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_free_iterator</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Destructor - destroy a librdf_iterator object
+ </DT
+><DT
+><A
+HREF="r12558.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_iterator_have_elements</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Test if the iterator has finished
+ </DT
+><DT
+><A
+HREF="r12588.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_iterator_end</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Test if the iterator has finished
+ </DT
+><DT
+><A
+HREF="r12615.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_iterator_next</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Move to the next iterator element
+ </DT
+><DT
+><A
+HREF="r12642.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_iterator_get_object</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the current object from the iterator
+ </DT
+><DT
+><A
+HREF="r12669.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_iterator_get_context</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the context of the current object on the iterator
+ </DT
+><DT
+><A
+HREF="r12696.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_iterator_get_key</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the key of the current object on the iterator
+ </DT
+><DT
+><A
+HREF="r12723.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_iterator_get_value</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get the value of the current object on the iterator
+ </DT
+><DT
+><A
+HREF="r12750.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_iterator_add_map</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Add a librdf_iterator mapping function
+ </DT
+></DL
+></DD
+></DL
+></DD
+><DT
+><A
+HREF="list.html"
+>Lists</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="list.html#AEN12805"
+>List Class</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r12808.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_list</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Constructor - create a new librdf_list
+ </DT
+><DT
+><A
+HREF="r12835.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_free_list</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Destructor - destroy a librdf_list object
+ </DT
+><DT
+><A
+HREF="r12859.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_list_clear</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      empty an librdf_list
+ </DT
+><DT
+><A
+HREF="r12883.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_list_add</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      add a data item to the end of a librdf_list
+ </DT
+><DT
+><A
+HREF="r12921.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_list_unshift</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      add a data item to the start of a librdf_list
+ </DT
+><DT
+><A
+HREF="r12959.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_list_remove</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      remove a data item from an librdf_list
+ </DT
+><DT
+><A
+HREF="r12997.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_list_shift</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      remove and return the data at the start of the list
+ </DT
+><DT
+><A
+HREF="r13024.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_list_pop</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      remove and return the data at the end of the list
+ </DT
+><DT
+><A
+HREF="r13051.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_list_contains</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      check for presence of data item in list
+ </DT
+><DT
+><A
+HREF="r13089.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_list_size</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      return the length of the list
+ </DT
+><DT
+><A
+HREF="r13116.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_list_set_equals</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      set the equals function for the list
+ </DT
+><DT
+><A
+HREF="r13153.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_list_get_iterator</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      get an iterator for the list
+ </DT
+><DT
+><A
+HREF="r13181.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_list_foreach</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      apply a function for each data item in a librdf_list
+ </DT
+></DL
+></DD
+></DL
+></DD
+><DT
+><A
+HREF="uri.html"
+>URIs</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="uri.html#AEN13223"
+>URI Class</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r13225.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_init_uri</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Initialise the librdf_uri class
+ </DT
+><DT
+><A
+HREF="r13248.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_finish_uri</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Terminate the librdf_uri class
+ </DT
+><DT
+><A
+HREF="r13271.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_uri</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_uri object from a URI string
+ </DT
+><DT
+><A
+HREF="r13308.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_uri_from_uri</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Copy constructor - create a new librdf_uri object from an existing librdf_uri object
+ </DT
+><DT
+><A
+HREF="r13336.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_uri_from_uri_local_name</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Copy constructor - create a new librdf_uri object from an existing librdf_uri object and a local name
+ </DT
+><DT
+><A
+HREF="r13371.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_uri_normalised_to_base</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_uri object from a URI string stripped of the source URI, made relative to the base URI
+ </DT
+><DT
+><A
+HREF="r13412.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_uri_relative_to_base</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_uri object from a URI string relative to a base URI
+ </DT
+><DT
+><A
+HREF="r13449.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_new_uri_from_filename</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Constructor - create a new librdf_uri object from a filename
+ </DT
+><DT
+><A
+HREF="r13484.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_free_uri</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Destructor - destroy a librdf_uri object
+ </DT
+><DT
+><A
+HREF="r13508.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_uri_as_string</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get a pointer to the string representation of the URI
+ </DT
+><DT
+><A
+HREF="r13541.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_uri_as_counted_string</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get a pointer to the string representation of the URI with length
+ </DT
+><DT
+><A
+HREF="r13581.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_uri_get_digest</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Get a digest for the URI
+ </DT
+><DT
+><A
+HREF="r13613.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_uri_print</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Print the URI to the given file handle
+ </DT
+><DT
+><A
+HREF="r13645.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_uri_to_string</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Format the URI as a string
+ </DT
+><DT
+><A
+HREF="r13675.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_uri_to_counted_string</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Format the URI as a counted string
+ </DT
+><DT
+><A
+HREF="r13712.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_uri_equals</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Compare two librdf_uri objects for equality
+ </DT
+><DT
+><A
+HREF="r13747.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_uri_is_file_uri</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Test if a URI points to a filename
+ </DT
+><DT
+><A
+HREF="r13774.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_uri_to_filename</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Return pointer to filename of URI
+ </DT
+></DL
+></DD
+></DL
+></DD
+><DT
+><A
+HREF="utf8.html"
+>UTF-8</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="utf8.html#AEN13811"
+>UTF8 Class</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r13813.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_unicode_char_to_utf8</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   Convert a Unicode character to UTF-8 encoding
+ </DT
+><DT
+><A
+HREF="r13856.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_utf8_to_unicode_char</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Convert an UTF-8 encoded buffer to a Unicode character
+ </DT
+><DT
+><A
+HREF="r13899.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_utf8_to_latin1</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Convert a UTF-8 string to ISO Latin-1
+ </DT
+><DT
+><A
+HREF="r13943.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_latin1_to_utf8</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Convert an ISO Latin-1 encoded string to UTF-8
+ </DT
+><DT
+><A
+HREF="r13987.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_utf8_print</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Print a UTF-8 string to a stream
+ </DT
+></DL
+></DD
+></DL
+></DD
+><DT
+><A
+HREF="heuristics.html"
+>Heuristics</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="heuristics.html#AEN14031"
+>Heuristic functions</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="r14033.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_heuristic_is_blank_node</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;   try to guess if an node string is a blank node identifier
+ </DT
+><DT
+><A
+HREF="r14062.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_heuristic_get_blank_node</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      get a blank node identifier from a node string
+ </DT
+><DT
+><A
+HREF="r14094.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_heuristic_object_is_literal</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      try to guess if an object string is a literal or a resource
+ </DT
+><DT
+><A
+HREF="r14126.html"
+><SPAN
+CLASS="phrase"
+><SPAN
+CLASS="PHRASE"
+>librdf_heuristic_gen_name</SPAN
+></SPAN
+></A
+>&nbsp;--&nbsp;      Generate a new name from an existing name
+ </DT
+></DL
+></DD
+></DL
+></DD
+><DT
+><A
+HREF="licenses.html"
+>GNU Free Documentation License</A
+></DT
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="objects.html"
+ACCESSKEY="N"
+>Next &#62;&#62;&#62;</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Introduction to Objects in C</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

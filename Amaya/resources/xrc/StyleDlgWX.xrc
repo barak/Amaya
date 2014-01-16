@@ -1,0 +1,2478 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resource version="2.3.0.1" xmlns="http://www.wxwindows.org/wxxrc">
+  <object class="wxDialog" name="StyleDlgWX">
+    <title>StyleDlgWX</title>
+    <centered>1</centered>
+    <style>wxDEFAULT_DIALOG_STYLE|wxSTAY_ON_TOP|wxRESIZE_BORDER|wxNO_3D|wxTAB_TRAVERSAL|wxCLIP_CHILDREN</style>
+    <object class="wxBoxSizer">
+      <orient>wxVERTICAL</orient>
+      <object class="sizeritem">
+        <object class="wxNotebook" name="wxID_NOTEBOOK">
+          <usenotebooksizer>1</usenotebooksizer>
+          <style platform="unix"></style>
+          <focused>1</focused>
+          <object class="notebookpage">
+            <label>*Text*</label>
+            <object class="wxPanel" name="wxID_PAGE_TEXT">
+              <object class="wxBoxSizer">
+                <orient>wxVERTICAL</orient>
+                <object class="sizeritem">
+                  <object class="wxBoxSizer">
+                    <orient>wxHORIZONTAL</orient>
+                    <object class="sizeritem">
+                      <object class="wxBoxSizer">
+                        <orient>wxVERTICAL</orient>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_FAMILY">
+                                <label>font-family</label>
+                                <size>100,-1</size>
+                              </object>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxComboBox" name="wxID_COMBOBOX_FAMILY">
+                                <content>
+                                  <item/>
+                                  <item>times</item>
+                                  <item>helvetica</item>
+                                  <item>courier</item>
+                                  <item>serif</item>
+                                  <item>sans-serif</item>
+                                  <item>monospace</item>
+                                  <item>inherit</item></content>
+                                <focused>1</focused>
+                              </object>
+                              <option>1</option>
+                              <flag>wxALL|wxEXPAND</flag>
+                            </object>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_SIZE">
+                                <label>font-size</label>
+                                <size>100,-1</size>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_CHOICE_SIZE">
+                                <content>
+                                  <item/>
+                                  <item>larger</item>
+                                  <item>smaller</item>
+                                  <item>xx-small</item>
+                                  <item>x-small</item>
+                                  <item>medium</item>
+                                  <item>lage</item>
+                                  <item>x-large</item>
+                                  <item>xx-large</item>
+                                  <item>inherit</item></content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_OR">
+                                <label> or </label>
+                              </object>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxBoxSizer">
+                                <orient>wxHORIZONTAL</orient>
+                                <object class="sizeritem">
+                                  <object class="wxSpinCtrl" name="wxID_SPIN_SIZE">
+                                    <min>6</min>
+                                    <max>100</max>
+                                    <size>50,-1</size>
+                                    <focused>1</focused>
+                                  </object>
+                                  <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                </object>
+                                <object class="spacer">
+                                  <size>5,0</size>
+                                </object>
+                                <object class="sizeritem">
+                                  <object class="wxChoice" name="wxID_SIZE_UNIT">
+                                    <content>
+                                      <item>px</item>
+                                      <item>pt</item>
+                                      <item>pc</item>
+                                      <item>in</item>
+                                      <item>mm</item>
+                                      <item>cm</item>
+                                      <item>em</item>
+                                      <item>ex</item>
+                                      <item>%</item>
+                                    </content>
+                                    <focused>1</focused>
+                                  </object>
+                                </object>
+                              </object>
+                            </object>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_STYLE">
+                                <label>font-style</label>
+                                <size>100,-1</size>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                              <option>1</option>
+                              <flag>wxEXPAND</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_CHOICE_SYLE">
+                                <content>
+                                  <item/>
+                                  <item>normal</item>
+                                  <item>italic</item>
+                                  <item>oblique</item>
+                                  <item>inherit</item></content>
+                                <focused>1</focused>
+                              </object>
+                              <flag>wxLEFT</flag>
+                            </object>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_WEIGHT">
+                                <label>font-weight</label>
+                                <size>100,-1</size>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                              <option>1</option>
+                              <flag>wxEXPAND</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_CHOICE_WEIGHT">
+                                <content>
+                                  <item/>
+                                  <item>normal</item>
+                                  <item>bold</item>
+                                  <item>100</item>
+                                  <item>200</item>
+                                  <item>300</item>
+                                  <item>400</item>
+                                  <item>500</item>
+                                  <item>600</item>
+                                  <item>700</item>
+                                  <item>800</item>
+                                  <item>900</item>
+                                  <item>lighter</item>
+                                  <item>bolder</item>
+                                  <item>inherit</item></content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_VARIANT">
+                                <label>font-variant</label>
+                                <size>100,-1</size>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                              <option>1</option>
+                              <flag>wxEXPAND</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_CHOICE_VARIANT">
+                                <content>
+                                  <item/>
+                                  <item>normal</item>
+                                  <item>small-caps</item>
+                                  <item>inherit</item></content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                      </object>
+                      <option>1</option>
+                      <flag>wxALL|wxEXPAND</flag>
+                    </object>
+                    <object class="spacer">
+                      <size>10,0</size>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxBoxSizer">
+                        <orient>wxVERTICAL</orient>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticBitmap">
+                                <bitmap>../icons/22x22/format_justify.png</bitmap>
+                              </object>
+                              <flag>wxALIGN_CENTRE</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_LINE">
+                                <label>line-height</label>
+                                <size>100,-1</size>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_COMBOBOX_LINE">
+                                <content>
+                                  <item/>
+                                  <item>normal</item>
+                                  <item>inherit</item></content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_OR1">
+                                <label> or </label>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxSpinCtrl" name="wxID_SPIN_LINE">
+                                <min>0</min>
+                                <max>100</max>
+                                <size>50,-1</size>
+                                <focused>1</focused>
+                              </object>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>5,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_LINE_UNIT">
+                                <content>
+                                  <item/>
+                                  <item>px</item>
+                                  <item>pt</item>
+                                  <item>pc</item>
+                                  <item>in</item>
+                                  <item>mm</item>
+                                  <item>cm</item>
+                                  <item>em</item>
+                                  <item>ex</item>
+                                  <item>%</item></content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticBitmap">
+                                <bitmap>../icons/22x22/format_justify.png</bitmap>
+                              </object>
+                              <flag>wxALIGN_CENTRE</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_INDENT">
+                                <label>text-indent</label>
+                                <size>100,-1</size>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                              <option>1</option>
+                              <flag>wxEXPAND</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxSpinCtrl" name="wxID_SPIN_INDENT">
+                                <min>0</min>
+                                <max>100</max>
+                                <size>50,-1</size>
+                                <focused>1</focused>
+                              </object>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>5,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_INDENT_UNIT">
+                                <content>
+                                  <item>px</item>
+                                  <item>pt</item>
+                                  <item>pc</item>
+                                  <item>in</item>
+                                  <item>mm</item>
+                                  <item>cm</item>
+                                  <item>em</item>
+                                  <item>ex</item>
+                                  <item>%</item>
+                                </content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticBitmap">
+                                <bitmap>../icons/22x22/format_justify.png</bitmap>
+                              </object>
+                              <flag>wxALIGN_CENTRE</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_VALIGN">
+                                <label>vertical-align</label>
+                                <size>100,-1</size>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_CHOICE_VALIGN">
+                                <content>
+                                  <item/>
+                                  <item>baseline</item>
+                                  <item>sub</item>
+                                  <item>super</item>
+                                  <item>top</item>
+                                  <item>text-top</item>
+                                  <item>middle</item>
+                                  <item>bottom</item>
+                                  <item>text-bottom</item></content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_OR2">
+                                <label> or </label>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxSpinCtrl" name="wxID_SPIN_VALIGN">
+                                <min>6</min>
+                                <max>100</max>
+                                <size>50,-1</size>
+                                <focused>1</focused>
+                              </object>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>5,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_VALIGN_UNIT">
+                                <content>
+                                  <item>%</item>
+                                </content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticBitmap">
+                                <bitmap>../icons/22x22/format_justify.png</bitmap>
+                              </object>
+                              <flag>wxALIGN_CENTRE</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_TEXT_ALIGN">
+                                <label>text-align</label>
+                                <size>100,-1</size>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                              <option>1</option>
+                              <flag>wxEXPAND</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_CHOICE_ALIGN">
+                                <content>
+                                  <item/>
+                                  <item>left</item>
+                                  <item>right</item>
+                                  <item>center</item>
+                                  <item>inherit</item></content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticBitmap">
+                                <bitmap>../icons/22x22/format_justify.png</bitmap>
+                              </object>
+                              <flag>wxALIGN_CENTRE</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_TEXT_DECORATION">
+                                <label>text-decoration</label>
+                                <size>100,-1</size>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                              <option>1</option>
+                              <flag>wxEXPAND</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_CHOICE_DECORATION">
+                                <content>
+                                  <item/>
+                                  <item>none</item>
+                                  <item>underline</item>
+                                  <item>overline</item>
+                                  <item>line-through</item>
+                                  <item>blink</item></content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticBitmap">
+                                <bitmap>../icons/22x22/format_justify.png</bitmap>
+                              </object>
+                              <flag>wxALIGN_CENTRE</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_WORDSPACE">
+                                <label>word-spacing</label>
+                                <size>100,-1</size>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_CHOICE_WORD">
+                                <content>
+                                  <item/>
+                                  <item>normal</item>
+                                  <item>inherit</item></content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_OR1">
+                                <label> or </label>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxSpinCtrl" name="wxID_SPIN_WORD">
+                                <min>6</min>
+                                <max>100</max>
+                                <size>50,-1</size>
+                                <focused>1</focused>
+                              </object>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>5,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_WORD_UNIT">
+                                <content>
+                                  <item/>
+                                  <item>px</item>
+                                  <item>pt</item>
+                                  <item>pc</item>
+                                  <item>in</item>
+                                  <item>mm</item>
+                                  <item>cm</item>
+                                  <item>em</item>
+                                  <item>ex</item>
+                                  <item>%</item></content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticBitmap">
+                                <bitmap>../icons/22x22/format_justify.png</bitmap>
+                              </object>
+                              <flag>wxALIGN_CENTRE</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_LETTERSPACE">
+                                <label>letter-spacing</label>
+                                <size>100,-1</size>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_CHOICE_LETTER">
+                                <content>
+                                  <item/>
+                                  <item>normal</item>
+                                  <item>inherit</item></content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_OR1">
+                                <label> or </label>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxSpinCtrl" name="wxID_SPIN_LETTER">
+                                <min>6</min>
+                                <max>100</max>
+                                <size>50,-1</size>
+                                <focused>1</focused>
+                              </object>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>5,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_LETTER_UNIT">
+                                <content>
+                                  <item/>
+                                  <item>px</item>
+                                  <item>pt</item>
+                                  <item>pc</item>
+                                  <item>in</item>
+                                  <item>mm</item>
+                                  <item>cm</item>
+                                  <item>em</item>
+                                  <item>ex</item>
+                                  <item>%</item></content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                      </object>
+                      <option>1</option>
+                      <flag>wxALL|wxEXPAND</flag>
+                    </object>
+                  </object>
+                  <option>0</option>
+                  <flag>wxALL|wxEXPAND</flag>
+                  <border>10</border>
+                </object>
+              </object>
+              <style>wxTAB_TRAVERSAL</style>
+              <focused>1</focused>
+            </object>
+            <selected>1</selected>
+          </object>
+          <object class="notebookpage">
+            <label>*Color*</label>
+            <object class="wxPanel" name="wxID_PAGE_COLOR">
+              <style>wxTAB_TRAVERSAL</style>
+              <focused>1</focused>
+              <object class="wxBoxSizer">
+                <orient>wxVERTICAL</orient>
+                <object class="sizeritem">
+                  <object class="wxBoxSizer">
+                    <orient>wxHORIZONTAL</orient>
+                    <object class="sizeritem">
+                      <object class="wxStaticText" name="wxID_LABEL_TEXTCOLOR">
+                        <label>color</label>
+                        <size>110,-1</size>
+                      </object>
+                      <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxComboBox" name="wxID_COMBO_TEXTCOLOR">
+                        <content>
+                          <item/>
+                          <item>Black</item>
+                          <item>White</item>
+                          <item>Grey</item>
+                          <item>Red</item></content>
+                        <size>150,-1</size>
+                        <style>wxCB_READONLY</style>
+                        <focused>1</focused>
+                      </object>
+                      <flag>wxEXPAND</flag>
+                    </object>
+                    <object class="spacer">
+                      <size>10,0</size>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxBitmapButton" name="wxID_BUTTON_TEXTCOLOR">
+                        <bitmap>../icons/16x16/colorize.png</bitmap>
+                      </object>
+                      <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                    </object>
+                    <object class="spacer">
+                      <size>10,0</size>
+                    </object>
+                  </object>
+                  <flag>wxALL|wxEXPAND</flag>
+                  <border>10</border>
+                </object>
+                <object class="sizeritem">
+                  <object class="wxBoxSizer">
+                    <object class="sizeritem">
+                      <object class="wxBoxSizer">
+                        <orient>wxHORIZONTAL</orient>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_BACKCOLOR">
+                                <label>background-color</label>
+                                <size>110,-1</size>
+                              </object>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxComboBox" name="wxID_COMBO_BACKCOLOR">
+                                <content>
+                                  <item>transparent</item>
+                                  <item>Black</item>
+                                  <item>White</item>
+                                  <item>Grey</item>
+                                  <item>Red</item>
+                                </content>
+                                <size>150,-1</size>
+                                <style>wxCB_READONLY</style>
+                              </object>
+                              <flag>wxEXPAND</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxBitmapButton" name="wxID_BUTTON_BACKCOLOR">
+                                <bitmap>../icons/16x16/colorize.png</bitmap>
+                              </object>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                          </object>
+                        </object>
+                        <object class="spacer">
+                          <size>10,0</size>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxStaticText" name="wxID_LABEL_BGIMAGE">
+                            <label>background-image</label>
+                          </object>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="spacer">
+                          <size>10,0</size>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxComboBox" name="wxID_COMBOBOX_BGIMAGE">
+                            <content>
+                              <item/>
+                              <item>none</item></content>
+                            <focused>1</focused>
+                          </object>
+                          <option>1</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                        </object>
+                        <object class="spacer">
+                          <size>5,0</size>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBitmapButton" name="wxID_BUTTON_BGIMAGE">
+                            <bitmap>../icons/16x16/open.png</bitmap>
+                          </object>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                      </object>
+                      <option>0</option>
+                      <flag>wxALL|wxEXPAND</flag>
+                      <border>10</border>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxBoxSizer">
+                        <orient>wxHORIZONTAL</orient>
+                        <object class="spacer">
+                          <size>10,0</size>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxStaticText" name="wxID_LABEL_BGREPEAT">
+                            <label>background-repeat</label>
+                          </object>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="spacer">
+                          <size>10,0</size>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBitmapButton">
+                            <bitmap>../icons/22x22/BG_norepeat.png</bitmap>
+                            <tooltip>no-repeat</tooltip>
+                          </object>
+                        </object>
+                        <object class="spacer">
+                          <size>10,0</size>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBitmapButton">
+                            <bitmap>../icons/22x22/BG_repeat.png</bitmap>
+                            <tooltip>repeat</tooltip>
+                          </object>
+                        </object>
+                        <object class="spacer">
+                          <size>10,0</size>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBitmapButton">
+                            <bitmap>../icons/22x22/BG_repeat_x.png</bitmap>
+                            <tooltip>repeat-x</tooltip>
+                          </object>
+                        </object>
+                        <object class="spacer">
+                          <size>10,0</size>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBitmapButton">
+                            <bitmap>../icons/22x22/BG_repeat_y.png</bitmap>
+                            <tooltip>repeat-y</tooltip>
+                          </object>
+                        </object>
+                        <object class="spacer">
+                          <size>10,0</size>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxStaticText" name="wxID_LABEL_BGATTACH">
+                            <label>background-attachment</label>
+                          </object>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="spacer">
+                          <size>10,0</size>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxChoice" name="wxID_CHOICE_BGATTACH">
+                            <content>
+                              <item/>
+                              <item>scroll</item>
+                              <item>fixed</item></content>
+                            <focused>1</focused>
+                          </object>
+                        </object>
+                        <object class="spacer">
+                          <size>10,0</size>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxStaticText" name="wxID_LABEL_BGPOSITION">
+                            <label>background-position</label>
+                            <size></size>
+                          </object>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="spacer">
+                          <size>10,0</size>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxChoice" name="wxID_CHOICE_BG_VPOSITION">
+                            <content>
+                              <item/>
+                              <item>top</item>
+                              <item>center</item>
+                              <item>bottom</item></content>
+                            <focused>1</focused>
+                          </object>
+                        </object>
+                        <object class="spacer">
+                          <size>5,0</size>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxChoice" name="wxID_CHOICE_BG_HPOSITION">
+                            <content>
+                              <item/>
+                              <item>left</item>
+                              <item>center</item>
+                              <item>right</item></content>
+                            <focused>1</focused>
+                          </object>
+                        </object>
+                      </object>
+                      <flag>wxALL|wxEXPAND</flag>
+                    </object>
+                    <orient>wxVERTICAL</orient>
+                  </object>
+                  <flag>wxEXPAND</flag>
+                  <border>15</border>
+                </object>
+                <object class="sizeritem">
+                  <object class="wxStaticLine">
+                    <style>wxLI_HORIZONTAL</style>
+                  </object>
+                  <option>1</option>
+                  <flag>wxALL|wxEXPAND</flag>
+                  <border>3</border>
+                </object>
+                <object class="sizeritem">
+                  <object class="wxBoxSizer">
+                    <orient>wxVERTICAL</orient>
+                    <object class="sizeritem">
+                      <object class="wxBoxSizer">
+                        <orient>wxHORIZONTAL</orient>
+                        <object class="sizeritem">
+                          <object class="wxStaticBitmap">
+                            <bitmap>../icons/22x22/border_top.png</bitmap>
+                          </object>
+                          <flag>wxALL|wxALIGN_CENTRE</flag>
+                          <border>10</border>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxStaticText" name="wxID_LABEL_BTOP_W">
+                            <label>border-top-width</label>
+                            <size>115,-1</size>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxChoice" name="wxID_CHOICE_BTOP">
+                            <content>
+                              <item/>
+                              <item>auto</item></content>
+                            <focused>1</focused>
+                          </object>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxStaticText" name="wxID_LABEL_OR">
+                            <label> or </label>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxSpinCtrl" name="wxID_SPIN_BTOP">
+                            <min>0</min>
+                            <max>100</max>
+                            <size>50,-1</size>
+                            <focused>1</focused>
+                          </object>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxChoice" name="wxID_BTOP_UNIT">
+                            <content>
+                              <item>px</item>
+                              <item>pt</item>
+                              <item>pc</item>
+                              <item>in</item>
+                              <item>mm</item>
+                              <item>cm</item>
+                              <item>em</item>
+                              <item>ex</item>
+                              <item>%</item>
+                            </content>
+                            <focused>1</focused>
+                          </object>
+                          <flag>wxALL|wxALIGN_CENTRE_VERTICAL</flag>
+                          <border>5</border>
+                        </object>
+                        <object class="spacer">
+                          <size>5,0</size>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxStaticText" name="wxID_LABEL_BTOP_S">
+                            <label>border-top-style</label>
+                            <size>110,-1</size>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxChoice" name="wxID_CHOICE_BTOP">
+                            <content>
+                              <item/>
+                              <item>none</item>
+                              <item>dotted</item>
+                              <item>dashed</item>
+                              <item>solid</item>
+                              <item>double</item>
+                              <item>groove</item>
+                              <item>ridge</item>
+                              <item>inset</item>
+                              <item>outset</item></content>
+                            <focused>1</focused>
+                          </object>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_T_COLOR">
+                                <label>border-top-color</label>
+                                <size>115,-1</size>
+                              </object>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxComboBox" name="wxID_COMBO_T_COLOR">
+                                <content>
+                                  <item/>
+                                  <item>Black</item>
+                                  <item>White</item>
+                                  <item>Grey</item>
+                                  <item>Red</item></content>
+                                <size>150,-1</size>
+                                <style>wxCB_READONLY</style>
+                                <focused>1</focused>
+                              </object>
+                              <flag>wxEXPAND</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxBitmapButton" name="wxID_BUTTON_T_COLOR">
+                                <bitmap>../icons/16x16/colorize.png</bitmap>
+                              </object>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                          </object>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                      </object>
+                      <option>0</option>
+                      <flag>wxALL|wxEXPAND</flag>
+                      <border>5</border>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxBoxSizer">
+                        <orient>wxHORIZONTAL</orient>
+                        <object class="sizeritem">
+                          <object class="wxStaticBitmap">
+                            <bitmap>../icons/22x22/border_bottom.png</bitmap>
+                          </object>
+                          <flag>wxALL|wxALIGN_CENTRE</flag>
+                          <border>10</border>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxStaticText" name="wxID_LABEL_BBOTTOM_W">
+                            <label>border-bottom-width</label>
+                            <size>115,-1</size>
+                          </object>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxChoice" name="wxID_CHOICE_BBOTTOM">
+                            <content>
+                              <item/>
+                              <item>auto</item></content>
+                            <focused>1</focused>
+                          </object>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxStaticText" name="wxID_LABEL_OR">
+                            <label> or </label>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxSpinCtrl" name="wxID_SPIN_BBOTTOM">
+                            <min>0</min>
+                            <max>100</max>
+                            <size>50,-1</size>
+                            <focused>1</focused>
+                          </object>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="spacer">
+                          <size>5,0</size>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxChoice" name="wxID_BBOTTOM_UNIT">
+                            <content>
+                              <item>px</item>
+                              <item>pt</item>
+                              <item>pc</item>
+                              <item>in</item>
+                              <item>mm</item>
+                              <item>cm</item>
+                              <item>em</item>
+                              <item>ex</item>
+                              <item>%</item>
+                            </content>
+                            <focused>1</focused>
+                          </object>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="spacer">
+                          <size>10,0</size>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxStaticText" name="wxID_LABEL_BBOTTOM_S">
+                            <label>border-bottom-style</label>
+                            <size>110,-1</size>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxChoice" name="wxID_CHOICE_B_STYLE">
+                            <content>
+                              <item/>
+                              <item>none</item>
+                              <item>dotted</item>
+                              <item>dashed</item>
+                              <item>solid</item>
+                              <item>double</item>
+                              <item>groove</item>
+                              <item>ridge</item>
+                              <item>inset</item>
+                              <item>outset</item></content>
+                            <focused>1</focused>
+                          </object>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_B_COLOR">
+                                <label>border-bottom-color</label>
+                                <size>115,-1</size>
+                              </object>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxComboBox" name="wxID_COMBO_B_COLOR">
+                                <content>
+                                  <item/>
+                                  <item>Black</item>
+                                  <item>White</item>
+                                  <item>Grey</item>
+                                  <item>Red</item></content>
+                                <size>150,-1</size>
+                                <style>wxCB_READONLY</style>
+                                <focused>1</focused>
+                              </object>
+                              <flag>wxEXPAND</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxBitmapButton" name="wxID_BUTTON_B_COLOR">
+                                <bitmap>../icons/16x16/colorize.png</bitmap>
+                              </object>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                          </object>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                      </object>
+                      <option>0</option>
+                      <flag>wxALL|wxEXPAND</flag>
+                      <border>5</border>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxBoxSizer">
+                        <orient>wxHORIZONTAL</orient>
+                        <object class="sizeritem">
+                          <object class="wxStaticBitmap">
+                            <bitmap>../icons/22x22/border_left.png</bitmap>
+                          </object>
+                          <flag>wxALL|wxALIGN_CENTRE</flag>
+                          <border>10</border>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxStaticText" name="wxID_LABEL_BLEFT_W">
+                            <label>border-left-width</label>
+                            <size>115,-1</size>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxChoice" name="wxID_CHOICE_BLEFT">
+                            <content>
+                              <item/>
+                              <item>auto</item></content>
+                            <focused>1</focused>
+                          </object>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxStaticText" name="wxID_LABEL_OR">
+                            <label> or </label>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxSpinCtrl" name="wxID_SPIN_BLEFT">
+                            <min>0</min>
+                            <max>100</max>
+                            <size>50,-1</size>
+                            <focused>1</focused>
+                          </object>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="spacer">
+                          <size>5,0</size>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxChoice" name="wxID_BLEFT_UNIT">
+                            <content>
+                              <item>px</item>
+                              <item>pt</item>
+                              <item>pc</item>
+                              <item>in</item>
+                              <item>mm</item>
+                              <item>cm</item>
+                              <item>em</item>
+                              <item>ex</item>
+                              <item>%</item>
+                            </content>
+                            <focused>1</focused>
+                          </object>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="spacer">
+                          <size>10,0</size>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxStaticText" name="wxID_LABEL_BLEFT_S">
+                            <label>border-left-style</label>
+                            <size>110,-1</size>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxChoice" name="wxID_CHOICE_L_STYLE">
+                            <content>
+                              <item/>
+                              <item>none</item>
+                              <item>dotted</item>
+                              <item>dashed</item>
+                              <item>solid</item>
+                              <item>double</item>
+                              <item>groove</item>
+                              <item>ridge</item>
+                              <item>inset</item>
+                              <item>outset</item></content>
+                            <focused>1</focused>
+                          </object>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_L_COLOR">
+                                <label>border-left-color</label>
+                                <size>115,-1</size>
+                              </object>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxComboBox" name="wxID_COMBO_L_COLOR">
+                                <content>
+                                  <item/>
+                                  <item>Black</item>
+                                  <item>White</item>
+                                  <item>Grey</item>
+                                  <item>Red</item></content>
+                                <size>150,-1</size>
+                                <style>wxCB_READONLY</style>
+                                <focused>1</focused>
+                              </object>
+                              <flag>wxEXPAND</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxBitmapButton" name="wxID_BUTTON_L_COLOR">
+                                <bitmap>../icons/16x16/colorize.png</bitmap>
+                              </object>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                          </object>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                      </object>
+                      <option>0</option>
+                      <flag>wxALL|wxEXPAND</flag>
+                      <border>5</border>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxBoxSizer">
+                        <orient>wxHORIZONTAL</orient>
+                        <object class="sizeritem">
+                          <object class="wxStaticBitmap">
+                            <bitmap>../icons/22x22/border_right.png</bitmap>
+                          </object>
+                          <flag>wxALL|wxALIGN_CENTRE</flag>
+                          <border>10</border>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxStaticText" name="wxID_LABEL_BRIGHT_W">
+                            <label>border-right-width</label>
+                            <size>115,-1</size>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxChoice" name="wxID_CHOICE_BRIGHT">
+                            <content>
+                              <item/>
+                              <item>auto</item></content>
+                            <focused>1</focused>
+                          </object>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxStaticText" name="wxID_LABEL_OR">
+                            <label> or </label>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxSpinCtrl" name="wxID_SPIN_BRIGHT">
+                            <min>0</min>
+                            <max>100</max>
+                            <size>50,-1</size>
+                            <focused>1</focused>
+                          </object>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="spacer">
+                          <size>5,0</size>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxChoice" name="wxID_BRIGHT_UNIT">
+                            <content>
+                              <item>px</item>
+                              <item>pt</item>
+                              <item>pc</item>
+                              <item>in</item>
+                              <item>mm</item>
+                              <item>cm</item>
+                              <item>em</item>
+                              <item>ex</item>
+                              <item>%</item>
+                            </content>
+                            <focused>1</focused>
+                          </object>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="spacer">
+                          <size>10,0</size>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxStaticText" name="wxID_LABEL_BRIGHT_S">
+                            <label>border-right-style</label>
+                            <size>110,-1</size>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxChoice" name="wxID_CHOICE_R_STYLE">
+                            <content>
+                              <item/>
+                              <item>none</item>
+                              <item>dotted</item>
+                              <item>dashed</item>
+                              <item>solid</item>
+                              <item>double</item>
+                              <item>groove</item>
+                              <item>ridge</item>
+                              <item>inset</item>
+                              <item>outset</item></content>
+                            <focused>1</focused>
+                          </object>
+                          <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_R_COLOR">
+                                <label>border-right-color</label>
+                                <size>115,-1</size>
+                              </object>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxComboBox" name="wxID_COMBO_R_COLOR">
+                                <content>
+                                  <item/>
+                                  <item>Black</item>
+                                  <item>White</item>
+                                  <item>Grey</item>
+                                  <item>Red</item></content>
+                                <size>150,-1</size>
+                                <style>wxCB_READONLY</style>
+                                <focused>1</focused>
+                              </object>
+                              <flag>wxEXPAND</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxBitmapButton" name="wxID_BUTTON_R_COLOR">
+                                <bitmap>../icons/16x16/colorize.png</bitmap>
+                              </object>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                          </object>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                      </object>
+                      <option>0</option>
+                      <flag>wxALL|wxEXPAND</flag>
+                      <border>5</border>
+                    </object>
+                  </object>
+                  <flag>wxALL|wxEXPAND</flag>
+                  <border>0</border>
+                </object>
+              </object>
+            </object>
+          </object>
+          <object class="notebookpage">
+            <label>*Box*</label>
+            <object class="wxPanel" name="wxID_PAGE_BOX">
+              <object class="wxBoxSizer">
+                <orient>wxVERTICAL</orient>
+                <object class="sizeritem">
+                  <object class="wxBoxSizer">
+                    <orient>wxHORIZONTAL</orient>
+                    <object class="sizeritem">
+                      <object class="wxBoxSizer">
+                        <orient>wxVERTICAL</orient>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_MTOP">
+                                <label>margin-top</label>
+                                <size>100,-1</size>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_CHOICE_MTOP">
+                                <content>
+                                  <item/>
+                                  <item>auto</item></content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_OR">
+                                <label> or </label>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxBoxSizer">
+                                <orient>wxHORIZONTAL</orient>
+                                <object class="sizeritem">
+                                  <object class="wxSpinCtrl" name="wxID_SPIN_MTOP">
+                                    <min>6</min>
+                                    <max>100</max>
+                                    <size>50,-1</size>
+                                    <focused>1</focused>
+                                  </object>
+                                  <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                </object>
+                                <object class="spacer">
+                                  <size>5,0</size>
+                                </object>
+                                <object class="sizeritem">
+                                  <object class="wxChoice" name="wxID_MTOP_UNIT">
+                                    <content>
+                                      <item>px</item>
+                                      <item>pt</item>
+                                      <item>pc</item>
+                                      <item>in</item>
+                                      <item>mm</item>
+                                      <item>cm</item>
+                                      <item>em</item>
+                                      <item>ex</item>
+                                      <item>%</item>
+                                    </content>
+                                    <focused>1</focused>
+                                  </object>
+                                </object>
+                              </object>
+                            </object>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_MBOTTOM">
+                                <label>margin-bottom</label>
+                                <size>100,-1</size>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_CHOICE_MBOTTOM">
+                                <content>
+                                  <item/>
+                                  <item>auto</item></content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_OR">
+                                <label> or </label>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxBoxSizer">
+                                <orient>wxHORIZONTAL</orient>
+                                <object class="sizeritem">
+                                  <object class="wxSpinCtrl" name="wxID_SPIN_MBOTTOM">
+                                    <min>6</min>
+                                    <max>100</max>
+                                    <size>50,-1</size>
+                                    <focused>1</focused>
+                                  </object>
+                                  <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                </object>
+                                <object class="spacer">
+                                  <size>5,0</size>
+                                </object>
+                                <object class="sizeritem">
+                                  <object class="wxChoice" name="wxID_MBOTTOM_UNIT">
+                                    <content>
+                                      <item>px</item>
+                                      <item>pt</item>
+                                      <item>pc</item>
+                                      <item>in</item>
+                                      <item>mm</item>
+                                      <item>cm</item>
+                                      <item>em</item>
+                                      <item>ex</item>
+                                      <item>%</item>
+                                    </content>
+                                    <focused>1</focused>
+                                  </object>
+                                </object>
+                              </object>
+                            </object>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_MLEFT">
+                                <label>margin-left</label>
+                                <size>100,-1</size>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_CHOICE_MLEFT">
+                                <content>
+                                  <item/>
+                                  <item>auto</item></content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_OR">
+                                <label> or </label>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxBoxSizer">
+                                <orient>wxHORIZONTAL</orient>
+                                <object class="sizeritem">
+                                  <object class="wxSpinCtrl" name="wxID_SPIN_MLEFT">
+                                    <min>6</min>
+                                    <max>100</max>
+                                    <size>50,-1</size>
+                                    <focused>1</focused>
+                                  </object>
+                                  <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                </object>
+                                <object class="spacer">
+                                  <size>5,0</size>
+                                </object>
+                                <object class="sizeritem">
+                                  <object class="wxChoice" name="wxID_MLEFT_UNIT">
+                                    <content>
+                                      <item>px</item>
+                                      <item>pt</item>
+                                      <item>pc</item>
+                                      <item>in</item>
+                                      <item>mm</item>
+                                      <item>cm</item>
+                                      <item>em</item>
+                                      <item>ex</item>
+                                      <item>%</item>
+                                    </content>
+                                    <focused>1</focused>
+                                  </object>
+                                </object>
+                              </object>
+                            </object>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_MRIGHT">
+                                <label>margin-right</label>
+                                <size>100,-1</size>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_CHOICE_MRIGHT">
+                                <content>
+                                  <item/>
+                                  <item>auto</item></content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_OR">
+                                <label> or </label>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxBoxSizer">
+                                <orient>wxHORIZONTAL</orient>
+                                <object class="sizeritem">
+                                  <object class="wxSpinCtrl" name="wxID_SPIN_MRIGHT">
+                                    <min>6</min>
+                                    <max>100</max>
+                                    <size>50,-1</size>
+                                    <focused>1</focused>
+                                  </object>
+                                  <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                </object>
+                                <object class="spacer">
+                                  <size>5,0</size>
+                                </object>
+                                <object class="sizeritem">
+                                  <object class="wxChoice" name="wxID_MRIGHT_UNIT">
+                                    <content>
+                                      <item>px</item>
+                                      <item>pt</item>
+                                      <item>pc</item>
+                                      <item>in</item>
+                                      <item>mm</item>
+                                      <item>cm</item>
+                                      <item>em</item>
+                                      <item>ex</item>
+                                      <item>%</item>
+                                    </content>
+                                    <focused>1</focused>
+                                  </object>
+                                </object>
+                              </object>
+                            </object>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_MARGIN">
+                                <label>margin</label>
+                                <size>100,-1</size>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_CHOICE_MARGIN">
+                                <content>
+                                  <item/>
+                                  <item>auto</item></content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_OR">
+                                <label> or </label>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxBoxSizer">
+                                <orient>wxHORIZONTAL</orient>
+                                <object class="sizeritem">
+                                  <object class="wxSpinCtrl" name="wxID_SPIN_MARGIN">
+                                    <min>6</min>
+                                    <max>100</max>
+                                    <size>50,-1</size>
+                                    <focused>1</focused>
+                                  </object>
+                                  <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                </object>
+                                <object class="spacer">
+                                  <size>5,0</size>
+                                </object>
+                                <object class="sizeritem">
+                                  <object class="wxChoice" name="wxID_MARGIN_UNIT">
+                                    <content>
+                                      <item>px</item>
+                                      <item>pt</item>
+                                      <item>pc</item>
+                                      <item>in</item>
+                                      <item>mm</item>
+                                      <item>cm</item>
+                                      <item>em</item>
+                                      <item>ex</item>
+                                      <item>%</item>
+                                    </content>
+                                    <focused>1</focused>
+                                  </object>
+                                </object>
+                              </object>
+                            </object>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                        <object class="spacer">
+                          <size>0,20</size>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxStaticLine">
+                            <style>wxLI_HORIZONTAL</style>
+                          </object>
+                          <option>1</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>3</border>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_WIDTH">
+                                <label>width</label>
+                                <size>100,-1</size>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_CHOICE_WIDTH">
+                                <content>
+                                  <item/>
+                                  <item>auto</item></content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_OR">
+                                <label> or </label>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxBoxSizer">
+                                <orient>wxHORIZONTAL</orient>
+                                <object class="sizeritem">
+                                  <object class="wxSpinCtrl" name="wxID_SPIN_WIDTH">
+                                    <min>6</min>
+                                    <max>100</max>
+                                    <size>50,-1</size>
+                                    <focused>1</focused>
+                                  </object>
+                                  <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                </object>
+                                <object class="spacer">
+                                  <size>5,0</size>
+                                </object>
+                                <object class="sizeritem">
+                                  <object class="wxChoice" name="wxID_WIDTH_UNIT">
+                                    <content>
+                                      <item>px</item>
+                                      <item>pt</item>
+                                      <item>pc</item>
+                                      <item>in</item>
+                                      <item>mm</item>
+                                      <item>cm</item>
+                                      <item>em</item>
+                                      <item>ex</item>
+                                      <item>%</item>
+                                    </content>
+                                    <focused>1</focused>
+                                  </object>
+                                </object>
+                              </object>
+                            </object>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                      </object>
+                      <option>1</option>
+                      <flag>wxALL|wxEXPAND</flag>
+                    </object>
+                    <object class="spacer">
+                      <size>10,0</size>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxBoxSizer">
+                        <orient>wxVERTICAL</orient>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_PTOP">
+                                <label>padding-top</label>
+                                <size>100,-1</size>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_CHOICE_PTOP">
+                                <content>
+                                  <item/>
+                                  <item>auto</item></content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_OR">
+                                <label> or </label>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxBoxSizer">
+                                <orient>wxHORIZONTAL</orient>
+                                <object class="sizeritem">
+                                  <object class="wxSpinCtrl" name="wxID_SPIN_PTOP">
+                                    <min>6</min>
+                                    <max>100</max>
+                                    <size>50,-1</size>
+                                    <focused>1</focused>
+                                  </object>
+                                  <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                </object>
+                                <object class="spacer">
+                                  <size>5,0</size>
+                                </object>
+                                <object class="sizeritem">
+                                  <object class="wxChoice" name="wxID_PTOP_UNIT">
+                                    <content>
+                                      <item>px</item>
+                                      <item>pt</item>
+                                      <item>pc</item>
+                                      <item>in</item>
+                                      <item>mm</item>
+                                      <item>cm</item>
+                                      <item>em</item>
+                                      <item>ex</item>
+                                      <item>%</item>
+                                    </content>
+                                    <focused>1</focused>
+                                  </object>
+                                </object>
+                              </object>
+                            </object>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_PBOTTOM">
+                                <label>padding-bottom</label>
+                                <size>100,-1</size>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_CHOICE_PBOTTOM">
+                                <content>
+                                  <item/>
+                                  <item>auto</item></content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_OR">
+                                <label> or </label>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxBoxSizer">
+                                <orient>wxHORIZONTAL</orient>
+                                <object class="sizeritem">
+                                  <object class="wxSpinCtrl" name="wxID_SPIN_PBOTTOM">
+                                    <min>6</min>
+                                    <max>100</max>
+                                    <size>50,-1</size>
+                                    <focused>1</focused>
+                                  </object>
+                                </object>
+                                <object class="spacer">
+                                  <size>5,0</size>
+                                </object>
+                                <object class="sizeritem">
+                                  <object class="wxChoice" name="wxID_PBOTTOM_UNIT">
+                                    <content>
+                                      <item>px</item>
+                                      <item>pt</item>
+                                      <item>pc</item>
+                                      <item>in</item>
+                                      <item>mm</item>
+                                      <item>cm</item>
+                                      <item>em</item>
+                                      <item>ex</item>
+                                      <item>%</item>
+                                    </content>
+                                    <focused>1</focused>
+                                  </object>
+                                </object>
+                              </object>
+                            </object>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_PLEFT">
+                                <label>padding-left</label>
+                                <size>100,-1</size>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_CHOICE_PLEFT">
+                                <content>
+                                  <item/>
+                                  <item>auto</item></content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_OR">
+                                <label> or </label>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxBoxSizer">
+                                <orient>wxHORIZONTAL</orient>
+                                <object class="sizeritem">
+                                  <object class="wxSpinCtrl" name="wxID_SPIN_PLEFT">
+                                    <min>6</min>
+                                    <max>100</max>
+                                    <size>50,-1</size>
+                                    <focused>1</focused>
+                                  </object>
+                                  <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                </object>
+                                <object class="spacer">
+                                  <size>5,0</size>
+                                </object>
+                                <object class="sizeritem">
+                                  <object class="wxChoice" name="wxID_PLEFT_UNIT">
+                                    <content>
+                                      <item>px</item>
+                                      <item>pt</item>
+                                      <item>pc</item>
+                                      <item>in</item>
+                                      <item>mm</item>
+                                      <item>cm</item>
+                                      <item>em</item>
+                                      <item>ex</item>
+                                      <item>%</item>
+                                    </content>
+                                    <focused>1</focused>
+                                  </object>
+                                </object>
+                              </object>
+                            </object>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_PRIGHT">
+                                <label>padding-right</label>
+                                <size>100,-1</size>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_CHOICE_PRIGHT">
+                                <content>
+                                  <item/>
+                                  <item>auto</item></content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_OR">
+                                <label> or </label>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxBoxSizer">
+                                <orient>wxHORIZONTAL</orient>
+                                <object class="sizeritem">
+                                  <object class="wxSpinCtrl" name="wxID_SPIN_PRIGHT">
+                                    <min>6</min>
+                                    <max>100</max>
+                                    <size>50,-1</size>
+                                    <focused>1</focused>
+                                  </object>
+                                  <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                </object>
+                                <object class="spacer">
+                                  <size>5,0</size>
+                                </object>
+                                <object class="sizeritem">
+                                  <object class="wxChoice" name="wxID_PRIGHT_UNIT">
+                                    <content>
+                                      <item>px</item>
+                                      <item>pt</item>
+                                      <item>pc</item>
+                                      <item>in</item>
+                                      <item>mm</item>
+                                      <item>cm</item>
+                                      <item>em</item>
+                                      <item>ex</item>
+                                      <item>%</item>
+                                    </content>
+                                    <focused>1</focused>
+                                  </object>
+                                </object>
+                              </object>
+                            </object>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_PADDING">
+                                <label>padding</label>
+                                <size>100,-1</size>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_CHOICE_PADDING">
+                                <content>
+                                  <item/>
+                                  <item>auto</item></content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_OR">
+                                <label> or </label>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxBoxSizer">
+                                <orient>wxHORIZONTAL</orient>
+                                <object class="sizeritem">
+                                  <object class="wxSpinCtrl" name="wxID_SPIN_PADDING">
+                                    <min>6</min>
+                                    <max>100</max>
+                                    <size>50,-1</size>
+                                    <focused>1</focused>
+                                  </object>
+                                  <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                </object>
+                                <object class="spacer">
+                                  <size>5,0</size>
+                                </object>
+                                <object class="sizeritem">
+                                  <object class="wxChoice" name="wxID_PADDING_UNIT">
+                                    <content>
+                                      <item>px</item>
+                                      <item>pt</item>
+                                      <item>pc</item>
+                                      <item>in</item>
+                                      <item>mm</item>
+                                      <item>cm</item>
+                                      <item>em</item>
+                                      <item>ex</item>
+                                      <item>%</item>
+                                    </content>
+                                    <focused>1</focused>
+                                  </object>
+                                </object>
+                              </object>
+                            </object>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                        <object class="spacer">
+                          <size>0,20</size>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxStaticLine">
+                            <style>wxLI_HORIZONTAL</style>
+                          </object>
+                          <option>1</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>3</border>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_HEIGHT">
+                                <label>height</label>
+                                <size>100,-1</size>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="spacer">
+                              <size>10,0</size>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxChoice" name="wxID_CHOICE_HEIGHT">
+                                <content>
+                                  <item/>
+                                  <item>auto</item></content>
+                                <focused>1</focused>
+                              </object>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxStaticText" name="wxID_LABEL_OR">
+                                <label> or </label>
+                              </object>
+                              <option>0</option>
+                              <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                            </object>
+                            <object class="sizeritem">
+                              <object class="wxBoxSizer">
+                                <orient>wxHORIZONTAL</orient>
+                                <object class="sizeritem">
+                                  <object class="wxSpinCtrl" name="wxID_SPIN_HEIGHT">
+                                    <min>6</min>
+                                    <max>100</max>
+                                    <size>50,-1</size>
+                                    <focused>1</focused>
+                                  </object>
+                                  <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                </object>
+                                <object class="spacer">
+                                  <size>5,0</size>
+                                </object>
+                                <object class="sizeritem">
+                                  <object class="wxChoice" name="wxID_HEIGHT_UNIT">
+                                    <content>
+                                      <item>px</item>
+                                      <item>pt</item>
+                                      <item>pc</item>
+                                      <item>in</item>
+                                      <item>mm</item>
+                                      <item>cm</item>
+                                      <item>em</item>
+                                      <item>ex</item>
+                                      <item>%</item>
+                                    </content>
+                                    <focused>1</focused>
+                                  </object>
+                                </object>
+                              </object>
+                            </object>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALL|wxEXPAND</flag>
+                          <border>10</border>
+                        </object>
+                      </object>
+                      <option>1</option>
+                      <flag>wxALL|wxEXPAND</flag>
+                    </object>
+                  </object>
+                  <option>0</option>
+                  <flag>wxALL|wxEXPAND</flag>
+                  <border>10</border>
+                </object>
+              </object>
+              <style>wxTAB_TRAVERSAL</style>
+              <focused>1</focused>
+            </object>
+          </object>
+          <object class="notebookpage">
+            <label>*Format*</label>
+            <object class="wxPanel" name="wxID_PAGE_FORMAT">
+              <object class="wxBoxSizer">
+                <orient>wxVERTICAL</orient>
+                <object class="sizeritem">
+                  <object class="wxBoxSizer">
+                    <orient>wxHORIZONTAL</orient>
+                    <object class="sizeritem">
+                      <object class="wxStaticText" name="wxID_LABEL_DISPLAY">
+                        <label>display</label>
+                        <size>50,-1</size>
+                      </object>
+                      <option>0</option>
+                      <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxChoice" name="wxID_CHOICE_DISPLAY">
+                        <content>
+                          <item>block</item>
+                          <item>inline</item>
+                          <item>inline-block</item>
+                          <item>list-item</item>
+                          <item>none</item>
+                          <item>inherit</item>
+                        </content>
+                        <focused>1</focused>
+                      </object>
+                    </object>
+                  </object>
+                  <option>0</option>
+                  <flag>wxALL|wxEXPAND</flag>
+                  <border>10</border>
+                </object>
+                <object class="sizeritem">
+                  <object class="wxBoxSizer">
+                    <orient>wxHORIZONTAL</orient>
+                    <object class="sizeritem">
+                      <object class="wxStaticText" name="wxID_LABEL_FLOAT">
+                        <label>float</label>
+                        <size>50,-1</size>
+                      </object>
+                      <option>0</option>
+                      <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxChoice" name="wxID_CHOICE_FLOAT">
+                        <content>
+                          <item/>
+                          <item>left</item>
+                          <item>right</item></content>
+                        <focused>1</focused>
+                      </object>
+                    </object>
+                    <object class="spacer">
+                      <size>40,0</size>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxStaticText" name="wxID_LABEL_CLEAR">
+                        <label>clear</label>
+                        <size>50,-1</size>
+                      </object>
+                      <option>0</option>
+                      <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxChoice" name="wxID_CHOICE_CLEAR">
+                        <content>
+                          <item/>
+                          <item>left</item>
+                          <item>right</item>
+                          <item>both</item></content>
+                        <focused>1</focused>
+                      </object>
+                    </object>
+                  </object>
+                  <option>0</option>
+                  <flag>wxALL|wxEXPAND</flag>
+                  <border>10</border>
+                </object>
+                <object class="sizeritem">
+                  <object class="wxBoxSizer">
+                    <orient>wxVERTICAL</orient>
+                  </object>
+                  <flag>wxALL|wxEXPAND</flag>
+                  <border>10</border>
+                </object>
+              </object>
+              <focused>1</focused>
+            </object>
+          </object>
+        </object>
+        <option>1</option>
+        <flag>wxALL|wxEXPAND</flag>
+        <border>5</border>
+      </object>
+      <object class="sizeritem">
+        <object class="wxBoxSizer">
+          <orient>wxHORIZONTAL</orient>
+          <object class="spacer">
+            <size>0,0</size>
+            <option>1</option>
+          </object>
+          <object class="sizeritem">
+            <object class="wxButton" name="wxID_OK">
+              <label>*OK*</label>
+              <default>1</default>
+            </object>
+          </object>
+          <object class="spacer">
+            <size>5,0</size>
+          </object>
+          <object class="sizeritem">
+            <object class="wxButton" name="wxID_DEFAULT">
+              <label>*DEFAULT*</label>
+            </object>
+          </object>
+          <object class="spacer">
+            <size>5,0</size>
+          </object>
+          <object class="sizeritem">
+            <object class="wxButton" name="wxID_CANCEL">
+              <label>*CANCEL*</label>
+            </object>
+          </object>
+        </object>
+        <option>0</option>
+        <flag>wxALL|wxEXPAND</flag>
+        <border>5</border>
+      </object>
+    </object>
+    <focused>1</focused>
+  </object>
+</resource>

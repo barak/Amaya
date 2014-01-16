@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+       "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Editer des Attributs</title>
+  <meta name="GENERATOR" content="amaya 9.1, see http://www.w3.org/Amaya/" />
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <link href="style.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body xml:lang="fr" lang="fr">
+
+<div>
+<img alt="Amaya" src="../../resources/icons/22x22/logo.png" class="logo" />
+
+<p class="nav"><a href="Creating.html.fr" accesskey="p"><img alt="previous"
+src="../../resources/icons/misc/left.png" /></a> <a href="Manual.html.fr"
+accesskey="t"><img alt="top" src="../../resources/icons/misc/up.png" /></a>
+<a href="EditChar.html.fr" accesskey="n"><img alt="next"
+src="../../resources/icons/misc/right.png" /></a></p>
+</div>
+
+<div id="Attributes">
+<h2 id="Editer">Editer des attributs</h2>
+
+<p>Il y a deux manières d'éditer des attributs :</p>
+<ul>
+  <li>En utilisant l'outil <strong>Attributs</strong></li>
+  <li>Directement dans la Vue structure</li>
+</ul>
+
+<h3 id="Editer1"><a name="L1073">Editer des attributs par le biais de l'outil
+Attributs</a></h3>
+
+<p>L'outil <strong>Attributs</strong> présente la liste de tous les attributs
+qui peuvent être associés à l'élément sélectionné. Il peut être utilisé pour
+créer un attribut, pour changer la valeur d'un attribut existant ou pour
+effacer un attribut.</p>
+
+<p class="ProcedureCaption">Pour créer un attribut :</p>
+<ol>
+  <li>Sélectionnez d'abord l'élément approprié. Vous devez sélectionner
+    l'élément entier et pas seulement un caractère à l'intérieur de
+    l'élément. Pour cela, utilisez la touche F2 .</li>
+  <li>Une fois l'élément sélectionné, cliquez sur le [ ] qui précède l'entrée
+    pour ajouter l'attribut. Ce<span class=""></span>t attribut est
+    maintenant activé [x].</li>
+  <li>Pour les attributs bouléens ( comme <strong>ismap</strong> pour une
+    image), la commande est terminée.</li>
+  <li>Pour les autres attributs, vous devez éditer la valeur puis confirmez
+    avec le bouton appliquer (<img alt="ok"
+    src="../../resources/icons/16x16/ok.png" />).</li>
+</ol>
+
+<p class="ProcedureCaption">Pour éditer un attribut :</p>
+<ol>
+  <li>Sélectionnez d'abord l'élément approprié. Vous devez sélectionner
+    l'élément entier et pas seulement un caractère à l'intérieur de
+    l'élément. Pour cela, utilisez la touche F2 .</li>
+  <li>Une fois l'élément sélectionné avec cet attribut actif (le nom est
+    précédé par un [x]), cliquez sur le le nom de l'attribut pour afficher sa
+    valeur courante.</li>
+  <li>Pour les attributs avec une série limitée de valeurs ( comme
+    <strong>align</strong> pour un paragraphe ou une en-tête), Amaya affiche :
+    <ul>
+      <li>Un ensemble de boutons radio proposant la liste des valeurs
+        possibles. Une longue liste (comme <strong>lang</strong>) est
+        présentée avec une liste déroulante.</li>
+      <li>Un bouton appliquer (<img alt="ok"
+        src="../../resources/icons/16x16/ok.png" />) pour confirmer la valeur
+        selectionnée.</li>
+      <li>Un bouton poubelle (<img alt="trash"
+        src="../../resources/icons/16x16/trash.png" />) pour retirer
+        l'attribut.</li>
+    </ul>
+  </li>
+  <li>Pour les attributs à valeur libre (comme <strong>href</strong> pour une
+    ancre), Amaya affiche :
+    <ul>
+      <li>Une boîte de saisie pour insérer la valeur.</li>
+      <li>Un bouton appliquer (<img alt="ok"
+        src="../../resources/icons/16x16/ok.png" />) pour confirmer la valeur
+        saisie.</li>
+      <li>Un bouton poubelle (<img alt="trash"
+        src="../../resources/icons/16x16/trash.png" />) pour retirer
+        l'attribut.</li>
+    </ul>
+  </li>
+</ol>
+
+<p class="ProcedureCaption">Pour retirer un attribut :</p>
+<ol>
+  <li>Sélectionnez d'abord l'élément approprié. Vous devez sélectionner
+    l'élément entier et pas seulement un caractère à l'intérieur de
+    l'élément. Pour cela, utilisez la touche F2 .</li>
+  <li>Une fois l'élément sélectionné, cliquez sur le [x] qui précède l'entrée
+    pour retirer l'attribut.</li>
+  <li>Vous pouvez aussi sélectionner l'attribut et cliquer sur le bouton
+    poubelle (<img alt="trash" src="../../resources/icons/16x16/trash.png"
+    />) pour retirer l'attribut.</li>
+</ol>
+
+<h3 id="Editer2"><a name="Editing" id="Editing">Editer des attributs dans la
+vue structure</a></h3>
+
+<p>Tous les attributs sont affichés dans la Vue structure. Les attributs
+peuvent être affichés en bleu ou en rose. Quand un attribut est affiché en
+bleu, vous pouvez seulement le modifier avec l'outil
+<strong>Attributs</strong>. Ceci assure que seules des valeurs correctes
+soient choisies.</p>
+
+<p>Les attributs à valeur libre peuvent être édités dans la vue structure.</p>
+<ul>
+  <li>Vous pouvez cliquez dans la valeur (affichée en rose) et éditer la
+    valeur comme n'importe quelle autre chaîne de caractères.</li>
+  <li>Pour sélectionner la valeur entière l'attribut, vous pouvez cliquer
+    dans la valeur puis presser la touche <code>F2</code>.</li>
+  <li>Pour retirer l'attribut, vous pouvez sélectionner la valeur entière,
+    puis presser deux la touche <code>Delete</code>. Le premier
+    <code>Delete</code> va retirer la valeur de l'attribut et le second va
+    détruire l'attribut.</li>
+</ul>
+
+<h3 id="Copier"><a name="Copying">Copier des attributs</a></h3>
+
+<p>Un attribut n'est pas la même chose qu'un élément et un attribut ne peut
+pas être copié à l'aide des commandes
+<strong>Copier</strong>/<strong>Coller</strong> du menu
+<strong>Edition</strong>.</p>
+
+<p>Pour copier un attribut, vous devez utiliser l'outil
+<strong>Attributs</strong>.</p>
+<ol>
+  <li>Sélectionnez l'élément qui contient l'attribut que vous voulez
+  copier.</li>
+  <li>Sélectionnez l'entrée de l'attribut appropriée dans l'outil
+    <strong>Attributs</strong>.</li>
+  <li>Puis sélectionnez le nouvel élément auquel vous voulez associer
+    l'attribut courant.</li>
+  <li>Cliquez sur le bouton appliquer (<img alt="ok"
+    src="../../resources/icons/16x16/ok.png" />).</li>
+</ol>
+</div>
+</body>
+</html>
