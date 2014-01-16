@@ -50,7 +50,7 @@ extern HTStream * HTMIMERequest_new    (HTRequest * request, HTStream * target,
 
 
 
-@(#) $Id: HTMIMERq.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+@(#) $Id: HTMIMERq.html,v 1.1.1.1 1998/08/14 21:54:38 cvs Exp $
 
 
 */

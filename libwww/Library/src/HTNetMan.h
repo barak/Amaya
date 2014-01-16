@@ -146,6 +146,6 @@ extern HTPriority HTNet_eventPriority(HTNet * net);
 
   
 
-  @(#) $Id: HTNetMan.h,v 1.1.1.2 2005/07/06 10:27:39 gully Exp $
+  @(#) $Id: HTNetMan.html,v 1.1.1.2 2005/07/06 09:34:02 gully Exp $
 
 */

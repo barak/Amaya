@@ -80,6 +80,6 @@ or even werite your own extensions.
 
   
 
-  @(#) $Id: WWWInit.h,v 1.1.1.2 2005/07/06 10:27:39 gully Exp $
+  @(#) $Id: WWWInit.html,v 1.1.1.2 2005/07/06 09:34:02 gully Exp $
 
 */

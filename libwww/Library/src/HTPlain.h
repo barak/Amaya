@@ -35,7 +35,7 @@ extern HTConverter HTPlainPresent;
 
 
 
-@(#) $Id: HTPlain.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+@(#) $Id: HTPlain.html,v 1.1.1.1 1998/08/14 21:54:38 cvs Exp $
 
 
 */

@@ -16,7 +16,7 @@ void TopicsApplicationInitialise ()
  PtrEventsSet appliActions;
 
   /* Create the new application context*/
-  appliActions = TteNewEventsSet (7192, "Topics");
+  appliActions = TteNewEventsSet (15355, "Topics");
    /* Generate event/action entries */
   TteAddActionEvent (appliActions, 0, TteElemMenu, 1, "BM_IgnoreEvent");
   TteAddActionEvent (appliActions, 0, TteElemNew, 1, "BM_IgnoreEvent");

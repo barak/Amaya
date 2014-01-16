@@ -616,13 +616,13 @@ fi # with_wx = no
 
 # the wx version
 AMAYAWX_MAJVER=9
-AMAYAWX_MINVER=4
+AMAYAWX_MINVER=51
 AMAYAWX_SUBVER=0
 
 #the old version (to remove when switching on wx)
 AMAYA_MAJVER=8
 AMAYA_MINVER=8
-AMAYA_SUBVER=4
+AMAYA_SUBVER=51
 
 if test "$with_wx" = "yes" ; then
   APP_MAJVER=$AMAYAWX_MAJVER
@@ -1231,7 +1231,7 @@ if test "$build_amaya" = "yes" ; then
     fi
 
     if test "$with_redland" = "yes" ; then
-       AMAYA_ANNOT_OPTIONS="$AMAYA_ANNOT_OPTIONS -DLIBRDF_INTERNAL=1 -DAM_REDLAND -DRAPTOR_RDF_PARSER"
+       AMAYA_ANNOT_OPTIONS="$AMAYA_ANNOT_OPTIONS -DAM_REDLAND -DRAPTOR_RDF_PARSER"
        if test "$redland_compile_source" = "yes" ; then
          AMAYA_RAPTOR_SRC="amaya_comp_redland"
          AMAYA_ANNOT_OPTIONS="$AMAYA_ANNOT_OPTIONS -I\$(THOTDIR)/../redland/librdf -I\$(THOTDIR)/../redland/raptor"

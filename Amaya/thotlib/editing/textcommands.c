@@ -1309,7 +1309,7 @@ static int CopyXClipboard (unsigned char **buffer, View view)
       if (!SelPosition && lastChar == 0)
         {
           /* get the content of the whole element */
-          lastChar = pLastEl->ElVolume + 1;
+          lastChar = pLastEl->ElVolume + 2;
           firstChar = 1;
         }
       if (pFirstEl->ElTypeNumber != CharString + 1)
@@ -1511,8 +1511,65 @@ void TtcClearClipboard ()
     TtaFreeMemory (Xbuffer);
   Xbuffer = NULL;
   ClipboardLength = 0;
+  ClipboardURI = FALSE; // no URI stored
 #ifdef _WX
 #endif /* _WX */
+}
+
+/*----------------------------------------------------------------------
+  TtaStringToClipboard
+  ----------------------------------------------------------------------*/
+void TtaStringToClipboard (unsigned char *s, CHARSET encoding)
+{
+  int              len;
+
+  if (s)
+    {
+      len = strlen ((char *)s);
+      if (len)
+        {
+#ifdef _WX
+          if (wxTheClipboard->Open())
+            {
+              TtcClearClipboard ();
+              // Write some text to the clipboard
+              ClipboardLength = len;
+              if (encoding == UTF_8)
+                Xbuffer = (unsigned char *)TtaStrdup ((char *)s);
+              else
+                Xbuffer = TtaConvertByteToMbs (s, encoding);
+              
+              // This data objects are held by the clipboard, 
+              // so do not delete them in the app.
+              wxTheClipboard->AddData( new wxTextDataObject( TtaConvMessageToWX((char *)s) ) );
+              wxTheClipboard->Close();
+            }
+#endif /* _WX */
+#ifdef _GTK
+          /* Must get the selection */
+          TtcClearClipboard ();
+          if (encoding == UTF_8)
+            {
+              Xbuffer = (unsigned char *)TtaStrdup ((char *)s);
+              ClipboardLength = len;
+            }
+          else
+            {
+              Xbuffer = TtaConvertByteToMbs (s, encoding);
+              ClipboardLength = strlen ((char *)Xbuffer);
+            }
+#endif /* _GTK */
+#ifdef _WINGUI
+          if (encoding == UTF_8)
+            Xbuffer = TtaConvertMbsToByte (s, TtaGetLocaleCharset ());
+          else
+            Xbuffer = TtaStrdup (s);
+#endif /* _WINGUI */
+
+          // It should be an URI
+          ClipboardURI = TRUE;
+        }
+    }
 }
 
 /*----------------------------------------------------------------------
@@ -1567,6 +1624,7 @@ void DoCopyToClipboard (Document doc, View view, ThotBool force)
 #endif /* _GTK */
 #ifdef _WINGUI
   /* Store the current selection */
+  ClipboardURI = FALSE;
   ClipboardLength = CopyXClipboard (&Xbuffer, view);
 #endif /* _WINGUI */
 }

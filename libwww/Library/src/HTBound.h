@@ -41,7 +41,7 @@ extern HTConverter HTBoundary;
 
 
 
-@(#) $Id: HTBound.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+@(#) $Id: HTBound.html,v 1.1.1.1 1998/08/14 21:54:37 cvs Exp $
 
 
 */

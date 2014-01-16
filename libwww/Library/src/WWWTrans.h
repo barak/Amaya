@@ -77,6 +77,6 @@ These are the transports describing this interface
 
   
 
-  @(#) $Id: WWWTrans.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+  @(#) $Id: WWWTrans.html,v 1.1.1.1 1998/08/14 21:54:39 cvs Exp $
 
 */

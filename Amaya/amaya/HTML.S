@@ -876,7 +876,7 @@ EXCEPT
 	BODY:		NoCut, CssBackground, NoMove, NoResize,
 		        SetWindowBackground, NoBreakByReturn;
 	HEAD:		NoCut;
-	TITLE:		NoCut;
+	TITLE:		NoCut, NoSpellCheck;
 	Document_URL:	Hidden, NoSpellCheck, NoCut;
 	C_Empty:	Hidden, NoSpellCheck, NoSelect;
 	C_BR:		SelectParent;
@@ -888,11 +888,11 @@ EXCEPT
 	Definition_Item:Hidden;
 	Term_List:	Hidden, CanCut;
 	Definitions:	Hidden;
-  XMLPI:	        ReturnCreateNL, NoSpellCheck, NoReplicate;
-	Comment\240:	ReturnCreateNL, NoReplicate;
+  XMLPI:	        ReturnCreateNL, NoSpellCheck, NoReplicate, NotAnElementNode;
+	Comment\240:	ReturnCreateNL, NoSpellCheck, NoReplicate, NotAnElementNode;
 	Comment_line:	Hidden, MarkupPreserve;
 	PI_line:	Hidden, MarkupPreserve;
-	DOCTYPE:	NoCut, NoSpellCheck;
+	DOCTYPE:	NoCut, NoSpellCheck, NotAnElementNode;
 	DOCTYPE_line:	Hidden, NoCut;
   CDATA_line:     Hidden, MarkupPreserve;
 	GRAPHICS:	NoMove, NoResize, SelectParent;
@@ -1002,14 +1002,14 @@ EXCEPT
 	onselect:	EventAttr;
 	ID :		CssId; {Default id attribute}
 	Class:		CssClass;
-	External_Object_Content: Hidden;
-	Embed_:	        NoBreakByReturn, NoReplicate;
+	External_Object_Content: Hidden, NoSpellCheck;
+	Embed_:	        NoBreakByReturn, NoReplicate, NoSpellCheck;
 	Embed_Content:  Hidden, NoSelect;
 	Object:	        NoBreakByReturn, NoReplicate;
 	Object_Content: Hidden, NoSelect, NoCreate, NoCut, NoBreakByReturn;
 	Applet:	        NoBreakByReturn, NoReplicate;
 	Applet_Content: Hidden, NoSelect, NoCreate, NoCut, NoBreakByReturn;
-	IFRAME:	        NoBreakByReturn, NoReplicate;
+	IFRAME:	        NoBreakByReturn, NoReplicate, NoSpellCheck;
 	Iframe_Content: Hidden, NoSelect, NoCut, NoBreakByReturn;
 	Iframe_Src_Content: Hidden, NoCut, NoSelect;
 	is_css:	        Invisible;

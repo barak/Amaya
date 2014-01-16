@@ -688,7 +688,7 @@ void InitSaveObjectForm (Document document, View view, char *object,
   char                tempdir[MAX_LENGTH];
 #endif /* _WINGUI */
 
-  if (SavingDocument != 0 || SavingObject != 0)
+  if (SavingDocument || SavingObject)
     return;
   SavingObject = document;
   strncpy (tempSavedObject, object, sizeof (tempSavedObject));
@@ -734,9 +734,11 @@ void DeleteTempObjectFile (void)
 void DoSaveObjectAs (void)
 {
   char           tempfile[MAX_LENGTH];
+  char           pathname[MAX_LENGTH];
+  char           docname[MAX_LENGTH];
   char           msg[MAX_LENGTH];
-  ThotBool       dst_is_local;
   int            res;
+  ThotBool       dst_is_local;
    
   if (SavingObject == 0)
     return;
@@ -771,6 +773,7 @@ void DoSaveObjectAs (void)
       SavingDocument = 0;
       return;
     }
+
   if (TtaFileExist (tempfile))
     {
       /* ask confirmation */
@@ -783,10 +786,41 @@ void DoSaveObjectAs (void)
           TtaSetDialoguePosition ();
           TtaShowDialogue (BaseDialog + SaveForm, FALSE);
 #endif /* !_WINGUI */
+          // redisplay Save form
+          res = SavingObject;
+          SavingObject = 0;
+          InitSaveObjectForm (res, 1, SavePath, ObjectName);
           return;
         }
     }
-  TtaFileCopy (tempSavedObject, tempfile);
+  else
+    {
+      TtaExtractName (tempfile, pathname, docname);
+      if (!CheckMakeDirectory (pathname, TRUE))
+        {
+          // cannot create the current path
+          /* cannot save */
+          sprintf (msg, TtaGetMessage (AMAYA, AM_CANNOT_SAVE), tempfile);
+          InitInfo (NULL, msg);
+          // redisplay Save form
+          res = SavingObject;
+          SavingObject = 0;
+          InitSaveObjectForm (res, 1, SavePath, ObjectName);
+          return;
+        }
+    }
+
+  if (!TtaFileCopy (tempSavedObject, tempfile))
+    {
+      /* cannot save */
+      sprintf (msg, TtaGetMessage (AMAYA, AM_CANNOT_SAVE), tempfile);
+      InitInfo (NULL, msg);
+      // redisplay Save form
+      res = SavingObject;
+      SavingObject = 0;
+      InitSaveObjectForm (res, 1, SavePath, ObjectName);
+      return;
+    }
   /* delete the temporary file */
   DeleteTempObjectFile ();
   SavingObject = 0;
@@ -995,7 +1029,8 @@ char *UpdateDocumentCharset (Document doc)
   ----------------------------------------------------------------------*/
 void SetNamespacesAndDTD (Document doc)
 {
-  Element		    root, el, head, meta, docEl, doctype, elFound, text, elDecl;
+  Element		    root, el, head, meta, docEl, doctype, elFound, text;
+  Element       next, elDecl;
   ElementType		elType;
   Attribute		  attr;
   AttributeType	attrType;
@@ -1130,51 +1165,54 @@ void SetNamespacesAndDTD (Document doc)
       /* check if XML declaration or the math PI are already defined */
       xmlDecl = DocumentMeta[doc]->xmlformat;
       el = TtaGetFirstChild (docEl);
-      elType = TtaGetElementType (el);
-      if (elType.ElTypeNum == pi_type)
+      while (el)
         {
-          /* get PI lines */
-          elFound = TtaGetFirstChild (el);
-          while (elFound)
+          elType = TtaGetElementType (el);
+          if (elType.ElTypeNum != pi_type)
+            TtaNextSibling (&el);
+          else
             {
-              /* get PI text */
-              text = TtaGetFirstChild (elFound);
-              if (text == NULL)
-                text = elFound;
-              length = 300;
-              TtaGiveTextContent (text, (unsigned char *)buffer, &length, &lang);
-              if (strstr (buffer, "xml version="))
+              /* get PI lines */
+              next = el;
+              TtaNextSibling (&next);
+              elFound = TtaGetFirstChild (el);
+              while (elFound)
                 {
-                  if (strstr (buffer, charsetname))
+                  /* get PI text */
+                  text = TtaGetFirstChild (elFound);
+                  if (text == NULL)
+                    text = elFound;
+                  length = 300;
+                  TtaGiveTextContent (text, (unsigned char *)buffer, &length,
+                                      &lang);
+                  if (strstr (buffer, "xml version="))
                     {
-                      /* it's not necessary to generate the XML declaration */
-                      xmlDecl = FALSE;
-                      elDecl = elFound;
+                      if (strstr (buffer, charsetname))
+                        {
+                          /* not necessary to generate the XML declaration */
+                          xmlDecl = FALSE;
+                          elDecl = el;
+                        }
+                      else
+                        {
+                          // the charset changed -> regenerate the declaration
+                          xmlDecl = TRUE;
+                          elDecl = NULL;
+                          TtaDeleteTree (el, doc);
+                          el = next;
+                        }
+                      elFound = NULL;
                     }
-                  else
+                  else if (strstr (buffer, "mathml.xsl"))
                     {
-                      // the charset changed -> regenerate the declaration
-                      xmlDecl = TRUE;
-                      elDecl = NULL;
-                      TtaDeleteTree (elFound, doc);
+                      /* it's not necessary to generate the math PI */
+                      mathPI = FALSE;
+                      elFound = NULL;
                     }
-                  elFound = NULL;
-                  /* check next PI ? */
-                  TtaNextSibling (&el);
-                  if (el)
-                    {
-                      elType = TtaGetElementType (el);
-                      if (elType.ElTypeNum == pi_type)
-                        /* get PI lines */
-                        elFound = TtaGetFirstChild (el);
-                    }
+                  if (elFound)
+                    TtaNextSibling (&elFound);
                 }
-              else if (strstr (buffer, "pmathml.xsl"))
-                {
-                  /* it's not necessary to generate the math PI */
-                  mathPI = FALSE;
-                  elFound = NULL;
-                }
+              el = next;
             }
         }
 
@@ -1618,7 +1656,8 @@ void RedisplaySourceFile (Document doc)
         /* get the current position in the document */
         position = RelativePosition (DocumentSource[doc], &distance);
         TtaClearUndoHistory (DocumentSource[doc]);
-
+        /* if selection is in the source document, cancel it */
+        TtaUnselect (DocumentSource[doc]);
         /* Get its local copy */
         localFile = GetLocalPath (doc, DocumentURLs[doc]);
         TtaExtractName (localFile, tempdir, documentname);
@@ -1700,11 +1739,8 @@ static ThotBool SaveDocumentLocally (Document doc, char *directoryName,
         {
           /* copy the image file to the new destination */
           if (!IsW3Path (DocumentURLs[doc]))
-            {
-              /* local to local */
-              TtaFileCopy (DocumentURLs[doc], tempname);
-              ok = TRUE;
-            }
+            /* local to local */
+            ok = TtaFileCopy (DocumentURLs[doc], tempname);
           else
             {
               /* remote to local */
@@ -1731,6 +1767,7 @@ static ThotBool SaveDocumentLocally (Document doc, char *directoryName,
                 }
             }
         }
+
       if (ok)
         {
           TtaSetDocumentDirectory (doc, directoryName);
@@ -1744,7 +1781,7 @@ static ThotBool SaveDocumentLocally (Document doc, char *directoryName,
             /* export the new container (but to the temporary file name */
             ok = TtaExportDocumentWithNewLineNumbers (doc, ptr, "HTMLTX");
           else
-            TtaFileCopy (tempname, ptr);
+            ok = TtaFileCopy (tempname, ptr);
           TtaFreeMemory (ptr);
         }
     }
@@ -1752,24 +1789,31 @@ static ThotBool SaveDocumentLocally (Document doc, char *directoryName,
 }
 
 /*----------------------------------------------------------------------
-  AddNoName
+  HasSavingName
   This function is called whenether one tries to save a document
   without name (just the directory path e.g. http://www.w3.org/pub/WWW/ )
-  It ask the user whether an extra name suffix should be added or
+  It asks the user whether an extra name suffix should be added or
   abort.
+  Return TRUE if there is a document name
+  with_suffix is TRUE if the document name has a suffix
   ----------------------------------------------------------------------*/
-static ThotBool AddNoName (Document document, View view, char *url,
-                           ThotBool *ok)
+static ThotBool HasSavingName (Document doc, View view, char *url,
+                               ThotBool *with_suffix)
 {
-  char            msg[MAX_LENGTH];
+  char            msg[MAX_LENGTH], suffix[MAX_LENGTH];
   char            documentname[MAX_LENGTH];
   int             len;
+  ThotBool        ok;
 
   len = strlen (url);
   TtaExtractName (url, msg, documentname);
-  *ok = (documentname[0] != EOS);
-  if (*ok)
-    return (FALSE);
+  if (documentname[0] != EOS)
+    {
+      // check if there is a suffix
+      TtaExtractSuffix (documentname, suffix);
+      *with_suffix = (suffix[0] != EOS);
+      return (TRUE);
+    }
   else
     {
       /* the name is not correct for the put operation */
@@ -1783,17 +1827,36 @@ static ThotBool AddNoName (Document document, View view, char *url,
       else if (url[len -1] != DIR_SEP)
         strcat (msg, DIR_STR);
       /* get default name */
-      DefaultName = TtaGetEnvString ("DEFAULTNAME");
-      if (DefaultName == NULL || *DefaultName == EOS)
-        DefaultName = StdDefaultName;
-
-      strcat (msg, DefaultName);
-      InitConfirm (document, view, msg);
-
-      if (UserAnswer == 0)
-        return (FALSE);
+      ok = (DocumentMeta[doc] && DocumentMeta[doc]->content_location);
+      if (ok)
+        {
+          // don't pay attention to current suffix
+          *with_suffix = TRUE;
+        }
       else
-        return (TRUE);
+        {
+          DefaultName = TtaGetEnvString ("DEFAULTNAME");
+          if (DefaultName == NULL || *DefaultName == EOS)
+            DefaultName = StdDefaultName;
+          strcat (msg, DefaultName);
+          InitConfirm (doc, view, msg);
+          
+          if (UserAnswer != 0 && DocumentMeta[doc])
+            {
+              DocumentMeta[doc]->content_location = TtaStrdup (DefaultName);
+              ok = (DocumentMeta[doc]->content_location != NULL);
+            }
+          if (ok)
+            {
+              // check isf there is a suffix
+	      strcpy (documentname, DocumentMeta[doc]->content_location);
+	      TtaExtractSuffix (documentname, suffix);
+              *with_suffix = (suffix[0] != EOS);
+            }
+          else
+            *with_suffix = FALSE;
+        }
+      return ok;
     }
 }
 
@@ -1927,6 +1990,9 @@ static ThotBool SaveObjectThroughNet (Document doc, View view,
     {
       DocNetworkStatus[doc] |= AMAYA_NET_ERROR;
       ResetStop (doc);
+          InitInfo ("", AmayaLastHTTPErrorMsg);
+          res = -1;
+#ifdef IV
       sprintf (msg, "%s %s",
                TtaGetMessage (AMAYA, AM_URL_SAVE_FAILED),
                url);
@@ -1941,12 +2007,12 @@ static ThotBool SaveObjectThroughNet (Document doc, View view,
         }
       else
         {
-          InitConfirm3L (doc, view, msg, AmayaLastHTTPErrorMsg, 
-                         AmayaLastHTTPErrorMsgR, FALSE);
+          InitInfo ("", AmayaLastHTTPErrorMsg);
           res = -1;
         }
       /* erase the last status message */
-      TtaSetStatus (doc, view, "", NULL);	       
+      TtaSetStatus (doc, view, "", NULL);	  
+#endif     
     }
   else
     {
@@ -2121,69 +2187,57 @@ static ThotBool SaveDocumentThroughNet (Document doc, View view, char *url,
         {
           DocNetworkStatus[doc] |= AMAYA_NET_ERROR;
           ResetStop (doc);
-          sprintf (msg, "%s %s",
-                   TtaGetMessage (AMAYA, AM_URL_SAVE_FAILED),
-                   url);
-          if (confirm)
-            {
-              if (AmayaLastHTTPErrorMsg[0] != EOS ||
-                  AmayaLastHTTPErrorMsgR[0] != EOS)
-                InitConfirm3L (doc, view, msg, AmayaLastHTTPErrorMsg,
-                               AmayaLastHTTPErrorMsgR, FALSE);
-              res = - 1;
-            }
+          if (AmayaLastHTTPErrorMsg[0] != EOS)
+            InitInfo ("", AmayaLastHTTPErrorMsg);
           else
             {
-              InitConfirm3L (doc, view, msg, AmayaLastHTTPErrorMsg, 
-                             AmayaLastHTTPErrorMsgR, FALSE);
-              res = -1;
+              sprintf (AmayaLastHTTPErrorMsg, TtaGetMessage (AMAYA, AM_CANNOT_SAVE),
+                       DocumentURLs[doc]);
+              InitInfo ("", AmayaLastHTTPErrorMsg);
             }
-          /* JK: to erase the last status message */
-          TtaSetStatus (doc, view, "", NULL);	       
+          res = -1;
         }
 
-      i = 0;
-      while (pImage)
+      if (res == 0)
         {
-          if (pImage->document == doc && pImage->status == IMAGE_MODIFIED)
+          i = 0;
+          while (pImage)
             {
-              if (imgToSave[i++])
+              if (pImage->document == doc && pImage->status == IMAGE_MODIFIED)
                 {
-                  /* we get the MIME type of the image. We reuse whatever the
-                     server sent if we have it, otherwise, we try to infer it from
-                     the image type as discovered by the handler */
-                  if (pImage->content_type)
-                    content_type = pImage->content_type;
-                  else
-                    content_type = PicTypeToMIME ((PicType)pImage->imageType);
-                  res = SafeSaveFileThroughNet(doc, pImage->tempfile,
-                                               pImage->originalName, content_type,
-                                               use_preconditions);
-                  if (res == -1 && AmayaLastHTTPErrorMsgR[0] == EOS)
-                    res = 0;
-                  if (res)
+                  if (imgToSave[i++])
                     {
-                      /* message not null if an error is detected */
-                      DocNetworkStatus[doc] |= AMAYA_NET_ERROR;
-                      ResetStop (doc);
-                      sprintf (msg, "%s %s",
-                               TtaGetMessage (AMAYA, AM_URL_SAVE_FAILED),
-                               pImage->originalName);
-                      InitConfirm3L (doc, view, msg, AmayaLastHTTPErrorMsg, 
-                                     AmayaLastHTTPErrorMsgR, FALSE);
-                      /* erase the last status message */
-                      TtaSetStatus (doc, view, "", NULL);
-                      /*res = -1;*/res = 0;
-                      /* continue */
-                      /*pImage = NULL;*/
+                      /* we get the MIME type of the image. We reuse whatever the
+                         server sent if we have it, otherwise, we try to infer it from
+                         the image type as discovered by the handler */
+                      if (pImage->content_type)
+                        content_type = pImage->content_type;
+                      else
+                        content_type = PicTypeToMIME ((PicType)pImage->imageType);
+                      res = SafeSaveFileThroughNet(doc, pImage->tempfile,
+                                                   pImage->originalName, content_type,
+                                                   use_preconditions);
+                      if (res)
+                        {
+                          /* message not null if an error is detected */
+                          DocNetworkStatus[doc] |= AMAYA_NET_ERROR;
+                          ResetStop (doc);
+                          sprintf (msg, "%s %s",
+                                   TtaGetMessage (AMAYA, AM_URL_SAVE_FAILED),
+                                   pImage->originalName);
+                          InitInfo ("", msg);
+                          /*res = -1;*/res = 0;
+                          /* continue */
+                          /*pImage = NULL;*/
+                        }
+                      else
+                        pImage->status = IMAGE_LOADED;
                     }
-                  else
-                    pImage->status = IMAGE_LOADED;
                 }
+              
+              if (pImage != NULL)
+                pImage = pImage->nextImage;
             }
-
-          if (pImage != NULL)
-            pImage = pImage->nextImage;
         }
       ResetStop (doc);
     }
@@ -2337,7 +2391,8 @@ void DoSynchronize (Document doc, View view, NotifyElement *event)
           /* get the current position in the document */
           position = RelativePosition (otherDoc, &distance);
           TtaClearUndoHistory (otherDoc);
-
+          // By default remove the read-only mode
+          TtaSetDocumentAccessMode (otherDoc, 1);
           /* save the current state of the document into the temporary file */
           tempdoc = GetLocalPath (otherDoc, DocumentURLs[otherDoc]);
           TtaExportDocumentWithNewLineNumbers (doc, tempdoc, "TextFileT");
@@ -2492,9 +2547,11 @@ void SaveDocument (Document doc, View view)
   DisplayMode         dispMode;
   char                tempname[MAX_LENGTH];
   char                localFile[MAX_LENGTH];
+  char                msg[MAX_LENGTH];
   char               *ptr;
   int                 i;
   ThotBool            ok, newLineNumbers;
+  ThotBool            with_suffix = FALSE;
 
   if (DocumentTypes[doc] == docAnnot) 
     {
@@ -2554,10 +2611,7 @@ void SaveDocument (Document doc, View view)
      saving some elements, for instance META */
   dispMode = TtaGetDisplayMode (doc);
   if (TextFormat)
-    {
-      dispMode = TtaGetDisplayMode (doc);
-      TtaSetDisplayMode (doc, DeferredDisplay);
-    }
+    TtaSetDisplayMode (doc, DeferredDisplay);
   else if (dispMode == DisplayImmediately)
     TtaSetDisplayMode (doc, DeferredDisplay);
 
@@ -2578,15 +2632,22 @@ void SaveDocument (Document doc, View view)
     /* it's a remote document */
     {
       Synchronize (doc, view);
-      if (DocumentMeta[doc]->content_location)
-        ok = TRUE;
-      else if (AddNoName (doc, view, tempname, &ok))
+      if (SavingDocument != doc)
         {
-          ok = TRUE;
-          if (DocumentMeta[doc]->content_location)
-            TtaFreeMemory (DocumentMeta[doc]->content_location);
-          ptr = TtaGetEnvString ("DEFAULTNAME");
-          DocumentMeta[doc]->content_location = TtaStrdup (ptr);
+          ok = FALSE;
+          // reset the source document as updated
+          TtaSetDocumentUpdated (doc);
+        }
+      else
+        ok = HasSavingName (doc, view, tempname, &with_suffix);
+
+      if (!ok || !with_suffix)
+        {
+          // call Save As when there is no suffix
+          SavingDocument = 0;
+          TtaSetDisplayMode (doc, dispMode);
+          SaveDocumentAs (doc, view);
+          return;
         }
 
       ptr = GetLocalPath (doc, DocumentURLs[doc]);
@@ -2597,12 +2658,14 @@ void SaveDocument (Document doc, View view)
       /* it's a complete name: save it */
       if (ok)
         {
-          if (TextFormat)
-            ok = SaveObjectThroughNet (doc, view, DocumentURLs[doc],
-                                       FALSE, TRUE);
+          if (DocumentMeta[doc] && DocumentMeta[doc]->full_content_location)
+            ptr = DocumentMeta[doc]->full_content_location;
           else
-            ok = SaveDocumentThroughNet (doc, view, DocumentURLs[doc],
-                                         TRUE, TRUE, TRUE);
+            ptr = DocumentURLs[doc];
+          if (TextFormat)
+            ok = SaveObjectThroughNet (doc, view, ptr, FALSE, TRUE);
+          else
+            ok = SaveDocumentThroughNet (doc, view, ptr, TRUE, TRUE, TRUE);
         }
     }
   else
@@ -2619,20 +2682,26 @@ void SaveDocument (Document doc, View view)
       else
         {
           Synchronize (doc, view);
-          /* save a local copy of the current document */
-          if (xmlDoc)
-            ptr = GetLocalPath (xmlDoc, tempname);
-          else
-            ptr = GetLocalPath (doc, tempname);
-          ok = TtaFileCopy (ptr, tempname);
-          TtaFreeMemory (ptr);
+          if (SavingDocument == doc)
+            {
+              /* save a local copy of the current document */
+              if (xmlDoc)
+                ptr = GetLocalPath (xmlDoc, tempname);
+              else
+                ptr = GetLocalPath (doc, tempname);
+              ok = TtaFileCopy (ptr, tempname);
+              TtaFreeMemory (ptr);
+            }
         }
     }
 
   /* restore original display mode */
   TtaSetDisplayMode (doc, dispMode);
-  SavingDocument = 0;
 
+  if (SavingDocument == 0)
+    // the saving was discarded
+    return;
+  SavingDocument = 0;
   if (ok)
     {
       /* cancel the possible don't replace mark */
@@ -2653,7 +2722,7 @@ void SaveDocument (Document doc, View view)
       else if (DocumentSource[doc])
         {
           TtaSetDocumentUnmodified (DocumentSource[doc]);
-      TtaSetInitialSequence (DocumentSource[doc]);
+          TtaSetInitialSequence (DocumentSource[doc]);
         }
         
       /* switch Amaya buttons and menus */
@@ -2667,14 +2736,14 @@ void SaveDocument (Document doc, View view)
       if (!TtaFileExist (tempname))
         RemoveAutoSavedDoc (doc);
     }
-  else
+  else if (!IsW3Path (tempname))
     {
-      char msg[200];
       /* cannot save */
       sprintf (msg, TtaGetMessage (AMAYA, AM_CANNOT_SAVE), DocumentURLs[doc]);
-      InitConfirm (0, 0, msg);
+      InitInfo ("", msg);
     }
 }
+
 
 /*----------------------------------------------------------------------
   CanReplaceCurrentDocument
@@ -2740,7 +2809,10 @@ void BackUpDocs ()
   /* check all modified documents */
   f = NULL;
   for (doc = 1; doc < DocumentTableLength; doc++)
-    if (DocumentURLs[doc] && TtaIsDocumentModified (doc) && doc != W3Loading)
+    if (DocumentURLs[doc] && TtaIsDocumentModified (doc) && doc != W3Loading &&
+        (DocumentTypes[doc] != docSource &&
+         DocumentTypes[doc] != docLibrary &&
+         DocumentTypes[doc] != docLog))
       {
         if (f == NULL)
           {
@@ -2772,6 +2844,7 @@ void BackUpDocs ()
 
         /* write the backup file */
         DocumentURLs[doc] = TtaStrdup (pathname);
+        DocumentSource[doc] = 0;
         SaveDocument (doc, 1);
         /* register the backup file name and the original document name */
         fprintf (f, "\"%s\" \"%s\" %d\n", pathname, ptr, DocumentTypes[doc]);
@@ -3550,9 +3623,8 @@ void DoSaveAs (char *user_charset, char *user_mimetype)
   char                imgbase[MAX_LENGTH];
   char                documentname[MAX_LENGTH];
   char                tempdir[MAX_LENGTH];
-  char                msg[200];
+  char                msg[MAX_LENGTH];
   char                url_sep;
-  int                 res;
   int                 len, xmlDoc;
   char               *old_charset = NULL;
   char               *old_mimetype = NULL;
@@ -3561,8 +3633,7 @@ void DoSaveAs (char *user_charset, char *user_mimetype)
   char               *ptr;
   ThotBool            src_is_local;
   ThotBool            dst_is_local, ok;
-  ThotBool	          docModified, toUndo;
-  ThotBool            new_put_def_name;
+  ThotBool	          docModified, toUndo, with_suffix = FALSE;
 
   if (SavingDocument == 0)
     return;
@@ -3603,29 +3674,16 @@ void DoSaveAs (char *user_charset, char *user_mimetype)
   else
     url_sep = URL_SEP;
 
-  new_put_def_name = FALSE;
   if (SaveName[0] == EOS)
     {
       /* there is no document name */
-      if (AddNoName (SavingDocument, 1, documentFile, &ok))
-        {
-          ok = TRUE;
-          res = strlen(SavePath) - 1;
-          if (SavePath[res] == url_sep)
-            SavePath[res] = EOS;
-          /* need to update the document url */
-          strcpy (SaveName, DefaultName);
-          strcat (documentFile, SaveName);
-          /* set up a temp flag to say we're using the default name */
-          new_put_def_name = TRUE;
-        }
-      else if (!ok)
+      ok = HasSavingName (SavingDocument, 1, documentFile, &with_suffix);
+      if (!ok)
         {
           /* cannot save */
           doc = SavingDocument;
           sprintf (msg, TtaGetMessage (AMAYA, AM_CANNOT_SAVE), DocumentURLs[doc]);
-          InitConfirm (0, 0, msg);
-          //TtaSetStatus (doc, 1, TtaGetMessage (AMAYA, AM_CANNOT_SAVE), DocumentURLs[doc]);
+          InitInfo (NULL, msg);
           SavingDocument = 0;
           /* display the dialog box */
           InitSaveForm (doc, 1, documentFile);
@@ -3644,19 +3702,8 @@ void DoSaveAs (char *user_charset, char *user_mimetype)
     SaveImgsURL[0] = EOS;
   if (ok && dst_is_local)
     {
-      /* verify that the directory exists */
-      if (!TtaCheckDirectory (SavePath))
-        {
-          sprintf (msg, TtaGetMessage (AMAYA, AM_CANNOT_SAVE), SavePath);
-          InitConfirm (0, 0, msg);
-          //TtaSetStatus (doc, 1, TtaGetMessage (AMAYA, AM_CANNOT_SAVE), SavePath);
-          /* the user has to change the name of the images directory */
-          /* display the dialog box */
-          InitSaveForm (doc, 1, documentFile);
-          ok = FALSE;
-        }
       /* verify that we don't overwite anything and ask for confirmation */
-      else if (TtaFileExist (documentFile))
+      if (TtaFileExist (documentFile))
         {
           /* ask confirmation */
           tempname = (char *)TtaGetMemory (MAX_LENGTH);
@@ -3670,6 +3717,17 @@ void DoSaveAs (char *user_charset, char *user_mimetype)
               InitSaveForm (doc, 1, documentFile);
               ok = FALSE;
             }
+        }
+      /* verify that the directory exists */
+      else if (!CheckMakeDirectory (SavePath, TRUE))
+        {
+          sprintf (msg, TtaGetMessage (AMAYA, AM_CANNOT_SAVE), SavePath);
+          InitInfo (NULL, msg);
+          /* the user has to change the name of the images directory */
+          /* display the dialog box */
+          SavingDocument = 0;
+          InitSaveForm (doc, 1, documentFile);
+          ok = FALSE;
         }
     }
  
@@ -3718,10 +3776,11 @@ void DoSaveAs (char *user_charset, char *user_mimetype)
                 }
               else
                 strcpy(tempname, imgbase);
-              ok = TtaCheckDirectory (tempname);
+              ok = CheckMakeDirectory (tempname, TRUE);
               if (!ok)
                 {
-                  TtaSetStatus (doc, 1, TtaGetMessage (AMAYA, AM_CANNOT_SAVE), tempname);
+                  sprintf (msg, TtaGetMessage (AMAYA, AM_CANNOT_SAVE), tempname);
+                  InitInfo (NULL, msg);
                   TtaFreeMemory (tempname);
                   /* free base before returning*/
                   if (base)
@@ -3978,7 +4037,8 @@ void DoSaveAs (char *user_charset, char *user_mimetype)
           */
           if (toUndo)
             TtaUndoNoRedo (doc);
-          TtaSetStatus (doc, 1, TtaGetMessage (AMAYA, AM_CANNOT_SAVE), documentFile);
+          sprintf (msg, TtaGetMessage (AMAYA, AM_CANNOT_SAVE), documentFile);
+          InitInfo (NULL, msg);
           /* restore the previous status of the document */
           if (DocumentTypes[doc] == docImage)
             {

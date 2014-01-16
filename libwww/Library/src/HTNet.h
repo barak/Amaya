@@ -779,6 +779,6 @@ extern BOOL HTNet_rawBytesCount (HTNet * net);
 
   
 
-  @(#) $Id: HTNet.h,v 1.1.1.2 2005/07/06 10:27:39 gully Exp $
+  @(#) $Id: HTNet.html,v 1.1.1.2 2005/07/06 09:34:02 gully Exp $
 
 */

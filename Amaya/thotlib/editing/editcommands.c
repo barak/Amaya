@@ -43,7 +43,6 @@
 static ThotPictInfo PictClipboard;
 static LeafType     ClipboardType;
 static Language     ClipboardLanguage = 0;
-
 /* X Clipboard */
 static struct _TextBuffer XClipboard;
 
@@ -2622,8 +2621,10 @@ ThotBool ContentEditing (int editType)
 
 /*----------------------------------------------------------------------
   Insere un caractere dans une boite de texte.                    
+  Return TRUE if a Cut command was applied and it moved the selection
+  to a next element.
   ----------------------------------------------------------------------*/
-void InsertChar (int frame, CHAR_T c, int keyboard)
+ThotBool InsertChar (int frame, CHAR_T c, int keyboard)
 {
   PtrTextBuffer       pBuffer;
   PtrAbstractBox      pAb, pBlock;
@@ -2646,7 +2647,7 @@ void InsertChar (int frame, CHAR_T c, int keyboard)
   ThotBool            toSplit, toSplitForScript = FALSE;
   ThotBool            saveinsert, rtl;
   ThotBool            notification = FALSE;
-  ThotBool            status, selprev;
+  ThotBool            status, selprev, selNext = FALSE;
 
   toDelete = (c == 127);
   script  = ' ';
@@ -2668,7 +2669,7 @@ void InsertChar (int frame, CHAR_T c, int keyboard)
       pViewSelEnd = &pFrame->FrSelectionEnd;
       
       if (pAb == NULL && nat != LtText)
-        return;
+        return selNext;
 
       if (pAb == NULL)
         {
@@ -2690,7 +2691,7 @@ void InsertChar (int frame, CHAR_T c, int keyboard)
               GetFrameParams (frame, &visib, &zoom);
               SetFrameParams (frame, pAb->AbVisibility, zoom);
               InsertChar (frame, c, keyboard);
-              return;
+              return selNext;
             }
 
           switch (pAb->AbLeafType)
@@ -2736,7 +2737,7 @@ void InsertChar (int frame, CHAR_T c, int keyboard)
                       font = pSelBox->BxFont;
 		      
                       if (pBuffer == NULL)
-                        return;
+                        return selNext;
                       /* the selection should at the end of a buffer */
                       if (ind < pBuffer->BuLength && pBuffer->BuPrevious)
                         {
@@ -2765,7 +2766,7 @@ void InsertChar (int frame, CHAR_T c, int keyboard)
                               CloseTextInsertion ();
                               DeleteNextChar (frame, pAb->AbElement, TRUE);
                               pFrame->FrReady = TRUE;
-                              return;
+                              return selNext;
                             }
                           else
                             {
@@ -2889,7 +2890,7 @@ void InsertChar (int frame, CHAR_T c, int keyboard)
                                          the last element in the line*/
                                       FirstSelectedChar = 1;
                                       NewContent (pAb);
-                                      CutCommand (FALSE, FALSE);
+                                      selNext = CutCommand (FALSE, FALSE);
                                       TextInserting = FALSE;
                                       /* move the selection at the end of the
                                          previous element */
@@ -2901,11 +2902,11 @@ void InsertChar (int frame, CHAR_T c, int keyboard)
                                           if (selprev)
                                             TtcPreviousChar (FrameTable[frame].FrDoc,
                                                            FrameTable[frame].FrView);
-                                          else
+                                          else if (!selNext)
                                             TtcNextChar (FrameTable[frame].FrDoc,
                                                          FrameTable[frame].FrView);
                                         }
-                                      return;
+                                      return FALSE/*selNext*/;
                                     }
                                   /* update selection marks */
                                   xDelta = BoxCharacterWidth (109, font);
@@ -3383,6 +3384,7 @@ void InsertChar (int frame, CHAR_T c, int keyboard)
           SetDocumentModified (LoadedDocument[FrameTable[frame].FrDoc - 1], TRUE, 1); 
         }
     }
+  return selNext;
 }
 
 /*----------------------------------------------------------------------
@@ -3589,7 +3591,9 @@ void TtcInsertChar (Document doc, View view, CHAR_T c)
 
   if (doc != 0)
     {
-      if (TtaGetDocumentAccessMode(doc) == 0)
+      /* start the undo sequence */
+      GetCurrentSelection (&pDoc, &firstEl, &lastEl, &firstChar, &lastChar);
+      if (pDoc && pDoc->DocReadOnly)
         {
           //TtaDisplaySimpleMessage (CONFIRM, LIB, TMSG_EL_RO);
           return;
@@ -3621,8 +3625,6 @@ void TtcInsertChar (Document doc, View view, CHAR_T c)
             return;
         }
 
-      /* start the undo sequence */
-      GetCurrentSelection (&pDoc, &firstEl, &lastEl, &firstChar, &lastChar);
       if (pDoc && pViewSel->VsBox)
         {
           /* avoid to redisplay step by step */
@@ -3803,7 +3805,9 @@ void TtcDeletePreviousChar (Document doc, View view)
       if (delPrev)
         /* remove the current empty element even if there is an insertion
            point */
-        delPrev = (pViewSel->VsBox &&
+        delPrev = (firstEl->ElStructSchema &&
+                   !strcmp (firstEl->ElStructSchema->SsName, "TextFile")) ||
+                  (pViewSel->VsBox &&
                    pViewSel->VsBox->BxAbstractBox->AbVolume != 0);
       else
         /* remove the previous char if the selection is at the end of the
@@ -3831,7 +3835,15 @@ void TtcDeletePreviousChar (Document doc, View view)
                pViewSel->VsBox->BxFirstChar + pViewSel->VsIndBox == 1))
             if (!pViewSel->VsBox->BxAbstractBox->AbPresentationBox ||
                 pViewSel->VsBox->BxFirstChar + pViewSel->VsIndBox > 1)
-              InsertChar (frame, 127, -1);
+              {
+              nextSelected = InsertChar (frame, 127, -1);
+              // if the selected was moved to the next character
+              if (nextSelected &&
+                  pViewSel->VsBox &&
+                  (pViewSel->VsIndBox < pViewSel->VsBox->BxNChars ||
+                   pViewSel->VsBox->BxNChars == 0))
+                TtcPreviousChar (doc, view);
+              }
         }
       else
         {
@@ -3839,7 +3851,7 @@ void TtcDeletePreviousChar (Document doc, View view)
           CloseTextInsertion ();
           /* by default doesn't change the selection after the delete */
           moveAfter = FALSE;
-          if (pViewSel->VsBox )
+          if (pViewSel->VsBox)
             {
               // Move after if the element will be removed and there is
               // a next element
@@ -3973,48 +3985,50 @@ void TtcPasteFromClipboard (Document doc, View view)
       TTALOGDEBUG_0( TTA_LOG_CLIPBOARD, _T("Can't open clipboard.") );
       return;
     }
-  
   wxTextDataObject data;
+#ifdef IV
   if (wxTheClipboard->IsSupported( data.GetFormat() ))
     {
       TTALOGDEBUG_0( TTA_LOG_CLIPBOARD, _T("Clipboard supports requested format.") );
-      
+#endif /* IV */
       if (wxTheClipboard->GetData( data ))
         {
           wxString text = data.GetText();
-          TTALOGDEBUG_0( TTA_LOG_CLIPBOARD, _T("Successfully retrieved data from the clipboard.") );
           TTALOGDEBUG_0( TTA_LOG_CLIPBOARD, _T("Text pasted from the clipboard : ") + text );
-          /* if ClipboardLength is not zero, the last Xbuffer comes from Thot */
-          if (Xbuffer)
-            TtcClearClipboard ();
-
-          if (Xbuffer == NULL)
+	      
+          int len = strlen((const char *)text.mb_str(wxConvUTF8));
+          int i = ClipboardLength;
+          if (i < len)
+            i = len;
+          char *tmp = (char*)TtaGetMemory ((len + 1) * sizeof(char));
+          strcpy ((char *)tmp, (const char *)text.mb_str(wxConvUTF8));
+          if (Xbuffer == NULL || len != ClipboardLength ||
+              strncmp ((const char *)Xbuffer, tmp, i))
             {
-              int len = strlen((const char *)text.mb_str(wxConvUTF8));
-              TTALOGDEBUG_1( TTA_LOG_CLIPBOARD, _T("ClipboardLen=%d"), len );
-              Xbuffer = (unsigned char*)TtaGetMemory ((len + 1) * sizeof (unsigned char));
-              strncpy ((char *)Xbuffer, (const char *)text.mb_str(wxConvUTF8), len);
-              Xbuffer[len] = EOS;
+              TtcClearClipboard ();
+              PasteXClipboard ((unsigned char *)tmp, len, UTF_8);
             }
-          PasteXClipboard (Xbuffer, strlen((char *)Xbuffer), UTF_8);
+          else
+            PasteXClipboard (Xbuffer, ClipboardLength, UTF_8);
+          TtaFreeMemory (tmp);
         }
       else
         TTALOGDEBUG_0( TTA_LOG_CLIPBOARD, _T("Error getting data from the clipboard.") );
+#ifdef IV
      }
   else
     TTALOGDEBUG_0( TTA_LOG_CLIPBOARD, _T("Clipboard doesn't support requested format.") );
-  
+#endif /* IV */
+
   wxTheClipboard->Close();
   TTALOGDEBUG_0( TTA_LOG_CLIPBOARD, _T("Closed the clipboard.\n") );
 #endif /* _WX */
-
 #ifdef _GTK
   DisplayMode         dispMode;
   int                 frame;
 
   if (doc == 0)
     return;
-
   frame = GetWindowNumber (doc, view);
   if (frame != ActiveFrame)
     {
@@ -4213,38 +4227,34 @@ void TtcPaste (Document doc, View view)
 #ifdef _WX
           if (wxTheClipboard->Open())
             {
-              wxTextDataObject data;
-              if (wxTheClipboard->IsSupported( data.GetFormat() ))
-                {
-                  TTALOGDEBUG_0( TTA_LOG_CLIPBOARD, _T("Clipboard supports requested format.") );
+                  wxTextDataObject data;
                   if (wxTheClipboard->GetData( data ))
                     {
                       wxString text = data.GetText();
-                      TTALOGDEBUG_0( TTA_LOG_CLIPBOARD, _T("Successfully retrieved data from the clipboard.") );
                       TTALOGDEBUG_0( TTA_LOG_CLIPBOARD, _T("Text pasted from the clipboard : ") + text );
 	      
-                      int buff_tmp_len = strlen((const char *)text.mb_str(wxConvUTF8));
-                      char * buff_tmp = (char*)TtaGetMemory ((buff_tmp_len + 1) * sizeof(char));
-                      strncpy ((char *)buff_tmp, (const char *)text.mb_str(wxConvUTF8), buff_tmp_len);
-                      buff_tmp[buff_tmp_len] = EOS;
-	      
-                      if (Xbuffer == NULL || strncmp ((const char *)Xbuffer, buff_tmp, 100))
-                        PasteXClipboard((unsigned char *)buff_tmp, strlen(buff_tmp), UTF_8);
-                      else 
+                      int len = strlen((const char *)text.mb_str(wxConvUTF8));
+                      int i = ClipboardLength;
+                      if (i < len)
+                        i = len;
+                      char *tmp = (char*)TtaGetMemory ((len + 1) * sizeof(char));
+                      strcpy ((char *)tmp, (const char *)text.mb_str(wxConvUTF8));
+                      if (Xbuffer == NULL || strncmp ((const char *)Xbuffer, tmp, i))
+                        {
+                          TtcClearClipboard ();
+                          PasteXClipboard((unsigned char *)tmp, len, UTF_8);
+                        }
+                      else if (ClipboardURI)
+                        PasteXClipboard(Xbuffer, ClipboardLength, UTF_8);
+                      else
                         ContentEditing (TEXT_PASTE);
+                      TtaFreeMemory (tmp);
                     }
                   else
                     {
                       TTALOGDEBUG_0( TTA_LOG_CLIPBOARD, _T("Error getting data from the clipboard."));
                       ContentEditing (TEXT_PASTE);
                     }
-                }
-              else
-                {
-                  TTALOGDEBUG_0( TTA_LOG_CLIPBOARD, _T("Clipboard doesn't support requested format."));
-                  ContentEditing (TEXT_PASTE);
-                }
-  
               wxTheClipboard->Close();
               TTALOGDEBUG_0( TTA_LOG_CLIPBOARD, _T("Clipboard closed."));
             }
@@ -4254,7 +4264,6 @@ void TtcPaste (Document doc, View view)
               ContentEditing (TEXT_PASTE);
             }
 #endif /* _WX */
-
 #ifdef _GTK
           if (FirstSelectedElement == NULL && FirstSavedElement)
             {

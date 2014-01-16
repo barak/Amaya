@@ -23,7 +23,7 @@
  *    will be used.
  *
  * Author: Ralph R. Swick (W3C/MIT)
- * $Revision: 1.37 $
+ * $Revision: 1.38 $
  *
  */
 
@@ -39,7 +39,7 @@
 #include "ANNOTevent_f.h"
 
 /* RDF parser */
-#include "librdf.h"
+#include "redland.h"
 #include "raptor.h"
 
 /* amaya includes */

@@ -1,6 +1,8 @@
 
 #ifdef _WX
-  #include "wx/wx.h"
+#include "wx/wx.h"
+#include "wxdialog/file_filters.h"
+#include "registry_wx.h"
 #endif /* _WX */
 
 #define THOT_EXPORT extern
@@ -9,6 +11,8 @@
 #include "appdialogue_wx.h"
 #include "message_wx.h"
 #include "wxdialog/file_filters.h"
+#include "init_f.h"
+#include "HTMLsave_f.h"
 
 #ifdef _WX
   #include "wxdialog/NewTemplateDocDlgWX.h"
@@ -22,6 +26,7 @@
   #include "wxdialog/InitConfirmDlgWX.h"
   #include "wxdialog/ListDlgWX.h"
   #include "wxdialog/ListEditDlgWX.h"
+  #include "wxdialog/MakeIdDlgWX.h"
   #include "wxdialog/NumDlgWX.h"
   #include "wxdialog/ObjectDlgWX.h"
   #include "wxdialog/OpenDocDlgWX.h"
@@ -75,14 +80,9 @@ wxArrayString BuildWX_URL_List( const char * url_list )
     + true : the dialogue has been created
     + false : error, nothing is created
   ----------------------------------------------------------------------*/
-ThotBool CreateInitConfirmDlgWX ( int ref,
-				  ThotWindow parent,
-				  char *title,
-				  char *extrabutton,
-				  char *confirmbutton,
-				  char *label,
-				  char *label2,
-				  char *label3 )
+ThotBool CreateInitConfirmDlgWX ( int ref, ThotWindow parent,
+				  char *title, char *extrabutton, char *confirmbutton,
+				  char *label, char *label2, char *label3 )
 {
 #ifdef _WX
   /* check if the dialog is alredy open */
@@ -231,16 +231,15 @@ ThotBool CreateNewTemplateDocDlgWX (int ref,  ThotWindow parent, Document doc,
   wxString wx_docName        = TtaConvMessageToWX( docName );
   wxString wx_filter         = APPHTMLNAMEFILTER;
   
-  NewTemplateDocDlgWX * p_dlg =
-    new NewTemplateDocDlgWX( ref,
-			     parent,
-			     doc,
-			     wx_title,
-			     wx_docName,
-			     wx_templateDir,
-			     wx_filter,
-			     &g_Last_used_filter
-	          	   );
+  NewTemplateDocDlgWX * p_dlg = new NewTemplateDocDlgWX( ref,
+                                                         parent,
+                                                         doc,
+                                                         wx_title,
+                                                         wx_docName,
+                                                         wx_templateDir,
+                                                         wx_filter,
+                                                         &g_Last_used_filter
+                                                         );
 
   if ( TtaRegisterWidgetWX( ref, p_dlg ) )
       /* the dialog has been sucesfully registred */
@@ -277,7 +276,6 @@ ThotBool CreateImageDlgWX (int ref, ThotWindow parent, const char *title,
   wxString wx_urlToOpen = TtaConvMessageToWX( urlToOpen );
   wxString wx_alt = TtaConvMessageToWX( alt );
   wxString wx_filter = APPIMAGENAMEFILTER;
-
   ImageDlgWX * p_dlg = new ImageDlgWX( ref,
                                        parent,
                                        wx_title,
@@ -321,7 +319,6 @@ ThotBool CreateObjectDlgWX (int ref, ThotWindow parent, const char *title,
   wxString wx_urlToOpen = TtaConvMessageToWX( urlToOpen );
   wxString wx_type = TtaConvMessageToWX( type );
   wxString wx_filter = APPIMAGENAMEFILTER;
-
   ObjectDlgWX * p_dlg = new ObjectDlgWX( ref,
                                          parent,
                                          wx_title,
@@ -365,6 +362,30 @@ ThotBool CreateTitleDlgWX (int ref, ThotWindow parent, char *doc_title)
 				       wx_title,
 				       wx_doc_title );
 
+  if ( TtaRegisterWidgetWX( ref, p_dlg ) )
+      /* the dialog has been sucesfully registred */
+      return TRUE;
+  else
+    {
+      /* an error occured durring registration */
+      p_dlg->Destroy();
+      return FALSE;
+    }
+#endif /* _WX */
+}
+
+/*----------------------------------------------------------------------
+  CreateMakeIdDlgWX create the dialog to Add/Remove IDs
+  returns:
+  ----------------------------------------------------------------------*/
+ThotBool CreateMakeIdDlgWX (int ref, ThotWindow parent)
+{
+#ifdef _WX
+  /* check if the dialog is alredy open */
+  if (TtaRaiseDialogue (ref))
+    return FALSE;
+
+  MakeIdDlgWX * p_dlg = new MakeIdDlgWX (ref, parent);
   if ( TtaRegisterWidgetWX( ref, p_dlg ) )
       /* the dialog has been sucesfully registred */
       return TRUE;
@@ -512,16 +533,28 @@ ThotBool CreateSaveAsDlgWX (int ref, ThotWindow parent, char* pathname,
 ThotBool CreateSaveObject (int ref, ThotWindow parent, char* objectname)
 {
 #ifdef _WX
+#ifdef _MACOS
+  wxString homedir = TtaGetHomeDir();
+  strcpy (SavePath, (const char *)homedir.mb_str(wxConvUTF8));
+  strcat (SavePath, "/Desktop/");
+  if (CheckMakeDirectory (SavePath, TRUE))
+    {
+      strcat (SavePath, objectname);
+      DoSaveObjectAs ();
+      SavingObject = 0;
+      return FALSE;
+    }
+  #endif /* _MACOS */
   // Create a generic filedialog
-  wxFileDialog * p_dlg = new wxFileDialog
-    (
-     parent,
-     TtaConvMessageToWX( TtaGetMessage (AMAYA, AM_OBJECT_LOCATION) ),
-     _T(""),
-     TtaConvMessageToWX( objectname ),
-     _T("*.*"),
-     wxSAVE | wxCHANGE_DIR /* wxCHANGE_DIR -> remember the last directory used. */
-     );
+  wxString      wx_filter = APPFILENAMEFILTER;
+  wxFileDialog *p_dlg = new wxFileDialog (
+                                          parent,
+                                          TtaConvMessageToWX( TtaGetMessage (AMAYA, AM_OBJECT_LOCATION) ),
+                                          _T(""),
+                                          TtaConvMessageToWX( objectname ),
+                                          wx_filter,
+                                          wxSAVE | wxCHANGE_DIR /* remember the last directory used. */
+                                          );
 
   // do not force the directory, let wxWidgets choose for the current one
   // p_dlg->SetDirectory(wxGetHomeDir());

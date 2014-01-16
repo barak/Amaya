@@ -53,6 +53,6 @@ HTNetAfter HTNewsCache_after;
 
   
 
-  @(#) $Id: HTNewsLs.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+  @(#) $Id: HTNewsLs.html,v 1.1.1.1 1998/08/14 21:54:38 cvs Exp $
 
 */

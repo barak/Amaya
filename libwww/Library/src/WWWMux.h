@@ -60,6 +60,6 @@ is that the Internet world is more complicated than Posix and ANSI.
 
   
 
-  @(#) $Id: WWWMux.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+  @(#) $Id: WWWMux.html,v 1.1.1.1 1998/08/14 21:54:39 cvs Exp $
 
 */

@@ -241,6 +241,6 @@ the HTEventInit() in the HTInit module
 
   
 
-  @(#) $Id: HTEvent.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+  @(#) $Id: HTEvent.html,v 1.1.1.1 1998/08/14 21:54:37 cvs Exp $
 
 */

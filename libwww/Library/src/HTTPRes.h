@@ -54,7 +54,7 @@ extern HTStream * HTTPResponse_new (HTRequest *	request, HTStream * target,
 
 
 
-@(#) $Id: HTTPRes.h,v 1.1.1.1 1998/08/14 21:54:41 cvs Exp $
+@(#) $Id: HTTPRes.html,v 1.1.1.1 1998/08/14 21:54:39 cvs Exp $
 
 
 */

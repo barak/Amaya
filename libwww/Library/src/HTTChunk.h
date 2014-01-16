@@ -54,6 +54,6 @@ extern HTCoder HTChunkedDecoder, HTChunkedEncoder;
 
   
 
-  @(#) $Id: HTTChunk.h,v 1.1.1.1 1998/08/14 21:54:41 cvs Exp $
+  @(#) $Id: HTTChunk.html,v 1.1.1.1 1998/08/14 21:54:39 cvs Exp $
 
 */

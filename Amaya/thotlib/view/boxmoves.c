@@ -196,7 +196,8 @@ ThotBool IsParentBox (PtrBox pAncestor, PtrBox pChild)
       equal = FALSE;
       while (!equal && pAb != NULL)
         {
-          equal = pAb->AbBox == pAncestor;
+          // prevent a deadlock when pAb == pAb->AbEnclosing
+          equal = pAb->AbBox == pAncestor || pAb == pAb->AbEnclosing;
           pAb = pAb->AbEnclosing;
         }
       return (equal);
@@ -875,7 +876,7 @@ void MoveBoxEdge (PtrBox pBox, PtrBox pSourceBox, OpRelation op, int delta,
   int                 translation;
 
   pAb = pBox->BxAbstractBox;
-  translation = 0;
+  translation = delta;
   /* Avoid to perform two times the same job */
   if (pAb != NULL && delta != 0 && pBox->BxPacking <= 1)
     {
@@ -897,6 +898,11 @@ void MoveBoxEdge (PtrBox pBox, PtrBox pSourceBox, OpRelation op, int delta,
                 pBox->BxMoved = pSourceBox;
               else if (pSourceBox->BxMoved != pBox)
                 pBox->BxMoved = pSourceBox;
+              else
+                {
+                  pBox->BxMoved = NULL;
+                  pSourceBox->BxMoved = NULL;
+                }
             }
 
           /* compute changes and temporally change the fixed edge */
@@ -938,7 +944,8 @@ void MoveBoxEdge (PtrBox pBox, PtrBox pSourceBox, OpRelation op, int delta,
             r += pBox->BxRMargin;
           r += pBox->BxRBorder + pBox->BxRPadding;
           delta = delta + pBox->BxWidth - pBox->BxW - l - r;
-          ResizeWidth (pBox, pSourceBox, NULL, delta, 0, 0, 0, frame);
+          // the history starts here
+          ResizeWidth (pBox, NULL, NULL, delta, 0, 0, 0, frame);
           /* restore the fixed edge */
           pBox->BxHorizEdge = oldHorizEdge;
         }
@@ -947,9 +954,11 @@ void MoveBoxEdge (PtrBox pBox, PtrBox pSourceBox, OpRelation op, int delta,
           /* save the previous fixed edge */
           oldVertEdge = pBox->BxVertEdge;
           /* Look for the vertical fixed edge and the vertical free edge */
-          if ((op == OpHeight/* && !pBox->BxVertInverted) ||
-                                (op != OpHeight && pBox->BxVertInverted*/))
-            oldPosEdge = pAb->AbHeight.DimPosition.PosEdge;
+          if (op == OpHeight)
+            {
+              oldPosEdge = pAb->AbHeight.DimPosition.PosEdge;
+              pBox->BxMoved = NULL;
+            }
           else
             {
               oldPosEdge = pAb->AbVertPos.PosEdge;
@@ -958,6 +967,11 @@ void MoveBoxEdge (PtrBox pBox, PtrBox pSourceBox, OpRelation op, int delta,
                 pBox->BxMoved = pSourceBox;
               else if (pSourceBox->BxMoved != pBox)
                 pBox->BxMoved = pSourceBox;
+              else
+                {
+                  pBox->BxMoved = NULL;
+                  pSourceBox->BxMoved = NULL;
+                }
             }
 	  
           /* compute changes and temporally change the fixed edge */
@@ -999,7 +1013,8 @@ void MoveBoxEdge (PtrBox pBox, PtrBox pSourceBox, OpRelation op, int delta,
             b += pBox->BxBMargin;
           b += pBox->BxBBorder + pBox->BxBPadding;
           delta = delta + pBox->BxHeight - pBox->BxH - t - b;
-          ResizeHeight (pBox, pSourceBox, NULL, delta, 0, 0, frame);
+          // the history starts here
+          ResizeHeight (pBox, NULL, NULL, delta, 0, 0, frame);
           /* restore the fixed edge */
           pBox->BxVertEdge = oldVertEdge;
         }
@@ -1012,7 +1027,7 @@ void MoveBoxEdge (PtrBox pBox, PtrBox pSourceBox, OpRelation op, int delta,
       else if (pSourceBox->BxMoved != pBox)
         pBox->BxMoved = pSourceBox;
     }
-}
+ }
 
 
 /*----------------------------------------------------------------------
@@ -1955,9 +1970,6 @@ void ResizeWidth (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox,
                       pCurrentAb->AbEnclosing->AbBox->BxType != BoBlock &&
                       pCurrentAb->AbEnclosing->AbBox->BxType != BoFloatBlock);
 	  
-          //if (pCurrentAb->AbWidth.DimUnit == UnPercent)
-          //printf("ResizeWidth %s %d + %d\n", pCurrentAb->AbElement->ElLabel, pBox->BxW, delta);
-
           /* check positionning constraints */
           if (!toMove ||
               pCurrentAb->AbFloat == 'L' ||
@@ -2010,6 +2022,10 @@ void ResizeWidth (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox,
           pBox->BxW += delta;
           /* outside width */
           pBox->BxWidth = pBox->BxWidth + delta + diff;
+          if (pBox->BxType == BoPicture ||
+              pCurrentAb->AbLeafType == LtGraphics)
+            pBox->BxMaxWidth = pBox->BxWidth;
+            
           pBox->BxXOrg += orgTrans;
 
           /* Moving sibling boxes and the parent? */
@@ -2247,7 +2263,7 @@ void ResizeWidth (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox,
                       IsParentBox (pBox, box))
                     /* update managed by ComputeLines */
                     pAb = NULL;
-                  if (pAb && !pAb->AbDead)
+                  if (pAb && !pAb->AbDead && !pAb->AbNew && pAb->AbBox)
                     {
                       /* Is it the same dimension? */
                       if (pDimRel->DimROp[i] == OpSame)
@@ -2497,6 +2513,7 @@ void ResizeHeight (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox,
               TtaFreeMemory ((STRING) pBox->BxPictInfo);
               pBox->BxPictInfo = NULL;
             }
+
           /* Check the validity of dependency rules */
           toMove = TRUE;
           if (pCurrentAb->AbEnclosing && pCurrentAb->AbEnclosing->AbBox)
@@ -2721,7 +2738,7 @@ void ResizeHeight (PtrBox pBox, PtrBox pSourceBox, PtrBox pFromBox,
               pAb = pCurrentAb->AbFirstEnclosed;
               while (pAb)
                 {
-                  if (!pAb->AbDead && pAb->AbBox)
+                  if (!pAb->AbDead && !pAb->AbNew && pAb->AbBox)
                     {
                       box = pAb->AbBox;
                       /* check if the position box depends on its enclosing */

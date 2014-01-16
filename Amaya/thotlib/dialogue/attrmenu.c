@@ -1090,7 +1090,7 @@ static int BuildAttrMenu (char *bufMenu, PtrDocument pDoc, int *nbEvent,
           k = 0;
           j = 0;
           /* met les noms des attributs de la table dans le menu */
-          for (att = 0; att < nbOfEntries; att++)
+          for (att = 0; att < nbOfEntries && AttrStruct[att]; att++)
             {
               pAt = AttrStruct[att]->SsAttribute->TtAttr[AttrNumber[att]-1];
               pAttr->AeAttrSSchema = AttrStruct[att];
@@ -1509,7 +1509,7 @@ void CallbackValAttrMenu (int ref, int valmenu, char *valtext)
               (!strcmp (tmp, "name") &&
                !strcmp (SchCurrentAttr->SsName, "HTML")));
       isCLASS = !strcmp (tmp, "class");
-      if (TextAttrValue[0] == EOS)
+      if (SchCurrentAttr->SsAttribute->TtAttr[NumCurrentAttr - 1]->AttrType == AtTextAttr && TextAttrValue[0] == EOS)
         return;
       act = valmenu;
       break;

@@ -65,7 +65,6 @@ typedef struct CSSProperty
 }
 CSSProperty;
 
-static char         *DocURL = NULL; /* The parsed CSS file */
 static int           LineNumber = -1; /* The line where the error occurs */
 static int           NewLineSkipped = 0;
 static int           RedisplayImages = 0; /* number of BG images loading */
@@ -180,11 +179,11 @@ static void CSSPrintError (char *msg, char *value)
       if (ParsedCSS > 0 && !CSSErrFile)
         OpenParsingErrors (ParsedCSS);
 
-      if (DocURL)
+      if (Error_DocURL)
         {
-          fprintf (ErrFile, "\n*** Errors/warnings in %s\n", DocURL);
+          fprintf (ErrFile, "\n*** Errors/warnings in %s\n", Error_DocURL);
           /* set to NULL as long as the CSS file doesn't change */
-          DocURL = NULL;
+          Error_DocURL = NULL;
         }
       CSSErrorsFound = TRUE;
       if (LineNumber < 0)
@@ -218,7 +217,6 @@ static void CSSPrintError (char *msg, char *value)
 /*----------------------------------------------------------------------
   CSSParseError
   print the error message msg on stderr.
-  When the line is 0 ask expat about the current line number
   ----------------------------------------------------------------------*/
 static void CSSParseError (char *msg, char *value, char *endvalue)
 {
@@ -1236,8 +1234,7 @@ static char *ParseCSSBorderStyleRight (Element element, PSchema tsch,
 }
 
 /*----------------------------------------------------------------------
-  ParseCSSBorderStyleStyle: parse a CSS border-style        
-  attribute string.                                          
+  ParseCSSBorderStyle: parse a CSS border-style attribute string.
   ----------------------------------------------------------------------*/
 static char *ParseCSSBorderStyle (Element element, PSchema tsch,
                                   PresentationContext context,
@@ -2699,7 +2696,7 @@ static char *ParseCSSLineHeight (Element element, PSchema tsch,
   else if (!strncasecmp (cssRule, "inherit", 7))
     {
       pval.typed_data.unit = VALUE_INHERIT;
-      cssRule += 6;
+      cssRule += 7;
     }
   else
     cssRule = ParseCSSUnit (cssRule, &pval);
@@ -3081,52 +3078,66 @@ static char *ParseACSSFontWeight (Element element, PSchema tsch,
   weight.typed_data.unit = UNIT_REL;
   weight.typed_data.real = FALSE;
   cssRule = SkipBlanksAndComments (cssRule);
-  if (!strncasecmp (cssRule, "100", 3) && cssRule[3] != '%' &&
-      !isalpha (cssRule[3]))
+  if (isdigit (*cssRule) && *cssRule != '0' &&
+      cssRule[1] == '0' && cssRule[2] == '0' &&
+      (cssRule[3] == EOS || cssRule[3] == SPACE || cssRule[3] == '/' ||
+       cssRule[3] == ';' || cssRule[3] == '}' || cssRule[3] == EOL || 
+       cssRule[3] == TAB || cssRule[3] ==  __CR__))
     {
-      weight.typed_data.value = -3;
-      cssRule = SkipWord (cssRule);
+      if (!strncasecmp (cssRule, "100", 3))
+        {
+          weight.typed_data.value = -3;
+          cssRule = SkipWord (cssRule);
+        }
+      else if (!strncasecmp (cssRule, "200", 3))
+        {
+          weight.typed_data.value = -2;
+          cssRule = SkipWord (cssRule);
+        }
+      else if (!strncasecmp (cssRule, "300", 3))
+        {
+          weight.typed_data.value = -1;
+          cssRule = SkipWord (cssRule);
+        }
+      else if (!strncasecmp (cssRule, "400", 3))
+        {
+          weight.typed_data.value = 0;
+          cssRule = SkipWord (cssRule);
+        }
+      else if (!strncasecmp (cssRule, "500", 3))
+        {
+          weight.typed_data.value = +1;
+          cssRule = SkipWord (cssRule);
+        }
+      else if (!strncasecmp (cssRule, "600", 3))
+        {
+          weight.typed_data.value = +2;
+          cssRule = SkipWord (cssRule);
+        }
+      else if (!strncasecmp (cssRule, "700", 3))
+        {
+          weight.typed_data.value = +3;
+          cssRule = SkipWord (cssRule);
+        }
+      else if (!strncasecmp (cssRule, "800", 3))
+        {
+          weight.typed_data.value = +4;
+          cssRule = SkipWord (cssRule);
+        }
+      else if (!strncasecmp (cssRule, "900", 3))
+        {
+          weight.typed_data.value = +5;
+          cssRule = SkipWord (cssRule);
+        }
     }
-  else if (!strncasecmp (cssRule, "200", 3) && !isalpha (cssRule[3]))
-    {
-      weight.typed_data.value = -2;
-      cssRule = SkipWord (cssRule);
-    }
-  else if (!strncasecmp (cssRule, "300", 3) && ! isalpha(cssRule[3]))
-    {
-      weight.typed_data.value = -1;
-      cssRule = SkipWord (cssRule);
-    }
-  else if (!strncasecmp (cssRule, "normal", 6) ||
-           (!strncasecmp (cssRule, "400", 3) && !isalpha (cssRule[3])))
+  else if (!strncasecmp (cssRule, "normal", 6))
     {
       weight.typed_data.value = 0;
       cssRule = SkipWord (cssRule);
     }
-  else if (!strncasecmp (cssRule, "500", 3) && !isalpha (cssRule[3]))
-    {
-      weight.typed_data.value = +1;
-      cssRule = SkipWord (cssRule);
-    }
-  else if (!strncasecmp (cssRule, "600", 3) && !isalpha (cssRule[3]))
-    {
-      weight.typed_data.value = +2;
-      cssRule = SkipWord (cssRule);
-    }
-  else if (!strncasecmp (cssRule, "bold", 4) ||
-           (!strncasecmp (cssRule, "700", 3) && !isalpha (cssRule[3])))
+  else if (!strncasecmp (cssRule, "bold", 4))
     {
       weight.typed_data.value = +3;
-      cssRule = SkipWord (cssRule);
-    }
-  else if (!strncasecmp (cssRule, "800", 3) && !isalpha (cssRule[3]))
-    {
-      weight.typed_data.value = +4;
-      cssRule = SkipWord (cssRule);
-    }
-  else if (!strncasecmp (cssRule, "900", 3) && !isalpha (cssRule[3]))
-    {
-      weight.typed_data.value = +5;
       cssRule = SkipWord (cssRule);
     }
   else if (!strncasecmp (cssRule, "inherit", 7))
@@ -3435,9 +3446,9 @@ static char *ParseCSSFont (Element element, PSchema tsch,
 }
 
 /*----------------------------------------------------------------------
-  ParseCSSTextDecoration: parse a CSS text decor string   
-  we expect the input string describing the attribute to be     
-  underline, overline, line-through, blink or none.
+  ParseCSSTextDecoration: parse a CSS text-decoration value.
+  We expect the input string to be none, inherit or a combination of
+  underline, overline, line-through, and blink.
   ----------------------------------------------------------------------*/
 static char *ParseCSSTextDecoration (Element element, PSchema tsch,
                                      PresentationContext context, char *cssRule,
@@ -3445,35 +3456,17 @@ static char *ParseCSSTextDecoration (Element element, PSchema tsch,
 {
   PresentationValue   decor;
   char               *ptr = cssRule;
+  ThotBool            ok;
 
   decor.typed_data.value = 0;
   decor.typed_data.unit = UNIT_REL;
   decor.typed_data.real = FALSE;
   cssRule = SkipBlanksAndComments (cssRule);
+  ok = TRUE;
   if (!strncasecmp (cssRule, "none", 4))
     {
       decor.typed_data.value = NoUnderline;
       cssRule += 4;
-    }
-  else if (!strncasecmp (cssRule, "underline", 9))
-    {
-      decor.typed_data.value = Underline;
-      cssRule += 9;
-    }
-  else if (!strncasecmp (cssRule, "overline", 8))
-    {
-      decor.typed_data.value = Overline;
-      cssRule += 8;
-    }
-  else if (!strncasecmp (cssRule, "line-through", 12))
-    {
-      decor.typed_data.value = CrossOut;
-      cssRule += 12;
-    }
-  else if (!strncasecmp (cssRule, "blink", 5))
-    {
-      /* the blink text-decoration attribute is not supported */
-      cssRule += 5;
     }
   else if (!strncasecmp (cssRule, "inherit", 7))
     {
@@ -3481,6 +3474,39 @@ static char *ParseCSSTextDecoration (Element element, PSchema tsch,
       cssRule += 7;
     }
   else
+    {
+      do
+        {
+          if (!strncasecmp (cssRule, "underline", 9))
+            {
+              decor.typed_data.value = Underline;
+              cssRule += 9;
+            }
+          else if (!strncasecmp (cssRule, "overline", 8))
+            {
+              decor.typed_data.value = Overline;
+              cssRule += 8;
+            }
+          else if (!strncasecmp (cssRule, "line-through", 12))
+            {
+              decor.typed_data.value = CrossOut;
+              cssRule += 12;
+            }
+          else if (!strncasecmp (cssRule, "blink", 5))
+            {
+              /* the blink text-decoration attribute is not supported */
+              cssRule += 5;
+            }
+          else
+            ok = FALSE;
+          if (ok)
+            {
+              cssRule = SkipBlanksAndComments (cssRule);
+            }
+        }
+      while (ok && (*cssRule != ';' && *cssRule != '}' && *cssRule != EOS));
+    }
+  if (!ok)
     {
       cssRule = SkipValue ("Invalid text-decoration value", cssRule);
       cssRule = CheckImportantRule (cssRule, context);
@@ -4268,7 +4294,9 @@ static char *ParseCSSContent (Element element, PSchema tsch,
                               CSSInfoPtr css, ThotBool isHTML)
 {
   PresentationValue   value;
-  char                *p, *last, *start, quoteChar, savedChar;
+  char                *last, *start, quoteChar, savedChar;
+  int                 length, val;
+  unsigned char       *buffer, *p;
   ThotBool            repeat;
 
   value.typed_data.unit = UNIT_REL;
@@ -4280,7 +4308,7 @@ static char *ParseCSSContent (Element element, PSchema tsch,
   repeat = TRUE;
   while (repeat)
     {
-      p = cssRule;
+      p = (unsigned char*) cssRule;
       if (!strncasecmp (cssRule, "normal", 6))
         /* The pseudo-element is not generated */
         {
@@ -4299,12 +4327,48 @@ static char *ParseCSSContent (Element element, PSchema tsch,
         /* It's a string */
         {
           quoteChar = *cssRule;
+          /* how long is the string? */
+          last = cssRule;
+          last = SkipString (last);
+          length = last - cssRule;
+          /* get a buffer to store the string */
+          buffer = (unsigned char*) TtaGetMemory (length);
+          p = buffer; /* beginning of the string */
           cssRule++;
-          p = cssRule;
-          /**** escape characters are not handled.
-                See function SkipQuotedString ******/
           while (*cssRule != EOS && *cssRule != quoteChar)
-            cssRule++;
+            {
+              if (*cssRule == '\\')
+                {
+                  cssRule++; /* skip the backslash */
+                  if ((*cssRule >= '0' && *cssRule <= '9') ||
+                      (*cssRule >= 'A' && *cssRule <= 'F') ||
+                      (*cssRule >= 'a' && *cssRule <= 'f'))
+                    {
+                      start = cssRule; /* first hex digit after the backslash*/
+                      cssRule++;
+                      while ((*cssRule >= '0' && *cssRule <= '9') ||
+                             (*cssRule >= 'A' && *cssRule <= 'F') ||
+                             (*cssRule >= 'a' && *cssRule <= 'f'))
+                        cssRule++;
+                      savedChar = *cssRule;
+                      *cssRule = EOS;
+                      sscanf (start, "%x", &val);
+                      TtaWCToMBstring ((wchar_t) val, &p);
+                      *cssRule = savedChar;
+                    }
+                  else
+                    {
+                      *p = *cssRule;
+                      p++; cssRule++;
+                    }
+                }
+              else
+                {
+                  *p = *cssRule;
+                  p++; cssRule++;
+                }
+            }
+          *p = EOS;
           if (*cssRule != quoteChar)
             cssRule = SkipProperty (cssRule, FALSE);
           else
@@ -4312,13 +4376,14 @@ static char *ParseCSSContent (Element element, PSchema tsch,
               *cssRule = EOS;
               value.typed_data.unit = UNIT_REL;
               value.typed_data.real = FALSE;
-              value.pointer = p;
+              value.pointer = buffer;
               if (DoApply)
                 TtaSetStylePresentation (PRContentString, element, tsch, ctxt,
                                          value);
               *cssRule = quoteChar;
               cssRule++;
             }
+          TtaFreeMemory (buffer);
         }
       else if (!strncasecmp (cssRule, "url", 3))
         {  
@@ -4376,7 +4441,7 @@ static char *ParseCSSContent (Element element, PSchema tsch,
             }
           if (value.pointer == NULL)
             {
-              CSSParseError ("Invalid content value", p, cssRule);
+              CSSParseError ("Invalid content value", (char*) p, cssRule);
               cssRule = SkipProperty (cssRule, FALSE);
             }
           cssRule++;
@@ -4409,7 +4474,7 @@ static char *ParseCSSContent (Element element, PSchema tsch,
         }
       else
         {
-          CSSParseError ("Invalid content value", p, cssRule);
+          CSSParseError ("Invalid content value", (char*) p, cssRule);
           cssRule = SkipProperty (cssRule, FALSE);
         }
       cssRule = SkipBlanksAndComments (cssRule);
@@ -4431,8 +4496,10 @@ static char *ParseCSSBackgroundImage (Element element, PSchema tsch,
                                       ThotBool isHTML)
 {
   PresentationValue          image, value;
+  char                       *ptr;
 
   cssRule = SkipBlanksAndComments (cssRule);
+  ptr = cssRule;
   if (!strncasecmp (cssRule, "none", 4))
     {
       cssRule += 4;
@@ -4444,6 +4511,11 @@ static char *ParseCSSBackgroundImage (Element element, PSchema tsch,
           TtaSetStylePresentation (PRBackgroundPicture, element, tsch, ctxt,
                                    image);
         }
+    }
+  else if (!strncasecmp (cssRule, "inherit", 7))
+    {
+      value.typed_data.unit = VALUE_INHERIT;
+      cssRule += 7;
     }
   else if (!strncasecmp (cssRule, "url", 3))
     {  
@@ -4460,6 +4532,12 @@ static char *ParseCSSBackgroundImage (Element element, PSchema tsch,
             value.typed_data.real = FALSE;
             TtaSetStylePresentation (PRShowBox, element, tsch, ctxt, value);
           }
+    }
+  else
+    {
+      cssRule = SkipWord (cssRule);
+      CSSParseError ("Invalid background-image value", ptr, cssRule);
+      cssRule = SkipProperty (cssRule, FALSE);
     }
   return (cssRule);
 }
@@ -5284,7 +5362,13 @@ static void  ParseCSSRule (Element element, PSchema tsch,
   while (*cssRule != EOS)
     {
       cssRule = SkipBlanksAndComments (cssRule);
-      if (*cssRule < 0x41 || *cssRule > 0x7A ||
+      if (*cssRule == '#')
+        {
+          end = SkipProperty (cssRule, FALSE);
+          CSSParseError ("Invalid property", cssRule, end);
+          cssRule = end; 
+        }
+      else if (*cssRule < 0x41 || *cssRule > 0x7A ||
           (*cssRule > 0x5A && *cssRule < 0x60))
         cssRule++;
       else if (*cssRule != EOS)
@@ -5309,13 +5393,12 @@ static void  ParseCSSRule (Element element, PSchema tsch,
             /* property content is allowed only for pseudo-elements :before and
                :after */
             {
-              end = cssRule;
-              end = SkipProperty (end, FALSE);
+              end = SkipProperty (cssRule, FALSE);
               CSSParseError ("content is allowed only for pseudo-elements",
                              cssRule, end);
-              i = NB_CSSSTYLEATTRIBUTE;
+              cssRule = end;
             }
-          if (i == NB_CSSSTYLEATTRIBUTE)
+          else if (i == NB_CSSSTYLEATTRIBUTE)
             cssRule = SkipProperty (cssRule, TRUE);
           else
             {
@@ -5437,7 +5520,7 @@ void  ParseHTMLSpecificStyle (Element el, char *cssRule, Document doc,
     {
       /* update the context for reported errors */
       ParsedDoc = doc;
-      DocURL = DocumentURLs[doc];
+      Error_DocURL = DocumentURLs[doc];
     }
   isHTML = (strcmp (TtaGetSSchemaName (elType.ElSSchema), "HTML") == 0);
   /* create the context of the Specific presentation driver */
@@ -5585,6 +5668,7 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
   char              *deb, *cur, *sel, *next, c;
   char              *schemaName, *mappedName, *saveURL;
   char              *names[MAX_ANCESTORS];
+  ThotBool           pseudoFirstChild[MAX_ANCESTORS];
   ElemRel            rel[MAX_ANCESTORS];
   char              *attrnames[MAX_ANCESTORS];
   int                attrnums[MAX_ANCESTORS];
@@ -5608,6 +5692,7 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
   for (i = 0; i < MAX_ANCESTORS; i++)
     {
       names[i] = NULL;
+      pseudoFirstChild[i] = FALSE;
       rel[i] = RelAncestor;
       attrnames[i] = NULL;
       attrnums[i] = 0;
@@ -5615,6 +5700,7 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
       attrvals[i] = NULL;
       attrmatch[i] = Txtmatch;
       ctxt->name[i] = 0;
+      ctxt->firstChild[i] = FALSE;
       ctxt->attrType[i] = 0;
       ctxt->attrLevel[i] = 0;
       ctxt->attrText[i] = NULL;
@@ -5755,78 +5841,56 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
               *cur++ = EOS;
               /* point to the pseudo-class or pseudo-element in sel[] if it's
                  a valid name */
-              if (deb[0] <= 64)
+              if (!strcmp (deb, "first-child"))
+                /* first-child pseudo-class */
                 {
-                  CSSPrintError ("Invalid pseudo-element", deb);
+                  pseudoFirstChild[0] = TRUE;
+                  specificity += 10;
+                }
+              else if (!strcmp (deb, "link") || !strcmp (deb, "visited"))
+                /* link or visited pseudo-classes */
+                {
+                  nbattrs++;
+                  if (nbattrs == MAX_ANCESTORS)
+                    /* abort parsing */
+                    {
+                      CSSPrintError ("Selector too long", deb);
+                      return (selector);
+                    }
+                  for (i = nbattrs; i > 0; i--)
+                    {
+                      attrnames[i] = attrnames[i - 1];
+                      attrnums[i] = attrnums[i - 1];
+                      attrlevels[i] = attrlevels[i - 1];
+                      attrvals[i] = attrvals[i - 1];
+                      attrmatch[i] = attrmatch[i - 1];
+                    }
+                  attrnames[0] = NULL;
+                  attrnums[0] = ATTR_PSEUDO;
+                  attrlevels[0] = 0;
+                  attrmatch[0] = Txtmatch;
+                  attrvals[0] = deb;
+                  specificity += 10;
+                }
+              else if (!strcmp (deb, "hover") || !strcmp (deb, "active") ||
+                       !strcmp (deb, "focus"))
+                /* hover, active, focus pseudo-classes */
+                {
+                  specificity += 10;
+                  /* not supported */
                   DoApply = FALSE;
                 }
-              else
+              else if (!strncmp (deb, "lang", 4))
+                /* it's the lang pseudo-class */
                 {
-                  if (!strcmp (deb, "first-letter") ||
-                      !strcmp (deb, "first-line"))
+                  if (deb[4] != '(' || deb[strlen(deb)-1] != ')')
+                    /* at least one parenthesis is missing. Error */
                     {
-                      if (doubleColon)
-                        CSSPrintError ("Warning: \"::\" is CSS3 syntax", NULL);
-                      /* not supported */
+                      CSSPrintError ("Invalid :lang pseudo-class", deb);
                       DoApply = FALSE;
                     }
-                  else if (!strcmp (deb, "hover") ||
-                           !strcmp (deb, "focus"))
-                    /* not supported */
-                    DoApply = FALSE;
                   else
-                    specificity += 10;
-                  if (!strncmp (deb, "before", 6))
-                    {
-                      if (doubleColon)
-                        CSSPrintError ("Warning: \"::before\" is CSS3 syntax",
-                                       NULL);
-                      ctxt->pseudo = PbBefore;
-                    }
-                  else if (!strncmp (deb, "after", 5))
-                    {
-                      if (doubleColon)
-                        CSSPrintError ("Warning: \"::after\" is CSS3 syntax",
-                                       NULL);
-                      ctxt->pseudo = PbAfter;
-                    }
-                  else if (!strncmp (deb, "lang", 4))
-                    /* it's the lang pseudo-class */
-                    {
-                      if (deb[4] != '(' || deb[strlen(deb)-1] != ')')
-                        /* at least one parenthesis is missing. Error */
-                        {
-                          CSSPrintError ("Invalid :lang pseudo-class", deb);
-                          DoApply = FALSE;
-                        }
-                      else
-                        /* simulate selector [lang|="xxx"] */
-                        {
-                          nbattrs++;
-                          if (nbattrs == MAX_ANCESTORS)
-                            /* abort parsing */
-                            {
-                              CSSPrintError ("Selector too long", deb);
-                              return (selector);
-                            }
-                          deb[strlen(deb)-1] = EOS;
-                          deb[4] = EOS;
-                          for (i = nbattrs; i > 0; i--)
-                            {
-                              attrnames[i] = attrnames[i - 1];
-                              attrnums[i] = attrnums[i - 1];
-                              attrlevels[i] = attrlevels[i - 1];
-                              attrvals[i] = attrvals[i - 1];
-                              attrmatch[i] = attrmatch[i - 1];
-                            }
-                          attrnames[0] = deb;
-                          attrnums[0] = 0;
-                          attrlevels[0] = 0;
-                          attrmatch[0] = Txtsubstring;
-                          attrvals[0] = &deb[5];
-                        }
-                    }
-                  else
+                    /* simulate selector [lang|="xxx"] */
                     {
                       nbattrs++;
                       if (nbattrs == MAX_ANCESTORS)
@@ -5835,6 +5899,8 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
                           CSSPrintError ("Selector too long", deb);
                           return (selector);
                         }
+                      deb[strlen(deb)-1] = EOS;
+                      deb[4] = EOS;
                       for (i = nbattrs; i > 0; i--)
                         {
                           attrnames[i] = attrnames[i - 1];
@@ -5843,15 +5909,49 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
                           attrvals[i] = attrvals[i - 1];
                           attrmatch[i] = attrmatch[i - 1];
                         }
-                      attrnames[0] = NULL;
-                      attrnums[0] = ATTR_PSEUDO;
+                      attrnames[0] = deb;
+                      attrnums[0] = 0;
                       attrlevels[0] = 0;
-                      attrmatch[0] = Txtmatch;
-                      attrvals[0] = deb;
+                      attrmatch[0] = Txtsubstring;
+                      attrvals[0] = &deb[5];
+                      specificity += 10;
                     }
-                  if (names[0] && !strcmp (names[0], "*"))
-                    names[0] = NULL;
                 }
+              else if (!strcmp (deb, "first-line") ||
+                       !strcmp (deb, "first-letter"))
+                /* pseudo-elements first-line or first-letter */
+                {
+                  if (doubleColon)
+                    CSSPrintError ("Warning: \"::\" is CSS3 syntax", NULL);
+                  specificity += 1;
+                  /* not supported */
+                  DoApply = FALSE;
+                }
+              else if (!strncmp (deb, "before", 6))
+                /* pseudo-element before */
+                {
+                  if (doubleColon)
+                    CSSPrintError ("Warning: \"::before\" is CSS3 syntax",
+                                   NULL);
+                  ctxt->pseudo = PbBefore;
+                  specificity += 1;
+                }
+              else if (!strncmp (deb, "after", 5))
+                /* pseudo-element after */
+                {
+                  if (doubleColon)
+                    CSSPrintError ("Warning: \"::after\" is CSS3 syntax",
+                                   NULL);
+                  ctxt->pseudo = PbAfter;
+                  specificity += 1;
+                }
+              else
+                {
+                  CSSPrintError ("Invalid pseudo-element", deb);
+                  DoApply = FALSE;
+                }
+              if (names[0] && !strcmp (names[0], "*"))
+                names[0] = NULL;
             }
           else if (*selector == '#')
             /* unique identifier */
@@ -6097,6 +6197,7 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
           for (i = nbnames; i > 0; i--)
             {
               names[i] = names[i - 1];
+              pseudoFirstChild[i] = pseudoFirstChild[i - 1];
               rel[i] = rel[i - 1];
             }
           /* increase the level of all attributes */
@@ -6117,6 +6218,7 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
   ctxt->schema = NULL;
   ctxt->nbElem = nbnames;
   elType.ElSSchema = NULL;
+  elType.ElTypeNum = 0;
   schemaName = TtaGetSSchemaName(TtaGetDocumentSSchema (doc));
   if (!strcmp (schemaName, "HTML"))
     xmlType = XHTML_TYPE;
@@ -6133,7 +6235,8 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
   while (i <= nbnames)
     {
       ctxt->rel[i] = rel[i];
-      if (!names[i])
+      ctxt->firstChild[i] = pseudoFirstChild[i];
+      if (!names[i] && i > 0)
         ctxt->name[i] = HTML_EL_ANY_TYPE;
       else
         /* store element information */
@@ -6143,10 +6246,12 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
             /* it's a generic XML document. Check the main document schema */
             {
               elType.ElSSchema = TtaGetDocumentSSchema (doc);
-              TtaGetXmlElementType (names[i], &elType, &mappedName, doc);
+              elType.ElTypeNum = 0;
+              if (names[i])
+                TtaGetXmlElementType (names[i], &elType, &mappedName, doc);
               if (!elType.ElTypeNum)
                 {
-                  if (!strcmp (names[i], "*"))
+                  if (!names[i] || !strcmp (names[i], "*"))
                     elType.ElTypeNum = HTML_EL_ANY_TYPE;
                   else
                     elType.ElSSchema = NULL;
@@ -6154,7 +6259,7 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
             }
           else
             {
-              if (!strcmp (names[i], "*"))
+              if (!names[i] || !strcmp (names[i], "*"))
                 {
                   elType.ElSSchema = TtaGetDocumentSSchema (doc);
                   elType.ElTypeNum = HTML_EL_ANY_TYPE;
@@ -6169,7 +6274,8 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
               if (elType.ElSSchema == NULL)
                 {
                   /* element name not found. Search in all loaded schemas */
-                  TtaGetXmlElementType (names[i], &elType, NULL, doc);
+                  if (names[i])
+                    TtaGetXmlElementType (names[i], &elType, NULL, doc);
                   if (elType.ElSSchema)
                     {
                       /* the element type concerns an imported nature */
@@ -6199,7 +6305,9 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
                     {
                       /* Creation of a new element type in the main schema */
                       elType.ElSSchema = TtaGetDocumentSSchema (doc);
-                      TtaAppendXmlElement (names[i], &elType, &mappedName, doc);
+                      if (names[i])
+                        TtaAppendXmlElement (names[i], &elType, &mappedName,
+                                             doc);
                     }
 #endif /* XML_GENERIC */
                   else
@@ -6583,9 +6691,7 @@ int IsImplicitClassName (char *class_, Document doc)
 }
 
 /************************************************************************
- *									*  
  *  Functions needed for support of HTML: translate to CSS equivalent   *
- *									*  
  ************************************************************************/
 
 /*----------------------------------------------------------------------
@@ -6594,7 +6700,7 @@ int IsImplicitClassName (char *class_, Document doc)
 void HTMLSetBackgroundColor (Document doc, Element el, int specificity,
                              char *color)
 {
-  char             css_command[100];
+  char             css_command[1000];
 
   sprintf (css_command, "background-color: %s", color);
   ParseHTMLSpecificStyle (el, css_command, doc, specificity, FALSE);
@@ -6606,7 +6712,7 @@ void HTMLSetBackgroundColor (Document doc, Element el, int specificity,
 void HTMLSetForegroundColor (Document doc, Element el, int specificity,
                              char *color)
 {
-  char           css_command[100];
+  char           css_command[1000];
 
   sprintf (css_command, "color: %s", color);
   ParseHTMLSpecificStyle (el, css_command, doc, specificity, FALSE);
@@ -6617,7 +6723,7 @@ void HTMLSetForegroundColor (Document doc, Element el, int specificity,
   ----------------------------------------------------------------------*/
 void HTMLResetBackgroundColor (Document doc, Element el)
 {
-  char           css_command[100];
+  char           css_command[1000];
 
   sprintf (css_command, "background: red");
   ParseHTMLSpecificStyle (el, css_command, doc, 0, TRUE);
@@ -6639,7 +6745,7 @@ void HTMLResetBackgroundImage (Document doc, Element el)
   ----------------------------------------------------------------------*/
 void HTMLResetForegroundColor (Document doc, Element el)
 {
-  char           css_command[100];
+  char           css_command[1000];
 
   /* it's not necessary to well know the current color but it must be valid */
   sprintf (css_command, "color: red");
@@ -6651,7 +6757,7 @@ void HTMLResetForegroundColor (Document doc, Element el)
   ----------------------------------------------------------------------*/
 void HTMLSetAlinkColor (Document doc, Element el, char *color)
 {
-  char           css_command[100];
+  char           css_command[1000];
 
   sprintf (css_command, ":link { color: %s }", color);
   ApplyCSSRules (el, css_command, doc, FALSE);
@@ -6662,7 +6768,7 @@ void HTMLSetAlinkColor (Document doc, Element el, char *color)
   ----------------------------------------------------------------------*/
 void HTMLSetAactiveColor (Document doc, Element el, char *color)
 {
-  char           css_command[100];
+  char           css_command[1000];
 
   sprintf (css_command, ":active { color: %s }", color);
   ApplyCSSRules (el, css_command, doc, FALSE);
@@ -6673,7 +6779,7 @@ void HTMLSetAactiveColor (Document doc, Element el, char *color)
   ----------------------------------------------------------------------*/
 void HTMLSetAvisitedColor (Document doc, Element el, char *color)
 {
-  char           css_command[100];
+  char           css_command[1000];
 
   sprintf (css_command, ":visited { color: %s }", color);
   ApplyCSSRules (el, css_command, doc, FALSE);
@@ -6684,7 +6790,7 @@ void HTMLSetAvisitedColor (Document doc, Element el, char *color)
   ----------------------------------------------------------------------*/
 void HTMLResetAlinkColor (Document doc, Element el)
 {
-  char           css_command[100];
+  char           css_command[1000];
 
   sprintf (css_command, ":link { color: red }");
   ApplyCSSRules (el, css_command, doc, TRUE);
@@ -6695,7 +6801,7 @@ void HTMLResetAlinkColor (Document doc, Element el)
   ----------------------------------------------------------------------*/
 void HTMLResetAactiveColor (Document doc, Element el)
 {
-  char           css_command[100];
+  char           css_command[1000];
 
   sprintf (css_command, ":active { color: red }");
   ApplyCSSRules (el, css_command, doc, TRUE);
@@ -6706,7 +6812,7 @@ void HTMLResetAactiveColor (Document doc, Element el)
   ----------------------------------------------------------------------*/
 void HTMLResetAvisitedColor (Document doc, Element el)
 {
-  char           css_command[100];
+  char           css_command[1000];
 
   sprintf (css_command, ":visited { color: red }");
   ApplyCSSRules (el, css_command, doc, TRUE);
@@ -6837,10 +6943,10 @@ char ReadCSSRules (Document docRef, CSSInfoPtr css, char *buffer, char *url,
   TtaFreeMemory (refcss->class_list);
   refcss->class_list = NULL;
   if (url)
-    DocURL = url;
+    Error_DocURL = url;
   else
     /* the CSS source in within the document itself */
-    DocURL = DocumentURLs[docRef];
+    Error_DocURL = DocumentURLs[docRef];
   LineNumber = numberOfLinesRead + 1;
   NewLineSkipped = 0;
   newlines = 0;
@@ -7143,7 +7249,7 @@ char ReadCSSRules (Document docRef, CSSInfoPtr css, char *buffer, char *url,
                   if (!ignoreImport)
                     {
                       /* save the displayed URL when an error is reported */
-                      saveDocURL = DocURL;
+                      saveDocURL = Error_DocURL;
                       ptr = TtaStrdup (base);
                       /* get the CSS URI in UTF-8 */
                       /*ptr = ReallocUTF8String (ptr, docRef);*/
@@ -7151,7 +7257,7 @@ char ReadCSSRules (Document docRef, CSSInfoPtr css, char *buffer, char *url,
                                       url, pInfo->PiMedia,
                                       pInfo->PiCategory == CSS_USER_STYLE);
                       /* restore the displayed URL when an error is reported */
-                      DocURL = saveDocURL;
+                      Error_DocURL = saveDocURL;
                       TtaFreeMemory (ptr);
                     }
                   /* restore the number of lines */
@@ -7190,7 +7296,7 @@ char ReadCSSRules (Document docRef, CSSInfoPtr css, char *buffer, char *url,
     TtaSetDisplayMode (docRef, dispMode);
 
   /* Prepare the context for style attributes */
-  DocURL = DocumentURLs[docRef];
+  Error_DocURL = DocumentURLs[docRef];
   LineNumber = -1;
   return (c);
 }

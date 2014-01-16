@@ -173,6 +173,6 @@ extern void HTSetSignal (void);
 
   
 
-  @(#) $Id: HTInet.h,v 1.1.1.2 2005/07/06 10:27:39 gully Exp $
+  @(#) $Id: HTInet.html,v 1.1.1.2 2005/07/06 09:34:02 gully Exp $
 
 */

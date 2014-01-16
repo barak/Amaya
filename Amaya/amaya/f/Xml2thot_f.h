@@ -19,6 +19,10 @@ extern int IsWithinXmlTable ( void );
 extern void SubWithinTable ( void );
 extern void InsertXmlElement ( Element *el );
 extern Element XmlLastLeafInElement ( Element el );
+extern ThotBool IsLeadingSpaceUseless ( Element lastEl,
+                                        Document doc,
+                                        ThotBool sibling,
+                                        ThotBool isXML );
 extern void PutInXmlElement ( char *data,
                               int length );
 extern void XmlStyleSheetPi ( char *PiData,
@@ -78,6 +82,10 @@ extern int IsWithinXmlTable ( void );
 extern void SubWithinTable ( void );
 extern void InsertXmlElement ( Element *el );
 extern Element XmlLastLeafInElement ( Element el );
+extern ThotBool IsLeadingSpaceUseless ( Element lastEl,
+                                          Document doc,
+                                          ThotBool sibling,
+                                          ThotBool isXML );
 extern void PutInXmlElement ( char *data,
                                 int length );
 extern void XmlStyleSheetPi ( char *PiData,

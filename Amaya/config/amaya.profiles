@@ -68,6 +68,7 @@ TtcParentElement
 TtcChildElement
 TtcPreviousElement
 TtcNextElement
+CopyLocation
 
 ################# AMAYA BROWSER
 <Browser>
@@ -305,6 +306,7 @@ DocumentInfo
 DoAction
 HelpAmaya
 HelpAtW3C
+HelpIndex
 HelpSearching
 HelpSelecting
 GoToHome
@@ -431,7 +433,7 @@ HelpXml
 +meta-module
 +presentation-module
 +makebook
-#+makeid
++makeid
 +maths
 +object-module
 +ruby
@@ -479,7 +481,7 @@ ShowAlternate
 ShowLinks
 ShowSource
 ShowStructure
-ShowFormatted
+#ShowFormatted
 ShowToC
 # ShowTimeLineWindow
 TtcCloseView

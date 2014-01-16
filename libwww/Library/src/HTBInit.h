@@ -60,6 +60,6 @@ extern void HTFileInit (void);
 
   
 
-  @(#) $Id: HTBInit.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+  @(#) $Id: HTBInit.html,v 1.1.1.1 1998/08/14 21:54:37 cvs Exp $
 
 */

@@ -1260,7 +1260,7 @@ void GiveEnclosureSize (PtrAbstractBox pAb, int frame, int *width,
 
   box = NULL;
   pBox = pAb->AbBox;
-  /* PcFirst fils vivant */
+  /* first child that is not dead */
   pFirstAb = pAb->AbFirstEnclosed;
   still = TRUE;
   hMin = !pAb->AbWidth.DimIsPosition && pAb->AbWidth.DimMinimum;
@@ -2642,7 +2642,7 @@ static PtrBox CreateBox (PtrAbstractBox pAb, int frame, ThotBool inLine,
                 SetPositionConstraint (VertRef, pBox, &i);
               if (!pAb->AbVertEnclosing)
                 /* the inline rule doesn't act on this box */
-                ComputePosRelation (&pAb->AbHorizRef, pBox, frame, FALSE);
+                ComputePosRelation (&pAb->AbVertPos, pBox, frame, FALSE);
               else if (pAb->AbNotInLine)
                 /* the inline rule doesn't act on this box */
                 ComputePosRelation (&pAb->AbVertPos, pBox, frame, FALSE);
@@ -3143,8 +3143,9 @@ void RecordEnclosing (PtrBox pBox, ThotBool horizRef)
   PtrDimRelations     pPreviousDimRel;
   ThotBool            toCreate;
 
-  if (horizRef && (pBox->BxType == BoCell || pBox->BxType == BoTable ||
-                   pBox->BxType == BoRow))
+  if (horizRef && pBox &&
+      (pBox->BxType == BoCell || pBox->BxType == BoTable ||
+       pBox->BxType == BoRow))
     /* width of these elements is computed in tableH.c */
     return;
   /* Look for an empty entry */
@@ -3784,7 +3785,7 @@ ThotBool ComputeUpdates (PtrAbstractBox pAb, int frame, ThotBool *computeBBoxes)
 
       /* Destruction */
       pCell = GetParentCell (pCurrentBox);
-      isCell = pAb->AbBox->BxType == BoCell;
+      isCell = pCurrentBox->BxType == BoCell;
       RemoveBoxes (pAb, FALSE, frame);
       
       /* update the list of leaf boxes */
@@ -3822,13 +3823,14 @@ ThotBool ComputeUpdates (PtrAbstractBox pAb, int frame, ThotBool *computeBBoxes)
         }
       
       /* Check table consistency */
-      if (isCell)
-        UpdateColumnWidth (pAb, NULL, frame);
+      if (isCell && pCurrentBox && pCurrentBox->BxAbstractBox)
+        UpdateColumnWidth (pCurrentBox->BxAbstractBox, NULL, frame);
       /* check enclosing cell */
-      else if (pCell && !IsDead (pAb) &&
-               (pAb->AbNext == NULL ||
-                (!pAb->AbNext->AbDead && !pAb->AbNext->AbNew)))
+      if (pCell && !IsDead (pAb) &&
+               (pAb->AbNext || (!pAb->AbNext->AbDead && !pAb->AbNext->AbNew)))
         UpdateColumnWidth (pCell, NULL, frame);
+      else if (pCell)
+        UpdateCellHeight (pCell, frame);
       result = TRUE;
     }
   else
@@ -4417,6 +4419,16 @@ ThotBool ComputeUpdates (PtrAbstractBox pAb, int frame, ThotBool *computeBBoxes)
             {
               /* remove the old horizontal position */
               ClearPosRelation (pBox, TRUE);
+              if (pAb->AbHorizPos.PosAbRef && pAb->AbHorizPos.PosAbRef == pAb->AbPrevious)
+                while (pAb->AbHorizPos.PosAbRef &&
+                       pAb->AbHorizPos.PosAbRef->AbPositioning &&
+                       (pAb->AbHorizPos.PosAbRef->AbPositioning->PnAlgorithm == PnAbsolute ||
+                        pAb->AbHorizPos.PosAbRef->AbPositioning->PnAlgorithm == PnFixed))
+                  {
+                    pAb->AbHorizPos.PosAbRef = pAb->AbHorizPos.PosAbRef->AbPrevious;
+                    if (pAb->AbHorizPos.PosAbRef && pAb->AbHorizPos.PosAbRef->AbDead)
+                      pAb->AbHorizPos.PosAbRef = pAb->AbHorizPos.PosAbRef->AbPrevious;
+                  }
               /* new horizontal position */
               ComputePosRelation (&pAb->AbHorizPos, pBox, frame, TRUE);
               result = TRUE;
@@ -4441,14 +4453,14 @@ ThotBool ComputeUpdates (PtrAbstractBox pAb, int frame, ThotBool *computeBBoxes)
                 pAb->AbVertPos.PosEdge = Top;
               pAb->AbVertPosChange = FALSE;
             }
-          else if (pAb->AbEnclosing == NULL)
+          else if (pAb->AbEnclosing == NULL || !pAb->AbVertEnclosing)
             condition = TRUE;
           else if (pAb->AbEnclosing->AbBox->BxType == BoBlock ||
                    pAb->AbEnclosing->AbBox->BxType == BoFloatBlock ||
                    pAb->AbEnclosing->AbBox->BxType == BoGhost ||
-                   pAb->AbEnclosing->AbBox->BxType == BoFloatGhost)
+                    pAb->AbEnclosing->AbBox->BxType == BoFloatGhost)
             {
-              /* the positioning rule is ignored */
+              /* the position depends on the line? */
               if (!pAb->AbHorizEnclosing && pBox->BxNChars > 0)
                 {
                   pPosAb = &pAb->AbVertPos;
@@ -4480,6 +4492,16 @@ ThotBool ComputeUpdates (PtrAbstractBox pAb, int frame, ThotBool *computeBBoxes)
             {
               /* remove the old vertical position */
               ClearPosRelation (pBox, FALSE);
+              if (pAb->AbVertPos.PosAbRef && pAb->AbVertPos.PosAbRef == pAb->AbPrevious)
+              while (pAb->AbVertPos.PosAbRef &&
+                     pAb->AbVertPos.PosAbRef->AbPositioning &&
+                     (pAb->AbVertPos.PosAbRef->AbPositioning->PnAlgorithm == PnAbsolute ||
+                      pAb->AbVertPos.PosAbRef->AbPositioning->PnAlgorithm == PnFixed))
+                {
+                  pAb->AbVertPos.PosAbRef = pAb->AbVertPos.PosAbRef->AbPrevious;
+                    if (pAb->AbVertPos.PosAbRef && pAb->AbVertPos.PosAbRef->AbDead)
+                      pAb->AbVertPos.PosAbRef = pAb->AbVertPos.PosAbRef->AbPrevious;
+                }
               /* new vertical position */
               ComputePosRelation (&pAb->AbVertPos, pBox, frame, FALSE);
               result = TRUE;

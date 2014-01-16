@@ -55,7 +55,7 @@ extern char * HTEnSlash (const char * str);
 
 
 
-@(#) $Id: HTWSRC.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+@(#) $Id: HTWSRC.html,v 1.1.1.1 1998/08/14 21:54:39 cvs Exp $
 
 
 */

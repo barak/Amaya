@@ -87,6 +87,6 @@ for example accessing HTTP servers or the local file system.
 
   
 
-  @(#) $Id: WWWLib.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+  @(#) $Id: WWWLib.html,v 1.1.1.1 1998/08/14 21:54:39 cvs Exp $
 
 */

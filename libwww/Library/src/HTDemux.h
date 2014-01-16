@@ -50,6 +50,6 @@ extern HTStream * HTDemux_new (HTHost * host, HTMuxChannel * muxch);
 
   
 
-  @(#) $Id: HTDemux.h,v 1.1.1.1 1998/08/14 21:54:41 cvs Exp $
+  @(#) $Id: HTDemux.html,v 1.1.1.1 1998/08/14 21:54:37 cvs Exp $
 
 */

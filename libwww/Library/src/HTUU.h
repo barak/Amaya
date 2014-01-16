@@ -47,7 +47,7 @@ extern int HTUU_decode (char * bufcoded, unsigned char * bufplain,
 
 
 
-@(#) $Id: HTUU.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+@(#) $Id: HTUU.html,v 1.1.1.1 1998/08/14 21:54:39 cvs Exp $
 
 
 */

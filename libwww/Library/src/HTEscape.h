@@ -85,6 +85,6 @@ extern char * HTUnEscape (char * str);
 
   
 
-  @(#) $Id: HTEscape.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+  @(#) $Id: HTEscape.html,v 1.1.1.1 1998/08/14 21:54:37 cvs Exp $
 
 */

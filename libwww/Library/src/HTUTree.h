@@ -170,6 +170,6 @@ extern BOOL HTUTree_deleteNode (HTUTree * tree,
 
   
 
-  @(#) $Id: HTUTree.h,v 1.1.1.1 1998/08/14 21:54:41 cvs Exp $
+  @(#) $Id: HTUTree.html,v 1.1.1.1 1998/08/14 21:54:39 cvs Exp $
 
 */

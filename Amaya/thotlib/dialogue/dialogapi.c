@@ -3971,6 +3971,12 @@ static void NewSheet (int ref, ThotWidget parent, char *title, int number,
             gtk_widget_show_all (w);
             gtk_box_pack_start (GTK_BOX(row), w, FALSE, FALSE, 5);
             break;
+          case D_DISCARD:
+            w = gtk_button_new_with_label(TtaGetMessage (LIB, TMSG_DISCARD));
+            GTK_WIDGET_SET_FLAGS (GTK_WIDGET(w), GTK_CAN_DEFAULT);
+            gtk_widget_show_all (w);
+            gtk_box_pack_start (GTK_BOX(row), w, FALSE, FALSE, 5);
+            break;
           }
       else
         {
@@ -5786,7 +5792,8 @@ void TtaShowDialogue (int ref, ThotBool remanent)
       if (catalogue->Cat_Widget)
         {
           /* Faut-il invalider un TtaShowDialogue precedent */
-          TtaAbortShowDialogue ();
+          if (ShowCat && ShowCat != catalogue)
+            TtaAbortShowDialogue ();
           /* Memorise qu'un retour sur le catalogue est attendu et */
           /* qu'il peut etre aborter si et seulement s'il n'est pas remanent */
           if (!remanent)

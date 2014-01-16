@@ -315,6 +315,6 @@ extern BOOL HTError_response (HTRequest * request, HTAlertOpcode op,
 
   
 
-  @(#) $Id: HTDialog.h,v 1.1.1.2 2005/07/06 10:27:38 gully Exp $
+  @(#) $Id: HTDialog.html,v 1.1.1.2 2005/07/06 09:34:01 gully Exp $
 
 */

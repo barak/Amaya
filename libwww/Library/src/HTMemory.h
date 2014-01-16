@@ -164,6 +164,6 @@ extern void HTMemory_outofmem(char * name, char * file, unsigned long line);
 
   
 
-  @(#) $Id: HTMemory.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+  @(#) $Id: HTMemory.html,v 1.1.1.1 1998/08/14 21:54:38 cvs Exp $
 
 */

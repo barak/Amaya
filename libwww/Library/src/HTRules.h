@@ -144,6 +144,6 @@ extern char * HTRule_translate (HTList * list, const char * token,
 
   
 
-  @(#) $Id: HTRules.h,v 1.1.1.1 1998/08/14 21:54:40 cvs Exp $
+  @(#) $Id: HTRules.html,v 1.1.1.1 1998/08/14 21:54:39 cvs Exp $
 
 */
