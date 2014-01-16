@@ -84,7 +84,9 @@ typedef struct _HTAAModule HTAAModule;
 extern HTAAModule * HTAA_newModule (const char *                scheme,
                                     HTNetBefore *               before,
                                     HTNetAfter *                after,
-                                    HTUTree_gc *                gc);
+                                    HTUTree_gc *                gc,
+                                    HTUTree_gc *                copy
+);
 /*
 
   Find an Authentication Module
@@ -179,6 +181,6 @@ HTNetBefore HTAA_proxyBeforeFilter;
    
    ___________________________________
    
-                          @(#) $Id: HTAAUtil.h,v 1.1.1.1 1996/10/15 13:08:40 cvs Exp $
+                          @(#) $Id: HTAAUtil.h,v 1.2 1998/06/18 14:04:29 cvs Exp $
                                                                                           
     */

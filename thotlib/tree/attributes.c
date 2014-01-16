@@ -58,6 +58,7 @@
 #include "presvariables_f.h"
 #include "applicationapi_f.h"
 #include "frame_f.h"
+#include "attributes_f.h"
 
 /*----------------------------------------------------------------------
    SetAttrReference fait pointer l'attribut reference pAttr sur    
@@ -939,82 +940,78 @@ PtrAttribute        pAttr;
      }
 }
 
-
 /*----------------------------------------------------------------------
-   Ajoute un attribut pNewAttr a l'element pEl                    
+   Ajoute un attribut pNewAttr a l'element pEl avant l'attribut pAttrNext
   ----------------------------------------------------------------------*/
-
 #ifdef __STDC__
-PtrAttribute        AddAttrToElem (PtrElement pEl, PtrAttribute pNewAttr)
-
+PtrAttribute        AddAttrToElem (PtrElement pEl, PtrAttribute pNewAttr, PtrAttribute pAttrNext)
 #else  /* __STDC__ */
-PtrAttribute        AddAttrToElem (pEl, pNewAttr)
+PtrAttribute        AddAttrToElem (pEl, pNewAttr, pAttrNext)
 PtrElement          pEl;
 PtrAttribute        pNewAttr;
-
+PtrAttribute        pAttrNext;
 #endif /* __STDC__ */
-
 {
-   PtrAttribute        pAttr, pA;
-   PtrReference        pRef;
-   int                 len;
+  PtrAttribute        pAttr, pA;
+  PtrReference        pRef;
+  int                 len;
 
-   GetAttribute (&pAttr);
-   /* on chaine cet attribut apres le dernier attribut de  l'element */
-   if (pEl->ElFirstAttr == NULL)
+  GetAttribute (&pAttr);
+  /* on chaine cet attribut apres le dernier attribut de  l'element */
+  if (pEl->ElFirstAttr == NULL || pEl->ElFirstAttr == pAttrNext)
+    {
       /* c'est le 1er attribut de l'element */
+      pAttrNext = pEl->ElFirstAttr;
       pEl->ElFirstAttr = pAttr;
-   else
-     {
-	/* cherche le dernier attr */
-	pA = pEl->ElFirstAttr;
-	while (pA->AeNext != NULL)
-	   pA = pA->AeNext;
-	/* chaine le nouvel attribut */
-	pA->AeNext = pAttr;
-     }
-   pAttr->AeNext = NULL;	/* c'est le dernier attribut */
-   pAttr->AeAttrSSchema = pNewAttr->AeAttrSSchema;
-   pAttr->AeAttrNum = pNewAttr->AeAttrNum;
-   pAttr->AeDefAttr = FALSE;
-   pAttr->AeAttrType = pNewAttr->AeAttrType;
-   switch (pAttr->AeAttrType)
-	 {
-	    case AtEnumAttr:
-	    case AtNumAttr:
-	       pAttr->AeAttrValue = pNewAttr->AeAttrValue;
-	       break;
-
-	    case AtTextAttr:
-	       if (pNewAttr->AeAttrText != NULL)
-		 {
-		    GetTextBuffer (&pAttr->AeAttrText);
-		    CopyTextToText (pNewAttr->AeAttrText, pAttr->AeAttrText, &len);
-		 }
-	       break;
-
-	    case AtReferenceAttr:
-	       GetReference (&pRef);
-	       pAttr->AeAttrReference = pRef;
-	       pRef->RdElement = pEl;
-	       pRef->RdAttribute = pAttr;
-	       pRef->RdReferred = pNewAttr->AeAttrReference->RdReferred;
-	       pRef->RdTypeRef = pNewAttr->AeAttrReference->RdTypeRef;
-	       pRef->RdInternalRef = pNewAttr->AeAttrReference->RdInternalRef;
-	       /* chaine la reference du nouvel attribut apres celle de */
-	       /* pNewAttr. */
-	       pRef->RdNext = pNewAttr->AeAttrReference->RdNext;
-	       if (pRef->RdNext != NULL)
-		  pRef->RdNext->RdPrevious = pRef;
-	       pRef->RdPrevious = pNewAttr->AeAttrReference;
-	       if (pRef->RdPrevious != NULL)
-		  pRef->RdPrevious->RdNext = pRef;
-	       break;
-
-	    default:
-	       break;
-	 }
-   return (pAttr);
+    }
+  else
+    {
+      /* cherche l'attribut qui doit etre le suivant */
+      pA = pEl->ElFirstAttr;
+      while (pA->AeNext != pAttrNext)
+	pA = pA->AeNext;
+      /* chaine le nouvel attribut */
+      pA->AeNext = pAttr;
+    }
+  pAttr->AeNext = pAttrNext;
+  pAttr->AeAttrSSchema = pNewAttr->AeAttrSSchema;
+  pAttr->AeAttrNum = pNewAttr->AeAttrNum;
+  pAttr->AeDefAttr = FALSE;
+  pAttr->AeAttrType = pNewAttr->AeAttrType;
+  switch (pAttr->AeAttrType)
+    {
+    case AtEnumAttr:
+    case AtNumAttr:
+      pAttr->AeAttrValue = pNewAttr->AeAttrValue;
+      break;
+    case AtTextAttr:
+      if (pNewAttr->AeAttrText != NULL)
+	{
+	  GetTextBuffer (&pAttr->AeAttrText);
+	  CopyTextToText (pNewAttr->AeAttrText, pAttr->AeAttrText, &len);
+	}
+      break;
+    case AtReferenceAttr:
+      GetReference (&pRef);
+      pAttr->AeAttrReference = pRef;
+      pRef->RdElement = pEl;
+      pRef->RdAttribute = pAttr;
+      pRef->RdReferred = pNewAttr->AeAttrReference->RdReferred;
+      pRef->RdTypeRef = pNewAttr->AeAttrReference->RdTypeRef;
+      pRef->RdInternalRef = pNewAttr->AeAttrReference->RdInternalRef;
+      /* chaine la reference du nouvel attribut apres celle de */
+      /* pNewAttr. */
+      pRef->RdNext = pNewAttr->AeAttrReference->RdNext;
+      if (pRef->RdNext != NULL)
+	pRef->RdNext->RdPrevious = pRef;
+      pRef->RdPrevious = pNewAttr->AeAttrReference;
+      if (pRef->RdPrevious != NULL)
+	pRef->RdPrevious->RdNext = pRef;
+      break;
+    default:
+      break;
+    }
+  return (pAttr);
 }
 
 #ifndef _WIN_PRINT
@@ -1033,17 +1030,19 @@ PtrAttribute        pNewAttr;
 
 #endif /* __STDC__ */
 {
-   PtrAttribute        pAttr, pAttrAsc;
+   PtrAttribute        pAttr, pAttrAsc, pAttrNext;
    PtrElement          pChild, pElAttr;
    boolean             suppress, compare, inherit, mandatory, create;
    NotifyAttribute     notifyAttr;
 
+   mandatory = FALSE;
+   pAttrNext = NULL;
    /* l'element porte-t-il deja un attribut du meme type ? */
    pAttr = AttributeValue (pEl, pNewAttr);
    create = (pAttr == NULL);
 
    /* peut-on appliquer l'attribut a l'element ? */
-   if (!CanAssociateAttr (pEl, pAttr, pNewAttr, &mandatory))
+   if (create && !CanAssociateAttr (pEl, pAttr, pNewAttr, &mandatory))
       return;
 
    /* est-ce une suppression d'attribut */
@@ -1098,10 +1097,8 @@ PtrAttribute        pNewAttr;
    compare = FALSE;
    if (pNewAttr->AeAttrSSchema->SsPSchema != NULL)
      {
-	inherit = (pNewAttr->AeAttrSSchema->SsPSchema->
-		   PsNHeirElems[pNewAttr->AeAttrNum - 1] != 0);
-	compare = (pNewAttr->AeAttrSSchema->SsPSchema->
-		   PsNComparAttrs[pNewAttr->AeAttrNum - 1] != 0);
+       inherit = (pNewAttr->AeAttrSSchema->SsPSchema->PsNHeirElems[pNewAttr->AeAttrNum - 1] != 0);
+       compare = (pNewAttr->AeAttrSSchema->SsPSchema->PsNComparAttrs[pNewAttr->AeAttrNum - 1] != 0);
      }
    if (inherit || compare)
       /* cherche le premier attribut de meme type sur un ascendant de pEl */
@@ -1109,6 +1106,7 @@ PtrAttribute        pNewAttr;
 				       pNewAttr->AeAttrSSchema, &pElAttr);
    else
       pAttrAsc = NULL;
+
    /* prepare et envoie l'evenement pour l'application */
    if (create)
       notifyAttr.event = TteAttrCreate;
@@ -1129,29 +1127,30 @@ PtrAttribute        pNewAttr;
 	   soit par pEl soit par un ascendant */
 	if (pAttr)
 	  {
-	     /* detache l'attribut de l'element s'il y a lieu */
-	     RemoveAttribute (pEl, pAttr);
-	     /* heritage et comparaison sont lies a un attribut de pEl */
-	     /* On supprime d'abord les regles de presentation liees a
-	        l'attribut sur l'element lui-meme */
-	     RemoveAttrPresentation (pEl, pDoc, pAttr, FALSE, NULL);
-	     /* supprime l'attribut */
-	     DeleteAttribute (pEl, pAttr);
-	     /* indique que le document a ete modifie' */
-	     pDoc->DocModified = TRUE;
-	     /* un changement d'attribut vaut dix caracteres saisis */
-	     pDoc->DocNTypedChars += 10;
-	     /* On supprime de pEl de son sous-arbre  la presentation venant
-	        de l'heritage de cet attribut par le sous-arbre, s'il existe
-	        des elements heritants de celui-ci */
-	     if (inherit)
-		RemoveInheritedAttrPresent (pEl, pDoc, pAttr);
-	     /* On supprime des elements du sous arbre pEl la presentation
-	        venant de la comparaison d'un attribut du sous-arbre avec ce
-	        type d'attribut */
-	     if (!pEl->ElTerminal && compare)
-		for (pChild = pEl->ElFirstChild; pChild != NULL; pChild = pChild->ElNext)
-		   RemoveComparAttrPresent (pChild, pDoc, pAttr);
+	    /* detache l'attribut de l'element s'il y a lieu */
+	    pAttrNext = pAttr->AeNext;
+	    RemoveAttribute (pEl, pAttr);
+	    /* heritage et comparaison sont lies a un attribut de pEl */
+	    /* On supprime d'abord les regles de presentation liees a
+	       l'attribut sur l'element lui-meme */
+	    RemoveAttrPresentation (pEl, pDoc, pAttr, FALSE, NULL);
+	    /* supprime l'attribut */
+	    DeleteAttribute (pEl, pAttr);
+	    /* indique que le document a ete modifie' */
+	    pDoc->DocModified = TRUE;
+	    /* un changement d'attribut vaut dix caracteres saisis */
+	    pDoc->DocNTypedChars += 10;
+	    /* On supprime de pEl de son sous-arbre  la presentation venant
+	       de l'heritage de cet attribut par le sous-arbre, s'il existe
+	       des elements heritants de celui-ci */
+	    if (inherit)
+	      RemoveInheritedAttrPresent (pEl, pDoc, pAttr);
+	    /* On supprime des elements du sous arbre pEl la presentation
+	       venant de la comparaison d'un attribut du sous-arbre avec ce
+	       type d'attribut */
+	    if (!pEl->ElTerminal && compare)
+	      for (pChild = pEl->ElFirstChild; pChild != NULL; pChild = pChild->ElNext)
+		RemoveComparAttrPresent (pChild, pDoc, pAttr);
 	  }
 
 	else if (pAttrAsc)
@@ -1179,14 +1178,15 @@ PtrAttribute        pNewAttr;
 	/* on met l'attribut */
 	if (!suppress)
 	  {
-	     pAttr = AddAttrToElem (pEl, pNewAttr);
-	     /* indique que le document a ete modifie' */
-	     pDoc->DocModified = TRUE;
-	     /* un changement d'attribut vaut dix caracteres saisis */
-	     pDoc->DocNTypedChars += 10;
-	     /* traitement special a l'ajout d'un attribut a un element d'un
-	        objet Draw */
-	     DrawAddAttr (&pAttr, pEl);
+	    /* add a copy of the new attribute before pAttrNext */
+	    pAttr = AddAttrToElem (pEl, pNewAttr, pAttrNext);
+	    /* indique que le document a ete modifie' */
+	    pDoc->DocModified = TRUE;
+	    /* un changement d'attribut vaut dix caracteres saisis */
+	    pDoc->DocNTypedChars += 10;
+	    /* traitement special a l'ajout d'un attribut a un element d'un
+	       objet Draw */
+	    DrawAddAttr (&pAttr, pEl);
 	  }
 
 	else
@@ -1241,20 +1241,10 @@ PtrAttribute        pNewAttr;
 	     ApplyAttrPRules (pEl, pDoc, pAttrAsc);
 	  }
 	/* prepare et envoie a l'application l'evenement TteAttrCreate.Post */
-	notifyAttr.document = (Document) IdentDocument (pDoc);
-	notifyAttr.element = (Element) pEl;
-	notifyAttr.attribute = (Attribute) pAttr;
-	notifyAttr.attributeType.AttrSSchema = (SSchema) (pNewAttr->AeAttrSSchema);
-	notifyAttr.attributeType.AttrTypeNum = pNewAttr->AeAttrNum;
-	if (create)
-	   notifyAttr.event = TteAttrCreate;
-	else if (suppress)
-	  {
-	     notifyAttr.attribute = NULL;
-	     notifyAttr.event = TteAttrDelete;
-	  }
-	else
-	   notifyAttr.event = TteAttrModify;
+	if (notifyAttr.event == TteAttrCreate)
+	  notifyAttr.attribute = (Attribute) pAttr;
+	else if (notifyAttr.event == TteAttrDelete)
+	  notifyAttr.attribute = NULL;
 	CallEventAttribute (&notifyAttr, FALSE);
      }
 }

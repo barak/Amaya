@@ -3,7 +3,7 @@
 **
 **	(c) COPYRIGHT MIT 1995.
 **	Please first read the full copyright statement in the file COPYRIGH.
-**	@(#) $Id: HTNet.c,v 1.1.1.1 1996/10/15 13:08:37 cvs Exp $
+**	@(#) $Id: HTNet.c,v 1.2 1998/03/11 17:45:38 cvs Exp $
 **
 **	This is the implementation of the internal library multithreading
 **	functions. This includes an interrupt handler and a event loop.
@@ -34,7 +34,7 @@
 #define HT_MAX_SOCKETS	6
 #endif
 
-#define HASH_SIZE	67
+#define HASH_SIZE	599
 
 typedef struct _BeforeFilter {
     HTNetBefore *	before;				  /* Filter function */
@@ -746,6 +746,7 @@ PUBLIC BOOL HTNet_clear (HTNet * net)
 	net->input = NULL;
 	net->bytes_read = 0;
 	net->bytes_written = 0;
+	net->headerLength = 0;
 	net->tcpstate = TCP_CHANNEL;
 	return YES;
     }

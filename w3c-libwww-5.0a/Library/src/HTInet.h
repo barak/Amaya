@@ -126,12 +126,23 @@ SIGNAL HANDLING
 extern void HTSetSignal (void);
 #endif
 
+/*
+
+  GET TIME OF DAY IN MILLI SECONDS
+
+   Return the time of day in milli seconds.
+
+ */
+typedef unsigned long ms_t;
+extern ms_t HTGetTimeInMillis (void);
+
+
 #endif   /* HTINET_H */
 /*
 
    
    ___________________________________
    
-                             @(#) $Id: HTInet.h,v 1.1.1.1 1996/10/15 13:08:41 cvs Exp $
+                             @(#) $Id: HTInet.h,v 1.2 1998/03/11 17:45:38 cvs Exp $
                                                                                           
     */

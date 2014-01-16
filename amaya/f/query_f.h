@@ -10,13 +10,18 @@ extern AHTDocId_Status *GetDocIdStatus ( int docid,
                                          HTList * documents );
 extern boolean AHTReqContext_delete ( AHTReqContext * me );
 extern int AHTOpen_file ( HTRequest * request );
+extern int AHTLoadTerminate_handler ( HTRequest * request,
+                                      HTResponse * response,
+                                      void *param,
+                                      int status );
 extern void QueryInit ( void );
 extern void QueryClose ( void );
 extern void InvokeGetObjectWWW_callback ( int docid,
                                           char *urlName,
                                           char *outputfile,
                                           TTcbf *terminate_cbf,
-                                          void *context_tcbf );
+                                          void *context_tcbf,
+                                          int status );
 extern int GetObjectWWW ( int docid,
                           char* urlName,
                           char* postString,
@@ -46,6 +51,7 @@ extern int UploadMemWWW ( int docid,
                           void *context_tcbf,
                           char *outputfile );
 extern void StopRequest ( int docid );
+extern boolean AmayaIsAlive ( void );
 
 #else /* __STDC__ */
 
@@ -53,13 +59,18 @@ extern AHTDocId_Status *GetDocIdStatus (/* int docid,
                                            HTList * documents */);
 extern boolean AHTReqContext_delete (/* AHTReqContext * me */);
 extern int AHTOpen_file (/* HTRequest * request */);
+extern int AHTLoadTerminate_handler (/* HTRequest * request,
+                                        HTResponse * response,
+                                        void *param,
+                                        int status */);
 extern void QueryInit (/* void */);
 extern void QueryClose (/* void */);
 extern void InvokeGetObjectWWW_callback (/* int docid,
                                             char *urlName,
                                             char *outputfile,
                                             TTcbf *terminate_cbf,
-                                            void *context_tcbf */);
+                                            void *context_tcbf,
+                                            int status */);
 extern int GetObjectWWW (/* int docid,
                             char* urlName,
                             char* postString,
@@ -89,6 +100,7 @@ extern int UploadMemWWW (/* int docid,
                             void *context_tcbf,
                             char *outputfile */);
 extern void StopRequest (/* int docid */);
+extern boolean AmayaIsAlive (/* void */);
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

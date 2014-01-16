@@ -3,7 +3,7 @@
 **
 **	(c) COPYRIGHT MIT 1995.
 **	Please first read the full copyright statement in the file COPYRIGH.
-**	@(#) $Id: HTString.c,v 1.1.1.1 1996/10/15 13:08:37 cvs Exp $
+**	@(#) $Id: HTString.c,v 1.2 1998/03/04 17:03:18 cvs Exp $
 **
 **	Original version came with listserv implementation.
 **	Version TBL Oct 91 replaces one which modified the strings.
@@ -22,9 +22,10 @@
 PUBLIC FILE *WWWTrace = NULL;
 #endif
 
-#ifndef WWW_WIN_DLL
+/* Commented out as this gives problems when compiling libwww as a .lib */
+/* #ifndef WWW_WIN_DLL */
 PUBLIC int WWW_TraceFlag = 0;		/* Global trace flag for ALL W3 code */
-#endif
+/* #endif */
 
 /* ------------------------------------------------------------------------- */
 

@@ -37,7 +37,6 @@ DEFAULT HTML PARSERS
 #include "HTML.h"                       /* Uses HTML/HText interface */
 #include "HTPlain.h"                    /* Uses HTML/HText interface */
 
-#include "HTTeXGen.h"
 #include "HTMLGen.h"
 
 extern void HTMLInit            (HTList * conversions);
@@ -51,6 +50,6 @@ extern void HTMLInit            (HTList * conversions);
    
    ___________________________________
    
-                            @(#) $Id: HTHInit.h,v 1.1.1.1 1996/10/15 13:08:41 cvs Exp $
+                            @(#) $Id: HTHInit.h,v 1.2 1998/03/05 14:37:26 cvs Exp $
                                                                                           
     */

@@ -20,9 +20,9 @@
 
 #include "EDITstyle_f.h"
 #include "HTMLstyle_f.h"
+#include "HTMLimage_f.h"
 #include "html2thot_f.h"
 #include "presentation.h"
-
 
 /*----------------------------------------------------------------------
  MakeASpan
@@ -78,6 +78,8 @@ boolean MakeASpan (elem, span, doc)
 	   TtaInsertSibling (*span, elem, FALSE, doc);
 	   TtaRemoveTree (elem, doc);
 	   TtaInsertFirstChild (&elem, *span, doc);
+	   /* mark the document as modified */
+	   TtaSetDocumentModified (doc);
 	   ret = TRUE;
 	   }
 	}
@@ -225,23 +227,38 @@ NotifyAttribute    *event;
   of that rule with element toEl, for the main view.
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
-static void MovePRule (PRule presRule, Element fromEl, Element toEl, Document doc)
+static void MovePRule (PRule presRule, Element fromEl, Element toEl, Document doc, boolean NonHTMLleaf)
 #else  /* __STDC__ */
-static void MovePRule (presRule, fromEl, toEl, doc)
+static void MovePRule (presRule, fromEl, toEl, doc, NonHTMLleaf)
 PRule       presRule;
 Element     fromEl;
 Element     toEl;
 Document    doc;
+boolean	    NonHTMLleaf;
 
 #endif /* __STDC__ */
 {
    int         presRuleType;
    PRule       newPRule, oldPRule;
+   ElementType elType;
    boolean     addShow;
 
    presRuleType = TtaGetPRuleType (presRule);
    newPRule = TtaCopyPRule (presRule);
    addShow = (presRuleType == PRBackground);
+   if (NonHTMLleaf)
+      /* the presentation rule is on a terminal element that is not an
+	 HTML element */
+      {
+      elType = TtaGetElementType (fromEl);
+#ifdef GRAPHML
+      if (strcmp (TtaGetSSchemaName (elType.ElSSchema), "GraphML") == 0)
+	 if (elType.ElTypeNum == HTML_EL_GRAPHICS_UNIT)
+	    /* don't add FillPattern and ShowBox rules to a Rectangle,
+	       Circle, Polygon, etc. */
+	    addShow = FALSE;
+#endif
+      }
    /* if the destination element already has a PRule of that type, remove
       that PRule from the destination element */
    oldPRule = TtaGetPRule (toEl, presRuleType);
@@ -283,7 +300,7 @@ Element             elem;
    AttributeType       attrType;
    Attribute           styleAttr;
 #define STYLELEN 1000
-   char*               style; /* [STYLELEN]; */
+   char*               style;
    int                 len;
 
    /* does the element have a Style_ attribute ? */
@@ -299,8 +316,8 @@ Element             elem;
 	/* delete the style attribute */
 	if (styleAttr != 0)
 	   {
-	   TtaRemoveAttribute (elem, styleAttr, doc);
-	   DeleteSpanIfNoAttr (elem, doc);
+	     TtaRemoveAttribute (elem, styleAttr, doc);
+	     DeleteSpanIfNoAttr (elem, doc);
 	   }
      }
    else
@@ -330,20 +347,24 @@ NotifyPresentation *event;
 
 #endif /* __STDC__ */
 {
-  ElementType	     elType;
-  Element	     elem, span, body, root;
+  ElementType	     elType, parentType;
+  Element	     el, span, body, root, parent;
   PRule	             presRule;
   Document	     doc;
   SSchema	     HTMLschema;
+  AttributeType      attrType;
+  Attribute          attr;
 #define STYLELEN 1000
+  char               buffer[15];
   int                presType;
+  int                w, h;
   boolean            ret;
 
-  elem = event->element;
+  el = event->element;
   doc = event->document;
   presType = event->pRuleType;
   presRule = event->pRule;
-  elType = TtaGetElementType (elem);
+  elType = TtaGetElementType (el);
   ret = FALSE;
   HTMLschema = TtaGetDocumentSSchema (doc);
 
@@ -354,77 +375,163 @@ NotifyPresentation *event;
     if (elType.ElSSchema != HTMLschema)
       /* it's not an HTML element */
       {
-      if (TtaGetConstruct (elem) == ConstructBasicType)
-	 /* it's a basic type. Move the PRule to the parent element */
-	 {
-	 elem = TtaGetParent (elem);
-	 MovePRule (presRule, event->element, elem, doc);
-	 ret = TRUE; /* don't let Thot perform normal operation */
-	 }
+	if (TtaGetConstruct (el) == ConstructBasicType)
+	  /* it's a basic type. Move the PRule to the parent element */
+	  {
+	    el = TtaGetParent (el);
+	    MovePRule (presRule, event->element, el, doc, TRUE);
+	    ret = TRUE; /* don't let Thot perform normal operation */
+	  }
       }
     else
       /* it's an HTML element */
       {
-      if (elType.ElTypeNum == HTML_EL_BODY
-	  && (presType == PRFillPattern || presType == PRBackground ||
-	      presType == PRShowBox))
-	{
-	  root = TtaGetParent (elem);
-	  if (presType == PRBackground)
-	    MovePRule (presRule, elem, root, doc);
-	  ret = TRUE; /* don't let Thot perform normal operation */      
-	}
-      else if (elType.ElTypeNum == HTML_EL_HTML)
-	{
-	  elType.ElTypeNum = HTML_EL_BODY;
-	  body = TtaSearchTypedElement (elType, SearchInTree, elem);
-	  if (presType != PRFillPattern && presType != PRBackground
-	      && presType != PRShowBox)
-	    {
-	      MovePRule (presRule, elem, body, doc);
-	      ret = TRUE; /* don't let Thot perform normal operation */
-	    }      
-	  elem = body;
-	}
-      else
-	{
-	  if (IsCharacterLevelElement (elem)
-	      && (presType == PRIndent || presType == PRLineSpacing
-		  || presType == PRAdjust || presType == PRJustify
-		  || presType == PRHyphenate))
-	    /* if the rule is a Format rule applied to a character-level element,
-	       move it to the first enclosing non character-level element */
-	    {
-	      do
-		elem = TtaGetParent (elem);
-	      while (elem != NULL && IsCharacterLevelElement (elem));
+	if (elType.ElTypeNum == HTML_EL_BODY
+	    && (presType == PRFillPattern || presType == PRBackground ||
+		presType == PRShowBox))
+	  {
+	    root = TtaGetParent (el);
+	    if (presType == PRBackground)
+	      MovePRule (presRule, el, root, doc, FALSE);
+	    ret = TRUE; /* don't let Thot perform normal operation */      
+	  }
+	else if (elType.ElTypeNum == HTML_EL_HTML)
+	  {
+	    elType.ElTypeNum = HTML_EL_BODY;
+	    body = TtaSearchTypedElement (elType, SearchInTree, el);
+	    if (presType != PRFillPattern && presType != PRBackground
+		&& presType != PRShowBox)
+	      {
+		MovePRule (presRule, el, body, doc, FALSE);
+		ret = TRUE; /* don't let Thot perform normal operation */
+	      }      
+	    el = body;
+	  }
+	else
+	  {
+	    /* style is not allowed in Head section */
+	    if (elType.ElTypeNum == HTML_EL_HEAD)
+	      parent = el;
+	    else
+	      {
+		parentType.ElSSchema = elType.ElSSchema;
+		parentType.ElTypeNum = HTML_EL_HEAD;
+		parent = TtaGetTypedAncestor (el, parentType);
+	      }
+
+	    if (parent != NULL)
+	      {
+		TtaSetStatus (doc, 1, TtaGetMessage (AMAYA, AM_INVALID_TARGET), NULL);
+		return (TRUE); /* don't let Thot perform normal operation */
+;
+	      }
+	    else
+	      {
+		/* style is not allowed in MAP */
+		if (elType.ElTypeNum == HTML_EL_MAP)
+		  parent = el;
+		else
+		  {
+		    parentType.ElTypeNum = HTML_EL_MAP;
+		    parent = TtaGetTypedAncestor (el, parentType);
+		  }
+		if (parent != NULL)
+		  {
+		    TtaSetStatus (doc, 1, TtaGetMessage (AMAYA, AM_INVALID_TARGET), NULL);
+		    return (TRUE);
+		  }
+	      }
+
+	    if ((presType == PRWidth || presType == PRHeight) &&
+		elType.ElSSchema == HTMLschema &&
+		(elType.ElTypeNum == HTML_EL_PICTURE_UNIT ||
+		 elType.ElTypeNum == HTML_EL_Table ||
+		 elType.ElTypeNum == HTML_EL_Data_cell ||
+		 elType.ElTypeNum == HTML_EL_Heading_cell ||
+		 elType.ElTypeNum == HTML_EL_Object ||
+#ifdef GRAPHML
+		 elType.ElTypeNum == HTML_EL_XMLGraphics ||
+#endif /* GRAPHML */
+		 elType.ElTypeNum == HTML_EL_Applet))
+	      {
+		/* store information in Width or Height attributes */
+		if (elType.ElTypeNum == HTML_EL_PICTURE_UNIT)
+		  TtaGiveBoxSize (el, doc, 1, UnPixel, &w, &h);
+		else
+		  {
+		    w = -1;
+		    h = -1;
+		  }
+		TtaSwitchSelection (doc, 1, FALSE);
+		attrType.AttrSSchema = HTMLschema;
+		if (presType == PRWidth)
+		  {
+		    attrType.AttrTypeNum = HTML_ATTR_Width__;
+		    attr = TtaGetAttribute (el, attrType);
+		    if (attr == NULL)
+		      {
+			attr = TtaNewAttribute (attrType);
+			TtaAttachAttribute (el, attr, doc);
+		      }
+		    sprintf (buffer, "%d", TtaGetPRuleValue (presRule));
+		    TtaSetAttributeText (attr, buffer, el, doc);
+		    CreateAttrWidthPercentPxl (buffer, el, doc, w);
+		  }
+		else
+		  {
+		    attrType.AttrTypeNum = HTML_ATTR_Height_;
+		    attr = TtaGetAttribute (el, attrType);
+		    if (attr == NULL)
+		      {
+			attr = TtaNewAttribute (attrType);
+			TtaAttachAttribute (el, attr, doc);
+		      }
+		  TtaSetAttributeValue (attr, TtaGetPRuleValue (presRule), el, doc);
+		  /* update the associated map */
+		  if (elType.ElTypeNum == HTML_EL_PICTURE_UNIT)
+		    UpdateImageMap (el, doc, -1, h);
+		  }
+		TtaSwitchSelection (doc, 1, TRUE);
+		return (TRUE);
+	      }
+	    else if (IsCharacterLevelElement (el)
+		&& (presType == PRIndent || presType == PRLineSpacing
+		    || presType == PRAdjust || presType == PRJustify
+		    || presType == PRHyphenate))
+	      /* if the rule is a Format rule applied to a character-level element,
+		 move it to the first enclosing non character-level element */
+	      {
+		do
+		  el = TtaGetParent (el);
+		while (el != NULL && IsCharacterLevelElement (el));
+		/* if the PRule is on a Pseudo-Paragraph, move it to the enclosing
+		   element */
+		if (elType.ElTypeNum == HTML_EL_Pseudo_paragraph)
+		  el = TtaGetParent (el);
+		MovePRule (presRule, event->element, el, doc, FALSE);
+		ret = TRUE; /* don't let Thot perform normal operation */
+	      }	  
+	    else if (elType.ElTypeNum == HTML_EL_Pseudo_paragraph)
 	      /* if the PRule is on a Pseudo-Paragraph, move it to the enclosing
 		 element */
-	      if (elType.ElTypeNum == HTML_EL_Pseudo_paragraph)
-		elem = TtaGetParent (elem);
-	      MovePRule (presRule, event->element, elem, doc);
-	      ret = TRUE; /* don't let Thot perform normal operation */
-	    }	  
-	  else if (elType.ElTypeNum == HTML_EL_Pseudo_paragraph)
-	    /* if the PRule is on a Pseudo-Paragraph, move it to the enclosing
-	       element */
-	    {
-	      elem = TtaGetParent (elem);
-	      MovePRule (presRule, event->element, elem, doc);
-	      ret = TRUE; /* don't let Thot perform normal operation */
-	    }
-	  else if (MakeASpan (elem, &span, doc))
-	    /* if it is a new PRule on a text string, create a SPAN element that
-	       encloses this text string and move the PRule to that SPAN element */
-	    {
-	      MovePRule (presRule, elem, span, doc);
-	      elem = span;
-	      ret = TRUE; /* don't let Thot perform normal operation */
-	    }
+	      {
+		el = TtaGetParent (el);
+		MovePRule (presRule, event->element, el, doc, FALSE);
+		ret = TRUE; /* don't let Thot perform normal operation */
+	      }
+	    else if (MakeASpan (el, &span, doc))
+	      /* if it is a new PRule on a text string, create a SPAN element that
+		 encloses this text string and move the PRule to that SPAN element */
+	      {
+		MovePRule (presRule, el, span, doc, FALSE);
+		el = span;
+		ret = TRUE; /* don't let Thot perform normal operation */
+	      }
 	  }
-    }
+      }
   /* set the Style_ attribute ? */
-  SetStyleAttribute (doc, elem);
+  SetStyleAttribute (doc, el);
+  TtaSetDocumentModified (doc);
   return (ret);
 }
 
@@ -528,8 +635,12 @@ static void MoveAttrLang (oldAttr, el, doc)
 	   sibling = next;
 	   }
 	/* associate a LANG attribute to the parent element */
-	newAttr = TtaNewAttribute (attrType);
-	TtaAttachAttribute (parent, newAttr, doc);
+	newAttr = TtaGetAttribute (parent, attrType);
+	if (newAttr == NULL)
+	  {
+	    newAttr = TtaNewAttribute (attrType);
+	    TtaAttachAttribute (parent, newAttr, doc);
+	  }
 	TtaSetAttributeText (newAttr, oldValue, parent, doc);
 	*el = parent;
 	/* do it again for the parent element */

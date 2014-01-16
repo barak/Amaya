@@ -82,7 +82,8 @@ static HTList      *converters = NULL;	/* List of global converters */
 static HTList      *acceptTypes = NULL; /* List of types for the Accept header */
 static HTList      *encodings = NULL;
 static int          object_counter = 0;	/* loaded objects counter */
-static  boolean    AmayaIsAlive;
+static  boolean    AmayaAlive;          /* set to 1 if the application is
+					   active; 0 if we have killed it */
 
 #include "answer_f.h"
 #include "query_f.h"
@@ -302,9 +303,10 @@ AHTReqContext      *me;
 		  TtaFreeMemory ((void *) docid_status);
 	       }
 	  }
-	/* is this necessary??? */
+
 	if (HTRequest_outputStream (me->request))
 	  AHTFWriter_FREE (me->request->output_stream);
+
 	HTRequest_delete (me->request);
 
 	if (me->output && me->output != stdout)
@@ -344,17 +346,15 @@ AHTReqContext      *me;
 	       TtaFreeMemory (me->urlName);
             if (me->outputfile)
 	       TtaFreeMemory (me->outputfile);
-	    if (me->content_type)
-	      TtaFreeMemory (me->content_type);
 	  }
-   
+
+	if (me->content_type)
+	  TtaFreeMemory (me->content_type);
 	if (me->mode & AMAYA_FORM_POST)
 	  TtaFreeMemory (me->mem_ptr);
 
 	TtaFreeMemory ((void *) me);
-
 	Amaya->open_requests--;
-
 	return TRUE;
 
      }
@@ -626,15 +626,13 @@ int                 status;
 	/* update the current file name */
 	if (strlen (new_anchor->parent->address) > (MAX_LENGTH - 2))
 	  {
-	     strncpy (me->urlName, new_anchor->parent->address, 
-		      MAX_LENGTH - 1);
+	     strncpy (me->urlName, new_anchor->parent->address, MAX_LENGTH - 1);
 	     me->urlName[MAX_LENGTH - 1] = EOS;
 	  }
 	else
 	  strcpy (me->urlName, new_anchor->parent->address);
 
 	ChopURL (me->status_urlName, me->urlName);
-
 	TtaSetStatus (me->docid, 1, TtaGetMessage (AMAYA, AM_RED_FETCHING),
 		      me->status_urlName);
 
@@ -652,7 +650,11 @@ int                 status;
 	  }
 	}
 
-	me->reqStatus = HT_NEW; /* reset the status */
+	/* reset the status */
+	me->reqStatus = HT_NEW;
+	/* clear the errors */
+	HTError_deleteAll( HTRequest_error (request));
+	HTRequest_setError (request, NULL);
 	if (me->method == METHOD_PUT || me->method == METHOD_POST)	/* PUT, POST etc. */
 	  status = HTLoadAbsolute (me->urlName, request);
 	else
@@ -692,6 +694,7 @@ int                 status;
 #endif
 {
    AHTReqContext      *me = (AHTReqContext *) HTRequest_context (request);
+   char               *content_type;
    boolean             error_flag;
 
    if (!me)
@@ -699,7 +702,7 @@ int                 status;
    
    /* if Amaya was killed, treat with this request as if it were
       issued by a Stop button event */
-   if (!AmayaIsAlive)           
+   if (!AmayaAlive)           
       me->reqStatus = HT_ABORT; 
    
    if (status == HT_LOADED || 
@@ -772,46 +775,42 @@ int                 status;
    else if (me->reqStatus != HT_ABORT)
      me->reqStatus = HT_END;
 
-   /* copy the content_type */
-  
-   {
-    char *content_type = request->anchor->content_type->name;
- 
-   if (content_type && content_type [0] && me->content_type)  
+   /* copy the content_type */  
+   content_type = request->anchor->content_type->name; 
+   if (content_type && content_type [0] != EOS)
      {
-        /* libwww gives www/unknown when it gets an error. As this is 
-           an HTML test, we force the type to text/html */
-	if (!strcmp (content_type, "www/unknown"))
-          {
-           strcpy (me->content_type, "text/html");
-          }
-        else 
-          { 
-	   strncpy (me->content_type, content_type, 
-	            NAME_LENGTH -1);
-           me->content_type [NAME_LENGTH-1] = '\0';
-           
-           /* Content-Type can be specified by a server's admin. To be on
-              the safe side, we normalize its case */
-           ConvertToLowerCase (me->content_type);
-          } 
+       /* libwww gives www/unknown when it gets an error. As this is 
+	  an HTML test, we force the type to text/html */
+       if (!strcmp (content_type, "www/unknown"))
+	 me->content_type = TtaStrdup ("text/html");
+       else
+	 me->content_type = TtaStrdup (content_type);
+
+       /* Content-Type can be specified by an httpd  server's admin. To be on
+	  the safe side, we normalize its case */
+       ConvertToLowerCase (me->content_type);
+
 #ifdef DEBUG_LIBWWW
         fprintf (stderr, "content type is: %s\n", me->content_type);
 #endif /* DEBUG_LIBWWW */
-     }
-   }
- 
-  /* don't remove or Xt will hang up during the PUT */
-   if (AmayaIsAlive  && ((me->method == METHOD_POST) ||
-			 (me->method == METHOD_PUT)))
-     {
-       PrintTerminateStatus (me, status);
-
      } 
 
-  ProcessTerminateRequest (me);
+   /* to avoid a hangup while downloading css files */
+   if (AmayaAlive && (me->mode & AMAYA_LOAD_CSS))
+       TtaSetStatus (me->docid, 1, 
+		     TtaGetMessage (AMAYA, AM_ELEMENT_LOADED),
+		     me->status_urlName);
 
-  return HT_OK;
+   /* don't remove or Xt will hang up during the PUT */
+   if (AmayaAlive  && ((me->method == METHOD_POST) ||
+		       (me->method == METHOD_PUT)))
+     {
+       PrintTerminateStatus (me, status);
+     } 
+
+       
+   ProcessTerminateRequest (request, response, context, status);
+   return HT_OK;
 }
 
 /*----------------------------------------------------------------------
@@ -821,9 +820,9 @@ int                 status;
   ----------------------------------------------------------------------*/
 
 #ifdef __STDC__
-static int          AHTLoadTerminate_handler (HTRequest * request, HTResponse * response, void *param, int status)
+int          AHTLoadTerminate_handler (HTRequest * request, HTResponse * response, void *param, int status)
 #else
-static int          AHTLoadTerminate_handler (request, response, param, status)
+int          AHTLoadTerminate_handler (request, response, param, status)
 HTRequest          *request;
 HTResponse         *response;
 void               *param;
@@ -980,11 +979,6 @@ HTList             *c;
     */
    HTConversion_add (c, "text/x-http", "*/*", HTTPStatus_new,
 		     1.0, 0.0, 0.0);
-   HTConversion_add (c, "text/x-nntp-list", "*/*", HTNewsList,
-		     1.0, 0.0, 0.0);
-   HTConversion_add (c, "text/x-nntp-over", "*/*", HTNewsGroup,
-		     1.0, 0.0, 0.0);
-
 
    /*
     ** We also register a special content type guess stream that can figure out
@@ -997,8 +991,10 @@ HTList             *c;
       ** Register a persistent cache stream which can save an object to local
       ** file
     */
+#if 0
    HTConversion_add (c, "www/cache", "*/*", HTCacheWriter,
 		     1.0, 0.0, 0.0);
+#endif
 
    /*
       ** This dumps all other formats to local disk without any further
@@ -1025,9 +1021,9 @@ static void         AHTProtocolInit (void)
    HTProtocol_add ("http", "buffered_tcp", NO, HTLoadHTTP, NULL);
    /*   HTProtocol_add ("http", "tcp", NO, HTLoadHTTP, NULL); */
    HTProtocol_add ("file", "local", NO, HTLoadFile, NULL);
+#if 0 /* experimental code */
    HTProtocol_add ("cache", "local", NO, HTLoadCache, NULL);
    HTProtocol_add ("ftp", "tcp", NO, HTLoadFTP, NULL);
-#if 0 /* experimental code */
    HTProtocol_add ("telnet", "", YES, HTLoadTelnet, NULL);
    HTProtocol_add ("tn3270", "", YES, HTLoadTelnet, NULL);
    HTProtocol_add ("rlogin", "", YES, HTLoadTelnet, NULL);
@@ -1066,7 +1062,9 @@ static void         AHTNetInit (void)
    HTNet_addAfter (redirection_handler, "http://*", NULL, HT_TEMP_REDIRECT, HT_FILTER_MIDDLE);
    HTNet_addAfter (redirection_handler, "http://*", NULL, HT_PERM_REDIRECT, HT_FILTER_MIDDLE);
    HTNet_addAfter (HTUseProxyFilter, "http://*", NULL, HT_USE_PROXY, HT_FILTER_MIDDLE);
+#ifndef _WINDOWS
    HTNet_addAfter (AHTLoadTerminate_handler, NULL, NULL, HT_ALL, HT_FILTER_LAST);	
+#endif /* !_WINDOWS */
    /* handles all errors */
    HTNet_addAfter (terminate_handler, NULL, NULL, HT_ALL, HT_FILTER_LAST);
 }
@@ -1227,7 +1225,7 @@ static void         AHTProfile_delete ()
 #  endif _WINDOWS;		
     
     /* Clean up the persistent cache (if any) */
-    HTCacheTerminate ();
+  /*  HTCacheTerminate (); */
     
     /* Clean up all the global preferences */
     HTFormat_deleteAll ();
@@ -1248,7 +1246,7 @@ void                QueryInit ()
 #endif
 {
 
-   AmayaIsAlive = TRUE;
+   AmayaAlive = TRUE;
    AHTProfile_newAmaya (HTAppName, HTAppVersion);
 
    /* New AHTBridge stuff */
@@ -1291,7 +1289,7 @@ void                QueryInit ()
    /* Maximum number of simultaneous open sockets */
    HTNet_setMaxSocket (8);
    /* different network services timeouts */
-   HTDNS_setTimeout (1800);
+   HTDNS_setTimeout (60);
 #ifdef _WINDOWS
    /* under windows, the libwww persistent socket handling has
    ** some bugs. The following line inhibits idle socket reusal.
@@ -1316,10 +1314,6 @@ void                QueryInit ()
    signal (SIGPIPE, SIG_IGN);
 #endif
 
-#if !defined(AMAYA_JAVA) && !defined(AMAYA_ILU)	&& defined (_WINDOWS)
-  /* forces libwww to do sync request if true and if in MakeBook mode */
-  WinMakeBookFlag = FALSE;
-#endif /* _WINDOWS */
 }
 
 #ifndef _WINDOWS
@@ -1345,7 +1339,7 @@ static int          LoopForStop (AHTReqContext * me)
    while (me->reqStatus != HT_ABORT &&
 	  me->reqStatus != HT_END &&
 	  me->reqStatus != HT_ERR) {
-	 if (!AmayaIsAlive)
+	 if (!AmayaAlive)
 	    /* Amaya was killed by one of the callback handlers */
 	    exit (0);
 
@@ -1386,7 +1380,7 @@ static int          LoopForStop (AHTReqContext * me)
 void                QueryClose ()
 {
 
-   AmayaIsAlive = FALSE;
+   AmayaAlive = FALSE;
 
    /* remove all the handlers and callbacks that may output a message to
       a non-existent Amaya window */
@@ -1414,14 +1408,15 @@ void                QueryClose ()
   ---------------------------------------------------------------------*/
 
 #ifdef _STDC
-void      InvokeGetObjectWWW_callback (int docid, char *urlName, char *outputfile, TTcbf *terminate_cbf, void *context_cbf)
+void      InvokeGetObjectWWW_callback (int docid, char *urlName, char *outputfile, TTcbf *terminate_cbf, void *context_cbf, int status)
 #else
-void      InvokeGetObjectWWW_callback (docid, urlName, outputfile, terminate_cbf, context_tcbf)
+void      InvokeGetObjectWWW_callback (docid, urlName, outputfile, terminate_cbf, context_tcbf, status)
 int docid;
 char *urlName;
 char *outputfile;
 TTcbf *terminate_cbf;
 void *context_tcbf;
+int status;
 #endif /* _STDC */
 {
   if (!terminate_cbf)
@@ -1516,9 +1511,10 @@ char 	     *content_type;
 {
    AHTReqContext      *me;
    char               *ref;
-   int                 status;
+   int                 status, l;
+   int                 tempsubdir;
 
-   if (urlName == NULL || docid == 0 || outputfile == NULL) {
+   if (urlName == NULL || outputfile == NULL) {
       /* no file to be loaded */
       TtaSetStatus (docid, 1, TtaGetMessage (AMAYA, AM_BAD_URL), urlName);
        
@@ -1526,7 +1522,7 @@ char 	     *content_type;
 	 /* so we can show the error message */
 	 DocNetworkStatus[docid] |= AMAYA_NET_ERROR;
       InvokeGetObjectWWW_callback (docid, urlName, outputfile, terminate_cbf,
-				   context_tcbf);
+				   context_tcbf, -1);
       return HT_ERROR;
    }
 
@@ -1540,12 +1536,17 @@ char 	     *content_type;
 	 /* so we can show the error message */
 	 DocNetworkStatus[docid] |= AMAYA_NET_ERROR;
       InvokeGetObjectWWW_callback (docid, urlName, outputfile, terminate_cbf,
-				   context_tcbf);
+				   context_tcbf, -1);
       return HT_ERROR;
    }
 
+   /* we store CSS in subdir named 0; all the other files go to a subidr
+      named after their own docid */
+   
+   tempsubdir = (mode & AMAYA_LOAD_CSS) ? 0 : docid;
+
    /*create a tempfilename */
-   sprintf (outputfile, "%s%c%d%c%04dAM", TempFileDirectory, DIR_SEP, docid, DIR_SEP, object_counter);
+   sprintf (outputfile, "%s%c%d%c%04dAM", TempFileDirectory, DIR_SEP, tempsubdir, DIR_SEP, object_counter);
 
    /* update the object_counter */
    object_counter++;
@@ -1561,7 +1562,7 @@ char 	     *content_type;
 	 /* so we can show the error message */
 	 DocNetworkStatus[docid] |= AMAYA_NET_ERROR;
       InvokeGetObjectWWW_callback (docid, urlName, outputfile, terminate_cbf,
-				   context_tcbf);
+				   context_tcbf, -1);
       return HT_ERROR;
    }
    /* verify if that file name existed */
@@ -1575,7 +1576,7 @@ char 	     *content_type;
      /* need an error message here */
      TtaFreeMemory (ref);
      InvokeGetObjectWWW_callback (docid, urlName, outputfile, terminate_cbf,
-				   context_tcbf);
+				   context_tcbf, -1);
      return HT_ERROR;
    }
    
@@ -1598,12 +1599,6 @@ char 	     *content_type;
        HTRequest_setConversion(me->request, acceptTypes, TRUE);
    }
 
-#if !defined(AMAYA_JAVA) && !defined(AMAYA_ILU)	&& defined (_WINDOWS)
-   /* forces libwww to do sync request if in MakeBook mode */
-   if (WinMakeBookFlag)
-	   mode = AMAYA_SYNC;
-#endif /* _WINDOWS */
-
    /* Common initialization */
    me->mode = mode;
    me->error_html = error_html;
@@ -1617,23 +1612,24 @@ char 	     *content_type;
     */
 
    if ((mode & AMAYA_ASYNC) || (mode & AMAYA_IASYNC)) {
-     char* tmp;
-     
-      tmp = TtaGetMemory (strlen (outputfile) + 1);
-      strcpy (tmp, outputfile);
-      me->outputfile = tmp;
-      
-      tmp = TtaGetMemory (MAX_LENGTH + 1);
-      strncpy (tmp, urlName, MAX_LENGTH);
-      tmp[MAX_LENGTH] = EOS;
-      me->urlName = tmp;
-      me->content_type = TtaGetMemory (MAX_LENGTH + 1);
-      me->content_type[MAX_LENGTH] = EOS;
+      l = strlen (outputfile);
+      if (l > MAX_LENGTH)
+	me->outputfile = TtaGetMemory (l + 2);
+      else
+	me->outputfile = TtaGetMemory (MAX_LENGTH + 2);
+      strcpy (me->outputfile, outputfile);
+      l = strlen (urlName);
+      if (l > MAX_LENGTH)
+	me->urlName = TtaGetMemory (l + 2);
+      else
+	me->urlName = TtaGetMemory (MAX_LENGTH + 2);
+      strcpy (me->urlName, urlName);
 #  ifdef _WINDOWS
       HTRequest_setPreemptive (me->request, NO);
    } else {
      me->outputfile = outputfile;
      me->urlName = urlName;
+     me->content_type = content_type;
      HTRequest_setPreemptive (me->request, YES);
    }
 #  else /* !_WINDOWS */
@@ -1661,6 +1657,13 @@ char 	     *content_type;
    me->anchor = (HTParentAnchor *) HTAnchor_findAddress (ref);
    TtaFreeMemory (ref);
 
+   if (mode & AMAYA_NOCACHE) 
+     {
+      HTRequest_addGnHd (me->request, HT_G_PRAGMA_NO_CACHE);
+      HTRequest_addCacheControl (me->request, "no-cache", "");
+      HTAnchor_clearHeader(me->anchor);
+     }
+
    if (mode & AMAYA_FORM_POST) {
       HTAnchor_setFormat ((HTParentAnchor *) me->anchor, HTAtom_for ("application/x-www-form-urlencoded"));
       HTAnchor_setLength ((HTParentAnchor *) me->anchor, me->block_size);
@@ -1673,7 +1676,7 @@ char 	     *content_type;
    if (status == HT_ERROR && me->reqStatus == HT_NEW)
      {
        InvokeGetObjectWWW_callback (docid, urlName, outputfile, terminate_cbf,
-    			            context_tcbf);
+    			            context_tcbf, -1);
      }
 
 #ifndef _WINDOWS
@@ -1965,6 +1968,13 @@ char               *outputfile;
 
    me->anchor = (HTParentAnchor *) HTAnchor_findAddress (urlName);
 
+   if (mode & AMAYA_NOCACHE)
+     {
+      HTRequest_addGnHd (me->request, HT_G_PRAGMA_NO_CACHE);
+      HTRequest_addCacheControl (me->request, "no-cache", "");
+      HTAnchor_clearHeader(me->anchor);
+     }
+
    /* Set the Content-Type of the file we are uploading */
    HTAnchor_setFormat ((HTParentAnchor *) me->anchor,
 		       AHTGuessAtom_for (me->urlName, contentType));
@@ -1975,6 +1985,7 @@ char               *outputfile;
    ChopURL (me->status_urlName, me->urlName);
    TtaSetStatus (me->docid, 1, TtaGetMessage (AMAYA, AM_REMOTE_SAVING),
 		     me->status_urlName);
+
    status = HTLoadAbsolute (urlName, me->request);
 
 #ifndef _WINDOWS
@@ -2027,13 +2038,13 @@ int                 docid;
    HTList             *cur;
    AHTDocId_Status    *docid_status;
    AHTReqContext      *me;
-   int                 open_requests;
-
    HTNet              *reqNet;
    HTHost             *reqHost;
    HTChannel          *reqChannel;
    int                 reqSock;
- 
+#ifdef DEBUG_LIBWWW
+   int                 open_requests;
+#endif /* DEBUG_LIBWWW */
   
    if (Amaya)
      {
@@ -2048,7 +2059,9 @@ int                 docid;
 	if (docid_status == (AHTDocId_Status *) NULL)
 	   return;
 
+#ifdef DEBUG_LIBWWW
 	open_requests = docid_status->counter;
+#endif /* DEBUG_LIBWWW */
 
 	/* First, kill all pending requests */
 	/* We first inhibit the activation of pending requests */
@@ -2067,26 +2080,24 @@ int                 docid;
 		 ** If it's a SYNC request, we just mark it as aborted
 		 */
 		 me->reqStatus = HT_ABORT;
-		 if (HTRequest_net (me->request))
-		   /* delete the libwww request context */
-		   HTRequest_kill (me->request);
-
-#ifndef _WINDOWS
-		 if (!(me->mode & AMAYA_ASYNC_SAFE_STOP) 
-		     && ((me->mode & AMAYA_IASYNC) ||
-			 (me->mode & AMAYA_ASYNC)))
+		 if (((me->mode & AMAYA_IASYNC)
+		     ||	 (me->mode & AMAYA_ASYNC))
+		     && !(me->mode & AMAYA_ASYNC_SAFE_STOP))
 		   {
+		     if (HTRequest_net (me->request))
+		       /* delete the libwww request context */
+		       HTRequest_kill (me->request);
+#ifndef _WINDOWS
 		     /* delete the Amaya request context */
 		     AHTReqContext_delete (me);
+#endif /* !_WINDOWS */
 		     cur = Amaya->reqlist;
+#ifdef DEBUG_LIBWWW
+		     /* update the number of open requests */
+		     open_requests--;		   
+#endif /* DEBUG_LIBWWW */
 		   }
-#else /* _WINDOWS */
-		 cur = Amaya->reqlist;
-#endif /* _WINDOWS */
 
-		 /* update the number of open requests */
-		 open_requests--;		   
-		 
 		 if (HTHost_isIdle (reqHost) ) {
 #ifdef DEBUG_LIBWWW
 		   fprintf (stderr, "Host is idle, killing socket %d\n",
@@ -2096,7 +2107,7 @@ int                 docid;
 		   HTEvent_unregister (reqSock, FD_ALL);
 		   HTEvent_register(reqSock, NULL, (SockOps) FD_READ,
 				    HTHost_catchClose,  HT_PRIORITY_MAX);
-		   close (reqSock);
+		   NETCLOSE (reqSock);
 		   /*	
    		   if (reqChannel && reqHost)
 		   HTHost_clearChannel(reqHost, HT_OK);
@@ -2118,18 +2129,30 @@ int                 docid;
 		 switch (me->reqStatus)
 		   {
 		   case HT_ABORT:
+#ifdef DEBUG_LIBWWW
+fprintf (stderr, "Stop: url %s says abort", me->urlName);
+#endif /* DEBUG_LIBWWW */
 		     break;
 		  
 		   case HT_END:
+#ifdef DEBUG_LIBWWW
+fprintf (stderr, "Stop: url %s says end", me->urlName);
+#endif /* DEBUG_LIBWWW */
 		     break;
 
 		   case HT_BUSY:
 		     me->reqStatus = HT_ABORT;
+#ifdef DEBUG_LIBWWW
+fprintf (stderr, "Stop: url %s going from busy to abort\n", me->urlName);
+#endif /* DEBUG_LIBWWW */
 		     break;
 
 		   case HT_NEW_PENDING:
 		   case HT_WAITING:
 		   default:
+#ifdef DEBUG_LIBWWW
+fprintf (stderr, "Stop: url %s says NEW_PENDING, WAITING", me->urlName);
+#endif /* DEBUG_LIBWWW */
 		     me->reqStatus = HT_ABORT;
 		     
 #                 ifndef _WINDOWS
@@ -2141,20 +2164,23 @@ int                 docid;
 		     reqChannel = HTChannel_find(reqSock);
 		     reqHost = HTChannel_host (reqChannel);
 
+		 if (((me->mode & AMAYA_IASYNC)
+		     ||	 (me->mode & AMAYA_ASYNC))
+		     && !(me->mode & AMAYA_ASYNC_SAFE_STOP))
+		   {
 		     if (HTRequest_net (me->request))
+		       /* delete the libwww request context */
 		       HTRequest_kill (me->request);
-
 #ifndef _WINDOWS
-		     if (!(me->mode & AMAYA_ASYNC_SAFE_STOP) 
-			 && ((me->mode & AMAYA_IASYNC) 
-			     || (me->mode & AMAYA_ASYNC)))
-		       {
-			 AHTReqContext_delete (me);		       
-			 cur = Amaya->reqlist;
-		       }
-#else /* _WINDOWS */
+		     /* delete the Amaya request context */
+		     AHTReqContext_delete (me);
+#endif /* !_WINDOWS */
 		     cur = Amaya->reqlist;
-#endif /* _WINDOWS */
+#ifdef DEBUG_LIBWWW
+		     /* update the number of open requests */
+		     open_requests--;		   
+#endif /* DEBUG_LIBWWW */
+		   }
 
 		     /* if there are no more requests, then close
 			the connection */
@@ -2171,7 +2197,7 @@ int                 docid;
 					(SockOps) FD_READ,
 					HTHost_catchClose,
 					HT_PRIORITY_MAX);
-		       close (reqSock);				
+		       NETCLOSE (reqSock);				
 		       HTHost_clearChannel (reqHost, HT_ERROR);
 		       /*
 			 if (reqChannel && reqHost)
@@ -2184,9 +2210,9 @@ int                 docid;
 				HTHost_isIdle (reqHost));
 #endif                          /* DEBUG_LIBWWW */
 		     }
-		     
+#ifdef DEBUG_LIBWWW		     
 		     open_requests--;
-		     
+#endif /* DEBUG_LIBWWW */		     
 		     break;
 		     
 		   }	/* switch */
@@ -2205,6 +2231,18 @@ int                 docid;
   end of Module query.c
 */
 
+/*----------------------------------------------------------------------
+  AmayaIsAlive
+  returns the status of the AmayaAlive flag
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
+boolean AmayaIsAlive (void)
+#else
+boolean AmayaIsAlive ()
+#endif /* _STDC_ */
+{
+  return AmayaAlive;
+}
 #endif /* AMAYA_JAVA */
 
 

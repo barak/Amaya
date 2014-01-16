@@ -6,9 +6,14 @@
 
 #define THOT_EXPORT extern
 #include "amaya.h"
+#include "css.h"
 #include "javaamaya.h"
 
+#include "EDITstyle_f.h"
+#include "HTMLstyle_f.h"
+#include "css_f.h"
 #include "html2thot_f.h"
+#include "init_f.h"
 
 /*----------------------------------------------------------------------
    GetUserAgentName returns the User Agent ID string
@@ -216,7 +221,7 @@ int document;
     char URL[MAX_LENGTH];
 
     strcpy (URL, url);
-    LoadHTMLStyleSheet (&URL[0], document);
+    LoadHTMLStyleSheet (&URL[0], document, NULL);
 }
 
 /*----------------------------------------------------------------------
@@ -251,8 +256,10 @@ int document;
      * at a time ...
      */
     static char css[5000];
+    int l;
 
-    GetHTMLStyleString (el, document, &css[0], sizeof (css));
+    l = 5000;
+    GetHTMLStyleString (el, document, &css[0], &l);
     return (&css[0]);
 }
 
@@ -272,7 +279,7 @@ int document;
 {
     /* direct mapping of an internal function */
     RemoveStyle (el, document, FALSE);
-    ParseHTMLSpecificStyle (el, style, document);
+    ParseHTMLSpecificStyle (el, style, document, FALSE);
 }
 
 /*----------------------------------------------------------------------
@@ -288,7 +295,7 @@ int document;
 #endif
 {
     /* direct mapping of an internal function */
-    ParseHTMLSpecificStyle (el, style, document);
+    ParseHTMLSpecificStyle (el, style, document, FALSE);
 }
 
 /*----------------------------------------------------------------------
@@ -304,8 +311,7 @@ int document;
 {
     Document res;
     
-    res = GetHTMLDocument(URL, NULL, document, document, CE_FALSE, TRUE, NULL, NULL
-);
+    res = GetHTMLDocument (URL, NULL, document, document, CE_FALSE, TRUE, NULL, NULL);
 
     return((int) res);
 }

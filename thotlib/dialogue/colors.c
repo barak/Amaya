@@ -59,6 +59,8 @@
 
 static BOOL   wndRegistered = FALSE ;
 
+extern LPCTSTR iconID;
+
 #ifdef __STDC__
 LRESULT CALLBACK ThotColorPaletteWndProc (HWND, UINT, WPARAM, LPARAM);
 #else  /* __STDC__ */
@@ -80,6 +82,10 @@ static ThotGC       GCkey;
 #include "changepresent_f.h"
 #include "structselect_f.h"
 #include "inites_f.h"
+
+#ifdef _WINDOWS
+#include "win_f.h"
+#endif /* _WINDOWS */
 
 /*----------------------------------------------------------------------
    ThotSelectPalette
@@ -412,6 +418,16 @@ ThotEvent             *event;
    ThotCreatePalette
    creates the color palette.
   ----------------------------------------------------------------------*/
+#ifdef _WINDOWS
+#ifdef __STDC__
+static BOOL         ThotCreatePalette (int x, int y)
+#else  /* __STDC__ */
+static BOOL         ThotCreatePalette (x, y)
+int                 x;
+int                 y;
+
+#endif /* __STDC__ */
+#else  /* !_WINDOWS */
 #ifdef __STDC__
 static void         ThotCreatePalette (int x, int y)
 #else  /* __STDC__ */
@@ -420,6 +436,7 @@ int                 x;
 int                 y;
 
 #endif /* __STDC__ */
+#endif /* _WINDOWS */
 {
 #  ifndef _WINDOWS
    int                 n;
@@ -640,7 +657,7 @@ int                 y;
    LastBg = -1;
    LastFg = -1;
 #  else  /* _WINDOWS */
-   WNDCLASS    wndThotPaletteClass ;
+   WNDCLASSEX  wndThotPaletteClass ;
    static char szAppName[] = "ThotColorPalette" ;
    HWND        hwnColorPal;
    MSG         msg;
@@ -651,23 +668,22 @@ int                 y;
       wndThotPaletteClass.cbClsExtra    = 0 ;
       wndThotPaletteClass.cbWndExtra    = 0 ;
       wndThotPaletteClass.hInstance     = hInstance ;
-      wndThotPaletteClass.hIcon         = LoadIcon (NULL, IDI_APPLICATION) ;
+      wndThotPaletteClass.hIcon         = LoadIcon (NULL, iconID) ;
       wndThotPaletteClass.hCursor       = LoadCursor (NULL, IDC_ARROW) ;
       wndThotPaletteClass.hbrBackground = (HBRUSH) GetStockObject (WHITE_BRUSH) ;
       wndThotPaletteClass.lpszMenuName  = NULL ;
       wndThotPaletteClass.lpszClassName = szAppName ;
+      wndThotPaletteClass.cbSize        = sizeof(WNDCLASSEX);
+      wndThotPaletteClass.hIconSm       = LoadIcon (hInstance, iconID) ;
 
-      if (IS_WIN95) {
-         if (!RegisterWin95 (&wndThotPaletteClass))
-            return (FALSE);
-      } else if (!RegisterClass (&wndThotPaletteClass))
-             return (FALSE);
+      if (!RegisterClassEx (&wndThotPaletteClass))
+         return FALSE;
    }
 
    hwnColorPal = CreateWindow (szAppName, TtaGetMessage (LIB, TMSG_COLORS),
                                DS_MODALFRAME | WS_POPUP | 
                                WS_VISIBLE | WS_CAPTION | WS_SYSMENU,
-                               CW_USEDEFAULT, CW_USEDEFAULT,
+                               ClickX, ClickY,
                                280, 385,
                                NULL, NULL, hInstance, NULL) ;
 
@@ -678,6 +694,7 @@ int                 y;
          TranslateMessage (&msg) ;
          DispatchMessage (&msg) ;
    }
+   return TRUE;
 #  endif /* _WINDOWS */
 }
 
@@ -697,6 +714,7 @@ LRESULT CALLBACK ThotColorPaletteWndProc (HWND hwnd, UINT iMsg, WPARAM wParam, L
      HDC         hdc ;
      PAINTSTRUCT ps ;
 	 HBRUSH      hBrush;
+	 HBRUSH      hOldBrush;
      int         i, x, y, nbPalEntries;
 	 HWND        hwnLButton;
 	 HWND        hwnRButton;
@@ -728,25 +746,25 @@ LRESULT CALLBACK ThotColorPaletteWndProc (HWND hwnd, UINT iMsg, WPARAM wParam, L
 
 			   doneButton = CreateWindow ("BUTTON", TtaGetMessage (LIB, TMSG_DONE), 
                                           WS_CHILD | BS_PUSHBUTTON | WS_VISIBLE,
-                                          115, 340, 50, 20, hwnd, 
+                                          95, 340, 80, 20, hwnd, 
                                           (HMENU) _IDDONE_, hInstance, NULL) ;
                ShowWindow (doneButton, SW_SHOWNORMAL);
                UpdateWindow (doneButton);
 
-			   return 0;
+			   break;
 
           case WM_LBUTTONDOWN:
 			   if (HIWORD (lParam) >= 45 && HIWORD (lParam) <= 330) 
 			      ColorsPress (1, LOWORD (lParam), HIWORD (lParam));
-			   return 0;
+			   break;
 
           case WM_MBUTTONDOWN:
 			   ColorsPress (2, LOWORD (lParam), HIWORD (lParam));
-			   return 0;
+			   break;
 
           case WM_RBUTTONDOWN:
 			   ColorsPress (3, LOWORD (lParam), HIWORD (lParam));
-			   return 0;
+			   break;
 
           case WM_PAINT:
                ptrLogPal = (PLOGPALETTE) LocalAlloc (LMEM_FIXED, sizeof(LOGPALETTE) + MAX_COLOR * sizeof(PALETTEENTRY));
@@ -756,54 +774,50 @@ LRESULT CALLBACK ThotColorPaletteWndProc (HWND hwnd, UINT iMsg, WPARAM wParam, L
                ptrLogPal->palNumEntries = MAX_COLOR;
        
                for (i = 0; i < MAX_COLOR; i++) {
-                   ptrLogPal->palPalEntry[i].peRed   = RGB_Table[i].red;
-                   ptrLogPal->palPalEntry[i].peGreen = RGB_Table[i].green;
-                   ptrLogPal->palPalEntry[i].peBlue  = RGB_Table[i].blue;
+                   ptrLogPal->palPalEntry[i].peRed   = (BYTE) RGB_Table[i].red;
+                   ptrLogPal->palPalEntry[i].peGreen = (BYTE) RGB_Table[i].green;
+                   ptrLogPal->palPalEntry[i].peBlue  = (BYTE) RGB_Table[i].blue;
                    ptrLogPal->palPalEntry[i].peFlags = PC_RESERVED;
                }
 
                TtCmap = CreatePalette (ptrLogPal);
                LocalFree (ptrLogPal);
       
-               if (TtCmap == NULL) {
-#                 ifdef _WIN_DEBUG
-                  fprintf (stderr, "couldn't CreatePalette\n");												  
-#                 endif 
+               if (TtCmap == NULL) 
                   WinErrorBox (WIN_Main_Wd);
-               } else {
-                      hdc = BeginPaint (hwnd, &ps) ;
-                      SelectPalette (hdc, TtCmap, FALSE);
-                      nbPalEntries = RealizePalette (hdc);
-                      if (nbPalEntries == 0)
-                         WinErrorBox ();
-				  
-                     /* SelectPalette (hdc, TtCmap, FALSE);
-                     RealizePalette (hdc); */
-
-                     for (y = 0 ; y < VERT_DIV ; y++)
-                         for (x = 0 ; x < HORIZ_DIV ; x++) {
-                             hBrush = CreateSolidBrush (PALETTEINDEX (x + y * HORIZ_DIV)) ;
-                             SelectObject (hdc, hBrush);
-                             Rectangle (hdc, x * cxBlock, (y * cyBlock) + 45,(x + 1) * cxBlock, (y + 1) * cyBlock + 45) ;
-                             SelectObject (hdc, GetStockObject (WHITE_BRUSH));
-                             DeleteObject (hBrush);
-                         }
+               else {
 			   
-                     EndPaint (hwnd, &ps) ;
-               }
-               return 0 ;
+               hdc = BeginPaint (hwnd, &ps) ;
+               SelectPalette (hdc, TtCmap, FALSE);
+               nbPalEntries = RealizePalette (hdc);
+
+               for (y = 0 ; y < VERT_DIV ; y++)
+                   for (x = 0 ; x < HORIZ_DIV ; x++) {
+                       hBrush = CreateSolidBrush (PALETTEINDEX (x + y * HORIZ_DIV)) ;
+                       hOldBrush = SelectObject (hdc, hBrush);
+                       Rectangle (hdc, x * cxBlock, (y * cyBlock) + 45,(x + 1) * cxBlock, (y + 1) * cyBlock + 45) ;
+                       SelectObject (hdc, hOldBrush);
+                       if (!DeleteObject (hBrush))
+                          WinErrorBox (WIN_Main_Wd);
+                   }
+			   
+               EndPaint (hwnd, &ps);
+               DeleteDC (hdc);
+               } 
+               break;
 
 		  case WM_COMMAND:
 			   switch (LOWORD (wParam)) {
 			          case _IDDONE_:
-                           DeleteObject (TtCmap);
+                           if (!DeleteObject (TtCmap))
+                              WinErrorBox (WIN_Main_Wd);
                            DestroyWindow (hwnd);
-						   return 0;
+						   break;
 			   }
 
           case WM_DESTROY :
                PostQuitMessage (0) ;
-               return 0 ;
+               break;
 	 }
      return DefWindowProc (hwnd, iMsg, wParam, lParam) ;
 }

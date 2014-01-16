@@ -19,7 +19,8 @@
  *
  * Authors: I. Vatton (INRIA)
  *          C. Roisin (INRIA) - Pagination at printing time
- *          R. Guetari (INRIA) - Integration of PostScript prologue
+ *          R. Guetari (INRIA) - Printing routines for Windows.
+ *                               Integration of PostScript prologue. 
  *
  */
 
@@ -35,6 +36,11 @@
 #include "appdialogue.h"
 #include "dictionary.h"
 #include "thotcolor.h"
+
+#ifdef _WINDOWS
+#define DLLEXPORT __declspec (dllexport)
+#include "thotprinter_f.h"
+#endif /* _WINDOWS */
 
 #define MAX_VOLUME        10000	/* volume maximum d'une page, en octets */
 #define DEF_TOP_MARGIN    57	/* marge de haut de page par defaut, en points */
@@ -57,12 +63,16 @@
 #include "frame_tv.h"
 #include "thotcolor.h"
 #include "thotcolor_tv.h"
-#ifndef WIN_PRINT
+#ifndef _WIN_PRINT
 #include "thotpalette_tv.h"
 #endif /* WIN_PRINT */
 #include "frame_tv.h"
 #include "appdialogue_tv.h"
 #include "platform_tv.h"
+
+#ifdef _WINDOWS
+#include "units_tv.h"
+#endif /* _WINDOWS */
 
 extern RGBstruct RGB_colors[];
 
@@ -115,7 +125,6 @@ static ThotWindow   thotWindow;
 #include "language_f.h"
 #include "paginate_f.h"
 #include "pagecommands_f.h"
-/*#include "loaddocument_f.h" */
 #include "inites_f.h"
 #include "frame_f.h"
 #include "readpivot_f.h"
@@ -123,6 +132,11 @@ static ThotWindow   thotWindow;
 #include "dictionary_f.h"
 #include "actions_f.h"
 #include "nodialog_f.h"
+#include "structlist_f.h"
+
+#ifdef _WINDOWS 
+#include "win_f.h"
+#endif /* _WINDOWS */
 
 static int          manualFeed;
 static char         pageSize [3];
@@ -137,7 +151,140 @@ static int          Repaginate;
 static int          firstPage;
 static int          lastPage;
 
+#ifdef _WINDOWS
+#define PRINTPROGRESSDLG 389
+extern HDC       TtPrinterDC;
+extern int       currentFrame;
+extern HINSTANCE hInstance;
+extern BOOL      buttonCommand;
 
+BOOL             bError;
+BOOL             gbAbort;
+HWND             hDlgPrint     = NULL;
+HWND             ghwndMain     = NULL;
+HWND             currentWindow;
+HWND             ghwndAbort;
+static HWND      thotWindow    = (HWND) 0;
+static HINSTANCE hCurrentInstance ;
+
+#ifdef __STDC__
+int WINAPI DllMain (HINSTANCE hInstance, DWORD fdwReason, PVOID pvReserved) 
+#else  /* __STDC__ */
+int WINAPI DllMain (hInstance, fdwReason, pvReserved) 
+HINSTANCE hInstance; 
+DWORD     fdwReason; 
+PVOID     pvReserved;
+#endif /* __STDC__ */
+{
+    return TRUE;
+}
+
+/* ---------------------------------------------------------------------- *
+ *                                                                        *
+ *  FUNCTION:    AbortDlgProc (standard dialog procedure INPUTS/RETURNS)  *
+ *                                                                        *
+ *  COMMENTS:    Handles "Abort" dialog messages                          *
+ *                                                                        *
+ * ---------------------------------------------------------------------- */
+#ifdef __STDC__
+LRESULT CALLBACK AbortDlgProc (HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+#else  /* __STDC__ */
+LRESULT CALLBACK AbortDlgProc (hwnd, msg, wParam, lParam)
+HWND   hwnd; 
+UINT   msg; 
+WPARAM wParam; 
+LPARAM lParam;
+#endif /* __STDC __ */
+{
+   switch (msg) {
+          case WM_INITDIALOG: ghwndAbort = hwnd;
+                              EnableMenuItem (GetSystemMenu (hwnd, FALSE), SC_CLOSE, MF_GRAYED);
+                              break;
+
+          case WM_COMMAND:
+               switch (LOWORD (wParam)) {
+                       case IDCANCEL: gbAbort = TRUE;
+                                      AbortDoc (TtPrinterDC);
+                                      EnableWindow  (ghwndMain, TRUE);
+                                      DestroyWindow (hwnd);
+                                      return TRUE;
+			   }
+               break;
+   }
+   return 0;
+}
+
+/* ---------------------------------------------------------------------- *
+ *                                                                        *
+ *  FUNCTION:    AbortProc                                                *
+ *                                                                        *
+ *  COMMENTS:    Standard printing abort proc                             *
+ *                                                                        *
+ * ---------------------------------------------------------------------- */
+#ifdef __STDC__
+BOOL CALLBACK AbortProc (HDC hdc, int error)
+#else  /* __STDC__ */
+BOOL CALLBACK AbortProc (hdc, error)
+HDC hdc; 
+int error;
+#endif /* __STDC__ */
+{
+   MSG msg;
+
+   while (!gbAbort && PeekMessage (&msg, NULL, 0, 0, PM_REMOVE))
+         if (!ghwndAbort || !IsDialogMessage (ghwndAbort, &msg)) {
+            TranslateMessage (&msg);
+            DispatchMessage (&msg);
+		 }
+
+   return !gbAbort;
+}
+
+/* ---------------------------------------------------------------------- *
+ *                                                                        *
+ *  FUNCTION: InitPrinting(HDC hDC, HWND hWnd, HANDLE hInst, LPSTR msg)   *
+ *                                                                        *
+ *  PURPOSE : Makes preliminary driver calls to set up print job.         *
+ *                                                                        *
+ *  RETURNS : TRUE  - if successful.                                      *
+ *            FALSE - otherwise.                                          *
+ *                                                                        *
+ * ---------------------------------------------------------------------- */
+#ifdef __STDC__
+BOOL PASCAL InitPrinting(HDC hDC, HWND hWnd, HANDLE hInst, LPSTR msg)
+#else /* !__STDC__ */
+BOOL PASCAL InitPrinting(hDC, hWnd, hInst, msg)
+HDC    hDC; 
+HWND   hWnd; 
+HANDLE hInst; 
+LPSTR  msg;
+#endif /* __STDC__ */
+{
+    DOCINFO         DocInfo;
+
+    bError     = FALSE;     /* no errors yet */
+    gbAbort    = FALSE;     /* user hasn't aborted */
+
+    if (!(ghwndAbort = CreateDialog (hInst, (LPCTSTR) "Printinprogress", ghwndMain, (DLGPROC) AbortDlgProc)))
+       WinErrorBox (ghwndMain);
+    EnableWindow (ghwndMain, FALSE);
+    SetAbortProc (TtPrinterDC, AbortProc);
+
+    memset(&DocInfo, 0, sizeof(DOCINFO));
+    DocInfo.cbSize      = sizeof(DOCINFO);
+    DocInfo.lpszDocName = (LPTSTR) msg;
+    DocInfo.lpszOutput  = NULL;
+
+    if (StartDoc (hDC, &DocInfo) <= 0) {
+        bError = TRUE;
+        return FALSE;
+    }
+
+    /* might want to call the abort proc here to allow the user to
+     * abort just before printing begins */
+    return TRUE;
+}
+#endif /* _WINDOWS */
 
 /*----------------------------------------------------------------------
    DrawPage check whether a showpage is needed.
@@ -150,11 +297,23 @@ FILE               *fout;
 #endif /* __STDC__ */
 {
   NumberOfPages++;
+# ifdef _WINDOWS 
+	if (TtPrinterDC) {
+    EndPage (TtPrinterDC);
+	} else {
+         fprintf (fout, "%d %d %d nwpage\n%%%%Page: %d %d\n", LastPageNumber, LastPageWidth, LastPageHeight, NumberOfPages, NumberOfPages);
+         fflush (fout);
+         /* Enforce loading the font when starting a new page */
+         PoscriptFont = NULL;
+         ColorPs = -1;
+	}
+# else  /* _WINDOWS */
   fprintf (fout, "%d %d %d nwpage\n%%%%Page: %d %d\n", LastPageNumber, LastPageWidth, LastPageHeight, NumberOfPages, NumberOfPages);
   fflush (fout);
   /* Enforce loading the font when starting a new page */
   PoscriptFont = NULL;
   ColorPs = -1;
+# endif /* _WINDOWS */
 }
 
 #ifndef _WINDOWS
@@ -244,8 +403,8 @@ char               *aName;
    if (text == NULL || aDirectory == NULL || aName == NULL)
       return;			/* No input text or error in input parameters */
 
-   aDirectory[0] = '\0';
-   aName[0] = '\0';
+   aDirectory[0] = EOS;
+   aName[0] = EOS;
 
    lg = strlen (text);
    if (lg)
@@ -267,7 +426,7 @@ char               *aName;
 	     j = i - 1;
 	     /* Suppresses the / characters at the end of the path */
 	     while (aDirectory[j] == DIR_SEP)
-		aDirectory[j--] = '\0';
+		aDirectory[j--] = EOS;
 	  }
 	if (i != lg)
 	   strcpy (aName, oldptr);
@@ -367,7 +526,11 @@ char* server;
 #  endif /* ! _WINDOWS */
    InitDocColors ("thot");
    /* Initialisation des polices de caracteres */
+#  ifdef _WINDOWS 
+   WIN_InitDialogueFonts (TtPrinterDC, "thot");
+#  else  /* _WINDOWS */
    InitDialogueFonts ("thot");
+#  endif /* _WINDOWS */
 }
 
 /*----------------------------------------------------------------------------*/
@@ -499,6 +662,23 @@ int                *volume;
    i = 1;
    while (FrRef[i] != 0)
       i++;
+
+#  ifdef _WINDOWS
+   if (TtPrinterDC) {
+      FrRef[i] = (ThotWindow)i;
+      /* initialiser visibilite et zoom de la fenetre */
+      /* cf. procedure InitializeFrameParams */
+      pFrame = &ViewFrameTable[i - 1];
+      pFrame->FrVisibility = 5;	/* visibilite mise a 5 */
+      pFrame->FrMagnification = 0;	/* zoom a 0 */
+
+      /* On initialise la table des frames  (attention MYSTERES)*/
+      FrameTable[i].FrDoc = IdentDocument (TheDoc);
+      RemoveClipping(i);
+      *volume = 16000;
+      return (i);
+   }
+#  endif /* _WINDOWS */
 
    if (i == 1)
      {
@@ -1275,24 +1455,25 @@ static void         GivePageHeight (frame, org, height)
 int                 frame;
 int                 org;
 int                 height;
-boolean             EnPt;
 
 #endif /* __STDC__ */
 {
-   int                 y, h;
+   int                 y, h, framexmin, framexmax;
    ViewFrame          *pFrame;
 
    if (height != 0)
      {
 	pFrame = &ViewFrameTable[frame - 1];
 	/* On convertit suivant l'unite donnee */
-	y = PixelValue (org, UnPoint, pFrame->FrAbstractBox);
-	h = PixelValue (height, UnPoint, pFrame->FrAbstractBox);
+	y = PixelValue (org, UnPoint, pFrame->FrAbstractBox, 0);
+	h = PixelValue (height, UnPoint, pFrame->FrAbstractBox, 0);
 	pFrame->FrClipXBegin = 0;
 	pFrame->FrClipXEnd = 32000;
 	pFrame->FrClipYBegin = y;
 	pFrame->FrYOrg = y;
 	pFrame->FrClipYEnd = h;
+        /* set the clipping to the frame size before generating postscript (RedrawFrameBottom) */
+	DefineClipping (frame, pFrame->FrXOrg, pFrame->FrYOrg, &framexmin, &y, &framexmax, &h, 1);
      }
 }
 
@@ -1504,11 +1685,10 @@ PtrElement          pPageEl;
 	  }
      }
 
-   if (NewTopMargin != TopMargin || Repaginate)
       /* le cadrage vertical dans la feuille de papier change */
       /* on conserve la nouvelle marge */
       /* Si on est en mode repagination, il faut repositionner le pave racine            en fonction de la marge */
-     {
+      /* il faut le faire aussi en mode non repagination (cf. UnSetTopMargin) */
 	TopMargin = NewTopMargin;
 	/* on modifie la position verticale du pave racine */
 	pPos = &RootAbsBox->AbVertPos;
@@ -1520,7 +1700,6 @@ PtrElement          pPageEl;
 	pPos->PosUserSpecified = FALSE;
 	RootAbsBox->AbVertPosChange = TRUE;
 	change = TRUE;
-     }
 
    if (NewLeftMargin != LeftMargin)
       /* le cadrage horizontal dans la feuille de papier change */
@@ -1548,6 +1727,36 @@ PtrElement          pPageEl;
      }
 }
 #endif /* __COLPAGE__ */
+
+/*----------------------------------------------------------------------
+   UnSetTopMargin remet l'image abstraite a sa position initiale
+   en supprimant le decalage vertical introduit par la marge      
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
+static void         UnSetTopMargin()
+#else  /* __STDC__ */
+static void         UnSetTopMargin()
+
+
+#endif /* __STDC__ */
+{
+   AbPosition         *pPos;
+   int                 pageHeight;
+   boolean             change;
+      /* repositionne le pave racine en haut de l'image pour le calcul de la */
+      /* page suivante (si pagination et aussi pour evaluation de clipOrg) */
+      /* le pave racine avait ete decale par SetMargins */
+      pPos = &RootAbsBox->AbVertPos;
+      pPos->PosAbRef = NULL;
+      pPos->PosDistance = 0;
+      pPos->PosEdge = Top;
+      pPos->PosRefEdge = Top;
+      pPos->PosUnit = UnPoint;
+      pPos->PosUserSpecified = FALSE;
+      RootAbsBox->AbVertPosChange = TRUE;
+      pageHeight = 0;
+      change = ChangeConcreteImage (CurrentFrame, &pageHeight, RootAbsBox);
+}
 
 /*----------------------------------------------------------------------
    NextPage    On cherche dans l'image abstraite     		
@@ -1720,6 +1929,7 @@ int                 lastPage;
 	 {
 	   if (pPageAb != pHeaderAb)
 	     {
+               UnSetTopMargin(); /* on retire le decalage introduit par les marges */
 	       KillAbsBoxBeforePage (pPageAb, CurrentFrame, TheDoc, CurrentView, &clipOrg);
 	       if (pPageAb->AbFirstEnclosed != NULL &&
 		   !pPageAb->AbFirstEnclosed->AbPresentationBox)
@@ -1887,6 +2097,7 @@ int                 lastPage;
 	     /* la 1ere page n'est pas le haut de l'image, on detruit */
 	     /* tout ce qui precede */
 	     {
+               UnSetTopMargin (); /* on retire le decalage introduit par les marges */
 	       KillAbsBoxBeforePage (pPageAb, CurrentFrame, TheDoc, CurrentView, &clipOrg);
 	       if (pPageAb->AbFirstEnclosed != NULL &&
 		   !pPageAb->AbFirstEnclosed->AbPresentationBox)
@@ -1967,7 +2178,7 @@ int                 lastPage;
 		      ce pave a pour hauteur shift + position - h
 		      car  position - h = hauteur effective du bas de page */
 		   pSpaceAb = InitAbsBoxes (pNextPageAb->AbElement,
-					    pNextPageAb->AbDocView, pNextPageAb->AbVisibility);
+					    pNextPageAb->AbDocView, pNextPageAb->AbVisibility, TRUE);
 		   pSpaceAb->AbPSchema = pNextPageAb->AbPSchema;
 		   pSpaceAb->AbVertPos.PosEdge = Bottom;
 		   pSpaceAb->AbVertPos.PosRefEdge = Top;
@@ -2002,7 +2213,9 @@ int                 lastPage;
 		     pNextPageAb->AbFirstEnclosed = pSpaceAb;
 		   /* on signale la creation du pave */
 		   h = 0;
-		   ChangeConcreteImage (CurrentFrame, &h, pSpaceAb);
+		   /* on met a jour l'image depuis la racine (pour que la hauteur */
+		   /*  du filet soit correctement calculee */
+		   ChangeConcreteImage (CurrentFrame, &h, RootAbsBox);
 		   /* demande la nouvelle position du saut de page */
 		   /* pour donner la hauteur effective a l'impression */
 		   /* cf. appel a SetPageHeight */
@@ -2081,6 +2294,14 @@ PtrDocument         pDoc;
    int                 schView, rule, v, assocNum, firstFrame;
    boolean             present, assoc, found, withPages;
 
+#  ifdef _WINDOWS
+   static DOCINFO docInfo = {sizeof (DOCINFO), "Amaya", NULL};
+   int    i;
+   POINT  ptPage;
+   int    cxPage, cyPage, xRes, yRes, xSize, ySize, xPSize, yPSize, dx, dy;
+   RECT   Rect;
+#  endif /* _WINDOWS */
+
    TheDoc = pDoc;
    TopMargin = 0;
    LeftMargin = 0;
@@ -2097,6 +2318,31 @@ PtrDocument         pDoc;
    firstFrame = 0;
    withPages = FALSE;
 
+#  ifdef _WINDOWS
+   if (TtPrinterDC) {
+      for (i = 0; i < MAX_COLOR; i++) 
+          Pix_Color[i] = RGB (RGB_Table[i].red, RGB_Table[i].green, RGB_Table[i].blue);
+
+      xSize = GetDeviceCaps (TtPrinterDC, HORZRES);
+      ySize = GetDeviceCaps (TtPrinterDC, VERTRES);
+      xRes  = GetDeviceCaps (TtPrinterDC, LOGPIXELSX);
+      yRes  = GetDeviceCaps (TtPrinterDC, LOGPIXELSY);
+
+      /* Fix bounding rectangle for the picture .. */
+      Rect.top    = 0;
+      Rect.left   = 0;
+      Rect.bottom = ySize;
+      Rect.right  = xSize;
+
+      /* ... and inf
+	  orm the driver */
+      Escape (TtPrinterDC, SET_BOUNDS, sizeof (RECT), (LPSTR)&Rect, NULL);
+
+      if (!InitPrinting (TtPrinterDC, ghwndMain, hCurrentInstance, NULL))
+         WinErrorBox (NULL);
+   }
+   
+#  endif /* _WINDOWS */
    /* imprime l'une apres l'autre les vues a imprimer indiquees dans */
    /* les parametres d'appel du programme print */
    for (v = 0; v < NPrintViews; v++)
@@ -2195,29 +2441,22 @@ PtrDocument         pDoc;
 	   /* demande la creation d'une frame pour la vue a traiter */
 	  {
 	     if (CurAssocNum > 0)
-		CurrentFrame = OpenPSFile (TheDoc->DocDName,
-				  &TheDoc->DocAssocVolume[CurAssocNum - 1]);
+            CurrentFrame = OpenPSFile (TheDoc->DocDName, &TheDoc->DocAssocVolume[CurAssocNum - 1]);
 	     else
-		CurrentFrame = OpenPSFile (TheDoc->DocDName,
-				   &TheDoc->DocViewVolume[CurrentView - 1]);
-	     if (CurrentFrame != 0)
-		/* creation frame reussie */
-		/* si c'est la premiere frame, on garde son numero */
-	       {
-		  if (firstFrame == 0)
-		     firstFrame = CurrentFrame;
-		  /* initialise la fenetre, et notamment le volume de l'image
-		     abstraite a creer et le nombre de pages creees a 0 */
-		  if (CurAssocNum > 0)
-		    {
+             CurrentFrame = OpenPSFile (TheDoc->DocDName, &TheDoc->DocViewVolume[CurrentView - 1]);
+		 if (CurrentFrame != 0) {
+            /* creation frame reussie */
+            /* si c'est la premiere frame, on garde son numero */
+            if (firstFrame == 0)
+               firstFrame = CurrentFrame;
+            /* initialise la fenetre, et notamment le volume de l'image abstraite a creer et le nombre de pages creees a 0 */
+            if (CurAssocNum > 0) {
 		       TheDoc->DocAssocFrame[CurAssocNum - 1] = CurrentFrame;
 		       TheDoc->DocAssocFreeVolume[CurAssocNum - 1] = 1000;
 #ifdef __COLPAGE__
 		       TheDoc->DocAssocNPages[CurAssocNum - 1] = 0;
 #endif /* __COLPAGE__ */
-		    }
-		  else
-		    {
+			} else {
 		       TheDoc->DocViewFrame[CurrentView - 1] = CurrentFrame;
 		       /* DocVueCreee[CurrentView]:= true; */
 		       TheDoc->DocViewFreeVolume[CurrentView - 1] = 1000;
@@ -2261,6 +2500,29 @@ PtrDocument         pDoc;
 	       }
 	  }
      }
+#  ifdef _WINDOWS
+	 if (TtPrinterDC) {
+        if ((EndDoc (TtPrinterDC)) <= 0)
+           WinErrorBox (NULL);
+
+        DeleteDC (TtPrinterDC);
+		TtPrinterDC = NULL;
+
+        if (!gbAbort) {
+           EnableWindow  (ghwndMain, TRUE);
+           DestroyWindow (ghwndAbort);
+		}
+        return 0;
+	 } else {
+          if (firstFrame != 0) {
+             ClosePSFile (firstFrame);
+             return (0); /** The .ps file was generated **/
+		  } else {
+                TtaDisplayMessage (FATAL, TtaGetMessage (LIB, TMSG_MISSING_VIEW));
+                return (-1); /** The .ps file was not generated for any raison **/
+		  }
+	 }
+#  else  /* _WINDOWS */
    if (firstFrame != 0)
      {
        ClosePSFile (firstFrame);
@@ -2271,6 +2533,7 @@ PtrDocument         pDoc;
        TtaDisplayMessage (FATAL, TtaGetMessage (LIB, TMSG_MISSING_VIEW));
        return (-1); /** The .ps file was not generated for any raison **/
      }
+#  endif /* _WINDOWS */
 }
 
 
@@ -2303,8 +2566,21 @@ boolean             assoc;
   DocViewDescr       *pViewD;
   Name                viewName;
   FILE               *PSfile;
+#ifdef PRINT_DEBUG
+  FILE               *list;
+#endif
 
+# ifdef _WINDOWS
+  if (gbAbort)
+     return;
+  if (TtPrinterDC) {
+     if ((StartPage (TtPrinterDC)) <= 0)
+        WinErrorBox (NULL);
+  } else
+       PSfile = (FILE *) FrRef[CurrentFrame];
+# else  /* !_WINDOWS */
   PSfile = (FILE *) FrRef[CurrentFrame];
+# endif /* _WINDOWS */
   if (pPageAb != NULL)
     {
       pDoc = TheDoc;
@@ -2422,7 +2698,7 @@ boolean             assoc;
 		  /* ce pave a pour hauteur shift + position - h */
 		  /* car  position - h = hauteur effective du bas de page */
 		  pSpaceAb = InitAbsBoxes (pNextPageAb->AbElement, pNextPageAb->AbDocView,
-					   pNextPageAb->AbVisibility);
+					   pNextPageAb->AbVisibility, TRUE);
 		  pSpaceAb->AbPSchema = pNextPageAb->AbPSchema;
 		  pSpaceAb->AbVertPos.PosEdge = Bottom;
 		  pSpaceAb->AbVertPos.PosRefEdge = Top;
@@ -2458,7 +2734,9 @@ boolean             assoc;
 		    pNextPageAb->AbFirstEnclosed = pSpaceAb;
 		  /* on signale la creation du pave au Mediateur */
 		  h = 0;
-		  ChangeConcreteImage (CurrentFrame, &h, pSpaceAb);
+		   /* on met a jour l'image depuis la racine (pour que la hauteur */
+		   /*  du filet soit correctement calculee */
+		  ChangeConcreteImage (CurrentFrame, &h, RootAbsBox);
 		  /* demande au Mediateur la nouvelle position du saut de page */
 		  /* pour lui donner la hauteur effective a l'impression */
 		  /* cf. appel a SetPageHeight */
@@ -2497,6 +2775,22 @@ boolean             assoc;
 	  {
 	    /* CurrentFrame est une variable globale a print */
 	    GivePageHeight (CurrentFrame, clipOrg, position);
+#ifdef PRINT_DEBUG
+          list = fopen("C:\\TEMP\\AMAYA\\ia.dbg","w");
+          if (list != NULL)
+            {
+              NumberAbsBoxes(RootAbsBox);
+              ListAbsBoxes(RootAbsBox, 2, list);
+              fclose(list);
+            }
+          list = fopen("C:\\TEMP\\AMAYA\\bt.dbg","w");
+          if (list != NULL)
+            {
+              NumberAbsBoxes(RootAbsBox);
+              ListBoxes(CurrentFrame, list);
+              fclose(list);
+            }
+#endif
 	    DisplayFrame (CurrentFrame);
 	    DrawPage (PSfile);
 	    /* annule le volume du pave espace insere' en bas de page */
@@ -2597,8 +2891,13 @@ int                 msgType;
       /* if the request comes from the Thotlib we have to remove the directory */
       if (removeDirectory)
 	{
+#     ifdef _WINDOWS
+      if ((_unlink (tempDir)) == -1)
+         fprintf (stderr, "Cannot remove directory %s\n", tempDir);
+#     else  /* !_WINDOWS */
 	  sprintf (cmd, "/bin/rm -rf %s\n", tempDir);
 	  system (cmd);
+#     endif /* _WINDOWS */
 	}
       exit (1);
     }
@@ -2673,6 +2972,23 @@ PtrDocument         pDoc;
 /*----------------------------------------------------------------------
    Main program                                                           
   ----------------------------------------------------------------------*/
+#ifdef _WINDOWS
+#ifdef __STDC__
+void PrintDoc (HWND hWnd, int argc, char** argv, HDC PrinterDC, BOOL isTrueColors, int depth, char* tmpDocName, char* tmpDir, HINSTANCE hInst, BOOL buttonCmd)
+#else  /* !__STDC__ */
+void PrintDoc (hWnd, argc, argc, PrinterDC, isTrueColors, depth, tmpDocName, tmpDir, hInstance, buttonCmd)
+HWND      hWnd;
+int       argc;
+char**    argv;
+HDC       PrinterDC;
+BOOL      isTrueColors;
+int       depth;
+char*     tmpDocName; 
+char*     tmpDir;
+HINSTANCE hInst;
+BOOL      buttonCmd;
+#endif /* __STDC__ */
+#else  /* !_WINDOWS */
 #ifdef __STDC__
 void                main (int argc, char **argv)
 #else  /* __STDC__ */
@@ -2681,6 +2997,7 @@ int                 argc;
 char              **argv;
 
 #endif /* __STDC__ */
+#endif /* _WINDOWS */
 {
   char               *realName;
   char                name [MAX_PATH];             
@@ -2701,12 +3018,32 @@ char              **argv;
   boolean             viewFound = FALSE;
   boolean             done;
 
+# ifdef _WINDOWS 
+  TtPrinterDC      = PrinterDC;
+  TtIsTrueColor    = isTrueColors;
+  TtWDepth         = depth;
+  TtWPrinterDepth  = GetDeviceCaps (TtPrinterDC, PLANES);
+  hCurrentInstance = hInst;
+  WIN_GetDeviceContext (-1);
+  ScreenDPI        = GetDeviceCaps (TtDisplay, LOGPIXELSY);
+  if (buttonCmd == FALSE && TtPrinterDC == 0)
+     DOT_PER_INCHE = 72;
+  else 
+      DOT_PER_INCHE    = ScreenDPI;
+  WIN_ReleaseDeviceContext ();
+  PrinterDPI       = GetDeviceCaps (TtPrinterDC, LOGPIXELSY);
+  ghwndMain        = hWnd;
+  buttonCommand    = buttonCmd;
+# endif /* _WINDOWS */
+
   removeDirectory = FALSE;
   Repaginate     = 0;
   NPagesPerSheet = 1;
   BlackAndWhite  = 0;
   manualFeed     = 0;
+# ifndef _WINDOWS
   thotWindow     = (ThotWindow) 0;
+# endif /* !_WINDOWS */
   NoEmpyBox      = 1;
   Repaginate     = 0;
   firstPage      = 0;
@@ -2720,10 +3057,12 @@ char              **argv;
   PoscriptFont = NULL;
   ColorPs = -1;
 
+# ifndef _WINDOWS
   if (argc < 4)
     usage (argv [0]);
 
   TtaInitializeAppRegistry (argv[0]);
+# endif /* !_WINDOWS */
 
   ShowSpace = 1;  /* Restitution des espaces */
 
@@ -2737,7 +3076,11 @@ char              **argv;
    InitKernelMemory ();
    InitEditorMemory ();
 
-  argCounter = 1;
+#  ifdef _WINDOWS
+   argCounter = 0;
+#  else  /* !_WINDOWS */
+   argCounter = 1;
+#  endif /* _WINDOWS */
   while (argCounter < argc) {  /* Parsing the command line */
         if (argv [argCounter][0] == '-') { /* the argument is a parameter */
            if (!strcmp (argv [argCounter], "-display")) {
@@ -2807,7 +3150,7 @@ char              **argv;
                 index = 0;
                 pChar = &argv [argCounter][2];
                 while ((option[index++] = *pChar++));
-                option [index] = '\0';
+                option [index] = EOS;
                 switch (argv [argCounter] [1]) {
                        case 'F': firstPage = atoi (option);
                                  argCounter++;
@@ -2850,8 +3193,10 @@ char              **argv;
     }
   
   /* At least one view is mandatory */
+# ifndef _WINDOWS 
   if (!viewFound)
     usage (argv[0]);
+# endif /* _WINDOWS */
   
   length = strlen (name);
   if (!realNameFound)
@@ -2868,7 +3213,7 @@ char              **argv;
      {
        if (name [index] == '.')
 	 {
-	   name [index] = '\0';
+	   name [index] = EOS;
 	   done = TRUE;
 	 }
        else
@@ -2925,30 +3270,42 @@ char              **argv;
        Repaginate = 0;
    NPrintViews = viewsCounter;
    /* Imprime le document */
+#  ifdef _WINDOWS
+#  endif /* _WINDOWS */
    if (MainDocument != NULL)
      if (PrintDocument (MainDocument) == 0)
        {
          if (!strcmp (destination, "PSFILE"))
            {
 #            ifdef _WINDOWS 
-             sprintf (cmd, "copy %s\\%s.ps %s\n", tempDir, name, printer);
+             /* sprintf (cmd, "copy %s\\%s.ps %s\n", tempDir, name, printer); */
+             sprintf (cmd, "%s\\%s.ps", tempDir, name);
+             CopyFile (cmd, printer, FALSE);
 #            else  /* !_WINDOWS */
              sprintf (cmd, "/bin/mv %s/%s.ps %s\n", tempDir, name, printer);
-#            endif /* _WINDOWS */
              result = system (cmd);
              if (result != 0)
 	         ClientSend (thotWindow, printer, TMSG_CANNOT_CREATE_PS);
              else
 	         ClientSend (thotWindow, realName, TMSG_DOC_PRINTED);
+#            endif /* _WINDOWS */
            }
          else
            {
-             sprintf (cmd, "%s -#%d -T%s %s/%s.ps\n", printer, NCopies, realName, tempDir, name);
+#            ifdef _WINDOWS
+             /* sprintf (cmd, "%s\\%s.PIV", tempDir, name); */
+#            else  /* _WINDOWS */
+	     if (NCopies > 1)
+	       sprintf (cmd, "%s -#%d -T%s %s/%s.ps\n", printer, NCopies, realName, tempDir, name);
+	     else
+	       sprintf (cmd, "%s %s/%s.ps\n", printer, tempDir, name);
+
              result = system (cmd);
              if (result != 0)
-	       ClientSend (thotWindow, cmd, TMSG_UNKNOWN_PRINTER);
+                ClientSend (thotWindow, cmd, TMSG_UNKNOWN_PRINTER);
              else
-	       ClientSend (thotWindow, realName, TMSG_DOC_PRINTED);
+                ClientSend (thotWindow, realName, TMSG_DOC_PRINTED);
+#            endif /* _WINDOWS */
            }
        }
      else
@@ -2959,10 +3316,26 @@ char              **argv;
    
    /* if the request comes from the Thotlib we have to remove the directory */
    if (removeDirectory)
-     {
+    {
+#      ifdef _WINDOWS
+	   int i;
+       if (!strcmp (destination, "PSFILE") && !DeleteFile (cmd))
+          WinErrorBox (NULL);
+	   else {
+             char* pivDoc = (char*) TtaGetMemory (strlen (tmpDocName) + strlen (tmpDir) + 6);
+             sprintf (pivDoc, "%s\\%s.PIV", tmpDir, tmpDocName); 
+			 if (!DeleteFile (pivDoc))
+                WinErrorBox (NULL);
+	         else if (_rmdir (tempDir))
+                  WinErrorBox (NULL);
+	   }
+#      else  /* _WINDOWS */
        sprintf (cmd, "/bin/rm -rf %s\n", tempDir);
        system (cmd);
+#      endif /* _WINDOWS */
      }
    TtaFreeMemory (realName);
+#  ifndef _WINDOWS
    exit (0);
+#  endif /* !_WINDOWS */
 }

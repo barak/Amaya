@@ -51,7 +51,7 @@ int                 imagetype;
   PtrTextBuffer       pBuffer;
   PictInfo           *image = NULL;
   char               *ptr = NULL;
-  int                 picPresent;
+  int                 picPresent, len;
 
   if (imagetype == XBM_FORMAT || imagetype == XPM_FORMAT)
     picPresent = RealSize;
@@ -107,15 +107,29 @@ int                 imagetype;
 	  ppav->AbPictBackground = (int *) image;
 	}
       else
-	/* don't reset the presentation value */
-	picPresent = image->PicPresent;
+	{
+	  /* don't reset the presentation value */
+	  picPresent = image->PicPresent;
+	  ptr = image->PicFileName;
+	}
  
        /* create the text buffer */
       if (filename == NULL)
-	ptr = NULL;
+	{
+	  if (ptr != NULL)
+	    {
+	      TtaFreeMemory (ptr);
+	      ptr = NULL;
+	    }
+	}
       else
 	{
-	  ptr = TtaGetMemory (strlen (filename) + 1);
+	  len = strlen (filename) + 1;
+	  if (ptr == NULL || len > strlen (ptr) + 1)
+	    {
+	      TtaFreeMemory (ptr);
+	      ptr = TtaGetMemory (len);
+	    }
 	  strcpy (ptr, filename);
 	}
      }
@@ -135,6 +149,8 @@ int                 imagetype;
       image->PicYArea = 0;
       image->PicWArea = 0;
       image->PicHArea = 0;
+      image->PicWidth = 0;
+      image->PicHeight = 0;
       image->mapped = FALSE;
       image->created = FALSE;
     }
@@ -157,7 +173,7 @@ int                *desc;
      {
 	image = (PictInfo *) desc;
 	FreePicture (image);
-	TtaFreeMemory ((char *) image);
+	TtaFreeMemory (image);
      }
 }
 
@@ -183,6 +199,8 @@ int                *Imdsource;
    imagec->PicYArea = images->PicYArea;
    imagec->PicWArea = images->PicWArea;
    imagec->PicHArea = images->PicHArea;
+   imagec->PicWidth = images->PicWidth;
+   imagec->PicHeight = images->PicHeight;
    imagec->PicPresent = images->PicPresent;
    imagec->PicType = images->PicType;
 }

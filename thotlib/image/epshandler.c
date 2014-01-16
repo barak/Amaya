@@ -84,7 +84,7 @@ int                *hif;
 		*pt++ = c;
 	     if (c == '\n')
 	       {
-		  *(--pt) = '\0';
+		  *(--pt) = EOS;
 		  pt = buff;
 		  if ((buff[0] == '%')
 		      && (sscanf (buff, "%%%%BoundingBox: %d %d %d %d", xif, yif, &X2, &Y2) == 4))
@@ -103,9 +103,9 @@ int                *hif;
    Read the bounding box of an eps file  no picture to produce here
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
-ThotBitmap          EpsCreate (char *fn, PictureScaling pres, int *xif, int *yif, int *wif, int *hif, unsigned long BackGroundPixel, Drawable * PicMask)
+ThotBitmap          EpsCreate (char *fn, PictureScaling pres, int *xif, int *yif, int *wif, int *hif, unsigned long BackGroundPixel, ThotBitmap *PicMask, int *width, int *height, int zoom)
 #else  /* __STDC__ */
-ThotBitmap          EpsCreate (fn, pres, xif, yif, wif, hif, BackGroundPixel, PicMask)
+ThotBitmap          EpsCreate (fn, pres, xif, yif, wif, hif, BackGroundPixel, PicMask, width, height, zoom)
 char               *fn;
 PictureScaling      pres;
 int                *xif;
@@ -113,8 +113,10 @@ int                *yif;
 int                *wif;
 int                *hif;
 unsigned long       BackGroundPixel;
-Drawable           *PicMask;
-
+ThotBitmap         *PicMask;
+int                *width;
+int                *height;
+int                 zoom;
 #endif /* __STDC__ */
 {
 #ifdef _WINDOWS
@@ -130,7 +132,9 @@ Drawable           *PicMask;
    *yif = PointToPixel (*yif);
    *wif = PointToPixel (*wif);
    *hif = PointToPixel (*hif);
-   return (ThotBitmap) EpsfPictureLogo;
+   *width = *wif;
+   *height = *hif;
+   return ((ThotBitmap) EpsfPictureLogo);
 #endif /* !_WINDOWS */
 }			
 

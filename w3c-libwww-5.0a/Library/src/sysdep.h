@@ -714,7 +714,7 @@ Include Files
 
 /* syslog.h */
 #ifdef HAVE_SYSLOG_H
-#include <syslog.h>
+#include <sys/syslog.h>
 #endif
 
 /* socket.h */
@@ -1198,6 +1198,7 @@ Thread Safe Setup
 #define HOSTENT_MAX     128
 #define CTIME_MAX       26
 #endif
+
 /*
 
  */
@@ -1207,6 +1208,6 @@ Thread Safe Setup
    
    ___________________________________
    
-                             @(#) $Id: sysdep.h,v 1.5 1997/05/23 07:17:18 cvs Exp $
+                             @(#) $Id: sysdep.h,v 1.6 1998/03/11 17:45:40 cvs Exp $
                                                                                           
     */

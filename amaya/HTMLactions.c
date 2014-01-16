@@ -33,10 +33,14 @@
 #include "HTMLform_f.h"
 #include "HTMLhistory_f.h"
 #include "HTMLimage_f.h"
+#include "html2thot_f.h"
+#include "XMLparser_f.h"
 #include "trans_f.h"
 #include "selection.h"
 
 #ifdef _WINDOWS
+#include "windialogapi_f.h"
+
 HWND currentWindow = NULL;
 static char WIN_buffer [1024];
 #endif /* _WINDOWS */
@@ -56,7 +60,6 @@ typedef struct _FollowTheLink_context {
   Element              elSource;
   char                *sourceDocUrl;
   char                *url;
-  
 } FollowTheLink_context;
 
 /*----------------------------------------------------------------------
@@ -131,7 +134,7 @@ Attribute           ignore;
    char               *name;
 
    el = TtaGetMainRoot (doc);
-   attrType.AttrSSchema = TtaGetDocumentSSchema (doc);
+   attrType.AttrSSchema = TtaGetSSchema ("HTML", doc);
    attrType.AttrTypeNum = HTML_ATTR_NAME;
    found = FALSE;
    /* search all elements having an attribute NAME */
@@ -237,11 +240,11 @@ void *context;
   anchor = ctx->anchor;
   url = ctx->url;
   elSource = ctx->elSource;
+  docSchema = TtaGetDocumentSSchema (doc);
 
-  if (anchor != NULL) 
+  if ((doc != targetDocument || url[0] == '#') && anchor != NULL) 
     {
       /* search PseudoAttr attribute */
-      docSchema = TtaGetDocumentSSchema (doc);
       attrType.AttrSSchema = docSchema;
       attrType.AttrTypeNum = HTML_ATTR_PseudoClass;
       PseudoAttr = TtaGetAttribute (anchor, attrType);
@@ -258,8 +261,6 @@ void *context;
 	TtaSetAttributeText (PseudoAttr, "visited", anchor, doc);
     }
 
-  /*TtaSetSelectionMode (TRUE);*/
-  
   if (url[0] == '#' && targetDocument != 0)
     {
       /* attribute HREF contains the NAME of a target anchor */
@@ -315,22 +316,30 @@ Document            doc;
    Attribute           HrefAttr, PseudoAttr, attr;
    ElementType         elType;
    Document            targetDocument;
-   SSchema             docSchema;
+   SSchema             HTMLSSchema;
    char                documentURL[MAX_LENGTH];
    char               *url, *info, *sourceDocUrl;
    int                 length;
    FollowTheLink_context *ctx;
 
-   docSchema = TtaGetDocumentSSchema (doc);
+   HrefAttr = NULL;
+   HTMLSSchema = TtaGetSSchema ("HTML", doc);
+
    if (anchor != NULL)
      {
-	/* search HREF attribute */
-	attrType.AttrSSchema = docSchema;
-	attrType.AttrTypeNum = HTML_ATTR_HREF_;
+        elType = TtaGetElementType (anchor);
+	/* search the HREF or CITE attribute */
+        if (TtaSameSSchemas (elType.ElSSchema, HTMLSSchema) &&
+		(elType.ElTypeNum == HTML_EL_Quotation ||
+		 elType.ElTypeNum == HTML_EL_Block_Quote ||
+		 elType.ElTypeNum == HTML_EL_INS ||
+		 elType.ElTypeNum == HTML_EL_DEL))
+	   attrType.AttrTypeNum = HTML_ATTR_cite;
+	else
+	   attrType.AttrTypeNum = HTML_ATTR_HREF_;
+	attrType.AttrSSchema = HTMLSSchema;
 	HrefAttr = TtaGetAttribute (anchor, attrType);
      }
-   else
-      HrefAttr = NULL;
 
    if (HrefAttr != NULL)
      {
@@ -344,10 +353,10 @@ Document            doc;
 	  {
 	     elType = TtaGetElementType (anchor);
 	     if (elType.ElTypeNum == HTML_EL_Anchor &&
-		 elType.ElSSchema == docSchema)
+		 elType.ElSSchema == HTMLSSchema)
 	       {
 		  /* attach an attribute PseudoClass = active */
-		  attrType.AttrSSchema = docSchema;
+		  attrType.AttrSSchema = HTMLSSchema;
 		  attrType.AttrTypeNum = HTML_ATTR_PseudoClass;
 		  PseudoAttr = TtaGetAttribute (anchor, attrType);
 		  if (PseudoAttr == NULL)
@@ -395,7 +404,7 @@ Document            doc;
 		  strcpy (documentURL, url);
 		  url[0] = EOS;
 		  /* is the source element an image map? */
-		  attrType.AttrSSchema = docSchema;
+		  attrType.AttrSSchema = HTMLSSchema;
 		  attrType.AttrTypeNum = HTML_ATTR_ISMAP;
 		  attr = TtaGetAttribute (elSource, attrType);
 		  if (attr != NULL)
@@ -421,7 +430,7 @@ Document            doc;
 
 
 /*----------------------------------------------------------------------
-   DoubleClick     The user has double-clicked an element.         
+  DoubleClick     The user has double-clicked an element.         
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
 boolean             DoubleClick (NotifyElement * event)
@@ -433,23 +442,23 @@ NotifyElement      *event;
 {
    AttributeType       attrType;
    Attribute           attr;
-   Element             anchor, elFound;
-   ElementType         elType;
-   SSchema             docSchema;
-   boolean	       ok;
+   Element             anchor, elFound, ancestor;
+   ElementType         elType, elType1;
+   boolean	       ok, isHTML;
 
-   docSchema = TtaGetDocumentSSchema (event->document);
+   elType = TtaGetElementType (event->element);
+   isHTML = (strcmp(TtaGetSSchemaName (elType.ElSSchema), "HTML") == 0);
 
    /* Check if the current element is interested in double click */
    ok = FALSE;
-   elType = TtaGetElementType (event->element);
    if (elType.ElTypeNum == HTML_EL_PICTURE_UNIT ||
        elType.ElTypeNum == HTML_EL_TEXT_UNIT ||
        elType.ElTypeNum == HTML_EL_GRAPHICS_UNIT ||
        elType.ElTypeNum == HTML_EL_SYMBOL_UNIT)
+     /* it's a basic element */
      ok = TRUE;
    else
-     if (elType.ElSSchema == docSchema)
+     if (isHTML)
 	if (elType.ElTypeNum == HTML_EL_LINK ||
 	    elType.ElTypeNum == HTML_EL_C_Empty ||
 	    elType.ElTypeNum == HTML_EL_Radio_Input ||
@@ -460,34 +469,35 @@ NotifyElement      *event;
 	    elType.ElTypeNum == HTML_EL_Reset_Input)
 	   ok = TRUE;
    if (!ok)
-      /* DoubleClick is disabled */
+      /* DoubleClick is disabled for this element type */
       return (FALSE);
 
    if (W3Loading)
-      /* suspend current loading */
+      /* interrupt current transfer */
       StopTransfer (W3Loading, 1);
 
-   if (elType.ElTypeNum == HTML_EL_Frame
-       || elType.ElTypeNum == HTML_EL_Submit_Input
-       || elType.ElTypeNum == HTML_EL_Reset_Input)
+   if (isHTML && (elType.ElTypeNum == HTML_EL_Frame ||
+		  elType.ElTypeNum == HTML_EL_Submit_Input ||
+		  elType.ElTypeNum == HTML_EL_Reset_Input))
      {
 	if (elType.ElTypeNum == HTML_EL_Frame)
-	   elType = TtaGetElementType (TtaGetParent (event->element));
-	if (elType.ElTypeNum == HTML_EL_Submit_Input
-	    || elType.ElTypeNum == HTML_EL_Reset_Input)
-	   /* it is a double click on submit element */
+	   elType1 = TtaGetElementType (TtaGetParent (event->element));
+	else
+	   elType1.ElTypeNum = elType.ElTypeNum;
+	if (elType1.ElTypeNum == HTML_EL_Submit_Input ||
+	    elType1.ElTypeNum == HTML_EL_Reset_Input)
+	   /* it is a double click on submit or reset element */
 	   SubmitForm (event->document, event->element);
 	return (TRUE);
      }
-   else if (elType.ElTypeNum == HTML_EL_PICTURE_UNIT)
+   else if (isHTML && elType.ElTypeNum == HTML_EL_PICTURE_UNIT)
      {
-       /* is it a double click on graphic submit element? */
-       elType = TtaGetElementType (TtaGetParent (event->element));
+       /* is it a double click on a graphic submit element? */
        elType.ElTypeNum = HTML_EL_Form;
        elFound = TtaGetTypedAncestor (event->element, elType);
        if (elFound != NULL)
 	 {
-	   attrType.AttrSSchema = docSchema;
+	   attrType.AttrSSchema = elType.ElSSchema;
 	   attrType.AttrTypeNum = HTML_ATTR_NAME;
 	   attr = TtaGetAttribute (event->element, attrType);
 	   if (attr)
@@ -498,38 +508,34 @@ NotifyElement      *event;
 	     }
 	 }
      }
-   else if (elType.ElTypeNum == HTML_EL_TEXT_UNIT)
+   else if (isHTML && elType.ElTypeNum == HTML_EL_TEXT_UNIT)
      {
 	/* is it an option menu ? */
 	elFound = TtaGetParent (event->element);
-	elType = TtaGetElementType (elFound);
-	if (elType.ElTypeNum == HTML_EL_Option &&
-	    elType.ElSSchema == docSchema)
+	elType1 = TtaGetElementType (elFound);
+	if (elType1.ElTypeNum == HTML_EL_Option)
 	  {
 	     SelectOneOption (event->document, elFound);
 	     return (TRUE);
 	  }
      }
-   else if (elType.ElTypeNum == HTML_EL_Option_Menu &&
-	    elType.ElSSchema == docSchema)
+   else if (isHTML && elType.ElTypeNum == HTML_EL_Option_Menu)
      {
 	/* it is an option menu */
 	elFound = TtaGetFirstChild (event->element);
-	elType = TtaGetElementType (elFound);
-	if (elType.ElTypeNum == HTML_EL_Option)
+	elType1 = TtaGetElementType (elFound);
+	if (elType1.ElTypeNum == HTML_EL_Option)
 	  {
 	     SelectOneOption (event->document, elFound);
 	     return (TRUE);
 	  }
      }
-   else if (elType.ElTypeNum == HTML_EL_Checkbox_Input &&
-	    elType.ElSSchema == docSchema)
+   else if (isHTML && elType.ElTypeNum == HTML_EL_Checkbox_Input)
      {
 	SelectCheckbox (event->document, event->element);
 	return (TRUE);
      }
-   else if (elType.ElTypeNum == HTML_EL_Radio_Input &&
-	    elType.ElSSchema == docSchema)
+   else if (isHTML && elType.ElTypeNum == HTML_EL_Radio_Input)
      {
 	SelectOneRadio (event->document, event->element);
 	return (TRUE);
@@ -538,17 +544,70 @@ NotifyElement      *event;
    /* Search the anchor or LINK element */
    anchor = SearchAnchor (event->document, event->element, TRUE);
    if (anchor == NULL)
-      if (elType.ElTypeNum == HTML_EL_LINK &&
-	  elType.ElSSchema == docSchema)
-	 anchor = event->element;
+      if (isHTML && elType.ElTypeNum == HTML_EL_LINK)
+	   anchor = event->element;
       else
 	{
-	   elType.ElTypeNum = HTML_EL_LINK;
-	   elType.ElSSchema = docSchema;
-	   anchor = TtaGetTypedAncestor (event->element, elType);
+	   elType1.ElTypeNum = HTML_EL_LINK;
+	   elType1.ElSSchema = TtaGetSSchema ("HTML", event->document);
+	   anchor = TtaGetTypedAncestor (event->element, elType1);
 	}
+   /* if not found, search a cite or href attribute on an ancestor */
+   if (anchor == NULL)
+      {
+	ancestor = event->element;
+	attrType.AttrSSchema = TtaGetSSchema ("HTML", event->document);
+	do
+	   {
+	   attrType.AttrTypeNum = HTML_ATTR_HREF_;
+	   attr = TtaGetAttribute (ancestor, attrType);
+	   if (!attr)
+	      {
+	      attrType.AttrTypeNum = HTML_ATTR_cite;
+	      attr = TtaGetAttribute (ancestor, attrType);
+	      }
+	   if (attr)
+	      anchor = ancestor;
+	   else
+	      ancestor = TtaGetParent (ancestor);
+	   }
+	while (anchor == NULL && ancestor != NULL);
+      }
 
    return (FollowTheLink (anchor, event->element, event->document));
+}
+
+/*----------------------------------------------------------------------
+   UpdateTitle update the content of the Title field on top of the 
+   main window, according to the contents of element el.   
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
+void                UpdateTitle (Element el, Document doc)
+#else  /* __STDC__ */
+void                UpdateTitle (el, doc)
+Element             el;
+Document            doc;
+
+#endif /* __STDC__ */
+{
+   Element             textElem;
+   int                 length;
+   Language            lang;
+   char               *text;
+
+   if (TtaGetViewFrame (doc, 1) == 0)
+      /* this document is not displayed */
+      return;
+   textElem = TtaGetFirstChild (el);
+   if (textElem != NULL)
+     {
+	length = TtaGetTextLength (textElem) + 1;
+	text = TtaGetMemory (length);
+	TtaGiveTextContent (textElem, text, &length, &lang);
+	TtaSetTextZone (doc, 1, 2, text);
+	UpdateAtom (doc, DocumentURLs[doc], text);
+	TtaFreeMemory (text);
+     }
 }
 
 /*----------------------------------------------------------------------
@@ -578,7 +637,7 @@ Document       doc;
 	}
       TtaFreeMemory (DocumentURLs[doc]);
       DocumentURLs[doc] = NULL;
-      CleanDocumentCSS (doc);
+      RemoveDocCSSs (doc, TRUE);
       RemoveDocumentImages (doc);
     }
 
@@ -600,6 +659,16 @@ Document       doc;
 	  QueryClose ();
 #endif
 #endif
+	  TtaFreeMemory (LastURLName);
+	  TtaFreeMemory (DocumentName);
+	  TtaFreeMemory (SavePath);
+	  TtaFreeMemory (SaveName);
+	  TtaFreeMemory (ObjectName);
+	  TtaFreeMemory (SaveImgsURL);
+	  TtaFreeMemory (SavingFile);
+	  TtaFreeMemory (AttrHREFvalue);
+	  FreeHTMLParser ();
+	  FreeXMLParser ();
 	  TtaQuit ();
 	}
     }
@@ -638,9 +707,9 @@ Document            doc
 
    TtaGiveFirstSelectedElement (doc, &firstSel, &firstChar, &lastChar);
    /* 
-    * elements PICTURE, Big_text, Small_text, Subscript, Superscript, Font_ 
-    * are not permitted in a Preformatted element. The corresponding
-    * entries in the menus must be turned off 
+    * elements PICTURE, Object, Applet, Big_text, Small_text, Subscript,
+    * Superscript, Font_  are not permitted in a Preformatted element.
+    * The corresponding menu entries must be turned off 
     */
    if (firstSel == NULL)
      NewSelInElem = FALSE;
@@ -656,20 +725,20 @@ Document            doc
 	if (NewSelInElem)
 	  {
 	     TtaSetItemOff (doc, 1, Types, BImage);
+	     TtaSetItemOff (doc, 1, Types, BObject);
 	     TtaSetItemOff (doc, 1, Style, TBig);
 	     TtaSetItemOff (doc, 1, Style, TSmall);
 	     TtaSetItemOff (doc, 1, Style, BSub);
 	     TtaSetItemOff (doc, 1, Style, BSup);
-	     TtaSetItemOff (doc, 1, Style, BFont);
 	  }
 	else
 	  {
 	     TtaSetItemOn (doc, 1, Types, BImage);
+	     TtaSetItemOn (doc, 1, Types, BObject);
 	     TtaSetItemOn (doc, 1, Style, TBig);
 	     TtaSetItemOn (doc, 1, Style, TSmall);
 	     TtaSetItemOn (doc, 1, Style, BSub);
 	     TtaSetItemOn (doc, 1, Style, BSup);
-	     TtaSetItemOn (doc, 1, Style, BFont);
 	  }
      }
    /* 
@@ -745,6 +814,74 @@ Document            doc
      {
 	SelectionInCITE = NewSelInElem;
 	TtaSetToggleItem (doc, 1, Style, TCite, NewSelInElem);
+     }
+
+   if (firstSel == NULL)
+      NewSelInElem = FALSE;
+   else
+     {
+	elType.ElTypeNum = HTML_EL_ABBR;
+	if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
+	    elTypeSel.ElSSchema == elType.ElSSchema)
+	   NewSelInElem = TRUE;
+	else
+	   NewSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+     }
+   if (SelectionInABBR != NewSelInElem)
+     {
+	SelectionInABBR = NewSelInElem;
+	TtaSetToggleItem (doc, 1, Style, TAbbreviation, NewSelInElem);
+     }
+
+   if (firstSel == NULL)
+      NewSelInElem = FALSE;
+   else
+     {
+	elType.ElTypeNum = HTML_EL_ACRONYM;
+	if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
+	    elTypeSel.ElSSchema == elType.ElSSchema)
+	   NewSelInElem = TRUE;
+	else
+	   NewSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+     }
+   if (SelectionInACRONYM != NewSelInElem)
+     {
+	SelectionInACRONYM = NewSelInElem;
+	TtaSetToggleItem (doc, 1, Style, TAcronym, NewSelInElem);
+     }
+
+   if (firstSel == NULL)
+      NewSelInElem = FALSE;
+   else
+     {
+	elType.ElTypeNum = HTML_EL_INS;
+	if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
+	    elTypeSel.ElSSchema == elType.ElSSchema)
+	   NewSelInElem = TRUE;
+	else
+	   NewSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+     }
+   if (SelectionInINS != NewSelInElem)
+     {
+	SelectionInINS = NewSelInElem;
+	TtaSetToggleItem (doc, 1, Style, TInsertion, NewSelInElem);
+     }
+
+   if (firstSel == NULL)
+      NewSelInElem = FALSE;
+   else
+     {
+	elType.ElTypeNum = HTML_EL_DEL;
+	if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
+	    elTypeSel.ElSSchema == elType.ElSSchema)
+	   NewSelInElem = TRUE;
+	else
+	   NewSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+     }
+   if (SelectionInDEL != NewSelInElem)
+     {
+	SelectionInDEL = NewSelInElem;
+	TtaSetToggleItem (doc, 1, Style, TDeletion, NewSelInElem);
      }
 
    if (firstSel == NULL)
@@ -888,40 +1025,6 @@ Document            doc
       NewSelInElem = FALSE;
    else
      {
-	elType.ElTypeNum = HTML_EL_Underlined_text;
-	if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
-	    elTypeSel.ElSSchema == elType.ElSSchema)
-	   NewSelInElem = TRUE;
-	else
-	   NewSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
-     }
-   if (SelectionInU != NewSelInElem)
-     {
-	SelectionInU = NewSelInElem;
-	TtaSetToggleItem (doc, 1, Style, TUnderline, NewSelInElem);
-     }
-
-   if (firstSel == NULL)
-      NewSelInElem = FALSE;
-   else
-     {
-	elType.ElTypeNum = HTML_EL_Struck_text;
-	if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
-	    elTypeSel.ElSSchema == elType.ElSSchema)
-	   NewSelInElem = TRUE;
-	else
-	   NewSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
-     }
-   if (SelectionInSTRIKE != NewSelInElem)
-     {
-	SelectionInSTRIKE = NewSelInElem;
-	TtaSetToggleItem (doc, 1, Style, TStrikeOut, NewSelInElem);
-     }
-
-   if (firstSel == NULL)
-      NewSelInElem = FALSE;
-   else
-     {
 	elType.ElTypeNum = HTML_EL_Big_text;
 	if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
 	    elTypeSel.ElSSchema == elType.ElSSchema)
@@ -983,7 +1086,7 @@ NotifyElement      *event;
 #ifdef __STDC__
 boolean            ElemToTransform (NotifyOnElementType * event)
 #else  /* __STDC__ */
-void               ElemToTransform (event)
+boolean               ElemToTransform (event)
 NotifyOnElementType * event;
 #endif  /* __STDC__ */
 {
@@ -1132,9 +1235,6 @@ int                 eltype;
 	    case HTML_EL_Strong:
 	       SelectionInSTRONG = !remove;
 	       break;
-	    case HTML_EL_Cite:
-	       SelectionInCITE = !remove;
-	       break;
 	    case HTML_EL_Def:
 	       SelectionInDFN = !remove;
 	       break;
@@ -1150,6 +1250,21 @@ int                 eltype;
 	    case HTML_EL_Keyboard:
 	       SelectionInKBD = !remove;
 	       break;
+	    case HTML_EL_Cite:
+	       SelectionInCITE = !remove;
+	       break;
+	    case HTML_EL_ABBR:
+	       SelectionInABBR = !remove;
+	       break;
+	    case HTML_EL_ACRONYM:
+	       SelectionInACRONYM = !remove;
+	       break;
+	    case HTML_EL_INS:
+	       SelectionInINS = !remove;
+	       break;
+	    case HTML_EL_DEL:
+	       SelectionInDEL = !remove;
+	       break;
 	    case HTML_EL_Italic_text:
 	       SelectionInI = !remove;
 	       break;
@@ -1158,12 +1273,6 @@ int                 eltype;
 	       break;
 	    case HTML_EL_Teletype_text:
 	       SelectionInTT = !remove;
-	       break;
-	    case HTML_EL_Underlined_text:
-	       SelectionInU = !remove;
-	       break;
-	    case HTML_EL_Struck_text:
-	       SelectionInSTRIKE = !remove;
 	       break;
 	    case HTML_EL_Big_text:
 	       SelectionInBIG = !remove;
@@ -1192,6 +1301,7 @@ Element             el;
    Document            targetDoc;
    Attribute           attrNAME, attrHREF;
    AttributeType       attrType;
+   ElementType	       elType;
    char               *buffer;
    int                 length;
 
@@ -1226,6 +1336,17 @@ Element             el;
 	/* If the anchor has an HREF attribute, put its value in the form */
 	attrType.AttrSSchema = TtaGetDocumentSSchema (doc);
 	attrType.AttrTypeNum = HTML_ATTR_HREF_;
+
+        elType = TtaGetElementType (el);
+        if (elType.ElSSchema == attrType.AttrSSchema)
+           {
+	   /* search the HREF or CITE attribute */
+           if (elType.ElTypeNum == HTML_EL_Quotation ||
+	       elType.ElTypeNum == HTML_EL_Block_Quote ||
+	       elType.ElTypeNum == HTML_EL_INS ||
+	       elType.ElTypeNum == HTML_EL_DEL)
+	       attrType.AttrTypeNum = HTML_ATTR_cite;
+	   }
 	attrHREF = TtaGetAttribute (el, attrType);
 	if (attrHREF != 0)
 	  {
@@ -1245,13 +1366,14 @@ Element             el;
 #   ifndef _WINDOWS
 	TtaShowDialogue (BaseDialog + AttrHREFForm, FALSE);
 #   else  /* _WINDOWS */
-    CreateLinkDlgWindow (currentWindow, AttrHREFvalue, BaseDialog, AttrHREFForm, AttrHREFText);
+	CreateLinkDlgWindow (currentWindow, AttrHREFvalue, BaseDialog, AttrHREFForm, AttrHREFText);
 #   endif  /* _WINDOWS */
      }
    else
      {
-	/* create an attribute HREF for the Anchor */
-	SetHREFattribute (el, doc, targetDoc);
-	TtaSetStatus (doc, 1, " ", NULL);
+       TtaSetDocumentModified (doc);
+       /* create an attribute HREF for the Anchor */
+       SetHREFattribute (el, doc, targetDoc);
+       TtaSetStatus (doc, 1, " ", NULL);
      }
 }

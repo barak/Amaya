@@ -44,36 +44,37 @@
 #include "thotcolor_tv.h"
 #include "appdialogue_tv.h"
 
+#include "absboxes_f.h"
+#include "appdialogue_f.h"
 #include "appli_f.h"
-#include "tree_f.h"
+#include "applicationapi_f.h"
 #include "attrpresent_f.h"
 #include "attributes_f.h"
 #include "context_f.h"
-#include "structcreation_f.h"
-#include "createabsbox_f.h"
-#include "scroll_f.h"
-#include "views_f.h"
-#include "viewapi_f.h"
-
-#include "absboxes_f.h"
-#include "appdialogue_f.h"
-#include "applicationapi_f.h"
 #include "boxlocate_f.h"
 #include "boxparams_f.h"
 #include "boxselection_f.h"
 #include "buildboxes_f.h"
 #include "changeabsbox_f.h"
 #include "changepresent_f.h"
+#include "createabsbox_f.h"
 #include "fileaccess_f.h"
 #include "frame_f.h"
+#include "geom_f.h"
 #include "inites_f.h"
 #include "paginate_f.h"
 #include "presrules_f.h"
+#include "structcreation_f.h"
 #include "structschema_f.h"
 #include "structselect_f.h"
 #include "schemas_f.h"
+#include "scroll_f.h"
 #include "structmodif_f.h"
 #include "thotmsg_f.h"
+#include "tree_f.h"
+#include "views_f.h"
+#include "viewapi_f.h"
+#include "units_f.h"
 
 extern int          UserErrorCode;
 
@@ -522,7 +523,8 @@ boolean             complete;
 	ChangeConcreteImage (frame, &h, pAbbRoot);
 	CloseDocumentView (pDoc, View, Assoc, TRUE);
 	FrameTable[frame].FrDoc = 0;
-	/*ViewFrameTable[frame - 1].FrAbstractBox = NULL; */
+	/* selection is no more displayed */
+	ViewFrameTable[frame - 1].FrSelectShown = FALSE;
      }
    else
      {
@@ -733,7 +735,7 @@ int                 value;
   if (frame != 0)
     {
       GetFrameParams (frame, &valvisib, &valzoom);
-      if (valzoom < 0 || valzoom > 10)
+      if (valzoom < -10 || valzoom > 10)
 	TtaError (ERR_invalid_parameter);
       else
 	{
@@ -846,7 +848,7 @@ int                 position;
   UserErrorCode = 0;
   frame = GetWindowNumber (document, view);
   if (frame != 0)
-    if (position < -100 || position > 200 || element == NULL)
+    if (element == NULL)
       TtaError (ERR_invalid_parameter);
     else
       {
@@ -1006,7 +1008,7 @@ char               *presentationName;
 
    Return parameters:
    buffer: list of view names. Each name is a character string with
-   a final '\0'. Names of views that are already open have a '*'
+   a final EOS. Names of views that are already open have a '*'
    at the       end.
    nbViews: number of names in the list, 0 if not any view can be open.
 
@@ -1060,7 +1062,7 @@ View                view;
    int                 numAssoc;
 
    UserErrorCode = 0;
-   nameBuffer[0] = '\0';
+   nameBuffer[0] = EOS;
    /* Checks the parameter document */
    if (document < 1 || document > MAX_DOCUMENTS)
       TtaError (ERR_invalid_document_parameter);
@@ -1310,16 +1312,30 @@ PtrDocument         pDoc;
 
 #endif /* __STDC__ */
 {
-   int                 view;
-   int                 assoc;
+  int                 view, frame;
+  int                 assoc;
 
-   for (view = 1; view <= MAX_VIEW_DOC; view++)
+  for (view = 1; view <= MAX_VIEW_DOC; view++)
+    {
       if (pDoc->DocView[view - 1].DvPSchemaView > 0)
-	 CleanImageView (view, FALSE, pDoc, FALSE);
-   for (assoc = 1; assoc <= MAX_ASSOC_DOC; assoc++)
-      if (pDoc->DocAssocFrame[assoc - 1] > 0)
-	 CleanImageView (assoc, TRUE, pDoc, FALSE);
-}				/* DestroyImage */
+	{
+	  CleanImageView (view, FALSE, pDoc, FALSE);
+	  /* selection is no more displayed */
+	  frame = pDoc->DocViewFrame[view - 1];
+	  ViewFrameTable[frame - 1].FrSelectShown = FALSE;
+	}
+    }
+  for (assoc = 1; assoc <= MAX_ASSOC_DOC; assoc++)
+    {
+      frame = pDoc->DocAssocFrame[assoc - 1];
+      if (frame > 0)
+	{
+	  CleanImageView (assoc, TRUE, pDoc, FALSE);
+	  /* selection is no more displayed */
+	  ViewFrameTable[frame - 1].FrSelectShown = FALSE;
+	}
+    }
+}
 
 
 /*----------------------------------------------------------------------
@@ -2171,6 +2187,21 @@ int                 delta;
 		       pAbbox1->AbLeafType = element->ElLeafType;
 		       pAbbox1->AbShape = element->ElGraph;
 		       pAbbox1->AbGraphAlphabet = 'G';
+		       if (element->ElLeafType == LtGraphics &&
+			   element->ElGraph == 'a' &&
+			   pAbbox1->AbHeight.DimAbRef == NULL)
+			 {
+			   /* force the circle height to be equal to its width */
+			   pAbbox1->AbHeight.DimAbRef = pAbbox1;
+			   pAbbox1->AbHeight.DimSameDimension = FALSE;
+			   pAbbox1->AbHeight.DimValue = 0;
+			   pAbbox1->AbHeight.DimUserSpecified = FALSE;
+			   if (pAbbox1->AbWidth.DimUnit == UnPoint)
+			     pAbbox1->AbHeight.DimUnit = UnPoint;
+			   else
+			     pAbbox1->AbHeight.DimUnit = UnPixel;
+			   pAbbox1->AbHeightChange = TRUE;
+			 }
 		       break;
 		    default:
 		       break;
@@ -2663,6 +2694,101 @@ Document            document;
 
 
 /*----------------------------------------------------------------------
+  TtaClipPolyline update the Polyline box to fit the polyline bounding
+  box. Need to be within a draw
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
+void                TtaClipPolyline (Element element, Document doc, View view)
+#else  /* __STDC__ */
+void                TtaClipPolyline (element, doc, view)
+Element             element;
+Document            doc;
+View                view;
+#endif /* __STDC__ */
+{
+  PtrDocument         pDoc;
+  PtrAbstractBox      pAb;
+  PtrBox              pBox;
+  PtrTextBuffer       Bbuffer;
+  int                 xMin, yMin, xMax, yMax;
+  int                 x, y, width, height;
+  int                 nbpoints, i, j;
+  int                 frame;
+
+  if (element == NULL)
+    TtaError (ERR_invalid_parameter);
+  else if (!((PtrElement) element)->ElTerminal)
+    TtaError (ERR_invalid_element_type);
+  else if (((PtrElement) element)->ElLeafType != LtPolyLine)
+    TtaError (ERR_invalid_element_type);
+  else if (doc < 1 || doc > MAX_DOCUMENTS)
+    TtaError (ERR_invalid_document_parameter);
+  else
+    {
+      pDoc = LoadedDocument[doc - 1];
+      if (pDoc == NULL)
+	TtaError (ERR_invalid_document_parameter);
+      else
+	{
+	  /* parameter document is correct */
+	  frame = GetWindowNumber (doc, view);
+	  pAb = pDoc->DocViewRootAb[view - 1];
+	  if (pAb != NULL && pAb->AbBox != NULL)
+	    {
+	      pBox = pAb->AbBox;
+	      /* it's a polyline: check the box limits */
+	      Bbuffer = pBox->BxBuffer;
+	      xMin = PixelToPoint (pBox->BxWidth) * 1000;
+	      xMax = 0.;
+	      yMin = PixelToPoint (pBox->BxHeight) * 1000;
+	      yMax = 0.;
+	      nbpoints = pBox->BxNChars;
+	      if (nbpoints == 0)
+		return;
+	      for (i = 1; i < nbpoints; i++)
+		{
+		  if (j >= Bbuffer->BuLength)
+		    {
+		      if (Bbuffer->BuNext != NULL)
+			{
+			  /* Next buffer */
+			  Bbuffer = Bbuffer->BuNext;
+			  j = 0;
+			}
+		    }
+		  x = Bbuffer->BuPoints[j].XCoord;
+		  y = Bbuffer->BuPoints[j].YCoord;
+		  /* register the min and the max */
+		  if (x < xMin)
+		    xMin = x;
+		  if (x > xMax)
+		    xMax = x;
+		  if (y < yMin)
+		    yMin = y;
+		  if (y > yMax)
+		    yMax = y;
+		  j++;
+		}
+	      x = pBox->BxXOrg;
+	      y = pBox->BxYOrg;
+	      /* pack the box and return the new origins */
+	      SetBoundingBox (xMin, xMax, &x, yMin, yMax, &y, pBox, nbpoints);
+	      if (x != pBox->BxXOrg || y != pBox->BxYOrg)
+		NewPosition (pAb, x, y, frame, TRUE);
+	      width = PointToPixel (pBox->BxBuffer->BuPoints[0].XCoord / 1000);
+	      height = PointToPixel (pBox->BxBuffer->BuPoints[0].YCoord / 1000);
+	      if (width != pBox->BxWidth || height != pBox->BxHeight)
+		NewDimension (pAb, width, height, frame, TRUE);
+	      /*RedrawFrameBottom (frame, 0);*/
+	      /* Reaffiche la selection */
+	      /*SwitchSelection (frame, FALSE);*/
+	    }
+	}
+    }
+}
+
+
+/*----------------------------------------------------------------------
    TtaSetDisplayMode
 
    Changes display mode for a document. Three display modes are available.
@@ -2722,7 +2848,7 @@ DisplayMode         newDisplayMode;
 	      ExtinguishOrLightSelection (LoadedDocument[document - 1], FALSE);
 	      /* si on passe au mode sans calcul d'image il faut detruire l'image */
 	      if (newDisplayMode == NoComputedDisplay)
-		DestroyImage (LoadedDocument[document - 1]);
+		  DestroyImage (LoadedDocument[document - 1]);
 	      /* on met a jour le mode d'affichage */
 	      documentDisplayMode[document - 1] = newDisplayMode;
 	    }
@@ -2738,7 +2864,14 @@ DisplayMode         newDisplayMode;
               if (oldDisplayMode == NoComputedDisplay)
                 /* il faut recalculer l'image */
 		RebuildImage (LoadedDocument[document - 1]);
-	      
+
+	      /* update tables if necessary */
+	      if (ThotLocalActions[T_colupdates])
+		(*ThotLocalActions[T_colupdates]) (document);
+		
+              /* reaffiche ce qui a deja ete prepare' */
+              RedisplayDocViews (LoadedDocument[document - 1]);
+
 	      if (!documentNewSelection[document - 1].SDSelActive)
 		/* la selection n'a pas change', on la rallume */
 		ExtinguishOrLightSelection (LoadedDocument[document - 1], TRUE);
@@ -2779,9 +2912,6 @@ DisplayMode         newDisplayMode;
 		  /* plus de selection a faire pour ce document */
 		  documentNewSelection[document - 1].SDSelActive = FALSE;
 		}
-              /* reaffiche ce qui a deja ete prepare' */
-              RedisplayDocViews (LoadedDocument[document - 1]);
-
 	    }
 	  else if (oldDisplayMode == DeferredDisplay
 		   && newDisplayMode == NoComputedDisplay)

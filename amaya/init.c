@@ -37,7 +37,6 @@
 #include "Num.xpm"
 #include "Bullet.xpm"
 #include "Print.xpm"
-#include "css.xpm"
 #include "Image.xpm"
 #include "DL.xpm"
 #include "Link.xpm"
@@ -67,6 +66,7 @@ int  Window_Curs;
 
 char docToOpen [256];
 extern boolean viewClosed;
+/* extern bmpID;  */
 #define AMAYA_PAGE "\\amaya\\AmayaPage.html"
 #else  /* _WINDOWS */
 #define AMAYA_PAGE "/amaya/AmayaPage.html"
@@ -112,7 +112,6 @@ static Pixmap       iconH1;
 static Pixmap       iconH2;
 static Pixmap       iconH3;
 static Pixmap       iconPrint;
-static Pixmap       iconCSS;
 static Pixmap       iconBullet;
 static Pixmap       iconNum;
 static Pixmap       iconDL;
@@ -150,11 +149,18 @@ static Pixmap       iconJava;
 #ifdef AMAYA_PLUGIN
 #define iconPlugin    20
 #endif AMAYA_PLUGIN
-#define stopN         22
-#define iconBackNo    23
-#define iconForwardNo 24
+#define stopN         21
+#define iconBackNo    22
+#define iconForwardNo 23
 
 static BOOL itemChecked = FALSE;
+extern int  currentFrame;
+extern int  menu_item;
+extern char LostPicturePath [512];
+
+BOOL        tbStringsInitialized = FALSE;
+int         tipIndex;
+int         iString;
 #endif /* _WINDOWS */
 
 #include "css_f.h"
@@ -172,6 +178,9 @@ static BOOL itemChecked = FALSE;
 #ifdef MATHML
 #include "Mathedit_f.h"
 #endif /* MATHML */
+#ifdef GRAPHML
+#include "Graphedit_f.h"
+#endif /* GRAPHML */
 #include "HTMLactions_f.h"
 #include "HTMLbook_f.h"
 #include "HTMLedit_f.h"
@@ -180,6 +189,10 @@ static BOOL itemChecked = FALSE;
 #include "HTMLsave_f.h"
 #include "HTMLstyle_f.h"
 #include "UIcss_f.h"
+
+#ifdef _WINDOWS
+#include "windialogapi_f.h"
+#endif /* _WINDOWS */
 
 #ifdef AMAYA_PLUGIN
 extern void CreateFormPlugin (Document, View);
@@ -195,11 +208,10 @@ typedef struct _GETHTMLDocument_context {
   Document baseDoc;
   boolean ok;
   boolean history;
+  boolean local_link;
   char *target;
   char *documentname;
   char *tempdocument;
-  char *sourceDocUrl;
-  Element anchor;
   TTcbf *cbf;
   void *ctx_cbf;
 } GETHTMLDocument_context;
@@ -544,7 +556,33 @@ Document            doc;
 }
 
 /*----------------------------------------------------------------------
-   ActiveTransfer initialize the current transfer                     
+   SetStopButton Activates the stop button if it's turned off
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
+void                SetStopButton (Document document)
+#else
+void                SetStopButton (document)
+Document            doc;
+#endif
+{
+#if !defined(AMAYA_JAVA) && !defined(AMAYA_ILU)
+  if (DocNetworkStatus[document] != AMAYA_NET_ACTIVE)
+    DocNetworkStatus[document] = AMAYA_NET_ACTIVE;
+#endif
+  if (FilesLoading[document] == 0)
+    FilesLoading[document] = 1;
+#if !defined(AMAYA_JAVA) && !defined(AMAYA_ILU)
+  if (TtaGetViewFrame (document, 1) != 0)
+    /* this document is displayed */
+#ifdef _WINDOWS 
+    WIN_TtaChangeButton (document, 1, 1 , stopR, TRUE);
+#else  /* _WINDOWS */
+    TtaChangeButton (document, 1, 1, stopR);
+#endif /* _WINDOWS */
+#endif
+}
+/*----------------------------------------------------------------------
+   ActiveMakeBook initialize the current transfer                     
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
 void                ActiveMakeBook (Document document)
@@ -873,11 +911,13 @@ View                view;
    TtaSetDialoguePosition ();
    TtaShowDialogue (BaseDialog + OpenForm, FALSE);
 #  else /* _WINDOWS */
-   CreateOpenDocDlgWindow (TtaGetViewFrame (document, view), docToOpen)	;
-   if (InNewWindow)
-      GetHTMLDocument (docToOpen, NULL, 0, 0, CE_FALSE, NULL, 0, FALSE);
-   else 
-      GetHTMLDocument (docToOpen, NULL, document, document, CE_FALSE, NULL, 0, TRUE);
+   CreateOpenDocDlgWindow (TtaGetViewFrame (document, view), docToOpen, BaseDialog, OpenForm, DocSelect, DirSelect, 2);
+   if (docToOpen && docToOpen [0] != 0) {
+      if (InNewWindow)
+         GetHTMLDocument (docToOpen, NULL, 0, 0, CE_FALSE, NULL, 0, FALSE);
+      else 
+          GetHTMLDocument (docToOpen, NULL, document, document, CE_FALSE, NULL, 0, TRUE);
+   }
 #  endif /* _WINDOWS */
 }
 
@@ -941,6 +981,7 @@ char               *pathname;
 
 #  ifdef _WINDOWS
    Window_Curs = IDC_WINCURSOR;
+   /* bmpID = IDB_AMAYALOGO; */
 #  endif /* _WINDOWS */
 
    old_doc = doc;		/* previous document */
@@ -966,6 +1007,12 @@ char               *pathname;
 	   if (TtaIsViewOpened (doc, structView))
 	      TtaCloseView (doc, structView);
 #endif /* MATHML */
+#ifdef GRAPHML
+	structView = TtaGetViewFromName (doc, "Graph_Structure_view");
+	if (structView != 0)
+	   if (TtaIsViewOpened (doc, structView))
+	      TtaCloseView (doc, structView);
+#endif /* GRAPHML */
         /* close the Links view if it is open */
 	linksView = TtaGetViewFromName (doc, "Links_view");
 	if (linksView != 0)
@@ -1002,14 +1049,18 @@ char               *pathname;
 
    doc = TtaNewDocument ("HTML", tempname);
    TtaFreeMemory (tempname);
-   if (doc < DocumentTableLength)
+   if (doc >= DocumentTableLength)
+     {
+       TtaCloseDocument (doc);
+       doc = 0;
+     }
+   else if (doc > 0)
      {
 	/* assign a presentation model to the document */
 	if (TtaGetScreenDepth () > 1)
 	   TtaSetPSchema (doc, "HTMLP");
 	else
 	   TtaSetPSchema (doc, "HTMLPBW");
-
 	/* open the main view */
 	TtaSetNotificationMode (doc, 1);
 	TtaGetViewGeometry (doc, "Formatted_view", &x, &y, &w, &h);
@@ -1024,9 +1075,10 @@ char               *pathname;
 	     TtaFreeMemory (temppath);
 	     return (0);
 	  }
+	LoadUserStyleSheet (doc);
 	if (!opened)
 	  {
-	     HelpDocuments[doc] = FALSE;
+	     DocumentTypes[doc] = docHTML;
 	     /* Add a button */
 #        ifndef _WINDOWS
 	     TtaAddButton (doc, 1, stopN, StopTransfer,
@@ -1053,8 +1105,6 @@ char               *pathname;
 				      TtaGetMessage (AMAYA, AM_BUTTON_BOLD));
 	     TTButton = TtaAddButton (doc, 1, iconT, SetCharCode,
 				      TtaGetMessage (AMAYA, AM_BUTTON_CODE));
-	     TtaAddButton (doc, 1, iconCSS, InitCSSDialog,
-			   TtaGetMessage (AMAYA, AM_BUTTON_CSS));
 	     TtaAddButton (doc, 1, None, NULL, NULL);
 
 	     TtaAddButton (doc, 1, iconImage, CreateImage,
@@ -1077,6 +1127,8 @@ char               *pathname;
 			   TtaGetMessage (AMAYA, AM_BUTTON_TABLE));
 
 #        else /* _WINDOWS */
+		 tipIndex = 0;
+		 iString  = 0;
 
 		 WIN_TtaAddButton (doc, 1, stopR, StopTransfer, TtaGetMessage (AMAYA, AM_BUTTON_INTERRUPT), TBSTYLE_BUTTON, FALSE);
 	     WIN_TtaAddButton (doc, 1, iconBack, GotoPreviousHTML, TtaGetMessage (AMAYA, AM_BUTTON_PREVIOUS), TBSTYLE_BUTTON, FALSE);
@@ -1093,7 +1145,6 @@ char               *pathname;
 	     IButton =  WIN_TtaAddButton (doc, 1, inconI, SetCharEmphasis, TtaGetMessage (AMAYA, AM_BUTTON_ITALICS), TBSTYLE_CHECK, TBSTATE_ENABLED);
 	     BButton =  WIN_TtaAddButton (doc, 1, inconB, SetCharStrong, TtaGetMessage (AMAYA, AM_BUTTON_BOLD), TBSTYLE_CHECK, TBSTATE_ENABLED);
 	     TTButton = WIN_TtaAddButton (doc, 1, iconT, SetCharCode, TtaGetMessage (AMAYA, AM_BUTTON_CODE), TBSTYLE_CHECK, TBSTATE_ENABLED);
-	     WIN_TtaAddButton (doc, 1, iconCSS, InitCSSDialog, TtaGetMessage (AMAYA, AM_BUTTON_CSS), TBSTYLE_BUTTON, TBSTATE_ENABLED);
 	     WIN_TtaAddButton (doc, 1, 0, NULL, NULL, TBSTYLE_SEP, TBSTATE_ENABLED);  /* SEPARATOR */
 
 	     WIN_TtaAddButton (doc, 1, inconImage, CreateImage, TtaGetMessage (AMAYA, AM_BUTTON_IMG), TBSTYLE_BUTTON, TBSTATE_ENABLED);
@@ -1119,6 +1170,12 @@ char               *pathname;
 #ifdef MATHML
 	     AddMathButton (doc, 1);
 #endif /* MATHML */
+#ifdef GRAPHML
+	     AddGraphicsButton (doc, 1);
+#endif /* GRAPHML */
+#        ifdef _WINDOWS
+         tbStringsInitialized = TRUE;
+#        endif /* _WINDOWS */
 	     TtaAddTextZone (doc, 1, TtaGetMessage (AMAYA, AM_LOCATION), TRUE,
 			     TextURL);
 	     TtaAddTextZone (doc, 1, TtaGetMessage (AMAYA, AM_TITLE), TRUE,
@@ -1143,6 +1200,8 @@ char               *pathname;
 		  ActiveTransfer (doc);
 	       }
 	  }
+	else
+	  TtaSetTextZone (doc, 1, 2, "");
      }
    TtaFreeMemory (temppath);
    return (doc);
@@ -1178,16 +1237,16 @@ boolean		    history;
   if (content_type == NULL || content_type[0] == EOS)
     /* no content type */
     {
-      if (tempfile[0] != EOS)
-	/* It's a document loaded from the Web */
-	/* Let's suppose it's HTML */
-	HTMLfile = TRUE;
-      else if (IsHTMLName (pathname))
+      if (IsHTMLName (pathname))
 	/* local document */
 	/* try to guess the document type after its file name extension */
 	HTMLfile = TRUE;
       else if (!IsImageName (pathname))
 	PlainText = TRUE;
+      else if (tempfile[0] != EOS)
+	/* It's a document loaded from the Web */
+	/* Let's suppose it's HTML */
+	HTMLfile = TRUE;
       }
    else
      /* the server returned a content type */
@@ -1290,7 +1349,7 @@ boolean		    history;
       
       tempdir = TtaGetMemory (MAX_LENGTH);
       TtaExtractName (tempdocument, tempdir, documentname);
-      StartHTMLParser (newdoc, tempdocument, documentname, tempdir, pathname,
+      StartParser (newdoc, tempdocument, documentname, tempdir, pathname,
 		       PlainText);
       TtaFreeMemory (tempdir);
       if (newdoc != doc)
@@ -1370,14 +1429,11 @@ View                view;
    char               *tempfile;
    char               *pathname;
    char               *documentname;
-   char                content_type[NAME_LENGTH];
    int                 toparse;
 
    if (DocumentURLs[(int) document] == NULL)
       /* the document has not been loaded yet */
       return;
-
-   content_type[0] = '\0';
 
    /* abort all current exchanges concerning this document */
    StopTransfer (document, 1);
@@ -1389,11 +1445,16 @@ View                view;
    /* reload the document */
    pathname = TtaGetMemory (MAX_LENGTH);
    documentname = TtaGetMemory (MAX_LENGTH);
-   NormalizeURL (DocumentURLs[(int) document], 0, pathname, documentname);
+   NormalizeURL (DocumentURLs[(int) document], 0, pathname, documentname, NULL);
 
    if (!IsW3Path (pathname) && !TtaFileExist (pathname))
-     /* cannot reload this document */
-     return;
+     {
+       /* Free Memory ***/
+       TtaFreeMemory (pathname);
+       TtaFreeMemory (documentname);
+       /* cannot reload this document */
+       return;
+     }
 
    W3Loading = document;	/* this document is currently in load */
    newdoc = InitDocView (document, pathname);
@@ -1418,12 +1479,12 @@ View                view;
 #ifdef AMAYA_JAVA
        toparse = GetObjectWWW (newdoc, pathname, NULL, tempfile, 
 			       AMAYA_SYNC | AMAYA_NOCACHE,
-			       NULL, NULL, NULL, NULL, YES, &content_type[0]);
+			       NULL, NULL, NULL, NULL, YES, NULL);
 #else /* AMAYA_JAVA */
        toparse = GetObjectWWW (newdoc, pathname, NULL, tempfile, 
-			       AMAYA_ASYNC | AMAYA_ASYNC_SAFE_STOP,
+			       AMAYA_ASYNC | AMAYA_NOCACHE,
 			       NULL, NULL, (void *) Reload_callback, 
-			       (void *) documentname, YES, (char *) content_type);
+			       (void *) documentname, YES, NULL);
 #endif /* AMAYA_JAVA */
      }
    else if (TtaFileExist (pathname))
@@ -1432,6 +1493,86 @@ View                view;
    TtaFreeMemory (pathname);
    
    TtaHandlePendingEvents ();
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
+void                ZoomIn (Document document, View view)
+#else
+void                ZoomIn (document, view)
+Document            document;
+View                view;
+#endif
+{
+  int               zoom, zoomVal;
+  char             *zoomStr;
+
+  zoom = TtaGetZoom (document, view);
+  if (zoom < 10)
+    {
+      zoom++;
+      TtaSetZoom (document, view, zoom);
+    }
+
+  /* compare to the standard value? */
+  zoomStr = TtaGetEnvString ("ZOOM");
+  if (zoomStr == NULL)
+    zoomVal = 0;
+  else
+    {
+      sscanf (zoomStr, "%d", &zoomVal);
+      if (zoomVal > 10 || zoomVal < -10)
+	zoomVal = 0;
+    }
+  if (zoom > zoomVal)
+    TtaSetToggleItem (document, 1, Views, TZoomIn, TRUE);
+  else
+    TtaSetToggleItem (document, 1, Views, TZoomIn, FALSE);
+  if (zoom < zoomVal)
+    TtaSetToggleItem (document, 1, Views, TZoomOut, TRUE);
+  else
+    TtaSetToggleItem (document, 1, Views, TZoomOut, FALSE);
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
+void                ZoomOut (Document document, View view)
+#else
+void                ZoomOut (document, view)
+Document            document;
+View                view;
+#endif
+{
+  int               zoom, zoomVal;
+  char             *zoomStr;
+
+  zoom = TtaGetZoom (document, view);
+  if (zoom > -10)
+    {
+      zoom--;
+      TtaSetZoom (document, view, zoom);
+    }
+
+  /* compare to the standard value? */
+  zoomStr = TtaGetEnvString ("ZOOM");
+  if (zoomStr == NULL)
+    zoomVal = 0;
+  else
+    {
+      sscanf (zoomStr, "%d", &zoomVal);
+      if (zoomVal > 10 || zoomVal < -10)
+	zoomVal = 0;
+    }
+  if (zoom > zoomVal)
+    TtaSetToggleItem (document, 1, Views, TZoomIn, TRUE);
+  else
+    TtaSetToggleItem (document, 1, Views, TZoomIn, FALSE);
+  if (zoom < zoomVal)
+    TtaSetToggleItem (document, 1, Views, TZoomOut, TRUE);
+  else
+    TtaSetToggleItem (document, 1, Views, TZoomOut, FALSE);
 }
 
 /*----------------------------------------------------------------------
@@ -1448,6 +1589,9 @@ View                view;
 #ifdef MATHML
    View                mathView;
 #endif /* MATHML */
+#ifdef GRAPHML
+   View                graphView;
+#endif /* GRAPHML */
    int                 x, y, w, h;
 
    structView = TtaGetViewFromName (document, "Structure_view");
@@ -1459,6 +1603,16 @@ View                view;
        structView = TtaOpenView (document, "Structure_view", x, y, w, h);
        TtcSwitchButtonBar (document, structView);
        TtcSwitchCommands (document, structView);
+       if (DocumentTypes[document] == docHelp)
+	 {
+	   TtaSetItemOff (document, structView, Edit_, BCut);
+	   TtaSetItemOff (document, structView, Edit_, BPaste);
+	   TtaSetItemOff (document, structView, Edit_, BClear);
+	   TtaSetItemOff (document, structView, Edit_, BSpellCheck);
+	   TtaSetMenuOff (document, structView, StructTypes);
+	   TtaSetMenuOff (document, structView, Types);
+	   TtaSetMenuOff (document, structView, Attributes_);
+	 }
      }
 #ifdef MATHML
    mathView = TtaGetViewFromName (document, "Math_Structure_view");
@@ -1475,6 +1629,21 @@ View                view;
 	 }
      }
 #endif /* MATHML */
+#ifdef GRAPHML
+   graphView = TtaGetViewFromName (document, "Graph_Structure_view");
+   if (graphView != 0 && TtaIsViewOpened (document, graphView))
+     TtaRaiseView (document, graphView);
+   else
+     {
+       TtaGetViewGeometry (document, "Graph_Structure_view", &x, &y, &w, &h);
+       graphView = TtaOpenView (document, "Graph_Structure_view", x, y, w, h);
+       if (graphView != 0)
+	 {
+	   TtcSwitchButtonBar (document, graphView);
+	   TtcSwitchCommands (document, graphView);
+	 }
+     }
+#endif /* GRAPHML */
 }
 
 /*----------------------------------------------------------------------
@@ -1647,6 +1816,9 @@ NotifyDialog       *event;
 #ifdef MATHML
    View          mathView;
 #endif /* MATHML */
+#ifdef GRAPHML
+   View          graphView;
+#endif /* GRAPHML */
 
    view = event->view;
    document = event->document;
@@ -1657,6 +1829,9 @@ NotifyDialog       *event;
 #ifdef MATHML
    mathView = TtaGetViewFromName (document, "Math_Structure_view");
 #endif /* MATHML */
+#ifdef GRAPHML
+   graphView = TtaGetViewFromName (document, "Graph_Structure_view");
+#endif /* GRAPHML */
    if (view != 1)
      /* let Thot perform normal operation */
      return FALSE;
@@ -1666,7 +1841,7 @@ NotifyDialog       *event;
 	/* abort the command and don't let Thot perform normal operation */
 	return TRUE;
 
-   HelpDocuments[document] = FALSE;
+   DocumentTypes[document] = docHTML;
    if (structView != 0 && TtaIsViewOpened (document, structView))
      TtaCloseView (document, structView);
    if (altView != 0 && TtaIsViewOpened (document, altView))
@@ -1679,10 +1854,16 @@ NotifyDialog       *event;
    if (mathView != 0 && TtaIsViewOpened (document, mathView))
      TtaCloseView (document, mathView);
 #endif /* MATHML */
+#ifdef GRAPHML
+   if (graphView != 0 && TtaIsViewOpened (document, graphView))
+     TtaCloseView (document, graphView);
+#endif /* GRAPHML */
    /* let Thot perform normal operation */
    return FALSE;
 }
 
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
 #ifdef __STDC__
 void               GetHTMLDocument_callback (int newdoc, int status, 
 					     char *urlName,
@@ -1715,9 +1896,8 @@ void *context;
    int                 i;
    boolean	       history;
    boolean             ok;
+   boolean             local_link;
    GETHTMLDocument_context *ctx;
-   char               *sourceDocUrl;
-   Element             anchor;
    TTcbf              *cbf;
    void               *ctx_cbf;
 
@@ -1734,11 +1914,10 @@ void *context;
    target = ctx->target;
    documentname = ctx->documentname;
    tempdocument = ctx->tempdocument;
-   sourceDocUrl = ctx->sourceDocUrl;
-   anchor = ctx->anchor;
    cbf = ctx->cbf;
    ctx_cbf = ctx->ctx_cbf;
-   
+   local_link = ctx->local_link;
+
    pathname = TtaGetMemory (MAX_LENGTH + 1);
    strncpy (pathname, urlName, MAX_LENGTH);
    pathname[MAX_LENGTH] = EOS;
@@ -1746,7 +1925,7 @@ void *context;
    strncpy (tempfile, outputfile, MAX_LENGTH);
    tempfile[MAX_LENGTH] = EOS;
    
-   if (ok)
+   if (ok && !local_link)
      {
        /* memorize the initial newdoc value in doc because LoadHTMLDocument */
        /* will open a new document if newdoc is a modified document */
@@ -1754,7 +1933,7 @@ void *context;
 	 {
 	   if (IsW3Path (pathname) && !strcmp (documentname, "noname.html"))
 	     /* keep the real name */
-	     NormalizeURL (pathname, 0, tempdocument, documentname);
+	     NormalizeURL (pathname, 0, tempdocument, documentname, NULL);
 
 	   /* do we need to control the last slash here? */
 	   res = LoadHTMLDocument (newdoc, pathname, tempfile, 
@@ -1820,7 +1999,7 @@ void *context;
    TtaFreeMemory (tempfile);
    TtaFreeMemory (tempdocument);
    TtaFreeMemory (ctx);
-   if (HelpDocuments[newdoc])
+   if (DocumentTypes[newdoc] == docHelp)
      TtaSetDocumentAccessMode (newdoc, 0);
 }
 
@@ -1856,7 +2035,6 @@ void               *ctx_cbf;
    char               *target;
    char               *pathname;
    char               *documentname;
-   char                content_type [NAME_LENGTH];
    int                 toparse;
    int                 slash;
    int                 mode;
@@ -1865,14 +2043,15 @@ void               *ctx_cbf;
 
 
    /* Extract parameters if necessary */
-
    if (strlen (documentPath) > MAX_LENGTH - 1) 
      {
        TtaSetStatus (baseDoc, 1, TtaGetMessage (AMAYA, AM_TOO_LONG_URL), "512");
        return (0);
      }
+   else
+     /* clean up the status line */
+     TtaSetStatus (baseDoc, 1, " ", NULL);
  
-   content_type[0] = '\0';
    ok = TRUE;
    tempdocument = TtaGetMemory (MAX_LENGTH);
    target = TtaGetMemory (MAX_LENGTH);
@@ -1888,9 +2067,9 @@ void               *ctx_cbf;
    /* Add the  base content if necessary */
    if (CE_event == CE_TRUE || CE_event == CE_FORM_GET
        || CE_event == CE_FORM_POST || CE_event == CE_MAKEBOOK)
-     NormalizeURL (tempdocument, baseDoc, pathname, documentname);
+     NormalizeURL (tempdocument, baseDoc, pathname, documentname, NULL);
    else
-     NormalizeURL (tempdocument, 0, pathname, documentname);
+     NormalizeURL (tempdocument, 0, pathname, documentname, NULL);
 
    if (parameters[0] == EOS)
      newdoc = IsDocumentLoaded (pathname);
@@ -1920,7 +2099,23 @@ void               *ctx_cbf;
      /* it's just a move in the same document */
      /* record the current position in the history */
      AddDocHistory (newdoc, DocumentURLs[newdoc]);
-   
+
+   if (ok)
+     {
+       /* Create the context for the callback */
+       ctx = TtaGetMemory (sizeof (GETHTMLDocument_context));
+       ctx->doc = doc;
+       ctx->baseDoc = baseDoc;
+       ctx->ok = ok;
+       ctx->history = history;
+       ctx->target = target;
+       ctx->documentname = documentname;
+       ctx->tempdocument = tempdocument;
+       ctx->cbf = cbf;
+       ctx->ctx_cbf = ctx_cbf;
+       ctx->local_link = 0;
+     }
+
    if (ok && newdoc == 0)
      {
        /* document not loaded yet */
@@ -1949,8 +2144,12 @@ void               *ctx_cbf;
 		 {
 		   /* help document has to be in read-only mode */
 		   TtcSwitchCommands (newdoc, 1);
-		   HelpDocuments[newdoc] = TRUE;
-		   TtaSetMenuOff (newdoc, 1, Edit_);
+		   TtcSwitchButtonBar (newdoc, 1);
+		   DocumentTypes[newdoc] = docHelp;
+		   TtaSetItemOff (newdoc, 1, Edit_, BCut);
+		   TtaSetItemOff (newdoc, 1, Edit_, BPaste);
+		   TtaSetItemOff (newdoc, 1, Edit_, BClear);
+		   TtaSetItemOff (newdoc, 1, Edit_, BSpellCheck);
 		   TtaSetMenuOff (newdoc, 1, Types);
 		   TtaSetMenuOff (newdoc, 1, Links);
 		   TtaSetMenuOff (newdoc, 1, Style);
@@ -1994,24 +2193,13 @@ void               *ctx_cbf;
 	       if (CE_event == CE_FORM_POST)
 		 mode = AMAYA_SYNC | AMAYA_FORM_POST;
 	       else if (CE_event == CE_MAKEBOOK)
-		 mode = AMAYA_SYNC;
+		 mode = AMAYA_ASYNC;
 	       else
 #if defined(AMAYA_JAVA) || defined(AMAYA_ILU)
 		 mode = AMAYA_ASYNC;
 #else
-	       mode = AMAYA_ASYNC | AMAYA_ASYNC_SAFE_STOP;
+	         mode = AMAYA_ASYNC;
 #endif /* AMAYA_JAVA */
-	       /* Create the context for the callback */
-	       ctx = TtaGetMemory (sizeof (GETHTMLDocument_context));
-	       ctx->doc = doc;
-	       ctx->baseDoc = baseDoc;
-	       ctx->ok = ok;
-	       ctx->history = history;
-	       ctx->target = target;
-	       ctx->documentname = documentname;
-	       ctx->tempdocument = tempdocument;
-	       ctx->cbf = cbf;
-	       ctx->ctx_cbf = ctx_cbf;
 	       if (IsW3Path (pathname))
 		 {
 		   if (CE_event == CE_FORM_POST)
@@ -2025,7 +2213,7 @@ void               *ctx_cbf;
 					      (void *) GetHTMLDocument_callback,
 					      (void *) ctx,
 					      YES,
-					      (char *) content_type);
+					      NULL);
 		   else
 		     {
 		       if (!strcmp (documentname, "noname.html"))
@@ -2044,7 +2232,7 @@ void               *ctx_cbf;
 						   (void *) GetHTMLDocument_callback, 
 						   (void *) ctx,
 						   YES,
-						   (char *) content_type);
+						   NULL);
 			   
 			 }
 		       else 
@@ -2058,7 +2246,7 @@ void               *ctx_cbf;
 						 (void *) GetHTMLDocument_callback, 
 						 (void *) ctx,
 						 YES,
-						 (char *) content_type);
+						 NULL);
 		     }
 		 }
 	       else {
@@ -2073,8 +2261,20 @@ void               *ctx_cbf;
 	       }
 	     }
 	 }
-     } 
-   else if ((ok && newdoc != 0) || ok == FALSE)
+     }
+   else if (ok && newdoc != 0)
+     /* following a local link */
+     {
+       TtaSetStatus (newdoc, 1, TtaGetMessage (AMAYA, AM_DOCUMENT_LOADED), NULL);
+       ctx->local_link = 1;
+       GetHTMLDocument_callback (newdoc, 0,
+				 pathname,
+				 tempfile, 
+				 NULL,
+				 (void *) ctx);
+       TtaHandlePendingEvents ();
+     }
+   else if (ok == FALSE)
      /* if the document isn't loaded off the web (because of an error, or
 	because it was already loaded), we invoke the callback function */
      {
@@ -2096,7 +2296,7 @@ void               *ctx_cbf;
    TtaFreeMemory (parameters);
    TtaFreeMemory (tempfile);
    TtaFreeMemory (pathname);
-   if (HelpDocuments[newdoc])
+   if (DocumentTypes[newdoc] == docHelp)
      TtaSetDocumentAccessMode (newdoc, 0);
    return (newdoc);
 
@@ -2200,6 +2400,7 @@ char               *data;
 #endif
 {
   AttributeType       attrType;
+  ElementType	      elType;
   Attribute           attrHREF;
   char               *tempfile;
   char               *tempname;
@@ -2307,6 +2508,9 @@ char               *data;
        
        break;
      case DirSelect:
+#    ifdef _WINDOWS
+     sprintf (DirectoryName, "%s", data);
+#    else  /* _WINDOWS */
        if (DirectoryName[0] != EOS)
 	 {
 	   if (!strcmp (data, ".."))
@@ -2330,6 +2534,7 @@ char               *data;
 			     ScanFilter, TtaGetMessage (AMAYA, AM_FILES), BaseDialog + DocSelect);
 	   DocumentName[0] = EOS;
 	 }
+#    endif /* _WINDOWS */
        break;
      case DocSelect:
        if (DirectoryName[0] == EOS)
@@ -2412,14 +2617,18 @@ char               *data;
 	 case 0:	/* "Save as HTML" button */
 	   SaveAsHTML = !SaveAsHTML;
 	   SaveAsText = !SaveAsHTML;
+#      ifndef _WINDOWS
 	   TtaSetToggleMenu (BaseDialog + ToggleSave, 1, SaveAsText);
+#       endif /* _WINDOWS */
 	   UpdateSaveAsButtons ();
 	   SetFileSuffix ();
 	   break;
 	 case 1:	/* "Save as Text" button */
 	   SaveAsText = !SaveAsText;
 	   SaveAsHTML = !SaveAsText;
+#      ifndef _WINDOWS
 	   TtaSetToggleMenu (BaseDialog + ToggleSave, 0, SaveAsHTML);
+#      endif /* _WINDOWS */
 	   UpdateSaveAsButtons ();
 	   SetFileSuffix ();
 	   break;
@@ -2582,7 +2791,14 @@ char               *data;
        /* *********HREF Attribute*********** */
        /* create an attribute HREF for the Link_Anchor */
        attrType.AttrSSchema = TtaGetDocumentSSchema (AttrHREFdocument);
-       attrType.AttrTypeNum = HTML_ATTR_HREF_;
+       elType = TtaGetElementType (AttrHREFelement);
+       if (elType.ElTypeNum == HTML_EL_Quotation ||
+	   elType.ElTypeNum == HTML_EL_Block_Quote ||
+	   elType.ElTypeNum == HTML_EL_INS ||
+	   elType.ElTypeNum == HTML_EL_DEL)
+	  attrType.AttrTypeNum = HTML_ATTR_cite;
+       else
+          attrType.AttrTypeNum = HTML_ATTR_HREF_;
        attrHREF = TtaGetAttribute (AttrHREFelement, attrType);
        if (attrHREF == 0)
 	 {
@@ -2594,11 +2810,14 @@ char               *data;
 	 TtaSetAttributeText (attrHREF, AttrHREFvalue, AttrHREFelement, AttrHREFdocument);
        else
 	 TtaSetAttributeText (attrHREF, "XXX", AttrHREFelement, AttrHREFdocument);
+       TtaSetDocumentModified (AttrHREFdocument);
        break;
+
      case AttrHREFText:
        /* save the HREF name */
        strcpy (AttrHREFvalue, data);
        break;
+
      case ClassForm:
      case ClassSelect:
      case AClassForm:
@@ -2610,6 +2829,8 @@ char               *data;
 
 
 /*----------------------------------------------------------------------
+  InitAmaya intializes Amaya variables and opent the first document
+  window.
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
 void                InitAmaya (NotifyEvent * event)
@@ -2632,6 +2853,10 @@ NotifyEvent        *event;
    SelectionInEM = FALSE;
    SelectionInSTRONG = FALSE;
    SelectionInCITE = FALSE;
+   SelectionInABBR = FALSE;
+   SelectionInACRONYM = FALSE;
+   SelectionInINS = FALSE;
+   SelectionInDEL = FALSE;
    SelectionInDFN = FALSE;
    SelectionInCODE = FALSE;
    SelectionInVAR = FALSE;
@@ -2640,62 +2865,58 @@ NotifyEvent        *event;
    SelectionInI = FALSE;
    SelectionInB = FALSE;
    SelectionInTT = FALSE;
-   SelectionInU = FALSE;
-   SelectionInSTRIKE = FALSE;
    SelectionInBIG = FALSE;
    SelectionInSMALL = FALSE;
    /* initialize icons */
 #  ifndef _WINDOWS
    stopR = TtaCreatePixmapLogo (stopR_xpm);
-   TtaRegisterPixmap("stopR", stopR);
    stopN = TtaCreatePixmapLogo (stopN_xpm);
-   TtaRegisterPixmap("stopN", stopN);
    iconSave = TtaCreatePixmapLogo (save_xpm);
-   TtaRegisterPixmap("Save", iconSave);
    iconFind = TtaCreatePixmapLogo (find_xpm);
-   TtaRegisterPixmap("Find", iconFind);
    iconReload = TtaCreatePixmapLogo (Reload_xpm);
-   TtaRegisterPixmap("Reload", iconReload);
    iconI = TtaCreatePixmapLogo (I_xpm);
-   TtaRegisterPixmap("Italic", iconI);
    iconB = TtaCreatePixmapLogo (B_xpm);
-   TtaRegisterPixmap("Bold", iconB);
    iconT = TtaCreatePixmapLogo (T_xpm);
-   TtaRegisterPixmap("TeleType", iconT);
    iconBack = TtaCreatePixmapLogo (Back_xpm);
-   TtaRegisterPixmap("Back", iconBack);
    iconBackNo = TtaCreatePixmapLogo (BackNo_xpm);
-   TtaRegisterPixmap("BackNo", iconBackNo);
    iconForward = TtaCreatePixmapLogo (Forward_xpm);
-   TtaRegisterPixmap("Forward", iconForward);
    iconForwardNo = TtaCreatePixmapLogo (ForwardNo_xpm);
-   TtaRegisterPixmap("ForwardNo", iconForwardNo);
    iconH1 = TtaCreatePixmapLogo (H1_xpm);
-   TtaRegisterPixmap("H1", iconH1);
    iconH2 = TtaCreatePixmapLogo (H2_xpm);
-   TtaRegisterPixmap("H2", iconH2);
    iconH3 = TtaCreatePixmapLogo (H3_xpm);
-   TtaRegisterPixmap("H3", iconH3);
    iconPrint = TtaCreatePixmapLogo (Print_xpm);
-   TtaRegisterPixmap("Print", iconPrint);
-   iconCSS = TtaCreatePixmapLogo (css_xpm);
-   TtaRegisterPixmap("CSS", iconCSS);
    iconBullet = TtaCreatePixmapLogo (Bullet_xpm);
-   TtaRegisterPixmap("Bullet", iconBullet);
    iconNum = TtaCreatePixmapLogo (Num_xpm);
-   TtaRegisterPixmap("Numbered", iconNum);
    iconImage = TtaCreatePixmapLogo (Image_xpm);
    iconDL = TtaCreatePixmapLogo (DL_xpm);
-   TtaRegisterPixmap("Definition", iconDL);
    iconLink = TtaCreatePixmapLogo (Link_xpm);
-   TtaRegisterPixmap("Link", iconLink);
    iconTable = TtaCreatePixmapLogo (Table_xpm);
-   TtaRegisterPixmap("Table", iconTable);
 #  ifdef AMAYA_PLUGIN
    iconPlugin = TtaCreatePixmapLogo (Plugin_xpm);
    TtaRegisterPixmap("Plugin", iconPlugin);
 #  endif /* AMAYA_PLUGIN */
 #  ifdef AMAYA_JAVA
+   TtaRegisterPixmap("stopR", stopR);
+   TtaRegisterPixmap("stopN", stopN);
+   TtaRegisterPixmap("Save", iconSave);
+   TtaRegisterPixmap("Find", iconFind);
+   TtaRegisterPixmap("Reload", iconReload);
+   TtaRegisterPixmap("Italic", iconI);
+   TtaRegisterPixmap("Bold", iconB);
+   TtaRegisterPixmap("TeleType", iconT);
+   TtaRegisterPixmap("Back", iconBack);
+   TtaRegisterPixmap("BackNo", iconBackNo);
+   TtaRegisterPixmap("Forward", iconForward);
+   TtaRegisterPixmap("ForwardNo", iconForwardNo);
+   TtaRegisterPixmap("H1", iconH1);
+   TtaRegisterPixmap("H2", iconH2);
+   TtaRegisterPixmap("H3", iconH3);
+   TtaRegisterPixmap("Print", iconPrint);
+   TtaRegisterPixmap("Bullet", iconBullet);
+   TtaRegisterPixmap("Numbered", iconNum);
+   TtaRegisterPixmap("Definition", iconDL);
+   TtaRegisterPixmap("Link", iconLink);
+   TtaRegisterPixmap("Table", iconTable);
    iconJava = TtaCreatePixmapLogo (Java_xpm);
    TtaRegisterPixmap("Java", iconJava);
 #  endif /* AMAYA_JAVA */
@@ -2703,6 +2924,9 @@ NotifyEvent        *event;
 #ifdef MATHML
    InitMathML ();
 # endif /* MATHML */
+#ifdef GRAPHML
+   InitGraphML ();
+# endif /* GRAPHML */
 
    TargetName = NULL;
    /* initialize temporary directory for loaded files */
@@ -2737,11 +2961,12 @@ NotifyEvent        *event;
    TtaAppendDocumentPath (TempFileDirectory);
 
    /* Create and intialize resources needed for each document */
-   for (i = 1; i < DocumentTableLength; i++)
+   /* Style sheets are strored in directory .amaya/0 */
+   for (i = 0; i < DocumentTableLength; i++)
      {
        /* initialize document table */
        DocumentURLs[i] = NULL;
-       HelpDocuments[i] = FALSE;
+       DocumentTypes[i] = docHTML;
        /* initialize history */
        InitDocHistory (i);
        /* Create a temporary sub-directory for storing the HTML and
@@ -2770,10 +2995,10 @@ NotifyEvent        *event;
    ObjectName[0] = EOS;
    SaveImgsURL = TtaGetMemory (MAX_LENGTH);
    SaveImgsURL[0] = EOS;
-   strcpy (ScanFilter, ".*html*");
+   strcpy (ScanFilter, ".*htm*");
    SaveAsHTML = TRUE;
    SaveAsText = FALSE;
-   CopyImages = TRUE;
+   CopyImages = FALSE;
    UpdateURLs = FALSE;
    SavingFile = TtaGetMemory (MAX_LENGTH);
    AttrHREFvalue = TtaGetMemory (MAX_LENGTH);
@@ -2789,6 +3014,8 @@ NotifyEvent        *event;
    QueryInit ();
 #endif
 
+   /* Define the backup function */
+   TtaSetBackup (BackUpDocs);
    AMAYA = TtaGetMessageTable ("amayamsg", AMAYA_MSG_MAX);
    /* allocate callbacks for amaya */
    BaseDialog = TtaSetCallback (CallbackDialogue, MAX_REF);
@@ -2818,8 +3045,12 @@ NotifyEvent        *event;
       /* default Amaya URL */
      {
        s = (char *) TtaGetEnvString ("THOTDIR");
-       if (s != NULL)
-	strcpy (LastURLName, s);
+       if (s != NULL) {
+#         ifdef _WINDOWS
+          sprintf (LostPicturePath, "%s\\amaya\\lost.gif", s);              
+#         endif /* _WINDOWS */
+          strcpy (LastURLName, s);
+          }
        else
 	LastURLName[0] = EOS;
        strcat (LastURLName, AMAYA_PAGE);
@@ -2911,25 +3142,23 @@ View                view;
 
 #endif
 {
-#  if 0
 #  ifdef _WINDOWS
    int frame = GetWindowNumber (document, view);
 
-   if (frame == 0 || frame > MAX_FRAME)
+   if (currentFrame == 0 || currentFrame > 10)
       TtaError (ERR_invalid_parameter);
    else {
-        HMENU hmenu = GetMenu (FrMainRef[frame]); 
+        HMENU hmenu = WIN_GetMenu (currentFrame); 
         if (!itemChecked) {
           CheckMenuItem (hmenu, menu_item, MF_BYCOMMAND | MF_CHECKED); 
           itemChecked = TRUE ;
        } else {
-              hmenu = GetMenu (FrMainRef[frame]); 
+              hmenu = WIN_GetMenu (currentFrame); 
               CheckMenuItem (hmenu, menu_item, MF_BYCOMMAND | MF_UNCHECKED); 
               itemChecked = FALSE ;
        }
    }
 #  endif /* _WINDOWS */
-#  endif /* 0 */
    ChangeAttrOnRoot (document, HTML_ATTR_ShowAreas);
 }
 

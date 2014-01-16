@@ -9,6 +9,7 @@
  * Module dedicated to font handling.
  *
  * Author: I. Vatton (INRIA)
+ *         R. Guetari (W3C/INRIA)
  *
  */
 
@@ -22,6 +23,13 @@
 #define THOT_EXPORT extern
 #include "frame_tv.h"
 
+#ifdef _WINDOWS
+#include "win_f.h"
+
+extern int ScreenDPI;
+extern int PrinterDPI;
+#endif /* _WINDOWS */
+
 /*----------------------------------------------------------------------
  *      PointToPixel convert from points to pixels.
   ----------------------------------------------------------------------*/
@@ -33,7 +41,12 @@ int                 value;
 
 #endif /* __STDC__ */
 {
-   return ((value * DOT_PER_INCHE) / DOT_PER_INCHE);
+#  ifdef _WINDOWS 
+   /* return ((value * GetDeviceCaps (TtDisplay, LOGPIXELSY) + 36) / 72); */
+   return ((value * DOT_PER_INCHE + 36) / 72);
+#  else /* _WINDOWS */
+   return ((value * DOT_PER_INCHE + 36) / 72);
+#  endif /* _WINDOWS */
 }
 
 
@@ -48,7 +61,15 @@ int                 value;
 
 #endif /* __STDC__ */
 {
-   return ((value * DOT_PER_INCHE + DOT_PER_INCHE / 2) / DOT_PER_INCHE);
+#  ifdef _WINDOWS
+   WIN_GetDeviceContext (-1);
+   if (DOT_PER_INCHE == 0)
+      DOT_PER_INCHE = 72;
+   /* return ((value * 72 + GetDeviceCaps (TtDisplay, LOGPIXELSY) / 2) / GetDeviceCaps (TtDisplay, LOGPIXELSY)); */
+   return ((value * 72 + DOT_PER_INCHE / 2) / DOT_PER_INCHE);
+   WIN_ReleaseDeviceContext ();
+#  else  /* !_WINDOWS */
+   return ((value * 72 + DOT_PER_INCHE / 2) / DOT_PER_INCHE);
+#  endif /* _WINDOWS */
 }
-
 

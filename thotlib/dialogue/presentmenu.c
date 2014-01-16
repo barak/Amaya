@@ -26,7 +26,6 @@
 #include "thot_sys.h"
 #include "libmsg.h"
 #include "message.h"
-
 #include "dialog.h"
 #include "constmedia.h"
 #include "typemedia.h"
@@ -34,10 +33,12 @@
 
 #undef THOT_EXPORT
 #define THOT_EXPORT extern
+#include "boxes_tv.h"
 #include "page_tv.h"
 #include "edit_tv.h"
 #include "select_tv.h"
 #include "appdialogue_tv.h"
+#include "frame_tv.h"
 
 #include "tree_f.h"
 #include "attributes_f.h"
@@ -128,6 +129,15 @@ static int          OldLineSp;
 static int          NormalLineSpacing;
 static void         ResetMenus ();
 
+#ifdef _WINDOWS 
+#ifdef __STDC__
+extern void CreateCharacterDlgWindow (HWND, int, int, int, int);
+extern void CreateChangeFormatDlgWindow (HWND);
+#else /* __STDC__ */
+extern void CreateCharacterDlgWindow ();
+extern void CreateChangeFormatDlgWindow ();
+#endif /* __STDC__ */
+#endif /* _WINDOWS */
 
 /*----------------------------------------------------------------------
    GetEnclosingBlock
@@ -354,7 +364,7 @@ int                 applyDomain;
 	if (pAb != NULL)
 	  {
 	     currentBodySize = PixelToPoint(PixelValue (pAb->AbSize,
-							pAb->AbSizeUnit, pAb));
+							pAb->AbSizeUnit, pAb, ViewFrameTable[ActiveFrame - 1].FrMagnification));
 	    
 	    /* famille de polices de caracteres */
 	    if (locChngFontFamily)
@@ -487,8 +497,8 @@ int                 applyDomain;
 		      sign = 0;
 		    else
 		      sign = -1;
-		    i = PixelToPoint(PixelValue (abs (pAb->AbIndent),
-						 pAb->AbIndentUnit, pAb));
+		    i = PixelToPoint(PixelValue (abs (pAb->AbIndent), pAb->AbIndentUnit,
+						 pAb, ViewFrameTable[ActiveFrame - 1].FrMagnification));
 		    if (sign == IndentSign && i == IndentValue)
 		      /* pas de changement */
 		      locChngIndent = FALSE;
@@ -512,8 +522,8 @@ int                 applyDomain;
 		else
 		  {
 		    /* convertit 'interligne en points typographiques */
-		    i = PixelToPoint(PixelValue (pAb->AbLineSpacing,
-						 pAb->AbLineSpacingUnit, pAb));
+		    i = PixelToPoint(PixelValue (pAb->AbLineSpacing, pAb->AbLineSpacingUnit,
+						 pAb, ViewFrameTable[ActiveFrame - 1].FrMagnification));
 		    if (OldLineSp == i)
 		      locChngLineSp = FALSE;
 		  }
@@ -760,7 +770,9 @@ View                view;
    TtaNewToggleMenu (NumMenuPresentStandard, NumFormPresentStandard,
 		TtaGetMessage (LIB, TMSG_STD_PRES), 5, string, NULL, TRUE);
    /* annule toutes les options du choix multiple Presentation standard */
+#  ifndef _WINDOWS 
    TtaSetToggleMenu (NumMenuPresentStandard, -1, FALSE);
+#  endif /* _WINDOWS */
    /* active le formulaire "Presentation standard" */
    DocModPresent = pDoc;
    TtaShowDialogue (NumFormPresentStandard, TRUE);
@@ -874,13 +886,13 @@ char               *txt;
 	  c = 'C';	/* Courier */
 	  break;
 	case 3:
-	  c = '\0';	/* standard */
+	  c = EOS;	/* standard */
 	  break;
 	default:
 	  c = 'T';
 	  break;
 	}
-      if (c == '\0')	/* standard */
+      if (c == EOS)	/* standard */
 	{
 	  ChngFontFamily = FALSE;
 	  StdFontFamily = TRUE;
@@ -910,17 +922,25 @@ char               *txt;
       break;
     case NumMenuUnderlineType:		/* style du souligne */
       /* l'entree 2 est supprimee dans cette version */
-      if (val == 3)	/* entree 3: Standard */
+      if (val == 4)	/* entree 4: Standard */
 	{
 	  ChngUnderline = FALSE;
 	  StdUnderline = TRUE;
 	}
-      else if (val == 2)	/* entree 2->3 */
+      /*******
+	else if (val == 3)
 	{
 	  ChngUnderline = TRUE;
 	  StdUnderline = FALSE;
 	  UnderlineStyle = val + 1;
 	}
+      else if (val == 2)
+	{
+	  ChngUnderline = TRUE;
+	  StdUnderline = FALSE;
+	  UnderlineStyle = val + 1;
+	}
+	*******/
       else
 	{
 	  ChngUnderline = TRUE;
@@ -1085,12 +1105,12 @@ char               *txt;
 	  c = '.';	/* tirets courts */
 	  break;
 	case 3:
-	  c = '\0';	/* standard */
+	  c = EOS;	/* standard */
 	default:
 	  c = 'S';	/* trait continu */
 	  break;
 	}
-      if (c == '\0')	/* standard */
+      if (c == EOS)	/* standard */
 	{
 	  ChngLineStyle = FALSE;
 	  StdLineStyle = TRUE;
@@ -1157,7 +1177,7 @@ char               *txt;
     }
 }
 
-
+#ifndef _WIN_PRINT
 /*----------------------------------------------------------------------
    TtcChangeCharacters
    user requests to modify the specific character presentation for the
@@ -1174,19 +1194,22 @@ View                view;
 
 #endif /* __STDC__ */
 {
+   PtrDocument         pSelDoc;
+   PtrDocument         pDoc;
+   PtrElement          pFirstSel, pLastSel;
+   PtrElement          pEl;
+   PtrAbstractBox      pAb;
 #  ifndef _WINDOWS 
-   int                 i, nbItems;
+   int                 nbItems;
    int                 max, bodyRelatSize, bodyPointSize;
    char               *s;
    char                string[MAX_TXT_LEN];
+#  else  /* _WINDOWS */
+   int                 fontNum;
 #  endif /* !_WINDOWS */
-   PtrDocument         pSelDoc;
-   PtrElement          pFirstSel, pLastSel;
+   int                 i;
    int                 firstChar, lastChar;
    boolean             selectionOK;
-   PtrAbstractBox      pAb;
-   PtrElement          pEl;
-   PtrDocument         pDoc;
 
    pDoc = LoadedDocument[document - 1];
 
@@ -1268,11 +1291,13 @@ View                view;
 	     i += strlen (&string[i]) + 1;
 	     sprintf (&string[i], "%s%s", "B", TtaGetMessage (LIB, TMSG_UNDERLINE));
 	     i += strlen (&string[i]) + 1;
+	     sprintf (&string[i], "%s%s", "B", TtaGetMessage (LIB, TMSG_OVERLINE));
+	     i += strlen (&string[i]) + 1;
 	     sprintf (&string[i], "%s%s", "B", TtaGetMessage (LIB, TMSG_CROSS_OUT));
 	     i += strlen (&string[i]) + 1;
 	     sprintf (&string[i], "%s%s", "B", TtaGetMessage (LIB, TMSG_UNCHANGED));
 	     TtaNewSubmenu (NumMenuUnderlineType, NumFormPresChar, 0,
-		    TtaGetMessage (LIB, TMSG_LINE), 4, string, NULL, TRUE);
+		    TtaGetMessage (LIB, TMSG_LINE), 5, string, NULL, TRUE);
 	     TtaNewLabel (NumMenuUnderlineWeight, NumFormPresChar, " ");
 	     /* sous-menus des corps disponibles, en points typographiques */
 	     nbItems = 0;
@@ -1293,6 +1318,7 @@ View                view;
 	     nbItems++;
 	     TtaNewSubmenu (NumMenuCharFontSize, NumFormPresChar, 0,
 			    TtaGetMessage (LIB, TMSG_BODY_SIZE_PTS), nbItems, string, NULL, TRUE);
+#        endif /* !_WINDOWS */
 	     /* initialise la zone 'Famille de caracteres' */
 	     ChngFontFamily = TRUE;
 	     StdFontFamily = FALSE;
@@ -1316,19 +1342,26 @@ View                view;
 		 i = 0;
 		 break;
 	       }
+#        ifdef _WINDOWS 
+         fontNum = i;
+#        else /* !_WINDOWS */
 	     TtaSetMenuForm (NumMenuCharFamily, i - 1);
-
+#        endif /* !_WINDOWS */
 	     /* initialise le catalogue 'Style des caracteres' */
 	     ChngStyle = TRUE;
 	     StdStyle = FALSE;
 	     Style = pAb->AbHighlight;
+#        ifndef _WINDOWS 
 	     TtaSetMenuForm (NumMenuStyleChar, Style);
+#        endif /* !_WINDOWS */
 
 	     /* initialise le catalogue 'Epaisseur du souligne' */
 	     ChngUnderline = TRUE;
 	     StdUnderline = FALSE;
 	     UnderlineStyle = pAb->AbUnderline;
+#        ifndef _WINDOWS 
 	     TtaSetMenuForm (NumMenuUnderlineType, UnderlineStyle);
+#        endif /* !_WINDOWS */
 	     ChngLineWeight = TRUE;
 	     StdLineWeight = FALSE;
 	     UnderlineWeight = pAb->AbThickness;
@@ -1343,16 +1376,17 @@ View                view;
 		i = FontRelSize (BodySize);
 	     else
 		i = pAb->AbSize;
+#        ifndef _WINDOWS 
 	     TtaSetMenuForm (NumMenuCharFontSize, i);
-
 #       else  /* _WINDOWS */
-		CreateCharacterDlgWindow (TtaGetViewFrame (document, view));
+		CreateCharacterDlgWindow (TtaGetViewFrame (document, view), fontNum, Style, UnderlineStyle, BodySize);
 #       endif /* _WINDOWS */
 	  }
 	DocModPresent = pDoc;
 	TtaShowDialogue (NumFormPresChar, TRUE);
      }
 }
+#endif /* _WIN_PRINT */
 
 /*----------------------------------------------------------------------
   ModPresentGraphiques
@@ -1370,15 +1404,15 @@ View                view;
 
 #endif /* __STDC__ */
 {
-   int                 i, nbItems;
    PtrDocument         pSelDoc;
+   PtrDocument         pDoc;
    PtrElement          pFirstSel, pLastSel;
+   PtrAbstractBox      pAb;
+   char                string[MAX_TXT_LEN];
+   int                 currentBodySize;
+   int                 i, nbItems;
    int                 firstChar, lastChar;
    boolean             selectionOK;
-   PtrAbstractBox      pAb;
-   int                 currentBodySize;
-   char                string[MAX_TXT_LEN];
-   PtrDocument         pDoc;
 
    pDoc = LoadedDocument[document - 1];
 
@@ -1461,8 +1495,8 @@ View                view;
 		i = LineWeight;
 	     else
 	       {
-	          currentBodySize = PixelToPoint(PixelValue (pAb->AbSize,
-							pAb->AbSizeUnit, pAb));
+	          currentBodySize = PixelToPoint(PixelValue (pAb->AbSize,pAb->AbSizeUnit,
+							     pAb, ViewFrameTable[ActiveFrame - 1].FrMagnification));
 		  i = (currentBodySize * LineWeight) / 10;
 		  if ((currentBodySize * i) % 10 >= 5)
 		     i++;
@@ -1497,7 +1531,7 @@ View                view;
 }
 
 
-
+#ifndef _WIN_PRINT
 /*----------------------------------------------------------------------
    ModPresentFormat    
    user requests to modify the specific format presentation for the
@@ -1515,15 +1549,15 @@ View                view;
 #endif /* __STDC__ */
 {
    PtrDocument         pSelDoc;
-   PtrElement          pFirstSel, pLastSel;
-   int                 firstChar, lastChar;
-   boolean             selectionOK;
-   PtrAbstractBox      pAb;
-#  ifndef _WINDOWS 
-   int                 i;
-   char                string[MAX_TXT_LEN];
-#  endif /* !_WINDOWS */
    PtrDocument         pDoc;
+   PtrElement          pFirstSel, pLastSel;
+   PtrAbstractBox      pAb;
+   int                 firstChar, lastChar;
+#  ifndef _WINDOWS 
+   char                string[MAX_TXT_LEN];
+   int                 i;
+#  endif /* !_WINDOWS */
+   boolean             selectionOK;
 
    pDoc = LoadedDocument[document - 1];
 
@@ -1593,7 +1627,7 @@ View                view;
 			TtaGetMessage (LIB, TMSG_INDENT_PTS), 0, 300, TRUE);
 	     /* initialise la valeur du renfoncement */
 	     IndentValue = PixelToPoint(PixelValue (abs (pAb->AbIndent),
-					pAb->AbIndentUnit, pAb));
+					pAb->AbIndentUnit, pAb, ViewFrameTable[ActiveFrame - 1].FrMagnification));
 	     TtaSetNumberForm (NumZoneRecess, IndentValue);
 
 	     /* sous-menu sens de renfoncement */
@@ -1651,10 +1685,10 @@ View                view;
 		TtaRedrawMenuEntry (NumMenuLineSpacing, i, "icones", ThotColorNone, -1);
 	     /* initialise l'interligne en points typographiques */
 	     OldLineSp = PixelToPoint(PixelValue (pAb->AbLineSpacing,
-					  pAb->AbLineSpacingUnit, pAb));
+					  pAb->AbLineSpacingUnit, pAb, ViewFrameTable[ActiveFrame - 1].FrMagnification));
 	     TtaSetNumberForm (NumZoneLineSpacing, OldLineSp);
 
-	     NormalLineSpacing = PixelToPoint(PixelValue (10, UnRelative, pAb));
+	     NormalLineSpacing = PixelToPoint(PixelValue (10, UnRelative, pAb, ViewFrameTable[ActiveFrame - 1].FrMagnification));
 	     /* saisie de l'interligne par un menu */
 	     if (OldLineSp < (NormalLineSpacing * 3) / 2)
 		i = 0;
@@ -1671,6 +1705,7 @@ View                view;
 	  }
      }
 }
+#endif /* _WIN_PRINT */
 
 
 /*----------------------------------------------------------------------

@@ -33,6 +33,11 @@ DEBUG MESSAGE CONTROL
    The global trace flag variable is available everywhere.
    
  */
+
+/* commented out as this doesn't seem to work well when we compile
+libwww as a .lib, rather than a .dll */
+
+#if 0
 #ifdef DEBUG
 #ifdef WWW_WIN_DLL
 extern int *            WWW_TraceFlag;   /* In DLLs, we need the indirection */
@@ -41,9 +46,14 @@ extern int *            WWW_TraceFlag;   /* In DLLs, we need the indirection */
 extern int              WWW_TraceFlag;       /* Global flag for all W3 trace */
 #define WWWTRACE        (WWW_TraceFlag)
 #endif /* WWW_WIN_DLL */
+extern int WWW_TraceFlag;
+#define WWWTRACE        (WWW_TraceFlag)
 #else
 #define WWWTRACE        0
 #endif /* DEBUG */
+#endif /* 0 */
+extern int              WWW_TraceFlag;
+#define WWWTRACE        (WWW_TraceFlag)
 /*
 
    The WWWTRACEdefine outputs messages if verbose mode is active according to the
@@ -173,6 +183,8 @@ RETURN CODES FOR PROTOCOL MODULES AND STREAMS
 #define HT_NO_PROXY_ACCESS      -407    /* Proxy Authentication Failed */
 #define HT_CONFLICT             -409    /* Conflict */
 #define HT_LENGTH_REQUIRED      -411    /* Length required */
+#define HT_REAUTH               -418    /* Reauthentication required */
+#define HT_PROXY_REAUTH         -419    /* Proxy Reauthentication required */
 
 #define HT_RETRY                -503    /* If service isn't available */
 #define HT_BAD_VERSION          -505    /* Bad protocol version */
@@ -242,6 +254,6 @@ LIBRARY DYNAMIC MEMORY MAGEMENT
    
    ___________________________________
    
-                           @(#) $Id: HTUtils.h,v 1.1.1.1 1996/10/15 13:08:40 cvs Exp $
+                           @(#) $Id: HTUtils.h,v 1.3 1998/03/11 17:45:39 cvs Exp $
                                                                                           
     */

@@ -14,13 +14,16 @@ USES
 #ifdef MATHML
        , MathML
 #endif
+#ifdef GRAPHML
+       , GraphML
+#endif
        , TableH;
 
 DEFAULT
    Init.Post -> InitAmaya;
 
 MENUS
-   HTML Windows:
+   Document Windows:
 	BEGIN
 	view:1 File button:BNew -> New;
 	view:1 File button:BOpenDoc -> OpenDoc;
@@ -47,7 +50,6 @@ MENUS
 	Edit_ button:BFind -> TtcSearchText;
 	Edit_ button:BSpellCheck -> SpellCheck;
 
-	view:2 StructTypes button:BIsIndex -> CreateIsIndex;
 	view:2 StructTypes button:BBase -> CreateBase;
 	view:2 StructTypes button:BMeta -> CreateMeta;
 	view:2 StructTypes button:BLink -> CreateLinkInHead;
@@ -66,8 +68,6 @@ MENUS
 
 	Types.Lists button:BBulletedList -> CreateList;
 	Types.Lists button:BNumberedList -> CreateNumberedList;
-	Types.Lists button:BMenu -> ThotCreateMenu;
-	Types.Lists button:BDirectory -> ThotCreateDirectory;
 	Types.Lists button:BDefinitionList -> CreateDefinitionList;
 	Types.Lists Separator;
 	Types.Lists button:BTerm -> CreateDefinitionTerm;
@@ -95,16 +95,17 @@ MENUS
 	Types.Form button:BOption -> CreateOption;
 	Types.Form button:BTextInput -> CreateTextInput;
 	Types.Form button:BTextArea -> CreateTextArea;
-	Types.Form button:BCommandLine -> CreateCommandLine;
+	Types.Form button:BSubmit -> CreateSubmit;
+	Types.Form button:BReset -> CreateReset;
 
 	Types.AreaMap button:BRectangle -> CreateAreaRect;
 	Types.AreaMap button:BCircle -> CreateAreaCircle;
 	Types.AreaMap button:BPoly -> CreateAreaPoly;
 
 	Types button:BDivision -> CreateDivision;
-	Types button:BObject -> CreateObject;
-	Types.Applet button:BApplet -> CreateApplet;
-	Types.Applet button:BParameter -> CreateParameter;
+	Types.Object button:BObject -> CreateObject;
+	Types.Object button:BParameter -> CreateParameter;
+	Types button:BIFrame -> CreateIFrame;
 
 	Types.Math button:BInlineMath -> CreateInlineMath;
 	Types.Math button:BDisplayMath -> CreateDisplayMath;
@@ -119,6 +120,7 @@ MENUS
         Types.Math button:BOver -> CreateMOVER;
         Types.Math button:BParentheses -> CreateMROW;
         Types.Math button:BMultiscripts -> CreateMMULTISCRIPTS;
+        Types.Math button:BMatrix -> CreateMTABLE;
 
 	view:1 Links button:BCreateLink -> CreateLink;
 	view:1 Links button:BCreateTarget -> CreateTarget;
@@ -128,6 +130,8 @@ MENUS
 	view:1 Views toggle:TShowButtonbar -> TtcSwitchButtonBar;
 	view:1 Views toggle:TShowTextZone -> TtcSwitchCommands;
 	view:1 Views toggle:TShowMapAreas -> ShowMapAreas;
+	view:1 Views toggle:TZoomIn -> ZoomIn;
+	view:1 Views toggle:TZoomOut -> ZoomOut;
 	view:1 Views Separator;
 	view:1 Views button:BShowStructure -> ShowStructure;
 	view:1 Views button:BShowAlternate -> ShowAlternate;
@@ -140,7 +144,7 @@ MENUS
 	view:1 Style button:BBackgroundImage -> ChangeBackgroundImage;
 	view:1 Style Separator;
 
-	view:1 Style button:BCreateClass -> ChangeClass;
+	view:1 Style button:BCreateClass -> CreateClass;
 	view:1 Style button:BApplyClass -> ApplyClass;
 	view:1 Style Separator;
 	view:1 Style button:BCSS -> InitCSSDialog;
@@ -153,17 +157,20 @@ MENUS
         view:1 Style.Phrase toggle:TVariable -> CreateElemVariable;
         view:1 Style.Phrase toggle:TSample -> CreateElemSample;
         view:1 Style.Phrase toggle:TKeyboard -> CreateElemKeyboard;
- 
+	view:1 Style.Phrase toggle:TAbbreviation -> CreateElemAbbr;
+	view:1 Style.Phrase toggle:TAcronym -> CreateElemAcronym;
+	view:1 Style.Phrase toggle:TInsertion -> CreateElemINS;
+	view:1 Style.Phrase toggle:TDeletion -> CreateElemDEL;
+
         view:1 Style.Font toggle:TItalic -> CreateElemItalic;
         view:1 Style.Font toggle:TBold -> CreateElemBold;
         view:1 Style.Font toggle:TTeletype -> CreateElemTeletype;
-        view:1 Style.Font toggle:TUnderline -> CreateElemUnderline;
-        view:1 Style.Font toggle:TStrikeOut -> CreateElemStrikeOut;
         view:1 Style.Font toggle:TBig -> CreateElemBig;
         view:1 Style.Font toggle:TSmall -> CreateElemSmall;
         view:1 Style.Font button:BSub -> CreateSub;
         view:1 Style.Font button:BSup -> CreateSup;
-	view:1 Style.Font button:BFont -> CreateElemFont;
+        view:1 Style.Font button:BQuotation -> CreateQuotation;
+        view:1 Style.Font button:BBDO -> CreateBDO;
 
 	view:1 Special button:BTransform -> TransformType;
 	view:1 Special Separator;

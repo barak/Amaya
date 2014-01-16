@@ -645,7 +645,7 @@ void                FreeSavedElements ()
 	pNextPasteEl = pPasteEl->PeNext;
 	if (pPasteEl->PeElement != NULL)
 	   DeleteElement (&pPasteEl->PeElement);
-	TtaFreeMemory ((char *) pPasteEl);
+	TtaFreeMemory ( pPasteEl);
 	pPasteEl = pNextPasteEl;
      }
    FirstSavedElement = NULL;
@@ -834,7 +834,7 @@ void                CopyCommand ()
 							    NULL, &pElAttr);
 				    if (pAttrHerit != NULL)
 				      {
-					 pAttrLang = AddAttrToElem (pCopy, pAttrHerit);
+					 pAttrLang = AddAttrToElem (pCopy, pAttrHerit, NULL);
 					 if (pAttrLang != NULL)
 					    pAttrLang->AeAttrSSchema = pCopy->ElStructSchema;
 				      }
@@ -1459,7 +1459,8 @@ boolean             save;
 			     if (pAncestor[i] == NULL)
 				i = MAX_ANCESTOR;
 			     else
-				if (DocumentOfElement (pAncestor[i]) == pSelDoc)
+				if (pAncestor[i]->ElStructSchema != NULL &&
+				    DocumentOfElement (pAncestor[i]) ==pSelDoc)
 				   pParent = pAncestor[i];
 			     }
 
@@ -1467,11 +1468,13 @@ boolean             save;
 			  for (i = 0; i < MAX_ANCESTOR && pNext == NULL; i++)
 			     {
 			     if (pAncestorNext[i] != NULL)
-				if (DocumentOfElement (pAncestorNext[i]) == pSelDoc)
+				if (pAncestorNext[i]->ElStructSchema != NULL &&
+				    DocumentOfElement (pAncestorNext[i]) == pSelDoc)
 				   pNext = pAncestorNext[i];
 				else
 				   if (pAncestorPrev[i] != NULL)
-				      if (DocumentOfElement (pAncestorPrev[i]) == pSelDoc)
+				     if (pAncestorPrev[i]->ElStructSchema != NULL &&
+					 DocumentOfElement (pAncestorPrev[i]) == pSelDoc)
 					if (pAncestorPrev[i]->ElNext != NULL)
 					   pNext = pAncestorPrev[i]->ElNext;
 			     }
@@ -1480,11 +1483,13 @@ boolean             save;
 			  for (i = 0; i < MAX_ANCESTOR && pPrev == NULL; i++)
 			     {
 			     if (pAncestorPrev[i] != NULL)
-				if (DocumentOfElement (pAncestorPrev[i]) == pSelDoc)
+				if (pAncestorPrev[i]->ElStructSchema != NULL &&
+				    DocumentOfElement (pAncestorPrev[i]) == pSelDoc)
 				   pPrev = pAncestorPrev[i];
 				else
 				   if (pAncestorNext[i] != NULL)
-				      if (DocumentOfElement (pAncestorNext[i]) == pSelDoc)
+				     if (pAncestorNext[i]->ElStructSchema != NULL &&
+					 DocumentOfElement (pAncestorNext[i]) == pSelDoc)
 					if (pAncestorNext[i]->ElPrevious != NULL)
 					   pPrev = pAncestorNext[i]->ElPrevious;
 			     }
@@ -2139,7 +2144,7 @@ PtrElement          pEl;
 		while (pIsoD != NULL)
 		  {
 		     pNextIsoD = pIsoD->IDNext;
-		     TtaFreeMemory ((char *) pIsoD);
+		     TtaFreeMemory ( pIsoD);
 		     pIsoD = pNextIsoD;
 		  }
 		firstIsomorphDesc = NULL;
@@ -2214,7 +2219,7 @@ PtrElement          pEl;
 		     /* passe a la regle CsChoice suivante */
 		     pOldChoiceD = pChoiceD;
 		     pChoiceD = pChoiceD->CONext;
-		     TtaFreeMemory ((char *) pOldChoiceD);
+		     TtaFreeMemory ( pOldChoiceD);
 		  }
 	     }
 	}
@@ -2478,7 +2483,7 @@ boolean             Before;
   NotifyElement       notifyEl;
   NotifyOnElementType notifyElType;
   int                 firstChar, lastChar, NSiblings, ancestorRule,
-		      rule, prevrule, prevprevrule;
+		      rule, prevrule, prevprevrule, nComp;
   boolean             InsertionPoint, ok, createAfter, splitElem, elConst;
   boolean             empty, selHead, selTail, done, deleted;
 
@@ -2496,17 +2501,20 @@ boolean             Before;
     {
       elConst = FALSE;
       empty = FALSE;
-      InsertionPoint = (firstSel == lastSel 
-			&& firstChar == lastChar
-			&& firstSel->ElTerminal
-			&& ((firstSel->ElLeafType == LtText && firstChar > 0)
-			    || firstSel->ElLeafType == LtPicture));
+      InsertionPoint = (firstSel == lastSel  &&
+			firstSel->ElTerminal &&
+			((firstSel->ElLeafType == LtText && firstChar > 0 &&
+			  firstChar == lastChar)            ||
+			 firstSel->ElLeafType == LtPicture  ||
+			 firstSel->ElLeafType == LtGraphics ||
+			 firstSel->ElLeafType == LtPolyLine ||
+			 firstSel->ElLeafType == LtSymbol     ));
       /* Peut-on considerer la selection courante comme un simple point */
       /* d'insertion ? */
       if (!InsertionPoint)
 	if (firstSel == lastSel)
 	  /* un seul element selectionne' */
-	  if (GetElementConstruct (firstSel) == CsConstant)
+	  if (GetElementConstruct (firstSel, &nComp) == CsConstant)
 	    /* c'est une constante, on va creer le nouvel element devant */
 	    {
 	      InsertionPoint = TRUE;
@@ -2622,15 +2630,23 @@ boolean             Before;
 	      selHead = (firstSel == lastSel &&
 			 firstSel->ElPrevious == NULL &&
 			 lastSel->ElTerminal &&
-			 (lastSel->ElLeafType == LtText || lastSel->ElLeafType == LtPicture) &&
-			 firstChar <= 1);
+			 ((lastSel->ElLeafType == LtText && firstChar <= 1) ||
+			  (lastSel->ElLeafType == LtPicture && firstChar == 0) ||
+			  lastSel->ElLeafType == LtGraphics ||
+			  lastSel->ElLeafType == LtPolyLine ||
+			  lastSel->ElLeafType == LtSymbol ));
 	      /* la selection est-t-elle a la fin de la derniere feuille
 		 de texte d'un element */
 	      selTail = (firstSel == lastSel &&
 			 lastSel->ElNext == NULL &&
 			 lastSel->ElTerminal &&
-			 (lastSel->ElLeafType == LtText || lastSel->ElLeafType == LtPicture) &&
-			 firstChar > lastSel->ElTextLength);
+			 ((lastSel->ElLeafType == LtText &&
+			   firstChar > lastSel->ElTextLength) ||
+			  (lastSel->ElLeafType == LtPicture &&
+			   firstChar > 0) ||
+			  lastSel->ElLeafType == LtGraphics ||
+			  lastSel->ElLeafType == LtPolyLine ||
+			  lastSel->ElLeafType == LtSymbol ));
 	    }
 	  
 	  /* verifie si la selection est en fin ou debut de paragraphe */
@@ -2850,33 +2866,36 @@ boolean             Before;
 			   son pere */
 			ChangeFirstLast (pEl, pSelDoc, TRUE, TRUE);
 		    }
-		  /* traite les exclusions des elements crees */
-		  RemoveExcludedElem (&pNew);
-		  /* traite les attributs requis des elements crees */
-		  AttachMandatoryAttributes (pNew, pSelDoc);
-		  if (pSelDoc->DocSSchema != NULL)
-		    /* le document n'a pas ete ferme' entre temps */
+		  if (pNew != NULL)
 		    {
-		      /* traitement des exceptions */
-		      CreationExceptions (pNew, pSelDoc);
-		      /* cree les paves du nouvel element et */
-		      /* met a jour ses voisins */
-		      CreateAllAbsBoxesOfEl (pNew, pSelDoc);
-		      /* Mise a jour des images abstraites */
-		      AbstractImageUpdated (pSelDoc);
-		      /* indique au Mediateur les modifications */
-		      RedisplayDocViews (pSelDoc);
-		      /* si on est dans un element copie' par inclusion,
-			 on met a jour les copies de cet element. */
-		      RedisplayCopies (pNew, pSelDoc, TRUE);
-		      UpdateNumbers (NextElement (pNew), pNew, pSelDoc, TRUE);
-		      /* Indiquer que le document est modifie' */
-		      pSelDoc->DocModified = TRUE;
-		      pSelDoc->DocNTypedChars += 30;
-		      /* envoie un evenement ElemNew.Post a l'application */
-		      NotifySubTree (TteElemNew, pSelDoc, pNew, 0);
-		      /* Replace la selection */
-		      SelectElementWithEvent (pSelDoc, FirstLeaf (pNew), TRUE, TRUE);
+		      /* traite les exclusions des elements crees */
+		      RemoveExcludedElem (&pNew);
+		      /* traite les attributs requis des elements crees */
+		      AttachMandatoryAttributes (pNew, pSelDoc);
+		      if (pSelDoc->DocSSchema != NULL)
+			/* le document n'a pas ete ferme' entre temps */
+			{
+			  /* traitement des exceptions */
+			  CreationExceptions (pNew, pSelDoc);
+			  /* cree les paves du nouvel element et */
+			  /* met a jour ses voisins */
+			  CreateAllAbsBoxesOfEl (pNew, pSelDoc);
+			  /* Mise a jour des images abstraites */
+			  AbstractImageUpdated (pSelDoc);
+			  /* indique au Mediateur les modifications */
+			  RedisplayDocViews (pSelDoc);
+			  /* si on est dans un element copie' par inclusion,
+			     on met a jour les copies de cet element. */
+			  RedisplayCopies (pNew, pSelDoc, TRUE);
+			  UpdateNumbers (NextElement (pNew), pNew, pSelDoc, TRUE);
+			  /* Indiquer que le document est modifie' */
+			  pSelDoc->DocModified = TRUE;
+			  pSelDoc->DocNTypedChars += 30;
+			  /* envoie un evenement ElemNew.Post a l'application */
+			  NotifySubTree (TteElemNew, pSelDoc, pNew, 0);
+			  /* Replace la selection */
+			  SelectElementWithEvent (pSelDoc, FirstLeaf (pNew), TRUE, TRUE);
+			}
 		    }
 		}
 	    }
@@ -3268,7 +3287,7 @@ int                *NItems;
 	/* la table est maintenant complete */
 	/* construit le menu a partir de la table */
 	*NItems = 0;
-	menuBuffer[0] = '\0';
+	menuBuffer[0] = EOS;
 	menuInd = 0;
 	for (i = 0; i < NElSurround; i++)
 	  {
@@ -3411,7 +3430,7 @@ PtrElement   pEl;
    BuildChangeTypeTable (pEl);
    /* on construit le menu a partir de la table */
    *NItems = 0;
-   menuBuffer[0] = '\0';
+   menuBuffer[0] = EOS;
    menuInd = 0;
    for (i = 0; i < NChangeTypeItems; i++)
      {

@@ -244,11 +244,11 @@ char               *label;
      {
 	element = NewSubtree (elementType.ElTypeNum, (PtrSSchema) (elementType.ElSSchema),
 			  LoadedDocument[document - 1], 0, TRUE, TRUE, TRUE,
-			      (*label) == '\0');
+			      (*label) == EOS);
 	if (element->ElStructSchema->SsRule[element->ElTypeNumber - 1].SrConstruct == CsPairedElement)
 	   if (!element->ElStructSchema->SsRule[element->ElTypeNumber - 1].SrFirstOfPair)
 	      element->ElPairIdent = 0;
-	if (*label != '\0')
+	if (*label != EOS)
 	   strncpy (element->ElLabel, label, MAX_LABEL_LEN);
      }
    return ((Element) element);
@@ -796,7 +796,8 @@ Document            document;
 		if (pDoc->DocRootElement == pEl)
 		   /* The whole main tree is destroyed */
 		   pDoc->DocRootElement = NULL;
-		else if (pDoc->DocAssocRoot[pEl->ElAssocNum - 1] == pEl)
+		else if (pEl->ElAssocNum > 0 &&
+			 pDoc->DocAssocRoot[pEl->ElAssocNum - 1] == pEl)
 		   pDoc->DocAssocRoot[pEl->ElAssocNum - 1] = NULL;
 	     DeleteElement (&pEl);
 	  }
@@ -1179,6 +1180,8 @@ Document            document;
       TtaError (ERR_invalid_parameter);
    else if (((PtrElement) (*newElement))->ElParent != NULL)
       TtaError (ERR_element_already_inserted);
+   else if (*newElement == parent)
+      TtaError (ERR_invalid_parameter);
    /* Checks the parameter document */
    else if (document < 1 || document > MAX_DOCUMENTS)
       TtaError (ERR_invalid_document_parameter);
@@ -2162,7 +2165,7 @@ Element             element;
    elementType.ElTypeNum = 0;
    if (element == NULL)
 	TtaError (ERR_invalid_parameter);
-   else
+   else if (((PtrElement) element)->ElStructSchema != NULL)
      {
 	elementType.ElSSchema = (SSchema) ((PtrElement) element)->ElStructSchema;
 	elementType.ElTypeNum = ((PtrElement) element)->ElTypeNumber;
@@ -2230,7 +2233,7 @@ ElementType         elementType;
 {
 
    UserErrorCode = 0;
-   nameBuffer[0] = '\0';
+   nameBuffer[0] = EOS;
    if (elementType.ElSSchema == NULL)
 	TtaError (ERR_invalid_parameter);
    else if (elementType.ElTypeNum > ((PtrSSchema) (elementType.ElSSchema))->SsNRules ||
@@ -2266,7 +2269,7 @@ ElementType         elementType;
 {
 
    UserErrorCode = 0;
-   nameBuffer[0] = '\0';
+   nameBuffer[0] = EOS;
    if (elementType.ElSSchema == NULL)
 	TtaError (ERR_invalid_parameter);
    else if (elementType.ElTypeNum > ((PtrSSchema) (elementType.ElSSchema))->SsNRules ||
@@ -2309,7 +2312,7 @@ char               *name;
 {
    UserErrorCode = 0;
    (*elementType).ElTypeNum = 0;
-   if (name == NULL || name[0] == '\0' || (*elementType).ElSSchema == NULL)
+   if (name == NULL || name[0] == EOS || (*elementType).ElSSchema == NULL)
      {
 	(*elementType).ElSSchema = NULL;
 	TtaError (ERR_invalid_parameter);
@@ -2352,7 +2355,7 @@ char               *name;
 {
    UserErrorCode = 0;
    (*elementType).ElTypeNum = 0;
-   if (name == NULL || name[0] == '\0' || (*elementType).ElSSchema == NULL)
+   if (name == NULL || name[0] == EOS || (*elementType).ElSSchema == NULL)
      {
 	(*elementType).ElSSchema = NULL;
 	TtaError (ERR_invalid_parameter);
@@ -2435,7 +2438,7 @@ Element             element;
 {
 
    UserErrorCode = 0;
-   nameBuffer[0] = '\0';
+   nameBuffer[0] = EOS;
    if (element == NULL)
 	TtaError (ERR_invalid_parameter);
    else
@@ -3559,6 +3562,11 @@ Element             element;
 	TtaError (ERR_invalid_parameter);
 	ok = FALSE;
      }
+   else if (((PtrElement) element)->ElStructSchema == NULL)
+     {
+	TtaError (ERR_invalid_parameter);
+	ok = FALSE;
+     }
    else if (searchedType.ElSSchema == NULL)
      {
 	if (searchedType.ElTypeNum > MAX_BASIC_TYPE)
@@ -3659,7 +3667,7 @@ Element             element;
    elementFound = NULL;
    if (element == NULL)
 	TtaError (ERR_invalid_parameter);
-   else if (searchedLabel[0] == '\0')
+   else if (searchedLabel[0] == EOS)
 	TtaError (ERR_invalid_element_type);
    else
       elementFound = SearchLabel (searchedLabel, (PtrElement) element);

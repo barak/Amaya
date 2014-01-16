@@ -47,16 +47,18 @@
 
 #include "applicationapi_f.h"
 #include "inites_f.h"
+#ifndef _WINDOWS 
 #include "LiteClue_f.h"
+#endif /* _WINDOWS */
 
 extern boolean      WithMessages;	/* partage avec le module dialog.c */
 extern Pixmap       image;
 #ifndef _WIN_PRINT
 extern int          appArgc;
-extern char       **appArgv;
+extern char**       appArgv;
+extern int          iString;
 #endif /* !_WIN_PRINT */
 extern ThotWidget   WIN_curWin;
-
 typedef void        (*Thot_ActionProc) ();
 typedef struct _CallbackCTX *PtrCallbackCTX;
 
@@ -86,47 +88,52 @@ static Menu_Ctl    *DocumentMenuList;
 static SchemaMenu_Ctl *SchemasMenuList;
 
 #ifdef _WINDOWS
+#include "win_f.h"
 #define WM_ENTER (WM_USER)
 
 extern TBADDBITMAP ThotTBBitmap;
+extern HWND        currentWindow;
+extern BOOL        tbStringsInitialized;
 
 static WNDPROC lpfnTextZoneWndProc = (WNDPROC) 0;
 static BOOL    doSwitchButton = TRUE;
+
+static int FormattedViewXPos = 0;
+static int FormattedViewYPos = 0;
 int     currentFrame;
 
 HWND  hwndClient ;
 HWND  ToolBar ;
 HWND  StatusBar;
+HWND  logoFrame;
 HMENU currentMenu;
-#ifdef AMAYA_TOOLTIPS
-int  nCust[MAX_FRAME][30];
+#ifdef THOT_TOOLTIPS
+int    nCust[MAX_FRAME][30];
 static HWND hwndTB;
 
-static int   tipIndex = 0;
-static int   strIndex = 0;
+static int   strIndex ;
 
-extern int   CommandToString [MAX_BUTTON];
-extern char  szTbStrings [4096];
-#endif /* AMAYA_TOOLTIPS */
-
-#define ToolBar_AddBitmap(hwnd, nButtons, lptbab) \
-    (int)SendMessage((hwnd), TB_ADDBITMAP, (WPARAM)nButtons, (LPARAM)(LPTBADDBITMAP) lptbab)
+extern int     tipIndex;
+extern int     CommandToString [MAX_FRAME][MAX_BUTTON];
+extern char    szTbStrings [4096];
+#endif /* THOT_TOOLTIPS */
 
 #define ToolBar_InsertButton(hwnd, idButton, lpButton) \
     (BOOL)SendMessage((hwnd), TB_INSERTBUTTON, (WPARAM)idButton, (LPARAM)(LPTBBUTTON)lpButton)
 
-#define ToolBar_ButtonStructSize(hwnd) \
-    (void)SendMessage((hwnd), TB_BUTTONSTRUCTSIZE, (WPARAM)sizeof(TBBUTTON), 0L)
-
+#if 0
+extern HBITMAP appLogo;
+extern int     bmpID;
+#endif /* 0 */
 HMENU hmenu;
 int   menu_item ;
-#ifdef AMAYA_TOOLTIPS
+#ifdef THOT_TOOLTIPS
 #ifdef __STDC__
-LPSTR GetString (int frame, int iString)
+LPSTR GetString (int frame, int i_String)
 #else  /* __STDC__ */
-LPSTR GetString (frame, iString)
-int frame;
-int iString;
+LPSTR GetString (frame, i_String)
+int frane;
+int i_String;
 #endif /* __STDC__ */
 {
    int i, cb ;
@@ -134,7 +141,7 @@ int iString;
 
    /* Cycle through to requested string */
    pString = &szTbStrings [0] ;
-   for (i = 0 ; i < iString ; i++) {
+   for (i = 0 ; i < i_String ; i++) {
        cb = lstrlen (pString) ;
        pString += (cb + 1) ;
    }
@@ -173,7 +180,7 @@ LPARAM lParam;
 
    return 0 ;
 }
-#endif /* AMAYA_TOOLTIPS */
+#endif /* THOT_TOOLTIPS */
 
 #ifdef __STDC__
 LRESULT CALLBACK textZoneProc (HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -208,6 +215,10 @@ LPARAM lParam;
      */ 
  
     return CallWindowProc (lpfnTextZoneWndProc, hwnd, msg, wParam, lParam); 
+}
+
+HWND GetCurrentWindow () {
+     return FrRef [currentFrame];
 }
 #endif /* _WINDOWS */
 
@@ -255,7 +266,7 @@ int                 number;
    char                namef1[100];
    char                namef2[100];
    char                text[100];
-   /*   char               *servername; */
+   char                alphabet;
 
 #  ifndef _WINDOWS
    Display            *Dp;
@@ -307,8 +318,15 @@ int                 number;
 
    Dict_Init ();
    ThotInitDisplay (name, 0, 0);
-   FontIdentifier ('L', 'H', 0, MenuSize, UnPoint, text, namef1);
-   FontIdentifier ('L', 'H', 1, MenuSize, UnPoint, text, namef2);
+
+#  ifndef _WINDOWS
+   /* initialize the LiteClue Widget */
+   InitClue(RootShell);
+#  endif /* !_WINDOWS */
+
+   alphabet = TtaGetAlphabet (TtaGetDefaultLanguage ());
+   FontIdentifier (alphabet, 'H', 0, MenuSize, UnPoint, text, namef1);
+   FontIdentifier (alphabet, 'H', 1, MenuSize, UnPoint, text, namef2);
    TtaChangeDialogueFonts (namef1, namef2);
 
    /* reserve les menus de Thot */
@@ -960,7 +978,7 @@ int                 frame;
    i = 0;
    j = 0;
    withEquiv = FALSE;
-   equiv[0] = '\0';
+   equiv[0] = EOS;
    ptritem = ptrmenu->ItemsList;
    while (item < ptrmenu->ItemsNb)
      {
@@ -1002,7 +1020,7 @@ int                 frame;
 	       }
 	     MenuActionList[action].ActionActive[frame] = TRUE;
 	  }
-	equiv[j++] = '\0';
+	equiv[j++] = EOS;
 	item++;
      }
    sref = ((entry + 1) * MAX_MENU * MAX_ITEM) + ref;
@@ -1047,7 +1065,7 @@ int                 frame;
    i = 0;
    j = 0;
    withEquiv = FALSE;
-   equiv[0] = '\0';
+   equiv[0] = EOS;
    ptritem = ptrmenu->ItemsList;
    while (item < ptrmenu->ItemsNb)
      {
@@ -1092,7 +1110,7 @@ int                 frame;
 		  MenuActionList[action].ActionActive[frame] = TRUE;
 	       }
 	  }
-	equiv[j++] = '\0';
+	equiv[j++] = EOS;
 	item++;
      }
 
@@ -1168,7 +1186,7 @@ Pixmap              icon;
      {
 	/* Police de caracteres utilisee dans les menus */
 #       ifndef _WINDOWS
-	DefaultFont = XmFontListCreate ((XFontStruct *) ThotLoadFont ('L', 'H', 0, MenuSize, UnPoint, 0), XmSTRING_DEFAULT_CHARSET);
+       /*DefaultFont = XmFontListCreate ((XFontStruct *) ThotLoadFont ('L', 'H', 0, MenuSize, UnPoint, 0), XmSTRING_DEFAULT_CHARSET);*/
 #       endif
 	/* Compte le nombre de menus a creer */
 	n = 0;
@@ -1285,10 +1303,10 @@ caddr_t             call_d;
 static ThotWidget liteClue = NULL;
 
 #ifdef __STDC__
-void                InitClue (ThotWidget toplevel)
+void         InitClue (ThotWidget toplevel)
 #else  /* __STDC__ */
-void                InitClue (toplevel)
-ThotWidget          toplevel;
+void         InitClue (toplevel)
+ThotWidget   toplevel;
 
 #endif /* __STDC__ */
 {
@@ -1310,13 +1328,13 @@ ThotWidget          toplevel;
 	   wait_ms = 500;
        }
    }
-   bg = ColorPixel(ColorNumber("yellow"));
+   bg = ColorPixel(ColorNumber("Yellow"));
    n = 0;
    XtSetArg (args[n], XtNbackground, bg);
    n++;
    XtSetArg (args[n], XtNfont, DefaultFont);
    n++;
-   XtSetArg (args[n], XgcNwaitperiod, wait_ms);
+   XtSetArg (args[n], XgcNwaitPeriod, wait_ms);
    n++;
    XtSetValues (liteClue, args, n);
 }
@@ -1337,6 +1355,7 @@ ThotWidget          toplevel;
    info: text to display when the cursor stays on the button.
    Returns index
   ----------------------------------------------------------------------*/
+#ifndef _WIN_PRINT
 #ifdef _WINDOWS
 #ifdef __STDC__
 int WIN_TtaAddButton (Document document, View view, int picture, void (*procedure) (), char *info, BYTE type, BOOL state)
@@ -1388,7 +1407,7 @@ char               *info;
 	  {
 	     i = 0;
 	     while (i < MAX_BUTTON && FrameTable[frame].Button[i] != 0)
-		i++;
+               i++;
 	     if (i < MAX_BUTTON)
 	       {
 
@@ -1449,17 +1468,19 @@ char               *info;
 					 if (!w)
                         WinErrorBox (NULL);
 					 else {
-                         w->iBitmap   = picture;
-                         w->idCommand = TBBUTTONS_BASE + i; 
-                         w->fsState   = TBSTATE_ENABLED;
-                         w->fsStyle   = type;
-                         w->dwData    = 0;
-                         w->iString   = i;
-#                        ifdef AMAYA_TOOLTIPS
-                         CommandToString[tipIndex++] = TBBUTTONS_BASE + i;
-                         CommandToString[tipIndex]   = -1;
+                         w->iBitmap      = picture;
+                         w->idCommand    = TBBUTTONS_BASE + i; 
+                         w->fsState      = TBSTATE_ENABLED;
+                         w->fsStyle      = type;
+						 w->bReserved[0] = 0;
+						 w->bReserved[1] = 0;
+                         w->dwData       = 0;
+                         w->iString      = -1;
+#                        ifdef THOT_TOOLTIPS
+                         CommandToString[frame][tipIndex++] = TBBUTTONS_BASE + i;
+                         CommandToString[frame][tipIndex]   = -1;
 			             nCust [frame][i] = i;
-#                        endif /* AMAYA_TOOLTIPS */
+#                        endif /* THOT_TOOLTIPS */
                          FrameTable[frame].Button[i] = w;
                          FrameTable[frame].Call_Button[i] = (Proc) procedure;
 
@@ -1481,10 +1502,12 @@ char               *info;
 #                 endif /* _WINDOWS */
                   if (info != NULL) {
 #                    ifdef _WINDOWS
-#            ifdef AMAYA_TOOLTIPS
-		     strcat (&szTbStrings[strIndex], info);
-		     strIndex += (strlen (info) + 1);
-#            endif /* AMAYA_TOOLTIPS */
+#                    ifdef THOT_TOOLTIPS
+                     if (!tbStringsInitialized) {                   
+		                strcat (&szTbStrings [strIndex], info);
+	                    strIndex += (strlen (info) + 1);
+					 }
+#                    endif /* THOT_TOOLTIPS */
 #                    else  /* !_WINDOWS */
 		     XcgLiteClueAddWidget(liteClue, w,  info, strlen(info), 0);
 #                    endif /* _WINDOWS */
@@ -1496,7 +1519,7 @@ char               *info;
    TtaHandlePendingEvents ();
    return (index);
 }				/*TtaAddButton */
-
+#endif /* _WIN_PRINT */
 
 /*----------------------------------------------------------------------
    TtaGetButtonCallback
@@ -2015,6 +2038,7 @@ void                (*procedure) ();
                   wLabel = CreateWindow ("STATIC", label, WS_CHILD | WS_VISIBLE | SS_LEFT, 
                                          0, 0, 0, 0, FrMainRef[frame], (HMENU) (i + MAX_TEXTZONE), hInstance, NULL);
                   FrameTable[frame].Label[i] = wLabel;
+				  /* FrameTable[frame].showLogo = TRUE ; */
                   PostMessage (FrMainRef[frame], WM_SIZE, 0, MAKELPARAM (rect.right, rect.bottom));
 #                 endif /* _WINDOWS */
 	       }
@@ -2115,10 +2139,11 @@ View                view;
 #  endif
 
 #  ifdef _WINDOWS
-   int     index;
+   int     index, nbZonesShown = 0;
    boolean itemChecked = FALSE;
    RECT    r;
 #  endif /* _WINDOWS */
+
 
    UserErrorCode = 0;
    /* verifie le parametre document */
@@ -2127,6 +2152,9 @@ View                view;
    else
      {
 	frame = GetWindowNumber (document, view);
+#   ifdef _WINDOWS
+    /* FrameTable[frame].showLogo = !FrameTable[frame].showLogo; */
+#   endif /* _WINDOWS */ 
 	if (frame == 0 || frame > MAX_FRAME)
 	   TtaError (ERR_invalid_parameter);
 	else if (FrameTable[frame].WdFrame != 0)
@@ -2264,542 +2292,550 @@ int                 doc;
 #  ifdef _WINDOWS
    hwndClient = 0;
    ToolBar    = 0;
+   logoFrame  = 0;
    StatusBar  = 0;
 #  endif /* _WINDOWS */
 
    frame = 0;
    if (schema != NULL)
      {
-	/* Allocation d'une entree dans la table des fenetres */
-	found = FALSE;
-	frame = 1;
-	while (frame <= MAX_FRAME && !found)
-	  {
-	     /* Recherche une frame ouverte vide */
-	     found = (FrameTable[frame].FrDoc == 0 && FrameTable[frame].WdFrame != 0);
-	     if (!found)
-		frame++;
-	  }
-	if (!found)
-	  {
-	     frame = 1;
-	     while (frame <= MAX_FRAME && !found)
-	       {
-		  /* Recherche une frame libre */
-		  found = (FrameTable[frame].WdFrame == 0);
-		  if (!found)
-		     frame++;
-	       }
-	  }
-
-	if (!found)
-	   frame = 0;
-	else if (FrameTable[frame].WdFrame == 0)
-	  {
-	     /* il faut creer effectivement la fenetre */
-	     FrameTable[frame].FrLeftMargin = 0;
-	     FrameTable[frame].FrTopMargin = 0;
-	     /* Verification des dimensions */
-	     if (large == 0)
-		large = 180;	/* largeur en mm */
-	     large = mmtopixel (large, 1) + FrameTable[frame].FrLeftMargin;
-	     if (haut == 0)
-		haut = 240;	/* hauteur en mm */
-	     haut = mmtopixel (haut, 0) + FrameTable[frame].FrTopMargin;
-
-#            ifndef _WINDOWS
-	     if (large < MIN_LARG)
-		dx = (Dimension) MIN_LARG;
-	     else
-		dx = (Dimension) large;
-	     if (haut < MIN_HAUT)
-		dy = (Dimension) MIN_HAUT;
-	     else
-		dy = (Dimension) haut;
-#            endif /* _WINDOWS */
-
-	     if (X <= 0)
-		X = 92;
-	     else
-		X = mmtopixel (X, 1);
-	     if (Y <= 0)
-		Y = 2;
-	     else
-		Y = mmtopixel (Y, 0);
-
-#            ifdef _WINDOWS
-	     Main_Wd = CreateWindowEx (0L, tszAppName,	    /* window class name       */
-				       tszAppName,	    /* window caption          */
-				       WS_OVERLAPPEDWINDOW, /* window style            */
-				       CW_USEDEFAULT,	    /* initial x pos           */
-				       CW_USEDEFAULT,	    /* initial y pos           */
-				       large,	            /* initial x size          */
-				       haut,	            /* initial y size          */
-				       NULL,		    /* parent window handle    */
-				       NULL,		    /* window menu handle      */
-				       hInstance,	    /* program instance handle */
-				       NULL);	            /* creation parameters     */
-	     if (Main_Wd == 0)
-		WinErrorBox (WIN_Main_Wd);
-	     else {
-#                 ifdef AMAYA_DEBUG
-                  fprintf (stderr, "Created Main_Wd %X for %d\n", Main_Wd, frame);
-#                 endif /* AMAYA_DEBUG */
-                  /* store everything. */
-                  FrMainRef[frame]           = Main_Wd;
-                  FrRef[frame]               = hwndClient;
-                  WinToolBar[frame]          = ToolBar;
-                  FrameTable[frame].WdStatus = StatusBar;
-                  /* and show it up. */
-                  
-                  menu_bar = CreateMenu ();
-                  if (!menu_bar) 
-                     WinErrorBox (Main_Wd);
-                  else 
-		       WinMenus[frame] = menu_bar;
+       /* Allocation d'une entree dans la table des fenetres */
+       found = FALSE;
+       frame = 1;
+       while (frame <= MAX_FRAME && !found)
+	 {
+	   /* Recherche une frame ouverte vide */
+	   found = (FrameTable[frame].FrDoc == 0 && FrameTable[frame].WdFrame != 0);
+	   if (!found)
+	     frame++;
+	 }
+       if (!found)
+	 {
+	   frame = 1;
+	   while (frame <= MAX_FRAME && !found)
+	     {
+	       /* Recherche une frame libre */
+	       found = (FrameTable[frame].WdFrame == 0);
+	       if (!found)
+		 frame++;
 	     }
-#            endif /* _WINDOWS */
+	 }
 
-	     /*** Creation la fenetre document ***/
-	     n = 0;
-#            ifndef _WINDOWS
-	     XtSetArg (args[n], XmNdefaultFontList, DefaultFont);
-	     n++;
-	     sprintf (string, "+%d+%d", X, Y);
-	     XtSetArg (args[n], XmNgeometry, (String) string);
-	     n++;
-	     XtSetArg (args[n], XmNwidth, dx + 4);
-	     n++;
-	     XtSetArg (args[n], XmNheight, dy + 4);
-	     n++;
-	     if (wind_pixmap != 0)
-	       {
-		  /* Creation de la fenetre icone associee */
-		  XtSetArg (args[n], XmNiconPixmap, wind_pixmap);
-		  n++;
-	       }
-	     XtSetArg (args[n], XmNmwmDecorations, MWM_DECOR_ALL);
-	     n++;
-	     XtSetArg (args[n], XmNkeyboardFocusPolicy, XmPOINTER);
-	     n++;
-	     shell = XtCreatePopupShell (name, applicationShellWidgetClass, RootShell, args, n);
+       if (!found)
+	 frame = 0;
+       else if (FrameTable[frame].WdFrame == 0)
+	 {
+	   /* il faut creer effectivement la fenetre */
+	   FrameTable[frame].FrLeftMargin = 0;
+	   FrameTable[frame].FrTopMargin = 0;
+	   /* Verification des dimensions */
+	   if (large == 0)
+	     large = 180;	/* largeur en mm */
+	   large = mmtopixel (large, 1) + FrameTable[frame].FrLeftMargin;
+	   if (haut == 0)
+	     haut = 240;	/* hauteur en mm */
+	   haut = mmtopixel (haut, 0) + FrameTable[frame].FrTopMargin;
+	   
+#          ifdef _WINDOWS
+	   if (X < 0)
+	     X = 92;
+	   else
+	     X = mmtopixel (X, 1);
+	   if (Y < 0)
+	     Y = 2;
+	   else
+	     Y = mmtopixel (Y, 0);
+#          else  /* _WINDOWS */
+	   if (large < MIN_LARG)
+	     dx = (Dimension) MIN_LARG;
+	   else
+	     dx = (Dimension) large;
+	   if (haut < MIN_HAUT)
+	     dy = (Dimension) MIN_HAUT;
+	   else
+	     dy = (Dimension) haut;
+	   if (X <= 0)
+	     X = 92;
+	   else
+	     X = mmtopixel (X, 1);
+	   if (Y <= 0)
+	     Y = 2;
+	   else
+	     Y = mmtopixel (Y, 0);
+#          endif /* _WINDOWS */
 
-	     n = 0;
-	     XtSetArg (args[n], XmNwidth, dx + 4);
-	     n++;
-	     XtSetArg (args[n], XmNheight, dy + 4);
-	     n++;
-	     XtSetArg (args[n], XmNbackground, Scroll_Color);
-	     n++;
-	     XtSetArg (args[n], XmNspacing, 0);
-	     n++;
-	     XtSetArg (args[n], XmNkeyboardFocusPolicy, XmPOINTER);
-	     n++;
-	     Main_Wd = XmCreateMainWindow (shell, "Thot_Doc", args, n);
+#          ifdef _WINDOWS
+#          if 0
+	   if (appLogo == (HBITMAP)0)
+	     appLogo = (HBITMAP) LoadImage (hInstance, bmpID, IMAGE_BITMAP, 0, 0, LR_DEFAULTCOLOR);
+#          endif /* 0 */
 
-	     XtManageChild (Main_Wd);
-	     XtAddCallback (shell, XmNdestroyCallback, (XtCallbackProc) FrameKilled, (XtPointer) frame);
-#            endif /* _WINDOWS */
+	   Main_Wd = CreateWindowEx (0L, tszAppName,    /* window class name */
+				     tszAppName,	/* window caption    */
+				     WS_OVERLAPPEDWINDOW, /* window style            */
+				     X,	    /* initial x pos           */
+				     Y,	    /* initial y pos           */
+				     large, /* initial x size          */
+				     haut,  /* initial y size          */
+				     NULL,  /* parent window handle    */
+				     NULL,  /* window menu handle      */
+				     hInstance,	/* program instance handle */
+				     NULL);	/* creation parameters     */
 
-	     /* Recherche la liste des menus a construire */
-	     SCHmenu = SchemasMenuList;
-	     ptrmenu = NULL;
-	     while (SCHmenu != NULL && ptrmenu == NULL)
-	       {
-		  if (!strcmp (schema, SCHmenu->SchemaName))
-		     /* c'est un document d'un type particulier */
-		     ptrmenu = SCHmenu->SchemaMenu;
-		  else
-		     /* schema suivant */
-		     SCHmenu = SCHmenu->NextSchema;
-	       }
-	     if (ptrmenu == NULL)
-		/* c'est un document standard */
-		ptrmenu = DocumentMenuList;
+	   if (Main_Wd == 0)
+	     WinErrorBox (WIN_Main_Wd);
+	   else {
+#ifdef AMAYA_DEBUG
+	     fprintf (stderr, "Created Main_Wd %X for %d\n", Main_Wd, frame);
+#endif /* AMAYA_DEBUG */
+	     /* store everything. */
+	     FrMainRef[frame]            = Main_Wd;
+	     FrRef[frame]                = hwndClient;
+	     WinToolBar[frame]           = ToolBar;
+	     FrameTable[frame].WdStatus  = StatusBar;
+	     /* and show it up. */
+                  
+	     menu_bar = CreateMenu ();
+	     if (!menu_bar) 
+	       WinErrorBox (Main_Wd);
+	     else 
+	       WinMenus[frame] = menu_bar;
+	   }
+#          endif /* _WINDOWS */
 
-	     /**** Construction des menus ****/
-	     FrameTable[frame].FrMenus = ptrmenu;
-	     /* reference du menu construit */
-	     ref = frame + MAX_LocalMenu;
-	     i = 0;
-	     /* Initialise les menus dynamiques */
-	     FrameTable[frame].MenuAttr = -1;
-	     FrameTable[frame].MenuSelect = -1;
-#            ifndef _WINDOWS
-	     menu_bar = 0;
-#            endif /* !_WINDOWS */ 
-	     /*** Parametres de creation des boutons menus ***/
-	     n = 0;
-#            ifndef _WINDOWS
-	     XtSetArg (args[n], XmNbackground, BgMenu_Color);
-	     n++;
-	     XtSetArg (args[n], XmNforeground, Black_Color);
-	     n++;
-	     XtSetArg (args[n], XmNfontList, DefaultFont);
-	     n++;
-	     XtSetArg (args[n], XmNspacing, 0);
-	     n++;
-	     XtSetArg (args[n], XmNborderWidth, 0);
-	     n++;
-#            endif /* _WINDOWS */
-	     /* saute les menus qui ne concernent pas cette vue */
-	     while (ptrmenu != NULL)
-	       {
-		  /* saute les menus qui ne concernent pas cette vue */
-		  if (ptrmenu->MenuView == 0 || ptrmenu->MenuView == view)
-		    {
-		       if (menu_bar == 0)
-			 {
-			     /*** La barre des menus ***/
-#                           ifndef _WINDOWS
-			    XtSetArg (argument[0], XmNbackground, BgMenu_Color);
-			    XtSetArg (argument[1], XmNspacing, 0);
-			    menu_bar = XmCreateMenuBar (Main_Wd, "Barre_menu", argument, 2);
-			    XtManageChild (menu_bar);
-#                           endif /* !_WINDOWS */
-			 }
+	   /*** Creation la fenetre document ***/
+	   n = 0;
+#          ifndef _WINDOWS
+	   XtSetArg (args[n], XmNdefaultFontList, DefaultFont);
+	   n++;
+	   sprintf (string, "+%d+%d", X, Y);
+	   XtSetArg (args[n], XmNgeometry, (String) string);
+	   n++;
+	   XtSetArg (args[n], XmNwidth, dx + 4);
+	   n++;
+	   XtSetArg (args[n], XmNheight, dy + 4);
+	   n++;
+	   if (wind_pixmap != 0)
+	     {
+	       /* Creation de la fenetre icone associee */
+	       XtSetArg (args[n], XmNiconPixmap, wind_pixmap);
+	       n++;
+	     }
+	   XtSetArg (args[n], XmNmwmDecorations, MWM_DECOR_ALL);
+	   n++;
+	   XtSetArg (args[n], XmNkeyboardFocusPolicy, XmPOINTER);
+	   n++;
+	   shell = XtCreatePopupShell (name, applicationShellWidgetClass, RootShell, args, n);
+	   
+	   n = 0;
+	   XtSetArg (args[n], XmNwidth, dx + 4);
+	   n++;
+	   XtSetArg (args[n], XmNheight, dy + 4);
+	   n++;
+	   XtSetArg (args[n], XmNbackground, Scroll_Color);
+	   n++;
+	   XtSetArg (args[n], XmNspacing, 0);
+	   n++;
+	   XtSetArg (args[n], XmNkeyboardFocusPolicy, XmPOINTER);
+	   n++;
+	   Main_Wd = XmCreateMainWindow (shell, "Thot_Doc", args, n);
 
-		       /* construit le bouton de menu */
-#                      ifdef _WINDOWS
-		       w = CreateMenu ();
-#                      else  /* _WINDOWS */
-		       w = XmCreateCascadeButton (menu_bar, TtaGetMessage (THOT, ptrmenu->MenuID), args, n);
+	   XtManageChild (Main_Wd);
+	   XtAddCallback (shell, XmNdestroyCallback, (XtCallbackProc) FrameKilled, (XtPointer) frame);
+#          endif /* _WINDOWS */
+	   
+	   /* Recherche la liste des menus a construire */
+	   SCHmenu = SchemasMenuList;
+	   ptrmenu = NULL;
+	   while (SCHmenu != NULL && ptrmenu == NULL)
+	     {
+	       if (!strcmp (schema, SCHmenu->SchemaName))
+		 /* c'est un document d'un type particulier */
+		 ptrmenu = SCHmenu->SchemaMenu;
+	       else
+		 /* schema suivant */
+		 SCHmenu = SCHmenu->NextSchema;
+	     }
+	   if (ptrmenu == NULL)
+	     /* c'est un document standard */
+	     ptrmenu = DocumentMenuList;
+	   
+	   /**** Construction des menus ****/
+	   FrameTable[frame].FrMenus = ptrmenu;
+	   /* reference du menu construit */
+	   ref = frame + MAX_LocalMenu;
+	   i = 0;
+	   /* Initialise les menus dynamiques */
+	   FrameTable[frame].MenuAttr = -1;
+	   FrameTable[frame].MenuSelect = -1;
+#          ifndef _WINDOWS
+	   menu_bar = 0;
+#          endif /* !_WINDOWS */ 
+	   /*** Parametres de creation des boutons menus ***/
+	   n = 0;
+#          ifndef _WINDOWS
+	   XtSetArg (args[n], XmNbackground, BgMenu_Color);
+	   n++;
+	   XtSetArg (args[n], XmNforeground, Black_Color);
+	   n++;
+	   XtSetArg (args[n], XmNfontList, DefaultFont);
+	   n++;
+	   XtSetArg (args[n], XmNspacing, 0);
+	   n++;
+	   XtSetArg (args[n], XmNborderWidth, 0);
+	   n++;
+#          endif /* _WINDOWS */
+	   /* saute les menus qui ne concernent pas cette vue */
+	   while (ptrmenu != NULL)
+	     {
+	       /* saute les menus qui ne concernent pas cette vue */
+	       if (ptrmenu->MenuView == 0 || ptrmenu->MenuView == view)
+		 {
+		   if (menu_bar == 0)
+		     {
+		       /*** La barre des menus ***/
+#                      ifndef _WINDOWS
+		       XtSetArg (argument[0], XmNbackground, BgMenu_Color);
+		       XtSetArg (argument[1], XmNspacing, 0);
+		       menu_bar = XmCreateMenuBar (Main_Wd, "Barre_menu", argument, 2);
+		       XtManageChild (menu_bar);
 #                      endif /* !_WINDOWS */
-		       FrameTable[frame].WdMenus[i] = w;
-		       FrameTable[frame].ActifMenus[i] = TRUE;
-		       /* Evite la construction des menus dynamiques */
-		       if (ptrmenu->MenuAttr)
-			  FrameTable[frame].MenuAttr = ptrmenu->MenuID;
-		       else if (ptrmenu->MenuSelect) 
-			    FrameTable[frame].MenuSelect = ptrmenu->MenuID;
-		       else 
-			    BuildPopdown (ptrmenu, ref, w, frame);
-#                      ifdef _WINDOWS
-                       AppendMenu (menu_bar, MF_POPUP, (UINT) w, TtaGetMessage (THOT, ptrmenu->MenuID));
-#                      else  /* !_WINDOWS */
-                       XtManageChild (w);
-#                      endif /* !_WINDOWS */
-		       /* Enregistre les menus dynamiques */
-		       if (ptrmenu->MenuHelp)
-			 {
-			    /* Cadre a droite le menu help */
-#                           ifdef _WINDOWS
-#                           else  /* _WINDOWS */
-			    XtSetArg (argument[0], XmNmenuHelpWidget, w);
-			    XtSetValues (XtParent (w), argument, 1);
-#                           endif /* _WINDOWS */
-			 }
+		     }
+		   
+		   /* construit le bouton de menu */
+#                  ifdef _WINDOWS
+		   w = CreateMenu ();
+#                  else  /* _WINDOWS */
+		   w = XmCreateCascadeButton (menu_bar, TtaGetMessage (THOT, ptrmenu->MenuID), args, n);
+#                  endif /* !_WINDOWS */
+		   FrameTable[frame].WdMenus[i] = w;
+		   FrameTable[frame].ActifMenus[i] = TRUE;
+		   /* Evite la construction des menus dynamiques */
+		   if (ptrmenu->MenuAttr)
+		     FrameTable[frame].MenuAttr = ptrmenu->MenuID;
+		   else if (ptrmenu->MenuSelect) 
+		     FrameTable[frame].MenuSelect = ptrmenu->MenuID;
+		   else 
+		     BuildPopdown (ptrmenu, ref, w, frame);
+#                  ifdef _WINDOWS
+		   AppendMenu (menu_bar, MF_POPUP, (UINT) w, TtaGetMessage (THOT, ptrmenu->MenuID));
+#                  else  /* !_WINDOWS */
+		   XtManageChild (w);
+#                  endif /* !_WINDOWS */
+		   /* Enregistre les menus dynamiques */
+		   if (ptrmenu->MenuHelp)
+		     {
+		       /* Cadre a droite le menu help */
+#                      ifndef _WINDOWS
+		       XtSetArg (argument[0], XmNmenuHelpWidget, w);
+		       XtSetValues (XtParent (w), argument, 1);
+#                      endif /* _WINDOWS */
+		     }
+		 }
 
-		    }
+	       ptrmenu = ptrmenu->NextMenu;
+	       ref += MAX_ITEM;
+	       i++;
+	     }
 
-		  ptrmenu = ptrmenu->NextMenu;
-		  ref += MAX_ITEM;
-		  i++;
-	       }
+	   /* Les autres entrees de menus sont inactives */
+	   while (i < MAX_MENU)
+	     {
+	       FrameTable[frame].ActifMenus[i] = FALSE;
+	       i++;
+	     }
 
-	     /* Les autres entrees de menus sont inactives */
-	     while (i < MAX_MENU)
-	       {
-		  FrameTable[frame].ActifMenus[i] = FALSE;
-		  i++;
-	       }
+	   /*** La barre de scroll horizontale ***/
+	   n = 0;
+#          ifndef _WINDOWS
+	   XtSetArg (args[n], XmNbackground, Scroll_Color);
+	   n++;
+	   XtSetArg (args[n], XmNorientation, XmHORIZONTAL);
+	   n++;
+	   XtSetArg (args[n], XmNvalue, 0);
+	   n++;
+	   hscrl = XmCreateScrollBar (Main_Wd, "Scroll", args, n);
+	   XtManageChild (hscrl);
+	   /*XtAddCallback (hscrl, XmNvalueChangedCallback, (XtCallbackProc) FrameHScrolled, (XtPointer) frame); */
+	   XtAddCallback (hscrl, XmNdragCallback, (XtCallbackProc) FrameHScrolled, (XtPointer) frame);
+	   XtAddCallback (hscrl, XmNdecrementCallback, (XtCallbackProc) FrameHScrolled, (XtPointer) frame);
+	   XtAddCallback (hscrl, XmNincrementCallback, (XtCallbackProc) FrameHScrolled, (XtPointer) frame);
+	   XtAddCallback (hscrl, XmNpageDecrementCallback, (XtCallbackProc) FrameHScrolled, (XtPointer) frame);
+	   XtAddCallback (hscrl, XmNpageIncrementCallback, (XtCallbackProc) FrameHScrolled, (XtPointer) frame);
+	   XtAddCallback (hscrl, XmNtoTopCallback, (XtCallbackProc) FrameHScrolled, (XtPointer) frame);
+	   XtAddCallback (hscrl, XmNtoBottomCallback, (XtCallbackProc) FrameHScrolled, (XtPointer) frame);
+#          else  /* _WINDOWS */
+	   hscrl = CreateWindow ("scrollbar", NULL, WS_CHILD | WS_VISIBLE | SBS_HORZ,
+				 0, 0, 0, 0, Main_Wd, (HMENU) frame, hInstance, NULL);
+	   
+	   SetScrollRange (hscrl, SB_CTL, 0, 100, FALSE);
+	   SetScrollPos (hscrl, SB_CTL, 0, FALSE);
+#          endif /* _WINDOWS */
 
-	     /*** La barre de scroll horizontale ***/
-	     n = 0;
-#            ifndef _WINDOWS
-	     XtSetArg (args[n], XmNbackground, Scroll_Color);
-	     n++;
-	     XtSetArg (args[n], XmNorientation, XmHORIZONTAL);
-	     n++;
-	     XtSetArg (args[n], XmNvalue, 0);
-	     n++;
-	     hscrl = XmCreateScrollBar (Main_Wd, "Scroll", args, n);
-	     XtManageChild (hscrl);
-	     /*XtAddCallback (hscrl, XmNvalueChangedCallback, (XtCallbackProc) FrameHScrolled, (XtPointer) frame); */
-	     XtAddCallback (hscrl, XmNdragCallback, (XtCallbackProc) FrameHScrolled, (XtPointer) frame);
-	     XtAddCallback (hscrl, XmNdecrementCallback, (XtCallbackProc) FrameHScrolled, (XtPointer) frame);
-	     XtAddCallback (hscrl, XmNincrementCallback, (XtCallbackProc) FrameHScrolled, (XtPointer) frame);
-	     XtAddCallback (hscrl, XmNpageDecrementCallback, (XtCallbackProc) FrameHScrolled, (XtPointer) frame);
-	     XtAddCallback (hscrl, XmNpageIncrementCallback, (XtCallbackProc) FrameHScrolled, (XtPointer) frame);
-	     XtAddCallback (hscrl, XmNtoTopCallback, (XtCallbackProc) FrameHScrolled, (XtPointer) frame);
-	     XtAddCallback (hscrl, XmNtoBottomCallback, (XtCallbackProc) FrameHScrolled, (XtPointer) frame);
+	   /*** La barre de scroll verticale ***/
+#          ifndef _WINDOWS
+	   n = 0;
+	   XtSetArg (args[n], XmNbackground, Scroll_Color);
+	   n++;
+	   XtSetArg (args[n], XmNorientation, XmVERTICAL);
+	   n++;
+	   XtSetArg (args[n], XmNvalue, 0);
+	   n++;
+	   vscrl = XmCreateScrollBar (Main_Wd, "Scroll", args, n);
+	   XtManageChild (vscrl);
+	   /*XtAddCallback (vscrl, XmNvalueChangedCallback, (XtCallbackProc) FrameVScrolled, (XtPointer) frame); */
+	   XtAddCallback (vscrl, XmNdragCallback, (XtCallbackProc) FrameVScrolled, (XtPointer) frame);
+	   XtAddCallback (vscrl, XmNdecrementCallback, (XtCallbackProc) FrameVScrolled, (XtPointer) frame);
+	   XtAddCallback (vscrl, XmNincrementCallback, (XtCallbackProc) FrameVScrolled, (XtPointer) frame);
+	   XtAddCallback (vscrl, XmNpageDecrementCallback, (XtCallbackProc) FrameVScrolled, (XtPointer) frame);
+	   XtAddCallback (vscrl, XmNpageIncrementCallback, (XtCallbackProc) FrameVScrolled, (XtPointer) frame);
+	   XtAddCallback (vscrl, XmNtoTopCallback, (XtCallbackProc) FrameVScrolled, (XtPointer) frame);
+	   XtAddCallback (vscrl, XmNtoBottomCallback, (XtCallbackProc) FrameVScrolled, (XtPointer) frame);
 #            else  /* _WINDOWS */
-             hscrl = CreateWindow ("scrollbar", NULL, WS_CHILD | WS_VISIBLE | SBS_HORZ,
-                                   0, 0, 0, 0, Main_Wd, (HMENU) frame, hInstance, NULL);
-
-             SetScrollRange (hscrl, SB_CTL, 0, 100, FALSE);
-             SetScrollPos (hscrl, SB_CTL, 0, FALSE);
-#            endif /* _WINDOWS */
-	     /*** La barre de scroll verticale ***/
-#            ifndef _WINDOWS
-
-	     n = 0;
-	     XtSetArg (args[n], XmNbackground, Scroll_Color);
-	     n++;
-	     XtSetArg (args[n], XmNorientation, XmVERTICAL);
-	     n++;
-	     XtSetArg (args[n], XmNvalue, 0);
-	     n++;
-	     vscrl = XmCreateScrollBar (Main_Wd, "Scroll", args, n);
-	     XtManageChild (vscrl);
-	     /*XtAddCallback (vscrl, XmNvalueChangedCallback, (XtCallbackProc) FrameVScrolled, (XtPointer) frame); */
-	     XtAddCallback (vscrl, XmNdragCallback, (XtCallbackProc) FrameVScrolled, (XtPointer) frame);
-	     XtAddCallback (vscrl, XmNdecrementCallback, (XtCallbackProc) FrameVScrolled, (XtPointer) frame);
-	     XtAddCallback (vscrl, XmNincrementCallback, (XtCallbackProc) FrameVScrolled, (XtPointer) frame);
-	     XtAddCallback (vscrl, XmNpageDecrementCallback, (XtCallbackProc) FrameVScrolled, (XtPointer) frame);
-	     XtAddCallback (vscrl, XmNpageIncrementCallback, (XtCallbackProc) FrameVScrolled, (XtPointer) frame);
-	     XtAddCallback (vscrl, XmNtoTopCallback, (XtCallbackProc) FrameVScrolled, (XtPointer) frame);
-	     XtAddCallback (vscrl, XmNtoBottomCallback, (XtCallbackProc) FrameVScrolled, (XtPointer) frame);
-#            else  /* _WINDOWS */
-             vscrl = CreateWindow ("scrollbar", NULL, WS_CHILD | WS_VISIBLE | SBS_VERT,
-                                   0, 0, 0, 0, Main_Wd, (HMENU) (frame + 1), hInstance, NULL);
-
-             SetScrollRange (vscrl, SB_CTL, 0, 100, FALSE);
-             SetScrollPos (vscrl, SB_CTL, 0, FALSE);
+	   vscrl = CreateWindow ("scrollbar", NULL, WS_CHILD | WS_VISIBLE | SBS_VERT,
+				 0, 0, 0, 0, Main_Wd, (HMENU) (frame + 1), hInstance, NULL);
+	   
+	   SetScrollRange (vscrl, SB_CTL, 0, 100, FALSE);
+	   SetScrollPos (vscrl, SB_CTL, 0, FALSE);
 #            endif /* _WINDOWS */
 
-	     /* Row vertical pour mettre le logo au dessous des boutons */
-#            ifndef _WINDOWS
-	     n = 0;
-	     XtSetArg (args[n], XmNmarginWidth, 0);
-	     n++;
-	     XtSetArg (args[n], XmNmarginHeight, 0);
-	     n++;
-	     XtSetArg (args[n], XmNbackground, BgMenu_Color);
-	     n++;
-	     XtSetArg (args[n], XmNpacking, XmPACK_TIGHT);
-	     n++;
-	     XtSetArg (args[n], XmNorientation, XmVERTICAL);
-	     n++;
-	     XtSetArg (args[n], XmNrightAttachment, XmATTACH_FORM);
-	     n++;
-	     rowv = XmCreateRowColumn (Main_Wd, "", args, n);
+	   /* Row vertical pour mettre le logo au dessous des boutons */
+#          ifndef _WINDOWS
+	   n = 0;
+	   XtSetArg (args[n], XmNmarginWidth, 0);
+	   n++;
+	   XtSetArg (args[n], XmNmarginHeight, 0);
+	   n++;
+	   XtSetArg (args[n], XmNbackground, BgMenu_Color);
+	   n++;
+	   XtSetArg (args[n], XmNpacking, XmPACK_TIGHT);
+	   n++;
+	   XtSetArg (args[n], XmNorientation, XmVERTICAL);
+	   n++;
+	   XtSetArg (args[n], XmNrightAttachment, XmATTACH_FORM);
+	   n++;
+	   rowv = XmCreateRowColumn (Main_Wd, "", args, n);
 
-	     XtManageChild (rowv);
+	   XtManageChild (rowv);
+	   
+	   Wframe = rowv;
+	   /* Row horizontal des boutons */
+	   n = 0;
+	   XtSetArg (args[n], XmNmarginWidth, 0);
+	   n++;
+	   XtSetArg (args[n], XmNmarginHeight, 0);
+	   n++;
+	   XtSetArg (args[n], XmNbackground, BgMenu_Color);
+	   n++;
+	   XtSetArg (args[n], XmNorientation, XmHORIZONTAL);
+	   n++;
+	   XtSetArg (args[n], XmNspacing, 0);
+	   n++;
+	   XtSetArg (args[n], XmNrightAttachment, XmATTACH_FORM);
+	   n++;
+	   row1 = XmCreateRowColumn (rowv, "", args, n);
+	   
+	   for (i = 1; i < MAX_BUTTON; i++)
+	     FrameTable[frame].Button[i] = 0;
+	   FrameTable[frame].Button[0] = row1;
 
-	     Wframe = rowv;
-	     /* Row horizontal des boutons */
-	     n = 0;
-	     XtSetArg (args[n], XmNmarginWidth, 0);
-	     n++;
-	     XtSetArg (args[n], XmNmarginHeight, 0);
-	     n++;
-	     XtSetArg (args[n], XmNbackground, BgMenu_Color);
-	     n++;
-	     XtSetArg (args[n], XmNorientation, XmHORIZONTAL);
-	     n++;
-	     XtSetArg (args[n], XmNspacing, 0);
-	     n++;
-	     XtSetArg (args[n], XmNrightAttachment, XmATTACH_FORM);
-	     n++;
-	     row1 = XmCreateRowColumn (rowv, "", args, n);
+	   /* Row horizontal pour mettre le logo a gauche des commandes */
+	   n = 0;
+	   XtSetArg (args[n], XmNmarginWidth, 5);
+	   n++;
+	   XtSetArg (args[n], XmNmarginHeight, 5);
+	   n++;
+	   XtSetArg (args[n], XmNbackground, BgMenu_Color);
+	   n++;
+	   XtSetArg (args[n], XmNwidth, dx);
+	   n++;
+	   XtSetArg (args[n], XmNrightAttachment, XmATTACH_FORM);
+	   n++;
+	   row1 = XmCreateForm (rowv, "", args, n);
 
-	     for (i = 1; i < MAX_BUTTON; i++)
-	       FrameTable[frame].Button[i] = 0;
-	     FrameTable[frame].Button[0] = row1;
+	   XtManageChild (row1);
 
-	     /* Row horizontal pour mettre le logo a gauche des commandes */
-	     n = 0;
-	     XtSetArg (args[n], XmNmarginWidth, 5);
-	     n++;
-	     XtSetArg (args[n], XmNmarginHeight, 5);
-	     n++;
-	     XtSetArg (args[n], XmNbackground, BgMenu_Color);
-	     n++;
-	     XtSetArg (args[n], XmNwidth, dx);
-	     n++;
-	     XtSetArg (args[n], XmNrightAttachment, XmATTACH_FORM);
-	     n++;
-	     row1 = XmCreateForm (rowv, "", args, n);
+	   /* logo de l'application */
+	   if (image != 0)
+	     {
+	       n = 0;
+	       XtSetArg (args[n], XmNbackground, BgMenu_Color);
+	       n++;
+	       XtSetArg (args[n], XmNlabelType, XmPIXMAP);
+	       n++;
+	       XtSetArg (args[n], XmNlabelPixmap, image);
+	       n++;
+	       XtSetArg (args[n], XmNleftAttachment, XmATTACH_FORM);
+	       n++;
+	       XtSetArg (args[n], XmNtopAttachment, XmATTACH_FORM);
+	       n++;
+	       w = XmCreateLabel (row1, "Logo", args, n);
 
-	     XtManageChild (row1);
+	       XtManageChild (w);
+	     }
 
-	     /* logo de l'application */
-	     if (image != 0)
-	       {
-		  n = 0;
-		  XtSetArg (args[n], XmNbackground, BgMenu_Color);
-		  n++;
-		  XtSetArg (args[n], XmNlabelType, XmPIXMAP);
-		  n++;
-		  XtSetArg (args[n], XmNlabelPixmap, image);
-		  n++;
-		  XtSetArg (args[n], XmNleftAttachment, XmATTACH_FORM);
-		  n++;
-		  XtSetArg (args[n], XmNtopAttachment, XmATTACH_FORM);
-		  n++;
-		  w = XmCreateLabel (row1, "Logo", args, n);
+	   /*** Creation des zones texte  ***/
+	   n = 0;
+	   XtSetArg (args[n], XmNmarginWidth, 0);
+	   n++;
+	   XtSetArg (args[n], XmNmarginHeight, 0);
+	   n++;
+	   XtSetArg (args[n], XmNbackground, BgMenu_Color);
+	   n++;
+	   XtSetArg (args[n], XmNtopAttachment, XmATTACH_FORM);
+	   n++;
+	   XtSetArg (args[n], XmNrightAttachment, XmATTACH_FORM);
+	   n++;
+	   XtSetArg (args[n], XmNkeyboardFocusPolicy, XmPOINTER);
+	   n++;
 
-		  XtManageChild (w);
-	       }
+	   if (image != 0)
+	     {
+	       XtSetArg (args[n], XmNleftOffset, 5);
+	       n++;
+	       XtSetArg (args[n], XmNleftAttachment, XmATTACH_WIDGET);
+	       n++;
+	       XtSetArg (args[n], XmNleftWidget, w);
+	       n++;
+	     }
+	   else
+	     {
+	       XtSetArg (args[n], XmNleftAttachment, XmATTACH_FORM);
+	       n++;
+	     }
 
-	     /*** Creation des zones texte  ***/
-	     n = 0;
-	     XtSetArg (args[n], XmNmarginWidth, 0);
-	     n++;
-	     XtSetArg (args[n], XmNmarginHeight, 0);
-	     n++;
-	     XtSetArg (args[n], XmNbackground, BgMenu_Color);
-	     n++;
-	     XtSetArg (args[n], XmNtopAttachment, XmATTACH_FORM);
-	     n++;
-	     XtSetArg (args[n], XmNrightAttachment, XmATTACH_FORM);
-	     n++;
-	     XtSetArg (args[n], XmNkeyboardFocusPolicy, XmPOINTER);
-	     n++;
+	   rowv = XmCreateForm (row1, "", args, n);
+	   for (i = 1; i < MAX_TEXTZONE; i++)
+	     FrameTable[frame].Text_Zone[i] = 0;
+	   FrameTable[frame].Text_Zone[0] = rowv;
 
-	     if (image != 0)
-	       {
-		  XtSetArg (args[n], XmNleftOffset, 5);
-		  n++;
-		  XtSetArg (args[n], XmNleftAttachment, XmATTACH_WIDGET);
-		  n++;
-		  XtSetArg (args[n], XmNleftWidget, w);
-		  n++;
-	       }
-	     else
-	       {
-		  XtSetArg (args[n], XmNleftAttachment, XmATTACH_FORM);
-		  n++;
-	       }
+	   /*** Creation de la zone d'affichage du contenu du document ***/
+	   n = 0;
+	   XtSetArg (args[n], XmNmarginWidth, 0);
+	   n++;
+	   XtSetArg (args[n], XmNmarginHeight, 0);
+	   n++;
+	   XtSetArg (args[n], XmNbackground, Scroll_Color);
+	   n++;
+	   XtSetArg (args[n], XmNkeyboardFocusPolicy, XmPOINTER);
+	   n++;
+	   XtSetArg (args[n], XmNtraversalOn, TRUE);
+	   n++;
 
-	     rowv = XmCreateForm (row1, "", args, n);
-	     for (i = 1; i < MAX_TEXTZONE; i++)
-		FrameTable[frame].Text_Zone[i] = 0;
-	     FrameTable[frame].Text_Zone[0] = rowv;
+	   TheFrame = w = XmCreateFrame (Main_Wd, "Frame", args, n);
+	   XtManageChild (w);
 
-	     /*** Creation de la zone d'affichage du contenu du document ***/
-	     n = 0;
-	     XtSetArg (args[n], XmNmarginWidth, 0);
-	     n++;
-	     XtSetArg (args[n], XmNmarginHeight, 0);
-	     n++;
-	     XtSetArg (args[n], XmNbackground, Scroll_Color);
-	     n++;
-	     XtSetArg (args[n], XmNkeyboardFocusPolicy, XmPOINTER);
-	     n++;
-	     XtSetArg (args[n], XmNtraversalOn, TRUE);
-	     n++;
+	   n = 0;
+	   XtSetArg (args[n], XmNbackground, White_Color);
+	   n++;
+	   XtSetArg (args[n], XmNfontList, DefaultFont);
+	   n++;
+	   XtSetArg (args[n], XmNmarginWidth, 0);
+	   n++;
+	   XtSetArg (args[n], XmNmarginHeight, 0);
+	   n++;
+	   XtSetArg (args[n], XmNkeyboardFocusPolicy, XmPOINTER);
+	   n++;
+	   w = XmCreateDrawingArea (w, "", args, n);
+	   XtManageChild (w);
 
-	     TheFrame = w = XmCreateFrame (Main_Wd, "Frame", args, n);
-	     XtManageChild (w);
+	   /* Row horizontal pour les messages */
+	   n = 0;
+	   XtSetArg (args[n], XmNmarginWidth, 0);
+	   n++;
+	   XtSetArg (args[n], XmNmarginHeight, 0);
+	   n++;
+	   XtSetArg (args[n], XmNbackground, BgMenu_Color);
+	   n++;
+	   XtSetArg (args[n], XmNorientation, XmHORIZONTAL);
+	   n++;
+	   XtSetArg (args[n], XmNkeyboardFocusPolicy, XmPOINTER);
+	   n++;
+	   row2 = XmCreateRowColumn (Main_Wd, "", args, n);
+	   XtManageChild (row2);
+	   n = 0;
+	   XtSetArg (args[n], XmNbackground, BgMenu_Color);
+	   n++;
+	   XtSetArg (args[n], XmNforeground, Black_Color);
+	   n++;
+	   XtSetArg (args[n], XmNheight, (Dimension) FontHeight (LargeFontDialogue));
+	   n++;
+	   XtSetArg (args[n], XmNfontList, DefaultFont);
+	   n++;
+	   title_string = XmStringCreateSimple (" ");
+	   XtSetArg (args[n], XmNlabelString, title_string);
+	   n++;
+	   i = CharacterWidth ('M', LargeFontDialogue) * 50;
+	   XtSetArg (args[n], XmNwidth, (Dimension) i);
+	   n++;
+	   FrameTable[frame].WdStatus = XmCreateLabel (row2, "Thot_MSG", args, n);
+	   XtManageChild (FrameTable[frame].WdStatus);
+	   XmStringFree (title_string);
+	   n = 0;
+	   XtSetArg (args[n], XmNmessageWindow, row2);
+	   n++;
+	   XtSetValues (Main_Wd, args, n);
 
-	     n = 0;
-	     XtSetArg (args[n], XmNbackground, White_Color);
-	     n++;
-	     XtSetArg (args[n], XmNfontList, DefaultFont);
-	     n++;
-	     XtSetArg (args[n], XmNmarginWidth, 0);
-	     n++;
-	     XtSetArg (args[n], XmNmarginHeight, 0);
-	     n++;
-	     XtSetArg (args[n], XmNkeyboardFocusPolicy, XmPOINTER);
-	     n++;
-	     w = XmCreateDrawingArea (w, "", args, n);
-	     XtManageChild (w);
+	   n = 0;
+	   XtSetArg (args[n], XmNx, (Position) X + 4);
+	   n++;
+	   XtSetArg (args[n], XmNy, (Position) Y + 4);
+	   n++;
+	   XtSetValues (shell, args, n);
+	   XtPopup (shell, XtGrabNonexclusive);
+	   
+	   XmMainWindowSetAreas (Main_Wd, menu_bar, Wframe, hscrl, vscrl, TheFrame);
+	   XtAddCallback (w, XmNinputCallback, (XtCallbackProc) DrawingInput, (XtPointer) frame);
+	   XtAddCallback (w, XmNresizeCallback, (XtCallbackProc) FrameResized, (XtPointer) frame);
+	   FrRef[frame] = XtWindowOfObject (w);
+#          endif /* !_WINDOWS */
+	   FrameTable[frame].WdScrollH = hscrl;
+	   FrameTable[frame].WdScrollV = vscrl;
+	   
+#          ifndef _WINDOWS
+	   FrameTable[frame].FrWidth  = (int) dx;
+	   FrameTable[frame].FrHeight = (int) dy;
+#          else /* _WINDOWS */
+	   FrameTable[frame].FrWidth  = (int) large;
+	   FrameTable[frame].FrHeight = (int) haut;
+#          endif /* _WINDOWS */
+	   FrameTable[frame].WdFrame = w;
 
-	     /* Row horizontal pour les messages */
-	     n = 0;
-	     XtSetArg (args[n], XmNmarginWidth, 0);
-	     n++;
-	     XtSetArg (args[n], XmNmarginHeight, 0);
-	     n++;
-	     XtSetArg (args[n], XmNbackground, BgMenu_Color);
-	     n++;
-	     XtSetArg (args[n], XmNorientation, XmHORIZONTAL);
-	     n++;
-	     XtSetArg (args[n], XmNkeyboardFocusPolicy, XmPOINTER);
-	     n++;
-	     row2 = XmCreateRowColumn (Main_Wd, "", args, n);
-	     XtManageChild (row2);
-	     n = 0;
-	     XtSetArg (args[n], XmNbackground, BgMenu_Color);
-	     n++;
-	     XtSetArg (args[n], XmNforeground, Black_Color);
-	     n++;
-	     XtSetArg (args[n], XmNheight, (Dimension) FontHeight (LargeFontDialogue));
-	     n++;
-	     XtSetArg (args[n], XmNfontList, DefaultFont);
-	     n++;
-	     title_string = XmStringCreateSimple (" ");
-	     XtSetArg (args[n], XmNlabelString, title_string);
-	     n++;
-	     i = CharacterWidth ('M', LargeFontDialogue) * 50;
-	     XtSetArg (args[n], XmNwidth, (Dimension) i);
-	     n++;
-	     FrameTable[frame].WdStatus = XmCreateLabel (row2, "Thot_MSG", args, n);
-	     XtManageChild (FrameTable[frame].WdStatus);
-	     XmStringFree (title_string);
-	     n = 0;
-	     XtSetArg (args[n], XmNmessageWindow, row2);
-	     n++;
-	     XtSetValues (Main_Wd, args, n);
+	   /* get registry default values for zoom and visibility */
+	   zoomStr = TtaGetEnvString ("ZOOM");
+	   if (zoomStr == NULL)
+	     zoomVal = 0;
+	   else
+	     {
+	       zoomVal = atoi (zoomStr);
+	       if (zoomVal > 10 || zoomVal < -10)
+		 zoomVal = 0;
+	     }
+	   visiStr = TtaGetEnvString ("VISIBILITY");
+	   if (visiStr == NULL)
+	     visiVal = 5;
+	   else
+	     {
+	       visiVal = atoi (visiStr);
+	       if (visiVal < 0 || visiVal > 10)
+		 visiVal = 5;
+	     }
+	   /* Initialise la visibilite et le zoom de la fenetre */
+	   InitializeFrameParams (frame, visiVal, zoomVal);	
+	 }
+       else
+	 ChangeFrameTitle (frame, name);
 
-	     n = 0;
-	     XtSetArg (args[n], XmNx, (Position) X + 4);
-	     n++;
-	     XtSetArg (args[n], XmNy, (Position) Y + 4);
-	     n++;
-	     XtSetValues (shell, args, n);
-	     XtPopup (shell, XtGrabNonexclusive);
-
-	     XmMainWindowSetAreas (Main_Wd, menu_bar, Wframe, hscrl, vscrl, TheFrame);
-	     XtAddCallback (w, XmNinputCallback, (XtCallbackProc) DrawingInput, (XtPointer) frame);
-	     XtAddCallback (w, XmNresizeCallback, (XtCallbackProc) FrameResized, (XtPointer) frame);
-	     FrRef[frame] = XtWindowOfObject (w);
-#            endif /* !_WINDOWS */
-	     FrameTable[frame].WdScrollH = hscrl;
-	     FrameTable[frame].WdScrollV = vscrl;
-
-#            ifndef _WINDOWS
-/*****	     n = 0;
-	     XtSetArg (args[n], XmNwidth, &dx);
-	     n++;
-	     XtSetArg (args[n], XmNheight, &dy);
-	     n++;
-	     XtGetValues ((Widget) w, args, n);
-*****/	     FrameTable[frame].FrWidth  = (int) dx;
-	     FrameTable[frame].FrHeight = (int) dy;
-#            else /* _WINDOWS */
-	     FrameTable[frame].FrWidth  = (int) large;
-	     FrameTable[frame].FrHeight = (int) haut;
-#            endif /* _WINDOWS */
-	     FrameTable[frame].WdFrame = w;
-	  }
-	else
-	   ChangeFrameTitle (frame, name);
-	/* volume en caracteres */
-	*volume = GetCharsCapacity (FrameTable[frame].FrWidth * FrameTable[frame].FrHeight);
-	FrameTable[frame].FrDoc = doc;
-	FrameTable[frame].FrView = view;
-
-	/* get registry default values for zoom and visibility */
-	zoomStr = TtaGetEnvString ("ZOOM");
-	if (zoomStr == NULL)
-	  zoomVal = 0;
-	else
-	  {
-	    zoomVal = atoi (zoomStr);
-	    if (zoomVal > 10 || zoomVal < -10)
-	      zoomVal = 0;
-	  }
-	visiStr = TtaGetEnvString ("VISIBILITY");
-	if (visiStr == NULL)
-	  visiVal = 5;
-	else
-	  {
-	    visiVal = atoi (visiStr);
-	    if (visiVal < 0 || visiVal > 10)
-	      visiVal = 5;
-	  }
-	/* Initialise la visibilite et le zoom de la fenetre */
-	InitializeFrameParams (frame, visiVal, zoomVal);	
-#       ifdef _WINDOWS
-        SetMenu (Main_Wd, menu_bar);
-	ShowWindow (Main_Wd, SW_SHOWNORMAL);
-	UpdateWindow (Main_Wd);
-        InitCommonControls ();
-#       endif /* _WINDOWS */
+       /* volume en caracteres */
+       *volume = GetCharsCapacity (FrameTable[frame].FrWidth * FrameTable[frame].FrHeight);
+       FrameTable[frame].FrDoc = doc;
+       FrameTable[frame].FrView = view;
+#      ifdef _WINDOWS
+       SetMenu (Main_Wd, menu_bar);
+       ShowWindow (Main_Wd, SW_SHOWNORMAL);
+       UpdateWindow (Main_Wd);
+       InitCommonControls ();
+#      endif /* _WINDOWS */
      }
 
    return (frame);
@@ -3078,10 +3114,13 @@ int                 menuID;
 #endif /* __STDC__ */
 {
    ThotWidget          w;
-   int                 n, menu;
+   int                 menu;
    int                 frame;
    int                 ref;
    Menu_Ctl           *ptrmenu;
+#  ifndef _WINDOWS
+   int                 n; 
+#  endif /* !_WINDOWS */
 
 #ifndef _WINDOWS
    XmFontList          font;
@@ -3268,7 +3307,11 @@ boolean             on;
 	ref = ((menu - 1) * MAX_ITEM) + frame + MAX_LocalMenu;
 	if (submenu != 0)
 	   ref += submenu * MAX_MENU * MAX_ITEM;
+#   ifdef _WINDOWS
+	WIN_TtaSetToggleMenu (ref, item, on, FrMainRef[frame]);
+#   else  /* _WINDOWS */
 	TtaSetToggleMenu (ref, item, on);
+#   endif /* _WINDOWS */
      }
 }
 
@@ -3293,8 +3336,12 @@ int                 itemID;
    int                 menu, submenu;
    int                 item;
    int                 action;
+#  ifndef _WINDOWS 
    char                fontname[100];
    char                text[20];
+#  else _WINDOWS
+   HMENU               hMenu;
+#  endif /* _WINDOWS */
 
    /* Si les parametres sont invalides */
    if (document == 0 && view == 0)
@@ -3318,6 +3365,10 @@ int                 itemID;
 	   ref = ((menu - 1) * MAX_ITEM) + frame + MAX_LocalMenu;
 	   if (submenu != 0)
 	      ref += submenu * MAX_MENU * MAX_ITEM;
+#      ifdef _WINDOWS
+       hMenu = GetMenu (TtaGetViewFrame (document, view));
+	   EnableMenuItem (hMenu, ref + item, MFS_GRAYED);
+#      else  /* !_WINDOWS */
 	   if (TtWDepth > 1)
 	      TtaRedrawMenuEntry (ref, item, NULL, InactiveB_Color, 0);
 	   else
@@ -3325,6 +3376,7 @@ int                 itemID;
 		FontIdentifier ('L', 'T', 2, 11, UnPoint, text, fontname);
 		TtaRedrawMenuEntry (ref, item, fontname, -1, 0);
 	     }
+#      endif /* _WINDOWS */
 	}
 }
 
@@ -3688,6 +3740,10 @@ char               *data;
 	j = ref - MAX_LocalMenu;
 	i = j / MAX_ITEM;
 	frame = j - (i * MAX_ITEM);	/* reste de la division */
+#   ifdef _WINDOWS
+    if (frame != -1)
+       currentWindow = FrRef [frame];
+#   endif /* _WINDOWS */
 	item = i / MAX_MENU;
 	menu = i - (item * MAX_MENU);	/* reste de la division */
 	if (frame == 0)

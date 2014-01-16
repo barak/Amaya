@@ -3,7 +3,7 @@
 **
 **	(c) COPYRIGHT MIT 1995.
 **	Please first read the full copyright statement in the file COPYRIGH.
-**	@(#) $Id: HTList.c,v 1.1.1.1 1996/10/15 13:08:37 cvs Exp $
+**	@(#) $Id: HTList.c,v 1.2 1998/03/11 17:45:38 cvs Exp $
 **
 **	A list is represented as a sequence of linked nodes of type HTList.
 **	The first node is a header which contains no object.
@@ -88,13 +88,14 @@ PUBLIC BOOL HTList_removeObjectAll (HTList *  me, void *  oldObject)
     if (me) {
 	HTList *previous;
 	while (me->next) {
-	    previous = me;
-	    me = me->next;
-	    if (me->object == oldObject) {
-		previous->next = me->next;
-		HT_FREE(me);
-		found = YES;	/* At least one object found */
-	    }
+	  previous = me;
+	  me = me->next;
+	  if (me->object = oldObject) {
+	    previous->next = me->next;
+	    HT_FREE(me);
+            me = previous->next; /* point to the next element */
+	    found = YES;	 /* At least one object found */
+	  }
 	}
     }
     return found;

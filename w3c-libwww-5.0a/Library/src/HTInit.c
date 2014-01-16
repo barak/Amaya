@@ -3,7 +3,7 @@
 **
 **	(c) COPYRIGHT MIT 1995.
 **	Please first read the full copyright statement in the file COPYRIGH.
-**	@(#) $Id: HTInit.c,v 1.1.1.1 1996/10/15 13:08:37 cvs Exp $
+**	@(#) $Id: HTInit.c,v 1.4 1998/06/18 14:04:32 cvs Exp $
 **
 **	Define a basic set of suffixes and presentations
 */
@@ -41,7 +41,7 @@ PUBLIC void HTConverterInit (HTList * c)
     HTConversion_add(c,"message/rfc822",	"*/*",		HTMIMEConvert,	1.0, 0.0, 0.0);
     HTConversion_add(c,"message/x-rfc822-foot",	"*/*",		HTMIMEFooter,	1.0, 0.0, 0.0);
     HTConversion_add(c,"message/x-rfc822-head",	"*/*",		HTMIMEHeader,	1.0, 0.0, 0.0);
-    HTConversion_add(c,"message/x-rfc822-partial","*/*",		HTMIMEPartial,	1.0, 0.0, 0.0);
+    HTConversion_add(c,"message/x-rfc822-partial","*/*",        HTMIMEPartial,	1.0, 0.0, 0.0);
     HTConversion_add(c,"multipart/*",		"*/*",		HTBoundary,	1.0, 0.0, 0.0);
     HTConversion_add(c,"text/plain",		"text/html",	HTPlainToHTML,	1.0, 0.0, 0.0);
 
@@ -57,9 +57,10 @@ PUBLIC void HTConverterInit (HTList * c)
     HTConversion_add(c,"text/x-wais-source",	"*/*",		HTWSRCConvert, 	1.0, 0.0, 0.0);
 #endif
 
+#if 0
     HTConversion_add(c,"text/x-nntp-list",	"*/*",		HTNewsList,	1.0, 0.0, 0.0);
     HTConversion_add(c,"text/x-nntp-over",	"*/*",		HTNewsGroup,	1.0, 0.0, 0.0);
-
+#endif
     /*
     ** We also register a special content type guess stream that can figure out
     ** the content type by reading the first bytes of the stream
@@ -162,6 +163,9 @@ PUBLIC void HTBeforeInit (void)
 PUBLIC void HTAfterInit (void)
 {
     HTNet_addAfter(HTAuthFilter, 	"http://*",	NULL, HT_NO_ACCESS, 	HT_FILTER_MIDDLE);
+/***
+    HTNet_addAfter(HTAuthFilter, 	"http://*",	NULL, HT_REAUTH, 	HT_FILTER_MIDDLE);
+***/
     HTNet_addAfter(HTPEP_afterFilter, 	"http://*",	NULL, HT_ALL, 		HT_FILTER_MIDDLE);
     HTNet_addAfter(HTRedirectFilter, 	"http://*",	NULL, HT_TEMP_REDIRECT, HT_FILTER_MIDDLE);
     HTNet_addAfter(HTRedirectFilter, 	"http://*",	NULL, HT_PERM_REDIRECT, HT_FILTER_MIDDLE);
@@ -177,7 +181,8 @@ PUBLIC void HTAfterInit (void)
 */
 PUBLIC void HTAAInit (void)
 {
-    HTAA_newModule ("basic", HTBasic_generate, HTBasic_parse, HTBasic_delete);
+    HTAA_newModule ("basic", HTBasic_generate, HTBasic_parse, HTBasic_delete,
+		    HTBasic_copy);
 }
 
 /*	REGISTER BEFORE AND AFTER FILTERS
@@ -229,6 +234,7 @@ PUBLIC void HTTransportInit (void)
 PUBLIC void HTProtocolInit (void)
 {
 #ifndef DECNET
+#if 0
     HTProtocol_add("ftp", 	"tcp", 		NO, 	HTLoadFTP,	NULL);
     HTProtocol_add("nntp",	"tcp", 		NO, 	HTLoadNews,	NULL);
     HTProtocol_add("news",	"tcp", 		NO, 	HTLoadNews,	NULL);
@@ -236,14 +242,17 @@ PUBLIC void HTProtocolInit (void)
 #ifdef HT_DIRECT_WAIS
     HTProtocol_add("wais",	"",		YES, 	HTLoadWAIS,	NULL);
 #endif
+#endif
 #endif /* DECNET */
 
     HTProtocol_add("http", 	"buffered_tcp", NO,	HTLoadHTTP,	NULL);
     HTProtocol_add("file", 	"local", 	NO, 	HTLoadFile, 	NULL);
     HTProtocol_add("cache", 	"local", 	NO, 	HTLoadCache, 	NULL);
+#if 0
     HTProtocol_add("telnet", 	"", 		YES, 	HTLoadTelnet, 	NULL);
     HTProtocol_add("tn3270", 	"", 		YES, 	HTLoadTelnet, 	NULL);
     HTProtocol_add("rlogin", 	"", 		YES, 	HTLoadTelnet, 	NULL);
+#endif
 }
 
 /*	REGISTER ALL KNOWN PROTOCOLS IN THE LIBRARY PREEMPTIVELY
@@ -253,6 +262,7 @@ PUBLIC void HTProtocolInit (void)
 PUBLIC void HTProtocolPreemptiveInit (void)
 {
 #ifndef DECNET
+#if 0
     HTProtocol_add("ftp", "tcp", YES, HTLoadFTP, NULL);
     HTProtocol_add("nntp", "tcp", YES, HTLoadNews, NULL);
     HTProtocol_add("news", "tcp", YES, HTLoadNews, NULL);
@@ -260,14 +270,17 @@ PUBLIC void HTProtocolPreemptiveInit (void)
 #ifdef HT_DIRECT_WAIS
     HTProtocol_add("wais", "", YES, HTLoadWAIS, NULL);
 #endif
+#endif
 #endif /* DECNET */
 
     HTProtocol_add("http", "buffered_tcp", YES, HTLoadHTTP, NULL);
     HTProtocol_add("file", "local", YES, HTLoadFile, NULL);
+#if 0
     HTProtocol_add("telnet", "", YES, HTLoadTelnet, NULL);
     HTProtocol_add("tn3270", "", YES, HTLoadTelnet, NULL);
     HTProtocol_add("rlogin", "", YES, HTLoadTelnet, NULL);
-}
+#endif
+    }
 
 /*	BINDINGS BETWEEN ICONS AND MEDIA TYPES
 **	--------------------------------------

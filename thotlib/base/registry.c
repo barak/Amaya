@@ -39,12 +39,17 @@
 
 /* for Marc.Baudoin@hsc.fr (Marc Baudoin) */
 #ifdef _WINDOWS
-#define THOT_RC_FILENAME	"thot.ini"
+#define THOT_RC_FILENAME	"thot.rc"
 #else /* !_WINDOWS */
 #define THOT_RC_FILENAME	".thotrc"
 #endif /* ! _WINDOWS */
 
-#define THOT_INI_FILENAME	"thot.ini"
+#ifdef _WINDOWS
+#      define THOT_INI_FILENAME "thot.rc"
+#else  /* _WINDOWS */
+#      define THOT_INI_FILENAME "thot.ini"
+#endif /* _WINDOWS */
+
 #define THOT_CONFIG_FILENAME    "config"
 #define THOT_BIN_FILENAME	"bin"
 #define THOT_LIB_DEFAULTNAME	"thot_lib"
@@ -88,10 +93,10 @@ static char        *Thot_Dir;
      { while (((*(ptr)) == ' ') || ((*(ptr)) == '\b') || \
               ((*(ptr)) == '\n') || ((*(ptr)) == '\r')) ptr++; }
 #define GOTO_EQL(ptr) \
-     { while (((*(ptr)) != '\0') && ((*(ptr)) != '=') && \
+     { while (((*(ptr)) != EOS) && ((*(ptr)) != '=') && \
               ((*(ptr)) != '\n') && ((*(ptr)) != '\r')) ptr++; }
 #define GOTO_EOL(ptr) \
-     { while (((*(ptr)) != '\0') && \
+     { while (((*(ptr)) != EOS) && \
               ((*(ptr)) != '\n') && ((*(ptr)) != '\r')) ptr++; }
 
 /*----------------------------------------------------------------------
@@ -152,7 +157,7 @@ int                 o_len;
 	break;
       
       save = *cour;
-      *cour = '\0';
+      *cour = EOS;
       if (save != ')')
 	fprintf (stderr, "invalid variable name %s in %s\n", base, THOT_INI_FILENAME);
 
@@ -180,7 +185,7 @@ int                 o_len;
     }
   if CHECK_OVERFLOW
     fprintf (stderr, "DoVariableSubstitution : Overflow on \"%s\"\n", input);
-  *res = '\0';
+  *res = EOS;
 }
 
 
@@ -308,7 +313,7 @@ int                 overwrite;
 	* If the value is empty, we add it only if it's not present
 	* in the thot library section.
 	*/
-       if (!overwrite && (value == NULL || *value == '\0'))
+       if (!overwrite && (value == NULL || *value == EOS))
 	 {
 	   cour = AppRegistryEntry;
 	   while (cour != NULL)
@@ -453,7 +458,7 @@ char               *name;
   cour = AppRegistryEntry;
   while (cour != NULL)
     {
-      if (!strcasecmp (cour->appli, "System") && !strcmp (cour->name, name) && cour->value[0] != '\0')
+      if (!strcasecmp (cour->appli, "System") && !strcmp (cour->name, name) && cour->value[0] != EOS)
 	{
 #ifdef DEBUG_REGISTRY
 	  fprintf (stderr, "TtaGetEnvString(\"%s\") = %s\n", name, cour->value);
@@ -467,7 +472,7 @@ char               *name;
   cour = AppRegistryEntry;
   while (cour != NULL)
     {
-      if (!strcasecmp (cour->appli, AppRegistryEntryAppli) && !strcmp (cour->name, name) && cour->value[0] != '\0')
+      if (!strcasecmp (cour->appli, AppRegistryEntryAppli) && !strcmp (cour->name, name) && cour->value[0] != EOS)
 	{
 #ifdef DEBUG_REGISTRY
 	  fprintf (stderr, "TtaGetEnvString(\"%s\") = %s\n", name, cour->value);
@@ -481,7 +486,7 @@ char               *name;
   cour = AppRegistryEntry;
   while (cour != NULL)
     {
-      if (!strcasecmp (cour->appli, THOT_LIB_DEFAULTNAME) && !strcmp (cour->name, name) && cour->value[0] != '\0')
+      if (!strcasecmp (cour->appli, THOT_LIB_DEFAULTNAME) && !strcmp (cour->name, name) && cour->value[0] != EOS)
 	{
 #ifdef DEBUG_REGISTRY
 	  fprintf (stderr, "TtaGetEnvString(\"%s\") = %s\n", name, cour->value);
@@ -706,7 +711,7 @@ RegistryLevel       level;
 
 	str = &string[0];
 	SKIP_BLANK (str);
-	string[sizeof (string) - 1] = '\0';
+	string[sizeof (string) - 1] = EOS;
 
 	/*
 	 * Comment starts with a semicolumn.
@@ -722,15 +727,15 @@ RegistryLevel       level;
 	     str++;
 	     SKIP_BLANK (str);
 	     base = str;
-	     while ((*str != '\0') && (*str != ']'))
+	     while ((*str != EOS) && (*str != ']'))
 		str++;
-	     if (*str == '\0')
+	     if (*str == EOS)
 	       {
 		  fprintf (stderr, "Registry %s corrupted :\n\t\"%s\"\n",
 			   filename, string);
 		  continue;
 	       }
-	     *str = '\0';
+	     *str = EOS;
 	     strcpy (&appli[0], base);
 #ifdef DEBUG_REGISTRY
 	     fprintf (stderr, "TtaInitializeAppRegistry section [%s]\n", appli);
@@ -746,11 +751,11 @@ RegistryLevel       level;
 	GOTO_EQL (str);
 	if (*str != '=')
 	   continue;
-	*str++ = '\0';
+	*str++ = EOS;
 	SKIP_BLANK (str);
 	value = str;
 	GOTO_EOL (str);
-	*str = '\0';
+	*str = EOS;
 	AddRegisterEntry (appli, name, value, level, TRUE);
      }
 
@@ -791,7 +796,7 @@ static void         InitEnviron ()
    /* The predefined path to documents */
    pT = (char *) TtaGetEnvString ("THOTDOC");
    if (pT == NULL)
-      DocumentPath[0] = '\0';
+      DocumentPath[0] = EOS;
    else
       strncpy (DocumentPath, pT, MAX_PATH);
 
@@ -809,7 +814,7 @@ static void         InitEnviron ()
    else if (Thot_Sys_Sch != NULL)
        strncpy (SchemaPath, Thot_Sys_Sch, MAX_PATH);
    else
-       SchemaPath[0] = '\0';
+       SchemaPath[0] = EOS;
 
 }
 
@@ -860,14 +865,18 @@ char               *appArgv0;
    * Sanity check on the argument given. An error here should be
    * detected by programmers, since it's a application coding error.
    */
-  if ((appArgv0 == NULL) || (*appArgv0 == '\0'))
+  if ((appArgv0 == NULL) || (*appArgv0 == EOS))
     {
       fprintf (stderr, "TtaInitializeAppRegistry called with invalid argv[0] value\n");
       exit (1);
     }
 
   /* No this should NOT be a call to TtaGetEnvString */
+# ifdef _WINDOWS
   home_dir = getenv ("HOME");
+# else /* _WINDOWS */
+  home_dir = getenv ("HOME");
+# endif /* _WINDOWS */
   /*
    * We are looking for the absolute pathname to the binary of the
    * application.
@@ -917,7 +926,7 @@ char               *appArgv0;
        */
       len = sizeof (path) - 1;
       strncpy (path, my_path, len);
-      path[len] = '\0';
+      path[len] = EOS;
 
       execname_len = sizeof (execname);
 #     ifdef _WINDOWS
@@ -925,7 +934,7 @@ char               *appArgv0;
 #     else
       MakeCompleteName (appArgv0, "", path, execname, &execname_len);
 #     endif
-      if (execname[0] == '\0')
+      if (execname[0] == EOS)
 	{
 	  fprintf (stderr, "TtaInitializeAppRegistry internal error\n");
 	  fprintf (stderr, "\tcannot find path to binary : %s\n", appArgv0);
@@ -951,7 +960,7 @@ char               *appArgv0;
   appName = TtaStrdup (appName);
   AppRegistryEntryAppli = appName;
 
-#ifndef _WINDOWS
+#ifdef HAVE_LSTAT
   /*
    * on Unixes, the binary path started may be a softlink
    * to the real app in the real dir.
@@ -972,7 +981,7 @@ char               *appArgv0;
 	    strcpy (dir_end + 1, filename);
 	}
     }
-#endif /* _WINDOWS */
+#endif /* HAVE_LSTAT */
 
 #ifdef DEBUG_REGISTRY
    fprintf (stderr, "path to binary %s : %s\n", appName, execname);
@@ -996,7 +1005,7 @@ char               *appArgv0;
      {
        /* the name has been found */
        found = TRUE;
-       *dir_end = '\0';
+       *dir_end = EOS;
        /* save the binary directory in BinariesDirectory */
        strncpy (BinariesDirectory, execname, sizeof (BinariesDirectory));
 
@@ -1014,7 +1023,7 @@ char               *appArgv0;
 	   while (!ok);
 	   if (*dir_end == DIR_SEP)
 	     {
-	       *dir_end = '\0';
+	       *dir_end = EOS;
 	       if (!strcmp (&dir_end[1], ".."))
 		 round ++;
 	       else if (strcmp (&dir_end[1], "."))
@@ -1033,7 +1042,7 @@ char               *appArgv0;
 	 }
        if (ok)
 	 {
-	   *dir_end = '\0';
+	   *dir_end = EOS;
 	   if (IsThotDir (execname))
 	     AddRegisterEntry ("System", "THOTDIR", execname, REGISTRY_INSTALL, TRUE);
 	 }
@@ -1080,7 +1089,7 @@ char               *appArgv0;
        fprintf (stderr, "reading system %s from %s\n", THOT_INI_FILENAME, filename);
 #endif
        ImportRegistryFile (filename, REGISTRY_SYSTEM);
-       *dir_end = '\0';
+       *dir_end = EOS;
        dir_end -= 3;
      }
    else
@@ -1158,7 +1167,7 @@ char               *fullName;
    if (Thot_Dir != NULL)
       strcpy (fullName, Thot_Dir);
    else
-      *fullName = '\0';
+      *fullName = EOS;
    switch (dir)
 	 {
 	    case 1:
@@ -1169,12 +1178,12 @@ char               *fullName;
 	       i = 0;
 	       j = 0;
 	       imagepath = SchemaPath;
-	       while (ret == 0 && imagepath[i] != '\0')
+	       while (ret == 0 && imagepath[i] != EOS)
 		 {
-		    while (imagepath[i] != '\0' && imagepath[i] != PATH_SEP && i < 200)
+		    while (imagepath[i] != EOS && imagepath[i] != PATH_SEP && i < 200)
 		       tmpbuf[j++] = imagepath[i++];
 
-		    tmpbuf[j] = '\0';
+		    tmpbuf[j] = EOS;
 		    i++;
 		    j = 0;
 		    sprintf (fullName, "%s%s%s", tmpbuf, DIR_STR, fileName);
@@ -1185,12 +1194,12 @@ char               *fullName;
 	       i = 0;
 	       j = 0;
 	       imagepath = SchemaPath;
-	       while (ret == 0 && imagepath[i] != '\0')
+	       while (ret == 0 && imagepath[i] != EOS)
 		 {
-		    while (imagepath[i] != '\0' && imagepath[i] != PATH_SEP && i < 200)
+		    while (imagepath[i] != EOS && imagepath[i] != PATH_SEP && i < 200)
 		       tmpbuf[j++] = imagepath[i++];
 
-		    tmpbuf[j] = '\0';
+		    tmpbuf[j] = EOS;
 		    i++;
 		    j = 0;
 		    sprintf (fullName, "%s%s%s", tmpbuf, DIR_STR, fileName);

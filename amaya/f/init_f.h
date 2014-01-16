@@ -18,6 +18,7 @@ extern void SetArrowButton ( Document document,
                              boolean on );
 extern void ResetStop ( Document document );
 extern void ActiveTransfer ( Document document );
+extern void SetStopButton ( Document document );
 extern void ActiveMakeBook ( Document document );
 extern void UpdateTransfer ( Document document );
 extern void StopTransfer ( Document document,
@@ -45,6 +46,10 @@ extern void Reload_callback ( int doc,
                               void * context );
 extern void Reload ( Document document,
                      View view );
+extern void ZoomIn ( Document document,
+                     View view );
+extern void ZoomOut ( Document document,
+                      View view );
 extern void ShowStructure ( Document document,
                             View view );
 extern void ShowAlternate ( Document document,
@@ -67,8 +72,8 @@ extern Document GetHTMLDocument ( const char *documentPath,
                                   Document baseDoc,
                                   ClickEvent CE_event,
                                   boolean history,
-				  TTcbf *cbf,
-				  void *context_cbf);
+                                  TTcbf *cbf,
+                                  void *ctx_cbf );
 extern void CallbackDialogue ( int ref,
                                int typedata,
                                char *data );
@@ -128,6 +133,7 @@ extern void SetArrowButton (/* Document document,
                                boolean on */);
 extern void ResetStop (/* Document document */);
 extern void ActiveTransfer (/* Document document */);
+extern void SetStopButton (/* Document document */);
 extern void ActiveMakeBook (/* Document document */);
 extern void UpdateTransfer (/* Document document */);
 extern void StopTransfer (/* Document document,
@@ -155,6 +161,10 @@ extern void Reload_callback (/* int doc,
                                 void * context */);
 extern void Reload (/* Document document,
                        View view */);
+extern void ZoomIn (/* Document document,
+                       View view */);
+extern void ZoomOut (/* Document document,
+                        View view */);
 extern void ShowStructure (/* Document document,
                               View view */);
 extern void ShowAlternate (/* Document document,
@@ -176,8 +186,9 @@ extern Document GetHTMLDocument (/* const char *documentPath,
                                     Document doc,
                                     Document baseDoc,
                                     ClickEvent CE_event,
-				    TTcbf *cbf,
-				    void *context_cbf */);
+                                    boolean history,
+                                    TTcbf *cbf,
+                                    void *ctx_cbf */);
 extern void CallbackDialogue (/* int ref,
                                  int typedata,
                                  char *data */);

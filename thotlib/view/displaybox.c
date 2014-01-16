@@ -44,7 +44,7 @@ PtrAbstractBox      pAb;
    if (pAb == NULL)
       return (0);
    else
-      return PixelValue (pAb->AbLineWeight, pAb->AbLineWeightUnit, pAb);
+      return PixelValue (pAb->AbLineWeight, pAb->AbLineWeightUnit, pAb, 0);
 }
 
 
@@ -357,218 +357,219 @@ PtrBox              pBox;
 int                 frame;
 #endif /* __STDC__ */
 {
-   int                 i, xd, yd;
-   PtrBox              mbox;
-   int                 op, RO;
-   int                 fg;
-   int                 bg;
-   int                 style;
-   int                 width, height;
-   PtrAbstractBox      pv;
-   ViewFrame          *pFrame;
+  int                 i, xd, yd;
+  PtrBox              mbox;
+  int                 op, RO;
+  int                 fg;
+  int                 bg;
+  int                 style;
+  int                 width, height;
+  PtrAbstractBox      pv;
+  ViewFrame          *pFrame;
 
-   /* Search for the box defining the enclosing constraints */
-   if (pBox->BxAbstractBox->AbEnclosing == NULL)
-      mbox = pBox;
-   else
-     {
-	pv = pBox->BxAbstractBox->AbEnclosing;
-	mbox = pv->AbBox;
-	/* If the englobing abstract box is splitted take the first englobing
-	   not splitted */
-	if (mbox->BxType == BoGhost)
-	   while (mbox->BxType == BoGhost && mbox->BxAbstractBox->AbEnclosing != NULL)
-	      mbox = mbox->BxAbstractBox->AbEnclosing->AbBox;
-     }
+  /* Search for the box defining the enclosing constraints */
+  if (pBox->BxAbstractBox->AbEnclosing == NULL)
+    mbox = pBox;
+  else
+    {
+      pv = pBox->BxAbstractBox->AbEnclosing;
+      mbox = pv->AbBox;
+      /* If the englobing abstract box is splitted take the first englobing
+	 not splitted */
+      if (mbox->BxType == BoGhost)
+	while (mbox->BxType == BoGhost && mbox->BxAbstractBox->AbEnclosing != NULL)
+	  mbox = mbox->BxAbstractBox->AbEnclosing->AbBox;
+    }
 
-   fg = pBox->BxAbstractBox->AbForeground;
-   bg = pBox->BxAbstractBox->AbBackground;
-   if (pBox->BxAbstractBox->AbVisibility >= ViewFrameTable[frame - 1].FrVisibility)
-      if (mbox->BxXOrg + mbox->BxWidth >= pBox->BxXOrg
-	  && mbox->BxYOrg + mbox->BxHeight >= pBox->BxYOrg)
-	{
-	   pFrame = &ViewFrameTable[frame - 1];
-	   xd = pBox->BxXOrg - pFrame->FrXOrg;
-	   yd = pBox->BxYOrg - pFrame->FrYOrg;
-	   if (pBox->BxAbstractBox->AbSensitive)
-	      op = 1;
-	   else
-	      op = 0;
-	   if (pBox->BxAbstractBox->AbReadOnly)
-	      RO = 1;
-	   else
-	      RO = 0;
+  fg = pBox->BxAbstractBox->AbForeground;
+  bg = pBox->BxAbstractBox->AbBackground;
+  if (pBox->BxAbstractBox->AbVisibility >= ViewFrameTable[frame - 1].FrVisibility)
+    if (mbox->BxXOrg + mbox->BxWidth >= pBox->BxXOrg
+	&& mbox->BxYOrg + mbox->BxHeight >= pBox->BxYOrg)
+      {
+	pFrame = &ViewFrameTable[frame - 1];
+	xd = pBox->BxXOrg - pFrame->FrXOrg;
+	yd = pBox->BxYOrg - pFrame->FrYOrg;
+	if (pBox->BxAbstractBox->AbSensitive)
+	  op = 1;
+	else
+	  op = 0;
+	if (pBox->BxAbstractBox->AbReadOnly)
+	  RO = 1;
+	else
+	  RO = 0;
 
-	   /* box sizes have to be positive */
-	   width = pBox->BxWidth;
-	   if (width < 0)
-	     width = 0;
-	   height = pBox->BxHeight;
-	   if (height < 0)
-	     height = 0;
+	/* box sizes have to be positive */
+	width = pBox->BxWidth;
+	if (width < 0)
+	  width = 0;
+	height = pBox->BxHeight;
+	if (height < 0)
+	  height = 0;
 
-	   pv = pBox->BxAbstractBox;
-	   /* Style and thickness of drawing */
-	   i = GetLineWeight (pv);
-	   switch (pv->AbLineStyle)
-		 {
-		    case 'S':
-		       style = 0;
-		       break;
-		    case '-':
-		       style = 3;
-		       break;
-		    case '.':
-		       style = 1;
-		       break;
-		    default:
-		       style = 0;
-		 }
+	pv = pBox->BxAbstractBox;
+	/* Style and thickness of drawing */
+	i = GetLineWeight (pv);
+	switch (pv->AbLineStyle)
+	  {
+	  case 'S':
+	    style = 0;
+	    break;
+	  case '-':
+	    style = 3;
+	    break;
+	  case '.':
+	    style = 1;
+	    break;
+	  default:
+	    style = 0;
+	  }
 
-	   switch (pv->AbRealShape)
-		 {
-		    case '\260':
-		       DrawRectangle (frame, 0, 0, xd, yd, width, height, RO, op, fg, bg, 2);
-		       break;
-		    case '\261':
-		       DrawRectangle (frame, 0, 0, xd, yd, width, height, RO, op, fg, bg, 5);
-		       break;
-		    case '\262':
-		       DrawRectangle (frame, 0, 0, xd, yd, width, height, RO, op, fg, bg, 6);
-		       break;
-		    case '\263':
-		       DrawRectangle (frame, 0, 0, xd, yd, width, height, RO, op, fg, bg, 7);
-		       break;
-		    case '\264':
-		       DrawRectangle (frame, 0, 0, xd, yd, width, height, RO, op, fg, bg, 8);
-		       break;
-		    case '\265':
-		       DrawRectangle (frame, 0, 0, xd, yd, width, height, RO, op, fg, bg, 9);
-		       break;
-		    case '\266':
-		       DrawRectangle (frame, 0, 0, xd, yd, width, height, RO, op, fg, bg, 1);
-		       break;
-		    case '\267':
-		       DrawRectangle (frame, 0, 0, xd, yd, width, height, RO, op, fg, bg, 0);
-		       break;
-		    case '\270':
-		       DrawRectangle (frame, 0, 0, xd, yd, width, height, RO, op, fg, bg, 4);
-		       break;
-		    case '0':
-		    case '1':
-		    case '2':
-		    case '3':
-		    case '4':
-		    case '5':
-		    case '6':
-		    case '7':
-		    case '8':
-		    case 'R':
-		       DrawRectangle (frame, i, style, xd, yd, width,
+	switch (pv->AbRealShape)
+	  {
+	  case '\260':
+	    DrawRectangle (frame, 0, 0, xd, yd, width, height, RO, op, fg, bg, 2);
+	    break;
+	  case '\261':
+	    DrawRectangle (frame, 0, 0, xd, yd, width, height, RO, op, fg, bg, 5);
+	    break;
+	  case '\262':
+	    DrawRectangle (frame, 0, 0, xd, yd, width, height, RO, op, fg, bg, 6);
+	    break;
+	  case '\263':
+	    DrawRectangle (frame, 0, 0, xd, yd, width, height, RO, op, fg, bg, 7);
+	    break;
+	  case '\264':
+	    DrawRectangle (frame, 0, 0, xd, yd, width, height, RO, op, fg, bg, 8);
+	    break;
+	  case '\265':
+	    DrawRectangle (frame, 0, 0, xd, yd, width, height, RO, op, fg, bg, 9);
+	    break;
+	  case '\266':
+	    DrawRectangle (frame, 0, 0, xd, yd, width, height, RO, op, fg, bg, 1);
+	    break;
+	  case '\267':
+	    DrawRectangle (frame, 0, 0, xd, yd, width, height, RO, op, fg, bg, 0);
+	    break;
+	  case '\270':
+	    DrawRectangle (frame, 0, 0, xd, yd, width, height, RO, op, fg, bg, 4);
+	    break;
+	  case '0':
+	  case '1':
+	  case '2':
+	  case '3':
+	  case '4':
+	  case '5':
+	  case '6':
+	  case '7':
+	  case '8':
+	  case 'R':
+	    DrawRectangle (frame, i, style, xd, yd, width,
+			   height, RO, op, fg, bg, pv->AbFillPattern);
+	    break;
+	  case 'C':
+	    DrawOval (frame, i, style, xd, yd, width,
+		      height, RO, op, fg, bg, pv->AbFillPattern);
+	    break;
+	  case 'L':
+	    DrawDiamond (frame, i, style, xd, yd, width,
 			 height, RO, op, fg, bg, pv->AbFillPattern);
-		       break;
-		    case 'C':
-		       DrawOval (frame, i, style, xd, yd, width,
-			 height, RO, op, fg, bg, pv->AbFillPattern);
-		       break;
-		    case 'L':
-		       DrawDiamond (frame, i, style, xd, yd, width,
-			 height, RO, op, fg, bg, pv->AbFillPattern);
-		       break;
-		    case 'c':
-		       DrawEllips (frame, i, style, xd, yd, width,
-			 height, RO, op, fg, bg, pv->AbFillPattern);
-		       break;
-		    case 'h':
-		       DrawHorizontalLine (frame, i, style, xd, yd, width, height, 1, RO, op, fg);
-		       break;
-		    case 't':
-		       DrawHorizontalLine (frame, i, style, xd, yd, width, height, 0, RO, op, fg);
-		       break;
-		    case 'b':
-		       DrawHorizontalLine (frame, i, style, xd, yd, width, height, 2, RO, op, fg);
-		       break;
-		    case 'v':
-		       DrawVerticalLine (frame, i, style, xd, yd, width, height, 1, RO, op, fg);
-		       break;
-		    case 'l':
-		       DrawVerticalLine (frame, i, style, xd, yd, width, height, 0, RO, op, fg);
-		       break;
-		    case 'r':
-		       DrawVerticalLine (frame, i, style, xd, yd, width, height, 2, RO, op, fg);
-		       break;
-		    case '/':
-		       DrawSlash (frame, i, style, xd, yd, width,
-				  height, 0, RO, op, fg);
-		       break;
-		    case '\\':
-		       DrawSlash (frame, i, style, xd, yd, width,
-				  height, 1, RO, op, fg);
-		       break;
-		    case '>':
-		       DrawArrow (frame, i, style, xd, yd, width, height, 0, RO, op, fg);
-		       break;
-		    case 'E':
-		       DrawArrow (frame, i, style, xd, yd, width,
-				  height, 45, RO, op, fg);
-		       break;
-		    case '^':
-		       DrawArrow (frame, i, style, xd, yd, width,
-				  height, 90, RO, op, fg);
-		       break;
-		    case 'O':
-		       DrawArrow (frame, i, style, xd, yd, width,
-				  height, 135, RO, op, fg);
-		       break;
-		    case '<':
-		       DrawArrow (frame, i, style, xd, yd, width,
-				  height, 180, RO, op, fg);
-		       break;
-		    case 'o':
-		       DrawArrow (frame, i, style, xd, yd, width,
-				  height, 225, RO, op, fg);
-		       break;
-		    case 'V':
-		       DrawArrow (frame, i, style, xd, yd, width,
-				  height, 270, RO, op, fg);
-		       break;
-		    case 'e':
-		       DrawArrow (frame, i, style, xd, yd, width,
-				  height, 315, RO, op, fg);
-		       break;
-
-		    case 'P':
-		       DrawRectangleFrame (frame, i, style, xd, yd, width,
-			 height, RO, op, fg, bg, pv->AbFillPattern);
-		       break;
-		    case 'Q':
-		       DrawEllipsFrame (frame, i, style, xd, yd, width,
-			 height, RO, op, fg, bg, pv->AbFillPattern);
-		       break;
-		    case 'W':
-		       DrawCorner (frame, i, style, xd, yd, width, height, 0, RO, op, fg);
-		       break;
-		    case 'X':
-		       DrawCorner (frame, i, style, xd, yd, width, height, 1, RO, op, fg);
-		       break;
-		    case 'Y':
-		       DrawCorner (frame, i, style, xd, yd, width, height, 2, RO, op, fg);
-		       break;
-		    case 'Z':
-		       DrawCorner (frame, i, style, xd, yd, width, height, 3, RO, op, fg);
-		       break;
-
-		    default:
-		       break;
-		 }
-
-	   if (pBox->BxEndOfBloc > 0)
-	     {
-		/* Compute the origin alignment */
-		yd += pBox->BxHorizRef;
-		DrawPoints (frame, xd + width, yd, pBox->BxEndOfBloc, RO, op, fg);
-	     }
-	}
+	    break;
+	  case 'a':
+	  case 'c':
+	    DrawEllips (frame, i, style, xd, yd, width,
+			height, RO, op, fg, bg, pv->AbFillPattern);
+	    break;
+	  case 'h':
+	    DrawHorizontalLine (frame, i, style, xd, yd, width, height, 1, RO, op, fg);
+	    break;
+	  case 't':
+	    DrawHorizontalLine (frame, i, style, xd, yd, width, height, 0, RO, op, fg);
+	    break;
+	  case 'b':
+	    DrawHorizontalLine (frame, i, style, xd, yd, width, height, 2, RO, op, fg);
+	    break;
+	  case 'v':
+	    DrawVerticalLine (frame, i, style, xd, yd, width, height, 1, RO, op, fg);
+	    break;
+	  case 'l':
+	    DrawVerticalLine (frame, i, style, xd, yd, width, height, 0, RO, op, fg);
+	    break;
+	  case 'r':
+	    DrawVerticalLine (frame, i, style, xd, yd, width, height, 2, RO, op, fg);
+	    break;
+	  case '/':
+	    DrawSlash (frame, i, style, xd, yd, width,
+		       height, 0, RO, op, fg);
+	    break;
+	  case '\\':
+	    DrawSlash (frame, i, style, xd, yd, width,
+		       height, 1, RO, op, fg);
+	    break;
+	  case '>':
+	     DrawArrow (frame, i, style, xd, yd, width, height, 0, RO, op, fg);
+	     break;
+	  case 'E':
+	    DrawArrow (frame, i, style, xd, yd, width,
+		       height, 45, RO, op, fg);
+	    break;
+	  case '^':
+	    DrawArrow (frame, i, style, xd, yd, width,
+		       height, 90, RO, op, fg);
+	    break;
+	  case 'O':
+	    DrawArrow (frame, i, style, xd, yd, width,
+		       height, 135, RO, op, fg);
+	    break;
+	  case '<':
+	    DrawArrow (frame, i, style, xd, yd, width,
+		       height, 180, RO, op, fg);
+	    break;
+	  case 'o':
+	    DrawArrow (frame, i, style, xd, yd, width,
+		       height, 225, RO, op, fg);
+	    break;
+	  case 'V':
+	    DrawArrow (frame, i, style, xd, yd, width,
+		       height, 270, RO, op, fg);
+	    break;
+	  case 'e':
+	    DrawArrow (frame, i, style, xd, yd, width,
+		       height, 315, RO, op, fg);
+	    break;
+	    
+	  case 'P':
+	    DrawRectangleFrame (frame, i, style, xd, yd, width,
+				height, RO, op, fg, bg, pv->AbFillPattern);
+	    break;
+	  case 'Q':
+	    DrawEllipsFrame (frame, i, style, xd, yd, width,
+			     height, RO, op, fg, bg, pv->AbFillPattern);
+	    break;
+	  case 'W':
+	    DrawCorner (frame, i, style, xd, yd, width, height, 0, RO, op, fg);
+	    break;
+	  case 'X':
+	    DrawCorner (frame, i, style, xd, yd, width, height, 1, RO, op, fg);
+	    break;
+	  case 'Y':
+	    DrawCorner (frame, i, style, xd, yd, width, height, 2, RO, op, fg);
+	    break;
+	  case 'Z':
+	    DrawCorner (frame, i, style, xd, yd, width, height, 3, RO, op, fg);
+	    break;
+	    
+	  default:
+	    break;
+	  }
+	
+	if (pBox->BxEndOfBloc > 0)
+	  {
+	    /* Compute the origin alignment */
+	    yd += pBox->BxHorizRef;
+	    DrawPoints (frame, xd + width, yd, pBox->BxEndOfBloc, RO, op, fg);
+	  }
+      }
 }
 
 
@@ -584,7 +585,6 @@ void                PolyTransform (PtrBox pBox)
 #else  /* __STDC__ */
 void                PolyTransform (pBox)
 PtrBox              pBox;
-
 #endif /* __STDC__ */
 {
    float               xRatio, yRatio, pointIndex;
@@ -602,7 +602,7 @@ PtrBox              pBox;
      height = 0;
 
    /* Compute ratio for axis X */
-   val = PixelToPoint (width * 1000);
+   val = PixelToPoint (width) * 1000;
    if (val != pBox->BxBuffer->BuPoints[0].XCoord
        && pBox->BxBuffer->BuPoints[0].XCoord > 0)
      {
@@ -617,7 +617,7 @@ PtrBox              pBox;
       xRatio = 1.0;
 
    /* Compute ratio for axis Y */
-   val = PixelToPoint (height * 1000);
+   val = PixelToPoint (height) * 1000;
    if (val != pBox->BxBuffer->BuPoints[0].YCoord
        && pBox->BxBuffer->BuPoints[0].YCoord > 0)
      {
@@ -746,11 +746,15 @@ int                 frame;
 		    case 'U':	/* Segments forward arrow */
 		    case 'N':	/* Segments backward arrow */
 		    case 'M':	/* Segments arrows on both directions */
-		       if (pAb->AbPolyLineShape == 'S')
+		    case 'w':	/* Segments (2 points) */
+		    case 'x':	/* Segments (2 points) forward arrow */
+		    case 'y':	/* Segments (2 points) backward arrow */
+		    case 'z':	/* Segments (2 points) arrows on both directions */
+		       if (pAb->AbPolyLineShape == 'S' || pAb->AbPolyLineShape == 'w')
 			  arrow = 0;
-		       else if (pAb->AbPolyLineShape == 'U')
+		       else if (pAb->AbPolyLineShape == 'U' || pAb->AbPolyLineShape == 'x')
 			  arrow = 1;
-		       else if (pAb->AbPolyLineShape == 'N')
+		       else if (pAb->AbPolyLineShape == 'N' || pAb->AbPolyLineShape == 'y')
 			  arrow = 2;
 		       else
 			  arrow = 3;
@@ -1032,7 +1036,9 @@ int                 frame;
 			   DisplayUnderline (frame, x, y, pBox->BxFont, pBox->BxUnderline,
 			        pBox->BxThickness, pBox->BxWidth, RO, op, fg);
 			/* Next char lookup */
-			if ((unsigned char) adbuff->BuContent[indbuff - 1] == BREAK_LINE && !ShowSpace)
+			if (((unsigned char) adbuff->BuContent[indbuff - 1] == BREAK_LINE ||
+			     (unsigned char) adbuff->BuContent[indbuff - 1] == NEW_LINE)
+			    && !ShowSpace)
 			   DrawChar (SHOWN_BREAK_LINE, frame, x, y, pBox->BxFont, RO, op, fg);
 		     }
 		   else
@@ -1081,30 +1087,34 @@ PtrBox              pBox;
 int                 frame;
 #endif /* __STDC__ */
 {
-   /* Empty */
-   if (pBox->BxAbstractBox->AbVolume == 0) {
+  if (pBox->BxAbstractBox->AbVolume == 0 ||
+      (pBox->BxAbstractBox->AbLeafType == LtPolyLine) && pBox->BxNChars == 1)
+    {
+      /* Empty */
       if (pBox->BxAbstractBox->AbLeafType == LtSymbol)
-         DisplayEmptyBox (pBox, frame, '2');
+	DisplayEmptyBox (pBox, frame, '2');
       else if (ThotLocalActions[T_emptybox] != NULL)
-           (*ThotLocalActions[T_emptybox]) (pBox, frame, '2');
-   } else if (pBox->BxAbstractBox->AbLeafType == LtText) /* Text */
-          /* Display a Text box */
-          DisplayJustifiedText (pBox, frame);
-   else if (pBox->BxType == BoPicture) /* Picture */
-        DisplayImage (pBox, frame);
-   else if (pBox->BxAbstractBox->AbLeafType == LtSymbol) /* Symbol */
-        if (pBox->BxAbstractBox->AbShape == '\0')
-           DisplayEmptyBox (pBox, frame, '2');
-        else
-           DisplaySymbol (pBox, frame);
-   else if (pBox->BxAbstractBox->AbLeafType == LtGraphics) /* Graphics */
-        if (pBox->BxAbstractBox->AbShape == '\0')
-           DisplayEmptyBox (pBox, frame, '2');
-        else
-           DisplayGraph (pBox, frame);
-   else if (pBox->BxAbstractBox->AbLeafType == LtPolyLine) /* Polyline */
-        if (pBox->BxNChars == 1)
-           DisplayEmptyBox (pBox, frame, '2');
-        else
-            DrawPolyLine (pBox, frame);
+	(*ThotLocalActions[T_emptybox]) (pBox, frame, '2');
+    }
+  else if (pBox->BxAbstractBox->AbLeafType == LtText)
+    /* Display a Text box */
+    DisplayJustifiedText (pBox, frame);
+  else if (pBox->BxType == BoPicture)
+    /* Picture */
+    DisplayImage (pBox, frame);
+  else if (pBox->BxAbstractBox->AbLeafType == LtSymbol)
+    /* Symbol */
+    if (pBox->BxAbstractBox->AbShape == EOS)
+      DisplayEmptyBox (pBox, frame, '2');
+    else
+      DisplaySymbol (pBox, frame);
+  else if (pBox->BxAbstractBox->AbLeafType == LtGraphics)
+    /* Graphics */
+    if (pBox->BxAbstractBox->AbShape == EOS)
+      DisplayEmptyBox (pBox, frame, '2');
+    else
+      DisplayGraph (pBox, frame);
+  else if (pBox->BxAbstractBox->AbLeafType == LtPolyLine)
+    /* Polyline */
+    DrawPolyLine (pBox, frame);
 }

@@ -340,7 +340,6 @@ Element             el;
    return firstcolhead;
 }
 
-
 /*----------------------------------------------------------------------
    MaximumRowSpan                                                  
   ----------------------------------------------------------------------*/
@@ -398,7 +397,7 @@ int                 span;
 
 #define MAX_COLS 100
 /*----------------------------------------------------------------------
-   CheckTable      Check a table and create the missing elements.  
+  CheckAllRows
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
 static void         CheckAllRows (Element table, Document doc)
@@ -509,9 +508,9 @@ Document            doc;
 				      /* there is no Column_head for that cell */
 				      /* Create an additional Column_head */
 				      colElement[cRef] = NewColumnHead (colElement[cRef-1], doc, FALSE, row);
-				      colVSpan[cRef] = colVSpan[cRef-1];
 				      cNumber++;
 				    }
+				  colVSpan[cRef] = colVSpan[cRef-1];
 				}
 
 			      /* set the attribute ColExt */
@@ -1230,7 +1229,6 @@ void                CellDeleted (event)
 NotifyElement      *event;
 #endif
 {
-  Element             colhead;
   Element             table;
   ElementType         elType;
   Document            doc;
@@ -1240,8 +1238,7 @@ NotifyElement      *event;
   doc = event->document;
   span = CurrentSpan;
   CurrentSpan = 0;
-  colhead = GetFirstColumnHead (event->element);
-  removed = RemoveEmptyColumn (colhead, doc);
+  removed = RemoveEmptyColumn (CurrentColumn, doc);
   if (removed)
     span--;
   else

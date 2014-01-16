@@ -3,7 +3,7 @@
 **
 **	(c) COPYRIGHT MIT 1995.
 **	Please first read the full copyright statement in the file COPYRIGH.
-**	@(#) $Id: HTTCP.c,v 1.2 1997/05/20 08:34:57 cvs Exp $
+**	@(#) $Id: HTTCP.c,v 1.3 1998/03/11 17:45:39 cvs Exp $
 **
 **	This code is in common between client and server sides.
 **
@@ -277,7 +277,7 @@ PUBLIC int HTDoConnect (HTNet * net, char * url, u_short default_port)
 	    net->channel = HTChannel_new(net, YES);
 
 	    /* If multi-homed host then start timer on connection */
-	    if (net->retry) net->connecttime = time(NULL);
+	    if (net->retry) net->connecttime = HTGetTimeInMillis();
 
 	    /* Progress */
 	    {
@@ -328,7 +328,7 @@ PUBLIC int HTDoConnect (HTNet * net, char * url, u_short default_port)
 		    break;
 		}
 		if (net->retry) {
-		    net->connecttime -= time(NULL);
+		    net->connecttime -= HTGetTimeInMillis();
 		    /* Added EINVAL `invalid argument' as this is what I 
 		       get back from a non-blocking connect where I should 
 		       get `connection refused' on BSD. SVR4 gives SIG_PIPE */
@@ -354,7 +354,7 @@ PUBLIC int HTDoConnect (HTNet * net, char * url, u_short default_port)
 	  case TCP_CONNECTED:
 	    HTEvent_unregister(net->sockfd, (SockOps) FD_CONNECT);
 	    if (net->retry) {
-		net->connecttime -= time(NULL);
+		net->connecttime -= HTGetTimeInMillis();
 		HTDNS_updateWeigths(net->dns, net->home, net->connecttime);
 	    }
 	    net->retry = 0;

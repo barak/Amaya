@@ -32,6 +32,7 @@ BASIC AUTHENTICATION
 extern HTNetBefore      HTBasic_generate;
 extern HTNetAfter       HTBasic_parse;
 extern HTUTree_gc       HTBasic_delete;
+extern void *           HTBasic_copy (void *context);
 /*
 
  */
@@ -41,6 +42,15 @@ extern HTUTree_gc       HTBasic_delete;
    
    ___________________________________
    
-                          @(#) $Id: HTAABrow.h,v 1.1.1.1 1996/10/15 13:08:40 cvs Exp $
+                          @(#) $Id: HTAABrow.h,v 1.2 1998/06/18 14:04:23 cvs Exp $
                                                                                           
     */
+
+
+
+
+
+
+
+
+

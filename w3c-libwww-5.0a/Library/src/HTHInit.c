@@ -3,7 +3,7 @@
 **
 **	(c) COPYRIGHT MIT 1995.
 **	Please first read the full copyright statement in the file COPYRIGH.
-**	@(#) $Id: HTHInit.c,v 1.1.1.1 1996/10/15 13:08:38 cvs Exp $
+**	@(#) $Id: HTHInit.c,v 1.2 1998/03/05 14:37:27 cvs Exp $
 **
 **	Set up the HTML parsers in libwww
 */
@@ -30,5 +30,7 @@ PUBLIC void HTMLInit (HTList * c)
     HTConversion_add(c,"text/plain",		"www/present",	HTPlainPresent,	1.0, 0.0, 0.0);
     HTConversion_add(c,"text/html",		"text/x-c",	HTMLToC,	0.5, 0.0, 0.0);
     HTConversion_add(c,"text/html",		"text/plain",	HTMLToPlain,	0.5, 0.0, 0.0);
+/*
     HTConversion_add(c,"text/html",	       	"text/latex",	HTMLToTeX,	1.0, 0.0, 0.0);
+*/
 }

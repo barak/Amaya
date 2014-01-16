@@ -62,8 +62,10 @@ struct _HTNet {
 
     /* For progress notifications */
     long                bytes_read;               /* Bytes read from network */
+    long                headerLength;                /* Bytes read in header */
     long                bytes_written;           /* Bytes written to network */
-
+    long                bytes_consumed;          /* bytes sent down a local stream */
+                                                     
     /* Connection dependent stuff */
     TCPState            tcpstate;                     /* State in connection */
     SockA               sock_addr;           /* SockA is defined in sysdep.h */
@@ -77,9 +79,19 @@ struct _HTNet {
 
 #define HTNet_bytesRead(me)             ((me) ? (me)->bytes_read : -1)
 #define HTNet_bytesWritten(me)          ((me) ? (me)->bytes_written : -1)
+#define HTNet_headerLength(me)          ((me) ? (me)->headerLength : -1)
+#define HTNet_bytesConsumed(me)         ((me) ? (me)->bytes_consumed : -1)
 
 #define HTNet_setBytesRead(me,l)        ((me) ? (me->bytes_read=(l)) : -1)
 #define HTNet_setBytesWritten(me,l)     ((me) ? (me->bytes_written=(l)) :-1)
+#define HTNet_setHeaderLength(me,l)     ((me) ? (me->headerLength=(l)) :-1)
+#define HTNet_setBytesConsumed(me,l)    ((me) ? (me->bytes_consumed=(l)) :-1)
+
+#define HTNet_addBytesRead(me,l)        ((me) ? (me->bytes_read+=(l)) : -1)
+#define HTNet_addBytesWritten(me,l)     ((me) ? (me->bytes_written+=(l)) : -1)
+#define HTNet_addHeaderLength(me,l)     ((me) ? (me->headerLength+=(l)) : -1)
+#define HTNet_addBytesConsumed(me,l)    ((me) ? (me->bytes_consumed+=(l)) : -1)
+
 /*
 
  */
@@ -89,6 +101,6 @@ struct _HTNet {
    
    ___________________________________
    
-                          @(#) $Id: HTNetMan.h,v 1.1.1.1 1996/10/15 13:08:40 cvs Exp $
+                          @(#) $Id: HTNetMan.h,v 1.2 1998/03/11 17:45:39 cvs Exp $
                                                                                           
     */

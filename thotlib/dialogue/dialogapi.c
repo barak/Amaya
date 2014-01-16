@@ -149,8 +149,9 @@ static Display*       GDp;
 #endif
 
 #ifdef _WINDOWS
-static OPENFILENAME OpenFileName;
-static int cyValue = 10;
+LPCTSTR iconID = "IDI_APPICON";
+static  OPENFILENAME OpenFileName;
+static  int cyValue = 10;
 
 static HWND   currentParent;
 #endif /* _WINDOWS */
@@ -163,7 +164,6 @@ static ThotWidget       MainShell;
 #include "thotmsg_f.h"
 
 #ifdef _WINDOWS
-
 typedef struct struct_winerror {
         WORD  errNo;
         char* errstr;
@@ -184,7 +184,12 @@ typedef struct FrCatalogue {
 } FrCatalogue ;
 
 
-FrCatalogue FrameCatList [MAX_FRAME] ;
+FrCatalogue FrameCatList [MAX_FRAME + 1] ;
+
+extern int       ReturnOption;
+extern Document  opDoc;
+extern Element   opOption [200];
+
 #ifdef __STDC__
 LRESULT CALLBACK WndProc        (HWND, UINT, WPARAM, LPARAM) ;
 LRESULT CALLBACK ClientWndProc  (HWND, UINT, WPARAM, LPARAM) ;
@@ -254,7 +259,6 @@ static WIN_Form formulary ;
 static BYTE     fVirt;
 static char     key;
 
-#define EOS     '\0'
 #define TAB     '\t'
 #define SPACE   ' '
 #endif /* _WINDOWS */
@@ -478,7 +482,7 @@ CONST char* text;
     char *pText = text;
     while (pText && *pText == ' ')
 	  pText++;
-    if (*pText == '\0')
+    if (*pText == EOS)
        return TRUE;
     return FALSE;
 }
@@ -550,7 +554,7 @@ ThotWindow win ;
    int     frame      = -1;
    boolean found      = FALSE;
   
-   while (frameIndex < MAX_FRAME && !found) {
+   while (frameIndex <= MAX_FRAME && !found) {
          menuIndex = 0;
          while (menuIndex < MAX_MENU && !found) 
 	     if (FrameTable[frameIndex].WdMenus[menuIndex] == menu) {
@@ -613,18 +617,29 @@ ThotWindow WIN_curWin = (ThotWindow)(-1);
    thot window.                                                
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
+HMENU WIN_GetMenu (int frame)
+#else  /* !__STDC__ */
+HMENU WIN_GetMenu (int frame)
+#endif /* __STDC__ */
+{
+    return (GetMenu (FrMainRef [frame]));
+}
+/*----------------------------------------------------------------------
+   WIN_GetDeviceContext :  select a Device Context for a given       
+   thot window.                                                
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
 void WIN_GetDeviceContext (int frame)
 #else  /* !__STDC__ */
 void WIN_GetDeviceContext (frame)
 int frame;
 #endif /* __STDC__ */
 {
-# ifdef _WIN_PRINT
-  WIN_curWin = NULL;
-  TtDisplay = GetDC (WIN_curWin);
-# else  /* !_WIN_PRINT */
-  HWND win;
-  if (frame == -1) {
+#  ifdef _WIN_PRINT
+   WIN_curWin = NULL;
+   TtDisplay = GetDC (WIN_curWin);
+#  else  /* !_WIN_PRINT */
+   if (frame == -1) {
       if (TtDisplay != 0)
          return;
       for (frame = 0; frame <= MAX_FRAME; frame++)
@@ -632,40 +647,28 @@ int frame;
 	     break;
    }
    if ((frame < 0) || (frame > MAX_FRAME)) {
-#     ifdef AMAYA_DEBUG
-      fprintf (stderr, "Could not get Device Context for Window #%d\n", frame);
-#     endif /* AMAYA_DEBUG */
+      TtDisplay = GetDC (NULL);
       return;
    }
    
-   win = FrRef[frame];
-   
-   if (win == 0) {
-#     ifdef AMAYA_DEBUG
-      fprintf (stderr, "WIN_GetDeviceContext : No Window #%d\n", frame);
-#     endif /* AMAYA_DEBUG */
+   if (FrRef[frame] == 0)
       return;
-   }
 
    /* if the correct Device Context is already selected, returns. */
-   if ((WIN_curWin == win) && (TtDisplay != 0))
+   if ((WIN_curWin == FrRef[frame]) && (TtDisplay != 0))
       return;
 
    /* release the previous Device Context. */
-   if ((TtDisplay != 0) && (WIN_curWin != (ThotWindow) (-1)))
+   if (TtDisplay)
       ReleaseDC (WIN_curWin, TtDisplay);
 
    WIN_curWin = (ThotWindow) (-1);
    TtDisplay = 0;
 
    /* load the new Context. */
-   TtDisplay = GetDC (win);
-#  ifdef AMAYA_DEBUG
-   if (TtDisplay == 0)
-      fprintf (stderr, "Could not get Device Context for Window %X\n", win);
-#  endif/*  AMAYA_DEBUG */
+   TtDisplay = GetDC (FrRef[frame]);
    if (TtDisplay != 0)
-      WIN_curWin = win;
+      WIN_curWin = FrRef[frame];
 #  endif /* !_WIN_PRINT */
 }
 
@@ -679,7 +682,8 @@ void WIN_ReleaseDeviceContext ()
 #endif /* __STDC__ */
 {
    /* release the previous Device Context. */
-   if ((TtDisplay != 0) && (WIN_curWin != (ThotWindow) (-1)))
+   /* if ((TtDisplay != 0) && (WIN_curWin != (ThotWindow) (-1))) */
+   if (TtDisplay != 0)
       ReleaseDC (WIN_curWin, TtDisplay);
 
    WIN_curWin = (ThotWindow) (-1);
@@ -713,7 +717,7 @@ struct Cat_Context* catalogue;
          frameIndex = 0 ;
          found      = FALSE ;
 
-         while (frameIndex < MAX_FRAME && !found) {
+         while (frameIndex <= MAX_FRAME && !found) {
                catIndex = 0 ;
             
                while (catIndex < MAX_FRAMECAT && !found) {
@@ -925,7 +929,7 @@ HINSTANCE hPrevInst;
 LPSTR     lpCommand; 
 int       nShow;
 #endif /* __STDC__ */
-{
+{ 
    int    argc ;
    char** argv;
 
@@ -1465,8 +1469,8 @@ caddr_t             call_d;
 			      {
 				 strncpy (text, XmTextGetString (catalogue->Cat_Entries->E_ThotWidget[1]), 10);
 
-				 text[10] = '\0';
-				 if (text[0] != '\0')
+				 text[10] = EOS;
+				 if (text[0] != EOS)
 				    sscanf (text, "%d", &i);
 				 else
 				    i = 0;
@@ -1483,7 +1487,7 @@ caddr_t             call_d;
 			      {
 				 if (catalogue->Cat_SelectList)
 				   {
-				      text[0] = '\0';
+				      text[0] = EOS;
 				      n = 0;
 				      XtSetArg (args[n], XmNselectedItems, &strings);
 				      n++;
@@ -1561,10 +1565,10 @@ caddr_t             call_d;
 	   wtext = catalogue->Cat_Entries->E_ThotWidget[1];
 
 	   strncpy (text, XmTextGetString (wtext), 10);
-	   text[10] = '\0';
-	   if (text[0] != '\0')
+	   text[10] = EOS;
+	   if (text[0] != EOS)
 	     {
-		if ((text[0] == '-') && (text[1] == '\0'))
+		if ((text[0] == '-') && (text[1] == EOS))
 		   /* cas ou le caractere - a ete tape, on met val a 0 */
 		   val = 0;
 		else
@@ -1625,7 +1629,7 @@ XmListCallbackStruct *infos;
 	   ok = XmStringGetLtoR (infos->item, XmSTRING_DEFAULT_CHARSET, &text);
 	   /* retourne l'entree choisie */
 	   if (ok && text != NULL)
-	      if (text[0] != '\0' && text[0] != ' ')
+	      if (text[0] != EOS && text[0] != ' ')
 		 (*CallbackDialogue) (catalogue->Cat_Ref, STRING_DATA, text);
 	}
 }
@@ -1723,9 +1727,9 @@ void                MyWarningHandler ()
   ----------------------------------------------------------------------*/
 #ifdef _WINDOWS
 #ifdef __STDC__
-boolean             WIN_TtaInitDialogue (char *server, char *txtOK, char *txtRAZ, char *txtDone)
+BOOL             WIN_TtaInitDialogue (char *server, char *txtOK, char *txtRAZ, char *txtDone)
 #else  /* !__STDC__ */
-boolean             WIN_TtaInitDialogue (server, txtOK, txtRAZ, txtDone)
+BOOL             WIN_TtaInitDialogue (server, txtOK, txtRAZ, txtDone)
 char* server; 
 char* txtOK; 
 char* txtRAZ; 
@@ -1758,51 +1762,48 @@ Display           **Dp;
    RootShell.cbClsExtra    = 0 ;
    RootShell.cbWndExtra    = 0 ;
    RootShell.hInstance     = hInstance ;
-   RootShell.hIcon         = LoadIcon (hInstance, IDI_APPLICATION) ;
+   RootShell.hIcon         = LoadIcon (hInstance, iconID) ;
    RootShell.hCursor       = LoadCursor (NULL, IDC_ARROW) ;
    RootShell.hbrBackground = (HBRUSH) GetStockObject (LTGRAY_BRUSH) ;
    RootShell.lpszMenuName  = "AmayaMain" ;
    RootShell.lpszClassName = tszAppName;
+   RootShell.cbSize        = sizeof(WNDCLASSEX);
+   RootShell.hIconSm       = LoadIcon (hInstance, iconID) ;
 
-   if (IS_WIN95) {
-      if (!RegisterWin95 (&RootShell))
-         return (FALSE);
-   } else if (!RegisterClass (&RootShell))
-          return (FALSE);
+   if (!RegisterClassEx (&RootShell))
+      return (FALSE);
 
    RootShell.style         = CS_DBLCLKS ;
    RootShell.lpfnWndProc   = ClientWndProc ;
    RootShell.cbClsExtra    = 0 ;
    RootShell.cbWndExtra    = 0 ;
    RootShell.hInstance     = hInstance ;
-   RootShell.hIcon         = LoadIcon (hInstance, IDI_APPLICATION) ;
+   RootShell.hIcon         = LoadIcon (hInstance, iconID) ;
    RootShell.hCursor       = LoadCursor (NULL, IDC_ARROW) ;
    RootShell.hbrBackground = (HBRUSH) (COLOR_WINDOW + 1) ;
    RootShell.lpszClassName = "ClientWndProc" ;
    RootShell.lpszMenuName  = NULL ;
+   RootShell.cbSize        = sizeof(WNDCLASSEX);
+   RootShell.hIconSm       = LoadIcon (hInstance, iconID) ;
 
-   if (IS_WIN95) {
-      if (!RegisterWin95 (&RootShell))
-         return (FALSE);
-   } else if (!RegisterClass (&RootShell))
-          return (FALSE);
+   if (!RegisterClassEx (&RootShell))
+      return (FALSE);
 
    RootShell.style         = 0 ;
    RootShell.lpfnWndProc   = ThotDlgProc ;
    RootShell.cbClsExtra    = 0 ;
    RootShell.cbWndExtra    = 0 ;
    RootShell.hInstance     = hInstance ;
-   RootShell.hIcon         = LoadIcon (hInstance, IDI_APPLICATION) ;
+   RootShell.hIcon         = LoadIcon (hInstance, iconID) ;
    RootShell.hCursor       = LoadCursor (NULL, IDC_ARROW) ;
    RootShell.lpszClassName = "WNDIALOGBOX" ;
    RootShell.lpszMenuName  = NULL ;
    RootShell.hbrBackground = (HBRUSH) GetStockObject (LTGRAY_BRUSH) ;
+   RootShell.cbSize        = sizeof(WNDCLASSEX);
+   RootShell.hIconSm       = LoadIcon (hInstance, iconID) ;
    
-   if (IS_WIN95) {
-      if (!RegisterWin95 (&RootShell))
-         return (FALSE);
-   } else if (!RegisterClass (&RootShell))
-          return (FALSE);
+   if (!RegisterClassEx (&RootShell))
+      return (FALSE);
 #  endif /* !_WIN_PRINT */
 #  endif /* _WINDOWS */
 
@@ -1828,8 +1829,6 @@ Display           **Dp;
    DefaultFont = XmFontListCreate (XLoadQueryFont (GDp, "fixed"), XmSTRING_DEFAULT_CHARSET);
    formFONT = XmFontListCreate (XLoadQueryFont (GDp, "fixed"), XmSTRING_DEFAULT_CHARSET);
 
-   /* initialize the LiteClue Widget */
-   InitClue(RootShell);
 #  endif /* _WINDOWS */
 
    if (txtOK == NULL)
@@ -1868,6 +1867,9 @@ Display           **Dp;
    MainShell = 0;
    /* Pas encore de reference attribuee */
    FirstFreeRef = 0;
+#  ifdef _WINDOWS
+   return TRUE;
+#  endif /* _WINDOWS */
 }
 
 /*----------------------------------------------------------------------
@@ -2604,7 +2606,7 @@ char* fileName;
 	TCHAR               szFileName[256];
 	TCHAR               szFileTitle[256];
 
-	szFileName[0] = '\0';
+	szFileName[0] = EOS;
 
     OpenFileName.lStructSize       = sizeof (OPENFILENAME); 
     OpenFileName.hwndOwner         = parentCatalogue->Cat_Widget; 
@@ -2966,7 +2968,7 @@ char               *equiv;
 		     if (equiv != NULL)
 		       {
 #                         ifdef _WINDOWS
-                          if (&equiv[eindex] != '\0') {
+                          if (&equiv[eindex] != EOS) {
                              if (parseAccelerator (&equiv[eindex]))
                                 addAccelerator (currentFrame, fVirt, key, ref + i);
                              sprintf (equiv_item, "%s", &equiv[eindex]); 
@@ -2985,10 +2987,10 @@ char               *equiv;
 #                         ifdef _WINDOWS
               if (equiv_item && equiv_item [0] != 0) {
                  sprintf (menu_item, "%s\t%s", &text[index + 1], equiv_item); 
-                 AppendMenu (menu, MF_STRING, ref + i, menu_item);
+                 AppendMenu (menu, MF_STRING | MF_UNCHECKED, ref + i, menu_item);
                  equiv_item[0] = 0;
               } else 
-                   AppendMenu (menu, MF_STRING, ref + i, &text[index + 1]);
+                   AppendMenu (menu, MF_STRING | MF_UNCHECKED, ref + i, &text[index + 1]);
 			  adbloc->E_ThotWidget[ent] = (ThotWidget) i;
                           copyCat = catalogue;
                           WIN_AddFrameCatalogue (parent, copyCat) ;
@@ -3009,10 +3011,9 @@ char               *equiv;
                  equiv_item [0] = 0;
               } else
                    sprintf (menu_item, "%s", &text[index + 1]);
-              if (i == 0 || i == 1) 
-			     AppendMenu (menu, MF_STRING | MF_CHECKED, ref + i, menu_item);
-			  else
-			      AppendMenu (menu, MF_STRING | MF_UNCHECKED, ref + i, menu_item);
+
+              AppendMenu (menu, MF_STRING | MF_UNCHECKED, ref + i, menu_item);
+
 			  adbloc->E_ThotWidget[ent] = (ThotWidget) i;
                           copyCat = catalogue;
                           WIN_AddFrameCatalogue (parent, copyCat) ;
@@ -3054,7 +3055,7 @@ char               *equiv;
 			  strcat (heading, "...");
 #                         ifdef _WINDOWS
 			  w = (HMENU) CreateMenu ();
-			  AppendMenu (menu, MF_POPUP, (UINT) w, &heading);
+			  AppendMenu (menu, MF_POPUP, (UINT) w, (LPCTSTR) (&heading));
 			  adbloc->E_ThotWidget[ent] = (ThotWidget) w;
 #                         else  /* _WINDOWS */
 			  w = XmCreatePushButton (menu, heading, args, n);
@@ -3492,7 +3493,7 @@ char                button;
 		     if (equiv != NULL)
 		       {
 #                         ifdef _WINDOWS
-                          if (&equiv[eindex] != '\0') {
+                          if (&equiv[eindex] != EOS) {
                              if (parseAccelerator (&equiv[eindex]))
                                 addAccelerator (1, fVirt, key, ref + i);
                           }
@@ -3550,7 +3551,7 @@ char                button;
 			  strcpy (heading, &text[index + 1]);
 			  strcat (heading, "...");
 #                         ifdef _WINDOWS
-			  AppendMenu (menu, MF_STRING, ref + i, &heading);
+			  AppendMenu (menu, MF_STRING, (UINT) (ref + i), (LPCTSTR) (&heading));
 			  adbloc->E_ThotWidget[ent] = (ThotWidget) i;
 #                         else  /* _WINDOWS */
 			  w = XmCreatePushButton (menu, heading, args, n);
@@ -4172,7 +4173,7 @@ boolean             react;
 		       if (equiv != NULL)
 			 {
 #                           ifdef _WINDOWS
-                            if (&equiv[eindex] != '\0') {
+                            if (&equiv[eindex] != EOS) {
                                if (parseAccelerator (&equiv[eindex]))
                                   addAccelerator (1, fVirt, key, ref);
                             }
@@ -4403,7 +4404,7 @@ boolean             react;
 		       if (equiv != NULL)
 			 {
 #                           ifdef _WINDOWS
-                            if (&equiv[eindex] != '\0') {
+                            if (&equiv[eindex] != EOS) {
                                if (parseAccelerator (&equiv[eindex]))
                                   addAccelerator (currentFrame, fVirt, key, ref + i);
                                sprintf (equiv_item, "%s", &equiv[eindex]);
@@ -4442,11 +4443,11 @@ boolean             react;
 #                           ifdef _WINDOWS
                             if (equiv_item && equiv_item[0] != 0) {
                                sprintf (menu_item, "%s\t%s", &text[index + 1], equiv_item);
-                               AppendMenu (w, MF_STRING | MF_CHECKED, ref + i, menu_item);
+                               AppendMenu (w, MF_STRING | MF_UNCHECKED, ref + i, menu_item);
                                equiv_item [0] = 0;
                             } else 
-                                 AppendMenu (w, MF_STRING | MF_CHECKED, ref + i, &text[index + 1]);
-			    adbloc->E_ThotWidget[ent] = (ThotWidget) i;
+                                 AppendMenu (w, MF_STRING | MF_UNCHECKED, ref + i, &text[index + 1]);
+                            adbloc->E_ThotWidget[ent] = (ThotWidget) i;
                             copyCat = catalogue;
                             WIN_AddFrameCatalogue (currentMenu, copyCat) ;
 #                           else  /* _WINDOWS */
@@ -4888,6 +4889,17 @@ boolean             react;
    toutes les entre'es). Le parame`tre on indique que le bouton       
    correspondant doit e^tre allume' (on positif) ou e'teint (on nul). 
   ----------------------------------------------------------------------*/
+#ifdef _WINDOWS 
+#ifdef __STDC__
+void                WIN_TtaSetToggleMenu (int ref, int val, boolean on, HWND owner)
+#else  /* __STDC__ */
+void                WIN_TtaSetToggleMenu (ref, val, on, owner)
+int                 ref;
+int                 val;
+boolean             on;
+HWND                owner;
+#endif /* __STDC__ */
+#else  /* !_WINDOWS */
 #ifdef __STDC__
 void                TtaSetToggleMenu (int ref, int val, boolean on)
 #else  /* __STDC__ */
@@ -4897,8 +4909,15 @@ int                 val;
 boolean             on;
 
 #endif /* __STDC__ */
+#endif /* _WINDOWS */
 {
-#  ifndef _WINDOWS 
+#  ifdef _WINDOWS 
+   HMENU hMenu = GetMenu (owner);
+   if (on)
+      CheckMenuItem (hMenu, ref + val, MF_CHECKED); 
+   else 
+       CheckMenuItem (hMenu, ref + val, MF_UNCHECKED); 
+#  else  /* !_WINDOWS  */
    ThotWidget          w;
    Arg                 args[MAX_ARGS];
    register int        i, n;
@@ -5003,7 +5022,6 @@ boolean             on;
 	if (!visible)
 	   XtUnmanageChild (catalogue->Cat_Widget);
      }
-#  else /* _WINDOWS */
 #  endif /* _WINDOWS */
 }
 
@@ -5153,14 +5171,14 @@ int                 activate;
 	else
 	  {
 	     w = adbloc->E_ThotWidget[ent];
-#            ifndef _WINDOWS
+#        ifndef _WINDOWS
 	     /* Recupere si necessaire la couleur par defaut */
 	     n = 0;
 	     /* Faut-il changer la police de caracteres ? */
 	     if (fontname != NULL)
-		font = XmFontListCreate (XLoadQueryFont (GDp, fontname), XmSTRING_DEFAULT_CHARSET);
+            font = XmFontListCreate (XLoadQueryFont (GDp, fontname), XmSTRING_DEFAULT_CHARSET);
 	     else
-		font = DefaultFont;
+            font = DefaultFont;
 	     XtSetArg (args[n], XmNfontList, font);
 	     n++;
 
@@ -5906,6 +5924,7 @@ int                 cattype;
 }
 
 #ifdef _WINDOWS
+#ifndef _WIN_PRINT
  /*----------------------------------------------------------------------
    Callback pour un bouton du menu                                    
   ----------------------------------------------------------------------*/
@@ -5918,7 +5937,8 @@ WPARAM wParam;
 LPARAM lParam;
 #endif /* __STDC__ */
 {
-   POINT ptCursor;
+   BOOL    modified;
+   Element el;
    struct Cat_Context* catalogue;
    int                 no = 0;
    int                 frame = GetMainFrameNumber (hWnd);
@@ -5942,6 +5962,13 @@ LPARAM lParam;
              case CAT_MENU:
              case CAT_POPUP:
                   CallMenu (no, catalogue, NULL);
+                  if (ReturnOption >= 0) {
+                     el = opOption[ReturnOption];
+                     modified = TtaIsDocumentModified (opDoc);
+                     OnlyOneOptionSelected (el, opDoc, FALSE);
+                     if (!modified)
+                        TtaSetDocumentUnmodified (opDoc);
+				  }
                   break;
 
              case CAT_TMENU:
@@ -5996,6 +6023,7 @@ LPARAM lParam;
            default: return (DefWindowProc (hwnDlg, msg, wParam, lParam)) ;
     }
 }
+#endif /* _WIN_PRINT */
 #endif /* _WINDOWS */
 
 
@@ -6374,7 +6402,7 @@ boolean             react;
 	item = (XmString *) TtaGetMemory (sizeof (XmString) * (number + 1));
 	i = 0;
 	index = 0;
-	while (i < number && text[index] != '\0')
+	while (i < number && text[index] != EOS)
 	  {
 	     item[i++] = XmStringCreateLtoR (&text[index], XmSTRING_DEFAULT_CHARSET);
 	     index += strlen (&text[index]) + 1;	/* Longueur de l'intitule */
@@ -6610,7 +6638,7 @@ boolean             react;
 	XmStringFree (item[i]);
 	i++;
      }
-   TtaFreeMemory ((char *) item);
+   TtaFreeMemory ( item);
 #  endif /* _WINDOWS */
 }
 
@@ -7536,7 +7564,7 @@ boolean             remanent;
 	if (catalogue->Cat_Type == CAT_POPUP) {
        GetCursorPos (&curPoint);
 	   if (!TrackPopupMenu (w,  TPM_LEFTALIGN, curPoint.x, curPoint.y, 0, currentParent, NULL))
-		   WinErrorBox (NULL);
+		   WinErrorBox (WIN_Main_Wd);
 	} else {
           ShowWindow (w, SW_SHOWNORMAL);
           UpdateWindow (w);

@@ -36,12 +36,10 @@
 #define MAX_EQUIV 25
 #define THOT_NO_MOD	0
 #define THOT_MOD_CTRL	1
-#define THOT_MOD_META	2
-#define THOT_MOD_ALT	4
-#define THOT_MOD_SHIFT	10
-#define THOT_MOD_S_CTRL	11
-#define THOT_MOD_S_META	12
-#define THOT_MOD_S_ALT	14
+#define THOT_MOD_ALT	2
+#define THOT_MOD_SHIFT	4
+#define THOT_MOD_S_CTRL	5
+#define THOT_MOD_S_ALT	6
 #define MAX_AUTOMATA	80
 /* automata structure for the keys */
 typedef struct _key
@@ -106,10 +104,8 @@ static int          SpecialKeys[] =
 static KEY         *Automata_normal = NULL;
 
 static KEY         *Automata_ctrl    = NULL;
-static KEY         *Automata_meta    = NULL;
 static KEY         *Automata_alt     = NULL;
 static KEY         *Automata_CTRL    = NULL;
-static KEY         *Automata_META    = NULL;
 static KEY         *Automata_ALT     = NULL;
 static KEY         *Automata_current = NULL;
 
@@ -137,19 +133,19 @@ char               *name;
 	 return ("0x2c");
       else
 	 return (name);
-   else if (!strcmp (name, "Return"))
+   else if (!strcasecmp (name, "return"))
       return ("0x0d");
-   else if (!strcmp (name, "BackSpace"))
+   else if (!strcasecmp (name, "backspace"))
       return ("0x08");
-   else if (!strcmp (name, "Space"))
+   else if (!strcasecmp (name, "space"))
       return ("0x20");
-   else if (!strcmp (name, "Escape"))
+   else if (!strcasecmp (name, "escape"))
       return ("0x18");
-   else if (!strcmp (name, "Delete"))
+   else if (!strcasecmp (name, "delete"))
       return ("0x7f");
    else
       return (name);
-}				/*NameCode */
+}
 
 
 /*----------------------------------------------------------------------
@@ -166,99 +162,99 @@ char               *name;
 #endif /* __STDC__ */
 {
    /* is it the name of a special character? */
-   if (!strcmp (name, "Return"))
+   if (!strcasecmp (name, "return"))
       return (unsigned int) THOT_KEY_Return;
-   else if (!strcmp (name, "BackSpace"))
+   else if (!strcasecmp (name, "backspace"))
       return (unsigned int) THOT_KEY_BackSpace;
-   else if (!strcmp (name, "Space"))
+   else if (!strcasecmp (name, "space"))
       return 32;
-   else if (!strcmp (name, "Escape"))
+   else if (!strcasecmp (name, "escape"))
       return (unsigned int) THOT_KEY_Escape;
-   else if (!strcmp (name, "Delete"))
+   else if (!strcasecmp (name, "delete"))
       return (unsigned int) THOT_KEY_Delete;
-   else if (!strcmp (name, "F1"))
+   else if (!strcasecmp (name, "f1"))
       return (unsigned int) THOT_KEY_F1;
-   else if (!strcmp (name, "F2"))
+   else if (!strcasecmp (name, "f2"))
       return (unsigned int) THOT_KEY_F2;
-   else if (!strcmp (name, "F3"))
+   else if (!strcasecmp (name, "f3"))
       return (unsigned int) THOT_KEY_F3;
-   else if (!strcmp (name, "F4"))
+   else if (!strcasecmp (name, "f4"))
       return (unsigned int) THOT_KEY_F4;
-   else if (!strcmp (name, "F5"))
+   else if (!strcasecmp (name, "f5"))
       return (unsigned int) THOT_KEY_F5;
-   else if (!strcmp (name, "F6"))
+   else if (!strcasecmp (name, "f6"))
       return (unsigned int) THOT_KEY_F6;
-   else if (!strcmp (name, "F7"))
+   else if (!strcasecmp (name, "f7"))
       return (unsigned int) THOT_KEY_F7;
-   else if (!strcmp (name, "F8"))
+   else if (!strcasecmp (name, "f8"))
       return (unsigned int) THOT_KEY_F8;
-   else if (!strcmp (name, "F9"))
+   else if (!strcasecmp (name, "f9"))
       return (unsigned int) THOT_KEY_F9;
-   else if (!strcmp (name, "F10"))
+   else if (!strcasecmp (name, "f10"))
       return (unsigned int) THOT_KEY_F10;
-   else if (!strcmp (name, "F11") || !strcmp (name, "L1"))
+   else if (!strcasecmp (name, "f11") || !strcasecmp (name, "l1"))
       return (unsigned int) THOT_KEY_F11;
-   else if (!strcmp (name, "F12") || !strcmp (name, "L2"))
+   else if (!strcasecmp (name, "f12") || !strcasecmp (name, "l2"))
       return (unsigned int) THOT_KEY_F12;
-   else if (!strcmp (name, "F13") || !strcmp (name, "L3"))
+   else if (!strcasecmp (name, "f13") || !strcasecmp (name, "l3"))
       return (unsigned int) THOT_KEY_F13;
-   else if (!strcmp (name, "F14") || !strcmp (name, "L4"))
+   else if (!strcasecmp (name, "f14") || !strcasecmp (name, "l4"))
       return (unsigned int) THOT_KEY_F14;
-   else if (!strcmp (name, "F15") || !strcmp (name, "L5"))
+   else if (!strcasecmp (name, "f15") || !strcasecmp (name, "l5"))
       return (unsigned int) THOT_KEY_F15;
-   else if (!strcmp (name, "F16") || !strcmp (name, "L6"))
+   else if (!strcasecmp (name, "f16") || !strcasecmp (name, "l6"))
       return (unsigned int) THOT_KEY_F16;
-   else if (!strcmp (name, "F17") || !strcmp (name, "L7"))
+   else if (!strcasecmp (name, "f17") || !strcasecmp (name, "l7"))
       return (unsigned int) THOT_KEY_F17;
-   else if (!strcmp (name, "F18") || !strcmp (name, "L8"))
+   else if (!strcasecmp (name, "f18") || !strcasecmp (name, "l8"))
       return (unsigned int) THOT_KEY_F18;
-   else if (!strcmp (name, "F19") || !strcmp (name, "L9"))
+   else if (!strcasecmp (name, "f19") || !strcasecmp (name, "l9"))
       return (unsigned int) THOT_KEY_F19;
-   else if (!strcmp (name, "F20") || !strcmp (name, "L10"))
+   else if (!strcasecmp (name, "f20") || !strcasecmp (name, "l10"))
       return (unsigned int) THOT_KEY_F20;
 #ifdef THOT_KEY_R1
-   else if (!strcmp (name, "F21") || !strcmp (name, "R1"))
+   else if (!strcasecmp (name, "f21") || !strcasecmp (name, "r1"))
       return (unsigned int) THOT_KEY_R1;
-   else if (!strcmp (name, "F22") || !strcmp (name, "R2"))
+   else if (!strcasecmp (name, "f22") || !strcasecmp (name, "r2"))
       return (unsigned int) THOT_KEY_R2;
-   else if (!strcmp (name, "F23") || !strcmp (name, "R3"))
+   else if (!strcasecmp (name, "f23") || !strcasecmp (name, "r3"))
       return (unsigned int) THOT_KEY_R3;
-   else if (!strcmp (name, "F24") || !strcmp (name, "R4"))
+   else if (!strcasecmp (name, "f24") || !strcasecmp (name, "r4"))
       return (unsigned int) THOT_KEY_R4;
-   else if (!strcmp (name, "F25") || !strcmp (name, "R5"))
+   else if (!strcasecmp (name, "f25") || !strcasecmp (name, "r5"))
       return (unsigned int) THOT_KEY_R5;
-   else if (!strcmp (name, "F26") || !strcmp (name, "R6"))
+   else if (!strcasecmp (name, "f26") || !strcasecmp (name, "r6"))
       return (unsigned int) THOT_KEY_R6;
-   else if (!strcmp (name, "F27") || !strcmp (name, "R7"))
+   else if (!strcasecmp (name, "f27") || !strcasecmp (name, "r7"))
       return (unsigned int) THOT_KEY_R7;
-   else if (!strcmp (name, "F28") || !strcmp (name, "R8"))
+   else if (!strcasecmp (name, "f28") || !strcasecmp (name, "r8"))
       return (unsigned int) THOT_KEY_R8;
-   else if (!strcmp (name, "F29") || !strcmp (name, "R9"))
+   else if (!strcasecmp (name, "f29") || !strcasecmp (name, "r9"))
       return (unsigned int) THOT_KEY_R9;
-   else if (!strcmp (name, "F30") || !strcmp (name, "R10"))
+   else if (!strcasecmp (name, "f30") || !strcasecmp (name, "r10"))
       return (unsigned int) THOT_KEY_R10;
-   else if (!strcmp (name, "F31") || !strcmp (name, "R11"))
+   else if (!strcasecmp (name, "f31") || !strcasecmp (name, "r11"))
       return (unsigned int) THOT_KEY_R11;
-   else if (!strcmp (name, "F32") || !strcmp (name, "R12"))
+   else if (!strcasecmp (name, "f32") || !strcasecmp (name, "r12"))
       return (unsigned int) THOT_KEY_R12;
-   else if (!strcmp (name, "F33") || !strcmp (name, "R13"))
+   else if (!strcasecmp (name, "f33") || !strcasecmp (name, "r13"))
       return (unsigned int) THOT_KEY_R13;
-   else if (!strcmp (name, "F34") || !strcmp (name, "R14"))
+   else if (!strcasecmp (name, "f34") || !strcasecmp (name, "r14"))
       return (unsigned int) THOT_KEY_R14;
-   else if (!strcmp (name, "F35") || !strcmp (name, "R15"))
+   else if (!strcasecmp (name, "f35") || !strcasecmp (name, "r15"))
       return (unsigned int) THOT_KEY_R15;
 #endif /* THOT_KEY_R1 */
-   else if (!strcmp (name, "Up"))
+   else if (!strcasecmp (name, "up"))
       return (unsigned int) THOT_KEY_Up;
-   else if (!strcmp (name, "Down"))
+   else if (!strcasecmp (name, "down"))
       return (unsigned int) THOT_KEY_Down;
-   else if (!strcmp (name, "Left"))
+   else if (!strcasecmp (name, "left"))
       return (unsigned int) THOT_KEY_Left;
-   else if (!strcmp (name, "Right"))
+   else if (!strcasecmp (name, "right"))
       return (unsigned int) THOT_KEY_Right;
-   else if (!strcmp (name, "Home"))
+   else if (!strcasecmp (name, "home"))
       return (unsigned int) THOT_KEY_Home;
-   else if (!strcmp (name, "End"))
+   else if (!strcasecmp (name, "end"))
       return (unsigned int) THOT_KEY_End;
    else
       return (unsigned int) name[0];
@@ -313,17 +309,11 @@ int                 command;
 	    case THOT_MOD_ALT:
 	       addFirst = &Automata_alt;
 	       break;
-	    case THOT_MOD_META:
-	       addFirst = &Automata_meta;
-	       break;
 	    case THOT_MOD_S_CTRL:
 	       addFirst = &Automata_CTRL;
 	       break;
 	    case THOT_MOD_S_ALT:
 	       addFirst = &Automata_ALT;
-	       break;
-	    case THOT_MOD_S_META:
-	       addFirst = &Automata_META;
 	       break;
 	    default:
 	       return;
@@ -552,46 +542,39 @@ ThotEvent             *event;
 
 #endif /* __STDC__ */
 {
-   int                 i, status;
+   int                 status;
    int                 PicMask;
    int                 frame;
+   unsigned int        state, save;
    unsigned char       string[2];
    ThotComposeStatus      ComS;
-   KeySym              KS, KS1;
+   KeySym              KS;
 
    frame = GetWindowFrame (event->xany.window);
    if (frame > MAX_FRAME)
       frame = 0;
 
-   i = event->xkey.state;
-   if (Automata_current == NULL)
-     {
-	status = XLookupString ((ThotKeyEvent *) event, string, 2, &KS, &ComS);
-	if (!status)
-	  {
-	     event->xkey.state = i & (ShiftMask);
-	     status = XLookupString ((ThotKeyEvent *) event, string, 2, &KS1, &ComS);
-	     if (status)
-		KS = KS1;
-	  }
-     }
+   status = 0;
+   /* control, alt and mouse status bits of the state are ignored */
+   state = event->xkey.state & (ShiftMask | LockMask | Mod3Mask | ButtonMotionMask);
+   if (event->xkey.state == state)
+     status = XLookupString ((ThotKeyEvent *) event, string, 2, &KS, &ComS);
    else
      {
-	/* On est entre dans l'automate, pas d'interpretation des modifieurs */
-	event->xkey.state = i & ShiftMask;
-	status = XLookupString ((ThotKeyEvent *) event, string, 2, &KS, &ComS);
+       save = event->xkey.state;
+       event->xkey.state = state;
+       state = save;
+       status = XLookupString ((ThotKeyEvent *) event, string, 2, &KS, &ComS);
      }
 
    PicMask = 0;
-   if (i & ShiftMask)
+   if (state & ShiftMask)
       PicMask |= THOT_MOD_SHIFT;
-   if (i & LockMask)
+   if (state & LockMask)
       PicMask |= THOT_MOD_SHIFT;
-   if (i & ControlMask)
+   if (state & ControlMask)
       PicMask |= THOT_MOD_CTRL;
-   if (i & Mod1Mask)
-      PicMask |= THOT_MOD_META;
-   if (i & Mod2Mask)
+   if (state & Mod1Mask || state & Mod4Mask)
       PicMask |= THOT_MOD_ALT;
 
    ThotInput (frame, &string[0], status, PicMask, KS);
@@ -615,134 +598,161 @@ int                 key;
 
 #endif /* __STDC__ */
 {
+   KEY                *ptr;
+   Document            document;
+   View                view;
    int                 value;
    int                 modtype;
    int                 command;
-   KEY                *ptr;
-   boolean             found;
-   Document            document;
-   View                view;
+   boolean             found, UPPERlower;
 #  ifdef _WINDOWS
-   BOOL                endOfSearch = FALSE;
+   boolean             endOfSearch = FALSE;
 #  endif /* _WINDOWS */
+
    if (frame > MAX_FRAME)
       frame = 0;
 
 #  ifdef _WINDOWS
    if (key == 13 && nb == 1)
-      specialKey = FALSE;
+     specialKey = FALSE;
    else if (key >= 1 && key <= 26 && nb == 1)
-        specialKey = TRUE;
+     specialKey = TRUE;
 #  endif /* _WINDOWS */
 
    value = string[0];
    found = FALSE;
-   if (nb == 2) {
-      /* C'est l'appel d'une action Thot */
-      command = (int) string[1];
-      found = TRUE;
-   } else {
-        command = 0;
-        /* Est-on entre dans un automate ? */
-        if (Automata_current != NULL) {
-           /* Recheche l'entree de 2eme niveau */
-           ptr = Automata_current;
-           Automata_current = NULL;
+   if (nb == 2)
+     {
+       /* It's a Thot action call */
+       command = (int) string[1];
+       found = TRUE;
+     }
+   else
+     {
+       command = 0;	   
+       /* Set the right indicator */
+       if (PicMask & THOT_MOD_CTRL)
+	 if (PicMask & THOT_MOD_SHIFT)
+	   modtype = THOT_MOD_S_CTRL;
+	 else
+	   modtype = THOT_MOD_CTRL;
+       else if (PicMask & THOT_MOD_ALT)
+	 if (PicMask & THOT_MOD_SHIFT)
+	   modtype = THOT_MOD_S_ALT;
+	 else
+	   modtype = THOT_MOD_ALT;
+       else if (PicMask & THOT_MOD_SHIFT)
+	 modtype = THOT_MOD_SHIFT;
+       else
+	 modtype = THOT_NO_MOD;
+
+       /* Is it a second level of the current automata? */
+       if (Automata_current != NULL)
+	 {
+	   /* search a second level entry */
+	   ptr = Automata_current;
+	   Automata_current = NULL;
+	   UPPERlower = FALSE;
+	   while (!found && (ptr != NULL || !UPPERlower))
+	     {
+	       if (ptr == NULL && !UPPERlower)
+		 {
+		   /* try other upper/lower list */
+		   UPPERlower = TRUE;
+		   if (modtype == THOT_MOD_S_CTRL)
+		     modtype = THOT_MOD_CTRL;
+		   else if (modtype == THOT_MOD_CTRL)
+		     modtype = THOT_MOD_S_CTRL;
+		   else if (modtype == THOT_MOD_S_ALT)
+		     modtype = THOT_MOD_ALT;
+		   else if (modtype == THOT_MOD_ALT)
+		     modtype = THOT_MOD_S_ALT;
+		 }
+	       if (ptr != NULL)
+		 {
+		   if (ptr->K_EntryCode == key && modtype == ptr->K_Modifier)
+		     found = TRUE;
+		   else
+		     ptr = ptr->K_Other;
+		 }
+	     }
 	   
-           /* Teste s'il y a un modifieur en jeu */
-           if (PicMask & THOT_MOD_CTRL)
-              if (PicMask & THOT_MOD_SHIFT)
-                 modtype = THOT_MOD_S_CTRL;
-              else
-                 modtype = THOT_MOD_CTRL;
-           else if (PicMask & THOT_MOD_META)
-                if (PicMask & THOT_MOD_SHIFT)
-                   modtype = THOT_MOD_S_META;
-                else
-                   modtype = THOT_MOD_META;
-           else if (PicMask & THOT_MOD_ALT)
-                if (PicMask & THOT_MOD_SHIFT)
-                   modtype = THOT_MOD_S_ALT;
-                else
-                   modtype = THOT_MOD_ALT;
-           else if (PicMask & THOT_MOD_SHIFT)
-                modtype = THOT_MOD_SHIFT;
-           else
-               modtype = THOT_NO_MOD;
+	   if (found)
+	     {
+	       value = (unsigned char) ptr->K_Value;
+	       command = ptr->K_Command;
+	     }
+	 }
+       else
+	 {
+	   /* Search a first level entry? */
+	   if (modtype == THOT_MOD_S_CTRL)
+	     ptr = Automata_CTRL;
+	   else if (modtype == THOT_MOD_CTRL)
+	     ptr = Automata_ctrl;
+	   else if (modtype == THOT_MOD_S_ALT)
+	     ptr = Automata_ALT;
+	   else if (modtype == THOT_MOD_ALT)
+	     ptr = Automata_alt;
+	   else
+	     ptr = Automata_normal;
 
-           /* Recherche l'entree de 1er niveau */
-           while (!found && ptr != NULL)
-                 if (ptr->K_EntryCode == key && modtype == ptr->K_Modifier)
-                    found = TRUE;
-                 else
-                    ptr = ptr->K_Other;
-
-           if (found) {
-              value = (unsigned char) ptr->K_Value;
-              command = ptr->K_Command;
-           }
-        } else {
-             /* Faut-il parcourir un automate de 1er niveau ? */
-             /* Teste s'il y a un modifieur en jeu */
-             if (PicMask & THOT_MOD_CTRL)
-                if (PicMask & THOT_MOD_SHIFT)
-                   ptr = Automata_CTRL;
-                else
-                   ptr = Automata_ctrl;
-             else if (PicMask & THOT_MOD_META)
-                  if (PicMask & THOT_MOD_SHIFT)
-                     ptr = Automata_META;
-                  else
-                     ptr = Automata_meta;
-             else if (PicMask & THOT_MOD_ALT)
-                  if (PicMask & THOT_MOD_SHIFT)
-                     ptr = Automata_ALT;
-                  else
-                     ptr = Automata_alt;
-             else
-                 ptr = Automata_normal;
-
-             /* Recherche l'entree de 1er niveau */
-#            ifdef _WINDOWS
-             endOfSearch = FALSE;
-             while (!endOfSearch && ptr != NULL) {
-                   if (ptr->K_EntryCode == key) {
-                      endOfSearch = TRUE;
-                      if (specialKey) {
-                         found = TRUE;
-                         Automata_current = ptr->K_Next;
-                         if (Automata_current == NULL) {
-                            /* il s'agit d'une valeur definie a premier niveau */
-                            value = (unsigned char) ptr->K_Value;
-                            command = ptr->K_Command;
-                         }
-                      }
-                   } else
-                         ptr = ptr->K_Other;
-             }
-#            else  /* !_WINDOWS */
-             while (!found && ptr != NULL)
-                   if (ptr->K_EntryCode == key) {
-                      /* On entre dans un automate */
-                      found = TRUE;
-                      Automata_current = ptr->K_Next;
-                      if (Automata_current == NULL) {
-                         /* il s'agit d'une valeur definie a premier niveau */
-                         value = (unsigned char) ptr->K_Value;
-                         command = ptr->K_Command;
-                      }
-                   } else
-                         ptr = ptr->K_Other;
+	   UPPERlower = FALSE;
+#          ifdef _WINDOWS
+	   endOfSearch = FALSE;
+	   while (!endOfSearch && (ptr != NULL || !UPPERlower))
+#          else  /* !_WINDOWS */
+           while (!found && (ptr != NULL || !UPPERlower))
 #            endif /* _WINDOWS */
-        }
-   }
+	     {
+	       if (ptr == NULL && !UPPERlower)
+		 {
+		   /* try other upper/lower list */
+		   UPPERlower = TRUE;
+		   if (modtype == THOT_MOD_S_CTRL)
+		     ptr = Automata_ctrl;
+		   else if (modtype == THOT_MOD_CTRL)
+		     ptr = Automata_CTRL;
+		   else if (modtype == THOT_MOD_S_ALT)
+		     ptr = Automata_alt;
+		   else if (modtype == THOT_MOD_ALT)
+		     ptr = Automata_ALT;
+		 }
+	       if (ptr != NULL)
+		 {
+		   if (ptr->K_EntryCode == key)
+		     {
+#                        ifdef _WINDOWS
+		       endOfSearch = TRUE;
+		       if (specialKey)
+			 {
+#                            endif /* _WINDOWS */
+			   /* On entre dans un automate */
+			   found = TRUE;
+			   Automata_current = ptr->K_Next;
+			   if (Automata_current == NULL)
+			     {
+			       /* il s'agit d'une valeur definie a premier niveau */
+			       value = (unsigned char) ptr->K_Value;
+			       command = ptr->K_Command;
+			     }
+#                             ifdef _WINDOWS
+			 }
+#                        endif /* _WINDOWS */
+		     }
+		   else
+		     ptr = ptr->K_Other;
+		 }
+	     }
+	 }
+     }
 
 #ifdef _WINDOWS
    if (specialKey && !found)
 #else /* !_WINDOWS */
    if (!found)
 #endif /* _WINDOWS */
-     /* Traitement des cles speciales */
+     /* Mangement of special keys */
      switch (key)
        {
        case THOT_KEY_Up:
@@ -907,6 +917,80 @@ int                 key;
 
 
 /*----------------------------------------------------------------------
+   FreeTranslations remove all translation structures.
+  ----------------------------------------------------------------------*/
+void FreeTranslations ()
+{
+   KEY                *ptr, *subkey;
+
+   while (Automata_current != NULL)
+     {
+       ptr = Automata_current;
+       while (ptr->K_Next != NULL)
+	 {
+	   subkey = ptr->K_Next;
+	   ptr->K_Next = subkey->K_Other;
+	   TtaFreeMemory (subkey);
+	 }
+       Automata_current = ptr->K_Other;
+       TtaFreeMemory (ptr);
+     }
+
+   while (Automata_ctrl != NULL)
+     {
+       ptr = Automata_ctrl;
+       while (ptr->K_Next != NULL)
+	 {
+	   subkey = ptr->K_Next;
+	   ptr->K_Next = subkey->K_Other;
+	   TtaFreeMemory (subkey);
+	 }
+       Automata_ctrl = ptr->K_Other;
+       TtaFreeMemory (ptr);
+     }
+
+   while (Automata_alt != NULL)
+     {
+       ptr = Automata_alt;
+       while (ptr->K_Next != NULL)
+	 {
+	   subkey = ptr->K_Next;
+	   ptr->K_Next = subkey->K_Other;
+	   TtaFreeMemory (subkey);
+	 }
+       Automata_alt = ptr->K_Other;
+       TtaFreeMemory (ptr);
+     }
+
+   while (Automata_CTRL != NULL)
+     {
+       ptr = Automata_CTRL;
+       while (ptr->K_Next != NULL)
+	 {
+	   subkey = ptr->K_Next;
+	   ptr->K_Next = subkey->K_Other;
+	   TtaFreeMemory (subkey);
+	 }
+       Automata_CTRL = ptr->K_Other;
+       TtaFreeMemory (ptr);
+     }
+
+   while (Automata_ALT != NULL)
+     {
+       ptr = Automata_ALT;
+       while (ptr->K_Next != NULL)
+	 {
+	   subkey = ptr->K_Next;
+	   ptr->K_Next = subkey->K_Other;
+	   TtaFreeMemory (subkey);
+	 }
+       Automata_ALT = ptr->K_Other;
+       TtaFreeMemory (ptr);
+     }
+}
+
+
+/*----------------------------------------------------------------------
    InitTranslations
    intializes the keybord encoding.
   ----------------------------------------------------------------------*/
@@ -918,20 +1002,24 @@ char               *appliname;
 
 #endif /* __STDC__ */
 {
-   char               *text;	                          /* fichier de translation transmis a motif */
-   char                line[200];	                  /* ligne en construction pour motif */
+   char               *text;	   /* fichier de translation transmis a motif */
+   char                line[200];  /* ligne en construction pour motif */
    char                home[200], name[80], ch[80], *adr;
-   char                equiv[MAX_EQUIV];	          /* chaine des equivalents caracteres pour motif */
-   unsigned int        key1, key2;	                  /* 1ere et 2 eme cles sous forme de keysym X */
+   char                equiv[MAX_EQUIV]; /* equivalents caracteres pour motif */
+   unsigned int        key1, key2; /* 1ere & 2eme cles sous forme de keysym X */
    int                 e, i;
-   int                 mod1, mod2;	                  /* 1er et 2eme modifieurs : voir definitions THOT_MOD_xx */
+   int                 mod1, mod2; /* 1er/ 2eme modifieurs : voir THOT_MOD_xx */
    int                 len, max;
    FILE               *file;
    ThotTranslations      table;
 
    text = TtaGetEnvString ("HOME");
    strcpy (name, appliname);
+#  ifdef _WINDOWS
+   strcat (name, ".kb");
+#  else  /* _WINDOWS */
    strcat (name, ".keyboard");
+#  endif /* _WINDOWS */
 
    if (text != NULL)
      {
@@ -955,6 +1043,7 @@ char               *appliname;
      {
 	/* Lecture du fichier des translations */
 	fseek (file, 0L, 2);	/* fin du fichier */
+
 	len = ftell (file) * 2 + 10;	/* pour assurer de la marge */
 	text = TtaGetMemory (len);
 	fseek (file, 0L, 0);	/* debut du fichier */
@@ -981,57 +1070,68 @@ char               *appliname;
 		/* it is not a comment */
 		/* -------> Lecture des autres champs */
 	       {
-		  if (!strcmp (ch, "Shift"))
+		  if (!strcasecmp (ch, "shift"))
 		    {
-		       mod1 = THOT_MOD_SHIFT;
-		       strcpy (equiv, "Shift+");
-		       strcat (line, ch);	/* copie 1er modifieur */
-		       strcat (line, " ");
-		       /* Lecture enventuelle d'un deuxieme modifieur */
-		       fscanf (file, "%80s", ch);
+		      mod1 = THOT_MOD_SHIFT;
+		      /* copie 1er modifieur */
+		      strcpy (equiv, "Shift");
+		      strcat (equiv, " ");
+		      strcat (line, "Shift");
+		      strcat (line, " ");
+		      /* Lecture enventuelle d'un deuxieme modifieur */
+		      ch[0] = EOS;
+		      fscanf (file, "%80s", ch);
 		    }
 		  else
 		    {
 		       mod1 = THOT_NO_MOD;
-		       equiv[0] = '\0';
+		       equiv[0] = EOS;
 		    }
 
-		  if (!strcmp (ch, "Ctrl"))
-		     mod1 += THOT_MOD_CTRL;
-		  else if (!strcmp (ch, "Alt"))
-		     mod1 += THOT_MOD_ALT;
-		  else if (!strcmp (ch, "Meta"))
-		     mod1 += THOT_MOD_META;
-
-		  /* Lecture de la cle */
-		  if (mod1 != THOT_NO_MOD && mod1 != THOT_MOD_SHIFT)
+		  if (!strcasecmp (ch, "ctrl"))
 		    {
-		       strcat (equiv, ch);
-		       strcat (equiv, "+");
-		       strcat (line, ch);	/* copie 2eme modifieur */
-		       strcat (line, " ");
-		       strcpy (ch, "");
-		       fscanf (file, "%80s", ch);
+		      mod1 += THOT_MOD_CTRL;
+		      /* copie 2eme modifieur */
+		      strcat (equiv, "Ctrl");
+		      strcat (equiv, " ");
+		      strcat (line, "Ctrl");
+		      strcat (line, " ");
+		      /* Lecture de la cle */
+		      ch[0] = EOS;
+		      fscanf (file, "%80s", ch);
+		    }
+		  else if (!strcasecmp (ch, "alt") || !strcasecmp (ch, "meta"))
+		    {
+		      mod1 += THOT_MOD_ALT;
+		      /* copie 2eme modifieur */
+		      strcat (equiv, "Alt");
+		      strcat (equiv, " ");
+		      strcat (line, "Alt");
+		      strcat (line, " ");
+		      /* Lecture de la cle */
+		      ch[0] = EOS;
+		      fscanf (file, "%80s", ch);
 		    }
 
 		  /* Extrait la valeur de la cle */
-		  name[0] = '\0';
+		  name[0] = EOS;
 		  sscanf (ch, "<Key>%80s", name);
-		  if (name[0] != '\0')
+		  if (name[0] != EOS)
 		    {
-		       strcat (line, "<Key>");	/* copie de la cle */
+		      /* copie de la cle */
+		       strcat (line, "<Key>");
 		       i = strlen (name);
 		       /* Elimine le : a la fin du nom */
 		       if ((name[i - 1] == ':') && i != 1)
 			 {
 			    /* Il faut engendrer un : apres le nom */
-			    name[i - 1] = '\0';
+			    name[i - 1] = EOS;
 			    i = 1;
 			 }
 		       else
 			  i = 0;
-
-		       strcat (line, NameCode (name));	/* copie le nom normalise */
+		       /* copie le nom normalise */
+		       strcat (line, NameCode (name));
 		       if (i == 1)
 			  strcat (line, ": ");
 		       else
@@ -1047,45 +1147,58 @@ char               *appliname;
 		  fscanf (file, "%80s", name);
 		  if (name[0] == ',')
 		    {
-		       strcat (line, ", ");	/* copie du separateur */
-		       strcpy (ch, "");
-		       fscanf (file, "%80s", ch);
+		      /* copie du separateur */
+		      strcat (line, ", ");
+		      strcpy (ch, "");
+		      fscanf (file, "%80s", ch);
+		      
+		      if (!strcasecmp (ch, "shift"))
+			{
+			  mod2 = THOT_MOD_SHIFT;
+			  /* copie du 2eme modifieur */
+			  strcat (equiv, "Shift");
+			  strcat (equiv, " ");
+			  strcat (line, "Shift");
+			  strcat (line, " ");
+			  /* Lecture enventuelle d'un deuxieme modifieur */
+			  ch[0] = EOS;
+			  fscanf (file, "%80s", ch);
+			}
+		      else
+			{
+			  mod2 = THOT_NO_MOD;
+			  strcat (equiv, " ");
+			}
 
-		       if (!strcmp (ch, "Shift"))
-			 {
-			    mod2 = THOT_MOD_SHIFT;
-			    strcat (line, ch);	/* copie du 1er modifieur */
-			    strcat (line, " ");
-			    strcat (equiv, " Shift+");
-			    /* Lecture enventuelle d'un deuxieme modifieur */
-			    strcpy (ch, "");
-			    fscanf (file, "%80s", ch);
-			 }
-		       else
-			 {
-			    mod2 = THOT_NO_MOD;
-			    strcat (equiv, " ");
-			 }
-
-		       if (!strcmp (ch, "Ctrl"))
+		      if (!strcasecmp (ch, "ctrl"))
+			{
 			  mod2 += THOT_MOD_CTRL;
-		       else if (!strcmp (ch, "Alt"))
+			  /* copie 2eme modifieur */
+			  strcat (equiv, "Ctrl");
+			  strcat (equiv, " ");
+			  strcat (line, "Ctrl");
+			  strcat (line, " ");
+			  /* copie de la cle */
+			  ch[0] = EOS;
+			  fscanf (file, "%80s", ch);
+			  strcat (line, ch);
+			  strcat (line, " ");
+			}
+		      else if (!strcasecmp (ch, "alt") || !strcasecmp (ch, "meta"))
+			{
 			  mod2 += THOT_MOD_ALT;
-		       else if (!strcmp (ch, "Meta"))
-			  mod2 += THOT_MOD_META;
+			  /* copie 2eme modifieur */
+			  strcat (equiv, "Alt");
+			  strcat (equiv, " ");
+			  strcat (line, "Alt");
+			  strcat (line, " ");
+			  /* copie de la cle */
+			  ch[0] = EOS;
+			  fscanf (file, "%80s", ch);
+			  strcat (line, ch);
+			  strcat (line, " ");
+			}
 
-		       /* Lecture de la cle */
-		       if (mod2 != THOT_NO_MOD && mod2 != THOT_MOD_SHIFT)
-			 {
-			    strcat (equiv, ch);
-			    strcat (equiv, "+");
-			    strcat (line, ch);	/* copie 2eme modifieur */
-			    strcat (line, " ");
-			    strcpy (ch, "");
-			    fscanf (file, "%80s", ch);
-			    strcat (line, ch);	/* copie de la cle */
-			    strcat (line, " ");
-			 }
 		       /* Extrait la valeur de la cle */
 		       strcpy (name, "");
 		       sscanf (ch, "<Key>%80s", name);
@@ -1097,7 +1210,7 @@ char               *appliname;
 			    if (name[i - 1] == ':' && i != 1)
 			      {
 				 /* Il faut engendrer un : apres le nom */
-				 name[i - 1] = '\0';
+				 name[i - 1] = EOS;
 				 i = 1;
 			      }
 			    else
@@ -1120,10 +1233,12 @@ char               *appliname;
 		  strncpy (ch, name, 80);
 		  adr = strchr (ch, '(');
 		  if (adr == NULL)
+		    adr = strchr (ch, ' ');
+		  if (adr == NULL)
 		     i = max;
 		  else
 		    {
-		       adr[0] = '\0';
+		       adr[0] = EOS;
 		       /* Selection de la bonne commande */
 		       for (i = 0; i < max; i++)
 			  if (!strcmp (ch, MenuActionList[i].ActionName))

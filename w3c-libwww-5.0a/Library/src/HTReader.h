@@ -33,7 +33,7 @@ INPUT BUFFERING
    value that equals the normal TCP High Water Mark (sb_hiwat) for receiving data.
    
  */
-#define INPUT_BUFFER_SIZE 8192
+#define INPUT_BUFFER_SIZE 32*1024
 /*
 
 READ STREAM
@@ -49,6 +49,6 @@ extern HTInput_new HTReader_new;
    
    ___________________________________
    
-                           @(#) $Id: HTReader.h,v 1.1.1.1 1996/10/15 13:08:41 cvs Exp $
+                           @(#) $Id: HTReader.h,v 1.2 1998/03/11 17:45:39 cvs Exp $
                                                                                           
     */

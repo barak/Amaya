@@ -35,6 +35,7 @@
 #include "frame_tv.h"
 #include "select_tv.h"
 #include "appdialogue_tv.h"
+#include "edit_tv.h"
 
 #include "appli_f.h"
 #include "textcommands_f.h"
@@ -48,7 +49,7 @@
 #include "memory_f.h"
 #include "boxselection_f.h"
 #include "displayselect_f.h"
-
+#include "viewapi_f.h"
 
 /*----------------------------------------------------------------------
    ClearAbstractBoxSelection parcours l'arborescence pour annuler  
@@ -100,17 +101,45 @@ boolean             toShow;
 #endif /* __STDC__ */
 {
    ViewFrame          *pFrame;
+   Document doc;
 
    /* visualisation la selection locale */
    if (frame > 0)
      {
-	pFrame = &ViewFrameTable[frame - 1];
-	/* compare le booleen toShow et l'etat de la selection */
-	if (toShow && !pFrame->FrSelectShown)
+       doc = FrameTable[frame].FrDoc;
+       if (documentDisplayMode[doc - 1] == DisplayImmediately)
+	 {
+	   pFrame = &ViewFrameTable[frame - 1];
+	   /* compare le booleen toShow et l'etat de la selection */
+	   if (toShow && !pFrame->FrSelectShown)
+	     DisplayCurrentSelection (frame, TRUE);
+	   else if (!toShow && pFrame->FrSelectShown)
 	   DisplayCurrentSelection (frame, TRUE);
-	else if (!toShow && pFrame->FrSelectShown)
-	   DisplayCurrentSelection (frame, TRUE);
+	 }
      }
+}
+
+
+/*----------------------------------------------------------------------
+  TtaSwitchSelection switches on or off the selection in the current 
+  document view according to the toShow value:
+  - TRUE if on
+  - FALSE if off
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
+void                TtaSwitchSelection (Document document, View view, boolean toShow)
+#else  /* __STDC__ */
+void                TtaSwitchSelection (document, view, toShow)
+Document            document;
+View                view;
+boolean             toShow;
+
+#endif /* __STDC__ */
+{
+  int               frame;
+
+   frame = GetWindowNumber (document, view);
+   SwitchSelection (frame, toShow);
 }
 #endif /* _WIN_PRINT */
 
@@ -389,8 +418,8 @@ ViewSelection      *selMark;
 
 	/* Boucle tant que le caractere designe se trouve dans */
 	/* le buffer suivant ou dans la boite suivante */
-	while (!stop && (pBuffer != pSelBuffer || max - beginInd <= i - dummy))
-	   if (max - beginInd <= i - dummy)
+	while (!stop && (pBuffer != pSelBuffer || max - beginInd + dummy <= i))
+	   if (max - beginInd + dummy <= i || pBuffer == NULL)
 	     {
 		/* Box de coupure GetNextBox */
 		/* Cas particulier des blancs supprimes en fin de boite */
@@ -401,7 +430,7 @@ ViewSelection      *selMark;
 		else if (pBox->BxNexChild->BxNChars == 0 && SearchLine (pBox->BxNexChild) == NULL)
 		   stop = TRUE;
 		else
-		   stop = max - beginInd + dummy > i && pBuffer == pSelBuffer;
+		   stop = FALSE;
 
 		/* Est-ce que la selection est en fin de boite ? */
 		if (stop)

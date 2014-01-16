@@ -23,6 +23,13 @@
 #ifndef __CEXTRACT__
 #ifdef __STDC__
 
+/*----------------------------------------------------------------------
+  TtaSwitchSelection switches on or off the selection in the current 
+  document view according to the toShow value:
+  - TRUE if on
+  - FALSE if off
+  ----------------------------------------------------------------------*/
+extern void TtaSwitchSelection (Document document, View view, boolean toShow);
 
 /*----------------------------------------------------------------------
    TtaIsDocumentSelected answers TRUE if the document is selected.  
@@ -85,6 +92,21 @@ extern void         TtaSelectString (Document document, Element textElement, int
 
   ----------------------------------------------------------------------*/
 extern void         TtaExtendSelection (Document document, Element element, int lastCharacter);
+
+/*----------------------------------------------------------------------
+   TtaAddElementToSelection
+ 
+   Add a new element to the current selection.  The new selection
+   may then contain separate elements.
+ 
+   Parameters:
+   document: the document to which the element belongs.  This element must
+        belong to the same document as the elements selected by previous calls
+        to TtaAddElementToSelection and by the last call to TtaSelectElement.
+   element: the element to be added to the current selection
+ 
+  ----------------------------------------------------------------------*/
+extern void         TtaAddElementToSelection (Document document, Element element);
 
 /*----------------------------------------------------------------------
    TtaSelectInterval
@@ -196,12 +218,14 @@ extern void         TtaGiveLastSelectedElement (Document document, /*OUT*/ Eleme
 
 #else  /* __STDC__ */
 
+extern void TtaSwitchSelection (/* Document document, View view, boolean toShow */);
 extern boolean      TtaIsDocumentSelected ( /*Document document */ );
 extern Document   TtaGetSelectedDocument ();
 extern void         TtaSelectElement ( /* Document document, Element selectedElement */ );
 extern void         TtaSelectView (/*Document document, View view*/);
 extern void         TtaSelectString ( /* Document document, Element textElement, int firstCharacter, int lastCharacter */ );
 extern void         TtaExtendSelection ( /* Document document, Element element, int lastCharacter */ );
+extern void         TtaAddElementToSelection (/* Document document, Element element */ );
 extern void         TtaSelectInterval ();
 extern void         TtaUnselect ( /* Document document */ );
 extern void         TtaSetSelectionMode ( /* boolean withMenu */ );

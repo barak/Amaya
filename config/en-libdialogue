@@ -102,12 +102,12 @@
 101 Nothing to be pasted.
 102 Cannot open a new window. Close a window.
 103 *** Thot: Irrecoverable error ***
-104 modified documents, if any, will be saved on .SAV files
+104 modified documents, if any, will be saved 
 105 As it is
 106 Scaled
-107 Repeted
-108 X Repeted
-109 Y Repeat
+107 Repeated
+108 X Repeated
+109 Y Repeated
 110 Premature EOF
 111 No bounding box in ps file %s
 112 Cannot open hyphen patterns file: %s
@@ -277,3 +277,4 @@
 277 Unable to link the new element
 278 Character encoding
 279 No language
+280 Overline

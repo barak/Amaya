@@ -12,9 +12,9 @@
 #include "resmatch_f.h"
 
 #ifdef __STDC__
-static boolean RestTransformChildren (Restruct restr, Element oldElem, Element newElem, TypeTree typeTree, Document srcDoc, Document dstDoc);
+static boolean RestTransformChildren (Restruct restr, Element oldElem, Element newElem, TypeTree typeTree, TypeTree ancestTree, Document srcDoc, Document dstDoc);
 #else  /* __STDC__ */
-static boolean RestTransformChildren (/* restr, oldElem, newElem, typeTree, doc */);
+static boolean RestTransformChildren (/* restr, oldElem, newElem, typeTree, ancestTree, doc */);
 #endif  /* __STDC__ */
 
 
@@ -285,44 +285,64 @@ Element *elem;
   newElem retourne l'element de plus bas niveau cree
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
- Element RestCreateDescent (Element ancestor, TypeTree ancestTree, TypeTree descendTree, Document doc)
+ Element RestCreateDescent (Element ancestor, TypeTree ancestTree, TypeTree descendTree, TypeTree recOrigTree, TypeTree recDestTree, Document doc)
 #else  /* __STDC__ */
- Element RestCreateDescent (ancestor, ancestTree, descendTree, doc)
+ Element RestCreateDescent (ancestor, ancestTree, descendTree, recOrigTree, recDestTree, doc)
 Element ancestor;
 Element *newElem;
 TypeTree ancestTree;
 TypeTree descendTree;
+TypeTree recOrigTree;
+TypeTree recDestTree;
 Document doc;
 #endif  /* __STDC__ */
 {
+
   ElementType elType;
   Element elLast, elNew, elParent;
   TypeTree nStack [10];
   int top, i;
   TypeTree tNode;
  
+
+ 
   elNew = NULL;
-  top = 1;
+  top = 0;
+  
   tNode = descendTree;
-  while (ancestTree != NULL && tNode->TId != ancestTree->TId && top < 10)
+  if (recDestTree != NULL)
+    {
+      while (tNode != NULL && tNode->TId != recDestTree->TId && top < 10)
+	{
+	  nStack [top++] = tNode;
+	  tNode = tNode->TParent;
+	}
+      if (tNode != NULL)
+	tNode = recOrigTree;
+    }
+  while (ancestTree != NULL && tNode != NULL && tNode->TId != ancestTree->TId && top < 10)
     {
       /* recherche ancestTree dans les ancetres de descendTree */
       nStack [top++] = tNode;
       tNode = tNode->TParent;
     }
-  elType = TtaGetElementType (ancestor);
-  while (!IsNodeOfType (tNode, elType))
-    { /* recherche le noeud de meme type que ancestor dans les ancetres */
-      /* de ancestTree */
-      nStack [top++] = tNode;
-      tNode = tNode->TParent;
+   if (tNode != NULL)
+    {
+      elType = TtaGetElementType (ancestor);
+      while (top < 10 && !IsNodeOfType (tNode, elType))
+	{ /* recherche le noeud de meme type que ancestor dans les ancetres */
+	  /* de ancestTree */
+	  nStack [top++] = tNode;
+	  tNode = tNode->TParent;
+	}
     }
   if (top < 10)
     {
       elParent = ancestor;
-      for (i = top - 1; i > 0; i--)
+      for (i = top - 1; i >= 0; i--)
 	{
 	  elType.ElTypeNum = nStack[i]->TypeNum;
+	  elType.ElSSchema = nStack[i]->TSchema;
 	  elLast = TtaGetLastChild (elParent);
 	  if (elLast == NULL)
 	    {
@@ -368,7 +388,7 @@ Document doc;
 	  elParent = elNew;
 	}
     }
-  return elNew;
+      return elNew;
 }
 
      
@@ -391,42 +411,103 @@ Restruct restr;
 {
   int i = 0;
   TypeTree res = NULL;
+  boolean found = FALSE;
 
-  while (i<SIZEPRINT && res == NULL)
+  while (i<SIZEPRINT && !found)
     {
       if (restr->RSrcPrint->SNodes[i] == source)
-	res = restr->RCoupledNodes[i];
-      if (res == NULL) i++;
+	{
+	  res = restr->RCoupledNodes[i]->CDstNode;
+	  found = TRUE;
+	}
+      else
+	i++;
+    }
+  return res;
+}
+
+/*----------------------------------------------------------------------  
+  RestSourceRec
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
+ TypeTree RestSourceRec (TypeTree source, Restruct restr)
+#else  /* __STDC__ */
+ TypeTree RestSourceRec (source, restr)
+TypeTree source;
+Restruct restr;
+#endif  /* __STDC__ */
+{
+  int i = 0;
+  TypeTree res = NULL;
+  boolean found = FALSE;
+
+  while (i<SIZEPRINT && !found)
+    {
+      if (restr->RSrcPrint->SNodes[i] == source)
+	{
+	  res = restr->RCoupledNodes[i]->CRecFrom;
+	  found = TRUE;
+	}
+      else
+	i++;
+    }
+  return res;
+}
+
+/*----------------------------------------------------------------------  
+  RestDestRec
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
+ TypeTree RestDestRec (TypeTree source, Restruct restr)
+#else  /* __STDC__ */
+ TypeTree RestDestRec (source, restr)
+TypeTree source;
+Restruct restr;
+#endif  /* __STDC__ */
+{
+  int i = 0;
+  TypeTree res = NULL;
+  boolean found = FALSE;
+
+  while (i<SIZEPRINT && !found)
+    {
+      if (restr->RSrcPrint->SNodes[i] == source)
+	{
+	  res = restr->RCoupledNodes[i]->CRecTo;
+	  found = TRUE;
+	}
+      else
+	i++;
     }
   return res;
 }
 
 /*----------------------------------------------------------------------  
   RestSearchInTree
-  Recherche un element de type searchedType dans la descendance de 
-  rootElem, retourne l'element trouve ou NULL si aucun element n'est 
-  trouve
+  
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
-static Element RestSearchInTree (ElementType searchedType, Element rootElem)
+static TypeTree RestSearchInTree (ElementType searchedType, TypeTree root)
 #else  /* __STDC__ */
-static Element RestSearchInTree (searchedType, rootElem)
+static TypeTree RestSearchInTree (searchedType, root)
 ElementType searchedType;
-Element rootElem;
+TypeTree root;
 #endif  /* __STDC__ */
 {
-  Element result, precedent;
-  
-  precedent = NULL;
-  result = TtaSearchTypedElement (searchedType, SearchInTree, rootElem);
-  while (result != NULL)
+  TypeTree currentNode, result = NULL;
+
+  currentNode = root->TChild;
+  while (result == NULL && currentNode !=NULL)
     {
-      precedent = result;
-      result = TtaSearchTypedElement (searchedType,SearchForward, result);
-      if (result != NULL && !TtaIsAncestor (result, rootElem))
-	  result = NULL;
+      if (IsNodeOfType (currentNode, searchedType))
+	result = currentNode;
+      if (result == NULL && currentNode->TDiscard == TRUE)
+	{
+	  result = RestSearchInTree (searchedType, currentNode);
+	}
+      currentNode = currentNode->TNext;
     }
-  return precedent;
+  return result;
 }
 
 /*----------------------------------------------------------------------  
@@ -449,9 +530,13 @@ Document dstDoc;
 #endif  /* __STDC__ */
 {
   ElementType elType, targetType;
-  Element elTarget, prev, elParent, elChild;
-  TypeTree target, treeChild, targetParent;
+  Element elTarget, prev, elParent;
+  TypeTree target, targetParent;
   boolean result = FALSE;
+# ifndef _WINDOWS
+  Element elChild;
+  TypeTree treeChild;
+# endif /* _WINDOWS */
   
 #ifdef DEBUG
   ElementType dbgType;
@@ -472,7 +557,7 @@ Document dstDoc;
   printf (" destParent : %s \n",msgbuf);
   
 #endif 
-  if ( sourceTree != NULL && sourceTree->TEffective)
+  if (sourceTree != NULL && sourceTree->TEffective)
     {
 #ifdef DEBUG
       printf("trouve noeud effectif ");
@@ -485,7 +570,14 @@ Document dstDoc;
 	targetParent = restr->RDestTree;
       if (target != NULL)
 	{
-	  elTarget = RestCreateDescent (elDestParent, targetParent, target, dstDoc);
+	  /* retrouver si recusif, les orig et des de la recursion */
+	  
+	  elTarget = RestCreateDescent (elDestParent, 
+					targetParent, 
+					target,
+					RestSourceRec (sourceTree, restr),
+					RestDestRec (sourceTree, restr),
+					dstDoc);
 #ifdef DEBUG
 	  targetType.ElSSchema = restr->RDestType.ElSSchema;
 	  targetType.ElTypeNum = target->TypeNum;
@@ -499,7 +591,7 @@ Document dstDoc;
       else
 	{
 #ifdef DEBUG
-	  printf("non couple\n ");
+	  printf("Noeud effectif non couple\n ");
 #endif 
 	  targetType.ElSSchema = elType.ElSSchema;
 	  targetType.ElTypeNum = elType.ElTypeNum;
@@ -548,6 +640,7 @@ Document dstDoc;
 					  elSource, 
 					  elParent, 
 					  sourceTree,
+					  sourceTree,
 					  srcDoc,
 					  dstDoc);
 	  if (result) 
@@ -558,11 +651,17 @@ Document dstDoc;
 	    TtaDeleteTree (elParent, dstDoc);
 	} 
     }
-  else /* sourceTree == NULL */
+  else 
+    result = FALSE;
+  return result;
+}
+
+#ifdef THIS_IS_GARBISH
+
     /* l'element n'a pas de type marque comme effectif, */
     /* c'est donc un choix ou une liste uniquement instanciee */
     /* on transforme sa descendence en l'ignorant. */
-    {
+     {
       /* recherche le fils de elSource et son arbre de type */
       elChild = TtaGetFirstChild (elSource);
       elType = TtaGetElementType (elChild);
@@ -579,9 +678,10 @@ Document dstDoc;
 				      parentTree, 
 				      srcDoc,
 				      dstDoc));
-    }
-  return result;
-}
+     }
+return result;
+
+#endif
 
 /*----------------------------------------------------------------------  
   RestTransformChildren
@@ -589,31 +689,60 @@ Document dstDoc;
   et les insere comme descendants de newElem
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
-static boolean RestTransformChildren (Restruct restr, Element srcElem, Element newElem, TypeTree typeTree, Document srcDoc, Document dstDoc)
+static boolean RestTransformChildren (Restruct restr, Element srcElem, Element newElem, TypeTree typeTree, TypeTree ancestTree, Document srcDoc, Document dstDoc)
 #else  /* __STDC__ */
-static boolean RestTransformChildren (restr, srcElem, newElem, typeTree, srcDoc, dstDoc)
+static boolean RestTransformChildren (restr, srcElem, newElem, typeTree, ancestTree, srcDoc, dstDoc)
 Restruct restr;
 Element srcElem;
 Element newElem;
 TypeTree typeTree;
+TypeTree ancestTree;
 Document srcDoc;
 Document dstDoc;
 #endif  /* __STDC__ */
 {
-  Element elChild, elCopy, prev;
+  Element elChild;
   ElementType elType;
   boolean result = TRUE;
   TypeTree childTree;
+# ifndef _WINDOWS 
+  Element elCopy, prev;
+# endif /* _WINDOWS */
 
   /* traite succesivement chacun des fils de oldElem */
   elChild = TtaGetFirstChild (srcElem);
   while (elChild != NULL && result)
     {
-      childTree = typeTree->TChild;
+   
       elType = TtaGetElementType (elChild);
-      /* recherche dans les fils de typeTree le noeud de type elType */
+      /* recherche dans les descendants de typeTree le noeud de type elType */
       /* recherche dans les petit-fils si le fils est un choix */
-      while (childTree != NULL && 
+      childTree = RestSearchInTree (elType, typeTree);
+      if (childTree != NULL && childTree->TEffective)
+	result = (result && RestTransformElement (restr, 
+						  elChild, 
+						  newElem, 
+						  childTree, 
+						  ancestTree, 
+						  srcDoc, 
+						  dstDoc));
+      else if (childTree != NULL)
+	result = (result && RestTransformChildren (restr,
+						   elChild,
+						   newElem,
+						   childTree,
+						   ancestTree,
+						   srcDoc, 
+						   dstDoc));
+      else
+	result = FALSE;
+      TtaNextSibling (&elChild);
+    }
+  return result;
+} 
+  
+#ifdef THIS_IS_GARBISH
+{    while (childTree != NULL && 
 	     (!IsNodeOfType (childTree, elType) &&
 	      !(childTree->TPrintSymb == '[' &&
 		childTree->TChild != NULL &&
@@ -643,7 +772,8 @@ Document dstDoc;
       TtaNextSibling (&elChild);
     }
   return result;
-} 
+
+#endif
 
 /*----------------------------------------------------------------------  
   RestChangeOnPlace
@@ -706,14 +836,19 @@ Restruct restruct;
 	  if (target == NULL || target->TypeNum != ptrTree->TypeNum)
 	    /* le type de la racine source n'est pas couple avec un noeud */
 	    /* de meme type : engage la transformation */
-	    result = result && RestTransformChildren (restruct, RContext->COldElems[i], newInstance, ptrTree, doc, doc);
+	    result = result && RestTransformChildren (restruct, RContext->COldElems[i], newInstance, ptrTree, ptrTree, doc, doc);
 	  else
 	    {
 	      /* le type de la racine source est couple avec un noeud */
 	      /* de meme type : cree une descendance et copie l'element */
 	      targetType.ElSSchema = destType.ElSSchema;
 	      targetType.ElTypeNum = target->TypeNum;
-	      elTargetParent = RestCreateDescent (newInstance, NULL, target, doc);
+	      elTargetParent = RestCreateDescent (newInstance, 
+						  NULL, 
+						  target,
+						  RestSourceRec (ptrTree, restruct),
+						  RestDestRec (ptrTree, restruct),
+						  doc);
 	      tprev = elTargetParent;
 	      TtaPreviousSibling (&tprev);
 	      if (tprev == NULL)
@@ -830,14 +965,19 @@ Restruct restruct;
 	 if (target == NULL || target->TypeNum != ptrTree->TypeNum)
 	   /* le type de la racine source n'est pas couple avec un noeud */
 	   /* de meme type : engage la transformation */
-	   result = result && RestTransformChildren (restruct, RContext->COldElems[i], newInstance, ptrTree, sourceDoc, destDoc);
+	   result = result && RestTransformChildren (restruct, RContext->COldElems[i], newInstance, ptrTree, ptrTree, sourceDoc, destDoc);
 	 else
 	   {
 	     /* le type de la racine source est couple avec un noeud */
 	     /* de meme type : cree une descendance et copie l'element */
 	     targetType.ElSSchema = destType.ElSSchema;
 	     targetType.ElTypeNum = target->TypeNum;
-	     elTargetParent = RestCreateDescent (newInstance, NULL, target, destDoc);
+	     elTargetParent = RestCreateDescent (newInstance, 
+						 NULL, 
+						 target,
+						 RestDestRec (ptrTree, restruct),
+						 RestSourceRec (ptrTree, restruct),
+						 destDoc);
 	     tprev = elTargetParent;
 	     TtaPreviousSibling (&tprev);
 	     if (tprev == NULL)

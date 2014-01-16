@@ -84,7 +84,6 @@ View                view;
 
    doc = GetHTMLDocument (tempfile, NULL, 0, 0, CE_FALSE, FALSE, NULL, NULL);
    ResetStop (doc);
-   ApplyFinalStyle (doc);
    root = TtaGetMainRoot (doc);
    elType = TtaGetElementType (root);
    /* create a default title if there is no content in the TITLE element */
@@ -314,28 +313,6 @@ int                 elementT;
        else
 	 TtaSelectElement (document, el);
        return (TRUE);
-     }
-}
-
-
-/*----------------------------------------------------------------------
-  ----------------------------------------------------------------------*/
-#ifdef __STDC__
-void                CreateIsIndex (Document document, View view)
-#else  /* __STDC__ */
-void                CreateIsIndex (document, view)
-Document            document;
-View                view;
-
-#endif /* __STDC__ */
-{
-   ElementType         elType;
-
-   if (MoveWithinHead (document, view, HTML_EL_ISINDEX))
-     {
-       elType.ElSSchema = TtaGetDocumentSSchema (document);
-       elType.ElTypeNum = HTML_EL_ISINDEX;
-       TtaInsertElement (elType, document);
      }
 }
 
@@ -636,50 +613,6 @@ View                view;
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
-void                ThotCreateMenu (Document document, View view)
-#else  /* __STDC__ */
-void                ThotCreateMenu (document, view)
-Document            document;
-View                view;
-
-#endif /* __STDC__ */
-{
-   ElementType         elType;
-
-   elType.ElSSchema = TtaGetDocumentSSchema (document);
-   if (strcmp(TtaGetSSchemaName (elType.ElSSchema), "HTML") == 0)
-     {
-       elType.ElTypeNum = HTML_EL_Menu;
-       TtaCreateElement (elType, document);
-     }
-}
-
-
-/*----------------------------------------------------------------------
-  ----------------------------------------------------------------------*/
-#ifdef __STDC__
-void                ThotCreateDirectory (Document document, View view)
-#else  /* __STDC__ */
-void                ThotCreateDirectory (document, view)
-Document            document;
-View                view;
-
-#endif /* __STDC__ */
-{
-   ElementType         elType;
-
-   elType.ElSSchema = TtaGetDocumentSSchema (document);
-   if (strcmp(TtaGetSSchemaName (elType.ElSSchema), "HTML") == 0)
-     {
-       elType.ElTypeNum = HTML_EL_Directory;
-       TtaCreateElement (elType, document);
-     }
-}
-
-
-/*----------------------------------------------------------------------
-  ----------------------------------------------------------------------*/
-#ifdef __STDC__
 void                CreateDefinitionList (Document document, View view)
 #else  /* __STDC__ */
 void                CreateDefinitionList (document, view)
@@ -840,12 +773,39 @@ View                view;
 #endif /* __STDC__ */
 {
    ElementType         elType;
+   Element             el;
+   int                 firstSelectedChar, i;
+   AttributeType       attrType;
+   Attribute           attr;
 
    elType.ElSSchema = TtaGetDocumentSSchema (document);
    if (strcmp(TtaGetSSchemaName (elType.ElSSchema), "HTML") == 0)
      {
        elType.ElTypeNum = HTML_EL_Table;
        TtaCreateElement (elType, document);
+       /* get the new Table */
+       TtaGiveFirstSelectedElement (document, &el, &firstSelectedChar, &i);
+       elType = TtaGetElementType (el);
+       while (elType.ElTypeNum != HTML_EL_Table && el != NULL)
+	 {
+	   el = TtaGetParent (el);
+	   if (el != NULL)
+	      elType = TtaGetElementType (el);
+	 }
+       if (el != NULL)
+	 {
+         /* if the Table has no Border attribute, create one */
+         attrType.AttrSSchema = elType.ElSSchema;
+         attrType.AttrTypeNum = HTML_ATTR_Border;
+         attr = TtaGetAttribute (el, attrType);
+         if (attr == NULL)
+	   {
+	   /* create the Border attribute */
+	   attr = TtaNewAttribute (attrType);
+	   TtaAttachAttribute (el, attr, document);
+	   TtaSetAttributeValue (attr, 1, el, document);
+	   }
+	 }
      }
 }
 
@@ -1105,11 +1065,9 @@ boolean            *withinP;
 	 {
 	   /* there is a parent form element */
 	   parent = el;
-	   while (parent != form && elType.ElTypeNum != HTML_EL_Paragraph
-		  && elType.ElTypeNum != HTML_EL_Text_Input_Line
-		  && elType.ElTypeNum != HTML_EL_Command_Line
-		  && elType.ElTypeNum != HTML_EL_Toggle_Menu
-		  && elType.ElTypeNum != HTML_EL_Radio_Menu
+	   while (parent != form
+		  && elType.ElTypeNum != HTML_EL_Paragraph
+		  && elType.ElTypeNum != HTML_EL_Pseudo_paragraph
 		  && !strcmp(TtaGetSSchemaName (elType.ElSSchema), "HTML"))
 	     {
 	       parent = TtaGetParent (parent);
@@ -1164,6 +1122,81 @@ View                view;
 
 
 /*----------------------------------------------------------------------
+  CreateInputElement insert an input element:
+  - within an existing paragraph generates input + text
+  - in other case generates a paragraph including text + input + text
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
+static void         CreateInputElement (Document doc, View view, int elInput)
+#else  /* __STDC__ */
+static void         CreateInputElement (doc, view, elInput)
+Document            doc;
+View                view;
+int                 elInput;
+#endif /* __STDC__ */
+{
+   ElementType         elType;
+   Element             el, input, parent;
+   int                 firstchar, lastchar;
+   boolean             withinP;
+
+   /* create the form if necessary */
+   el = InsertForm (doc, view, &withinP);
+   if (el != NULL)
+     {
+       /* the element can be created */
+       elType = TtaGetElementType (el);
+       if (!withinP)
+	 {
+	   /* create the paragraph element */
+	   elType.ElTypeNum = HTML_EL_Paragraph;
+	   TtaInsertElement (elType, doc);
+	   TtaGiveFirstSelectedElement (doc, &parent, &firstchar, &lastchar);
+	   /* create the input element */
+	   elType.ElTypeNum = elInput;
+	   input = TtaNewTree (doc, elType, "");
+	   TtaInsertFirstChild (&input, parent, doc);	   
+	   /* Insert a text element before */
+	   elType.ElTypeNum = HTML_EL_TEXT_UNIT;
+	   el = TtaNewElement (doc, elType);
+	   TtaInsertSibling (el, input, TRUE, doc);
+	 }
+       else
+	 {
+	   /* create the input element */
+	   elType.ElTypeNum = elInput;
+	   TtaInsertElement (elType, doc);
+	   TtaGiveFirstSelectedElement (doc, &input, &firstchar, &lastchar);
+	   elType = TtaGetElementType (input);
+	   while (elType.ElTypeNum != elInput)
+	     {
+	       input = TtaGetParent (input);
+	       elType = TtaGetElementType (input);
+	     }
+	   /* add a text before if needed */
+	   elType.ElTypeNum = HTML_EL_TEXT_UNIT;
+	   el = input;
+	   TtaPreviousSibling (&el);
+	   if (el == NULL)
+	     {
+	       el = TtaNewElement (doc, elType);
+	       TtaInsertSibling (el, input, TRUE, doc);
+	     }
+	 }
+       /* Insert a text element after */
+       el = input;
+       TtaNextSibling (&el);
+       if (el == NULL)
+	 {
+	   el = TtaNewElement (doc, elType);
+	   TtaInsertSibling (el, input, FALSE, doc);
+	   TtaSelectElement (doc, el);
+	 }
+     }
+}
+
+
+/*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
 void                CreateToggle (Document doc, View view)
@@ -1174,29 +1207,7 @@ View                view;
 
 #endif /* __STDC__ */
 {
-   ElementType         elType;
-   Element             el, input;
-   boolean             withinP;
-
-   /* create the form if necessary */
-   el = InsertForm (doc, view, &withinP);
-   if (el != NULL)
-     {
-       /* the element can be created */
-       elType = TtaGetElementType (el);
-       elType.ElTypeNum = HTML_EL_Checkbox_Input;
-       TtaInsertElement (elType, doc);
-       if (withinP)
-	 {
-	   /* Insert a text element after */
-	   input = TtaSearchTypedElement (elType, SearchForward, el);
-	   elType.ElTypeNum = HTML_EL_TEXT_UNIT;
-	   el = TtaNewElement (doc, elType);
-	   TtaInsertSibling (el, input, FALSE, doc);
-	   /* Select this new element */
-	   TtaSelectElement (doc, el);
-	 }
-     }
+  CreateInputElement (doc, view, HTML_EL_Checkbox_Input);
 }
 
 
@@ -1211,29 +1222,7 @@ View                view;
 
 #endif /* __STDC__ */
 {
-   ElementType         elType;
-   Element             el, input;
-   boolean             withinP;
-
-   /* create the form if necessary */
-   el = InsertForm (doc, view, &withinP);
-   if (el != NULL)
-     {
-       /* the element can be created */
-       elType = TtaGetElementType (el);
-       elType.ElTypeNum = HTML_EL_Radio_Input;
-       TtaInsertElement (elType, doc);
-       if (withinP)
-	 {
-	   /* Insert a text element after */
-	   input = TtaSearchTypedElement (elType, SearchForward, el);
-	   elType.ElTypeNum = HTML_EL_TEXT_UNIT;
-	   el = TtaNewElement (doc, elType);
-	   TtaInsertSibling (el, input, FALSE, doc);
-	   /* Select this new element */
-	   TtaSelectElement (doc, el);
-	 }
-     }
+  CreateInputElement (doc, view, HTML_EL_Radio_Input);
 }
 
 
@@ -1333,34 +1322,7 @@ View                view;
 
 #endif /* __STDC__ */
 {
-   ElementType         elType;
-   Element             el, input;
-   boolean             withinP;
-
-   /* create the form if necessary */
-   el = InsertForm (doc, view, &withinP);
-   if (el != NULL)
-     {
-       /* the element can be created */
-       elType = TtaGetElementType (el);
-       if (withinP)
-	 {
-	   /* create only the paragraph */
-	   elType.ElTypeNum = HTML_EL_Text_Input;
-	   TtaInsertElement (elType, doc);
-	   /* Insert a text element after */
-	   input = TtaSearchTypedElement (elType, SearchForward, el);
-	   elType.ElTypeNum = HTML_EL_TEXT_UNIT;
-	   el = TtaNewElement (doc, elType);
-	   TtaInsertSibling (el, input, FALSE, doc);
-	 }
-       else
-	 {
-	   /* create the text and the paragraph */
-	   elType.ElTypeNum = HTML_EL_Text_Input_Line;
-	   TtaInsertElement (elType, doc);
-	 }
-     }
+  CreateInputElement (doc, view, HTML_EL_Text_Input);
 }
 
 
@@ -1402,27 +1364,30 @@ View                view;
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
-void                CreateCommandLine (Document doc, View view)
+void                CreateSubmit (Document doc, View view)
 #else  /* __STDC__ */
-void                CreateCommandLine (doc, view)
+void                CreateSubmit (doc, view)
 Document            doc;
 View                view;
 
 #endif /* __STDC__ */
 {
-   ElementType         elType;
-   Element             el;
-   boolean             withinP;
+  CreateInputElement (doc, view, HTML_EL_Submit_Input);
+}
 
-   /* create the form if necessary */
-   el = InsertForm (doc, view, &withinP);
-   if (el != NULL)
-     {
-       /* the element can be created */
-       elType = TtaGetElementType (el);
-       elType.ElTypeNum = HTML_EL_Command_Line;
-       TtaInsertElement (elType, doc);
-     }
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
+void                CreateReset (Document doc, View view)
+#else  /* __STDC__ */
+void                CreateReset (doc, view)
+Document            doc;
+View                view;
+
+#endif /* __STDC__ */
+{
+  CreateInputElement (doc, view, HTML_EL_Reset_Input);
 }
 
 
@@ -1703,7 +1668,7 @@ char               *shape;
      {
 	elType.ElTypeNum = HTML_EL_AREA;
 	/* Is it necessary to ask user coordinates */
-	if (shape[0] == 'R' || shape[0] == 'c')
+	if (shape[0] == 'R' || shape[0] == 'a')
 	   TtaAskFirstCreation ();
 
 	el = TtaNewTree (doc, elType, "");
@@ -1729,7 +1694,7 @@ char               *shape;
 
 	if (shape[0] == 'R')
 	   TtaSetAttributeValue (attrShape, HTML_ATTR_shape_VAL_rectangle, el, doc);
-	else if (shape[0] == 'c')
+	else if (shape[0] == 'a')
 	   TtaSetAttributeValue (attrShape, HTML_ATTR_shape_VAL_circle, el, doc);
 	else if (shape[0] == 'p')
 	  {
@@ -1779,7 +1744,7 @@ View                view;
 
 #endif /* __STDC__ */
 {
-   CreateAreaMap (doc, view, "c");
+   CreateAreaMap (doc, view, "a");
 }
 
 /*----------------------------------------------------------------------
@@ -1828,7 +1793,6 @@ View                view;
 
 #endif /* __STDC__ */
 {
-#ifdef COUGAR
    ElementType         elType;
    Element             child, el;
    Attribute           attr;
@@ -1866,28 +1830,6 @@ View                view;
 	     }
 	 }
      }
-#endif /* COUGAR */
-}
-
-/*----------------------------------------------------------------------
-  ----------------------------------------------------------------------*/
-#ifdef __STDC__
-void                CreateApplet (Document document, View view)
-#else  /* __STDC__ */
-void                CreateApplet (document, view)
-Document            document;
-View                view;
-
-#endif /* __STDC__ */
-{
-   ElementType         elType;
-
-   elType.ElSSchema = TtaGetDocumentSSchema (document);
-   if (strcmp(TtaGetSSchemaName (elType.ElSSchema), "HTML") == 0)
-     {
-       elType.ElTypeNum = HTML_EL_Applet;
-       TtaCreateElement (elType, document);
-     }
 }
 
 /*----------------------------------------------------------------------
@@ -1908,6 +1850,27 @@ View                view;
      {
        elType.ElTypeNum = HTML_EL_Parameter;
        TtaInsertElement (elType, document);
+     }
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+#ifdef __STDC__
+void                CreateIFrame (Document document, View view)
+#else  /* __STDC__ */
+void                CreateIFrame (document, view)
+Document            document;
+View                view;
+
+#endif /* __STDC__ */
+{
+   ElementType         elType;
+
+   elType.ElSSchema = TtaGetDocumentSSchema (document);
+   if (strcmp(TtaGetSSchemaName (elType.ElSSchema), "HTML") == 0)
+     {
+       elType.ElTypeNum = HTML_EL_IFRAME;
+       TtaCreateElement (elType, document);
      }
 }
 

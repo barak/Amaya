@@ -16,6 +16,17 @@ RULES
 	begin
 	end;
 
+   XMLcomment:
+        BEGIN
+        NoLineBreak;
+        Create '<!--';
+	NoTranslation;
+        Create '-->\12' after;
+        END;
+
+   XMLcomment_line:
+	if not last create '\12' after;
+
    MROW:
 	begin
 	create '<mrow';
@@ -182,9 +193,48 @@ RULES
 	if not empty
 	   create '<mprescripts/>\12' before;
 
+   MTABLE:
+	begin
+	create '<mtable';
+	create Attributes;
+	create tagend;
+	indent +2;
+	indent -2 after;
+	create '</mtable>\12' after;
+	end;
+
+   MTable_head:
+	remove;
+
+   MTR:
+	begin
+	create '<mtr';
+	create Attributes;
+	create tagend;
+	indent +2;
+	indent -2 after;
+	create '</mtr>\12' after;
+	end;
+
+   MTD:
+	begin
+	create '<mtd';
+	create Attributes;
+	create tagend;
+	indent +2;
+	indent -2 after;
+	create '</mtd>\12' after;
+	end;
+
+   MALIGNGROUP:
+	create '<maligngroup/>\12';
+
+   MALIGNMARK:
+	create '<malignmark/>\12';
+
    MF :
 	begin
-	create '<mo fence="true"';
+	create '<mo';
 	create Attributes;
 	create '>';
 	create '</mo>\12' after;
@@ -289,6 +339,17 @@ RULES
 
 ATTRIBUTES
 
+  link = simple:
+	create ' xml:link="simple"';
+  link = extended:
+	create ' xml:link="extended"';
+  link = locator:
+	create ' xml:link="locator"';
+  link = group:
+	create ' xml:link="group"';
+  link = document:
+	create ' xml:link="document"';
+
    entity:
 	begin
 	notranslation;	{ do not translate & into &amp; }
@@ -311,10 +372,10 @@ ATTRIBUTES
 	create separators;
 	create '"';
 	end;
-   fontslant = plain:
-	create ' fontslant="plain"';
-   fontslant = italic:
-	create ' fontslant="italic"';
+   fontstyle = normal:
+	create ' fontstyle="normal"';
+   fontstyle = italic:
+	create ' fontstyle="italic"';
    fence = true:
 	create ' fence="true"';
    fence = false:

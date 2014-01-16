@@ -144,13 +144,13 @@ strTransDesc          *td;
    while (ls)
      {
 	ls2 = ls->Next;
-	TtaFreeMemory ((char *) ls);
+	TtaFreeMemory ( ls);
 	ls = ls2;
      }
    if (td->RootDesc)
      {
 	TtaFreeMemory (td->RootDesc->Tag);
-	TtaFreeMemory ((char *) td->RootDesc);
+	TtaFreeMemory ( td->RootDesc);
      }
    sd = td->Symbols;
    while (sd)
@@ -161,14 +161,14 @@ strTransDesc          *td;
 	while (ls)
 	  {
 	     ls2 = ls->Next;
-	     TtaFreeMemory ((char *) ls);
+	     TtaFreeMemory ( ls);
 	     ls = ls2;
 	  }
 	ls = sd->Followings;
 	while (ls)
 	  {
 	     ls2 = ls->Next;
-	     TtaFreeMemory ((char *) ls);
+	     TtaFreeMemory ( ls);
 	     ls = ls2;
 	  }
 	ad = sd->Attributes;
@@ -184,11 +184,11 @@ strTransDesc          *td;
 		TtaFreeMemory (ad->TextVal);
 
 	     ad2 = ad->Next;
-	     TtaFreeMemory ((char *) ad);
+	     TtaFreeMemory ( ad);
 	     ad = ad2;
 	  }
 	sd2 = sd->Next;
-	TtaFreeMemory ((char *) sd);
+	TtaFreeMemory ( sd);
 	sd = sd2;
      }
    rd = td->Rules;
@@ -211,12 +211,12 @@ strTransDesc          *td;
 		       TtaFreeMemory (ad->TextVal);
 		    }
 		  ad2 = ad->Next;
-		  TtaFreeMemory ((char *) ad);
+		  TtaFreeMemory ( ad);
 		  ad = ad2;
 	       }
 	     TtaFreeMemory (n->Tag);
 	     n2 = n->Next;
-	     TtaFreeMemory ((char *) n);
+	     TtaFreeMemory ( n);
 	     n = n2;
 	  }
 	n = rd->NewNodes;
@@ -236,19 +236,19 @@ strTransDesc          *td;
 		       TtaFreeMemory (ad->TextVal);
 		    }
 		  ad2 = ad->Next;
-		  TtaFreeMemory ((char *) ad);
+		  TtaFreeMemory ( ad);
 		  ad = ad2;
 	       }
 	     TtaFreeMemory (n->Tag);
 	     n2 = n->Next;
-	     TtaFreeMemory ((char *) n);
+	     TtaFreeMemory ( n);
 	     n = n2;
 	  }
 	rd2 = rd->Next;
-	TtaFreeMemory ((char *) rd);
+	TtaFreeMemory ( rd);
 	rd = rd2;
      }
-   TtaFreeMemory ((char *) td);
+   TtaFreeMemory ( td);
 }
 
 
@@ -266,7 +266,7 @@ strListSymb           *pl;
    if (pl)
      {
 	FreeList (pl->Next);
-	TtaFreeMemory ((char *) pl);
+	TtaFreeMemory ( pl);
      }
 }
 
@@ -288,7 +288,7 @@ parForest          *pf;
 	FreeList (pf->first);
 	FreeList (pf->last);
 	FreeForest (pf->next);
-	TtaFreeMemory ((char *) pf);
+	TtaFreeMemory ( pf);
      }
 }
 
@@ -306,7 +306,7 @@ parChoice          *pc;
    if (pc)
      {
 	FreeForest (pc->forests);
-	TtaFreeMemory ((char *) pc);
+	TtaFreeMemory ( pc);
      }
 }
 
@@ -497,10 +497,11 @@ static void         ProcessSymbol ()
 		sd = sd->Next;
 	     sd->Next = ppSymb;
 	  }
-	if (strcmp (ppSymb->Tag, "*") && (MapGI (ppSymb->Tag, &schema) == -1))
+	schema = ppTransSet->Schema;
+	if (strcmp (ppSymb->Tag, "*") && (MapGI (ppSymb->Tag, &schema, 0) == -1))
 	  {
 	     ppError = TRUE;
-	     sprintf (msgBuffer, "unknown tag </%s>", ppSymb->Tag);
+	     sprintf (msgBuffer, "unknown element %s", ppSymb->Tag);
 	     ErrorMessage (msgBuffer);
 	  }
      }
@@ -1636,7 +1637,8 @@ unsigned char       c;
      {
 	strcpy (ppNode->Tag, inputBuffer);
 	ppLgBuffer = 0;
-	if (MapGI (ppNode->Tag, &schema) == -1)
+	schema = ppTransSet->Schema;
+	if (MapGI (ppNode->Tag, &schema, 0) == -1)
 	  {
 	     ppError = TRUE;
 	     sprintf (msgBuffer, "unknown tag </%s>", ppNode->Tag);
@@ -1671,7 +1673,8 @@ unsigned char       c;
      {
 	strcpy (ppNode->Tag, inputBuffer);
 	ppLgBuffer = 0;
-	if (MapGI (ppNode->Tag, &schema) == -1)
+	schema = ppTransSet->Schema;
+	if (MapGI (ppNode->Tag, &schema, 0) == -1)
 	  {
 	     ppError = TRUE;
 	     sprintf (msgBuffer, "unknown tag </%s>", ppNode->Tag);
@@ -1693,11 +1696,11 @@ unsigned char       c;
 	     else if (!ad->IsInt)
 		TtaFreeMemory (ad->TextVal);
 	     ad2 = ad->Next;
-	     TtaFreeMemory ((char *) ad);
+	     TtaFreeMemory ( ad);
 	     ad = ad2;
 	  }
 	TtaFreeMemory (ppRule->OptionNodes->Tag);
-	TtaFreeMemory ((char *) ppRule->OptionNodes);
+	TtaFreeMemory ( ppRule->OptionNodes);
 	ppRule->OptionNodes = NULL;
      }
    /* allocate a New node descriptor */
@@ -1786,10 +1789,11 @@ unsigned char       c;
     {
       strcpy (ppNode->Tag, inputBuffer);
       ppLgBuffer = 0;
+      schema = ppTransSet->Schema;
       if (strcmp (ppNode->Tag, "*") && 
 	  strcmp (ppNode->Tag, "#") &&
 	  ppNode->Tag[0] != '\"' &&
-	  (MapGI (ppNode->Tag, &schema) == -1))
+	  (MapGI (ppNode->Tag, &schema, 0) == -1))
 	{
 	  ppError = TRUE;
 	  sprintf (msgBuffer, "unknown tag </%s>", ppNode->Tag);
@@ -1810,11 +1814,11 @@ unsigned char       c;
 	  else if (!ad->IsInt)
 	    TtaFreeMemory (ad->TextVal);
 	  ad2 = ad->Next;
-	  TtaFreeMemory ((char *) ad);
+	  TtaFreeMemory ( ad);
 	  ad = ad2;
 	}
       TtaFreeMemory (ppRule->OptionNodes->Tag);
-      TtaFreeMemory ((char *) ppRule->OptionNodes);
+      TtaFreeMemory ( ppRule->OptionNodes);
       ppRule->NewNodes = NULL;
     }
 
@@ -1832,11 +1836,11 @@ unsigned char       c;
 	  else if (!ad->IsInt)
 	    TtaFreeMemory (ad->TextVal);
 	  ad2 = ad->Next;
-	  TtaFreeMemory ((char *) ad);
+	  TtaFreeMemory ( ad);
 	  ad = ad2;
 	}
       TtaFreeMemory (ppRule->NewNodes->Tag);
-      TtaFreeMemory ((char *) ppRule->NewNodes);
+      TtaFreeMemory ( ppRule->NewNodes);
       ppRule->NewNodes = NULL;
     }
   ppNode = NULL;
@@ -2416,10 +2420,11 @@ static void         initpparse ()
    	ppStartParser loads the file Directory/FileName for parsing	
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
-int                 ppStartParser (char *name, strTransSet **resTrSet)
+int                 ppStartParser (char *name,SSchema tStrSchema, strTransSet **resTrSet)
 #else
-int                 ppStartParser (name, resTrSet)
+int                 ppStartParser (name, tStrSchema, resTrSet)
 char               *name;
+SSchema            tStrSchema;
 strTransSet        **resTrSet;
 #endif
 {
@@ -2447,6 +2452,7 @@ strTransSet        **resTrSet;
      {
        ppTransSet = TtaGetMemory (sizeof (strTransSet));
        strcpy (ppTransSet->TransFileName, name);
+       ppTransSet->Schema = tStrSchema;
        ppTransSet->timeLastWrite = (time_t) 0;
        ppTransSet->NbTrans = 0;
        ppTransSet->MaxDepth = 0;
@@ -2528,7 +2534,7 @@ strTransSet        **resTrSet;
 	      }
           }
      }
-   TtaFreeMemory ((char *)StatBuffer);
+   TtaFreeMemory (StatBuffer);
 #else
 	   	fclose (infile);
   	       }
@@ -2551,7 +2557,7 @@ void                main ()
    strNodeDesc           *nd;
    strRuleDesc           *pr;
 
-   ppStartParser ("test.trans");
+   ppStartParser ("test.trans",NULL,NULL);
    printf ("\n");
    td = strMatchEnv.Transformations;
    while (td)

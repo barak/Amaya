@@ -224,7 +224,8 @@ BoxEdge             targetEdge;
 /*----------------------------------------------------------------------
    InsertDimRelation etablit le lien entre les dimensions             
    horizontales ou verticales des deux boites (pOrginBox vers 
-   pTargetBox).                                               
+   pTargetBox).
+   Si sameDimension est Faux, il faut inverser horizRef.
   ----------------------------------------------------------------------*/
 #ifdef __STDC__
 static void         InsertDimRelation (PtrBox pOrginBox, PtrBox pTargetBox, boolean sameDimension, boolean horizRef)
@@ -241,6 +242,9 @@ boolean             horizRef;
   int                 i;
   boolean             loop;
   boolean             empty;
+
+  if (!sameDimension)
+    horizRef = !horizRef;
 
   i = 0;
   /* On determine la dimension affectee */
@@ -588,9 +592,9 @@ boolean             horizRef;
 	      localEdge = rule.PosEdge;
 	      /* Convert the distance value */
 	      if (rule.PosUnit == UnPercent)
-		dist = PixelValue (rule.PosDistance, UnPercent, (PtrAbstractBox) x);
+		dist = PixelValue (rule.PosDistance, UnPercent, (PtrAbstractBox) x, 0);
 	      else
-		dist = PixelValue (rule.PosDistance, rule.PosUnit, pCurrentAb);
+		dist = PixelValue (rule.PosDistance, rule.PosUnit, pCurrentAb, ViewFrameTable[frame - 1].FrMagnification);
 	    }
 	  else
 	    {
@@ -612,7 +616,7 @@ boolean             horizRef;
 		  pCurrentBox = pAb->AbBox;
 		  if (rule.PosUnit == UnPercent)
 		    /* poucentage de la largeur de l'englobant */
-		    dist = PixelValue (rule.PosDistance, UnPercent, (PtrAbstractBox) pCurrentAb->AbEnclosing);
+		    dist = PixelValue (rule.PosDistance, UnPercent, (PtrAbstractBox) pCurrentAb->AbEnclosing, 0);
 		  else
 		    dist = 0;
 		  refEdge = Left;
@@ -666,13 +670,13 @@ boolean             horizRef;
 	  /* Convert the distance value */
 	  if (rule.PosUnit == UnPercent)
 	    {
-	      dist = PixelValue (rule.PosDistance, UnPercent, (PtrAbstractBox) pCurrentAb->AbEnclosing->AbBox->BxWidth);
+	      dist = PixelValue (rule.PosDistance, UnPercent, (PtrAbstractBox) pCurrentAb->AbEnclosing->AbBox->BxWidth, 0);
 	      /* Change the rule for further updates */
 	      pCurrentAb->AbHorizPos.PosDistance = dist;
 	      pCurrentAb->AbHorizPos.PosUnit = UnPixel;
 	    }
 	  else
-	    dist = PixelValue (rule.PosDistance, rule.PosUnit, pCurrentAb);
+	    dist = PixelValue (rule.PosDistance, rule.PosUnit, pCurrentAb, ViewFrameTable[frame - 1].FrMagnification);
 	}
     }
   else
@@ -700,9 +704,9 @@ boolean             horizRef;
 	      localEdge = rule.PosEdge;
 	      /* Convert the distance value */
 	      if (rule.PosUnit == UnPercent)
-		dist = PixelValue (rule.PosDistance, UnPercent, (PtrAbstractBox) y);
+		dist = PixelValue (rule.PosDistance, UnPercent, (PtrAbstractBox) y, 0);
 	      else
-		dist = PixelValue (rule.PosDistance, rule.PosUnit, pCurrentAb);
+		dist = PixelValue (rule.PosDistance, rule.PosUnit, pCurrentAb, ViewFrameTable[frame - 1].FrMagnification);
 	    }
 	  else
 	    {
@@ -774,13 +778,13 @@ boolean             horizRef;
 	  /* Convert the distance value */
 	  if (rule.PosUnit == UnPercent)
 	    {
-	      dist = PixelValue (rule.PosDistance, UnPercent, (PtrAbstractBox) pCurrentAb->AbEnclosing->AbBox->BxHeight);
+	      dist = PixelValue (rule.PosDistance, UnPercent, (PtrAbstractBox) pCurrentAb->AbEnclosing->AbBox->BxHeight, 0);
 	      /* Change the rule for further updates */
 	      pCurrentAb->AbVertPos.PosDistance = dist;
 	      pCurrentAb->AbVertPos.PosUnit = UnPixel;
 	    }
 	  else
-	    dist = PixelValue (rule.PosDistance, rule.PosUnit, pCurrentAb);
+	    dist = PixelValue (rule.PosDistance, rule.PosUnit, pCurrentAb, ViewFrameTable[frame - 1].FrMagnification);
 	}
     }
 
@@ -1210,9 +1214,6 @@ boolean             horizRef;
    AbPosition         *pPosAb;
 
    pBox = pAb->AbBox;
-   /* a priori, la dimension ne depend pas de son contenu */
-   defaultDim = FALSE;
-
    /* On verifie que la boite est visible */
    if (pAb->AbVisibility >= ViewFrameTable[frame - 1].FrVisibility)
      {
@@ -1233,6 +1234,18 @@ boolean             horizRef;
 		     pAb->AbHorizPos.PosEdge = Left;
 	       }
 	     else if (pAb->AbHorizPos.PosAbRef == NULL
+		      && (pAb->AbWidth.DimPosition.PosAbRef == NULL ||
+			  pAb->AbWidth.DimPosition.PosAbRef == pParentAb))
+	       {
+		  /* prend la dimension de l'englobant */
+		  pAb->AbHorizPos.PosAbRef = pParentAb;
+		  pAb->AbWidth.DimIsPosition = FALSE;
+		  pAb->AbWidth.DimAbRef = pParentAb;
+		  pAb->AbWidth.DimValue = 0;
+		  pAb->AbWidth.DimSameDimension = TRUE;
+		  pAb->AbWidth.DimUserSpecified = FALSE;
+	       }
+	     else if (pAb->AbHorizPos.PosAbRef == NULL
 		      || pAb->AbWidth.DimPosition.PosEdge == VertRef
 		      || pAb->AbWidth.DimPosition.PosAbRef == NULL
 		      || pAb->AbWidth.DimPosition.PosAbRef == pAb)
@@ -1246,7 +1259,6 @@ boolean             horizRef;
 		  pAb->AbWidth.DimUnit = UnPoint;
 		  pAb->AbWidth.DimUserSpecified = FALSE;
 	       }
-
 	     /* verifie que la dimension ne depend pas d'un pave mort */
 	     else if (pAb->AbHorizPos.PosAbRef->AbDead)
 	       {
@@ -1271,6 +1283,18 @@ boolean             horizRef;
 		     pAb->AbVertPos.PosEdge = Top;
 	       }
 	     else if (pAb->AbVertPos.PosAbRef == NULL
+		      && (pAb->AbHeight.DimPosition.PosAbRef == NULL ||
+			  pAb->AbHeight.DimPosition.PosAbRef == pParentAb))
+	       {
+		  /* prend la dimension de l'englobant */
+		  pAb->AbVertPos.PosAbRef = pParentAb;
+		  pAb->AbHeight.DimIsPosition = FALSE;
+		  pAb->AbHeight.DimAbRef = pParentAb;
+		  pAb->AbHeight.DimValue = 0;
+		  pAb->AbHeight.DimSameDimension = TRUE;
+		  pAb->AbHeight.DimUserSpecified = FALSE;
+	       }
+	     else if (pAb->AbVertPos.PosAbRef == NULL
 		      || pAb->AbHeight.DimPosition.PosEdge == HorizRef
 		      || pAb->AbHeight.DimPosition.PosAbRef == NULL
 		      || pAb->AbHeight.DimPosition.PosAbRef == pAb)
@@ -1284,14 +1308,13 @@ boolean             horizRef;
 		  pAb->AbHeight.DimUnit = UnPoint;
 		  pAb->AbHeight.DimUserSpecified = FALSE;
 	       }
-
 	     /* verifie que la dimension ne depend pas d'un pave mort */
 	     else if (pAb->AbVertPos.PosAbRef->AbDead)
 	       {
 		  fprintf (stderr, "Dimension refers a dead box");
 		  pAb->AbHeight.DimIsPosition = FALSE;
 		  pAb->AbHeight.DimAbRef = NULL;
-		  pAb->AbHeight.DimValue = 20;	/* hauteur fixe */
+		  pAb->AbHeight.DimValue = 0;
 		  pAb->AbHeight.DimUnit = UnPoint;
 		  pAb->AbHeight.DimUserSpecified = FALSE;
 	       }
@@ -1302,9 +1325,15 @@ boolean             horizRef;
 	  {
 	     /* Est-ce que la dimension est exprimee en points typo. ? */
 	     if (horizRef)
-		pDimAb = &pAb->AbWidth;
+	       {
+		 pDimAb = &pAb->AbWidth;
+		 pBox->BxContentWidth = FALSE;
+	       }
 	     else
-		pDimAb = &pAb->AbHeight;
+	       {
+		 pDimAb = &pAb->AbHeight;
+		 pBox->BxContentHeight = FALSE;
+	       }
 
 	     /* verifie que la dimension ne depend pas d'un pave mort */
 	     if (pDimAb->DimAbRef != NULL && pDimAb->DimAbRef->AbDead)
@@ -1313,6 +1342,28 @@ boolean             horizRef;
 		  pDimAb->DimAbRef = NULL;
 		  pDimAb->DimValue = 0;
 	       }
+	     else if (pDimAb->DimAbRef == pAb && !pDimAb->DimSameDimension)
+	       {
+		 if (horizRef && pAb->AbHeight.DimUnit == UnPoint)
+		   pDimAb->DimUnit = UnPoint;
+		 else if (!horizRef && pAb->AbWidth.DimUnit == UnPoint)
+		   pDimAb->DimUnit = UnPoint;
+	       }
+	     else if (!horizRef &&
+		      pAb->AbLeafType == LtGraphics &&
+		      pAb->AbShape == 'a' &&
+		      pDimAb->DimAbRef == NULL)
+	       {
+		 /* force the circle height to be equal to its width */
+		 pDimAb->DimAbRef = pAb;
+		 pDimAb->DimSameDimension = FALSE;
+		 pDimAb->DimValue = 0;
+		 pDimAb->DimUserSpecified = FALSE;
+		 if (pAb->AbWidth.DimUnit == UnPoint)
+		   pDimAb->DimUnit = UnPoint;
+		 else
+		   pDimAb->DimUnit = UnPixel;
+	       }
 
 	     /* Est-ce la boite racine ? */
 	     if (pParentAb == NULL)
@@ -1320,16 +1371,16 @@ boolean             horizRef;
 		if (horizRef)
 		  {
 		     if (pDimAb->DimValue == 0)
-			defaultDim = TRUE;
+		       pBox->BxContentWidth = TRUE;
 		     else
 		       {
 			  GetSizesFrame (frame, &val, &i);
 			  if (pDimAb->DimValue < 0)
 			     val += pDimAb->DimValue;
 			  else if (pDimAb->DimUnit == UnPercent)
-			     val = PixelValue (pDimAb->DimValue, UnPercent, (PtrAbstractBox) val);
+			     val = PixelValue (pDimAb->DimValue, UnPercent, (PtrAbstractBox) val, 0);
 			  else
-			     val = PixelValue (pDimAb->DimValue, pDimAb->DimUnit, pAb);
+			     val = PixelValue (pDimAb->DimValue, pDimAb->DimUnit, pAb, ViewFrameTable[frame - 1].FrMagnification);
 			  ResizeWidth (pBox, pBox, NULL, val - pBox->BxWidth, 0, frame);
 		       }
 		  }
@@ -1337,16 +1388,16 @@ boolean             horizRef;
 		else
 		  {
 		     if (pDimAb->DimValue == 0)
-			defaultDim = TRUE;
+		       pBox->BxContentHeight = TRUE;
 		     else
 		       {
 			  GetSizesFrame (frame, &i, &val);
 			  if (pDimAb->DimValue < 0)
 			     val = 0;
 			  else if (pDimAb->DimUnit == UnPercent)
-			     val = PixelValue (pDimAb->DimValue, UnPercent, (PtrAbstractBox) val);
+			     val = PixelValue (pDimAb->DimValue, UnPercent, (PtrAbstractBox) val, 0);
 			  else
-			     val = PixelValue (pDimAb->DimValue, pDimAb->DimUnit, pAb);
+			     val = PixelValue (pDimAb->DimValue, pDimAb->DimUnit, pAb, ViewFrameTable[frame - 1].FrMagnification);
 			  ResizeHeight (pBox, pBox, NULL, val - pBox->BxHeight, frame);
 		       }
 		  }
@@ -1358,28 +1409,28 @@ boolean             horizRef;
 		  /* La largeur est contrainte (par heritage ou imposee) ? */
 		  if (horizRef)
 		     /* PcFirst cas de coherence */
-		     /* Le texte mis en ligne DOIT prendre sa taille */
 		     if (inLine && pAb->AbLeafType == LtText)
-			defaultDim = TRUE;
-		  /* Dimension fixee */
+		       /* Le texte mis en ligne DOIT prendre sa taille */
+		       pBox->BxContentWidth = TRUE;
 		     else if (pAb->AbWidth.DimAbRef == NULL)
+		       /* Dimension fixee */
 			if (pAb->AbWidth.DimValue <= 0)
-			   defaultDim = TRUE;	/* A calculer */
+			   pBox->BxContentWidth = TRUE;	/* A calculer */
 			else
 			  {
 			     /* Convert the distance value */
 			     if (pDimAb->DimUnit == UnPercent)
 			       {
-				  delta = PixelValue (pDimAb->DimValue, UnPercent, (PtrAbstractBox) pParentAb->AbBox->BxWidth);
+				  delta = PixelValue (pDimAb->DimValue, UnPercent, (PtrAbstractBox) pParentAb->AbBox->BxWidth, 0);
 				  InsertDimRelation (pParentAb->AbBox, pBox, pDimAb->DimSameDimension, horizRef);
 			       }
 			     else
-				delta = PixelValue (pDimAb->DimValue, pDimAb->DimUnit, pAb);
+				delta = PixelValue (pDimAb->DimValue, pDimAb->DimUnit, pAb, ViewFrameTable[frame - 1].FrMagnification);
 			     ResizeWidth (pBox, pBox, NULL, delta - pBox->BxWidth, 0, frame);
 			  }
-		  /* Deuxieme cas de coherence */
-		  /* La boite ne peut pas prendre la taille de son englobante si : */
-		  /* -> L'englobante prend la taille de son contenu */
+		     /* Deuxieme cas de coherence */
+		     /* La boite ne peut pas prendre la taille de son englobante si : */
+		     /* -> L'englobante prend la taille de son contenu */
 		     else
 		       {
 			  pPosAb = &pAb->AbHorizPos;
@@ -1391,7 +1442,7 @@ boolean             horizRef;
 				  || pPosAb->PosRefEdge != Left || pPosAb->PosEdge != Left))
 			    {
 			       pDimAb = &pAb->AbWidth;
-			       defaultDim = TRUE;
+			       pBox->BxContentWidth = TRUE;
 			       pDimAb->DimAbRef = NULL;
 			       pDimAb->DimValue = 0;
 			       pDimAb->DimUnit = UnRelative;
@@ -1402,7 +1453,7 @@ boolean             horizRef;
 			       pDimAb = &pAb->AbWidth;
 			       if (pDimAb->DimAbRef == pAb && pDimAb->DimSameDimension)
 				 {
-				    defaultDim = TRUE;
+				    pBox->BxContentWidth = TRUE;
 				    pDimAb->DimAbRef = NULL;
 				    pDimAb->DimValue = 0;
 				    pDimAb->DimUnit = UnRelative;
@@ -1431,9 +1482,9 @@ boolean             horizRef;
 					 if (pDimAb->DimAbRef == pParentAb && inLine && pDimAb->DimSameDimension)
 					   {
 					      if (pParentAb->AbIndentUnit == UnPercent)
-						 delta = PixelValue (pParentAb->AbIndent, UnPercent, (PtrAbstractBox) val);
+						 delta = PixelValue (pParentAb->AbIndent, UnPercent, (PtrAbstractBox) val, 0);
 					      else
-						 delta = PixelValue (pParentAb->AbIndent, pParentAb->AbIndentUnit, pParentAb);
+						 delta = PixelValue (pParentAb->AbIndent, pParentAb->AbIndentUnit, pParentAb, ViewFrameTable[frame - 1].FrMagnification);
 					      if (pParentAb->AbIndent > 0)
 						 val -= delta;
 					      else if (pParentAb->AbIndent < 0)
@@ -1442,9 +1493,9 @@ boolean             horizRef;
 
 					 /* Convert the distance value */
 					 if (pDimAb->DimUnit == UnPercent)
-					    val = PixelValue (pDimAb->DimValue, UnPercent, (PtrAbstractBox) val);
+					    val = PixelValue (pDimAb->DimValue, UnPercent, (PtrAbstractBox) val, 0);
 					 else
-					    val += PixelValue (pDimAb->DimValue, pDimAb->DimUnit, pAb);
+					    val += PixelValue (pDimAb->DimValue, pDimAb->DimUnit, pAb, ViewFrameTable[frame - 1].FrMagnification);
 					 ResizeWidth (pBox, pBox, NULL, val - pBox->BxWidth, 0, frame);
 					 /* On teste si la relation est hors structure */
 					 if (pDimAb->DimAbRef != pParentAb
@@ -1462,18 +1513,18 @@ boolean             horizRef;
 		     /* PcFirst cas de coherence */
 		     /* / Le texte mis en ligne DOIT prendre sa taille */
 		  if (inLine && pAb->AbLeafType == LtText)
-		     defaultDim = TRUE;
+		     pBox->BxContentHeight = TRUE;
 		  /* Dimension fixee */
 		  else if (pAb->AbHeight.DimAbRef == NULL)
 		     if (pAb->AbHeight.DimValue == 0)
-			defaultDim = TRUE;	/* A calculer */
+			pBox->BxContentHeight = TRUE;	/* A calculer */
 		     else
 		       {
 			  /* Convert the distance value */
 			  if (pDimAb->DimUnit == UnPercent)
-			     delta = PixelValue (pDimAb->DimValue, UnPercent, (PtrAbstractBox) pParentAb->AbBox->BxHeight);
+			     delta = PixelValue (pDimAb->DimValue, UnPercent, (PtrAbstractBox) pParentAb->AbBox->BxHeight, 0);
 			  else
-			     delta = PixelValue (pDimAb->DimValue, pDimAb->DimUnit, pAb);
+			     delta = PixelValue (pDimAb->DimValue, pDimAb->DimUnit, pAb, ViewFrameTable[frame - 1].FrMagnification);
 			  ResizeHeight (pBox, pBox, NULL, delta - pBox->BxHeight, frame);
 		       }
 		  /* Deuxieme cas de coherence */
@@ -1483,7 +1534,7 @@ boolean             horizRef;
 			   && (pAb->AbLeafType == LtPicture || pAb->AbLeafType == LtCompound))
 		    {
 		       pDimAb = &pAb->AbHeight;
-		       defaultDim = TRUE;
+		       pBox->BxContentHeight = TRUE;
 		       pDimAb->DimAbRef = NULL;
 		       pDimAb->DimValue = 0;
 		       pDimAb->DimUnit = UnRelative;
@@ -1502,7 +1553,7 @@ boolean             horizRef;
 			       || pPosAb->PosEdge != Top))
 			 {
 			    pDimAb = &pAb->AbHeight;
-			    defaultDim = TRUE;
+			    pBox->BxContentHeight = TRUE;
 			    pDimAb->DimAbRef = NULL;
 			    pDimAb->DimValue = 0;
 			    pDimAb->DimUnit = UnRelative;
@@ -1513,7 +1564,7 @@ boolean             horizRef;
 			    pDimAb = &pAb->AbHeight;
 			    if (pDimAb->DimAbRef == pAb && pDimAb->DimSameDimension)
 			      {
-				 defaultDim = TRUE;
+				 pBox->BxContentHeight = TRUE;
 				 pDimAb->DimAbRef = NULL;
 				 pDimAb->DimValue = 0;
 				 pDimAb->DimUnit = UnRelative;
@@ -1544,9 +1595,9 @@ boolean             horizRef;
 					  && !pDimAb->DimSameDimension)
 					{
 					   if (pParentAb->AbIndentUnit == UnPercent)
-					      delta = PixelValue (pParentAb->AbIndent, UnPercent, (PtrAbstractBox) val);
+					      delta = PixelValue (pParentAb->AbIndent, UnPercent, (PtrAbstractBox) val, 0);
 					   else
-					      delta = PixelValue (pParentAb->AbIndent, pParentAb->AbIndentUnit, pParentAb);
+					      delta = PixelValue (pParentAb->AbIndent, pParentAb->AbIndentUnit, pParentAb, ViewFrameTable[frame - 1].FrMagnification);
 					   if (pParentAb->AbIndent > 0)
 					      val -= delta;
 					   else if (pParentAb->AbIndent < 0)
@@ -1555,9 +1606,9 @@ boolean             horizRef;
 
 				      /* Convert the distance value */
 				      if (pDimAb->DimUnit == UnPercent)
-					 val = PixelValue (pDimAb->DimValue, UnPercent, (PtrAbstractBox) val);
+					 val = PixelValue (pDimAb->DimValue, UnPercent, (PtrAbstractBox) val, 0);
 				      else
-					 val += PixelValue (pDimAb->DimValue, pDimAb->DimUnit, pAb);
+					 val += PixelValue (pDimAb->DimValue, pDimAb->DimUnit, pAb, ViewFrameTable[frame - 1].FrMagnification);
 				      ResizeHeight (pBox, pBox, NULL, val - pBox->BxHeight, frame);
 				      /* On teste si la relation est hors structure */
 				      if (pDimAb->DimAbRef != pParentAb
@@ -1659,11 +1710,11 @@ boolean             horizRef;
 			  delta = 0;
 		       else
 			  delta = PixelValue (pPosAb->PosDistance, pPosAb->PosUnit,
-			  (PtrAbstractBox) pAb->AbEnclosing->AbBox->BxWidth);
+			  (PtrAbstractBox) pAb->AbEnclosing->AbBox->BxWidth, 0);
 		    }
 		  else
 		     /* Convert the distance value */
-		     delta = PixelValue (pPosAb->PosDistance, pPosAb->PosUnit, pAb);
+		     delta = PixelValue (pPosAb->PosDistance, pPosAb->PosUnit, pAb, ViewFrameTable[frame - 1].FrMagnification);
 
 		  val = pRefBox->BxXOrg + delta;
 		  switch (pPosAb->PosRefEdge)
@@ -1757,11 +1808,11 @@ boolean             horizRef;
 			  delta = 0;
 		       else
 			  delta = PixelValue (pPosAb->PosDistance, pPosAb->PosUnit,
-					      (PtrAbstractBox) pAb->AbEnclosing->AbBox->BxHeight);
+					      (PtrAbstractBox) pAb->AbEnclosing->AbBox->BxHeight, 0);
 		    }
 		  else
 		     /* Convert the distance value */
-		     delta = PixelValue (pPosAb->PosDistance, pPosAb->PosUnit, pAb);
+		     delta = PixelValue (pPosAb->PosDistance, pPosAb->PosUnit, pAb, ViewFrameTable[frame - 1].FrMagnification);
 
 		  val = pRefBox->BxYOrg + delta;
 		  switch (pPosAb->PosRefEdge)
@@ -1802,20 +1853,14 @@ boolean             horizRef;
 	pAb->AbWidthChange = FALSE;
 	/* Marque dans la boite si la dimension depend du contenu ou non */
 	pBox->BxRuleWidth = 0;
-	if (defaultDim)
-	   pBox->BxContentWidth = TRUE;
-	else
-	   pBox->BxContentWidth = FALSE;
+	defaultDim = pBox->BxContentWidth;
      }
    else
      {
 	pAb->AbHeightChange = FALSE;
 	/* Marque dans la boite si la dimension depend du contenu ou non */
 	pBox->BxRuleHeigth = 0;
-	if (defaultDim)
-	   pBox->BxContentHeight = TRUE;
-	else
-	   pBox->BxContentHeight = FALSE;
+	defaultDim = pBox->BxContentHeight;
      }
 
    /* break down the temporary link of moved boxes */
@@ -1866,7 +1911,7 @@ boolean             horizRef;
 	     refEdge = Left;
 	     localEdge = VertRef;
 	     if (rule.PosUnit == UnPercent)
-		dist = PixelValue (rule.PosDistance, UnPercent, (PtrAbstractBox) pBox->BxWidth);
+		dist = PixelValue (rule.PosDistance, UnPercent, (PtrAbstractBox) pBox->BxWidth, 0);
 	     else
 		dist = 0;
 	  }
@@ -1875,7 +1920,7 @@ boolean             horizRef;
 	     refEdge = Bottom;
 	     localEdge = HorizRef;
 	     if (rule.PosUnit == UnPercent)
-		dist = PixelValue (rule.PosDistance, UnPercent, (PtrAbstractBox) pBox->BxHeight);
+		dist = PixelValue (rule.PosDistance, UnPercent, (PtrAbstractBox) pBox->BxHeight, 0);
 	     else
 		dist = FontBase (pBox->BxFont) - pBox->BxHeight;
 	  }
@@ -1889,12 +1934,12 @@ boolean             horizRef;
 	if (rule.PosUnit == UnPercent)
 	  {
 	     if (horizRef)
-		dist = PixelValue (rule.PosDistance, UnPercent, (PtrAbstractBox) pCurrentAb->AbEnclosing->AbBox->BxWidth);
+		dist = PixelValue (rule.PosDistance, UnPercent, (PtrAbstractBox) pCurrentAb->AbEnclosing->AbBox->BxWidth, 0);
 	     else
-		dist = PixelValue (rule.PosDistance, UnPercent, (PtrAbstractBox) pCurrentAb->AbEnclosing->AbBox->BxHeight);
+		dist = PixelValue (rule.PosDistance, UnPercent, (PtrAbstractBox) pCurrentAb->AbEnclosing->AbBox->BxHeight, 0);
 	  }
 	else
-	   dist = PixelValue (rule.PosDistance, rule.PosUnit, pCurrentAb);
+	   dist = PixelValue (rule.PosDistance, rule.PosUnit, pCurrentAb, ViewFrameTable[frame - 1].FrMagnification);
 
 	pCurrentBox = pAb->AbBox;
 	if (pCurrentBox == NULL)
@@ -2029,6 +2074,7 @@ boolean             horizRef;
    found = 0;
    i = 0;
    pPreviousPosRel = NULL;
+   pOrginBox->BxMoved = NULL;
    pPosRel = pOrginBox->BxPosRelations;
    precpos = NULL;
    loop = TRUE;
@@ -2490,9 +2536,9 @@ boolean             horizRef;
 		pCurrentAb = pCurrentAb->AbFirstEnclosed;
 	     else
 		pCurrentAb = pCurrentAb->AbNext;
-	  }			/*while */
+	  }
      }
-}				/* ClearPosRelation */
+}
 
 /*----------------------------------------------------------------------
    ClearAxisRelation recherche la boite dont depend l'axe de reference

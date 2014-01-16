@@ -3,7 +3,7 @@
 **
 **	(c) COPYRIGHT MIT 1995.
 **	Please first read the full copyright statement in the file COPYRIGH.
-**	@(#) $Id: HTTP.c,v 1.1.1.1 1996/10/15 13:08:37 cvs Exp $
+**	@(#) $Id: HTTP.c,v 1.2 1998/03/11 17:45:39 cvs Exp $
 **
 **	This module implments the HTTP protocol as a state machine
 **
@@ -819,8 +819,19 @@ PUBLIC int HTLoadHTTP (SOCKET soc, HTRequest * request, SockOps ops)
 		*/
 		{
 		    HTOutputStream * output = HTNet_getOutput(net, NULL, 0);
-		    int version = HTHost_version(host);
+		    int version;
 		    HTStream * app = NULL;
+		    
+		    /* 
+		    ** JK: PUT requests are more reliable when using HTTP/1.0
+		    ** in this version of libwww. This allows to
+		    ** automatically toggle the version
+		    */
+		    if ( HTRequest_method (request) == METHOD_PUT)
+		      version = HTTP_10;
+		    else
+		      version = HTHost_version(host);
+
 #ifdef HTTP_DUMP
 		    if (PROT_TRACE) {
 			if ((htfp = fopen(HTTP_OUTPUT, "wb"))) {
