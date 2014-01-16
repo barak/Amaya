@@ -1,2 +1,3 @@
 version=3
-http://www.w3.org/Amaya/Distribution/amaya-(?:sources|src)-([\d].*)\.tgz
+# http://www.w3.org/Amaya/Distribution/amaya-(?:fullsrc|sources|src)-([\d].*)\.tgz
+http://www.w3.org/Amaya/Distribution/amaya-fullsrc-([\d].*)\.tgz
