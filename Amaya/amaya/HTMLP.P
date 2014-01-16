@@ -736,6 +736,8 @@ BOXES
         Visibility: Enclosing =;
         Content: Text '<img>';
         Foreground: TAG_Color;
+        HorizPos: Left = Creator . Left;
+        VertPos: Top = Creator . Top;
         MarginTop: 1 px;
         MarginLeft: 3 px;
         MarginBottom: 1 px;
@@ -757,6 +759,9 @@ BOXES
 
  SHOW_ALT: BEGIN
         Visibility: Enclosing =;
+        Inline: No;
+        HorizPos: Left = Creator . Left;
+        VertPos: Top = Creator . Top;
         Content: (ALT);
         IN Structure_view BEGIN
                 Visibility: 0;
@@ -923,6 +928,8 @@ BOXES
                 Visibility: 0;
         IN Alternate_view
                 Visibility: 0;
+        IN Links_view
+                Visibility: 0;
         END;
 
  Value_Box_Alt: BEGIN
@@ -959,6 +966,8 @@ BOXES
                 Visibility: 0;
         IN Alternate_view
                 Visibility: 0;
+        IN Links_view
+                Visibility: 0;
         END;
 
  ToggleS_gif: BEGIN
@@ -969,10 +978,12 @@ BOXES
                 Visibility: 0;
         IN Alternate_view
                 Visibility: 0;
+        IN Links_view
+                Visibility: 0;
         END;
 
  Radio_gif: BEGIN
-        Content: Picture 'radio.gif';
+        Content: Picture 'radio.png';
         HorizPos: Left = Previous . Right;
         VertPos: HRef = Previous . HRef;        
         IN Structure_view
@@ -984,7 +995,7 @@ BOXES
         END;
 
  RadioS_gif: BEGIN
-        Content: Picture 'radio-s.gif';
+        Content: Picture 'radio-s.png';
         HorizPos: Left = Previous . Right;
         VertPos: HRef = Previous . HRef;
         IN Structure_view
@@ -1001,6 +1012,8 @@ BOXES
         HorizPos:  Left = Previous . Right;
         IN Structure_view
                 Visibility: 0;
+        IN Links_view
+                Visibility: 0;
         END;
 
  QUOTE: BEGIN
@@ -1008,6 +1021,8 @@ BOXES
         VertPos: HRef = Previous . Href;
         HorizPos:  Left = Previous . Right;
         IN Structure_view
+                Visibility: 0;
+        IN Links_view
                 Visibility: 0;
         END;
 
@@ -1018,6 +1033,8 @@ BOXES
         IN Structure_view
                 Visibility: 0;
         IN Table_of_contents
+                Visibility: 0;
+        IN Links_view
                 Visibility: 0;
         END;
 
@@ -1197,6 +1214,8 @@ BOXES
         IN Structure_view BEGIN
                 Visibility: 0;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
 #ifdef PAGE
@@ -1213,6 +1232,8 @@ BOXES
                 Visibility: 0;
         IN Alternate_view
                 LineWeight: 1 px;
+        IN Links_view
+                Visibility: 0;
         END;
 #else
  HR_Alt: BEGIN
@@ -1252,6 +1273,8 @@ BOXES
                 Visibility: 0;
         IN Alternate_view
                 Visibility: 0;
+        IN Links_view
+                Visibility: 0;
         END;
 
  ISINDEX_Graph2: BEGIN
@@ -1266,6 +1289,8 @@ BOXES
                 Visibility: 0;
         IN Alternate_view
                 Visibility: 0;
+        IN Links_view
+                Visibility: 0;
         END;
 
  ISINDEX_Graph2A: BEGIN
@@ -1279,6 +1304,8 @@ BOXES
         IN Structure_view
                 Visibility: 0;
         IN Alternate_view
+                Visibility: 0;
+        IN Links_view
                 Visibility: 0;
         END;
 #endif
@@ -1313,6 +1340,8 @@ BOXES
                 Visibility: 0;
         IN Alternate_view
                 Visibility: 0;
+        IN Links_view
+                Visibility: 0;
         END;
 
  CellFrame: BEGIN
@@ -1342,6 +1371,8 @@ BOXES
                 Visibility: 0;
         IN Alternate_view
                 Visibility: 0;
+        IN Links_view
+                Visibility: 0;
         END;
 
  MAP_dummy: BEGIN
@@ -1353,6 +1384,8 @@ BOXES
         IN Structure_view
                 Visibility: 0;
         IN Alternate_view
+                Visibility: 0;
+        IN Links_view
                 Visibility: 0;
         END;
 
@@ -1841,6 +1874,8 @@ RULES
         IN Table_of_contents
                 Visibility: 0;
         IN Alternate_view
+                Visibility: 0;
+        IN Links_view
                 Visibility: 0;
         END;
 
@@ -2405,6 +2440,10 @@ RULES
                 Size: Enclosing =;
                 HorizRef: Enclosed . HRef - 1;
                 END;
+        IN Links_view BEGIN
+                Visibility: 0;
+                HorizRef: Enclosed . HRef;
+                END;
         END;
  Superscript:
         BEGIN
@@ -2425,6 +2464,10 @@ RULES
         IN Alternate_view BEGIN
                 Size: Enclosing =;
                 HorizRef: Enclosed . HRef + 1;
+                END;
+        IN Links_view BEGIN
+                Visibility: 0;
+                HorizRef: Enclosed . HRef;
                 END;
         END;
 
@@ -2688,8 +2731,9 @@ RULES
                 VertPos: Top = Previous . Bottom;
                 Height: Enclosed . Height;
                 END;
-        IN Links_view
+        IN Links_view BEGIN
                 Visibility: 0;
+                END;        
         END;
 
  Image_Input: BEGIN
@@ -2906,10 +2950,14 @@ RULES
 
  Definition_Item: BEGIN
         Width: auto{Enclosing . Width};
+        IN Links_view
+                Visibility: 0;
         END;
 
  Term_List: BEGIN
         Width: auto {Enclosing . Width};
+        IN Links_view
+                Visibility: 0;
         END;
 
  Term:        BEGIN
@@ -2926,6 +2974,8 @@ RULES
                 HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
                 NoLine;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  Definitions: BEGIN
@@ -2946,6 +2996,8 @@ RULES
                 Width: Enclosing . Width - STRUCT_INDENT;
                 HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  Unnumbered_List: BEGIN
@@ -3094,8 +3146,10 @@ RULES
                 HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
                 VertPos: Top = Previous . Bottom;
                 END;
-        IN Links_view
-                Display: Enclosing =;        
+        IN Links_view BEGIN
+                Display: Enclosing =;
+                Visibility: Enclosing =;
+                END;
         END;
 
  Preformatted: BEGIN
@@ -3250,6 +3304,8 @@ RULES
                 BorderBottomWidth: 0;
                 BorderLeftWidth: 0;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  Option_item: BEGIN
@@ -3295,7 +3351,7 @@ RULES
  Text_Area: BEGIN
         CreateBefore(ElementName);
         CreateWith(VerticalLine);
-  CreateBefore(NEW_LINE);
+        CreateBefore(NEW_LINE);
         CreateAfter(NEW_LINE);
         BorderTopWidth: 1 px;
         BorderLeftWidth: 1 px;
@@ -3336,6 +3392,8 @@ RULES
                 Height: Enclosed . Height;
                 Depth: 0;
                 END;        
+        IN Links_view
+                Visibility: 0;
         END;
 
  Fieldset_Content: BEGIN
@@ -3454,6 +3512,8 @@ FIELDSET: BEGIN
                     Width: Enclosed . Width;
                 HorizPos: Left = Enclosing . Left;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  Checkbox_Input: BEGIN
@@ -3474,6 +3534,8 @@ FIELDSET: BEGIN
                 MarginLeft: 0;
                 MarginRight: 0;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  Radio_Input: BEGIN
@@ -3494,6 +3556,8 @@ FIELDSET: BEGIN
                 MarginLeft: 0;
                 MarginRight: 0;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  Text_Input: BEGIN
@@ -3553,6 +3617,8 @@ FIELDSET: BEGIN
                 FillPattern: nopattern;
                 Depth: Enclosing =;
                 END;        
+        IN Links_view
+                Visibility: 0;
         END;
 
  File_Input: BEGIN
@@ -3604,6 +3670,8 @@ FIELDSET: BEGIN
                 FillPattern: nopattern;
                 Depth: Enclosing =;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  Hidden_Input: BEGIN
@@ -3673,6 +3741,8 @@ FIELDSET: BEGIN
                 FillPattern: nopattern;
                 Depth: Enclosing =;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  Reset_Input: BEGIN
@@ -3730,6 +3800,8 @@ FIELDSET: BEGIN
                 BorderBottomWidth: 0;
                 BorderRightWidth: 0;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  Submit_Input: BEGIN
@@ -3788,6 +3860,8 @@ FIELDSET: BEGIN
                 BorderBottomWidth: 0;
                 BorderRightWidth: 0;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  Button_Input: BEGIN
@@ -3839,6 +3913,8 @@ FIELDSET: BEGIN
                 BorderBottomWidth: 0;
                 BorderRightWidth: 0;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  LABEL: BEGIN
@@ -3985,11 +4061,18 @@ FIELDSET: BEGIN
                 if Immediately within Object
                    Visibility: 0;
                 END;
-        IN Links_view
-#ifndef PAGE
+        IN Links_view BEGIN
+#ifdef PAGE
+                Visibility: 0;
+#else
                 if Immediately within BODY
-#endif
                    Visibility: 0;
+                if NOT Immediately within BODY
+                   Visibility: Enclosing =;
+#endif
+                Width: 16 px;
+                Height: 16 px;
+                END;
         IN Table_of_contents
                 Visibility: 0;
         END;
@@ -4024,10 +4107,7 @@ FIELDSET: BEGIN
                    Visibility: 0;
                 END;
         IN Links_view
-#ifndef PAGE
-                if Immediately within BODY
-#endif
-                   Visibility: 0;
+                Visibility: 0;
         IN Table_of_contents
                 Visibility: 0;
         END;
@@ -4141,7 +4221,7 @@ FIELDSET: BEGIN
                 Width: Enclosing . Width - 28 pt;
 #else
                 Visibility: 7;
-                Width: Enclosing . Width;
+                Width: Enclosed . Width;
 #endif
                 END;
         END;
@@ -4182,6 +4262,11 @@ FIELDSET: BEGIN
                    Font: Courier;
                 Depth: 0;
                 END;
+        IN Links_view BEGIN
+                VertPos : Top = Previous . Bottom;
+                HorizPos: Left = Enclosing . Left;
+                Visibility: Enclosing =;
+                END;
         END;
 
  SYMBOL_UNIT:
@@ -4211,7 +4296,7 @@ FIELDSET: BEGIN
   Height: 0;
         Gather: Yes;
         InLine: No;
-  VertOverflow: Yes;
+        VertOverflow: Yes;
         IN Structure_view BEGIN
                 Visibility: Enclosing =;
                 Gather: No;
@@ -4221,7 +4306,7 @@ FIELDSET: BEGIN
                 VertPos: Top = Previous . Bottom;
                 Height: Enclosed . Height;
                 Depth: 0;
-    VertOverflow: No;
+                VertOverflow: No;
                 END;
         IN Alternate_view BEGIN
                 Visibility: 10;
@@ -4232,8 +4317,10 @@ FIELDSET: BEGIN
                 HorizPos: Left = Enclosing . Left;
                 Depth: 0;
                 Line;
-    VertOverflow: No;
+                VertOverflow: No;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  map:        BEGIN
@@ -4306,7 +4393,7 @@ FIELDSET: BEGIN
         IN Alternate_view
            Visibility: 0;
         IN Links_view
-           if within AREA Visibility: 0;
+           Visibility: 0;
         END;
 
 { ---- Table ---- }
@@ -4381,6 +4468,8 @@ FIELDSET: BEGIN
                 Adjust: Left;
                 NoLine;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  ColStruct:  BEGIN
@@ -4418,6 +4507,8 @@ FIELDSET: BEGIN
                 Adjust: Left;
                 Visibility: Enclosing =;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  COL:
@@ -4428,6 +4519,8 @@ FIELDSET: BEGIN
                 Height: 0;
                 Visibility: Enclosing =;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  Table_head:
@@ -4468,6 +4561,8 @@ FIELDSET: BEGIN
         IN Alternate_view BEGIN
                 Visibility: 0;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  Column_head:
@@ -4536,6 +4631,8 @@ FIELDSET: BEGIN
                 PaddingBottom: 0;
                 PaddingLeft: 0;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  thead:
@@ -4572,6 +4669,8 @@ FIELDSET: BEGIN
                 BorderBottomWidth: 0;
                 BorderLeftWidth: 0;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  tfoot:
@@ -4608,6 +4707,8 @@ FIELDSET: BEGIN
                 BorderBottomWidth: 0;
                 BorderLeftWidth: 0;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  Table_body:
@@ -4634,6 +4735,8 @@ FIELDSET: BEGIN
                 VertPos: Top = Previous . Bottom;
                 Width: Enclosing . Width;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  tbody:
@@ -4670,6 +4773,8 @@ FIELDSET: BEGIN
                 BorderBottomWidth: 0;
                 BorderLeftWidth: 0;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  Table_row:
@@ -4696,6 +4801,8 @@ FIELDSET: BEGIN
                 HorizPos: Left = Enclosing . Left;
                 Width: Enclosing . Width;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  Data_cell:
@@ -4749,20 +4856,22 @@ FIELDSET: BEGIN
                 Width: Enclosed. Width;
                 Height: Enclosed . Height;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  Heading_cell:
         BEGIN
         CreateBefore(ElementName);
         CreateWith(VerticalLine);
-        if not RowExt
+        if not RowExt and  immediately within Table_row
           CreateBefore(CellFrame);
-        { VertPos : Top = Enclosing . Top; }
-        VertPos : HMiddle = Previous AnyBox . HMiddle;
+        VertPos : Top = Enclosing Table_row. Top;
         HorizPos: Left = Previous Table_cell . Right;
+        {VertPos : HMiddle = Previous AnyBox . HMiddle;
+        HorizPos: Left = Previous Table_cell . Right;}
         Width: Enclosed . Width{20 px};
         Weight: Bold;
-        Adjust: VMiddle;
         PaddingTop: 1 px;
         PaddingLeft: 1 px;
         PaddingBottom: 1 px;
@@ -4805,6 +4914,8 @@ FIELDSET: BEGIN
                 HorizPos: Left = Enclosing . Left;
                 Width: Enclosed . Width;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  Division:
@@ -4851,6 +4962,8 @@ FIELDSET: BEGIN
                 Style: Italics;
                 VertPos: Top = Previous . Bottom;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  DEL:        BEGIN
@@ -4869,6 +4982,8 @@ FIELDSET: BEGIN
                 END;
         IN Alternate_view
                 VertPos: Top = Previous . Bottom;
+        IN Links_view
+                Visibility: 0;
         END;
 
   Center:
@@ -5000,9 +5115,11 @@ FIELDSET: BEGIN
 
   ASP_line:
         BEGIN
+        Visibility: 0;
         if First CreateFirst(ASP_S);
         if Last CreateLast(ASP_E);
         IN Structure_view BEGIN
+                Visibility: Enclosing =;
                 Width: Enclosed . Width;
                 VertPos: Top = Previous . Bottom + 0.2;
                 END;
@@ -5092,10 +5209,14 @@ FIELDSET: BEGIN
                 Width: Enclosing . Width - STRUCT_INDENT;
                 HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
                 END;                
+        IN Links_view
+                Visibility: 0;
         END;
 
   Frames: BEGIN
         Width: Enclosing . Width;
+        IN Links_view
+                Visibility: 0;
         END;
 
   NOFRAMES: BEGIN
@@ -5215,6 +5336,8 @@ FIELDSET: BEGIN
                 BorderRightStyle: none;
                 LineBreak: Yes;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
  Iframe_Content: BEGIN
@@ -5285,6 +5408,8 @@ FIELDSET: BEGIN
         IN Alternate_view BEGIN
                 LineBreak: Yes;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
   rb:   BEGIN
@@ -5306,6 +5431,8 @@ FIELDSET: BEGIN
                 HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
                 VertPos: Top = Previous . Bottom;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
   rt:   BEGIN
@@ -5346,6 +5473,8 @@ FIELDSET: BEGIN
                 HorizPos: Left = Previous . Right;
                 VertPos: HRef = Previous . HRef;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
   rp:   BEGIN
@@ -5364,6 +5493,8 @@ FIELDSET: BEGIN
                 HorizPos: Left = Previous . Right;
                 VertPos: HRef = Previous . HRef;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
   rbc:  BEGIN
@@ -5377,6 +5508,8 @@ FIELDSET: BEGIN
                 HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
                 VertPos: Top = Previous . Bottom;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
   rtc1: BEGIN
@@ -5399,6 +5532,8 @@ FIELDSET: BEGIN
                 HorizPos: Left = Previous . Right;
                 VertPos: HRef = Previous . HRef;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
   rtc2: BEGIN
@@ -5421,6 +5556,8 @@ FIELDSET: BEGIN
                 HorizPos: Left = Previous . Right;
                 VertPos: HRef = Previous . HRef;
                 END;
+        IN Links_view
+                Visibility: 0;
         END;
 
 ATTRIBUTES
@@ -5516,7 +5653,13 @@ ATTRIBUTES
             END;
         END;
 
- HREF_:
+HREF_(TEXT_UNIT):
+        BEGIN
+        IN Links_view BEGIN
+           visibility: 7;
+           END;
+        END;
+HREF_:
         BEGIN
         CreateBefore(AttrName);
         CreateBefore(AttrValue);
@@ -6678,7 +6821,7 @@ ATTRIBUTES
         CreateBefore(AttrName);
         CreateBefore(AttrValue);
         if Text_Area
-           Width: Columns;
+           Width: Columns ex;
         IN Structure_view
           BEGIN
           if Text_Area
@@ -7505,15 +7648,25 @@ ATTRIBUTES
         CreateBefore(AttrValue);
         END;
 
+ ID(TEXT_UNIT):
+        BEGIN
+        IN Links_view BEGIN
+           HorizPos: Left = Previous . Right;
+           VertPos: HRef = Previous . HRef;
+           Line;
+           visibility: Enclosing =;
+           END;
+        END;
+
  ID:
         BEGIN
         CreateBefore(AttrName);
         CreateBefore(AttrValue);
 #ifndef PAGE
         if PICTURE_UNIT
-                  CreateBefore(Target_gif);
+           CreateBefore(Target_gif);
         if not PICTURE_UNIT
-                   CreateFirst(Target_gif);
+           CreateFirst(Target_gif);
 #endif
           CreateLast(ATTR_ID_ANCH);
           CreateLast(VALUE_ID_ANCH);
@@ -7536,6 +7689,10 @@ ATTRIBUTES
            END;
         IN Links_view BEGIN
            visibility: 7;
+           if not PICTURE_UNIT
+              Width: Enclosed . Width;
+           HorizPos: Left = Enclosing . Left;
+           VertPos: Top = Previous . Bottom;
            END;
         IN Alternate_view BEGIN
            if Anchor BEGIN

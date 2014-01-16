@@ -6,6 +6,7 @@
 #ifndef __CEXTRACT__
 #ifdef __STDC__
 
+extern void ClearSVGDefs ( void );
 extern char *GetElementData ( Document doc,
                               Element el,
                               SSchema sschema,
@@ -40,8 +41,6 @@ extern void UpdateSVGElement ( Document doc,
                                int dy,
                                int dw,
                                int dh );
-extern void UpdateMarkers ( Element el,
-                            Document doc );
 extern void UpdatePointsOrPathAttribute ( Document doc,
                                           Element el,
                                           int w,
@@ -204,6 +203,7 @@ extern void EditSVG_GenerateDescription ( Document document,
 
 #else /* __STDC__ */
 
+extern void ClearSVGDefs ( void );
 extern char *GetElementData ( Document doc,
                                 Element el,
                                 SSchema sschema,
@@ -238,8 +238,6 @@ extern void UpdateSVGElement ( Document doc,
                                  int dy,
                                  int dw,
                                  int dh );
-extern void UpdateMarkers ( Element el,
-                              Document doc );
 extern void UpdatePointsOrPathAttribute ( Document doc,
                                             Element el,
                                             int w,

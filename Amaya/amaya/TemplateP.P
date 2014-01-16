@@ -1,5 +1,5 @@
     { Presentation Schema for Templates.
-      A. Tollenaere & I. Vatton    January 2007 }
+      A. Tollenaere & I. Vatton    January 2009 }
 
 
 PRESENTATION Template;
@@ -37,7 +37,6 @@ DEFAULT
    BEGIN
    Visibility: Enclosing =;
    VertRef: * . Left ;
-   {HorizRef: Enclosed AnyElem . HRef;}
    HorizRef: * . Bottom - 2 px;
    Height: Enclosed . Height;
    Width: Enclosed . Width;
@@ -710,12 +709,15 @@ RULES
 		BEGIN
     CreateBefore(ElementName);
 #ifdef INSTANCE
+    if  NOT immediately within repeat AND NOT immediately within bag
+      CreateFirst(UseButton);
     if immediately within repeat
       CreateAfter(RepeatUse);
     if immediately within bag
       CreateAfter(BagUse);
-#endif
+#else
     CreateFirst(UseButton);
+#endif
     CreateWith(VerticalLine);
     Width: auto{Enclosing . Width};
     Height: auto{Enclosing . Height};
@@ -738,24 +740,24 @@ RULES
     PaddingTop: 2 px;
     PaddingBottom: 2 px;
     IN Structure_view BEGIN
-		BorderTopWidth: 0;
-		BorderLeftWidth: 0;
-		BorderBottomWidth: 0;
-		BorderRightWidth: 0;
-		PaddingRight: 0;
-		PaddingLeft: 0;
-		PaddingTop: 0;
-		PaddingBottom: 0;
-     		FillPattern: nopattern;
-		HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
-		Width: Enclosing . Width - STRUCT_INDENT;
-		VertPos: Top = Previous . Bottom;
-		END;
+      BorderTopWidth: 0;
+		  BorderLeftWidth: 0;
+		  BorderBottomWidth: 0;
+		  BorderRightWidth: 0;
+	  	PaddingRight: 0;
+		  PaddingLeft: 0;
+		  PaddingTop: 0;
+		  PaddingBottom: 0;
+      FillPattern: nopattern;
+      HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
+		  Width: Enclosing . Width - STRUCT_INDENT;
+		  VertPos: Top = Previous . Bottom;
+		  END;
 	 END;
 
   useSimple:	
     BEGIN
-    if option
+    if  NOT immediately within repeat AND option
       CreateFirst(OptionButton);
 #ifdef INSTANCE
     if immediately within repeat
@@ -772,7 +774,7 @@ RULES
     Width: auto{Enclosing . Width};
     Height: auto{Enclosing . Height};
     {LineBreak: No;}
-    {Display: Inline;}
+    {Display: CSSInline;}
     VertPos: Top = Previous AnyElem. Bottom;
     HorizPos: Left = Enclosing . Left;
 		BorderTopWidth: 	 	1 px;
@@ -815,9 +817,9 @@ RULES
     Width: auto{Enclosing . Width};
     {LineBreak: No;}
     Display: Block;
-    VertPos: Top  	= Previous AnyElem . Bottom;
+    VertPos: Top = Previous AnyElem . Bottom;
     MarginTop	: 3 px;
-    HorizPos: Left  	= Enclosing . Left; 
+    HorizPos: Left = Enclosing . Left; 
 #ifndef INSTANCE
     BorderTopWidth:  2 pt;
     BorderLeftWidth:  2 pt;
@@ -851,34 +853,6 @@ RULES
     END;
 	 END;	 
 
-{  option:	
- BEGIN
-    CreateBefore(ElementName);
-	  CreateFirst(OptionButton);
-  	CreateWith(VerticalLine);
-    Width: auto;
-    VertPos: Top = Previous AnyElem . Bottom;
-    MarginTop: 0;
-    HorizPos: Left = Enclosing . Left; 
-    PaddingRight:  	2 px;
-    PaddingLeft:   2 px;
-    PaddingTop:   2 px;
-    PaddingBottom:  	2 px; 
-  	IN Structure_view BEGIN
- 	    BorderTopWidth: 0;
- 	    BorderLeftWidth: 0;
- 	    BorderBottomWidth: 0;
-      BorderRightWidth: 0;
-      PaddingRight: 0;
-      PaddingLeft: 0;
-      PaddingTop: 0;
-      PaddingBottom: 0;
-      HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
-	    Width: Enclosing . Width - STRUCT_INDENT;
-      VertPos: Top = Previous . Bottom;
-      END;
-	 END;	 
-}
 
 ATTRIBUTES
 
@@ -1042,6 +1016,19 @@ ATTRIBUTES
      CreateAfter (IndexBox);
   if not TEXT_UNIT and not SYMBOL_UNIT and not PICTURE_UNIT
      CreateLast (IndexBox);
+  END;
+
+  SetInLine:
+  BEGIN
+  Display: CSSInline;
+  MarginTop	: 0;
+  PaddingTop : 2 px;
+  PaddingBottom: 2 px;
+  HorizRef: Enclosed AnyElem . HRef;
+  IN Structure_view BEGIN
+    Display: Block;
+    HorizRef: * . Bottom - 2 px;
+    END;
   END;
 
   Unknown_attribute:

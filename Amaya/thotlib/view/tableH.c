@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA 1997-2008
+ *  (c) COPYRIGHT INRIA 1997-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -16,6 +16,7 @@
 #include "constmedia.h"
 #include "typemedia.h"
 #include "appdialogue.h"
+#include "application.h"
 #include "frame.h"
 
 #ifdef _GL
@@ -27,7 +28,7 @@
 #include "boxes_tv.h"
 #include "edit_tv.h"
 #include "frame_tv.h"
-
+#include "thotmsg_f.h"
 
 typedef struct _LockRelations *PtrLockRelations;
 typedef struct _LockRelations
@@ -800,8 +801,7 @@ static void CheckTableWidths (PtrAbstractBox table, int frame, ThotBool freely)
   if (sumPercent > 0)
     {
       minOfPercent = sumPercent * width / 100;
-      if (min + sum + minOfPercent > width ||
-          minOfPercent < width - sum - max)
+      if (min + sum + minOfPercent > width /*|| minOfPercent < width - sum - max*/)
         {
           delta = width - sum - min;
           /* table contents too narrow */
@@ -1334,7 +1334,7 @@ void GetCellSpans (PtrElement cell, int *colspan, int *rowspan,
   - TaRTPercent = the contrained width in percent
   Return TRUE if any table width is modified
   ----------------------------------------------------------------------*/
-static ThotBool SetTableWidths (PtrAbstractBox table, int frame)
+ThotBool SetTableWidths (PtrAbstractBox table, int frame)
 {
   PtrAttribute        pAttr;
   PtrSSchema          pSS;
@@ -1724,7 +1724,9 @@ static ThotBool SetTableWidths (PtrAbstractBox table, int frame)
   reformat = (pBox->BxWidth < min ||
               (pBox->BxRuleWidth != width && pBox->BxWidth == pBox->BxRuleWidth) ||
               (pBox->BxMinWidth != min && pBox->BxWidth == pBox->BxMinWidth) ||
-              (pBox->BxMaxWidth != max && pBox->BxWidth  == pBox->BxMaxWidth));
+              (max != pBox->BxMaxWidth &&
+               (pBox->BxWidth  == pBox->BxMaxWidth ||
+                pBox->BxRuleWidth != width && max < pBox->BxWidth)));
   pBox->BxMinWidth = min;
   pBox->BxMaxWidth = max;
   pBox->BxRuleWidth = width;
@@ -1778,6 +1780,29 @@ static ThotBool SetTableWidths (PtrAbstractBox table, int frame)
 }
 
 /*----------------------------------------------------------------------
+  TtaUpdateTableWidths
+  Force the rebuild of a table after presentation changes
+  ----------------------------------------------------------------------*/
+void TtaUpdateTableWidths (Element table, Document doc)
+{
+  PtrAbstractBox pAb;
+
+  UserErrorCode = 0;
+  if (table == NULL)
+    TtaError (ERR_invalid_parameter);
+  else if (doc < 1 || doc > MAX_DOCUMENTS)
+    TtaError (ERR_invalid_document_parameter);
+  else if (LoadedDocument[doc - 1] == NULL)
+    TtaError (ERR_invalid_document_parameter);
+  else
+    {
+      pAb = ((PtrElement) table)->ElAbstractBox[0];
+      if (pAb)
+        SetTableWidths (pAb, LoadedDocument[doc - 1]->DocViewFrame[0]);
+    }
+}
+
+/*----------------------------------------------------------------------
   SetCellWidths checks if any cell width is modified.
   If TRUE updates table widths.
   Return TRUE if any table width is modified
@@ -1786,7 +1811,7 @@ static ThotBool SetCellWidths (PtrAbstractBox cell, PtrAbstractBox table,
                                int frame)
 {
   PtrBox              box;
-  int                 min, max;
+  int                 min, max, dmax;
   int                 width, percent;
   ThotBool            reformat;
 
@@ -1800,13 +1825,17 @@ static ThotBool SetCellWidths (PtrAbstractBox cell, PtrAbstractBox table,
   if (width)
     /* when there is a constrained width the maximum is forced */
     max = width;
+  if (max > box->BxMaxWidth)
+    dmax = max - box->BxMaxWidth;
+  else
+    dmax = box->BxMaxWidth - max;
   reformat = (box->BxWidth < min ||
               (box->BxRuleWidth != width && box->BxWidth == box->BxRuleWidth) ||
-              (box->BxWidth < min) ||
               (box->BxMinWidth != min && box->BxWidth == box->BxMinWidth) ||
-              (box->BxMaxWidth != max && (box->BxWidth == box->BxMaxWidth ||
-                                          (box->BxWidth != box->BxRuleWidth &&
-                                           box->BxWidth != box->BxMinWidth))));
+              (dmax &&
+               (box->BxWidth == box->BxMaxWidth ||
+                (box->BxWidth != box->BxRuleWidth && 
+                 (max < box->BxWidth || dmax > box->BxWidth)))));
   box->BxMinWidth = min;
   box->BxMaxWidth = max;
   box->BxRuleWidth = width;

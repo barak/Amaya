@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA 1996-2007
+ *  (c) COPYRIGHT INRIA 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -130,7 +130,7 @@ typedef struct _AttributeBlock
     {
       struct	  /* AeAttrType = AtNumAttr or AtEnumAttr */
       {
-        intptr_t		_AeAttrValue_;	   /* attribute value or value number*/
+        intptr_t        _AeAttrValue_;	   /* attribute value or value number*/
       } s0;
       struct	  /* AeAttrType = AtReferenceAttr */
       {
@@ -314,8 +314,7 @@ typedef struct _ThotPath {
   int                height;    /*height of path (needed for inversion)*/
 } ThotPath;
 
-
-/*Animation Path defining successive position*/
+/* Animation Path defining successive positions */
 typedef struct _AnimPath
 {
   PtrPathSeg      FirstPathSeg; /*linked list of segment defining the path*/
@@ -327,41 +326,7 @@ typedef struct _AnimPath
   int             maxpoints;
  } AnimPath;
 
-
 #endif /*_GL */
-
-
-/* Typedef of SVG gradient part*/
-typedef struct _RgbaDef 
-{
-  unsigned short  r, g, b, a;   	/* color def */
-  float           length;               /* length til next color */  
-  Element         el;                   /* identify stop reference */  
-  struct _RgbaDef *next;  
-} RgbaDef;
-
-/* Typedef of SVG gradient part*/
-typedef struct _GradDef 
-{
-  int            x1, x2, y1, y2;
-  RgbaDef        *next;  
-} GradDef;
-
-
-/* type of a SVG Transform */
-typedef enum
-{
-  PtElScale,
-  PtElTranslate,
-  PtElAnimTranslate,
-  PtElAnimRotate,
-  PtElViewBox,
-  PtElBoxTranslate,
-  PtElRotate,
-  PtElMatrix,
-  PtElSkewX,
-  PtElSkewY
-} TransformType;
 
 typedef enum
 {
@@ -384,6 +349,21 @@ typedef enum
   MsMeet,
   MsSlice
 } ViewBoxMeetOrSlice;
+
+/* type of a SVG Transform */
+typedef enum
+{
+  PtElScale,
+  PtElTranslate,
+  PtElAnimTranslate,
+  PtElAnimRotate,
+  PtElViewBox,
+  PtElBoxTranslate,
+  PtElRotate,
+  PtElMatrix,
+  PtElSkewX,
+  PtElSkewY
+} TransformType;
 
 typedef struct _Transform *PtrTransform;
 
@@ -445,6 +425,55 @@ typedef struct _Transform
 #define VbHeight u.s4.VbHeight
 #define VbAspectRatio u.s4.VbAspectRatio
 #define VbMeetOrSlice u.s4.VbMeetOrSlice
+
+/* a stop in an SVG gradient */
+typedef struct _GradientStop 
+{
+  unsigned short  r, g, b, a;      /* color and alpha channel */
+  float           offset;          /* offset where this color starts */  
+  PtrElement      el;              /* reference to the stop element */  
+  struct _GradientStop *next;      /* next stop for the same gradient */
+} GradientStop;
+
+typedef enum
+  {
+    Linear,
+    Radial
+  } GradientType;
+
+/* an SVG gradient */
+typedef struct _Gradient
+{
+  ThotBool             userSpace;     /* units for coordinates are in the user
+					 space on use */
+  PtrTransform         gradTransform; /* list of transform operations */
+  int                  spreadMethod;  /* 1: pad, 2: reflect, 3: repeat */
+  PtrElement           el;
+  struct _GradientStop *firstStop;
+  GradientType         gradType;       /* Linear or Radial */
+  union
+  {
+    struct   /* gradType = Linear */
+    {
+      float  _gradX1_, _gradX2_, _gradY1_, _gradY2_;
+      /* coordinates for the direction of the gradient */
+    } s0;
+    struct   /* gradType = Radial */
+    {
+      float  _gradCx_, _gradCy_, _gradFx_, _gradFy_, _gradR_;       
+    } s1;
+  } u;
+} Gradient;
+
+#define gradX1 u.s0._gradX1_
+#define gradX2 u.s0._gradX2_
+#define gradY1 u.s0._gradY1_
+#define gradY2 u.s0._gradY2_
+#define gradCx u.s1._gradCx_
+#define gradCy u.s1._gradCy_
+#define gradFx u.s1._gradFx_
+#define gradFy u.s1._gradFy_
+#define gradR  u.s1._gradR_
 
 /* Animation structures */
 typedef enum
@@ -575,8 +604,10 @@ typedef struct _ElementDescr
  
   PtrTransform          ElTransform;    /* the element is transformed */
   void                 *ElAnimation;
-  void                 *ElGradient;
-  
+  Gradient             *ElGradient;
+  PtrElement            ElGradientCopy; /* used when copying trees */
+  ThotBool              ElGradientDef;  /* ElGradient is a gradient definition
+				  otherwise it is a reference to a definition */
   union
   {
     struct		      /* ElTerminal = False */

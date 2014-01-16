@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -197,11 +197,35 @@ static PRuleType    ReadrdTypeRegle (BinFile file)
     case C_PR_STROKE_OPACITY:
       return PtStrokeOpacity;
       break;
+    case C_PR_STOPOPACITY:
+      return PtStopOpacity;
+      break;
+    case C_PR_MARKER:
+      return PtMarker;
+      break;
+    case C_PR_MARKERSTART:
+      return PtMarkerStart;
+      break;
+    case C_PR_MARKERMID:
+      return PtMarkerMid;
+      break;
+    case C_PR_MARKEREND:
+      return PtMarkerEnd;
+      break;
+    case C_PR_FILL_RULE:
+      return PtFillRule;
+      break;
     case C_PR_BACKGROUND:
       return PtBackground;
       break;
     case C_PR_FOREGROUND:
       return PtForeground;
+      break;
+    case C_PR_COLOR:
+      return PtColor;
+      break;
+    case C_PR_STOPCOLOR:
+      return PtStopColor;
       break;
     case C_PR_HYPHENATE:
       return PtHyphenate;
@@ -265,6 +289,9 @@ static PresMode     ReadPresMode (BinFile file)
       return PresImmediate;
       break;
     case C_INHERIT:
+      return PresInherit;
+      break;
+    case C_CURRENT_COLOR:
       return PresInherit;
       break;
     case C_PRES_FUNCTION:
@@ -1078,6 +1105,7 @@ static void ReadPRules (BinFile file, PtrPRule *pPRule, PtrPRule *pNextPRule,
   DimensionRule      *pDim;
   Name                name;
   int                 i;
+  unsigned char       c;
 
   if (*pPRule != NULL && !error)
     /* pointeur sur la premiere regle qui va etre lue */
@@ -1166,6 +1194,7 @@ static void ReadPRules (BinFile file, PtrPRule *pPRule, PtrPRule *pNextPRule,
             switch (pPR->PrPresMode)
               {
               case PresInherit:
+              case PresCurrentColor:
                 pPR->PrInheritMode = ReadInheritMode (file);
                 TtaReadBool (file, &pPR->PrInhPercent);
                 TtaReadBool (file, &pPR->PrInhAttr);
@@ -1208,14 +1237,27 @@ static void ReadPRules (BinFile file, PtrPRule *pPRule, PtrPRule *pNextPRule,
                   case PtOpacity:
                   case PtFillOpacity:
                   case PtStrokeOpacity:
+                  case PtStopOpacity:
+                  case PtMarker:
+                  case PtMarkerStart:
+                  case PtMarkerMid:
+                  case PtMarkerEnd:
                   case PtBackground:
                   case PtForeground:
+                  case PtColor:
+                  case PtStopColor:
                   case PtBorderTopColor:
                   case PtBorderRightColor:
                   case PtBorderBottomColor:
                   case PtBorderLeftColor:
                   case PtListStyleImage:
-                    TtaReadBool (file, &pPR->PrAttrValue);
+                    TtaReadByte (file, &c);
+		    if (c == 'C')
+		      pPR->PrValueType = PrConstStringValue;
+		    if (c == 'A')
+		      pPR->PrValueType = PrAttrValue;
+		    else
+		      pPR->PrValueType = PrNumValue;
                     TtaReadSignedShort (file, &pPR->PrIntValue);
                     break;
                   case PtFont:
@@ -1236,6 +1278,7 @@ static void ReadPRules (BinFile file, PtrPRule *pPRule, PtrPRule *pNextPRule,
                   case PtBorderRightStyle:
                   case PtBorderBottomStyle:
                   case PtBorderLeftStyle:
+                  case PtFillRule:
                     if (!TtaReadByte (file, (unsigned char *)&pPR->PrChrValue))
                       error = True;
                     break;

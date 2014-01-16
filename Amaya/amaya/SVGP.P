@@ -76,17 +76,7 @@ DEFAULT
         HorizRef: Enclosed . HRef;
         END;
    IN Links_view
-        BEGIN
         Visibility: 0;
-        VertPos: Top = Previous . Bottom;
-        HorizPos: Left = Enclosing . Left + 1;
-        Width: Enclosed . Width;
-        Height: Enclosed . Height;
-        HorizRef: Enclosed . HRef;
-        Opacity: 100%;
-        FillOpacity: 100%;
-        StrokeOpacity: 100%;
-        END;
    END;
 
 BOXES
@@ -382,7 +372,7 @@ RULES
         IN Links_view BEGIN
                 if not within SVG BEGIN
                     Visibility: 10;
-                    VertPos: Top = Enclosing . Top;
+                    VertPos: Top = Previous . Bottom;
                     HorizPos: Left = Enclosing . Left;
                     Width: Enclosed . Width;
                     Height: Enclosed . Height;
@@ -416,7 +406,9 @@ RULES
         CreateWith (VerticalLine);
         Width: Enclosing . Width;
         Height: Enclosing . Height;
-        Visibility: 0;
+        Visibility: 1;  {  do not display the definition of a gradient, but
+	                   build its abstract box, to compute the stop-color
+			   and stop-opacity properties }
         IN Structure_view BEGIN
                 Visibility: Enclosing =;
                 Size: DOC_FONTSIZE;
@@ -536,6 +528,9 @@ RULES
         CreateWith (VerticalLine);
         Width: Enclosing . Width;
         Height: Enclosing . Height;
+        Foreground: Black;
+        Background: White;
+        FillPattern: nopattern;
         IN Structure_view BEGIN
                 if within use_
                     Visibility: 0;
@@ -553,7 +548,7 @@ RULES
                 Visibility: 0;
                 Width: Enclosed . Width;
                 Height: Enclosed . Height;
-                END;                
+                END;
         END;
 
    style__:
@@ -745,8 +740,8 @@ RULES
         CreateBefore (ElementName);
         CreateWith (VerticalLine);
         Width: Enclosed . Width;
-           HorizPos: Left = Enclosing . Left Userspecified;
-           VertPos:  Top = Enclosing . Top Userspecified;
+        HorizPos: Left = Enclosing . Left Userspecified;
+        VertPos:  HRef = Enclosing . Top Userspecified;
         HorizRef: Enclosed . HRef;
         IN Structure_view BEGIN
                 if within use_
@@ -885,18 +880,20 @@ RULES
         BEGIN
         CreateBefore (ElementName);
         CreateWith (VerticalLine);
-	if not immediately within path and not immediately within line_ and
+        if not immediately within path and not immediately within line_ and
            not immediately within polygon and not immediately within polyline
            Visibility: 0;
+        Foreground: Black;
+        FillPattern: backgroundcolor;
         IN Structure_view BEGIN
                 Visibility: Enclosing =;
-		if immediately within path
+                if immediately within path
                   Visibility: 0;
-		if immediately within line_
+                if immediately within line_
                   Visibility: 0;
-		if immediately within polyline
+                if immediately within polyline
                   Visibility: 0;
-		if immediately within polygon
+                if immediately within polygon
                   Visibility: 0;
                 Size: DOC_FONTSIZE;
                 Width: Enclosing . Width - STRUCT_INDENT;
@@ -923,7 +920,9 @@ RULES
         BEGIN
         CreateBefore (ElementName);
         CreateWith (VerticalLine);
-        Visibility: 0;
+        Visibility: 1;  {  do not display the definition of a gradient, but
+	                   build its abstract box, to compute the stop-color
+			   and stop-opacity properties }
         IN Structure_view BEGIN
                 Visibility: Enclosing =;
                 Size: DOC_FONTSIZE;
@@ -937,7 +936,9 @@ RULES
         BEGIN
         CreateBefore (ElementName);
         CreateWith (VerticalLine);
-        Visibility: 0;
+        Visibility: 1;  { do not display the definition of a gradient, but
+	                   build its abstract box, to compute the stop-color
+			   and stop-opacity properties }
         IN Structure_view BEGIN
                 Visibility: Enclosing =;
                 Size: DOC_FONTSIZE;
@@ -951,7 +952,6 @@ RULES
         BEGIN
         CreateBefore (ElementName);
         CreateWith (VerticalLine);
-        Visibility: 0;
         IN Structure_view BEGIN
                 Visibility: Enclosing =;
                 Size: DOC_FONTSIZE;
@@ -1385,7 +1385,9 @@ RULES
         IN Alternate_view
                 Visibility: 0;
         IN Links_view BEGIN
-                Visibility: 0;
+                Visibility: 7;
+                VertPos : Top = Previous . Bottom;
+                HorizPos: Left = Enclosing . Left;
                 Width: Enclosed . Width;
                 Height: Enclosed . Height;
                 END;                

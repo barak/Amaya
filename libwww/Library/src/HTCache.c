@@ -313,8 +313,8 @@ PUBLIC BOOL HTCacheIndex_write (const char * cache_root)
 		    HTCache * pres;
 		    while ((pres = (HTCache *) HTList_nextObject(cur))) {
 			if (fprintf(fp, "%s %s %s %ld %ld %ld %c %d %d %ld %ld %ld %c\r\n",
-				    pres->url,
-				    pres->cachename,
+				    &(pres->url[0]),
+				    &(pres->cachename[0]),
 				    pres->etag ? pres->etag : HT_CACHE_EMPTY_ETAG,
 				    (long) (pres->lm),
 				    (long) (pres->expires),
@@ -1407,7 +1407,7 @@ PRIVATE int HTCacheCheckFilter (HTRequest * request, HTResponse * response,
 		    HTCache_writeMeta (cache, request, response);
 		    /* @@ JK: and we remove the file name as it's obsolete 
 		       now */
-		    REMOVE(cache->cachename);
+		    REMOVE(&(cache->cachename[0]));
 		} else
 		    HTCache_remove(cache);
 	    } 
@@ -1550,7 +1550,7 @@ PRIVATE char * HTCache_metaLocation (HTCache * cache)
 	if ((local = (char *) HT_MALLOC(strlen(cache->cachename) +
 					strlen(HT_CACHE_META) + 5)) == NULL)
 	    HT_OUTOFMEM("HTCache_metaLocation");
-	sprintf(local, "%s%s", cache->cachename, HT_CACHE_META);
+	sprintf(local, "%s%s", &(cache->cachename[0]), HT_CACHE_META);
     }
     return local;
 }
@@ -1784,7 +1784,7 @@ PUBLIC BOOL HTCache_resetMeta (HTCache * cache, HTRequest * request,
   HTCache_writeMeta (cache, request, response);
   /* @@ JK: and we remove the file name as it's obsolete 
      now */
-  REMOVE(cache->cachename);
+  REMOVE(&(cache->cachename[0]));
 
   return YES;
 }
@@ -1799,7 +1799,7 @@ PRIVATE BOOL flush_object (HTCache * cache)
 	char * head = HTCache_metaLocation(cache);
 	REMOVE(head);
 	HT_FREE(head);
-	REMOVE(cache->cachename);
+	REMOVE(&(cache->cachename[0]));
 	return YES;
     }
     return NO;
@@ -2163,7 +2163,7 @@ PRIVATE HTStream * HTCacheStream (HTRequest * request, BOOL append)
     ** Test that we can actually write to the cache file. If the entry already
     ** existed then it will be overridden with the new data.
     */
-    if ((fp = fopen(cache->cachename, append ? "ab" : "wb")) == NULL) {
+    if ((fp = fopen(&(cache->cachename[0]), append ? "ab" : "wb")) == NULL) {
 	HTTRACE(CACHE_TRACE, "Cache....... Can't open `%s\' for writing\n" _ cache->cachename);
 	HTCache_delete(cache);
 	return NULL;

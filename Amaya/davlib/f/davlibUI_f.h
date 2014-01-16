@@ -6,7 +6,8 @@
 #ifndef __CEXTRACT__
 #ifdef __STDC__
 
-extern void DAVSetLockIndicator ( Document docid );
+extern void DAVSetLockIndicator ( Document doc,
+                                  int status );
 extern void DAVDisplayMessage ( const char *msg,
                                 const char *arg );
 extern void DAVDisplayMultiLineMessage ( Document docid,
@@ -17,31 +18,26 @@ extern BOOL DAVConfirmDialog ( Document docid,
                                char *msg1,
                                char *msg2,
                                char *msg3 );
-extern void DAVPropertiesVerticalDialog ( Document docid,
-                                          const char *title,
-                                          const char *rheader,
-                                          const char *lheader,
-                                          AwList *list );
-extern void DAVHorizontalDialog ( Document docid,
-                                  char *title,
-                                  char *rheader,
-                                  char *lheader,
-                                  AwList *list );
 extern void DAVShowInfo ( AHTReqContext *context );
 extern void DAVShowPropfindInfo ( AHTReqContext *context );
-extern AwList * GetPropfindInfoFromNode ( AwNode *propnode );
 extern void DAVShowMultiStatusInfo ( AHTReqContext *context );
 extern void SetDAVConf ( void );
 extern void GetDAVConf ( void );
 extern void DAVPreferencesDlg_callback ( int ref,
                                          int typedata,
                                          char *data );
+extern void* AllocDAVPathsListElement ( const char* path,
+                                        void* prevElement );
+extern void AddPathInDAVList ( const char *path );
+extern void RemovePathInDAVList ( const char *path );
+extern ThotBool IsPathInDAVList ( char *path );
+extern void FreeDAVPathsList ( void );
 extern void InitDAVPreferences ( void );
-extern void DAVShowPreferencesDlg ( Document document );
 
 #else /* __STDC__ */
 
-extern void DAVSetLockIndicator ( Document docid );
+extern void DAVSetLockIndicator ( Document doc,
+                                    int status );
 extern void DAVDisplayMessage ( const char *msg,
                                   const char *arg );
 extern void DAVDisplayMultiLineMessage ( Document docid,
@@ -52,27 +48,21 @@ extern BOOL DAVConfirmDialog ( Document docid,
                                  char *msg1,
                                  char *msg2,
                                  char *msg3 );
-extern void DAVPropertiesVerticalDialog ( Document docid,
-                                            const char *title,
-                                            const char *rheader,
-                                            const char *lheader,
-                                            AwList *list );
-extern void DAVHorizontalDialog ( Document docid,
-                                    char *title,
-                                    char *rheader,
-                                    char *lheader,
-                                    AwList *list );
 extern void DAVShowInfo ( AHTReqContext *context );
 extern void DAVShowPropfindInfo ( AHTReqContext *context );
-extern AwList * GetPropfindInfoFromNode ( AwNode *propnode );
 extern void DAVShowMultiStatusInfo ( AHTReqContext *context );
 extern void SetDAVConf ( void );
 extern void GetDAVConf ( void );
 extern void DAVPreferencesDlg_callback ( int ref,
                                            int typedata,
                                            char *data );
+extern void* AllocDAVPathsListElement ( const char* path,
+                                          void* prevElement );
+extern void AddPathInDAVList ( const char *path );
+extern void RemovePathInDAVList ( const char *path );
+extern ThotBool IsPathInDAVList ( char *path );
+extern void FreeDAVPathsList ( void );
 extern void InitDAVPreferences ( void );
-extern void DAVShowPreferencesDlg ( Document document );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

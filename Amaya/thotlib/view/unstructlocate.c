@@ -218,7 +218,7 @@ PtrAbstractBox GetParentWithException (int exceptNum, PtrAbstractBox pAb)
 void GetClickedBox (PtrBox *result, PtrFlow *pFlow, PtrAbstractBox pRootAb,
                     int frame, int x, int y, int ratio, int *pointselect)
 {
-  PtrAbstractBox      pAb, active, sel_active;
+  PtrAbstractBox      pAb, active, sel_active, marker, group;
   PtrBox              pSelBox, pBox;
   PtrBox              graphicBox;
   PtrElement          matchCell = NULL, prevMatch = NULL;
@@ -246,21 +246,16 @@ void GetClickedBox (PtrBox *result, PtrFlow *pFlow, PtrAbstractBox pRootAb,
       while (pBox && pBox->BxAbstractBox && pBox->BxAbstractBox->AbElement)
         {
           pAb = pBox->BxAbstractBox;
+          marker = group = NULL;
           if (matchCell)
             // keep in memory the previous found cell
             prevMatch = matchCell;
-#ifdef _GL
           if (pBox->BxBoundinBoxComputed ||
               pBox->BxType == BoBlock || pBox->BxNChars == 0)
             {
               bx = pBox->BxClipX;
               by = pBox->BxClipY;
               bw = pBox->BxClipW;
-#else  /* _GL */
-              bx = pBox->BxXOrg;
-              by = pBox->BxYOrg;
-              bw = pBox->BxWidth;
-#endif  /* _GL */
               *pFlow = GetRelativeFlow (pBox, frame);
               if (*pFlow)
                 {
@@ -285,11 +280,11 @@ void GetClickedBox (PtrBox *result, PtrFlow *pFlow, PtrAbstractBox pRootAb,
                       (pAb->AbEnclosing && pAb->AbEnclosing->AbBox &&
                        pAb->AbEnclosing->AbBox->BxType == BoColumn))
                     {
-#ifdef _GL
-		      if(pAb->AbLeafType == LtPath ||
-		      (bx <= x && bx + pBox->BxClipW >= x &&
-		       by <= y && by + pBox->BxClipH >= y))
-#endif  /* _GL */
+                      marker = GetParentMarker (pBox);
+                      group = GetParentGroup (pBox);
+                      if (pAb->AbLeafType == LtPath ||
+                         (bx <= x && bx + pBox->BxClipW >= x &&
+                          by <= y && by + pBox->BxClipH >= y))
                         {
                           if (pAb->AbLeafType == LtPicture &&
                               pAb->AbElement && pAb->AbElement->ElStructSchema &&
@@ -299,11 +294,13 @@ void GetClickedBox (PtrBox *result, PtrFlow *pFlow, PtrAbstractBox pRootAb,
                             graphicBox = GetEnclosingClickedBox (pAb, x, x, y, frame,
                                                                  &pointIndex, &selshape, pFlow);
                         }
-                      if (graphicBox == NULL)
+                      if (graphicBox)
+                        d = 0;
+                      else if (pAb->AbLeafType == LtGraphics)
+                        d = GetBoxDistance (pBox, *pFlow, x, y, ratio, frame, &matchCell) + 2;
+                      else
                         /* eliminate this box */
                         d = dist + 1;
-                      else
-                        d = 0;
                     }
                   else if (pAb->AbLeafType == LtSymbol && pAb->AbShape == 'r')
                     /* glitch for the root symbol */
@@ -328,20 +325,19 @@ void GetClickedBox (PtrBox *result, PtrFlow *pFlow, PtrAbstractBox pRootAb,
                     }
                   else
                     d = dist + 1;
-		  
                   /* select the nearest box */
                   active = GetParentWithException (ExcClickableSurface, pAb);
                   if (active)
                     {
                     if (active->AbBox == NULL)
                       active = NULL;
-		    else if (active->AbBox->BxType == BoGhost && d != 0)
+                    else if (active->AbBox->BxType == BoGhost && d != 0)
                       active = NULL;	    
                     else if (active->AbBox->BxType != BoGhost &&
                              GetBoxDistance (active->AbBox, *pFlow, x, y, ratio, frame, &matchCell) != 0)
                       active = NULL;
                     }
-                  if (active && sel_active == NULL)
+                  if (active && sel_active == NULL && dist != 0)
                     dist = d + 1;
 
                   if (prevMatch != matchCell && matchCell)
@@ -353,15 +349,16 @@ void GetClickedBox (PtrBox *result, PtrFlow *pFlow, PtrAbstractBox pRootAb,
                         pSelBox->BxAbstractBox->AbDepth >= pAb->AbDepth)))
                     {
                       dist = d;
-                      pSelBox = pBox;
+                      if (marker && marker->AbEnclosing && marker->AbEnclosing->AbBox)
+                        pSelBox = marker->AbEnclosing->AbBox;
+                      else
+                        pSelBox = pBox;
                       sel_active = active;
                       /* the selected reference point */
                       *pointselect = pointIndex;
                     }
                 }
-#ifdef _GL
             }
-#endif /* _GL */
           pBox = pBox->BxNext;
         }
       /* return the root box if there is no box selected */

@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2008
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -747,8 +747,15 @@ static void ReadBlocks (BinFile file, PtrTRuleBlock *pBlock, PtrTRule *pNextTRul
                           pCond->TcAttr == PtOpacity ||
                           pCond->TcAttr == PtFillOpacity ||
                           pCond->TcAttr == PtStrokeOpacity ||
+                          pCond->TcAttr == PtStopOpacity ||
+                          pCond->TcAttr == PtMarker ||
+                          pCond->TcAttr == PtMarkerStart ||
+                          pCond->TcAttr == PtMarkerMid ||
+                          pCond->TcAttr == PtMarkerEnd ||
                           pCond->TcAttr == PtBackground ||
-                          pCond->TcAttr == PtForeground)
+                          pCond->TcAttr == PtForeground ||
+			  pCond->TcAttr == PtColor ||
+			  pCond->TcAttr == PtStopColor)
                         {
                           TtaReadSignedShort (file, &pCond->TcLowerBound);
                           TtaReadSignedShort (file, &pCond->TcUpperBound);
@@ -898,7 +905,7 @@ static void ReadPresTRules (BinFile file, int pres, PtrTRuleBlock *pNextBlock,
           if (pres == PtSize || pres == PtIndent ||
               pres == PtLineSpacing || pres == PtLineWeight ||
               pres == PtFillPattern || pres == PtBackground ||
-              pres == PtForeground)
+              pres == PtForeground || pres == PtColor || pres == PtStopColor)
             /* presentation a valeur numerique */
             {
               TtaReadShort (file, &pPruleTr->RtNCase);
@@ -937,7 +944,8 @@ static void FreeTRulesPres (int pres, PRuleTransl *pPruleTr)
       if (pres == PtSize + 1 || pres == PtIndent + 1 ||
           pres == PtLineSpacing + 1 || pres == PtLineWeight + 1 ||
           pres == PtFillPattern + 1 || pres == PtBackground + 1 ||
-          pres == PtForeground + 1)
+          pres == PtForeground + 1 || pres == PtColor + 1 ||
+	  pres == PtStopColor + 1)
         /* presentation a valeur numerique */
         for (i = 0; i < pPruleTr->RtNCase; i++)
           FreeBlocks (pPruleTr->RtCase[i].TaTRuleBlock);
@@ -1155,7 +1163,8 @@ PtrTSchema ReadTranslationSchema (const char* fileName, PtrSSchema pSS)
                 {
                   if (i == PtSize || i == PtIndent || i == PtLineSpacing ||
                       i == PtLineWeight || i == PtFillPattern ||
-                      i == PtBackground || i == PtForeground)
+                      i == PtBackground || i == PtForeground ||
+		      i == PtColor || i == PtStopColor)
                     /* presentation a valeur numerique */
                     {
                       TtaReadShort (file, &pPRuleTr->RtNCase);

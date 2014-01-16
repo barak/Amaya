@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2008
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -41,11 +41,11 @@
 
 #include "logdebug.h"
 
-
 #include "AmayaFrame.h"
 #include "AmayaCanvas.h"
 #include "AmayaEditShapeEvtHandler.h"
 #include "svgedit.h"
+ThotBool Angle_ratio = FALSE;
 
 /*----------------------------------------------------------------------
  -----------------------------------------------------------------------*/
@@ -204,22 +204,24 @@ AmayaEditShapeEvtHandler::AmayaEditShapeEvtHandler (AmayaFrame * p_frame,
 
   box = ab->AbBox;
   shape = ab->AbShape;
-  if (!(box->BxXOrg == 0 && box->BxYOrg == 0))
+  // should rx and ry be updated with the same ratio
+  Angle_ratio = (point == 10 && box->BxRx <= 2 && box->BxRy <= 2);
+  if (point != 9 && point != 10 && (box->BxXOrg || box->BxYOrg))
     {
       /* Move the origin */
       x_org = box->BxXOrg;
       y_org = box->BxYOrg;
-      box->BxXOrg = 0;
-      box->BxYOrg = 0;
-      TtaAppendMatrixTransform (document, el, 1, 0, 0, 1, x_org, y_org);
-
-#ifndef NODISPLAY
-      RedisplayLeaf ((PtrElement) leaf, document, 0);
-#endif
-
-      DefBoxRegion (frameId, box, -1, -1, -1, -1);
-      RedrawFrameBottom (frameId, 0, NULL);
-      pFrame->GetCanvas()->Refresh();
+      if (shape != 1 && shape != 'C' && shape != 'a' &&  shape != 'c' &&
+          shape != 'g' && shape != 7 && shape != 8)
+         {
+          box->BxXOrg = 0;
+          box->BxYOrg = 0;
+          TtaAppendMatrixTransform (document, el, 1, 0, 0, 1, x_org, y_org);
+          RedisplayLeaf ((PtrElement) leaf, document, 0);
+          DefBoxRegion (frameId, box, -1, -1, -1, -1);
+          RedrawFrameBottom (frameId, 0, NULL);
+          pFrame->GetCanvas()->Refresh();
+        }
     }
 }
 
@@ -301,10 +303,9 @@ void AmayaEditShapeEvtHandler::OnMouseMove( wxMouseEvent& event )
 #define RATIO_EQUILATERAL sqrt((float)3)/2.
 
   ThotBool same_size;
-  int rx,ry,lx,ly, x, y;
-  int x1, y1, x2, y2;
-  int dx, dy;
-  float ratio = 0.;
+  int      rx, ry, lx, ly, x, y;
+  int      x1, y1, x2, y2, dx, dy;
+  float    ratio = 0.;
 
   if (IsFinish())
     return;
@@ -384,21 +385,19 @@ void AmayaEditShapeEvtHandler::OnMouseMove( wxMouseEvent& event )
         case 6: /* Rectangle triangle */
         case 7: /* square */
         case 8: /* rectangle */
-
-          if (shape == 1 || shape == 'C')
+          if (shape == 1 || shape == 'C') /* square and rectangle with rounded corner */
             {
-              /* square and rectangle with rounded corner */
               rx = box->BxRx;
               ry = box->BxRy;
-              if (ry == -1)ry = rx;
-              else if (rx == -1)rx = ry;
+              if (rx != -1 && ry == -1)
+                ry = rx;
+              else if (rx == -1 && ry != -1)
+                rx = ry;
             }
-          else if (shape == 2)
-            /* parallelogram */
+          else if (shape == 2) /* parallelogram */
             rx = box->BxRx;
-          else if (shape == 3)
+          else if (shape == 3) /* trapezium */
             {
-              /* trapezium */
               rx = box->BxRx;
               ry = box->BxRy;
             }
@@ -417,8 +416,8 @@ void AmayaEditShapeEvtHandler::OnMouseMove( wxMouseEvent& event )
           if (shape == 6 && point == 5)
             {
               /* The point is actually the middle of the hypot */
-              dx*=2;
-              dy*=2;
+              dx *= 2;
+              dy *= 2;
             }
 
           switch(point)
@@ -456,46 +455,63 @@ void AmayaEditShapeEvtHandler::OnMouseMove( wxMouseEvent& event )
               break;
 	      
             case 9:
-              if (shape == 1 || shape == 'C')
+              // change the arc size
+              if (shape == 1 || shape == 'C') /* Square Rectangle */
                 {
                   rx -= dx;
-                  if (same_size)ry=rx;
+                  if (rx > lx/2)
+                    rx = lx/2;
+                  if (same_size)
+                    {
+                      if (rx > ly/2)
+                        rx = ly/2;
+                      ry = rx;
+                    }
                 }
-              else if (shape == 2)
+              else if (shape == 2) /* Parallelogram */
                 rx += dx;
               break;
 	      
             case 10:
-              if (shape == 1 || shape == 'C')
+              // change the arc size
+              if (shape == 1 || shape == 'C') /* Square Rectangle */
                 {
                   ry += dy;
-                  if (same_size)rx=ry;
+                  if (ry > ly/2)
+                    ry = ly/2;
+                  if (same_size || Angle_ratio)
+                    {
+                      if (ry > lx/2)
+                        ry = lx/2;
+                      rx = ry;
+                    }
                 }
-              else if (shape == 2)
+              else if (shape == 2) /* Parallelogram */
                 rx -= dx;
               break;
             }
 	  
           if (lx < 0){lx = 0; x = x_org;}
           if (ly < 0){ly = 0; y = y_org;}
-	  
-          if (shape == 1 || shape == 'C')
+          if (shape == 1 || shape == 'C') /* Square Rectangle */
             {
-              if (rx < 0)rx = 0;
-              if (ry < 0)ry = 0;
-              if (rx > lx/2)rx = lx/2;
-              if (ry > ly/2)ry = ly/2;
+              if (rx > lx/2)
+                rx = lx/2;
+              if (ry > ly/2)
+                ry = ly/2;
 	      
-              if (box->BxRx != -1)box->BxRx = rx;
-              if (box->BxRy != -1)box->BxRy = ry;
+              if (box->BxRx != -1)
+                box->BxRx = rx;
+              if (box->BxRy != -1)
+                box->BxRy = ry;
             }
-          else if (shape == 2)
+          else if (shape == 2) /* Parallelogram */
             {
               if (rx < 0)rx = 0;
               if (rx > lx)rx = lx;
               box->BxRx = rx;
             }
-          else if (shape == 3)
+          else if (shape == 3) /* Trapezium */
             {
               if (x+abs(rx) > x+lx-abs(ry))
                 {
@@ -508,44 +524,36 @@ void AmayaEditShapeEvtHandler::OnMouseMove( wxMouseEvent& event )
                   box->BxRy = ry;
                 }
             }
-
           break;
 
         default:
           break;
         }
       
-      /*NewDimension (ab, lx, ly, frameId, TRUE);
-        NewPosition (ab, x, 0, y, 0, frameId, TRUE);*/
-
-      TtaAppendMatrixTransform (document, el, 1, 0, 0, 1, x - x_org, y - y_org);
+      if (shape != 1 && shape != 'C' && shape != 'a' && shape != 'c' &&
+          shape != 'g' && shape != 7 && shape != 8)
+        {
+          TtaAppendMatrixTransform (document, el, 1, 0, 0, 1, x - x_org, y - y_org);
+          box->BxXOrg = 0;
+          box->BxYOrg = 0;
+        }
+      else if (point != 9 && point != 10)
+        {
+          box->BxXOrg = x;
+          box->BxYOrg = y;
+        }
       x_org = x;
       y_org = y;
-
       box->BxW = lx;
       box->BxH = ly;
       box->BxWidth = lx;
       box->BxHeight = ly;
-      
-      /*ab->AbWidthChange = TRUE;
-        ab->AbHeightChange = TRUE;
-        ab->AbHorizPosChange = TRUE;
-        ab->AbVertPosChange = TRUE;*/
-
       e_box->BxW = lx;
       e_box->BxH = ly;
       e_box->BxWidth = lx;
       e_box->BxHeight = ly;
-
-      /*e_ab->AbWidthChange = TRUE;
-        e_ab->AbHeightChange = TRUE;
-        e_ab->AbHorizPosChange = TRUE;
-        e_ab->AbVertRefChange = TRUE;*/
-
-#ifndef NODISPLAY
       /* Redisplay the GRAPHICS leaf */
       RedisplayLeaf ((PtrElement) leaf, document, 0);
-#endif
 
       /* Update the previous mouse coordinates */
       lastX = mouse_x;

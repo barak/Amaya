@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2008
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -826,8 +826,8 @@ static void TransmitBgcolorToColhead (Element newCol, Element colhead,
 static void  NewColElement (Element colhead, ThotBool before, Document doc)
 {
   ElementType         elType;
-  Element             prevColhead, nextColhead, el, colstruct, col, newCol,
-    prevCol, nextCol;
+  Element             prevColhead, nextColhead, el, colstruct, col, newCol = NULL;
+  Element             prevCol, nextCol;
   AttributeType       attrTypeRef, attrTypeSpan;
   Attribute           attrRef, attrSpan;
   SSchema             tableSS;
@@ -1460,6 +1460,78 @@ Element NextTableRow (Element row)
   return next;
 }
 
+/*----------------------------------------------------------------------
+  TransmitWidthToColhead
+  Transmit the new width value to all colhead attached to the col element
+  ----------------------------------------------------------------------*/
+void TransmitWidthToColhead (Element col, Document doc, char *value, int oldwidth)
+{
+  Element             table, colhead, ref;
+  ElementType         elType;
+  AttributeType       attrTypeRef, attrTypeForced, attrTypeWidth;
+  Attribute           attr;
+
+  /* reformat the whole table */
+  elType = TtaGetElementType (col);
+  elType.ElTypeNum = HTML_EL_Table_;
+  table = TtaGetTypedAncestor (col, elType);
+  if (table)
+    {
+      elType.ElTypeNum = HTML_EL_Column_head;
+      colhead = TtaSearchTypedElement (elType, SearchInTree, table);
+      attrTypeRef.AttrSSchema = elType.ElSSchema;
+      attrTypeRef.AttrTypeNum = HTML_ATTR_Ref_ColColgroup;
+      attrTypeForced.AttrSSchema = elType.ElSSchema;
+      attrTypeForced.AttrTypeNum = HTML_ATTR_IntWidthForced;
+      attrTypeWidth.AttrSSchema = elType.ElSSchema;
+      while (colhead)
+        {
+          attr = TtaGetAttribute (colhead, attrTypeRef);
+          if (attr)
+            {
+              TtaGiveReferenceAttributeValue (attr, &ref);
+              if (ref == col)
+                {
+                  if (value == NULL)
+                    {
+                      // remove the forced value
+                      attr = TtaGetAttribute (colhead, attrTypeForced);
+                      if (attr)
+                        //TtaRegisterAttributeDelete (attr, colhead, doc);
+                        TtaRemoveAttribute (colhead, attr, doc);
+                      attrTypeWidth.AttrTypeNum = HTML_ATTR_IntWidthPxl;
+                      attr = TtaGetAttribute (colhead, attrTypeWidth);
+                      if (attr == NULL)
+                        {
+                          attrTypeWidth.AttrTypeNum = HTML_ATTR_IntWidthPercent;
+                          attr = TtaGetAttribute (colhead, attrTypeWidth);
+                        }
+                      if (attr)
+                        //TtaRegisterAttributeDelete (attr, colhead, doc);
+                        TtaRemoveAttribute (colhead, attr, doc);
+                    }
+                  else
+                    {
+                      // store the new internal width
+                      CreateAttrWidthPercentPxl (value, colhead, doc, oldwidth);
+                      // set the indicator
+                      attr = TtaGetAttribute (colhead, attrTypeForced);
+                      if (attr == NULL)
+                        {
+                          attr = TtaNewAttribute (attrTypeForced);
+                          TtaSetAttributeValue (attr, HTML_ATTR_IntWidthForced_VAL_IntWidthForced_,
+                                                colhead, doc);
+                          TtaAttachAttribute (colhead, attr, doc);
+                        }
+                    }
+                }
+            }
+          TtaNextSibling (&colhead);
+        }
+      TtaUpdateTableWidths (table, doc);
+    }
+}
+
 #define MAX_COLS 100
 /*----------------------------------------------------------------------
   CheckAllRows
@@ -1479,9 +1551,9 @@ void CheckAllRows (Element table, Document doc, ThotBool placeholder,
   Element             colgroup, col, colcolgroup, colhead, prevColhead;
   Element             cell, nextCell, group, prevGroup, new_, prev, el, next,
     parent;
-  ElementType         elType, elType1;
-  AttributeType       attrTypeHSpan, attrTypeVSpan, attrType, attrTypeSpan,
-    attrTypeRef, attrTypeWidth, attrTypeForced;
+  ElementType         elType, elType1, elType2;
+  AttributeType       attrTypeHSpan, attrTypeVSpan, attrType, attrTypeSpan;
+  AttributeType       attrTypeRef, attrTypeWidth, attrTypeForced;
   Attribute           attr;
   SSchema             tableSS;
   int                *colVSpan;
@@ -1506,6 +1578,7 @@ void CheckAllRows (Element table, Document doc, ThotBool placeholder,
   attrType.AttrSSchema = tableSS;
   attrTypeHSpan.AttrSSchema = tableSS;
   attrTypeVSpan.AttrSSchema = tableSS;
+  attrTypeRef.AttrSSchema = tableSS;
   inMath = TtaSameSSchemas (tableSS, TtaGetSSchema ("MathML", doc));
   if (inMath)
     {
@@ -1514,6 +1587,7 @@ void CheckAllRows (Element table, Document doc, ThotBool placeholder,
       attrTypeHSpan.AttrTypeNum = MathML_ATTR_columnspan;
       attrTypeVSpan.AttrTypeNum = MathML_ATTR_rowspan_;
       attrType.AttrTypeNum = MathML_ATTR_MColExt;
+      attrTypeRef.AttrTypeNum = 0;
     }
   else
     {
@@ -1522,6 +1596,7 @@ void CheckAllRows (Element table, Document doc, ThotBool placeholder,
       attrTypeHSpan.AttrTypeNum = HTML_ATTR_colspan_;
       attrTypeVSpan.AttrTypeNum = HTML_ATTR_rowspan_;
       attrType.AttrTypeNum = HTML_ATTR_ColExt;
+      attrTypeRef.AttrTypeNum = HTML_ATTR_Ref_ColColgroup;
     }
 
   /* remove text elements at the first level */
@@ -1556,33 +1631,21 @@ void CheckAllRows (Element table, Document doc, ThotBool placeholder,
   else
     {
       elType1.ElSSchema = tableSS;
-      elType1.ElTypeNum = HTML_EL_Table_;
+      elType1.ElTypeNum = HTML_EL_COL;
+      elType2.ElSSchema = tableSS;
+      elType2.ElTypeNum = HTML_EL_Table_;
       elType.ElTypeNum = HTML_EL_COLGROUP;
-      colgroup = TtaSearchElementAmong5Types (elType, elType1, elType1,
+      colgroup = TtaSearchElementAmong5Types (elType, elType1, elType2,
                                               elType1, elType1, SearchInTree, table);
       if (colgroup && TtaGetElementType (colgroup).ElTypeNum == HTML_EL_Table_)
         /* we have found a nested table. No COLGROUP in this table */
         colgroup = NULL;
-      if (colgroup)
-        colcolgroup = colgroup;
-      else
-        {
-          elType.ElTypeNum = HTML_EL_COL;
-          colcolgroup = TtaSearchElementAmong5Types (elType, elType1, elType1,
-                                                     elType1, elType1, SearchInTree, table);
-          if (colcolgroup &&
-              TtaGetElementType (colcolgroup).ElTypeNum == HTML_EL_Table_)
-            /* we have found a nested table. No COL in this table */
-            colcolgroup = NULL;
-        }
-
+      colcolgroup = colgroup;
       if (colcolgroup)
         {
           cRef = 0;
           attrTypeSpan.AttrSSchema = tableSS;
           attrTypeSpan.AttrTypeNum = HTML_ATTR_span_;
-          attrTypeRef.AttrSSchema = tableSS;
-          attrTypeRef.AttrTypeNum = HTML_ATTR_Ref_ColColgroup;
           attrTypeWidth.AttrSSchema = tableSS;
           attrTypeWidth.AttrTypeNum = HTML_ATTR_Width__;
           attrTypeForced.AttrSSchema = tableSS;
@@ -3091,6 +3154,10 @@ static void ClearColumn (Element colhead, Document doc)
       elType.ElTypeNum = MathML_EL_TableRow;
       attrTypeC.AttrTypeNum = MathML_ATTR_columnspan;
       attrTypeR.AttrTypeNum = MathML_ATTR_rowspan_;
+      attrTypeRef.AttrSSchema = NULL;
+      attrTypeRef.AttrTypeNum = 0;
+      attrTypeSpan.AttrSSchema = NULL;
+      attrTypeSpan.AttrTypeNum = 0;
     }
   else
     {
@@ -3516,8 +3583,8 @@ ThotBool DeleteSpan (NotifyAttribute * event)
   ApplyCSSRuleOneCol
   apply a CSS rule attached to the COL or COLGROUP leaf.
   ----------------------------------------------------------------------*/
-static void ApplyCSSRuleOneCol (Element col, PresentationContext ctxt,
-                                char *cssRule, CSSInfoPtr css)
+void ApplyCSSRuleOneCol (Element col, PresentationContext ctxt,
+                         char *cssRule, CSSInfoPtr css)
 {
   Element             colhead;
   ElementType         elType;
@@ -3596,6 +3663,7 @@ void ColApplyCSSRule (Element el, PresentationContext ctxt, char *cssRule,
             }
         }
     }
+
   if (!el)
     return;
 

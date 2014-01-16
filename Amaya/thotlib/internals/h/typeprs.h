@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -225,8 +225,9 @@ typedef enum
   PtBorderTopStyle, PtBorderRightStyle, PtBorderBottomStyle, PtBorderLeftStyle,
   PtSize, PtStyle, PtWeight, PtVariant, PtFont, PtUnderline, PtThickness,
   PtIndent, PtLineSpacing, PtDepth, PtAdjust, PtDirection, PtUnicodeBidi,
-  PtLineStyle, PtLineWeight, PtFillPattern, PtBackground, PtForeground, 
-  PtOpacity, PtFillOpacity, PtStrokeOpacity,
+  PtLineStyle, PtLineWeight, PtFillPattern, PtBackground, PtForeground, PtColor,
+  PtStopColor, PtStopOpacity, PtOpacity, PtFillOpacity, PtStrokeOpacity,
+  PtFillRule, PtMarker, PtMarkerEnd, PtMarkerMid, PtMarkerStart,
   PtHyphenate, PtPageBreak, PtLineBreak, PtGather,
   PtXRadius, PtYRadius,
   PtPosition, PtTop, PtRight, PtBottom, PtLeft, PtFloat, PtClear,
@@ -242,7 +243,7 @@ typedef enum
 /* computing mode of the properties */
 typedef enum
   {
-    PresImmediate, PresInherit, PresFunction
+    PresImmediate, PresInherit, PresCurrentColor, PresFunction
   } PresMode;
 
 /* inherit mode */
@@ -429,6 +430,11 @@ typedef enum
   BtElement, BtBefore, BtAfter
 } GenBoxType;
 
+typedef enum
+{
+  PrNumValue, PrAttrValue, PrConstStringValue
+} PrValType;
+
 /* The presentation rules relative to an object are linked by means of
    the pointer PrNextPRule. This way the presentation rules of a type
    defined in the structure schema are linked, as well as the presentation
@@ -463,7 +469,8 @@ typedef struct _PresRule
   PresMode	PrPresMode;	/* computing mode of the value */
   union
   {
-    struct			/* PrPresMode = PresInherit */
+    struct			/* PrPresMode = PresInherit
+				   PrPresMode = PresCurrentColor */
     {
       InheritMode  _PrInheritMode_;
       ThotBool	   _PrInhPercent_;/* PrInhDelta is a precentage if true, an
@@ -502,33 +509,36 @@ typedef struct _PresRule
       union
       {
 	struct	/* PRuleType = PtVisibility, PtListStyleImage, PtDepth,
-		   PtFillPattern, PtBackground, PtForeground,
+		   PtFillPattern, PtBackground, PtForeground, PtColor,
+                   PtStopColor,
 		   PtBorderTopColor, PtBorderRightColor,
 		   PtBorderBottomColor, PtBorderLeftColor,
-		   PtOpacity, PtFillOpacity, PtStrokeOpacity */
+		   PtOpacity, PtFillOpacity, PtStrokeOpacity, PtStopOpacity,
+		   PtMarker, PtMarkerEnd, PtMarkerMid, PtMarkerStart */
 	{
-	  ThotBool _PrAttrValue_; 	/* PrIntValue is a numerical attribute
+	  PrValType _PrValueType_; 	/* PrIntValue is a numerical attribute
 					   or numerical value number */ 
 	  int  _PrIntValue_;   /* Border colors: -2 means Transparent and
-				        -1 means "same color as foreground" */
+				  -1 means "same color as foreground" */
 	}  s0;
 	struct	/* PRuleType = PtListStyleType, PtListStylePosition, PtDisplay,
                                PtFont, PtStyle, PtWeight, PtUnderline,
 	        	       PtThickness, PtDirection, PtUnicodeBidi,
                                PtLineStyle, PtFloat, PtClear, PtPosition,
 	                       PtBorderTopStyle, PtBorderRightStyle,
-                               PtBorderBottomStyle, PtBorderLeftStyle */
+                               PtBorderBottomStyle, PtBorderLeftStyle,
+                               PtFillRule */
 	{
 	  char     _PrChrValue_;
 	}  s1;
 	struct	/* PRuleType = PtBreak1, PtBreak2,
 	           PtIndent, PtSize, PtLineSpacing, PtLineWeight,
-		         PtMarginTop, PtMarginRight, PtMarginBottom, PtMarginLeft,
+		   PtMarginTop, PtMarginRight, PtMarginBottom, PtMarginLeft,
 	           PtPaddingTop, PtPaddingRight, PtPaddingBottom, PtPaddingLeft,
-             PtBorderTopWidth, PtBorderRightWidth, PtBorderBottomWidth,
-             PtBorderLeftWidth, PtXRadius, PtYRadius,
-             PtTop, PtRight, PtBottom, PtLeft,
-             PtBackgroundHorizPos, PtBackgroundVertPos */
+                   PtBorderTopWidth, PtBorderRightWidth, PtBorderBottomWidth,
+                   PtBorderLeftWidth, PtXRadius, PtYRadius,
+                   PtTop, PtRight, PtBottom, PtLeft,
+                   PtBackgroundHorizPos, PtBackgroundVertPos */
 	{
 	  TypeUnit _PrMinUnit_;	/* the distance is expressed in picas,
 				   1/10 of a character, etc. */
@@ -572,7 +582,7 @@ typedef struct _PresRule
 #define PrNPresBoxes u.s1._PrNPresBoxes_
 #define PrPresBox u.s1._PrPresBox_
 #define PrPresBoxName u.s1._PrPresBoxName_
-#define PrAttrValue u.s2.u.s0._PrAttrValue_
+#define PrValueType u.s2.u.s0._PrValueType_
 #define PrIntValue u.s2.u.s0._PrIntValue_
 #define PrChrValue u.s2.u.s1._PrChrValue_
 #define PrMinUnit u.s2.u.s2._PrMinUnit_

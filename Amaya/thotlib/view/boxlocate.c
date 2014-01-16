@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2008
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -296,7 +296,7 @@ ThotBool LocateSelectionInView (int frame, int x, int y, int button,
   PtrBox              pBox;
   PtrElement          pEl = NULL, firstEl;
   PtrDocument         selecteddoc;
-  PtrTextBuffer       pBuffer;
+  PtrTextBuffer       pBuffer = NULL;
   PtrAbstractBox      pAb;
   PtrElement          el = NULL;
   ViewFrame          *pFrame;
@@ -353,7 +353,7 @@ ThotBool LocateSelectionInView (int frame, int x, int y, int button,
             pBox = pBox->BxPrevious;
         }
 
-      if (pBox)
+      if (pBox && pBox->BxAbstractBox)
         {
 #ifndef _GL
           xOrg =  pBox->BxXOrg;
@@ -480,7 +480,7 @@ ThotBool LocateSelectionInView (int frame, int x, int y, int button,
                     {
                       /* Click on a handle */
                       *drag = FALSE;
-                      if(AskShapeEdit(doc, (Element)(el->ElParent), nChars))
+                      if (AskShapeEdit(doc, (Element)(el->ElParent), nChars))
                         {
                           /* The user has edited an SVG element */
                           TtaSetDocumentModified(doc);

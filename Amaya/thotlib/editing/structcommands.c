@@ -938,9 +938,13 @@ void CopyCommand ()
           FreeSavedElements ();
           /* document d'ou vient la partie sauvee */
           DocOfSavedElements = pSelDoc;
+          doc = IdentDocument (DocOfSavedElements);
+
+          // start a new copy
+          TtaExecuteMenuAction ("StartACopyCommand", doc, 1, TRUE);
+
           /* tell the application what document the saved elements
              come from */
-          doc = IdentDocument (DocOfSavedElements);
           if (CopyAndCutFunction)
             (*(Proc1)CopyAndCutFunction) ((void *) doc);
           pEl = NULL;
@@ -1017,25 +1021,6 @@ void CopyCommand ()
                       DeleteElement (&pE, pSelDoc);
                     }
                   SaveElement (pCopy, pEl->ElParent, doc, pEl);
-#ifdef IV
-                  /* met l'attribut langue sur la copie s'il n'y
-                     est pas deja */
-                  if (GetTypedAttrForElem (pCopy, 1, NULL) == NULL)
-                    /* la copie ne possede pas d'attribut Langue,
-                       on le met */
-                    {
-                      /* cherche d'abord la valeur heritee par
-                         l'original */
-                      pAttrHerit = GetTypedAttrAncestor (pEl, 1,
-                                                         NULL, &pElAttr);
-                      if (pAttrHerit != NULL)
-                        {
-                          pAttrLang = AddAttrToElem (pCopy, pAttrHerit, NULL);
-                          if (pAttrLang != NULL)
-                            pAttrLang->AeAttrSSchema = pCopy->ElStructSchema;
-                        }
-                    }
-#endif
                 }
 		  
               /* next selected element */
@@ -1063,31 +1048,21 @@ void CopyCommand ()
                 pEl = NextInSelection (pEl, lastSel);
             }
         }
-      /* parmi les elements de la copie, cherche et traite tous ceux */
-      /* qui sont reference's */
+      /* look for and change references */
       pSave = FirstSavedElement;
-      while (pSave != NULL)
+      while (pSave)
         {
-          /* traite un sous-arbre */
+          /* update references */
           ChangeReferences (pSave->PeElement, &pSelDoc);
-          /* passe au sous-arbre suivant */
-          pSave = pSave->PeNext;
-        }
-      /* il faudra changer les labels des elements insere's par la */
-      /* prochaine commande coller */
-      ChangeLabel = TRUE;
-      
-      /* envoie l'evenement ElemCopy.Post pour tous les sous-arbres */
-      /* copie's */
-      pSave = FirstSavedElement;
-      while (pSave != NULL)
-        {
+          /* send the ElemCopy.Post event to the whole subtree */
           NotifySubTree (TteElemCopy, pSelDoc, pSave->PeElement, 0, 0,
                          FALSE, FALSE);
-          /* passe au sous-arbre suivant */
+          /* next subtree */
           pSave = pSave->PeNext;
         }
-    }
+      /* labels will change  with the paste */
+      ChangeLabel = TRUE;
+     }
 }
 
 
@@ -1243,13 +1218,13 @@ void ProcessFirstLast (PtrElement pPrev, PtrElement pNext, PtrDocument pDoc)
   ----------------------------------------------------------------------*/
 ThotBool CutCommand (ThotBool save, ThotBool replace)
 {
-  PtrElement          firstSel, lastSel, pEl, pE, pPrev, pNext, pParent,
-    pS, pSS, pParentEl, pFree, pF, pF1, pPrevPage, pSave,
-    pLastSave, pSel, pEl1, pA, firstSelInit, lastSelInit,
-    pAncestor[MAX_ANCESTOR],
-    pAncestorPrev[MAX_ANCESTOR],
-    pAncestorNext[MAX_ANCESTOR];
+  PtrElement          firstSel, lastSel, pEl, pE, pPrev, pNext, pParent;
+  PtrElement          pS, pSS, pParentEl, pFree, pF, pF1, pPrevPage, elSaved;
+  PtrElement          pLastSave, pSel, pEl1, pA, firstSelInit, lastSelInit;
+  PtrElement          pAncestor[MAX_ANCESTOR];
+  PtrElement          pAncestorPrev[MAX_ANCESTOR], pAncestorNext[MAX_ANCESTOR];
   PtrElement          enclosingCell, cellCleared, row;
+  PtrPasteElem        pSave;
   DisplayMode         dispMode;
   Document            doc;
   PtrDocument         pSelDoc;
@@ -1263,7 +1238,7 @@ ThotBool CutCommand (ThotBool save, ThotBool replace)
   pPrev = NULL;
   pNext = NULL;
   pParent = NULL;
-  pSave = NULL;
+  elSaved = NULL;
   pLastSave = NULL;
   nextChar = 0;
   pPrevPage = NULL;
@@ -1363,6 +1338,8 @@ ThotBool CutCommand (ThotBool save, ThotBool replace)
         }
 
       if (cutAll && !replace &&
+          firstSel->ElStructSchema &&
+          strcmp (firstSel->ElStructSchema->SsName, "SVG") &&
           CanCutElement (firstSel->ElParent, pSelDoc, NULL) &&
           !TypeHasException (ExcIsCell, firstSel->ElParent->ElTypeNumber,
                              firstSel->ElParent->ElStructSchema))
@@ -1397,7 +1374,7 @@ ThotBool CutCommand (ThotBool save, ThotBool replace)
           {
             /* empty element */
             firstSel = NULL;
-            pSave = NULL;
+            elSaved = NULL;
             stop = TRUE;
           }
         else
@@ -1441,6 +1418,9 @@ ThotBool CutCommand (ThotBool save, ThotBool replace)
     return FALSE;
 
   doc = IdentDocument (pSelDoc);
+  if (save)
+    // start a new copy
+    TtaExecuteMenuAction ("StartACopyCommand", doc, 1, TRUE);
   dispMode = TtaGetDisplayMode (doc);
   /* lock tables formatting */
   TtaGiveTableFormattingLock (&lock);
@@ -1541,7 +1521,7 @@ ThotBool CutCommand (ThotBool save, ThotBool replace)
 
   pEl = firstSel;	/* first selected element */
   pS = NULL;
-  pSave = NULL;
+  elSaved = NULL;
   pLastSave = NULL;
   pFree = NULL;
   enclosingCell = NULL;
@@ -1584,8 +1564,8 @@ ThotBool CutCommand (ThotBool save, ThotBool replace)
            sauf si rien d'autre n'a ete selectionne'.
            On ne detruit pas non plus les elements
            indestructibles */
-        pEl = NextElemToBeCut (pEl, lastSel, pSelDoc, pSave, &enclosingCell);
-      if (pEl != NULL)
+        pEl = NextElemToBeCut (pEl, lastSel, pSelDoc, elSaved, &enclosingCell);
+      if (pEl)
         {
           /* pE : pointeur sur l'element a detruire */
           pE = pEl;
@@ -1769,12 +1749,14 @@ ThotBool CutCommand (ThotBool save, ThotBool replace)
                   /* il ne faudra pas changer les labels des elements
                      exportables inseres par la prochaine commande Paste */
                   ChangeLabel = FALSE;
-                  /* met l'element courant dans la chaine des elements
-                     sauvegarde's */
-                  SaveElement (pE, pParentEl, doc, NULL);
+                  ok = SendEventSubTree (TteElemCopy, pSelDoc, pE, 0, 0,
+                                         FALSE, FALSE);
+                  if (!ok)
+                    /* save the current element */
+                    SaveElement (pE, pParentEl, doc, NULL);
                 }
               if (pS == NULL)
-                pSave = pE;
+                elSaved = pE;
               else
                 {
                   pS->ElNext = pE;
@@ -1785,6 +1767,7 @@ ThotBool CutCommand (ThotBool save, ThotBool replace)
               /* keep the link to parent */
               pE->ElParent = pParentEl;
             }
+
           if (last == TTE_STANDARD_DELETE_LAST_ITEM && !cutPage)
             pEl = NULL;
         }
@@ -1882,7 +1865,7 @@ ThotBool CutCommand (ThotBool save, ThotBool replace)
   /* reaffiche les paves qui copient les elements detruits */
   if (oneAtLeast)
     {
-      pS = pSave;
+      pS = elSaved;
       while (pS != NULL)
         /* parcourt la chaine des elements detruits */
         {
@@ -1891,7 +1874,7 @@ ThotBool CutCommand (ThotBool save, ThotBool replace)
           pS = pS->ElNext;
         }
       /* renumerote la suite */
-      pE = pSave;
+      pE = elSaved;
       pS = pNext;
       if (pS == NULL)
         pS = NextElement (pPrev);
@@ -1903,7 +1886,7 @@ ThotBool CutCommand (ThotBool save, ThotBool replace)
           }
       pNext = pS;
       /* annule les pointeurs vers le pere */
-      pS = pSave;
+      pS = elSaved;
       while (pS != NULL)
         /* parcourt la chaine des elements detruits */
         {
@@ -1937,7 +1920,7 @@ ThotBool CutCommand (ThotBool save, ThotBool replace)
          aux elements detruits et enregistre les references sortantes
          coupees ainsi que les elements coupe's qui sont reference's par
          d'autres documents */
-      pS = pSave;
+      pS = elSaved;
       while (pS != NULL)
         /* parcourt la chaine des elements detruits */
         {
@@ -1951,7 +1934,7 @@ ThotBool CutCommand (ThotBool save, ThotBool replace)
         pSS = pPrev;
       else
         pSS = pParent;
-      pS = pSave;
+      pS = elSaved;
       while (pS != NULL)
         /* parcourt la chaine des elements detruits */
         {
@@ -1973,7 +1956,7 @@ ThotBool CutCommand (ThotBool save, ThotBool replace)
   /* did the selection change? */
   GetCurrentSelection (&pSelDoc, &firstSel, &lastSel, &firstChar, &lastChar);
   if (oneAtLeast &&
-      (firstSel == pSave || ElemIsWithinSubtree (firstSel, pSave) ||
+      (firstSel == elSaved || ElemIsWithinSubtree (firstSel, elSaved) ||
        lastSel == pLastSave || ElemIsWithinSubtree (lastSel, pLastSave)))
     {
       /* the selection points to deleted elements. Set a new selection */
@@ -2043,11 +2026,27 @@ ThotBool CutCommand (ThotBool save, ThotBool replace)
     /* reset the selection */
     HighlightSelection (FALSE, FALSE);
 
-  if (!save)
+      
+  if (save)
+    {
+      /* look for and change references */
+      pSave = FirstSavedElement;
+      while (pE)
+        {
+          /* update references */
+          //ChangeReferences (pSave->PeElement, &pSelDoc);
+          /* send the ElemCopy.Post event to the whole subtree */
+          NotifySubTree (TteElemCopy, pSelDoc, pSave->PeElement, 0, 0,
+                         FALSE, FALSE);
+          /* next subtree */
+          pSave = pSave->PeNext;
+        }
+    }
+  else
     {
       /* libere les elements coupe's */
-      pE = pSave;
-      while (pE != NULL)
+      pE = elSaved;
+      while (pE)
         {
           pS = pE->ElNext;
           DeleteElement (&pE, pSelDoc);
@@ -3083,10 +3082,8 @@ ThotBool CreateNewElement (int typeNum, PtrSSchema pSS, PtrDocument pDoc,
           ok = CanInsertBySplitting (&pEl, firstChar, &splitElem,
                                      &pSplitEl, &pElSplit, createAfter,
                                      typeNum, pSS, pSelDoc);
-          if (ok)
-            if (empty)
-              if (!EmptyElement (pEl))
-                empty = FALSE;
+          if (ok && empty && !EmptyElement (pEl))
+            empty = FALSE;
 
           ancestorRule = 0;
           if (!ok)
@@ -3145,7 +3142,7 @@ ThotBool CreateNewElement (int typeNum, PtrSSchema pSS, PtrDocument pDoc,
             {
               /* demande a l'application si on peut creer ce type d'element */
               notifyEl.event = TteElemNew;
-              notifyEl.document = (Document) IdentDocument (pSelDoc);
+              notifyEl.document = doc;
               notifyEl.element = (Element) (pEl->ElParent);
               notifyEl.info = 0; /* not sent by undo */
               notifyEl.elementType.ElTypeNum = typeNum;
@@ -3169,8 +3166,11 @@ ThotBool CreateNewElement (int typeNum, PtrSSchema pSS, PtrDocument pDoc,
           if (ok && pEl)
             {
               /* After element */
-              OpenHistorySequence (pSelDoc, firstSel, lastSel, NULL,
-                                   origFirstChar, origLastChar);
+              histOpen = TtaHasUndoSequence (doc);
+              if (!histOpen)
+                OpenHistorySequence (pSelDoc, firstSel, lastSel, NULL,
+                                     origFirstChar, origLastChar);
+
               ok = !CannotInsertNearElement (pEl, FALSE);
               if (ok)
                 {
@@ -3413,7 +3413,8 @@ ThotBool CreateNewElement (int typeNum, PtrSSchema pSS, PtrDocument pDoc,
                         }
                     }
                 }
-              CloseHistorySequence (pSelDoc);
+              if (!histOpen)
+                CloseHistorySequence (pSelDoc);
             }
         }
     }
@@ -3578,9 +3579,9 @@ void TtaInsertAnyElement (Document document, ThotBool before)
           /* Update the attribute */
           if (newPointCreated)
             {
-	      Element el = TtaGetParent((Element)firstSel);
+              Element el = TtaGetParent((Element)firstSel);
               UpdatePointsOrPathAttribute(document, el, 0, 0, TRUE);
-	      UpdateMarkers(el, document);
+              TtaUpdateMarkers(el, document, TRUE, TRUE);
               TtaSetDocumentModified(document);
             }
           return;

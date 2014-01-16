@@ -18,6 +18,7 @@
 
 
 #include "AHTLockBase.h"
+#include "fileaccess.h"
 
 
 /* ------------------------------------------------------------------ 
@@ -50,7 +51,7 @@ PUBLIC time_t strtotime (char *time)
     /* month */
     ptr2 = strchr (ptr1,' ');
     if (!ptr2) return 0;
-    *ptr2='\0';
+    *ptr2=EOS;
     ptr2++;
     
     for (i=0;i<12;i++) 
@@ -64,7 +65,7 @@ PUBLIC time_t strtotime (char *time)
     while (ptr1 && *ptr1 && *ptr1==' ') ptr1++;
     ptr2 = strchr (ptr1,' ');
     if (!ptr2) return 0;
-    *ptr2='\0';
+    *ptr2=EOS;
     ptr2++;
  
     dia = atoi(ptr1);
@@ -74,7 +75,7 @@ PUBLIC time_t strtotime (char *time)
     while (ptr1 && *ptr1 && *ptr1==' ') ptr1++;
     ptr2 = strchr (ptr1,':');
     if (!ptr2) return 0;
-    *ptr2='\0';
+    *ptr2=EOS;
     ptr2++;
      
     hora = atoi (ptr1);
@@ -83,7 +84,7 @@ PUBLIC time_t strtotime (char *time)
     ptr1 = ptr2; 
     ptr2 = strchr (ptr1,':');
     if (!ptr2) return 0;
-    *ptr2='\0';
+    *ptr2=EOS;
     ptr2++;
    
     min = atoi (ptr1);
@@ -92,7 +93,7 @@ PUBLIC time_t strtotime (char *time)
     ptr1 = ptr2; 
     ptr2 = strchr (ptr1,' ');
     if (!ptr2) return 0;
-    *ptr2='\0';
+    *ptr2=EOS;
     ptr2++;
    
     seg = atoi (ptr1);
@@ -133,7 +134,7 @@ PUBLIC char * timetostr (time_t t)
      {
         s[i] = *(ptr+i);
      }
-    s[i]='\0';
+    s[i]=EOS;
     ptr = (char *)calloc (i+1,sizeof(char));
     strcpy(ptr,s);
     /*ptr = NULL;
@@ -180,7 +181,7 @@ LockLine * LockLine_new (const char * aline)
         last = line;
         if ( (ptr = strchr (last,BREAK_CHAR)) != NULL ) 
          {
-            *ptr = '\0';
+            *ptr = EOS;
             url = line;
             lock = ++ptr;
             last = lock;
@@ -188,21 +189,21 @@ LockLine * LockLine_new (const char * aline)
     
         if ( (ptr = strchr (last,BREAK_CHAR)) != NULL ) 
          {
-            *ptr = '\0';
+            *ptr = EOS;
             depth = *(++ptr);
             last = ptr;
          }
 
         if ( (ptr = strchr (last,BREAK_CHAR)) != NULL ) 
          {
-            *ptr = '\0';
+            *ptr = EOS;
             timeout = ++ptr;
             last = timeout;
          }
 
         if ( (ptr = strchr (last,BREAK_CHAR)) != NULL ) 
          {
-            *ptr = '\0';
+            *ptr = EOS;
             itime = ++ptr;
             last = ptr;
          }
@@ -210,7 +211,7 @@ LockLine * LockLine_new (const char * aline)
         /* we don't want any '\n' at the end of line */
         if ( (ptr = strchr (last,'\n')) != NULL) 
          {
-            *ptr = '\0';
+            *ptr = EOS;
          }
     
         if (url && *url && lock && *lock && depth!=' ' && 
@@ -451,7 +452,8 @@ PUBLIC HTList *processLockFile (const char *filename, const char *reqUri)
         fprintf (stderr,"AHTLockBase... opening %s\n",path);
 #endif
         /* open the file "filename" for read purposes */
-        if ((fp = fopen (path,"r")) == NULL) 
+	fp = TtaReadOpen (path);
+        if (fp == NULL) 
             return (HTList *)NO;
 
         list  = HTList_new(); 
@@ -501,7 +503,7 @@ PUBLIC HTList *processLockFile (const char *filename, const char *reqUri)
             } /* if (info) */        
         } /* while */
 
-        fclose  (fp); /* closing file */
+        TtaReadClose (fp); /* closing file */
     }
     
     return list;        
@@ -519,10 +521,11 @@ PUBLIC HTList *processLockFile (const char *filename, const char *reqUri)
  * ----------------------------------------------------------- */
 PUBLIC HTList * searchLockBase ( char * filename,  char * reqUri) 
 {
-    LockLine * info;
-    HTList * list, *if_list = NULL;
-    time_t itime, now,tout;
-    char * ptr;
+    LockLine          *info;
+    HTList            *list, *if_list = NULL;
+    time_t             now;
+    unsigned long int  itime, tout;
+    char              *ptr;
     
     /* process filename - returns a list of LockLine that matches */
     if ( (list = processLockFile(filename,reqUri)) == NULL ||
@@ -550,11 +553,11 @@ PUBLIC HTList * searchLockBase ( char * filename,  char * reqUri)
         else if (HTStrCaseStr(info->timeout, (char*)"Second-")!=NULL) 
          {
             ptr = strchr(info->timeout,'-') + 1;
-            tout = (time_t) atol(ptr);
+            tout = (unsigned long int) atol(ptr);
          }
 	else tout = 0; /*a unknown timeout notation*/
 
-        if ((itime+tout) < now)  
+        if ((itime+tout) < (unsigned long int)now)  
          {
 #ifdef DEBUG_LOCK_BASE		
             fprintf (stderr,"- expired\n");
@@ -633,7 +636,7 @@ PUBLIC BOOL separateUri (const char *URI, const char *localFQDN,
     host = port = rel = dom = NULL;
     filename = relUri = NULL;
     address = fqdn = NULL;
-    pnumber[0]='\0';
+    pnumber[0] = EOS;
     status = NO;
     i = 0;
 
@@ -669,11 +672,11 @@ PUBLIC BOOL separateUri (const char *URI, const char *localFQDN,
     for (i=0; port && *(port+i) && *(port+i)!='/'; i++) 
         pnumber[i]=*(port+i);
     
-    pnumber[i] = '\0';
+    pnumber[i] = EOS;
     
     /* use PORT_CHAR instead ':' (from ":port_number") in the filename 
      * (Windows does not allow ':' in filename) */
-    if (pnumber[0] != '\0')
+    if (pnumber[0] != EOS)
         pnumber[0] = PORT_CHAR;
     
     /* copy the relativeURI in "rel" to relUri, or
@@ -686,11 +689,11 @@ PUBLIC BOOL separateUri (const char *URI, const char *localFQDN,
      * the relative URI part */
     if (port)
      {
-        (*port) = '\0';
+        (*port) = EOS;
         port++;
      }
     else if (rel) 
-      (*rel) = '\0';
+      (*rel) = EOS;
     /* try to find the domain name in the host */
     StrAllocCopy (filename, host);
     dom = HTStrCaseStr (host, (char*)".");
@@ -715,7 +718,7 @@ PUBLIC BOOL separateUri (const char *URI, const char *localFQDN,
      }
 
     /* copy the port number to the host */
-    if (pnumber[0]!='\0')
+    if (pnumber[0]!=EOS)
       StrAllocCat (filename, pnumber);
 
     /* returning */
@@ -735,10 +738,10 @@ PUBLIC BOOL separateUri (const char *URI, const char *localFQDN,
 PUBLIC LockLine * processLockInfo (char *relative, AwTree *xmlbody, HTAssocList *headers) 
 {
     LockLine *me = NULL;
-    char *depth, *timeout, *lock;
-    time_t itime;
-    HTAssoc *h = NULL;
-    char *ptr = NULL;
+    char     *depth, *timeout, *lock;
+    time_t    itime;
+    HTAssoc  *h = NULL;
+    char     *ptr = NULL;
 
     if (relative && *relative && xmlbody && headers) 
      {
@@ -795,10 +798,10 @@ PUBLIC BOOL saveLockLine (char *absolute, LockLine *lockinfo)
 #ifdef DEBUG_LOCK_BASE		
 	fprintf (stderr,"AHTLockBase.... DAVHome is %s\n",DAVHome);
         fprintf (stderr,"AHTLockBase.... open file %s\n", filename);
-#endif	
-        if ( (fp = fopen (filename,"a")) == NULL) 
+#endif
+	fp = TtaAddOpen (filename);
+        if (fp == NULL) 
             return NO;
- 
         status = LockLine_writeline (fp, lockinfo);
      }
 
@@ -838,8 +841,9 @@ PUBLIC BOOL saveLockBase (char *absolute, char *relative,
 #ifdef DEBUG_LOCK_BASE		
 	fprintf (stderr,"AHTLockBase.... DAVHome is %s\n",DAVHome);
         fprintf (stderr,"AHTLockBase.... open file %s\n", filename);
-#endif	
-        if ( (fp = fopen (filename,"a")) == NULL) 
+#endif
+	fp = TtaAddOpen (filename);
+        if (fp == NULL) 
             return NO;
  
         /* creates the AwTree with the xml body */
@@ -862,14 +866,13 @@ PUBLIC BOOL saveLockBase (char *absolute, char *relative,
             status = LockLine_writeline(fp,line);
         else 
             status = NO;
-       
-        	
+	
         if (tree) AwTree_delete(tree);
         if (line) LockLine_delete(line);
 #ifdef DEBUG_LOCK_BASE		
         fprintf (stderr,"AHTLockBase.... closing file\n");
 #endif		
-        fclose (fp);
+        TtaWriteClose (fp);
      }
         
     return status;
@@ -904,12 +907,12 @@ PUBLIC BOOL removeFromBase (char *filename, LockLine *line)
         fprintf (stderr,"AHTLockBase.... opening %s\n", path);
 #endif	
         /* open the file "filename" for read purposes */
-        if ((fp = fopen (path,"r")) == NULL ) 
+	fp = TtaReadOpen (path);
+        if (fp == NULL ) 
             return NO;
         
         status = YES; /* thinking positif! */
         list = HTList_new();
-        
 
         /* copying file to memory */
         while (fgets (buf,DAV_LINE_MAX,fp) != NULL && status) 
@@ -922,7 +925,7 @@ PUBLIC BOOL removeFromBase (char *filename, LockLine *line)
             if (ptr) 
              {
                 old = (*ptr);
-                (*ptr) = '\0';
+                (*ptr) = EOS;
                 
                 /* if doesn't match, it will be save */
                 if (strcasecomp (buf,line->relativeURI)!=0) 
@@ -951,17 +954,14 @@ PUBLIC BOOL removeFromBase (char *filename, LockLine *line)
         if (status) 
          {
             /* close and remove old file */
-            fclose (fp);
+            TtaReadClose (fp);
             fp = NULL;
             
             /* try to remove the old file, to write a new one.
              * if remove failed, we force the creation of a new empty file.
              * if we have something to write, create a new file. */
-            if ((TtaFileUnlink(path)<0) || (list && !HTList_isEmpty (list))) 
-                fp = fopen (path,"w");
-
-            //if (fp)
-              //  fprintf (fp,"");    
+            if ((TtaFileUnlink(path) < 0) || (list && !HTList_isEmpty (list))) 
+                fp = TtaWriteOpen (path);
          }      
 	
 
@@ -982,7 +982,7 @@ PUBLIC BOOL removeFromBase (char *filename, LockLine *line)
         if (status && fp) 
          {
 	    fflush (fp);
-	    fclose (fp);
+	    TtaReadClose (fp);
 	 }
      }
 

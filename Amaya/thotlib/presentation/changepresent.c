@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -171,8 +171,8 @@ void ApplyInherit (PRuleType ruleType, PtrAbstractBox pAb,
 {
   PtrElement          pEl;
   int                 view;
-  PtrAbstractBox      pAbCur, pPRP;
-  PtrPRule            pRule = NULL, checkedRule;
+  PtrAbstractBox      pAbCur;
+  PtrPRule            pRule = NULL;
   PtrPSchema          pSchP;
   PtrAttribute        pAttr;
 
@@ -238,28 +238,7 @@ void ApplyInherit (PRuleType ruleType, PtrAbstractBox pAb,
       if (pAbCur)
         {
           /* apply delayed rules */
-          checkedRule = NULL;
-          do
-            {
-              pPRP = pAbCur;
-              if (pAbCur->AbDelayedPRule &&
-                  pAbCur->AbDelayedPRule->DpPRule == checkedRule)
-                pRule = NULL;
-              else
-                {
-                  GetDelayedRule (&pRule, &pSchP, &pPRP, &pAttr);
-                  if (pRule && !ApplyRule (pRule, pSchP, pPRP, pDoc, pAttr, NULL))
-                    {
-                      /* this rule cannot be applied yet */
-                      Delay (pRule, pSchP, pPRP, pAttr, pAbCur->AbFirstEnclosed);
-                      if (checkedRule == NULL)
-                        /* first rule already checked and re-inserted
-                           in the delay list */
-                        checkedRule = pRule;
-                    }
-                }
-            }
-          while (pRule);
+          ApplyDelayedRules (ruleType, pAbCur, pDoc);
 
           /* il y a un element ascendant dont le pave pAbCur pourrait
              heriter de pAb */
@@ -401,7 +380,7 @@ void ApplyInherit (PRuleType ruleType, PtrAbstractBox pAb,
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-int          NumTypePRuleAPI (PtrPRule pRule)
+int NumTypePRuleAPI (PtrPRule pRule)
 {
   switch (pRule->PrType)
     {
@@ -591,11 +570,35 @@ int          NumTypePRuleAPI (PtrPRule pRule)
     case PtStrokeOpacity:
       return PRStrokeOpacity;
       break;
+    case PtStopOpacity:
+      return PRStopOpacity;
+      break;
+    case PtMarker:
+      return PRMarker;
+      break;
+    case PtMarkerStart:
+      return PRMarkerStart;
+      break;
+    case PtMarkerMid:
+      return PRMarkerMid;
+      break;
+    case PtMarkerEnd:
+      return PRMarkerEnd;
+      break;
+    case PtFillRule:
+      return PRFillRule;
+      break;
     case PtBackground:
       return PRBackground;
       break;
     case PtForeground:
       return PRForeground;
+      break;
+    case PtColor:
+      return PRColor;
+      break;
+    case PtStopColor:
+      return PRStopColor;
       break;
     case PtHyphenate:
       return PRHyphenate;
@@ -1489,7 +1492,7 @@ void    TtaRemovePRule (Element element, PRule pRule, Document document)
   pRule: the next presentation rule, or NULL if
   pRule is the last rule of the element.
   ----------------------------------------------------------------------*/
-void                TtaNextPRule (Element element, PRule * pRule)
+void TtaNextPRule (Element element, PRule * pRule)
 {
   PtrPRule            nextPRule;
 

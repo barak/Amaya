@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2008
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -1276,6 +1276,19 @@ static void PresentationValueToPRule (PresentationValue val, int type,
       rule->PrInhUnit = UnRelative;
       return;
     }
+  else if (val.typed_data.unit == VALUE_CURRENT)
+    /* the CSS value is "currentColor". Create an equivalent PRule */
+    {
+      rule->PrPresMode = PresCurrentColor;
+      rule->PrInheritMode = InheritParent;
+      rule->PrInhPercent = False;
+      rule->PrInhAttr = False;
+      rule->PrInhDelta = 0;
+      rule->PrMinMaxAttr = False;
+      rule->PrInhMinOrMax = 0;
+      rule->PrInhUnit = UnRelative;
+      return;      
+    }
   else
     /* in most cases the rule takes an immediate values */
     rule->PrPresMode = PresImmediate;
@@ -1370,19 +1383,32 @@ static void PresentationValueToPRule (PresentationValue val, int type,
     case PtVisibility:
     case PtDepth:
     case PtFillPattern:
-    case PtBackground:
     case PtForeground:
+    case PtColor:
+    case PtStopColor:
     case PtBorderTopColor:
     case PtBorderRightColor:
     case PtBorderBottomColor:
     case PtBorderLeftColor:
+    case PtOpacity:
     case PtStrokeOpacity:
     case PtFillOpacity:
-    case PtOpacity:
-      rule->PrAttrValue = FALSE;
+    case PtStopOpacity:
+      rule->PrValueType = PrNumValue;
       rule->PrIntValue = value;
       break;
-   case PtVis:
+    case PtBackground:
+    case PtMarker:
+    case PtMarkerStart:
+    case PtMarkerMid:
+    case PtMarkerEnd:
+      if (unit == VALUE_URL)
+	rule->PrValueType = PrConstStringValue;
+      else
+	rule->PrValueType = PrNumValue;
+      rule->PrIntValue = value;
+      break;
+    case PtVis:
       switch (value)
         {
         case VsHidden:
@@ -1817,6 +1843,17 @@ static void PresentationValueToPRule (PresentationValue val, int type,
           break;
         }
       break;
+    case PtFillRule:
+      switch (value)
+        {
+        case NonZero:
+          rule->PrChrValue = 'n';
+          break;
+        case EvenOdd:
+          rule->PrChrValue = 'e';
+          break;
+        }
+      break;
     case PtVertRef:
       rule->PrPosRule.PoDistUnit = int_unit;
       rule->PrPosRule.PoDistance = value;
@@ -2104,10 +2141,16 @@ static PresentationValue PRuleToPresentationValue (PtrPRule rule)
     case PtFillPattern:
     case PtBackground:
     case PtForeground:
+    case PtColor:
+    case PtStopColor:
     case PtBorderTopColor:
     case PtBorderRightColor:
     case PtBorderBottomColor:
     case PtBorderLeftColor:
+    case PtMarker:
+    case PtMarkerStart:
+    case PtMarkerMid:
+    case PtMarkerEnd:
       value = rule->PrIntValue;
       break;
     case PtVis:
@@ -2130,6 +2173,7 @@ static PresentationValue PRuleToPresentationValue (PtrPRule rule)
     case PtOpacity:
     case PtFillOpacity:
     case PtStrokeOpacity:
+    case PtStopOpacity:
       real = TRUE;
       value = rule->PrIntValue;
       break;
@@ -2557,6 +2601,18 @@ static PresentationValue PRuleToPresentationValue (PtrPRule rule)
         }
       break;
 
+    case PtFillRule:
+      switch (rule->PrChrValue)
+        {
+        case 'n':
+          value = NonZero;
+          break;
+        case 'e':
+          value = EvenOdd;
+          break;
+        }
+      break;
+
     case PtFunction:
       switch (rule->PrPresFunction)
         {
@@ -2835,11 +2891,35 @@ static void TypeToPresentation (unsigned int type, PRuleType *intRule,
     case PRStrokeOpacity:
       *intRule = PtStrokeOpacity;
       break;
+    case PRStopOpacity:
+      *intRule = PtStopOpacity;
+      break;
+    case PRMarker:
+      *intRule = PtMarker;
+      break;
+    case PRMarkerStart:
+      *intRule = PtMarkerStart;
+      break;
+    case PRMarkerMid:
+      *intRule = PtMarkerMid;
+      break;
+    case PRMarkerEnd:
+      *intRule = PtMarkerEnd;
+      break;
+    case PRFillRule:
+      *intRule = PtFillRule;
+      break;
     case PRBackground:
       *intRule = PtBackground;
       break;
     case PRForeground:
       *intRule = PtForeground;
+      break;
+    case PRColor:
+      *intRule = PtColor;
+      break;
+    case PRStopColor:
+      *intRule = PtStopColor;
       break;
     case PRHyphenate:
       *intRule = PtHyphenate;
@@ -3072,12 +3152,24 @@ int TtaSetStylePresentation (unsigned int type, Element el, PSchema tsch,
               if (type == PRBackgroundPicture ||
                   (type == PRListStyleImage &&
                    v.typed_data.value != 0 &&
-                   v.typed_data.unit != VALUE_INHERIT))
+                   v.typed_data.unit != VALUE_INHERIT) ||
+		  ((type == PRBackground ||
+		    type == PRMarker || type == PRMarkerStart ||
+		    type == PRMarkerMid || type == PRMarkerEnd) &&
+		   v.typed_data.unit == VALUE_URL))
                 {
                   if (!generic)
-                    tsch = (PSchema) PresentationSchema (((PtrElement)el)->ElStructSchema, LoadedDocument[doc - 1]);
-                  cst = PresConstInsert (tsch, (char *)v.pointer, tt_Picture);
-                  v.typed_data.unit = UNIT_REL;
+                    tsch = (PSchema) PresentationSchema
+                    (((PtrElement)el)->ElStructSchema, LoadedDocument[doc - 1]);
+		  if (type == PRBackground ||
+		      type == PRMarker || type == PRMarkerStart ||
+		      type == PRMarkerMid || type == PRMarkerEnd)
+		    cst = PresConstInsert (tsch, (char *)v.pointer, CharString);
+		  else
+		    {
+		      cst = PresConstInsert (tsch, (char *)v.pointer, tt_Picture);
+		      v.typed_data.unit = UNIT_REL;
+		    }
                   v.typed_data.value = cst;
                   v.typed_data.real = FALSE;
                   v.typed_data.mainValue = TRUE;
@@ -3194,11 +3286,35 @@ void PRuleToPresentationSetting (PtrPRule rule, PresentationSetting setting,
     case PtFillOpacity:
       setting->type = PRFillOpacity;
       break;
+    case PtStopOpacity:
+      setting->type = PRStopOpacity;
+      break;
+    case PtMarker:
+      setting->type = PRMarker;
+      break;
+    case PtMarkerStart:
+      setting->type = PRMarkerStart;
+      break;
+    case PtMarkerMid:
+      setting->type = PRMarkerMid;
+      break;
+    case PtMarkerEnd:
+      setting->type = PRMarkerEnd;
+      break;
+    case PtFillRule:
+      setting->type = PRFillRule;
+      break;
     case PtBackground:
       setting->type = PRBackground;
       break;
     case PtForeground:
       setting->type = PRForeground;
+      break;
+    case PtColor:
+      setting->type = PRColor;
+      break;
+    case PtStopColor:
+      setting->type = PRStopColor;
       break;
     case PtBorderTopColor:
       setting->type = PRBorderTopColor;
@@ -3544,7 +3660,7 @@ static void AddBorderStyleValue (char *buffer, int value)
   described in thotlib/include/presentation.h
   -----------------------------------------------------------------------*/
 void TtaPToCss (PresentationSetting settings, char *buffer, int len,
-                Element el)
+                Element el, void* pSchP)
 {
   ElementType         elType;
   float               fval = 0;
@@ -3552,6 +3668,7 @@ void TtaPToCss (PresentationSetting settings, char *buffer, int len,
   int                 add_unit = 0, val;
   unsigned int        unit, i;
   ThotBool            real = FALSE;
+  PresConstant	      *pConst;
 
   buffer[0] = EOS;
   if (len < 40)
@@ -3980,6 +4097,13 @@ void TtaPToCss (PresentationSetting settings, char *buffer, int len,
       add_unit = 1;
       break;
     case PRDepth:
+      if (settings->value.typed_data.unit == VALUE_INHERIT)
+        sprintf (buffer, "z-index: inherit");
+      else if (settings->value.typed_data.unit == VALUE_AUTO)
+        sprintf (buffer, "z-index: auto");
+      else
+        sprintf (buffer, "z-index: %d", - settings->value.typed_data.value);
+      break;
       break;
     case PRAdjust:
       elType = TtaGetElementType(el);
@@ -4076,6 +4200,14 @@ void TtaPToCss (PresentationSetting settings, char *buffer, int len,
       else
         sprintf (buffer, "color: #%02X%02X%02X", red, green, blue);
       break;
+    case PRColor:
+      TtaGiveThotRGB (settings->value.typed_data.value, &red, &green, &blue);
+      sprintf (buffer, "color: #%02X%02X%02X", red, green, blue);
+      break;
+    case PRStopColor:
+      TtaGiveThotRGB (settings->value.typed_data.value, &red, &green, &blue);
+      sprintf (buffer, "stop-color: #%02X%02X%02X", red, green, blue);
+      break;
     case PROpacity:
       sprintf (buffer, "opacity: %g", fval);
       break;
@@ -4084,6 +4216,65 @@ void TtaPToCss (PresentationSetting settings, char *buffer, int len,
       break;
     case PRStrokeOpacity:
       sprintf (buffer, "stroke-opacity: %g", fval);
+      break;
+    case PRStopOpacity:
+      sprintf (buffer, "stop-opacity: %g", fval);
+      break;
+    case PRMarker:
+      if (settings->value.typed_data.unit == VALUE_INHERIT)
+        sprintf (buffer, "marker: inherit");
+      else if (settings->value.typed_data.value == 0)
+        sprintf (buffer, "marker: none");
+      else
+	{
+	  pConst = &((PtrPSchema)pSchP)->PsConstant[settings->value.typed_data.value-1];
+	  if (pConst->PdString)
+	    sprintf (buffer, "marker: url(%s)", pConst->PdString);
+	}
+      break;
+    case PRMarkerStart:
+      if (settings->value.typed_data.unit == VALUE_INHERIT)
+        sprintf (buffer, "marker-start: inherit");
+      else if (settings->value.typed_data.value == 0)
+        sprintf (buffer, "marker-start: none");
+      else
+	{
+	  pConst = &((PtrPSchema)pSchP)->PsConstant[settings->value.typed_data.value-1];
+	  if (pConst->PdString)
+	    sprintf (buffer, "marker-start: url(%s)", pConst->PdString);
+	}
+      break;
+    case PRMarkerMid:
+      if (settings->value.typed_data.unit == VALUE_INHERIT)
+        sprintf (buffer, "marker-mid: inherit");
+      else if (settings->value.typed_data.value == 0)
+        sprintf (buffer, "marker-mid: none");
+      else
+	{
+	  pConst = &((PtrPSchema)pSchP)->PsConstant[settings->value.typed_data.value-1];
+	  if (pConst->PdString)
+	    sprintf (buffer, "marker-mid: url(%s)", pConst->PdString);
+	}
+      break;
+    case PRMarkerEnd:
+      if (settings->value.typed_data.unit == VALUE_INHERIT)
+        sprintf (buffer, "marker-end: inherit");
+      else if (settings->value.typed_data.value == 0)
+        sprintf (buffer, "marker-end: none");
+      else
+	{
+	  pConst = &((PtrPSchema)pSchP)->PsConstant[settings->value.typed_data.value-1];
+	  if (pConst->PdString)
+	    sprintf (buffer, "marker-end: url(%s)", pConst->PdString);
+	}
+      break;
+    case PRFillRule:
+      if (settings->value.typed_data.unit == VALUE_INHERIT)
+        sprintf (buffer, "fill-rule: inherit");
+      else if (settings->value.typed_data.value == NonZero)
+        sprintf (buffer, "fill-rule: nonzero");
+      else if (settings->value.typed_data.value == EvenOdd)
+        sprintf (buffer, "fill-rule: evenodd");
       break;
     case PRHyphenate:
       /*
@@ -4255,6 +4446,9 @@ void TtaPToCss (PresentationSetting settings, char *buffer, int len,
           break;
         case InlineBlock:
           strcpy (buffer, "display: inlineblock");
+          break;
+        case DisplayNone:
+          strcpy (buffer, "display: none");
           break;
         default:
           break;

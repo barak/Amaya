@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2008
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -26,12 +26,15 @@
 #include "templates.h"
 #include "templates_f.h"
 #include "registry_wx.h"
+#include "MENUconf.h"
 #include "MENUconf_f.h"
+#include "AHTURLTools_f.h"
 
 static int      Waiting = 0;
 static int      MyRef = 0;
 static int      Ref_doc = 0;
 static ThotBool Mandatory_title = FALSE;
+static ThotBool New_File = FALSE;
 static char    *compound_string;
 
 //-----------------------------------------------------------------------------
@@ -61,8 +64,8 @@ END_EVENT_TABLE()
   ----------------------------------------------------------------------*/
 void OpenDocDlgWX::UpdateTemplateList ()
 {
-  Prop_Templates       prop = GetProp_Templates();
-  Prop_Templates_Path *path = prop.FirstPath;
+#ifdef TEMPLATES
+  Prop_Templates_Path *path = TemplateRepositoryPaths;
   wxArrayString        templateList;
   wxString             value;
   bool                 initialized = false;
@@ -85,6 +88,7 @@ void OpenDocDlgWX::UpdateTemplateList ()
         }
       m_LockUpdateFlag = false;
    }
+#endif /* TEMPLATES */
 }
 
 /*----------------------------------------------------------------------
@@ -114,7 +118,6 @@ OpenDocDlgWX::OpenDocDlgWX( int ref, wxWindow* parent, const wxString & title,
   Waiting = 1;
   MyRef = ref;
   Ref_doc = doc;
-  GetTemplatesConf ();
   compound_string = TtaGetMessage(AMAYA,AM_COMPOUND_DOCUMENT);
 
   // update dialog labels with given ones
@@ -127,6 +130,7 @@ OpenDocDlgWX::OpenDocDlgWX( int ref, wxWindow* parent, const wxString & title,
 
   if (newfile)
     {
+      New_File = TRUE;
       // New HTML document
       XRCCTRL(*this, "wxID_OK", wxButton)->SetLabel( TtaConvMessageToWX( TtaGetMessage(AMAYA,AM_CREATE) ));
       XRCCTRL(*this, "wxID_BUTTON_DIR", wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_SEL)));
@@ -188,6 +192,7 @@ OpenDocDlgWX::OpenDocDlgWX( int ref, wxWindow* parent, const wxString & title,
     }
   else
     {
+      New_File = FALSE;
       // Not a new HTML document
       XRCCTRL(*this, "wxID_OK", wxButton)->SetLabel( TtaConvMessageToWX( TtaGetMessage(AMAYA,AM_OPEN_URL) ));
       Mandatory_title = FALSE;
@@ -301,7 +306,7 @@ void OpenDocDlgWX::OnDirButton( wxCommandEvent& event )
   // set an initial path
   if (url.StartsWith(_T("http")) ||
       url.StartsWith(TtaConvMessageToWX((TtaGetEnvString ("THOTDIR")))))
-    p_dlg->SetPath(wxGetHomeDir());
+    p_dlg->SetPath(TtaConvMessageToWX(TtaGetDocumentsDir()));
   else
     p_dlg->SetPath(dir_value);
 
@@ -310,11 +315,19 @@ void OpenDocDlgWX::OnDirButton( wxCommandEvent& event )
       dir_value =  p_dlg->GetPath();
       strncpy (buffer, (const char*)dir_value.mb_str(wxConvUTF8),MAX_LENGTH-3);
       buffer[MAX_LENGTH-2] = EOS;
-      len = strlen (buffer);
-      if (buffer[len-1] == DIR_SEP)
-        buffer[len-1] = EOS;
-      dir_value = url.Mid(end_pos);
-      strcat (buffer, (const char*)dir_value.mb_str(wxConvUTF8));          
+      if (IsHTMLName (buffer))
+        {
+          // make sure there is no directory name of the same name
+          wxRmdir (dir_value);
+        }
+      else
+        {
+          len = strlen (buffer);
+          if (buffer[len-1] == DIR_SEP)
+            buffer[len-1] = EOS;
+          dir_value = url.Mid(end_pos);
+          strcat (buffer, (const char*)dir_value.mb_str(wxConvUTF8));
+        }
       XRCCTRL(*this, "wxID_COMBOBOX", wxComboBox)->SetValue(TtaConvMessageToWX(buffer));
     }
   p_dlg->Destroy();
@@ -357,7 +370,7 @@ void OpenDocDlgWX::OnFilenameButton( wxCommandEvent& event )
  // set an initial path
  if (url.StartsWith(_T("http")) ||
      url.StartsWith(TtaConvMessageToWX((TtaGetEnvString ("THOTDIR")))))
-   p_dlg->SetDirectory(wxGetHomeDir());
+   p_dlg->SetDirectory(TtaConvMessageToWX(TtaGetDocumentsDir()));
   else
     {
       file_value = url.AfterLast (DIR_SEP);
@@ -511,14 +524,17 @@ void OpenDocDlgWX::OnOpenButton( wxCommandEvent& event )
   where_id = XRCCTRL(*this, "wxID_RADIOBOX", wxRadioBox)->GetSelection();
   ThotCallback (BaseDialog + OpenLocation , INTEGER_DATA, (char*)where_id);
 
-  // get the combobox profile
-  value = XRCCTRL(*this, "wxID_PROFILE", wxComboBox)->GetValue( );
-  if (!value.IsEmpty())
+  // get the combobox profile for new file
+  if (New_File)
     {
-      strcpy( buffer, (const char*)value.mb_str(wxConvUTF8) );
-      // give the profile to amaya
-      TtaSetEnvString ("XHTML_Profile", buffer, TRUE);
-      ThotCallback (BaseDialog + DocInfoDocType,  STRING_DATA, (char *)buffer );
+      value = XRCCTRL(*this, "wxID_PROFILE", wxComboBox)->GetValue( );
+      if (!value.IsEmpty())
+	{
+	  strcpy( buffer, (const char*)value.mb_str(wxConvUTF8) );
+	  // give the profile to amaya
+	  TtaSetEnvString ("XHTML_Profile", buffer, TRUE);
+	  ThotCallback (BaseDialog + DocInfoDocType,  STRING_DATA, (char *)buffer );
+	}
     }
 
   // give the new url to amaya (to do url completion)
@@ -657,21 +673,36 @@ void OpenDocDlgWX::UseTemplate(bool use)
   ----------------------------------------------------------------------*/
 void OpenDocDlgWX::OnTemplateButton( wxCommandEvent& event )
 {
-  wxFileName path = XRCCTRL(*this, "wxID_TEMPLATEFILENAME", wxComboBox)->GetValue();
-  
-  
-  
-  
-  wxFileDialog dlg(this, TtaConvMessageToWX( TtaGetMessage (AMAYA, AM_OPEN_URL) ),
-                         path.GetPath(), path.GetFullName(), _T("Templates (*.xtd)|*.xtd"),
-                         wxOPEN | wxCHANGE_DIR);
-  
-  if (dlg.ShowModal() == wxID_OK)
+  wxFileDialog  *p_dlg;
+  wxString       url, file_value;
+
+  p_dlg = new wxFileDialog (this, TtaConvMessageToWX( TtaGetMessage (AMAYA, AM_OPEN_URL) ),
+                            _T(""), _T(""), _T("Templates (*.xtd)|*.xtd"),
+                            wxOPEN | wxCHANGE_DIR);
+  url = XRCCTRL(*this, "wxID_TEMPLATEFILENAME", wxComboBox)->GetValue( );
+ // set an initial path
+ if (url.StartsWith(_T("http")) ||
+     url.StartsWith(TtaConvMessageToWX((TtaGetEnvString ("THOTDIR")))))
+   p_dlg->SetDirectory(wxGetHomeDir());
+  else
     {
-      path = dlg.GetPath();
-      XRCCTRL(*this, "wxID_TEMPLATEFILENAME", wxComboBox)->SetValue(path.GetFullPath());
+      file_value = url.AfterLast (DIR_SEP);
+      p_dlg->SetPath (url);
+      p_dlg->SetFilename (file_value);
+      // Open the directory in the url
+      wxString address = url.BeforeLast (DIR_SEP);
+      p_dlg->SetDirectory(address);
+    }
+  
+  if (p_dlg->ShowModal() == wxID_OK)
+    {
+      XRCCTRL(*this, "wxID_TEMPLATEFILENAME", wxComboBox)->SetValue(p_dlg->GetPath());
       UseTemplate(true);
     }
+  p_dlg->Destroy();
+
+  //Focus the open button after the file blowser is closed
+  XRCCTRL(*this, "wxID_OK", wxButton)->SetFocus();
 }
 
 

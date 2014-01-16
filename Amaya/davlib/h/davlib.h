@@ -1,3 +1,10 @@
+/*
+ *
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2009
+ *  Please first read the full copyright statement in file COPYRIGHT.
+ *
+ */
+
 /*  --------------------------------------------------------
  ** 
  ** File: davlib.h - WebDAV module
@@ -12,9 +19,19 @@
  **
  ** Date : April / 2002
  **
- ** $Id: davlib.h,v 1.9 2005/06/07 13:37:11 gully Exp $
- ** $Date: 2005/06/07 13:37:11 $
+ ** $Id: davlib.h,v 1.11 2009/06/10 10:57:23 vatton Exp $
+ ** $Date: 2009/06/10 10:57:23 $
  ** $Log: davlib.h,v $
+ ** Revision 1.11  2009/06/10 10:57:23  vatton
+ ** Change the management of Templates list
+ ** + Implementation of a new WebDAV list of sites
+ ** + Fix problems with lock/unlock status
+ ** Irene
+ **
+ ** Revision 1.10  2009/04/23 14:51:36  vatton
+ ** Improving the WebDAV interface
+ ** Irene
+ **
  ** Revision 1.9  2005/06/07 13:37:11  gully
  ** code cleaning + warning fixes
  ** S. GULLY
@@ -141,24 +158,16 @@ WEBDAV_EXPORT char DAVUserURL[DAV_LINE_MAX];                      /* user's refe
 WEBDAV_EXPORT BOOL DAVAwareness;                              /* if user wants general awareness info */
 WEBDAV_EXPORT BOOL DAVAwarenessExit;                          /* if user wants awareness information */
                                                 /* about his/her locks, when exiting a resource */  
-WEBDAV_EXPORT char DAVResources[DAV_LINE_MAX];                    /* list of user's WebDAV resources */
+
 
 /*
  * Full qualified host.domain name 
  */
 WEBDAV_EXPORT char DAVFullHostName[DAV_LINE_MAX];              
 
-
-/*
- * State of the LockIndicator toggle
- */
-WEBDAV_EXPORT ThotBool DAVLockIndicatorState;
-
-
 /*----------------------------------------------------------------------
    Types and Structures used in WebDAV functions
   ----------------------------------------------------------------------*/
-
 /*
  * Context for WebDAV requests
  */ 
@@ -189,8 +198,6 @@ typedef struct _AHTDAVContext {
 /*----------------------------------------------------------------------
    Definitions for the WebDAV preferences dialogue
   ----------------------------------------------------------------------*/
-
-
 #define DAVPreferencesDlg       1
 #define DAVtextUserReference    2
 #define DAVtextUserResources    3
@@ -206,8 +213,4 @@ typedef struct _AHTDAVContext {
 #define DAVlabelEmpty5         13 
 #define DAVlabelEmpty6         14 
 #define MAX_DAVPREF_DLG        15
-
-
-
-
 #endif

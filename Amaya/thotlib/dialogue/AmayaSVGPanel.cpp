@@ -44,6 +44,8 @@
 
 static
 AMAYA_BEGIN_TOOLBAR_DEF_TABLE(AmayaSVGToolDef)
+  AMAYA_TOOLBAR_DEF("wxID_SVG_TEXT", "CreateSVG_Text", LIB, TMSG_SVG_Text)
+  AMAYA_TOOLBAR_DEF("wxID_SVG_IMG", "CreateSVG_Image", LIB, TMSG_SVG_Image)
   AMAYA_TOOLBAR_DEF("wxID_PANEL_SVG_SELECT", "EditSVG_Select", LIB, TMSG_SEL)
   AMAYA_TOOLBAR_DEF("wxID_PANEL_SVG_GROUP", "CreateSVG_Group", LIB, TMSG_SVG_Group)
   AMAYA_TOOLBAR_DEF("wxID_PANEL_SVG_UNGROUP", "TransformSVG_Ungroup", LIB, TMSG_SVG_Ungroup)
@@ -110,29 +112,29 @@ bool AmayaSVGPanel::Create(wxWindow* parent, wxWindowID id, const wxPoint& pos,
 /* Structure of an SVG contruct */
 typedef struct svg_construct_
 {
-  const char *file_name;
-  int  msg_id;
-  const char *function_name;
+  const    char *file_name;
+  int      msg_id;
+  const    char *function_name;
   ThotBool fill;
 } svg_construct;
 
 /* Structure of a list of a set of constructs */
 typedef struct svg_constructs_
 {
-  const char* directory;
-  int length;
+  const         char* directory;
+  int           length;
   svg_construct list[MAX_CONSTRUCTS_BY_DIRECTORY];
 } svg_constructs;
 
 /* list of all constructions */
 static svg_constructs list_of_constructs[] =
   {
-    {"", 6,
+    {"", 4,
      {
        {"document_svg", TMSG_SVG_SvgCanvas, "CreateSVG_Svg", FALSE},
-       {"SVG_text", TMSG_SVG_Text, "CreateSVG_Text", FALSE},
+       //{"SVG_text", TMSG_SVG_Text, "CreateSVG_Text", FALSE},
        {"SVG_foreign_object", TMSG_SVG_ForeigObject, "CreateSVG_ForeignObject", FALSE},
-       {"document_image", TMSG_SVG_Image, "CreateSVG_Image", FALSE},
+       //{"document_image", TMSG_SVG_Image, "CreateSVG_Image", FALSE},
        {NULL, TMSG_SVG_Information, "EditSVG_Information", FALSE},
        {NULL, TMSG_SVG_GenerateDescription, "EditSVG_GenerateDescription", FALSE}
      }
@@ -160,19 +162,19 @@ static svg_constructs list_of_constructs[] =
      {
        {"SVG_square", TMSG_SVG_Square, "CreateSVG_Square", TRUE},
        {"SVG_rounded_square",
-	TMSG_SVG_RoundedSquare, "CreateSVG_RoundedSquare", TRUE},
+        TMSG_SVG_RoundedSquare, "CreateSVG_RoundedSquare", TRUE},
        {"SVG_rectangle", TMSG_SVG_Rectangle, "CreateSVG_Rectangle", TRUE},
        {"SVG_rounded_rectangle",
-	TMSG_SVG_RoundedRectangle, "CreateSVG_RoundedRectangle", TRUE},
+        TMSG_SVG_RoundedRectangle, "CreateSVG_RoundedRectangle", TRUE},
        {"SVG_diamond", TMSG_SVG_Diamond, "CreateSVG_Diamond", TRUE},
        {"SVG_parallelogram", TMSG_SVG_Parallelogram, "CreateSVG_Parallelogram", TRUE},
        {"SVG_trapezium", TMSG_SVG_Trapezium, "CreateSVG_Trapezium", TRUE},
        {"SVG_equilateral_triangle",
-	TMSG_SVG_EquilateralTriangle, "CreateSVG_EquilateralTriangle", TRUE},
+        TMSG_SVG_EquilateralTriangle, "CreateSVG_EquilateralTriangle", TRUE},
        {"SVG_isosceles_triangle",
-	TMSG_SVG_IsoscelesTriangle, "CreateSVG_IsoscelesTriangle", TRUE},
+        TMSG_SVG_IsoscelesTriangle, "CreateSVG_IsoscelesTriangle", TRUE},
        {"SVG_right_triangle",
-	TMSG_SVG_RightTriangle, "CreateSVG_RectangleTriangle", TRUE},
+        TMSG_SVG_RightTriangle, "CreateSVG_RectangleTriangle", TRUE},
        {"SVG_circle", TMSG_SVG_Circle, "CreateSVG_Circle", TRUE},
        {"SVG_ellipse", TMSG_SVG_Ellipse, "CreateSVG_Ellipse", TRUE}
      }
@@ -182,9 +184,9 @@ static svg_constructs list_of_constructs[] =
      {
        {"SVG_send_to_back", TMSG_SVG_SendToBack, "TransformSVG_SendToBack", FALSE},
        {"SVG_send_backward",
-	TMSG_SVG_SendBackward, "TransformSVG_SendBackward", FALSE},
+        TMSG_SVG_SendBackward, "TransformSVG_SendBackward", FALSE},
        {"SVG_bring_forward",
-	TMSG_SVG_BringForward, "TransformSVG_BringForward", FALSE},
+        TMSG_SVG_BringForward, "TransformSVG_BringForward", FALSE},
        {"SVG_bring_to_front", TMSG_SVG_BringToFront, "TransformSVG_BringToFront", FALSE}
      }
     },
@@ -192,13 +194,13 @@ static svg_constructs list_of_constructs[] =
     {"", 8,
      {
        {"SVG_flip_vertically",
-	TMSG_SVG_FlipVertically, "TransformSVG_FlipVertically", FALSE},
+        TMSG_SVG_FlipVertically, "TransformSVG_FlipVertically", FALSE},
        {"SVG_flip_horizontally",
-	TMSG_SVG_FlipHorizontally, "TransformSVG_FlipHorizontally", FALSE},
+        TMSG_SVG_FlipHorizontally, "TransformSVG_FlipHorizontally", FALSE},
        {"SVG_rotate_anticlockwise",
-	TMSG_SVG_RotateAntiClockwise, "TransformSVG_AntiClockWise", FALSE},
+        TMSG_SVG_RotateAntiClockwise, "TransformSVG_AntiClockWise", FALSE},
        {"SVG_rotate_clockwise",
-	TMSG_SVG_RotateClockwise, "TransformSVG_ClockWise", FALSE},
+        TMSG_SVG_RotateClockwise, "TransformSVG_ClockWise", FALSE},
        {"SVG_rotate", TMSG_SVG_Rotate, "TransformSVG_Rotate", FALSE},
        {"SVG_scale", TMSG_SVG_Scale, "TransformSVG_Scale", FALSE},
        {"SVG_skew", TMSG_SVG_Skew, "TransformSVG_Skew", FALSE},
@@ -274,7 +276,7 @@ static svg_constructs list_of_constructs[] =
        {"3-way_arrow_callout", TMSG_SVG_3_Way_Arrow_Callout, NULL, TRUE},
        {"4-way_arrow_callout", TMSG_SVG_4_Way_Arrow_Callout, NULL, TRUE},
        {"corner_double_arrow_callout",
-	TMSG_SVG_Corner_Double_Arrow_Callout, NULL, TRUE},
+        TMSG_SVG_Corner_Double_Arrow_Callout, NULL, TRUE},
 
        {"S-shape_arrow", TMSG_SVG_S_Shape_Arrow, NULL, TRUE},
        {"rounded_arrow", TMSG_SVG_Rounded_Arrow, NULL, TRUE},
@@ -282,7 +284,7 @@ static svg_constructs list_of_constructs[] =
        {"2-way_rounded_arrow", TMSG_SVG_2_Way_Rounded_Arrow, NULL, TRUE},
 
        {"split_arrow", TMSG_SVG_Split_Arrow, NULL, TRUE},
-       {"pentagon", TMSG_SVG_Pentagon, NULL, TRUE},
+       {"pentagon", TMSG_SVG_Pentagon_Arrow, NULL, TRUE},
        {"chevron", TMSG_SVG_Chevron, NULL, TRUE},
        {"striped_arrow", TMSG_SVG_Striped_Arrow, NULL, TRUE},
        {"notched_arrow", TMSG_SVG_Notched_Arrow, NULL, TRUE}
@@ -496,31 +498,29 @@ void AmayaSVGPanel::DisplayMenu(int i)
   /* Register the number of last popup menu */
   last_menu = i;
 
-  for(j = 0; j < e.length; j++)
+  for (j = 0; j < e.length; j++)
     {
       /* Create a new menu item */
       item = new wxMenuItem(&menu, j,
 			    TtaConvMessageToWX(TtaGetMessage(LIB, e.list[j].msg_id)));
 
       /* Add an icon if the png file exists  */
-      if(e.list[j].file_name != NULL)
-	{
-	  sprintf(name, "%s/%s.png", e.directory, e.list[j].file_name);
-
-	  if(e.list[j].function_name == NULL)
-	    /* It's an SVG template: look in svg/ */
-	    path = TtaGetResourcePathWX(WX_RESOURCES_SVG, name);
-	  else
-	    /* It's an SVG command: look in 16x16 */
-	    path = TtaGetResourcePathWX(WX_RESOURCES_ICON_16X16, name);
-
-	  if(icon.LoadFile(path, wxBITMAP_TYPE_PNG))
-	    item->SetBitmap(icon);
-	}
+      if (e.list[j].file_name != NULL)
+        {
+          sprintf(name, "%s/%s.png", e.directory, e.list[j].file_name);
+          if (e.list[j].function_name == NULL)
+            /* It's an SVG template: look in svg/ */
+            path = TtaGetResourcePathWX(WX_RESOURCES_SVG, name);
+          else
+            /* It's an SVG command: look in 16x16 */
+            path = TtaGetResourcePathWX(WX_RESOURCES_ICON_16X16, name);
+          
+          if (icon.LoadFile(path, wxBITMAP_TYPE_PNG))
+            item->SetBitmap(icon);
+        }
 
       /* Add the item in the menu */
       menu.Append(item);
-      
     }
 
   /* Display the menu */
@@ -544,24 +544,23 @@ void AmayaSVGPanel::InsertElement(int i, int j)
   View view;
   TtaGiveActiveView( &doc, &view );
 
-  if(doc > 0 && j >= 0 && j < e.length)
+  if (doc > 0 && j >= 0 && j < e.length)
     {
       LastSVGelementIsFilled = e.list[j].fill;
-
-      if(e.list[j].function_name == NULL)
-	{
-	  /* No function name is given: call the creation of an svg template */
-	  sprintf(name, "%s/%s.svg", e.directory, e.list[j].file_name);
-	  path = TtaGetResourcePathWX(WX_RESOURCES_SVG, name);
-	  LastSVGelement = TtaStrdup(path.mb_str(wxConvUTF8));
-	  LastSVGelementTitle = TtaStrdup(TtaGetMessage(LIB, e.list[j].msg_id));
-	  TtaExecuteMenuAction ("CreateSVG_Template", doc, view, TRUE);
-	}
+      if (e.list[j].function_name == NULL)
+        {
+          /* No function name is given: call the creation of an svg template */
+          sprintf(name, "%s/%s.svg", e.directory, e.list[j].file_name);
+          path = TtaGetResourcePathWX(WX_RESOURCES_SVG, name);
+          LastSVGelement = TtaStrdup(path.mb_str(wxConvUTF8));
+          LastSVGelementTitle = TtaStrdup(TtaGetMessage(LIB, e.list[j].msg_id));
+          TtaExecuteMenuAction ("CreateSVG_Template", doc, view, TRUE);
+        }
       else
-	{
-	  /* Call the function */
-	  TtaExecuteMenuAction (e.list[j].function_name, doc, view, TRUE);
- 	}
+        {
+          /* Call the function */
+          TtaExecuteMenuAction (e.list[j].function_name, doc, view, TRUE);
+        }
     }
 }
 #endif /* #ifdef _WX */

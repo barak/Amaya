@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2008
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -394,8 +394,7 @@ static void TransRef (PtrElement pElem, PtrElement pRoot, PtrDocument pDoc)
 Element TtaCopyTree (Element sourceElement, Document sourceDocument,
                      Document destinationDocument, Element parent)
 {
-  PtrElement          element;
-  PtrElement          ancestor;
+  PtrElement          element, ancestor;
   PtrSSchema          pSS, nextExtension;
 
   UserErrorCode = 0;
@@ -789,23 +788,29 @@ void TtaDeleteTree (Element element, Document document)
   else
     {
       /* Checks the parameter document */
-      if (document < 1 || document > MAX_DOCUMENTS)
+      if (document == 0 && DocumentOfElement ((PtrElement) element) != NULL)
         TtaError (ERR_invalid_document_parameter);
-      else if (LoadedDocument[document - 1] == NULL)
+      else if (document < 0 || document > MAX_DOCUMENTS)
+        TtaError (ERR_invalid_document_parameter);
+      else if (document > 0 && LoadedDocument[document - 1] == NULL)
         TtaError (ERR_invalid_document_parameter);
       else
         /* Parameter document is ok */
         {
-          pDoc = LoadedDocument[document - 1];
           pEl = (PtrElement) element;
-          root = (pEl->ElParent == NULL);
+          if (document == 0)
+            pDoc = NULL;
+          else
+            {
+              pDoc = LoadedDocument[document - 1];
+              root = (pEl->ElParent == NULL);
 #ifndef NODISPLAY
-          UndisplayElement (pEl, document);
+              UndisplayElement (pEl, document);
 #endif
-          if (root && pDoc->DocDocElement == pEl)
-            /* The whole main tree is destroyed */
-            pDoc->DocDocElement = NULL;
-	  
+              if (root && pDoc->DocDocElement == pEl)
+                /* The whole main tree is destroyed */
+                pDoc->DocDocElement = NULL;
+            }
           DeleteElement (&pEl, pDoc);
         }
     }
@@ -2502,6 +2507,30 @@ int TtaIsReadOnly (Element element)
 }
 
 /* ----------------------------------------------------------------------
+   TtaIsSetReadOnly
+   Tests whether the given element itself is ReadOnly.
+   Parameter:
+   element: the element to be tested.
+   Return Value:
+   1 if the element is protected, 0 if not.
+   ---------------------------------------------------------------------- */
+int TtaIsSetReadOnly (Element element)
+{
+  int                 result;
+
+  UserErrorCode = 0;
+  result = 0;
+  if (element == NULL)
+    TtaError (ERR_invalid_parameter);
+  else
+    {
+      if (((PtrElement) element)->ElAccess == ReadOnly)
+        result = 1;
+    }
+  return result;
+}
+
+/* ----------------------------------------------------------------------
    TtaIsHidden
    Tests whether a given element is hidden to the user.
    Parameter:
@@ -2541,6 +2570,32 @@ int TtaIsCopy (Element element)
   if (element == NULL)
     TtaError (ERR_invalid_parameter);
   else if (((PtrElement)element)->ElIsCopy)
+    result = 1;
+  return result;
+}
+
+/* ----------------------------------------------------------------------
+   TtaIsGaphics
+   Tests whether a given element is a graphics.
+   Parameter:
+   element: the element to be tested.
+   Return Value:
+   1 if the element is a graphics, 0 if not.
+
+   ---------------------------------------------------------------------- */
+int TtaIsGraphics (Element element)
+{
+  PtrElement  pEl = (PtrElement)element;
+  int         result;
+
+  UserErrorCode = 0;
+  result = 0;
+  if (element == NULL)
+    TtaError (ERR_invalid_parameter);
+  else if (pEl->ElTerminal &&
+           (pEl->ElLeafType == LtPolyLine ||
+            pEl->ElLeafType == LtGraphics ||
+            pEl->ElLeafType == LtPath))
     result = 1;
   return result;
 }

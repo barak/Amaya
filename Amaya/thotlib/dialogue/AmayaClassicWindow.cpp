@@ -137,14 +137,15 @@ bool AmayaClassicWindow::Initialize()
         m_pNotebook = new AmayaAdvancedNotebook( m_pSplitterWindow, wxID_ANY );
 
         ThotBool panel_opened;
+        int kind = GetKind();
         TtaGetEnvBoolean ("OPEN_PANEL", &panel_opened);
         
         Freeze();
         ShowToolPanels();
-        if(!panel_opened ||
-           GetKind() == WXAMAYAWINDOW_ANNOT ||
-           GetKind() == WXAMAYAWINDOW_HELP ||
-           GetKind() == WXAMAYAWINDOW_CSS)
+        if (!panel_opened ||
+            kind == WXAMAYAWINDOW_ANNOT ||
+            kind == WXAMAYAWINDOW_HELP ||
+            kind == WXAMAYAWINDOW_CSS)
           HideToolPanels();
         Thaw();
       }
@@ -195,7 +196,9 @@ void AmayaClassicWindow::LoadConfig()
 void AmayaClassicWindow::SaveConfig()
 {
   // TODO : save the global config about the toolPanelBar
-  m_pPanel->SaveConfig();
+  int kind = GetKind();
+  if (kind != WXAMAYAWINDOW_ANNOT && kind != WXAMAYAWINDOW_HELP)
+    m_pPanel->SaveConfig();
   AmayaNormalWindow::SaveConfig();
 }
 
@@ -261,8 +264,12 @@ void AmayaClassicWindow::OnClose(wxCloseEvent& event)
 {
   if (s_normalWindowCount == 1)
     {
-      SaveConfig();
-      TtaSetEnvBoolean("OPEN_PANEL", ToolPanelsShown(), TRUE);
+      int kind = GetKind();
+      if (kind != WXAMAYAWINDOW_ANNOT && kind != WXAMAYAWINDOW_HELP)
+        {
+          SaveConfig();
+          TtaSetEnvBoolean("OPEN_PANEL", ToolPanelsShown(), TRUE);
+        }
     }
   
   if(m_pNotebook)

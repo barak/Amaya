@@ -9,7 +9,7 @@ THOTDIR = @top_srcdir@
 WWWDAV = @WWWDAV@
 LIBWWW_RDF_PARSER = @LIBWWW_RDF_PARSER@
 
-OBJDIRS = wxdialog
+OBJDIRS = wxdialog mathedit
 
 include ../Options
 
@@ -82,7 +82,7 @@ redland:
 	$(MAKE) -C ../redland
 
 .depends depend : ../tools/mkdep/mkdep
-	../tools/mkdep/mkdep -relative -vpath $(VPATH) $(INCLUDES) $(VPATH)/*.c > .depends
+	../tools/mkdep/mkdep -relative -vpath $(VPATH) $(INCLUDES) $(VPATH)/*.c  $(VPATH)/*.cpp > .depends
 
 #########################################################################
 #									#
@@ -199,7 +199,7 @@ AMAYA_OBJ = \
 	wxdialog/CheckedListDlgWX.o \
 	wxdialog/CreateTableDlgWX.o \
 	wxdialog/DocInfoDlgWX.o \
-        wxdialog/FontDlgWX.o \
+	wxdialog/FontDlgWX.o \
 	wxdialog/HRefDlgWX.o \
 	wxdialog/ImageDlgWX.o \
 	wxdialog/InitConfirmDlgWX.o \
@@ -208,6 +208,7 @@ AMAYA_OBJ = \
 	wxdialog/ListEditDlgWX.o \
 	wxdialog/ListNSDlgWX.o \
 	wxdialog/MakeIdDlgWX.o \
+	wxdialog/MetaDlgWX.o \
 	wxdialog/ObjectDlgWX.o \
 	wxdialog/OpenDocDlgWX.o \
 	wxdialog/PreferenceDlgWX.o \
@@ -220,7 +221,7 @@ AMAYA_OBJ = \
 	wxdialog/SpellCheckDlgWX.o \
 	wxdialog/SendByMailDlgWX.o \
 	wxdialog/StyleDlgWX.o \
-  wxdialog/StyleListToolPanel.o \
+	wxdialog/StyleListToolPanel.o \
 	wxdialog/TitleDlgWX.o \
 	wxdialogapi.o \
 	EDITORAPP.o \

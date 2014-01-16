@@ -1064,7 +1064,7 @@ void TtaSetGraphicsShape (Element element, char shape, Document document)
   int                 delta;
   ThotBool            polyline;
   PtrElement          pElAsc, pEl;
-  PtrPathSeg pPa, pPaNext;
+  PtrPathSeg          pPa, pPaNext;
 
   UserErrorCode = 0;
   if (element == NULL)
@@ -2314,181 +2314,387 @@ void TtaAppendPathSeg (Element element, PathSegment segment, Document document)
       }
 }
 
-
 #ifndef NODISPLAY
+
+/*----------------------------------------------------------------------
+  TtaNewGradient
+  ----------------------------------------------------------------------*/
+void TtaNewGradient (ThotBool linear, Element el)
+{
 #ifdef _GL
-/*----------------------------------------------------------------------
-  ---------------------------------------------------------------------- */
-static RgbaDef *NewRgbaDef (Element el)
-{
-  RgbaDef *seek;
- 
-  seek = (RgbaDef *)TtaGetMemory (sizeof (RgbaDef));
-  seek->el = el;
-  seek->next = NULL;
+  Gradient *grad;
 
-  return seek;
-}
-
-/*----------------------------------------------------------------------
-  ---------------------------------------------------------------------- */
-static GradDef *NewGradDef ()
-{
-  GradDef *grad;
- 
-  grad = (GradDef *)TtaGetMemory (sizeof (GradDef));
-  grad->x1 = 0;
-  grad->x2 = 0;
-  grad->y1 = 0;
-  grad->y2 = 0;
-  grad->next = NULL;
-  
-  return grad;
-}
-
-/*----------------------------------------------------------------------
-  ---------------------------------------------------------------------- */
-static GradDef *GetGradientRef (PtrElement father)
-{  
-  GradDef *grad;
-  
-  if (father->ElGradient == NULL)
-    father->ElGradient = NewGradDef ();
-  grad = (GradDef *) father->ElGradient;
-  return grad;
-}
-
-/*----------------------------------------------------------------------
-  ---------------------------------------------------------------------- */
-static RgbaDef *GetStopRef (Element el, PtrElement father)
-{
-  RgbaDef *previous = NULL;
-  RgbaDef *seek;
-  GradDef *grad;
-
-  if (father->ElGradient == NULL)
-    father->ElGradient = NewGradDef ();
-  grad = (GradDef *) father->ElGradient;
-  
-  seek = grad->next;
-  while (seek)
+  grad = (Gradient *)TtaGetMemory (sizeof (Gradient));
+  grad->userSpace = FALSE;
+  grad->gradTransform = NULL;
+  grad->spreadMethod = 1;  /* spreadMethod = pad by default */
+  grad->el = (PtrElement)el;
+  grad->el->ElGradient = grad;
+  grad->el->ElGradientDef = TRUE;
+  grad->firstStop = NULL;
+  if (linear)
     {
-      if (seek->el == el)
-        return seek;
-      previous = seek;
-      seek = seek->next;
+      grad->gradType = Linear;
+      grad->gradX1 = 0;
+      grad->gradX2 = 1;   /* default value = horizontal axis */
+      grad->gradY1 = 0;
+      grad->gradY2 = 0;
     }
-  seek = NewRgbaDef (el);
-  if (previous)
-    previous->next = seek;
   else
-    grad->next = seek;
-  
-  return seek;
-}
-#endif /*_GL*/
-
-
-/*----------------------------------------------------------------------
-  ---------------------------------------------------------------------- */
-void AddStopColor (Element el, PtrElement Father, 
-                   unsigned short red, unsigned short green, unsigned short blue)
-{
-#ifdef _GL
-  RgbaDef *stop_grad;
-  
-  stop_grad = GetStopRef (el, Father);
-  stop_grad->r = red;
-  stop_grad->g = green;
-  stop_grad->b = blue;
-  stop_grad->a = 255;
-#endif /* _GL */
-}
-
-void AddOffset (Element el, PtrElement Father, float offset)
-{
-#ifdef _GL
-  RgbaDef *Stop;
-  
-  Stop = GetStopRef (el, Father);
-  Stop->length = offset;
+    {
+      grad->gradType = Radial;
+      grad->gradCx = .5;   /* default value */
+      grad->gradCy = .5;   /* default value */
+      grad->gradFx = .5;
+      grad->gradFy = .5;
+      grad->gradR = .5;    /* default value */
+    }
 #endif /* _GL */
 }
 
 /*----------------------------------------------------------------------
-  TtaSetLinearx1Gradient
+  TtaNewGradientStop
   ----------------------------------------------------------------------*/
-void TtaSetLinearx1Gradient (int value, Element el)
+void TtaNewGradientStop (Element stop, Element gradient)
 {
 #ifdef _GL
-  GradDef *grad;
-  
-  grad = GetGradientRef ((PtrElement) TtaGetParent (el));
-  grad->x1 = value;
+  GradientStop *previous, *gstop, *newStop;
+  Gradient *grad;
+
+  if (!stop || !gradient)
+    /* error */
+    return;
+  grad = ((PtrElement)gradient)->ElGradient;
+  if (!grad)
+    /* error */
+    return;
+  newStop = (GradientStop *)TtaGetMemory (sizeof (GradientStop));
+  newStop->el = (PtrElement)stop;
+  newStop->next = NULL;
+  newStop->r = 0;
+  newStop->g = 0;
+  newStop->b = 0;
+  newStop->a = 255;
+
+  previous = NULL;
+  gstop = grad->firstStop;
+  while (gstop)
+    {
+      previous = gstop;
+      gstop = gstop->next;
+    }
+  if (previous)
+    previous->next = newStop;
+  else
+    grad->firstStop = newStop;
+#endif /* _GL */
+}
+
+#ifdef _GL
+/*----------------------------------------------------------------------
+  GetGradientStop
+  ----------------------------------------------------------------------*/
+static GradientStop* GetGradientStop (PtrElement stop, PtrElement gradient)
+{
+  GradientStop *gstop;
+  Gradient     *grad;
+
+  if (stop == NULL || gradient == NULL || gradient->ElGradient == NULL)
+    /* error */
+    return NULL;
+  grad = gradient->ElGradient;
+  gstop = grad->firstStop;
+  while (gstop)
+    {
+      if (gstop->el == stop)
+        return gstop;
+      else
+	gstop = gstop->next;
+    }
+  return NULL;
+}
+#endif /* _GL */
+
+/*----------------------------------------------------------------------
+  TtaSetGradientUnits
+  ----------------------------------------------------------------------*/
+void TtaSetGradientUnits (ThotBool value, Element el)
+{
+#ifdef _GL
+  Gradient *grad;
+
+  if (el == NULL)
+    return;
+  grad = ((PtrElement)el)->ElGradient;
+  if (grad)
+    grad->userSpace = value;
 #endif /* _GL */
 }
 
 /*----------------------------------------------------------------------
-  TtaSetLineary1Gradient
+  TtaAppendGradientTransform
   ----------------------------------------------------------------------*/
-void TtaSetLineary1Gradient (int value, Element el)
+void TtaAppendGradientTransform (Element el, void *transform)
 {
 #ifdef _GL
-  GradDef *grad;
-  
-  grad = GetGradientRef ((PtrElement) TtaGetParent (el));
-  grad->y1 = value;
+  Gradient *grad;
+  PtrTransform       pPa, pPrevPa;
+
+  if (!el)
+    return;
+  grad = ((PtrElement)el)->ElGradient;
+  if (grad && transform)
+    {
+      pPa = grad->gradTransform;
+      pPrevPa = NULL;
+      while (pPa)
+	{
+	  pPrevPa = pPa;
+	  pPa = pPa->Next;
+	}
+      if (pPrevPa == NULL)
+	grad->gradTransform = (PtrTransform) transform;
+      else
+	pPrevPa->Next = (PtrTransform) transform;
+    }
 #endif /* _GL */
 }
 
 /*----------------------------------------------------------------------
-  TtaSetLinearx2Gradient
+  TtaSetGradientSpreadMethod
+  value = 1: pad
+  value = 2: reflect
+  value = 3: repeat
   ----------------------------------------------------------------------*/
-void TtaSetLinearx2Gradient (int value, Element el)
+void TtaSetGradientSpreadMethod (int value, Element el)
 {
 #ifdef _GL
-  GradDef *grad;
+  Gradient *grad;
   
-  grad = GetGradientRef ((PtrElement) TtaGetParent (el));
-  grad->x2 = value;
+  if (!el)
+    return;
+  grad = ((PtrElement)el)->ElGradient;
+  if (grad)
+    grad->spreadMethod = value;
 #endif /* _GL */
 }
 
 /*----------------------------------------------------------------------
-  TtaSetLineary2Gradient
+  TtaSetLinearGradientx1
   ----------------------------------------------------------------------*/
-void TtaSetLineary2Gradient (int value, Element el)
+void TtaSetLinearGradientx1 (float value, Element el)
 {
 #ifdef _GL
-  GradDef *grad;
-  
-  grad = GetGradientRef ((PtrElement) TtaGetParent (el));
-  grad->y2 = value;
+  Gradient *grad;
+
+  if (!el)
+    return;
+  grad = ((PtrElement)el)->ElGradient;
+  if (grad && grad->gradType == Linear)
+    grad->gradX1 = value;
 #endif /* _GL */
 }
 
 /*----------------------------------------------------------------------
-  TtaSetStopColorGradient
+  TtaSetLinearGradienty1
   ----------------------------------------------------------------------*/
-void TtaSetStopColorGradient (unsigned short red, unsigned short green,
+void TtaSetLinearGradienty1 (float value, Element el)
+{
+#ifdef _GL
+  Gradient *grad;
+  
+  if (!el)
+    return;
+  grad = ((PtrElement)el)->ElGradient;
+  if (grad && grad->gradType == Linear)
+    grad->gradY1 = value;
+#endif /* _GL */
+}
+
+/*----------------------------------------------------------------------
+  TtaSetLinearGradientx2
+  ----------------------------------------------------------------------*/
+void TtaSetLinearGradientx2 (float value, Element el)
+{
+#ifdef _GL
+  Gradient *grad;
+
+  if (!el)
+    return;
+  grad = ((PtrElement)el)->ElGradient;
+  if (grad && grad->gradType == Linear)
+    grad->gradX2 = value;
+#endif /* _GL */
+}
+
+/*----------------------------------------------------------------------
+  TtaSetLinearGradienty2
+  ----------------------------------------------------------------------*/
+void TtaSetLinearGradienty2 (float value, Element el)
+{
+#ifdef _GL
+  Gradient *grad;
+  
+  if (!el)
+    return;
+  grad = ((PtrElement)el)->ElGradient;
+  if (grad && grad->gradType == Linear)
+    grad->gradY2 = value;
+#endif /* _GL */
+}
+
+/*----------------------------------------------------------------------
+  TtaSetRadialGradientRadius
+  ----------------------------------------------------------------------*/
+void TtaSetRadialGradientRadius (float value, Element el)
+{
+#ifdef _GL
+  Gradient *grad;
+
+  if (!el)
+    return;
+  grad = ((PtrElement)el)->ElGradient;
+  if (grad && grad->gradType == Radial)
+    grad->gradR = value;
+#endif /* _GL */
+}
+
+/*----------------------------------------------------------------------
+  TtaSetRadialGradientcx
+  ----------------------------------------------------------------------*/
+void TtaSetRadialGradientcx (float value, Element el)
+{
+#ifdef _GL
+  Gradient *grad;
+
+  if (!el)
+    return;
+  grad = ((PtrElement)el)->ElGradient;
+  if (grad && grad->gradType == Radial)
+    grad->gradCx = value;
+#endif /* _GL */
+}
+
+/*----------------------------------------------------------------------
+  TtaSetRadialGradientcy
+  ----------------------------------------------------------------------*/
+void TtaSetRadialGradientcy (float value, Element el)
+{
+#ifdef _GL
+  Gradient *grad;
+
+  if (!el)
+    return;
+  grad = ((PtrElement)el)->ElGradient;
+  if (grad && grad->gradType == Radial)
+    grad->gradCy = value;
+#endif /* _GL */
+}
+
+/*----------------------------------------------------------------------
+  TtaSetRadialGradientfx
+  ----------------------------------------------------------------------*/
+void TtaSetRadialGradientfx (float value, Element el)
+{
+#ifdef _GL
+  Gradient *grad;
+
+  if (!el)
+    return;
+  grad = ((PtrElement)el)->ElGradient;
+  if (grad && grad->gradType == Radial)
+    grad->gradFx = value;
+#endif /* _GL */
+}
+
+/*----------------------------------------------------------------------
+  TtaSetRadialGradientfy
+  ----------------------------------------------------------------------*/
+void TtaSetRadialGradientfy (float value, Element el)
+{
+#ifdef _GL
+  Gradient *grad;
+  
+  if (!el)
+    return;
+  grad = ((PtrElement)el)->ElGradient;
+  if (grad && grad->gradType == Radial)
+    grad->gradFy = value;
+#endif /* _GL */
+}
+
+/*----------------------------------------------------------------------
+  TtaSetGradientStopOffset
+  ----------------------------------------------------------------------*/
+void TtaSetGradientStopOffset (float offset, Element el)
+{
+#ifdef _GL
+  GradientStop *gstop;
+  
+  if (!el)
+    return;
+  gstop = GetGradientStop ((PtrElement)el, (PtrElement)(TtaGetParent (el)));
+  if (gstop)
+    gstop->offset = offset;
+#endif /* _GL */
+}
+
+/*----------------------------------------------------------------------
+  TtaSetGradientStopColor
+  ----------------------------------------------------------------------*/
+void TtaSetGradientStopColor (unsigned short red, unsigned short green,
                               unsigned short blue, Element el)
 {
 #ifdef _GL
-  AddStopColor (el, (PtrElement) (TtaGetParent(TtaGetParent(el))), red, green, blue);  
+  GradientStop *gstop;
+  
+  if (!el)
+    return;
+  gstop = GetGradientStop ((PtrElement)el, (PtrElement) (TtaGetParent(el)));
+  if (gstop)
+    {
+      gstop->r = red;
+      gstop->g = green;
+      gstop->b = blue;
+    }
 #endif /* _GL */
 }
 
 /*----------------------------------------------------------------------
-  TtaSetStopOffsetColorGradient
+  TtaSetGradientStopOpacity
   ----------------------------------------------------------------------*/
-void TtaSetStopOffsetColorGradient (float offset, Element el)
+void TtaSetGradientStopOpacity (float opacity, Element el)
 {
 #ifdef _GL
-  AddOffset (el, (PtrElement)(TtaGetParent(TtaGetParent (el))),
-             offset);  
+  GradientStop *gstop;
+  
+  if (!el)
+    return;
+  gstop = GetGradientStop ((PtrElement)el, (PtrElement) (TtaGetParent(el)));
+  if (gstop)
+    gstop->a = (unsigned short) (opacity * 255);
 #endif /* _GL */
 }
 
+/*----------------------------------------------------------------------
+  TtaCopyGradientUse
+  If the parent of element el refers to a gradient, move this reference
+  to element el itself.
+  ----------------------------------------------------------------------*/
+void TtaCopyGradientUse (Element el)
+{
+#ifdef _GL
+  if (el == NULL || ((PtrElement)el)->ElParent == NULL)
+    return;
+  if (((PtrElement)el)->ElParent->ElGradient &&
+      !((PtrElement)el)->ElParent->ElGradientDef)
+    {
+      ((PtrElement)el)->ElGradient = ((PtrElement)el)->ElParent->ElGradient;
+      ((PtrElement)el)->ElGradientDef = FALSE;
+      ((PtrElement)el)->ElParent->ElGradient = NULL;
+    }
+#endif /* _GL */
+}
 
 /* ----------------------------------------------------------------------
    getPathSegment
@@ -2771,40 +2977,28 @@ ThotBool TtaInsertPointInCurve (Document doc, Element el,
   transform: the transformation info to be appended.
   document: the document containing the element.
   ----------------------------------------------------------------------*/
-void TtaAppendTransform (Element element, void *transform, 
-                         Document document)
+void TtaAppendTransform (Element element, void *transform)
 {
   PtrTransform       pPa, pPrevPa;
      
   UserErrorCode = 0;
-  if (element == NULL)
+  if (element == NULL || transform == NULL)
     TtaError (ERR_invalid_parameter);
   else
-    /* verifies the parameter document */
-    if (document < 1 || document > MAX_DOCUMENTS)
-      TtaError (ERR_invalid_document_parameter);
-    else if (LoadedDocument[document - 1] == NULL)
-      TtaError (ERR_invalid_document_parameter);
-    else
-      /* parameter document is correct */
-      {
-        if (element && transform)
-          {
-            pPa = ((PtrElement) element)->ElTransform;
-            pPrevPa = NULL;
-            while (pPa)
-              {
-                pPrevPa = pPa;
-                pPa = pPa->Next;
-              }
-            if (pPrevPa == NULL)
-              ((PtrElement) element)->ElTransform = (PtrTransform) transform;
-            else
-              pPrevPa->Next = (PtrTransform) transform;
-          }
-      }
+    {
+      pPa = ((PtrElement) element)->ElTransform;
+      pPrevPa = NULL;
+      while (pPa)
+	{
+	  pPrevPa = pPa;
+	  pPa = pPa->Next;
+	}
+      if (pPrevPa == NULL)
+	((PtrElement) element)->ElTransform = (PtrTransform) transform;
+      else
+	pPrevPa->Next = (PtrTransform) transform;
+    }
 }
-
 
 /*----------------------------------------------------------------------
   TransformAddition
@@ -2964,33 +3158,34 @@ void TtaRemoveTransform (Document document, Element element)
 }
 
 /*----------------------------------------------------------------------
-  TtaSimplifyTransformMatrix
-
+  SimplifyTransformMatrix
   Return a new transform of type PtElMatrix which represents the
   composition of all the elements of the list "transform".
   ---------------------------------------------------------------------- */
-extern void *TtaSimplifyTransformMatrix(void *transform)
+static PtrTransform SimplifyTransformMatrix (Element el, PtrTransform pPa)
 {
-  PtrTransform result, pPa;
-  double T, cosT,sinT, tanT, a, b, c, d, e, f;
+  PtrTransform result;
+  PtrElement   pEl = (PtrElement) el;
+  float        xtrans,  ytrans;
+  double       xscale, yscale;
+  double       T, cosT,sinT, tanT, a, b, c, d, e, f;
+  ThotBool     istranslated, isscaled;
 
-  if(transform == NULL)
+  if ((pEl == NULL || pEl->ElTransform == NULL) && pPa == NULL)
     /* Nothing to do */
     return NULL;
 
-  pPa = (PtrTransform)(transform);
-
-  if(pPa->TransType == PtElMatrix && pPa->Next == NULL)
+  if (pPa == NULL)
+    pPa = pEl->ElTransform;
+  if (pPa->TransType == PtElMatrix && pPa->Next == NULL)
     /* The matrix is already simplified, return a copy */
-    return TtaCopyTransform(transform);
+    return (PtrTransform) TtaCopyTransform (pPa);
 
   /* result = Identity */
-  result = ((PtrTransform)(TtaNewTransformMatrix(1, 0, 0, 1, 0, 0)));
+  result = (PtrTransform) TtaNewTransformMatrix (1, 0, 0, 1, 0, 0);
   result->Next = NULL;
-
   while (pPa)
-    {      
-
+    {
       switch (pPa->TransType)
         {
         case PtElTranslate:
@@ -3000,18 +3195,33 @@ extern void *TtaSimplifyTransformMatrix(void *transform)
           result->FMatrix += result->BMatrix*pPa->XScale +
             result->DMatrix*pPa->YScale;
           break;
-
         case PtElScale:
           result->AMatrix *= pPa->XScale;
           result->CMatrix *= pPa->YScale;
           result->BMatrix *= pPa->XScale;
           result->DMatrix *= pPa->YScale;
           break;
-
         case PtElViewBox:
           /* TODO */
+          GetViewBoxTransformation (pEl->ElTransform,
+                                    pEl->ElAbstractBox[0]->AbBox->BxW,
+                                    pEl->ElAbstractBox[0]->AbBox->BxH,
+                                    &xtrans, &ytrans,
+                                    &xscale, &yscale,
+                                    &istranslated, &isscaled);
+          if (istranslated || isscaled)
+            {
+              //printf ("xtrans=%f ytrans=%f xscale=%f yscale=%f\n",xtrans,  ytrans, xscale, yscale);
+              result->EMatrix = result->AMatrix * xtrans +
+              result->CMatrix * ytrans;
+              result->FMatrix = result->BMatrix * xtrans +
+                result->DMatrix * ytrans;
+              result->AMatrix *= xscale;
+              result->CMatrix *= yscale;
+              result->BMatrix *= xscale;
+              result->DMatrix *= yscale;
+            }
           break;
-
         case PtElRotate:
         case PtElAnimRotate:
           /* tranlate(XRotate,YRotate) */
@@ -3031,7 +3241,6 @@ extern void *TtaSimplifyTransformMatrix(void *transform)
           d = result->DMatrix;
           e = result->EMatrix;
           f = result->FMatrix;
-
           result->AMatrix = (float)(a*cosT + c*sinT);
           result->CMatrix = (float)(-a*sinT + c*cosT);
           result->BMatrix = (float)(b*cosT + d*sinT);
@@ -3043,7 +3252,6 @@ extern void *TtaSimplifyTransformMatrix(void *transform)
           result->FMatrix -= result->BMatrix*pPa->XRotate +
             result->DMatrix*pPa->YRotate;
           break;  
-
         case PtElMatrix:
           a = result->AMatrix;
           b = result->BMatrix;
@@ -3051,7 +3259,6 @@ extern void *TtaSimplifyTransformMatrix(void *transform)
           d = result->DMatrix;
           e = result->EMatrix;
           f = result->FMatrix;
-
           result->AMatrix = (float)(a*pPa->AMatrix + c*pPa->BMatrix);
           result->CMatrix = (float)(a*pPa->CMatrix + c*pPa->DMatrix);
           result->BMatrix = (float)(b*pPa->AMatrix + d*pPa->BMatrix);
@@ -3059,27 +3266,21 @@ extern void *TtaSimplifyTransformMatrix(void *transform)
           result->EMatrix += (float)(a*pPa->EMatrix + c*pPa->FMatrix);
           result->FMatrix += (float)(b*pPa->EMatrix + d*pPa->FMatrix);
           break;	  
-
         case PtElSkewX:
           T = pPa->TrAngle * M_PI / 180;
           tanT = tan(T);
-
           result->CMatrix += (float)(tanT*result->AMatrix);
           result->DMatrix += (float)(tanT*result->BMatrix);
           break;
-
         case PtElSkewY:
           T = pPa->TrAngle * M_PI / 180;
           tanT = tan(T);
-
           result->AMatrix += (float)(tanT*result->CMatrix);
           result->BMatrix += (float)(tanT*result->DMatrix);
           break;	  
-
         default:
           break;
-        }	       
- 
+        }
       pPa = pPa->Next;
     }
 
@@ -3092,13 +3293,13 @@ extern void *TtaSimplifyTransformMatrix(void *transform)
   Convert the coordinates (x,y) of a point inside the space of the element
   el into coordinates in its parent space.
   ---------------------------------------------------------------------- */
-extern void TtaCoordinatesInParentSpace(Element el, float *x, float *y)
+void TtaCoordinatesInParentSpace(Element el, float *x, float *y)
 {
-  float newx,newy;
-  PtrTransform transform = (PtrTransform)
-    TtaSimplifyTransformMatrix(((PtrElement) el)->ElTransform);
+  PtrTransform transform;
+  float        newx, newy;
 
-  if(transform)
+  transform = SimplifyTransformMatrix (el, NULL);
+  if (transform)
     {
       newx = transform->AMatrix * *x +
         transform->CMatrix * *y +
@@ -3107,10 +3308,8 @@ extern void TtaCoordinatesInParentSpace(Element el, float *x, float *y)
       newy = transform->BMatrix * *x +
         transform->DMatrix * *y +
         transform->FMatrix;
-
       *x = newx;
       *y = newy;
-
       TtaFreeTransform (transform);
     }
 }
@@ -3126,35 +3325,59 @@ extern void TtaCoordinatesInParentSpace(Element el, float *x, float *y)
   (          1          )         (        1      )
 
   ---------------------------------------------------------------------- */
-extern void *TtaGetCurrentTransformMatrix(Element el, Element ancestor)
+void *TtaGetCurrentTransformMatrix(Element el, Element ancestor)
 {
   PtrTransform CTM = NULL, transform;
+  PtrElement   pEl, pAncestor;
+  float        x_trans, y_trans;
+  double       x_scale, y_scale; 
+  ThotBool     is_translated, is_scaled;
 
+  pEl = (PtrElement) el;
+  pAncestor = (PtrElement) ancestor;
   /* Concatenate all simplified transform matrix */
-  while(el && el != ancestor)
+  while (pEl && pEl != pAncestor)
     {
-      transform = (PtrTransform)
-        TtaSimplifyTransformMatrix(((PtrElement) el)->ElTransform);
-
-      if(transform != NULL)
+      transform = SimplifyTransformMatrix(el, NULL);
+      if (transform)
         {
-          transform -> Next = CTM;
+          transform->Next = CTM;
           CTM = transform;
         }
-      el = TtaGetParent(el);
+      pEl = pEl->ElParent;
     }
-
-
-  /* Simplify the product */
-  if(CTM)
+  if (pEl == pAncestor && pEl->ElTransform &&
+      pEl->ElTransform->TransType == PtElViewBox && pEl->ElAbstractBox[0] &&
+      pEl->ElAbstractBox[0]->AbBox)
     {
-      transform = (PtrTransform)
-        TtaSimplifyTransformMatrix(CTM);
-
-      TtaFreeTransform(CTM);
+      GetViewBoxTransformation (pEl->ElTransform,
+                                pEl->ElAbstractBox[0]->AbBox->BxW,
+                                pEl->ElAbstractBox[0]->AbBox->BxH,
+                                &x_trans, &y_trans,
+                                &x_scale, &y_scale,
+                                &is_translated, &is_scaled);
+      if (is_translated || is_scaled)
+        {
+          transform = ((PtrTransform)(TtaNewTransformMatrix(1, 0, 0, 1, 0, 0)));
+          transform->Next = CTM;
+          transform->EMatrix = transform->AMatrix * x_trans +
+            transform->CMatrix * y_trans;
+          transform->FMatrix = transform->BMatrix * x_trans +
+            transform->DMatrix * y_trans;
+          transform->AMatrix *= x_scale;
+          transform->CMatrix *= y_scale;
+          transform->BMatrix *= x_scale;
+          transform->DMatrix *= y_scale;
+          CTM = transform;
+        }
+    }
+  /* Simplify the product */
+  if (CTM)
+    {
+      transform = (PtrTransform) SimplifyTransformMatrix (NULL, CTM);
+      TtaFreeTransform (CTM);
       CTM = transform;
     }
- 
   return CTM;
 }
 
@@ -3164,7 +3387,7 @@ extern void *TtaGetCurrentTransformMatrix(Element el, Element ancestor)
   Return the matrix representing the inverse of a transform. If the
   transform is not inversible, then return NULL.
   ----------------------------------------------------------------------*/
-extern void *TtaInverseTransform (void *transform)
+void *TtaInverseTransform (void *transform)
 {
   PtrTransform result, pPa;
   double a,b,c,d,e,f,a2,b2,c2,d2,e2,f2, cosA, sinA, tanA, det;
@@ -3180,19 +3403,19 @@ extern void *TtaInverseTransform (void *transform)
         case PtElTranslate:
         case PtElAnimTranslate:
           /* Check whether the scale matrix is inversible */
-          if(pPa -> XScale == 0 || pPa -> YScale == 0)
+          if(pPa->XScale == 0 || pPa->YScale == 0)
             {
               TtaFreeTransform (result);
               return NULL;
             }
 
           /* Multiply by the inverse of scale(XScale, YScale) */
-          result->AMatrix /= pPa -> XScale;
-          result->CMatrix /= pPa -> XScale;
-          result->EMatrix /= pPa -> XScale;
-          result->BMatrix /= pPa -> YScale;
-          result->DMatrix /= pPa -> YScale;
-          result->FMatrix /= pPa -> YScale;
+          result->AMatrix /= pPa->XScale;
+          result->CMatrix /= pPa->XScale;
+          result->EMatrix /= pPa->XScale;
+          result->BMatrix /= pPa->YScale;
+          result->DMatrix /= pPa->YScale;
+          result->FMatrix /= pPa->YScale;
           break;
         case PtElViewBox:
           /* TODO: inverse matrix of a ViewBox ??? */
@@ -3200,8 +3423,8 @@ extern void *TtaInverseTransform (void *transform)
         case PtElRotate:
         case PtElAnimRotate:
           /* Multiply result by the inverse of translate(-XRotate,-YRotate) */
-          result->EMatrix -= pPa -> XRotate;
-          result->FMatrix -= pPa -> YRotate;
+          result->EMatrix -= pPa->XRotate;
+          result->FMatrix -= pPa->YRotate;
 
           /* Multiply result by the inverse of rotate(TrAngle,0,0) */
           cosA = cos(pPa->TrAngle);
@@ -3222,8 +3445,8 @@ extern void *TtaInverseTransform (void *transform)
           result->FMatrix = (float)f;
 
           /* Multiply result by the inverse of translate(+XRotate,+YRotate) */
-          result->EMatrix += pPa -> XRotate;
-          result->FMatrix += pPa -> YRotate;
+          result->EMatrix += pPa->XRotate;
+          result->FMatrix += pPa->YRotate;
           break;  
         case PtElMatrix:
           /* Check whether the matrix is inversible */
@@ -3286,9 +3509,9 @@ extern void *TtaInverseTransform (void *transform)
   Apply a transform matrix to an element and simplify its transformation
   matrix.
   ---------------------------------------------------------------------- */
-extern void TtaApplyMatrixTransform (Document document, Element element,
-                                     float a, float b, float c, float d, float e,
-                                     float f)
+void TtaApplyMatrixTransform (Document document, Element element,
+                              float a, float b, float c, float d, float e,
+                              float f)
 {
   PtrTransform       transform;
 
@@ -3310,9 +3533,7 @@ extern void TtaApplyMatrixTransform (Document document, Element element,
                             document);
 
         /* Simplify the transform matrix */
-        transform = (PtrTransform)
-          TtaSimplifyTransformMatrix(((PtrElement) element)->ElTransform);
-
+        transform = SimplifyTransformMatrix (element, NULL);
         if(transform)
           {
             TtaFreeTransform (((PtrElement) element)->ElTransform);
@@ -3327,9 +3548,9 @@ extern void TtaApplyMatrixTransform (Document document, Element element,
   Apply a transform matrix to an element and simplify its transformation
   matrix.
   ---------------------------------------------------------------------- */
-extern void TtaAppendMatrixTransform (Document document, Element element,
-                                      float a, float b, float c, float d, float e,
-                                      float f)
+void TtaAppendMatrixTransform (Document document, Element element,
+                               float a, float b, float c, float d, float e,
+                               float f)
 {
   PtrTransform       transform;
 
@@ -3346,13 +3567,9 @@ extern void TtaAppendMatrixTransform (Document document, Element element,
       /* parameter document is correct */
       {
         /* Add a new transform */
-        TtaAppendTransform (element,
-                            TtaNewTransformMatrix (a, b, c, d, e, f),
-                            document);
-
+        TtaAppendTransform (element, TtaNewTransformMatrix (a, b, c, d, e, f));
         /* Simplify the transform matrix */
-        transform = (PtrTransform)
-          TtaSimplifyTransformMatrix(((PtrElement) element)->ElTransform);
+        transform = SimplifyTransformMatrix (element, NULL);
 
         if(transform)
           {
@@ -3361,8 +3578,6 @@ extern void TtaAppendMatrixTransform (Document document, Element element,
           }
       }
 }
-
-
 
 /*----------------------------------------------------------------------
   TtaDecomposeTransform
@@ -3377,22 +3592,21 @@ extern void TtaAppendMatrixTransform (Document document, Element element,
 
   Each kind of transform is used at most once.
   ---------------------------------------------------------------------- */
-extern void *TtaDecomposeTransform(void *transform)
+void *TtaDecomposeTransform (void *transform)
 {
   PtrTransform result = NULL, cursor;
-  PtrTransform matrix = (PtrTransform)TtaSimplifyTransformMatrix(transform);
-  double coeff,coeff1, coeff2, theta1, theta2;
-  double a,b,c,d,e,f,k;
-  ThotBool RemoveTranslate = FALSE;
-  ThotBool decompose;
+  PtrTransform matrix = SimplifyTransformMatrix (NULL, (PtrTransform) transform);
+  double       coeff, coeff1, coeff2, theta1, theta2;
+  double       a, b, c, d, e, f, k;
+  ThotBool     RemoveTranslate = FALSE, decompose;
   
-  if(matrix == NULL)return NULL;
-
-  if(!TtaGetEnvBoolean ("ENABLE_DECOMPOSE_TRANSFORM", &decompose))
+  if (matrix == NULL)
+    return NULL;
+  if (!TtaGetEnvBoolean ("ENABLE_DECOMPOSE_TRANSFORM", &decompose))
     decompose = TRUE;
-
   /* Environnement variable set to false, simply return one matrix */
-  if(!decompose)return matrix;
+  if (!decompose)
+    return matrix;
 
   a = matrix->AMatrix;
   b = matrix->BMatrix;
@@ -3400,8 +3614,7 @@ extern void *TtaDecomposeTransform(void *transform)
   d = matrix->DMatrix;
   e = matrix->EMatrix;
   f = matrix->FMatrix;
-  
-  TtaFreeTransform(matrix);
+  TtaFreeTransform (matrix);
 
   /* Recall that the transform matrix is
    * 
@@ -3432,7 +3645,7 @@ extern void *TtaDecomposeTransform(void *transform)
 
       /* Add the scale if it is not the identity */
       if(!(a == 1 && d == 1))
-        cursor -> Next = (PtrTransform)TtaNewTransformScale((float)a, (float)d);
+        cursor->Next = (PtrTransform)TtaNewTransformScale((float)a, (float)d);
     }
   else if(a == 0 && d == 0)
     {
@@ -3450,12 +3663,12 @@ extern void *TtaDecomposeTransform(void *transform)
       RemoveTranslate = TRUE;
       e/=2;
       f/=2;
-      cursor -> Next = (PtrTransform)TtaNewTransformRotate(90,(float)(e-f),(float)(e+f));
-      cursor = cursor -> Next;
+      cursor->Next = (PtrTransform)TtaNewTransformRotate(90,(float)(e-f),(float)(e+f));
+      cursor = cursor->Next;
 
       /* Add the scale if it is not the identity */
       if(!(b == 1 && -c == 1))
-        cursor -> Next = (PtrTransform)TtaNewTransformScale((float)b,(float)(-c));
+        cursor->Next = (PtrTransform)TtaNewTransformScale((float)b,(float)(-c));
     }
   else if(a == d && b == -c)
     {
@@ -3489,15 +3702,15 @@ extern void *TtaDecomposeTransform(void *transform)
           theta1 *= (180 / M_PI);
           e/=2;
           f/=2;
-          cursor -> Next = (PtrTransform)TtaNewTransformRotate((float)theta1,
+          cursor->Next = (PtrTransform)TtaNewTransformRotate((float)theta1,
                                                                (float)(e - k*f),
                                                                (float)(k*e + f));
-          cursor = cursor -> Next;
+          cursor = cursor->Next;
         }
 
       /* Add the scale if it is not the identity */
       if(coeff != 1)
-        cursor -> Next = (PtrTransform)TtaNewTransformScale((float)coeff, (float)coeff);
+        cursor->Next = (PtrTransform)TtaNewTransformScale((float)coeff, (float)coeff);
     }
   else if(a*b + c*d == 0 && ((b!=0 && c!=0) || (a!=0 && d!=0)))
     {
@@ -3538,8 +3751,8 @@ extern void *TtaDecomposeTransform(void *transform)
       /* case coeff1 == coeff2 == 1
          has already been treated in II/
          so the following scale is never useless */
-      cursor -> Next = (PtrTransform)TtaNewTransformScale((float)coeff1, (float)coeff2);
-      cursor = cursor -> Next;
+      cursor->Next = (PtrTransform)TtaNewTransformScale((float)coeff1, (float)coeff2);
+      cursor = cursor->Next;
 
       /* Group the rotate with the translate if it is possible */
       if(theta1 != 0)
@@ -3556,7 +3769,7 @@ extern void *TtaDecomposeTransform(void *transform)
           theta1 *= (180 / M_PI);
           e/=2;
           f/=2;
-          cursor -> Next = (PtrTransform)TtaNewTransformRotate((float)theta1,
+          cursor->Next = (PtrTransform)TtaNewTransformRotate((float)theta1,
                                                                (float)(e - k*f),
                                                                (float)(k*e + f));
         }
@@ -3605,17 +3818,17 @@ extern void *TtaDecomposeTransform(void *transform)
           theta1 *= (180 / M_PI);
           e/=2;
           f/=2;
-          cursor -> Next = (PtrTransform)TtaNewTransformRotate((float)theta1,
+          cursor->Next = (PtrTransform)TtaNewTransformRotate((float)theta1,
                                                                (float)(e - k*f),
                                                                (float)(k*e + f));
-          cursor = cursor -> Next;
+          cursor = cursor->Next;
         }
 
 
       /* case coeff1 == coeff2 == 1
          has already been treated in III/
          so the following scale is never useless */
-      cursor -> Next = (PtrTransform)TtaNewTransformScale((float)coeff1,(float)coeff2);
+      cursor->Next = (PtrTransform)TtaNewTransformScale((float)coeff1,(float)coeff2);
     }
   else if(a != 0)
     {
@@ -3632,20 +3845,20 @@ extern void *TtaDecomposeTransform(void *transform)
       /* Add the skew if it is not the identity */
       if(theta1 != 0)
         {
-          cursor -> Next = (PtrTransform)TtaNewTransformSkewY((float)theta1);
-          cursor = cursor -> Next;
+          cursor->Next = (PtrTransform)TtaNewTransformSkewY((float)theta1);
+          cursor = cursor->Next;
         }
       
       /* Add the scale if it is not the identity */
       if(!(a == 1 && d == 1))
         {
-          cursor -> Next = (PtrTransform)TtaNewTransformScale((float)a, (float)d);
-          cursor = cursor -> Next;
+          cursor->Next = (PtrTransform)TtaNewTransformScale((float)a, (float)d);
+          cursor = cursor->Next;
         }
       
       /* Add the skew if it is not the identity */
       if(theta2 != 0)
-        cursor -> Next = (PtrTransform)TtaNewTransformSkewX((float)theta2);
+        cursor->Next = (PtrTransform)TtaNewTransformSkewX((float)theta2);
     }
   else if(d != 0)
     {
@@ -3662,27 +3875,27 @@ extern void *TtaDecomposeTransform(void *transform)
       /* Add the skew if it is not the identity */
       if(theta1 != 0)
         {
-          cursor -> Next = (PtrTransform)TtaNewTransformSkewX((float)theta1);
-          cursor = cursor -> Next;
+          cursor->Next = (PtrTransform)TtaNewTransformSkewX((float)theta1);
+          cursor = cursor->Next;
         }
 
       /* Add the scale if it is not the identity */
       if(!(a == 1 && d == 1))
         {
-          cursor -> Next = (PtrTransform)TtaNewTransformScale((float)a, (float)d);
-          cursor = cursor -> Next;
+          cursor->Next = (PtrTransform)TtaNewTransformScale((float)a, (float)d);
+          cursor = cursor->Next;
         }
 
       /* Add the skew if it is not the identity */
       if(theta2 != 0)
-        cursor -> Next = (PtrTransform)TtaNewTransformSkewY((float)theta2);
+        cursor->Next = (PtrTransform)TtaNewTransformSkewY((float)theta2);
     }
     
   if(RemoveTranslate || (e == 0 && f == 0))
     {
       /* Remove the initial translation */
-      cursor = result -> Next;
-      result -> Next = NULL;
+      cursor = result->Next;
+      result->Next = NULL;
       TtaFreeTransform(result);
       result = cursor;
     }
@@ -3697,7 +3910,7 @@ extern void *TtaDecomposeTransform(void *transform)
   using a reduced form (i.e. using only rotate, scale, translate and skew)
 
   ---------------------------------------------------------------------- */
-extern char *TtaGetTransformAttributeValue(Document document, Element el)
+char *TtaGetTransformAttributeValue (Document document, Element el)
 {
   char buffer[500], buffer2[100], *result;
 
@@ -3794,7 +4007,7 @@ extern char *TtaGetTransformAttributeValue(Document document, Element el)
         }
 	   
       if(add)strcat(buffer, buffer2);
-      pPa = pPa -> Next;
+      pPa = pPa->Next;
     }
   
   TtaFreeTransform(transform);
@@ -3818,29 +4031,22 @@ extern char *TtaGetTransformAttributeValue(Document document, Element el)
   ( 0  0  1 )
 
   ---------------------------------------------------------------------- */
-extern void TtaGetMatrixTransform(Document document, Element el,
-                                  float *a,
-                                  float *b,
-                                  float *c,
-                                  float *d,
-                                  float *e,			    
-                                  float *f
-                                  )
+void TtaGetMatrixTransform (Document document, Element el,
+                            float *a, float *b, float *c,
+                            float *d, float *e, float *f)
 {
   PtrTransform transform;
 
-  if(!el)return;
-  transform = (PtrTransform)TtaSimplifyTransformMatrix(((PtrElement) el)->ElTransform);
-
-
+  if (!el)
+    return;
+  transform = SimplifyTransformMatrix (el, NULL);
   *a = transform->AMatrix;
   *b = transform->BMatrix;
   *c = transform->CMatrix;
   *d = transform->DMatrix;
   *e = transform->EMatrix;
   *f = transform->FMatrix;
-
-  TtaFreeTransform(transform);
+  TtaFreeTransform (transform);
 }
 
 /*----------------------------------------------------------------------
@@ -4629,7 +4835,7 @@ int TtaGetPolylineLength (Element element)
   else if (((PtrElement) element)->ElLeafType != LtPolyLine)
     TtaError (ERR_invalid_element_type);
   else
-    /* one ignore the boundary point limite, considered in ElNPoints */
+    /* one ignore the boundary point limit, considered in ElNPoints */
     return ((PtrElement) element)->ElNPoints - 1;
   return (0);
 }
@@ -5830,24 +6036,19 @@ ThotBool CheckGeometricProperties(Document doc, Element leaf,
           d = (y4 - y1)/h;
           e = x1;
           f = y1;
-
           if(shape == SQUARE)
             TtaSetGraphicsShape (leaf, 7, doc);
           else
             TtaSetGraphicsShape (leaf, 8, doc);
-
           break;
         }
 
       if(shape != -1)
         {
           TtaAppendTransform (TtaGetParent(leaf),
-                              TtaNewTransformMatrix((float)a, (float)b, (float)c, (float)d, (float)e, (float)f),
-                              doc);
-      
+                              TtaNewTransformMatrix((float)a, (float)b, (float)c, (float)d, (float)e, (float)f));
           *width = (int)(w);
           *height = (int)(h);
-
           return TRUE;
         }
     }

@@ -139,11 +139,8 @@ static int          Loading_method = CE_INIT;
 #ifdef BOOKMARKS
 #include "BMevent_f.h"
 #endif /* BOOKMARKS */
-
 #include "wxdialogapi_f.h"
-
 #include "archives.h"
-
 #ifdef DAV
 #define WEBDAV_EXPORT extern
 #include "davlib.h"
@@ -209,7 +206,7 @@ static int AmayaPopupDocContextMenu (int doc, int view, int window,
         display_item[i] = TRUE;
 
       /* Is the element a link? */
-      if(CanFollowTheLink(doc))
+      if (CanFollowTheLink(doc))
         {
           for(i = 0; i < 4; i++)
             display_item[i] = TRUE;
@@ -535,7 +532,7 @@ void DocumentInfo (Document document, View view)
   if (created)
     {
       TtaSetDialoguePosition ();
-      TtaShowDialogue (BaseDialog + DocInfoForm, FALSE);
+      TtaShowDialogue (BaseDialog + DocInfoForm, FALSE, TRUE);
       /* wait for an answer */
       TtaWaitShowDialogue ();
     }
@@ -1142,9 +1139,33 @@ void UpdateEditorMenus (Document doc)
     /* Update the javascript menus */
     UpdateJavascriptMenus ();
 #endif /* _JAVA */
-  TtaRefreshTopMenuStats (doc, -1);
+    
+    // Is it an annotation ?
+    if (DocumentTypes[doc] == docAnnot)
+      {
+	TtaSetItemOn (doc, 1, Tools, BDeleteAnnot);
+	TtaSetItemOn (doc, 1, Tools, BReplyToAnnotation);
+	TtaSetItemOn (doc, 1, Tools, BPostAnnot);
+      }
+    else
+      {
+	TtaSetItemOff (doc, 1, Tools, BDeleteAnnot);
+	TtaSetItemOff (doc, 1, Tools, BReplyToAnnotation);
+	TtaSetItemOff (doc, 1, Tools, BPostAnnot);
+      }
+
+    TtaRefreshTopMenuStats (doc, -1);
 }
 
+/*----------------------------------------------------------------------
+  StartACopyCommand says that a new copy command starts
+  ----------------------------------------------------------------------*/
+void StartACopyCommand (Document doc, View view)
+{
+#ifdef _SVG
+  ClearSVGDefs ();
+#endif /* _SVG */
+}
 
 /*----------------------------------------------------------------------
   ShowLogFile
@@ -1696,7 +1717,7 @@ void InitFormAnswer (Document document, View view, const char *auth_realm,
   if (created)
     {
       TtaSetDialoguePosition ();
-      TtaShowDialogue (BaseDialog + FormAnswer, FALSE);
+      TtaShowDialogue (BaseDialog + FormAnswer, FALSE, FALSE);
     }
   TtaWaitShowDialogue ();
 }
@@ -1731,7 +1752,7 @@ void InitAlert(Document document, View view, char *label)
   if (created)
     {
       TtaSetDialoguePosition ();
-      TtaShowDialogue (BaseDialog + ConfirmForm, FALSE);
+      TtaShowDialogue (BaseDialog + ConfirmForm, FALSE, TRUE);
       /* wait for an answer */
       TtaWaitShowDialogue ();
     }
@@ -1754,7 +1775,7 @@ void ConfirmError (Document document, View view, char *label,
   if (created)
     {
       TtaSetDialoguePosition ();
-      TtaShowDialogue (BaseDialog + ConfirmForm, FALSE);
+      TtaShowDialogue (BaseDialog + ConfirmForm, FALSE, TRUE);
       /* wait for an answer */
       TtaWaitShowDialogue ();
     }
@@ -1774,7 +1795,7 @@ void ConfirmError3L (Document document, View view, char *label1, char *label2,
   if (created)
     {
       TtaSetDialoguePosition ();
-      TtaShowDialogue (BaseDialog + ConfirmForm, FALSE);
+      TtaShowDialogue (BaseDialog + ConfirmForm, FALSE, TRUE);
       /* wait for an answer */
       TtaWaitShowDialogue ();
     }
@@ -1807,7 +1828,7 @@ void InitConfirm3L (Document document, View view, const char *label1, const char
   if (created)
     {
       TtaSetDialoguePosition ();
-      TtaShowDialogue (BaseDialog + ConfirmForm, FALSE);
+      TtaShowDialogue (BaseDialog + ConfirmForm, FALSE, TRUE);
       /* wait for an answer */
       TtaWaitShowDialogue ();
       //if (AmayaIsAlive ())
@@ -1838,7 +1859,7 @@ void InitConfirm (Document document, View view, char *label)
   if (created)
     {
       TtaSetDialoguePosition ();
-      TtaShowDialogue (BaseDialog + ConfirmForm, FALSE);
+      TtaShowDialogue (BaseDialog + ConfirmForm, FALSE, TRUE);
       /* wait for an answer */
       TtaWaitShowDialogue ();
     }
@@ -1924,13 +1945,12 @@ static void BrowserForm (Document doc, View view, char *urlname)
   The parameter name gives a proposed document name (New document).
   The parameter title gives the title of the the form.
   ----------------------------------------------------------------------*/
-static void InitOpenDocForm (Document doc, View view, const char *name, const char *title,
-                             DocumentType docType)
+static void InitOpenDocForm (Document doc, View view, const char *name,
+                             const char *title, DocumentType docType)
 {
   char              s[MAX_LENGTH];
-  char             *thotdir;
+  char             *thotdir, *docdir;
   ThotBool          remote;
-  wxString          homedir;
   ThotBool          created;
 
   CurrentDocument = doc;
@@ -1972,8 +1992,8 @@ static void InitOpenDocForm (Document doc, View view, const char *name, const ch
           // Avoid to create new documents into Amaya space
           if (!strncmp (s, thotdir, strlen (thotdir)))
             {
-              homedir = TtaGetHomeDir();
-              strcpy (s, (const char *)homedir.mb_str(wxConvUTF8));
+              docdir = TtaGetDocumentsDir();
+              strcpy (s, docdir);
             }
           strcpy (DirectoryName, s);
           strcpy (DocumentName, name);
@@ -1990,7 +2010,7 @@ static void InitOpenDocForm (Document doc, View view, const char *name, const ch
   if (created)
     {
       TtaSetDialoguePosition ();
-      TtaShowDialogue (BaseDialog + OpenForm, TRUE);
+      TtaShowDialogue (BaseDialog + OpenForm, TRUE, TRUE);
     }
 }
 
@@ -3800,7 +3820,7 @@ Document LoadDocument (Document doc, char *pathname,
       */
       /* content-type */
       if (http_content_type)
-          DocumentMeta[newdoc]->content_type = TtaStrdup (http_content_type);
+        DocumentMeta[newdoc]->content_type = TtaStrdup (http_content_type);
       else if (local_content_type[0] != EOS)
         /* assign a content type to the local files */
         DocumentMeta[newdoc]->content_type = TtaStrdup (local_content_type);
@@ -4068,11 +4088,11 @@ void Reload_callback (int doc, int status, char *urlName, char *outputfile,
   /* MKP: if document has been loaded, we are       * 
    * able to discovery if the document is locked.   *
    * do a lock discovery, set LockIndicator button  */
-  if (W3Loading == 0 && res> 0) 
-    {
-      DAVLockDiscovery (newdoc);
-      DAVSetLockIndicator(newdoc);
-    }
+  if (W3Loading == 0 && res > 0) 
+    DAVLockDiscovery (newdoc);
+#else /* DAV */
+    // no lock/unlock allowed
+    TtaSetLockButton (newdoc, 0);
 #endif /* DAV */
 
   if (DocumentTypes[newdoc] == docBookmark && TtaIsDocumentModified (newdoc))
@@ -4642,9 +4662,9 @@ void ShowToC (Document doc, View view)
   ----------------------------------------------------------------------*/
 ThotBool RequestView (NotifyDialog *event)
 {
-  //ShowStructure (event->document, event->view);
+  ShowStructure (event->document, event->view);
   /* Inform Thot that the view is not open by Amaya */
-  return FALSE;
+  return TRUE;
 }
 
 /*----------------------------------------------------------------------
@@ -4951,17 +4971,17 @@ void GetAmayaDoc_callback (int newdoc, int status, char *urlName, char *outputfi
   if (cbf)
     (*cbf) (newdoc, status, pathname, tempfile, NULL, NULL, ctx_cbf);
 
-
+  if (newdoc && W3Loading == 0) 
 #ifdef DAV
   /* MKP: if document has been loaded,  we are     * 
    * able to discovery if the document is locked.  *
    * do a lock discovery, set LockIndicator button */
-  if (W3Loading == 0) 
-    {
-      DAVLockDiscovery (newdoc);
-      DAVSetLockIndicator(newdoc);
-    }
-#endif /* DAV */  
+    DAVLockDiscovery (newdoc);
+#else /* DAV */
+    // no lock/unlock allowed
+    TtaSetLockButton (newdoc, 0);
+#endif /* DAV */
+
   TtaFreeMemory (target);
   TtaFreeMemory (documentname);
   TtaFreeMemory (initial_url);
@@ -4972,6 +4992,9 @@ void GetAmayaDoc_callback (int newdoc, int status, char *urlName, char *outputfi
   TtaFreeMemory (ctx);
   /* check if a refresh is requested */
   CheckRefresh (newdoc);
+  if (DocumentTypes[newdoc] == docXml && !DocHasCSS (newdoc))
+    // Display the source view
+    ShowSource (newdoc, 1);
 }
 
 
@@ -5065,13 +5088,18 @@ Document GetAmayaDoc (const char *urlname, const char *form_data,
   else if (IsXTiger (documentname) || IsXMLName (documentname))
     {
       if (IsXTiger (documentname))
-	// a template cannot replace another document
-	DontReplaceOldDoc = TRUE;
+        // a template cannot replace another document
+        DontReplaceOldDoc = TRUE;
       docType = docXml;
       //TODO Check that urlname is a valid URL
       if (!IsW3Path (temp_url) && TtaFileExist (temp_url))
-        CheckDocHeader(temp_url, &xmlDec, &withDoctype, &isXML, &useMath, &isKnown, &parsingLevel, 
-		       &doc_charset, charsetname, (DocumentType*)&docType, &extraProfile);
+        {
+          CheckDocHeader(temp_url, &xmlDec, &withDoctype, &isXML, &useMath,
+                         &isKnown, &parsingLevel, &doc_charset,
+                         charsetname, (DocumentType*)&docType, &extraProfile);
+          if (docType == docText)
+            docType = docXml;
+        }
     }
   else if (method == CE_CSS)
     docType = docCSS;
@@ -5308,6 +5336,7 @@ Document GetAmayaDoc (const char *urlname, const char *form_data,
                   char *localFile = GetLocalPath (newdoc, initial_url);
                   strcpy (tempfile, localFile);
                   TtaFreeMemory (localFile);      
+                  TtaSetDisplayMode (newdoc, NoComputedDisplay);
                 }
               /* wasn't a document off the web, we need to open it */
               TtaSetStatus (newdoc, 1,
@@ -5316,6 +5345,8 @@ Document GetAmayaDoc (const char *urlname, const char *form_data,
               GetAmayaDoc_callback (newdoc, 0, initial_url, tempfile,
                                     NULL, NULL, (void *) ctx);
               TtaHandlePendingEvents ();
+              if (method == CE_INSTANCE)
+                TtaSetDisplayMode (newdoc, DisplayImmediately);
             }
         }
     }
@@ -5806,16 +5837,17 @@ void CallbackDialogue (int ref, int typedata, char *data)
 
     case FormAnswer:
       /* *********Get an answer********* */
-      if (val == 0)
+      if (val == 0 || val == 2)
         {
           /* no answer */
           Answer_text[0] = EOS;
           Answer_name[0] = EOS;
           Answer_password[0] = EOS;
-          UserAnswer = 0;
+          UserAnswer = FALSE;
+          ExtraChoice = (val == 2);
         }
       else
-        UserAnswer = 1;
+        UserAnswer = TRUE;
       TtaDestroyDialogue (BaseDialog + FormAnswer);
       break;
 
@@ -6788,11 +6820,13 @@ void FreeAmayaStructures ()
 #ifdef BOOKMARKS
       BM_Quit ();
 #endif /* BOOKMARKS */
-
 #ifdef TEMPLATES
+      FreeTemplateRepositoryList ();
       FreeTemplateEnvironment ();
 #endif /* TEMPLATES */
-
+#ifdef DAV
+      FreeDAVPathsList ();
+#endif /* DAV */
       /* Write and free password table  */
       WritePasswordTable ();
 
@@ -6817,6 +6851,7 @@ void InitAmaya (NotifyEvent * event)
   AmayaInitialized = 1;
   ErrFile = NULL;
   CSSErrFile = NULL;
+  IgnoreErrors = FALSE;
   W3Loading = 0;
   BackupDocument = 0;
   DoDialog = TRUE; /* don't update the CSS dialog by default */
@@ -6860,7 +6895,7 @@ void InitAmaya (NotifyEvent * event)
   LinkAsJavascript = FALSE;
   ImgPosition = 0;
   AttrHREFelement = NULL;
-  Right_ClikedElement = NULL;
+  Right_ClickedElement = NULL;
 
   /* init transformation callback */
   TtaSetTransformCallback ((Func2) TransformIntoType);
@@ -6919,6 +6954,16 @@ void InitAmaya (NotifyEvent * event)
     }
   else
     ptr = NULL;
+  // Table options
+  TtaSetEnvInt ("TABLE_ROWS", 2, FALSE);
+  TtaSetEnvInt ("TABLE_COLUMNS", 5, FALSE);
+  TtaSetEnvInt ("TABLE_BORDER", 1, FALSE);
+  TtaSetEnvBoolean ("TABLE_EXTEND_WIDTH", TRUE, FALSE);
+  TtaSetEnvBoolean ("TABLE_CAPTION", TRUE, FALSE);
+  // SaveAs options
+  TtaSetEnvBoolean ("TRANSFORM_URL", TRUE, FALSE);
+  TtaSetEnvBoolean ("COPY_IMAGES", FALSE, FALSE);
+  TtaSetEnvBoolean ("COPY_CSS", FALSE, FALSE);
 
   /* Initialize environment variables if they are not defined */
   TtaSetEnvString ("DOCUMENT_CHARSET", "iso-8859-1", FALSE);
@@ -7013,7 +7058,8 @@ void InitAmaya (NotifyEvent * event)
   SavingFile = (char *)TtaGetMemory (MAX_LENGTH);
   AttrHREFvalue = (char *)TtaGetMemory (MAX_LENGTH);
   AttrHREFvalue[0] = EOS;
-
+  // Initialize the meta dialog
+  MetaName = MetaEquiv = MetaContent = NULL;
 #ifdef WITH_SOCKS
   SOCKSinit ("amaya");
 #endif
@@ -7208,6 +7254,7 @@ void OpenNewDocFromArgv( char * url )
               }
           /* start with the local document */
           LastURLName[0] = EOS;
+          NewFile = FALSE;
           CallbackDialogue (BaseDialog + OpenForm, INTEGER_DATA, (char *) 1);
         }
     }
@@ -7449,12 +7496,12 @@ void MakeIDMenu (Document doc, View view)
   /* select the current radio button */
   TtaSetMenuForm (BaseDialog + mIdUseSelection, IdApplyToSelection);
   TtaSetDialoguePosition ();
-  TtaShowDialogue (BaseDialog + MakeIdMenu, TRUE);
+  TtaShowDialogue (BaseDialog + MakeIdMenu, TRUE, TRUE);
 
   if (CreateMakeIdDlgWX (BaseDialog + MakeIdMenu, TtaGetViewFrame (doc, view)))
     {
       TtaSetDialoguePosition ();
-      TtaShowDialogue (BaseDialog + MakeIdMenu, FALSE);
+      TtaShowDialogue (BaseDialog + MakeIdMenu, FALSE, TRUE);
     }
 }
 
@@ -7478,7 +7525,7 @@ void CheckAmayaClosed ()
   if (i == DocumentTableLength)
     {
       /* remove images loaded by shared CSS style sheets */
-      RemoveDocumentImages (0);
+      RemoveLoadedResources (0, &ImageURLs);
 #ifdef  _JAVA
       DestroyJavascript ();
 #endif /* _JAVA */
@@ -8211,7 +8258,7 @@ char* CreateTempDirectory (const char* name)
   while (i < 10000)
     {
       sprintf(buff, "%s%s%04d", temppath, name, i);
-      if(!TtaCheckDirectory(buff))
+      if (!TtaCheckDirectory(buff))
         {
           if(TtaCheckMakeDirectory(buff, TRUE))
             return TtaStrdup(buff);

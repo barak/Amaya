@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2008
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -975,6 +975,9 @@ static ThotBool Within (int ThotType, SSchema ThotSSchema)
   ----------------------------------------------------------------------*/
 void HTMLParseError (Document doc, const char* msg, int lineNumber)
 {
+  if (IgnoreErrors)
+    return;
+
   HTMLErrorsFound = TRUE;
   if (!ErrFile)
     if (OpenParsingErrors (doc) == FALSE)
@@ -5295,7 +5298,7 @@ void CheckDocHeader (char *fileName, ThotBool *xmlDec, ThotBool *docType,
   gzFile      stream;
   char       *ptr, *beg, *end, *ptrns, *prefix;
   char       *buffer = FileBuffer;
-  int         res, i, j, k, pref_lg;
+  int         res, i, j, k, pref_lg = 0;
   ThotBool    endOfSniffedFile, beginning;
   ThotBool    found;
 
@@ -7310,6 +7313,7 @@ void ParseExternalHTMLDoc (Document doc, FILE * infile, CHARSET charset, char *e
     }
   DocumentSSchema = NULL;
   HTMLcontext.doc = 0;
+  CleanUpParsingErrors ();
   return;
 }
 

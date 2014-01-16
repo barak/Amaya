@@ -95,11 +95,85 @@ void SVGEntityCreated (unsigned char *entityValue, Language lang,
 }
 
 /*----------------------------------------------------------------------
+  SetAttributeOnRoot
+  Put attribute att on the <svg> element to which element el belongs.
+  ----------------------------------------------------------------------*/
+static void SetAttributeOnRoot (Element el, int att, Document doc)
+{
+  ElementType     elType, parentType;
+  Element         root, parent, prev;
+  AttributeType   attrType;
+  Attribute       attr;
+
+  /* find the root of the current SVG tree */
+  root = NULL;
+  elType = TtaGetElementType (el);
+  parent = TtaGetParent (el);
+  while (parent && !root)
+    {
+      parentType = TtaGetElementType (parent);
+      prev = parent;
+      parent = TtaGetParent (parent);
+      if (parentType.ElSSchema == elType.ElSSchema &&
+	  parentType.ElTypeNum == SVG_EL_SVG)
+	/* this is an <svg> element */
+	if (parent)
+	  {
+	    parentType = TtaGetElementType (parent);
+	    if (parentType.ElTypeNum == SVG_EL_Document)
+	      /* its parent is the root of the document */
+	      root = prev;
+	    else if (parentType.ElSSchema != elType.ElSSchema)
+	      /* its parent is in a different namespace */
+	      root = prev;
+	  }
+    }
+  if (root)
+    /* put the attribute on the root if it is not present yet */
+    {
+      attrType.AttrSSchema = elType.ElSSchema;
+      attrType.AttrTypeNum = att;
+      attr = TtaGetAttribute (root, attrType);
+      if (!attr)
+	{
+	  attr = TtaNewAttribute (attrType);
+	  TtaAttachAttribute (root, attr, doc);
+	}
+    } 
+}
+
+/*----------------------------------------------------------------------
+  ParseFloatAttribute : 
+  Parse the value of a float data attribute
+  ----------------------------------------------------------------------*/
+static float ParseFloatAttribute (Attribute attr)
+{
+  int                  length;
+  char                *text, *ptr;
+  PresentationValue    pval;
+
+  length = TtaGetTextAttributeLength (attr) + 2;
+  text = (char *)TtaGetMemory (length);
+  if (text != NULL)
+    {
+      TtaGiveTextAttributeValue (attr, text, &length);
+      /* parse the attribute value (just a number) */
+      ptr = text;
+      ptr = (char*)TtaSkipBlanks (ptr);
+      ptr = ParseClampedUnit (ptr, &pval);
+      TtaFreeMemory (text);
+      return (float) pval.typed_data.value/1000;
+    }
+  return 0;
+}
+
+/*----------------------------------------------------------------------
   ParseCSSequivAttribute
   Create or update a specific presentation rule for element el that reflects
   the value of attribute attr, which is equivalent to a CSS property (fill,
   stroke, stroke-width, font-family, font-size, font-style, font-variant,
-  font-weight).
+  font-weight, text-decoration, opacity, fill-opacity, stroke-opacity,
+  fill-rule).
   ----------------------------------------------------------------------*/
 void ParseCSSequivAttribute (int attrType, Attribute attr, Element el,
                              Document doc, ThotBool delete_)
@@ -113,7 +187,8 @@ void ParseCSSequivAttribute (int attrType, Attribute attr, Element el,
   /* get the value of the attribute */
   if (attrType == SVG_ATTR_font_style ||
       attrType == SVG_ATTR_font_variant ||
-      attrType == SVG_ATTR_font_weight)
+      attrType == SVG_ATTR_font_weight ||
+      attrType == SVG_ATTR_fill_rule)
     /* enumerated value */
     val = TtaGetAttributeValue (attr);
   else
@@ -129,6 +204,9 @@ void ParseCSSequivAttribute (int attrType, Attribute attr, Element el,
   css_command[0] = EOS;
   switch (attrType)
     {
+    case SVG_ATTR_color:
+      sprintf (css_command, "color: %s", text);
+      break;
     case SVG_ATTR_fill:
       sprintf (css_command, "fill: %s", text);
       break;
@@ -251,6 +329,41 @@ void ParseCSSequivAttribute (int attrType, Attribute attr, Element el,
         sprintf (css_command, "fill-opacity: 0.0");
       else
         sprintf (css_command, "fill-opacity: %s", text);
+      break;
+    case SVG_ATTR_stop_opacity:
+      value = ParseFloatAttribute (attr);
+      if (value > 1.0)
+        sprintf (css_command, "stop-opacity: 1.0");
+      else if (value < 0)
+        sprintf (css_command, "stop-opacity: 0.0");
+      else
+        sprintf (css_command, "stop-opacity: %s", text);
+      break;
+    case SVG_ATTR_fill_rule:
+      switch (val)
+        {
+        case SVG_ATTR_fill_rule_VAL_nonzero:
+          sprintf (css_command, "fill-rule: nonzero");
+          break;
+        case SVG_ATTR_fill_rule_VAL_evenodd:
+          sprintf (css_command, "fill-rule: evenodd");
+          break;
+        case SVG_ATTR_fill_rule_VAL_inherit:
+          sprintf (css_command, "fill-rule: inherit");
+          break;
+        }
+      break;
+    case SVG_ATTR_stop_color:
+      sprintf (css_command, "stop-color: %s", text);
+      break;
+    case SVG_ATTR_marker_start:
+      sprintf (css_command, "marker-start: %s", text);
+      break;
+    case SVG_ATTR_marker_mid:
+      sprintf (css_command, "marker-mid: %s", text);
+      break;
+    case SVG_ATTR_marker_end:
+      sprintf (css_command, "marker-end: %s", text);
       break;
     default:
       break;
@@ -483,24 +596,26 @@ void CopyTRefContent (Element source, Element el, Document doc)
 /*----------------------------------------------------------------------
   CopyUseContent
   Copy the subtree pointed by the href URI as a subtree of element el,
-  which is of type use or tref.
-  Return TRUE is successful.
+  which is of type use, tref, linearGradient or radialGradient.
+  Return TRUE if successful.
   ----------------------------------------------------------------------*/
 ThotBool CopyUseContent (Element el, Document doc, char *href)
 {
-  Element              source, curEl, copy, child, nextChild, elFound;
-  ElementType          elType;
+  Element              source, curEl, copy, prevCopy, child, nextChild, elFound;
+  ElementType          elType, childType;
   Attribute            attr;
   AttributeType        attrType;
   SearchDomain         direction;
-  int                  i, length;
+  int                  i, length, attrKind;
+  float                offset;
   char *               id;
-  ThotBool             isUse, oldStructureChecking;
+  ThotBool             isUse, isTref, oldStructureChecking;
 
   /* look for an element with an id attribute with the same value as the
      href attribute */
   elType = TtaGetElementType (el);
   isUse = (elType.ElTypeNum == SVG_EL_use_);
+  isTref = (elType.ElTypeNum == SVG_EL_tref);
   attrType.AttrSSchema = elType.ElSSchema;
   attrType.AttrTypeNum = SVG_ATTR_id;
   /* search backwards first */
@@ -535,7 +650,7 @@ ThotBool CopyUseContent (Element el, Document doc, char *href)
   if (!source)
     return FALSE;
   else
-    /* the element to be copied in the use or tref element has been found */
+    /* the element to be copied in the element has been found */
     {
       /* remove the old copy if there is one */
       child = TtaGetFirstChild (el);
@@ -568,10 +683,100 @@ ThotBool CopyUseContent (Element el, Document doc, char *href)
             TtaInsertSibling (copy, child, FALSE, doc);
           else
             TtaInsertFirstChild (&copy, el, doc);
+	  /* if the use element refers to a gradient, associate the gradient
+	     with the new child of the use element */
+	  TtaCopyGradientUse (copy);
         }
-      else
-        /* it's a tref element. Copy all the contents of the source element */
+      else if (isTref)
+        /* it's a tref, linearGradient or radialGradient element.
+	   Copy all the contents of the source element */
         CopyTRefContent (source, el, doc);
+      else if (elType.ElTypeNum ==SVG_EL_linearGradient ||
+	       elType.ElTypeNum ==SVG_EL_radialGradient)
+	/* it's a gradient. Copy the gradient stops and update attributes */
+	{
+	  /* copy the gradient stops */
+	  child = TtaGetFirstChild (source);
+	  prevCopy = NULL;
+	  while (child)
+	    {
+	      childType = TtaGetElementType (child);
+	      if (childType.ElTypeNum == SVG_EL_stop &&
+		  childType.ElSSchema == elType.ElSSchema)
+		{
+		  copy = TtaCopyTree (child, doc, doc, el);
+		  if (!prevCopy)
+		    TtaInsertFirstChild (&copy, el, doc);
+		  else
+		    TtaInsertSibling (copy, prevCopy, FALSE, doc);
+		  TtaNewGradientStop (copy, el);
+		  /* Put attribute IsCopy to indicate that this copy must not
+		     be saved with the document */
+		  attrType.AttrSSchema = elType.ElSSchema;
+		  attrType.AttrTypeNum = SVG_ATTR_IsCopy;
+		  attr = TtaNewAttribute (attrType);
+		  TtaAttachAttribute (copy, attr, doc);
+		  /* copy attribute offset */
+		  attrType.AttrTypeNum = SVG_ATTR_offset;
+		  attr = TtaGetAttribute (copy, attrType);
+		  if (attr)
+		    {
+		      offset = ParseNumberPercentAttribute (attr);
+		      TtaSetGradientStopOffset (offset, copy);
+		    }
+		  prevCopy = copy;
+		}
+	      TtaNextSibling (&child);
+	    }
+	  /* update attributes */
+	  attr = NULL;
+	  TtaNextAttribute (el, &attr);
+	  while (attr)
+	    {
+	      TtaGiveAttributeType (attr, &attrType, &attrKind);
+	      if (attrType.AttrSSchema == elType.ElSSchema)
+		switch (attrType.AttrTypeNum)
+		  {
+		  case SVG_ATTR_x1:
+		    TtaSetLinearGradientx1 (ParseNumberPercentAttribute (attr), el);
+		    break;
+		  case SVG_ATTR_y1:
+		    TtaSetLinearGradienty1 (ParseNumberPercentAttribute (attr), el);
+		    break;
+		  case SVG_ATTR_x2:
+		    TtaSetLinearGradientx2 (ParseNumberPercentAttribute (attr), el);
+		    break;
+		  case SVG_ATTR_y2:
+		    TtaSetLinearGradienty2 (ParseNumberPercentAttribute (attr), el);
+		    break;
+		  case SVG_ATTR_spreadMethod:
+		    TtaSetGradientSpreadMethod (TtaGetAttributeValue (attr), el);
+		    break;
+		  case SVG_ATTR_gradientUnits:
+		    TtaSetGradientUnits ((TtaGetAttributeValue (attr) == SVG_ATTR_gradientUnits_VAL_userSpaceOnUse), el);
+		    break;
+		  case SVG_ATTR_gradientTransform:
+		    ParseTransformAttribute (attr, el, doc, FALSE, TRUE);
+		    break;
+		  case SVG_ATTR_r:
+		    TtaSetRadialGradientRadius (ParseNumberPercentAttribute (attr), el);
+		    break;
+		  case SVG_ATTR_cx:
+		    TtaSetRadialGradientcx (ParseNumberPercentAttribute (attr), el);
+		    break;
+		  case SVG_ATTR_cy:
+		    TtaSetRadialGradientcy (ParseNumberPercentAttribute (attr), el);
+		    break;
+		  case SVG_ATTR_fx:
+		    TtaSetRadialGradientfx (ParseNumberPercentAttribute (attr), el);
+		    break;
+		  case SVG_ATTR_fy:
+		    TtaSetRadialGradientfy (ParseNumberPercentAttribute (attr), el);
+		    break;
+		  }
+	      TtaNextAttribute (el, &attr);
+	    }
+	}
 
       if (oldStructureChecking)
         TtaSetStructureChecking (oldStructureChecking, doc);
@@ -579,23 +784,158 @@ ThotBool CopyUseContent (Element el, Document doc, char *href)
   return TRUE;
 }
 
+/*----------------------------------------------------------------------
+  SkipBlanksAndComma skips all spaces, tabs, linefeeds, newlines and
+  commas at the beginning of the string and returns the pointer to the
+  new position. 
+  ----------------------------------------------------------------------*/
+static char *SkipBlanksAndComma (char *ptr)
+{
+  while (*ptr == SPACE || *ptr == BSPACE || *ptr == EOL ||
+         *ptr == TAB || *ptr == __CR__ || *ptr == ',')
+    ptr++;
+  return (ptr);
+}
+
+/*----------------------------------------------------------------------
+  GetFloat
+  Parse an integer or floating point number and skip to the next token.
+  Return the value of that number in number and moves ptr to the next
+  token to be parsed.
+  ----------------------------------------------------------------------*/
+static char *GetFloat (char *ptr, float* number)
+{
+  int      i;
+  char     *start, c;
+  float     val = 0.;
+  ThotBool negative, decimal, exponent, useDotForFloat;
+
+  /* test if the system uses dot or comma in the float syntax */
+  sscanf (".5", "%f", &val);
+  useDotForFloat = (val == 0.5);
+  negative = FALSE;
+  decimal = FALSE;
+  exponent = FALSE;
+  *number = 0.;
+  /* read the sign */
+  if (*ptr == '+')
+    ptr++;
+  else if (*ptr == '-')
+    {
+      ptr++;
+      negative = TRUE;
+    }
+
+  start = ptr;
+  /* read the integer part */
+  while (*ptr != EOS && *ptr >= '0' && *ptr <= '9')
+    ptr++;
+  if (*ptr == '.')
+    /* there is a decimal part */
+    {
+      if (!useDotForFloat)
+        *ptr = ',';
+      ptr++;
+      decimal = TRUE;
+      while (*ptr != EOS &&  *ptr >= '0' && *ptr <= '9')
+        ptr++;
+    }
+
+  if (*ptr == 'e' || *ptr == 'E')
+    /* there is an exponent, parse it */
+    {
+      exponent = TRUE;
+      ptr++;
+      /* read the sign of the exponent */
+      if (*ptr == '+')
+        ptr++;
+      else if (*ptr == '-')
+        ptr++;
+      while (*ptr != EOS &&  *ptr >= '0' && *ptr <= '9')
+        ptr++;
+    }
+  /* remove possible extra characters */
+  c = *ptr;
+	if (c != EOS)
+    *ptr = EOS;
+  if (exponent)
+    sscanf (start, "%e", number);
+  else if (decimal)
+    sscanf (start, "%f", number);
+  else
+    {
+      sscanf (start, "%d", &i);
+      *number = (float)i;
+    }
+
+  if (negative)
+    *number = - *number;
+  /* restore extra characters */
+  *ptr = c;
+
+  /* skip the following spaces */
+  while (*ptr != EOS &&
+         (*ptr == ',' || *ptr == SPACE || *ptr == BSPACE ||
+          *ptr == EOL    || *ptr == TAB   || *ptr == __CR__))
+    ptr++;
+  return (ptr);
+}
+
+/*----------------------------------------------------------------------
+  ParseviewBoxAttribute
+  Parse the value of a viewbox attribute
+  ----------------------------------------------------------------------*/
+static void ParseviewBoxAttribute (Attribute attr, Element el, Document doc,
+                                   float* x, float* y, float* width,
+                                   float* height, ThotBool delete_)
+{
+  int                  length;
+  char                *text, *ptr;
+
+  *x = 0;
+  *y = 0;
+  *width = 0;
+  *height = 0;
+  length = TtaGetTextAttributeLength (attr) + 2;
+  text = (char *)TtaGetMemory (length);
+  if (text)
+    {
+      /* get the value of the attribute */
+      TtaGiveTextAttributeValue (attr, text, &length);
+      /* parse the attribute value */
+      ptr = text;
+      if (*ptr != EOS)
+        {
+          /* skip space characters */
+          ptr = SkipBlanksAndComma (ptr);
+          ptr = GetFloat (ptr, x);
+          ptr = SkipBlanksAndComma (ptr);
+          ptr = GetFloat (ptr, y);
+          ptr = SkipBlanksAndComma (ptr);
+          ptr = GetFloat (ptr, width);
+          ptr = SkipBlanksAndComma (ptr);
+          ptr = GetFloat (ptr, height);
+        }       
+      TtaFreeMemory (text);
+    }
+}
 
 /*----------------------------------------------------------------------
   CopyAMarker
-  Make a copy of the marker pointed by the value attrVal of attribute
-  att (marker-start, marker-end, or marker-mid) which is attached to
-  element el (a <path>, a <line>, a <polyline> or a <polygon>).
+  creates a copy of element marker for the given vertex of element leaf and
+  inserts it in document doc as a child of element el (a <path>, a <line>,
+  a <polyline> or a <polygon>) right after element leaf.
   ----------------------------------------------------------------------*/
-static void CopyAMarker (Element marker, Element el, Element leaf,
-                         int vertex, Document doc)
+void CopyAMarker (Element marker, Element el, Element leaf, int vertex,
+		  Document doc)
 {
   ElementType          elType;
-  Element              copy, child;
+  Element              copy, child, ascend;
   AttributeType        attrType;
   Attribute            attr;
-  char                 *val;
-  int                  x, y, length;
-  float                scale;
+  char                 *val, buffer[50];
+  int                  x, y, length, w, h, i;
+  float                scaleX, scaleY, vBX, vBY, vBWidth, vBHeight;
   double               angle;
   PresentationContext  context = NULL;
   PresentationValue    presValue;
@@ -608,6 +948,8 @@ static void CopyAMarker (Element marker, Element el, Element leaf,
 
   /* make a copy of the marker element */
   copy = TtaNewTranscludedElement (doc, marker);
+  /* mark the new Coordinate System */
+  TtaSetElCoordinateSystem (copy);
   /* remove the id attribute from the copy */
   attrType.AttrSSchema = elType.ElSSchema;
   attrType.AttrTypeNum = SVG_ATTR_id;
@@ -633,7 +975,7 @@ static void CopyAMarker (Element marker, Element el, Element leaf,
   else
     { x = 0;   y = 0; }
   if (x != 0 || y != 0)
-    TtaAppendTransform (copy, TtaNewTransformTranslate (x, y), doc);
+    TtaAppendTransform (copy, TtaNewTransformTranslate (x, y));
 
   /* add a rotation corresponding to the orient attribute of the marker */
   angle = 0;
@@ -646,28 +988,28 @@ static void CopyAMarker (Element marker, Element el, Element leaf,
       val = (char *)TtaGetMemory (length + 1);
       TtaGiveTextAttributeValue (attr, val, &length);
       if (!strcmp (val, "auto"))
-	/* angle="auto". Compute the angle for the relevant vertex */
-	{
-	  if (elType.ElTypeNum == SVG_EL_polyline ||
-	      elType.ElTypeNum == SVG_EL_polygon ||
-	      elType.ElTypeNum == SVG_EL_line_)
-	    TtaGivePolylineAngle (leaf, vertex, &angle);
-	  else if (elType.ElTypeNum == SVG_EL_path)
-	    TtaGivePathAngle (leaf, vertex, &angle);
-	}
+        /* angle="auto". Compute the angle for the relevant vertex */
+        {
+          if (elType.ElTypeNum == SVG_EL_polyline ||
+              elType.ElTypeNum == SVG_EL_polygon ||
+              elType.ElTypeNum == SVG_EL_line_)
+            TtaGivePolylineAngle (leaf, vertex, &angle);
+          else if (elType.ElTypeNum == SVG_EL_path)
+            TtaGivePathAngle (leaf, vertex, &angle);
+        }
       else
-	/* not "auto". Parse the value of the angle */
-	{
-	  /* @@@@ to be written @@@@ */
-	}
+        /* not "auto". Parse the value of the angle */
+        {
+          /* @@@@ to be written @@@@ */
+        }
       TtaFreeMemory (val);
     }
   if (angle != 0)
-    TtaAppendTransform (copy, TtaNewTransformRotate (angle, 0, 0), doc);
+    TtaAppendTransform (copy, TtaNewTransformRotate (angle, 0, 0));
 
   /* add a scaling to match the coordinate system indicated by the
      'markerUnits' attribute */
-  scale = 1;
+  scaleX = 1;
   strokeWidth = TRUE;  /* default value */
   attrType.AttrTypeNum = SVG_ATTR_markerUnits;
   attr = TtaGetAttribute (marker, attrType);
@@ -675,250 +1017,161 @@ static void CopyAMarker (Element marker, Element el, Element leaf,
     /* there is a 'markerUnits' attribute. Get its value */
     {
       if (TtaGetAttributeValue(attr) == SVG_ATTR_markerUnits_VAL_userSpaceOnUse)
-	strokeWidth = FALSE;
+        strokeWidth = FALSE;
     }
   if (strokeWidth)
     {
-      if (TtaGetStylePresentation (PRLineWeight, el, NULL, context, &presValue)
-          == 0)
+      strokeWidth = FALSE;
+      ascend = el;
+      do
 	{
-	  if (presValue.typed_data.real)
-	    scale = presValue.typed_data.value / 1000;
+	  if (TtaGetStylePresentation (PRLineWeight, ascend, NULL, context,
+				       &presValue) == 0)
+	    {
+	      strokeWidth = TRUE;
+	      if (presValue.typed_data.real)
+		scaleX = presValue.typed_data.value / 1000;
+	      else
+		scaleX = presValue.typed_data.value;
+	      if (presValue.typed_data.unit == UNIT_REL)
+		scaleX = scaleX / 10;
+	    }
 	  else
-	    scale = presValue.typed_data.value;
-	  if (presValue.typed_data.unit == UNIT_REL)
-	    scale = scale / 10;
+	    ascend = TtaGetParent (ascend);
 	}
+      while (!strokeWidth && ascend);
     }
-  if (scale != 1)
-    TtaAppendTransform (copy, TtaNewTransformScale (scale, scale), doc);
+  scaleY = scaleX;
+  if (scaleX != 1 || scaleY != 1)
+    TtaAppendTransform (copy, TtaNewTransformScale (scaleX, scaleY));
 
   /* add a translate to put the reference point of the marker on the vertex of
      the host element, using the 'refX' and 'refY' attributes of the marker */
+  attrType.AttrTypeNum = SVG_ATTR_markerWidth;
+  attr = TtaGetAttribute (marker, attrType);
+  if (attr)
+    {
+      i = 50;
+      TtaGiveTextAttributeValue (attr, buffer, &i);
+      sscanf (buffer, "%d", &w);
+    }
+  else
+    w = 3;
+  attrType.AttrTypeNum = SVG_ATTR_markerHeight;
+  attr = TtaGetAttribute (marker, attrType);
+  if (attr)
+    {
+      i = 50;
+      TtaGiveTextAttributeValue (attr, buffer, &i);
+      sscanf (buffer, "%d", &h);
+    }
+  else
+    h = 3;
+  /* get the viewBox attribute and its values */
+  attrType.AttrTypeNum = SVG_ATTR_viewBox;
+  attr = TtaGetAttribute (marker, attrType);
+  if (!attr)
+    {
+      scaleX = 1;
+      scaleY = 1;
+    }
+  else
+    {
+      ParseviewBoxAttribute (attr, marker, doc, &vBX, &vBY, &vBWidth, &vBHeight,
+			     FALSE);
+      /* compute scaling with preserveAspectRatio = xMidYMid meet */
+      scaleX = w / vBWidth;
+      scaleY = h / vBHeight;
+      if (scaleX < scaleY)
+	scaleY = scaleX;
+      else
+	scaleX = scaleY;
+    }
+
   attrType.AttrTypeNum = SVG_ATTR_refX;
   attr = TtaGetAttribute (marker, attrType);
-
-  /* @@@@ to be written @@@@ */
-
-
-  /* add a transform to scale the coordinate system based on the viewBox and
-     the markerHeight and the markerWidth attributes of the marker */
-  /* @@@@ to be written @@@@ */
+  if (attr)
+    {
+      i = 50;
+      TtaGiveTextAttributeValue (attr, buffer, &i);
+      sscanf (buffer, "%d", &x);
+    }
+  else
+    x = 0;
+  attrType.AttrTypeNum = SVG_ATTR_refY;
+  attr = TtaGetAttribute (marker, attrType);
+  if (attr)
+    {
+      i = 50;
+      TtaGiveTextAttributeValue (attr, buffer, &i);
+      sscanf (buffer, "%d", &y);
+    }
+  else
+    y = 0;
+  if (x != 0 || y != 0)
+    TtaAppendTransform (copy, TtaNewTransformTranslate (-x*scaleX, -y*scaleY));
+  /* Scale the coordinate system to set the coordinate system to viewBox units*/
+  if (scaleX != 1 || scaleY != 1)
+    TtaAppendTransform (copy, TtaNewTransformScale (scaleX, scaleY));
 
   if (oldStructureChecking)
     TtaSetStructureChecking (oldStructureChecking, doc);
 }
 
 /*----------------------------------------------------------------------
-  CopyMarkersSubtree
-  Make copies of element marker in every <path>, <line>, <polyline> and
-  <polygon> in the subtree of element el.
+  GenerateMarkers
+  Apply a CSS rule marker* to element el in document doc.
+  Parameter marker is the marker element to be used.
+  Parameter position indicates where the marker has to be put on element pEl:
+    0: all vertices
+    1: start vertex
+    2: mid vertices
+    3: end vertex
+  This function is called when applying a marker* CSS rule (see module
+  presrules.c)
   ----------------------------------------------------------------------*/
-static void CopyMarkersSubtree (Element el, Element marker, int att,
-				Document doc)
+void GenerateMarkers (Element el, Document doc, Element marker, int position)
 {
-  Element              child, leaf;
-  ElementType          elType;
-  int                  length, i;
+  Element         leaf;
+  ElementType     elType;
+  int             length, i;
 
+  if (!el || !marker || doc == 0)
+    /* invalid parameter */
+    return;
+  /* get the child of element pEl that is a graphic leaf */
+  leaf = TtaGetFirstChild (el);
+  while (leaf && TtaGetElementType(leaf).ElTypeNum != GRAPHICS_UNIT)
+    TtaNextSibling (&leaf);
+  if (!leaf)
+    return;
+  /* get the number of vertices in the graphic leaf */
   elType = TtaGetElementType (el);
-  if (elType.ElTypeNum != SVG_EL_polyline &&
-      elType.ElTypeNum != SVG_EL_polygon &&
-      elType.ElTypeNum != SVG_EL_path &&
-      elType.ElTypeNum != SVG_EL_line_)
-    /* it's not a polyline, polygon, path or line. visit the subtree */
-    {
-      child = TtaGetFirstChild (el);
-      while (child)
-	{
-	  CopyMarkersSubtree (child, marker, att, doc);
-	  TtaNextSibling (&child);
-	}
-    }
+  if (elType.ElTypeNum == SVG_EL_polyline ||
+      elType.ElTypeNum == SVG_EL_polygon)
+    length = TtaGetPolylineLength (leaf) - 1;
+  else if (elType.ElTypeNum == SVG_EL_path)
+    length = TtaNumberOfPointsInPath (leaf) - 1;
   else
-    /* it's a polyline, polygon, path or line. Copy the marker in the element */
+    length = 1;
+  /* copy the marker element(s) after the graphic leaf */
+  if (position == 1)
+    /* marker-start */
+    CopyAMarker (marker, el, leaf, 1, doc);
+  else if (position == 3)
+    /* marker-end */
+    CopyAMarker (marker, el, leaf, length+1, doc);
+  else if (position == 2)
+    /* marker-mid */
     {
-      leaf = TtaGetFirstChild (el);
-      while (leaf &&
-	     TtaGetElementType(leaf).ElTypeNum != GRAPHICS_UNIT)
-	TtaNextSibling (&leaf);
-      if (!leaf)
-	return;
-      if (elType.ElTypeNum == SVG_EL_polyline ||
-	  elType.ElTypeNum == SVG_EL_polygon)
-	length = TtaGetPolylineLength (leaf) - 1;
-      else if (elType.ElTypeNum == SVG_EL_path)
-	length = TtaNumberOfPointsInPath (leaf) - 1;
-      else
-	length = 1;
-      if (att == SVG_ATTR_marker_start)
-	CopyAMarker (marker, el, leaf, 1, doc);
-      else if (att == SVG_ATTR_marker_end)
-	CopyAMarker (marker, el, leaf, length+1, doc);
-      else if (att == SVG_ATTR_marker_mid)
-	{
-	  for (i = 2; i <= length; i++)
-	    CopyAMarker (marker, el, leaf, i, doc);
-	}
+      for (i = 2; i <= length; i++)
+	CopyAMarker (marker, el, leaf, i, doc);
     }
-}
-
-/*----------------------------------------------------------------------
-  CopyMarkers
-  Make copies of the marker pointed by the value attrVal of attribute
-  att (marker-start, marker-end, marker-mid) which is attached to
-  element el (<path>, <line>, <polyline> or <polygon>).
-  ----------------------------------------------------------------------*/
-static ThotBool CopyMarkers (Element el, Document doc, char *attrVal, int att)
-{
-  ElementType          elType;
-  Element              marker, curEl, elFound;
-  AttributeType        attrType;
-  Attribute            attr;
-  SearchDomain         direction;
-  char                 *id;
-  int                  length, i;
-
-  if (!strncmp (attrVal, "none", 4))
-    return TRUE;
-  length = strlen(attrVal);
-  if (strncmp (attrVal, "url(", 4) || attrVal[length - 1] != ')')
-    return TRUE;
-  attrVal[length-1] = EOS;
-  /* look for an element with an id attribute with the same value as the
-     marker-* attribute */
-  elType = TtaGetElementType (el);
-  attrType.AttrSSchema = elType.ElSSchema;
-  attrType.AttrTypeNum = SVG_ATTR_id;
-  /* search backwards first */
-  direction = SearchBackward;
-  marker = NULL;
-  if (attrVal[4] == '#') /* handles only internal links */
-    for (i = 1; i <= 2 && marker == NULL; i++)
-      {
-        curEl = el;
-        do
-          {
-            TtaSearchAttribute (attrType, direction, curEl, &elFound, &attr);
-            if (attr)
-              /* an id attribute has been found */
-              {
-                /* get its value */
-                length = TtaGetTextAttributeLength (attr);
-                id = (char *)TtaGetMemory (length + 1);
-                TtaGiveTextAttributeValue (attr, id, &length);
-                /* compare with the marker-* attribute of the use element */
-                if (!strcasecmp (&attrVal[5], id))
-                  /* same  values. we found it */
-                  marker = elFound;
-                TtaFreeMemory (id);
-              }
-            curEl = elFound;
-          }
-        while (elFound && !marker);
-        /* search forward if not found */
-        direction = SearchForward;
-      }
-  if (!marker)
-    return FALSE;
-  else
-    /* the marker to be copied has been found */
-    CopyMarkersSubtree (el, marker, att, doc);
-
-  return TRUE;
-}
-
-/*----------------------------------------------------------------------
-  SetAttributeOnRoot
-  Put attribute att on the <svg> element to which element el belongs.
-  ----------------------------------------------------------------------*/
-static void SetAttributeOnRoot (Element el, int att, Document doc)
-{
-  ElementType     elType, parentType;
-  Element         root, parent, prev;
-  AttributeType   attrType;
-  Attribute       attr;
-
-  /* find the root of the current SVG tree */
-  root = NULL;
-  elType = TtaGetElementType (el);
-  parent = TtaGetParent (el);
-  while (parent && !root)
+  else if (position == 0)
+    /* marker */
     {
-      parentType = TtaGetElementType (parent);
-      prev = parent;
-      parent = TtaGetParent (parent);
-      if (parentType.ElSSchema == elType.ElSSchema &&
-	  parentType.ElTypeNum == SVG_EL_SVG)
-	/* this is an <svg> element */
-	if (parent)
-	  {
-	    parentType = TtaGetElementType (parent);
-	    if (parentType.ElTypeNum == SVG_EL_Document)
-	      /* its parent is the root of the document */
-	      root = prev;
-	    else if (parentType.ElSSchema != elType.ElSSchema)
-	      /* its parent is in a different namespace */
-	      root = prev;
-	  }
-    }
-  if (root)
-    /* put the attribute on the root if it is not present yet */
-    {
-      attrType.AttrSSchema = elType.ElSSchema;
-      attrType.AttrTypeNum = att;
-      attr = TtaGetAttribute (root, attrType);
-      if (!attr)
-	{
-	  attr = TtaNewAttribute (attrType);
-	  TtaAttachAttribute (root, attr, doc);
-	}
-    } 
-}
-
-/*----------------------------------------------------------------------
-  ProcessMarkers
-  If element el has some marker-start, marker-end, or marker-mid
-  attributes, get the referred marker elements and insert them as
-  transclusions in the element.
-  ----------------------------------------------------------------------*/
-void ProcessMarkers (Element el, Document doc)
-{
-  ElementType      elType;
-  AttributeType    attrType;
-  Attribute        attr;
-  int              length, i;
-  char             *attrVal;
-  ThotBool         ok;
-
-  elType = TtaGetElementType (el);
-  attrType.AttrSSchema = elType.ElSSchema;
-  /* check the three marker-* attributes */
-  for (i = 1; i <= 3; i++)
-    {
-      /* choose one of the three possible attributes */
-      if (i==1)
-	attrType.AttrTypeNum = SVG_ATTR_marker_start;
-      else if (i==2)
-	attrType.AttrTypeNum = SVG_ATTR_marker_mid;
-      else
-	attrType.AttrTypeNum = SVG_ATTR_marker_end;
-      attr = TtaGetAttribute (el, attrType);
-      if (attr)
-	/* the element has this attribute */
-	{
-	  /* get its value */
-	  length = TtaGetTextAttributeLength (attr);
-	  attrVal = (char *)TtaGetMemory (length + 1);
-	  TtaGiveTextAttributeValue (attr, attrVal, &length);
-	  ok = CopyMarkers (el, doc, attrVal, attrType.AttrTypeNum);
-	  TtaFreeMemory (attrVal);
-	  if (!ok)
-	    /* the referred marker was not found. It may be a forward reference
-	       to an element that has not been parsed yet. We should retry when
-	       the document is complete. */
-	    SetAttributeOnRoot (el, SVG_ATTR_UnresolvedRef, doc);
-	}
+      for (i = 1; i <= length+1; i++)
+	CopyAMarker (marker, el, leaf, i, doc);
     }
 }
 
@@ -928,7 +1181,7 @@ void ProcessMarkers (Element el, Document doc)
   that attribute by a href attribute in the SVG namespace with the
   same value.
   ----------------------------------------------------------------------*/
-static void CheckHrefAttr (Element el, Document doc)
+static Attribute CheckHrefAttr (Element el, Document doc)
 {
   Element              root;
   SSchema              XLinkSSchema;
@@ -937,6 +1190,7 @@ static void CheckHrefAttr (Element el, Document doc)
   int                  length;
   char                 *href;
 
+  attr = NULL;
   XLinkSSchema = GetXLinkSSchema (doc);
   if (XLinkSSchema)
     /* the XLink namespace is used in that document */
@@ -965,6 +1219,7 @@ static void CheckHrefAttr (Element el, Document doc)
           TtaFreeMemory (href);
         }
     }
+  return attr;
 }
 
 /*----------------------------------------------------------------------
@@ -1467,144 +1722,8 @@ void CreateCSSRules (Element el, Document doc)
 }
 
 /*----------------------------------------------------------------------
-  SkipBlanksAndComma skips all spaces, tabs, linefeeds, newlines and
-  commas at the beginning of the string and returns the pointer to the
-  new position. 
-  ----------------------------------------------------------------------*/
-static char *SkipBlanksAndComma (char *ptr)
-{
-  while (*ptr == SPACE || *ptr == BSPACE || *ptr == EOL ||
-         *ptr == TAB || *ptr == __CR__ || *ptr == ',')
-    ptr++;
-  return (ptr);
-}
-
-/*----------------------------------------------------------------------
-  GetFloat
-  Parse an integer or floating point number and skip to the next token.
-  Return the value of that number in number and moves ptr to the next
-  token to be parsed.
-  ----------------------------------------------------------------------*/
-static char *GetFloat (char *ptr, float* number)
-{
-  int      i;
-  char     *start, c;
-  float     val = 0.;
-  ThotBool negative, decimal, exponent, useDotForFloat;
-
-  /* test if the system uses dot or comma in the float syntax */
-  sscanf (".5", "%f", &val);
-  useDotForFloat = (val == 0.5);
-  negative = FALSE;
-  decimal = FALSE;
-  exponent = FALSE;
-  *number = 0.;
-  /* read the sign */
-  if (*ptr == '+')
-    ptr++;
-  else if (*ptr == '-')
-    {
-      ptr++;
-      negative = TRUE;
-    }
-
-  start = ptr;
-  /* read the integer part */
-  while (*ptr != EOS && *ptr >= '0' && *ptr <= '9')
-    ptr++;
-  if (*ptr == '.')
-    /* there is a decimal part */
-    {
-      if (!useDotForFloat)
-        *ptr = ',';
-      ptr++;
-      decimal = TRUE;
-      while (*ptr != EOS &&  *ptr >= '0' && *ptr <= '9')
-        ptr++;
-    }
-
-  if (*ptr == 'e' || *ptr == 'E')
-    /* there is an exponent, parse it */
-    {
-      exponent = TRUE;
-      ptr++;
-      /* read the sign of the exponent */
-      if (*ptr == '+')
-        ptr++;
-      else if (*ptr == '-')
-        ptr++;
-      while (*ptr != EOS &&  *ptr >= '0' && *ptr <= '9')
-        ptr++;
-    }
-  /* remove possible extra characters */
-  c = *ptr;
-	if (c != EOS)
-    *ptr = EOS;
-  if (exponent)
-    sscanf (start, "%e", number);
-  else if (decimal)
-    sscanf (start, "%f", number);
-  else
-    {
-      sscanf (start, "%d", &i);
-      *number = (float)i;
-    }
-
-  if (negative)
-    *number = - *number;
-  /* restore extra characters */
-  *ptr = c;
-
-  /* skip the following spaces */
-  while (*ptr != EOS &&
-         (*ptr == ',' || *ptr == SPACE || *ptr == BSPACE ||
-          *ptr == EOL    || *ptr == TAB   || *ptr == __CR__))
-    ptr++;
-  return (ptr);
-}
-
-/*----------------------------------------------------------------------
-  ParseviewBoxAttribute
-  Parse the value of a viewbox attribute
-  ----------------------------------------------------------------------*/
-static void ParseviewBoxAttribute (Attribute attr, Element el, Document doc,
-                                   float* x, float* y, float* width,
-                                   float* height, ThotBool delete_)
-{
-  int                  length;
-  char                *text, *ptr;
-
-  *x = 0;
-  *y = 0;
-  *width = 0;
-  *height = 0;
-  length = TtaGetTextAttributeLength (attr) + 2;
-  text = (char *)TtaGetMemory (length);
-  if (text)
-    {
-      /* get the value of the attribute */
-      TtaGiveTextAttributeValue (attr, text, &length);
-      /* parse the attribute value */
-      ptr = text;
-      if (*ptr != EOS)
-        {
-          /* skip space characters */
-          ptr = SkipBlanksAndComma (ptr);
-          ptr = GetFloat (ptr, x);
-          ptr = SkipBlanksAndComma (ptr);
-          ptr = GetFloat (ptr, y);
-          ptr = SkipBlanksAndComma (ptr);
-          ptr = GetFloat (ptr, width);
-          ptr = SkipBlanksAndComma (ptr);
-          ptr = GetFloat (ptr, height);
-        }       
-      TtaFreeMemory (text);
-    }
-}
-
-/*----------------------------------------------------------------------
   ParsePreserveAspectRatioAttribute
-  Parse the value of a viewbox attribute
+  Parse the value of a preserveAspectRatio attribute
   ----------------------------------------------------------------------*/
 static void ParsePreserveAspectRatioAttribute (Attribute attr, Element el,
                                             Document doc, int* align,
@@ -1704,7 +1823,7 @@ static void ParsePreserveAspectRatioAttribute (Attribute attr, Element el,
   The XML parser has just inserted a new element in the abstract tree,
   with all its attributes, but without its children.
   ----------------------------------------------------------------------*/
-void      SVGElementCreated (Element el, Document doc)
+void SVGElementCreated (Element el, Document doc)
 {
   ElementType		elType;
   AttributeType attrType;
@@ -1946,7 +2065,7 @@ char *SVG_GetNumber (char *ptr, int* number, ThotBool *error)
 void ParsePointsBuffer (char *text, Element leaf, Document doc)
 {
   DisplayMode  dispMode;
- TypeUnit		   unit;
+  TypeUnit		   unit;
   char		    *ptr;
   int          x, y, nbPoints, maxX, maxY, minX, minY, i;
   ThotBool     error;
@@ -2078,13 +2197,13 @@ char *ConvertLineAttributesToPath (Element el)
   ----------------------------------------------------------------------*/
 void GraphicLeafComplete(Document doc, Element el)
 {
-  Element leaf;
-  ThotBool             shape_recognition;
+  Element              leaf;
   ElementType	       elType;
-  int w, h, rx = 0,ry = 0;
+  int                  w, h, rx = 0,ry = 0;
   PresentationContext  ctxt;
   PresentationValue    pval;
   ThotBool	       closedShape;
+  ThotBool             shape_recognition;
   PRule		       fillPatternRule, newPRule;
 
   leaf = CreateGraphicLeaf (el, doc, &closedShape);
@@ -2102,7 +2221,6 @@ void GraphicLeafComplete(Document doc, Element el)
 
   if (!TtaGetEnvBoolean ("ENABLE_SHAPE_RECOGNITION", &shape_recognition))
     shape_recognition = TRUE;
-
   elType = TtaGetElementType (el);
 
   /* Check the geometric properties of the leaf */
@@ -2142,7 +2260,27 @@ void GraphicLeafComplete(Document doc, Element el)
 	  UpdatePointsOrPathAttribute(doc, el, w, h, FALSE);
 	}
     }
+}
 
+/*----------------------------------------------------------------------
+  SVGCheckInsert
+  The XML parser has just created an element in the SVG namespace, before
+  parsing any of its attribute.
+  ----------------------------------------------------------------------*/
+void SVGCheckInsert (Element *el, Element parent,
+		     Document doc, ThotBool *inserted)
+{
+  ElementType  elType;
+
+  elType = TtaGetElementType (*el);
+  if (elType.ElTypeNum == SVG_EL_linearGradient)
+    TtaNewGradient (TRUE, *el);
+  else if (elType.ElTypeNum == SVG_EL_radialGradient)
+    TtaNewGradient (FALSE, *el);
+  else if (elType.ElTypeNum == SVG_EL_stop)
+    TtaNewGradientStop (*el, parent);
+  *inserted = FALSE;
+  return;
 }
 
 /*----------------------------------------------------------------------
@@ -2252,12 +2390,10 @@ void SVGElementComplete (ParserData *context, Element el, int *error)
         case SVG_EL_marker:
           /* case SVG_EL_view: */
           TtaSetElCoordinateSystem (el);
-	  ProcessMarkers (el, doc);
           break;
 
         case SVG_EL_g:
           TtaSetElCoordinateSystem (el);
-	  ProcessMarkers (el, doc);
           break;
 
         case SVG_EL_SVG:
@@ -2272,7 +2408,6 @@ void SVGElementComplete (ParserData *context, Element el, int *error)
               InstanciateUseElements (el, doc);
               TtaRemoveAttribute (el, attr, doc);
             } 
-	  ProcessMarkers (el, doc);
           break;
 
         case SVG_EL_image:
@@ -2293,16 +2428,20 @@ void SVGElementComplete (ParserData *context, Element el, int *error)
 
         case SVG_EL_use_:
         case SVG_EL_tref:
-          /* it's a use or a tref element */
-          /* if it has a href attribute from the XLink namespace, replace
-             that attribute by a href attribute from the SVG namespace */
-          CheckHrefAttr (el, doc);
+        case SVG_EL_linearGradient:
+        case SVG_EL_radialGradient:
           /* make a transclusion of the element addressed by its xlink_href
              attribute after the last child */
+          /* if the element has a href attribute from the XLink namespace,
+	     replace that attribute by a href attribute from the SVG namespace*/
+          attr = CheckHrefAttr (el, doc);
           /* first, get the xlink:href attribute */
-          attrType.AttrSSchema = elType.ElSSchema;
-          attrType.AttrTypeNum = SVG_ATTR_xlink_href;
-          attr = TtaGetAttribute (el, attrType);
+	  if (!attr)
+	    {
+	      attrType.AttrSSchema = elType.ElSSchema;
+	      attrType.AttrTypeNum = SVG_ATTR_xlink_href;
+	      attr = TtaGetAttribute (el, attrType);
+	    }
           if (attr)
             /* the use element has a xlink:href attribute */
             {
@@ -2318,24 +2457,19 @@ void SVGElementComplete (ParserData *context, Element el, int *error)
                    We should retry when the document is complete. */
 		SetAttributeOnRoot (el, SVG_ATTR_UnresolvedRef, doc);
             }
-	  ProcessMarkers (el, doc);
           break;
 
 	case SVG_EL_path:
         case SVG_EL_polyline:
         case SVG_EL_polygon:
-	  GraphicLeafComplete(doc, el);
-	  /* this element may use markers. Check its marker-start, marker-end
-	     and maker-mid attributes and copy the referred marker(s) */
-	  ProcessMarkers (el, doc);
-	  break;
+          GraphicLeafComplete(doc, el);
+          break;
 
         case SVG_EL_a:
           /* it's an anchor element */
           /* if it has a href attribute from the XLink namespace, replace
              that attribute by a href attribute from the SVG namespace */
           CheckHrefAttr (el, doc);
-	  ProcessMarkers (el, doc);
           break;
 
         case SVG_EL_switch:
@@ -2344,7 +2478,6 @@ void SVGElementComplete (ParserData *context, Element el, int *error)
              systemLanguage attributes on its direct child elements to select
              the child to be rendered */
           EvaluateTestAttrs (el, doc);
-	  ProcessMarkers (el, doc);
           break;
 
         case SVG_EL_style__:
@@ -2360,7 +2493,6 @@ void SVGElementComplete (ParserData *context, Element el, int *error)
         case SVG_EL_font_:
         case SVG_EL_glyph:
         case SVG_EL_missing_glyph:
-          ProcessMarkers (el, doc);
           break;
 
         case SVG_EL_line_:
@@ -2372,9 +2504,6 @@ void SVGElementComplete (ParserData *context, Element el, int *error)
           ParsePointsBuffer (buffer, leaf, doc);
           TtaFreeMemory (buffer);
           buffer = NULL;
-	  /* this element may use markers. Check its marker-start, marker-end
-	     and maker-mid attributes and copy the referred marker(s) */
-	  ProcessMarkers (el, doc);
           break;
 
         default:
@@ -2784,7 +2913,7 @@ void UpdatePositionOfPoly (Element el, Document doc, int minX, int minY,
   if (minY != 0)
     TranslateElement (el, doc, minY, unit, FALSE, TRUE);
 
-  TtaAppendTransform (el, TtaNewTransformTranslate((float)minX, (float)minY), doc);
+  TtaAppendTransform (el, TtaNewTransformTranslate((float)minX, (float)minY));
 }
 
 /*----------------------------------------------------------------------
@@ -2804,9 +2933,9 @@ void ParseCoordAttribute (Attribute attr, Element el, Document doc)
 
 
   elType = TtaGetElementType (el);
-  if (elType.ElTypeNum == SVG_EL_line_ &&
-      !strcmp (TtaGetSSchemaName (elType.ElSSchema), "SVG"))
-    return;
+/*   if (elType.ElTypeNum == SVG_EL_line_ && */
+/*       !strcmp (TtaGetSSchemaName (elType.ElSSchema), "SVG")) */
+/*     return; */
 
   length = TtaGetTextAttributeLength (attr) + 2;
   text = (char *)TtaGetMemory (length);
@@ -2880,10 +3009,11 @@ void ParseCoordAttribute (Attribute attr, Element el, Document doc)
 ThotBool ParseWidthHeightAttribute (Attribute attr, Element el, Document doc,
                                     ThotBool delete_)
 {
-  AttributeType	attrType;
+  AttributeType	       attrType, attrType2;
+  Attribute            attr2 = NULL;
   ElementType          elType;
   Element              child;
-  int			             length, attrKind, ruleType;
+  int		               length, attrKind, ruleType;
   char		            *text, *ptr;
   PresentationValue    pval;
   PresentationContext  ctxt;
@@ -2899,10 +3029,9 @@ ThotBool ParseWidthHeightAttribute (Attribute attr, Element el, Document doc,
       if (!text)
         return ret;
     }
-  ctxt = TtaGetSpecificStyleContext (doc);
-  /* the specific presentation is not a CSS rule */
-  ctxt->cssSpecificity = 2000;
-  ctxt->destroy = FALSE;
+  else if (attr == NULL || el == NULL)
+    return ret;
+
   /* decide of the presentation rule to be created or updated */
   TtaGiveAttributeType (attr, &attrType, &attrKind);
   if (attrType.AttrTypeNum == SVG_ATTR_width_)
@@ -2923,66 +3052,99 @@ ThotBool ParseWidthHeightAttribute (Attribute attr, Element el, Document doc,
       ruleType = PRHeight;
   else
     ruleType = PRWidth;
+
+  if (ruleType == PRXRadius || ruleType == PRYRadius)
+    /* that's the radius of a rounded corner. Get the graphics leaf
+       which will receive the specific presentation rule */
+    {
+      child = TtaGetFirstChild (el);
+      while (child &&
+             TtaGetElementType(child).ElTypeNum != GRAPHICS_UNIT)
+        TtaNextSibling (&child);
+      // When a radius doesn't exist, apply the other radius value
+      attrType2.AttrSSchema =  attrType.AttrSSchema;
+      if (attrType.AttrTypeNum == SVG_ATTR_ry)
+        attrType2.AttrTypeNum = SVG_ATTR_rx;
+      else
+        attrType2.AttrTypeNum = SVG_ATTR_ry;
+      attr2 = TtaGetAttribute (el, attrType2);
+    }
+  else
+    child = el;
+
   if (delete_)
-    /* attribute deleted */
-    if (ruleType != PRXRadius && ruleType != PRYRadius)
-      /* attribute mandatory. Do not delete */
-      ret = TRUE;
-    else
-      {
-        /* that's the radius of a rounded corner. Get the graphics leaf
-           which has the specific presentation rule to be removed */
-        child = TtaGetFirstChild (el);
-        while (child &&
-               TtaGetElementType(child).ElTypeNum != GRAPHICS_UNIT)
-          TtaNextSibling (&child);
-        pval.typed_data.value = 0;
-        pval.typed_data.unit = UNIT_PX;
-        ctxt->destroy = FALSE;
-        TtaSetStylePresentation (ruleType, child, NULL, ctxt, pval);
-        ctxt->destroy = TRUE;
-        TtaSetStylePresentation (ruleType, child, NULL, ctxt, pval);
-        ret = FALSE; /* let Thot perform normal operation */
-      }
+    {
+      /* attribute deleted */
+      if (ruleType != PRXRadius && ruleType != PRYRadius)
+        /* attribute mandatory. Do not delete */
+        return TRUE;
+      else
+        {
+          if (attr2)
+            {
+              length = TtaGetTextAttributeLength (attr) + 2;
+              text = (char *)TtaGetMemory (length);
+              TtaGiveTextAttributeValue (attr2, text, &length); 
+            }
+        }
+    }
   else
     /* attribute created or modified */
+    TtaGiveTextAttributeValue (attr, text, &length);
+
+  if (child)
     {
-      /* get the value of the attribute */
-      TtaGiveTextAttributeValue (attr, text, &length); 
-      /* parse the attribute value (a number followed by a unit) */
-      ptr = text;
-      ptr = (char*)TtaSkipBlanks (ptr);
-      ptr = ParseCSSUnit (ptr, &pval);
-      if (pval.typed_data.unit == UNIT_BOX)
-        pval.typed_data.unit = UNIT_PX;
-      if (pval.typed_data.unit != UNIT_INVALID)
+      ctxt = TtaGetSpecificStyleContext (doc);
+      /* the specific presentation is not a CSS rule */
+      ctxt->cssSpecificity = 2000;
+      if (text)
         {
-          if ((elType.ElTypeNum == SVG_EL_ellipse ||
-               elType.ElTypeNum == SVG_EL_circle_) &&
-              (attrType.AttrTypeNum == SVG_ATTR_r ||
-               attrType.AttrTypeNum == SVG_ATTR_rx ||
-               attrType.AttrTypeNum == SVG_ATTR_ry))
-            /* that's the radius of a circle or an ellipse,
-               multiply the value by 2 to set the width or height of the box */
-            pval.typed_data.value *= 2;
-          if (ruleType == PRXRadius || ruleType == PRYRadius)
-            /* that's the radius of a rounded corner. Get the graphics leaf
-               which will receive the specific presentation rule */
+          /* parse the attribute value (a number followed by a unit) */
+          ptr = text;
+          ptr = (char*)TtaSkipBlanks (ptr);
+          ptr = ParseCSSUnit (ptr, &pval);
+          if (pval.typed_data.unit == UNIT_BOX)
+            pval.typed_data.unit = UNIT_PX;
+          if (pval.typed_data.unit != UNIT_INVALID)
             {
-              child = TtaGetFirstChild (el);
-              while (child &&
-                     TtaGetElementType(child).ElTypeNum != GRAPHICS_UNIT)
-                TtaNextSibling (&child);
-              el = child;
+              if ((elType.ElTypeNum == SVG_EL_ellipse ||
+                   elType.ElTypeNum == SVG_EL_circle_) &&
+                  (attrType.AttrTypeNum == SVG_ATTR_r ||
+                   attrType.AttrTypeNum == SVG_ATTR_rx ||
+                   attrType.AttrTypeNum == SVG_ATTR_ry))
+                /* that's the radius of a circle or an ellipse,
+                   multiply the value by 2 to set the width or height of the box */
+                pval.typed_data.value *= 2;
             }
           /* set the specific presentation value of the box */
-          if (el)
-            TtaSetStylePresentation (ruleType, el, NULL, ctxt, pval);
+          ctxt->destroy = FALSE;
+          TtaSetStylePresentation (ruleType, child, NULL, ctxt, pval);
+          // update if necessary the other radius
+          if (attr2 == NULL && ruleType == PRXRadius)
+            TtaSetStylePresentation (PRYRadius, child, NULL, ctxt, pval);
+          else if (attr2 == NULL && ruleType == PRYRadius)
+            TtaSetStylePresentation (PRXRadius, child, NULL, ctxt, pval);
+          TtaFreeMemory (text);
         }
-      if (text)
-        TtaFreeMemory (text);
+      else
+        {
+          pval.typed_data.value = 0;
+          pval.typed_data.unit = UNIT_PX;
+          ctxt->destroy = FALSE;
+          TtaSetStylePresentation (ruleType, child, NULL, ctxt, pval);
+          ctxt->destroy = TRUE;
+          TtaSetStylePresentation (ruleType, child, NULL, ctxt, pval);
+          if (ruleType == PRXRadius)
+            ruleType = PRYRadius;
+          else
+            ruleType = PRXRadius;
+          ctxt->destroy = FALSE;
+          TtaSetStylePresentation (ruleType, child, NULL, ctxt, pval);
+          ctxt->destroy = TRUE;
+          TtaSetStylePresentation (ruleType, child, NULL, ctxt, pval);
+        }
+      TtaFreeMemory (ctxt);
     }
-  TtaFreeMemory (ctxt);
   return ret;
 }
 
@@ -3093,9 +3255,10 @@ void ParsePointsAttribute (Attribute attr, Element el, Document doc)
 /*----------------------------------------------------------------------
   ParseTransformAttribute
   Parse the value of a transform attribute
+  if parameter gradient is TRUE, it's a transformGradient attribute
   ----------------------------------------------------------------------*/
 void ParseTransformAttribute (Attribute attr, Element el, Document doc,
-                              ThotBool delete_)
+                              ThotBool delete_, ThotBool gradient)
 {
   int                  length;
   float                scaleX, scaleY, x, y, a, b, c, d, e, f, angle;
@@ -3166,10 +3329,13 @@ void ParseTransformAttribute (Attribute attr, Element el, Document doc,
                     {
                       ptr++;
 #ifdef _GL
-                      TtaAppendTransform (el, 
-                                           TtaNewTransformMatrix (a, b, c,
-                                                                  d, e, f),
-                                           doc);
+		      if (gradient)
+			TtaAppendGradientTransform (el, 
+				     TtaNewTransformMatrix (a, b, c, d, e, f));
+		      else
+			TtaAppendTransform (el, 
+					    TtaNewTransformMatrix (a, b, c,
+								   d, e, f));
 #else /* _GL */
                       pval.typed_data.value = 0;
                       pval.typed_data.unit = UNIT_PX;
@@ -3236,7 +3402,11 @@ void ParseTransformAttribute (Attribute attr, Element el, Document doc,
                   else
                     error = TRUE;
 #ifdef _GL
-                  TtaAppendTransform (el, TtaNewTransformTranslate (x, y), doc);
+		  if (gradient)
+                    TtaAppendGradientTransform (el,
+					      TtaNewTransformTranslate (x, y));
+		  else
+                    TtaAppendTransform (el, TtaNewTransformTranslate (x, y));
 #else /* _GL */
                   pval.typed_data.value = (int)y;
                   TtaSetStylePresentation (PRVertPos, el, NULL, ctxt, pval);
@@ -3270,10 +3440,13 @@ void ParseTransformAttribute (Attribute attr, Element el, Document doc,
                     {
                       ptr++;
 #ifdef _GL
-                      TtaAppendTransform (el, 
-                                           TtaNewTransformScale (scaleX, 
-                                                                 scaleY),
-                                           doc);
+		      if (gradient)
+                        TtaAppendGradientTransform (el, 
+                                        TtaNewTransformScale (scaleX, scaleY));
+		      else
+                       TtaAppendTransform (el, 
+					   TtaNewTransformScale (scaleX, 
+								 scaleY));
 #endif /* _GL */
                     }
                   else
@@ -3315,9 +3488,12 @@ void ParseTransformAttribute (Attribute attr, Element el, Document doc,
                     {
                       ptr++;
 #ifdef _GL
-                      TtaAppendTransform (el, 
-                                           TtaNewTransformRotate (angle, x, y),
-                                           doc);
+		      if (gradient)
+			TtaAppendGradientTransform (el, 
+					 TtaNewTransformRotate (angle, x, y));
+		      else
+			TtaAppendTransform (el, 
+					    TtaNewTransformRotate (angle, x, y));
 #endif /* _GL */
                     }
                   else
@@ -3339,9 +3515,12 @@ void ParseTransformAttribute (Attribute attr, Element el, Document doc,
                     {
                       ptr++;
 #ifdef _GL
-                      TtaAppendTransform (el, 
-                                           TtaNewTransformSkewX (x),
-                                           doc);
+		      if (gradient)
+			TtaAppendGradientTransform (el, 
+						    TtaNewTransformSkewX (x));
+		      else
+			TtaAppendTransform (el, 
+					    TtaNewTransformSkewX (x));
 #endif /* _GL */
                     }
                   else
@@ -3363,9 +3542,12 @@ void ParseTransformAttribute (Attribute attr, Element el, Document doc,
                     {
                       ptr++;
 #ifdef _GL
-                      TtaAppendTransform (el, 
-                                           TtaNewTransformSkewY (y),
-                                           doc);
+		      if (gradient)
+			TtaAppendGradientTransform (el, 
+						    TtaNewTransformSkewY (y));
+		      else
+			TtaAppendTransform (el, 
+					    TtaNewTransformSkewY (y));
 #endif /* _GL */
                     }
                   else
@@ -3909,53 +4091,39 @@ void *ParsePathDataAttribute (Attribute attr, Element el, Document doc, ThotBool
 }
 
 /*----------------------------------------------------------------------
-  ParseIntAttrbute : 
-  Parse the value of a integer data attribute
+  ParseNumberPercentAttribute : 
+  Parse the value of a <number> or <percentage> attribute
   ----------------------------------------------------------------------*/
-int ParseIntAttribute (Attribute attr)
+float ParseNumberPercentAttribute (Attribute attr)
 {
+  float                value;
   int                  length;
   char                *text, *ptr;
   PresentationValue    pval;
 
+  value = 0;
   length = TtaGetTextAttributeLength (attr) + 2;
   text = (char *)TtaGetMemory (length);
   if (text != NULL)
     {
       TtaGiveTextAttributeValue (attr, text, &length);
-      /* parse the attribute value (a number followed by a unit) */
+      /* parse the attribute value */
       ptr = text;
       ptr = (char*)TtaSkipBlanks (ptr);
       ptr = ParseCSSUnit (ptr, &pval);
       TtaFreeMemory (text);
-      return pval.typed_data.value;
+      if (pval.typed_data.unit == UNIT_BOX)
+	{
+	  if (pval.typed_data.real)
+	    value = (float) pval.typed_data.value/1000;
+	  else
+	    value = (float) pval.typed_data.value;
+	}
+      else if (pval.typed_data.unit == UNIT_PERCENT)
+	/* it's a percentage */
+	value = (float) pval.typed_data.value/100;
     }
-  return 0;
-}
-
-/*----------------------------------------------------------------------
-  ParseFloatAttrbute : 
-  Parse the value of a float data attribute
-  ----------------------------------------------------------------------*/
-float ParseFloatAttribute (Attribute attr)
-{
-  int                  length;
-  char                *text, *ptr;
-  PresentationValue    pval;
-
-  length = TtaGetTextAttributeLength (attr) + 2;
-  text = (char *)TtaGetMemory (length);
-  if (text != NULL)
-    {
-      TtaGiveTextAttributeValue (attr, text, &length);
-      /* parse the attribute value (a number followed by a unit) */
-      ptr = text;
-      ptr = (char*)TtaSkipBlanks (ptr);
-      ptr = ParseClampedUnit (ptr, &pval);
-      TtaFreeMemory (text);
-      return (float) pval.typed_data.value/1000;
-    }
-  return 0;
+  return value;
 }
 
 /*----------------------------------------------------------------------
@@ -3968,10 +4136,8 @@ void SVGAttributeComplete (Attribute attr, Element el, Document doc)
   Attribute            intAttr;
   ElementType          elType;
   Element	       leaf;
-  int		       attrKind;
+  int		       attrKind, method, value;
   ThotBool	       closed;
-  unsigned short       red, green, blue;
-  char                 *color;
   float                offset;
 
   TtaGiveAttributeType (attr, &attrType, &attrKind);
@@ -3980,12 +4146,20 @@ void SVGAttributeComplete (Attribute attr, Element el, Document doc)
     case SVG_ATTR_opacity_:
     case SVG_ATTR_stroke_opacity:
     case SVG_ATTR_fill_opacity:
+    case SVG_ATTR_stop_opacity:
+    case SVG_ATTR_fill_rule:
       ParseCSSequivAttribute (attrType.AttrTypeNum, attr, el, doc, FALSE);
       break;
     case SVG_ATTR_height_:
     case SVG_ATTR_width_:
-    case SVG_ATTR_r:
       ParseWidthHeightAttribute (attr, el, doc, FALSE);
+      break;
+    case SVG_ATTR_r:
+      elType = TtaGetElementType (el);
+      if (elType.ElTypeNum == SVG_EL_radialGradient)
+	TtaSetRadialGradientRadius (ParseNumberPercentAttribute (attr), el);
+      else
+	ParseWidthHeightAttribute (attr, el, doc, FALSE);
       break;
     case SVG_ATTR_font_family:
     case SVG_ATTR_font_size:
@@ -3993,52 +4167,81 @@ void SVGAttributeComplete (Attribute attr, Element el, Document doc)
     case SVG_ATTR_font_variant:
     case SVG_ATTR_font_weight:
     case SVG_ATTR_text_decoration:
+    case SVG_ATTR_color:
+    case SVG_ATTR_stop_color:
     case SVG_ATTR_fill:
     case SVG_ATTR_stroke:
     case SVG_ATTR_stroke_width:
       ParseCSSequivAttribute (attrType.AttrTypeNum, attr, el, doc, FALSE);
       break;
     case SVG_ATTR_transform:
-      ParseTransformAttribute (attr, el, doc, FALSE);
+      ParseTransformAttribute (attr, el, doc, FALSE, FALSE);
       break;
     case SVG_ATTR_points:
       ParsePointsAttribute (attr, el, doc);
       break;
     case SVG_ATTR_x:
     case SVG_ATTR_y:
-    case SVG_ATTR_cx:
-    case SVG_ATTR_cy:
     case SVG_ATTR_dx:
     case SVG_ATTR_dy:
       ParseCoordAttribute (attr, el, doc);
       break;
+      
+    case SVG_ATTR_cx:
+      elType = TtaGetElementType (el);
+      if (elType.ElTypeNum == SVG_EL_radialGradient)
+	TtaSetRadialGradientcx (ParseNumberPercentAttribute (attr), el);
+      else
+	ParseCoordAttribute (attr, el, doc);
+      break;
+    case SVG_ATTR_cy:
+      elType = TtaGetElementType (el);
+      if (elType.ElTypeNum == SVG_EL_radialGradient)
+	TtaSetRadialGradientcy (ParseNumberPercentAttribute (attr), el);
+      else
+	ParseCoordAttribute (attr, el, doc);
+      break;
+    case SVG_ATTR_fx:
+      elType = TtaGetElementType (el);
+      if (elType.ElTypeNum == SVG_EL_radialGradient)
+	TtaSetRadialGradientfx (ParseNumberPercentAttribute (attr), el);
+      else
+	ParseCoordAttribute (attr, el, doc);
+      break;
+    case SVG_ATTR_fy:
+      elType = TtaGetElementType (el);
+      if (elType.ElTypeNum == SVG_EL_radialGradient)
+	TtaSetRadialGradientfy (ParseNumberPercentAttribute (attr), el);
+      else
+	ParseCoordAttribute (attr, el, doc);
+      break;
     case SVG_ATTR_x1:
       elType = TtaGetElementType (el);
       if (elType.ElTypeNum == SVG_EL_linearGradient)
-        TtaSetLinearx1Gradient (ParseIntAttribute (attr), el);
-      else
-        ParseCoordAttribute (attr, el, doc);
+        TtaSetLinearGradientx1 (ParseNumberPercentAttribute (attr), el);
+      //else
+      //  ParseCoordAttribute (attr, el, doc);
       break;
     case SVG_ATTR_y1:
       elType = TtaGetElementType (el);
       if (elType.ElTypeNum == SVG_EL_linearGradient)
-        TtaSetLineary1Gradient (ParseIntAttribute (attr), el);
-      else
-        ParseCoordAttribute (attr, el, doc);
+        TtaSetLinearGradienty1 (ParseNumberPercentAttribute (attr), el);
+      //else
+      //  ParseCoordAttribute (attr, el, doc);
       break;
     case SVG_ATTR_x2:
       elType = TtaGetElementType (el);
       if (elType.ElTypeNum == SVG_EL_linearGradient)
-        TtaSetLinearx2Gradient (ParseIntAttribute (attr), el);
-       else
-        ParseCoordAttribute (attr, el, doc);
+        TtaSetLinearGradientx2 (ParseNumberPercentAttribute (attr), el);
+      //else
+      //  ParseCoordAttribute (attr, el, doc);
       break;
     case SVG_ATTR_y2:
       elType = TtaGetElementType (el);
       if (elType.ElTypeNum == SVG_EL_linearGradient)
-        TtaSetLineary2Gradient (ParseIntAttribute (attr), el);
-      else
-        ParseCoordAttribute (attr, el, doc);
+        TtaSetLinearGradienty2 (ParseNumberPercentAttribute (attr), el);
+      //else
+      //  ParseCoordAttribute (attr, el, doc);
       break;
 	
     case SVG_ATTR_rx:
@@ -4077,23 +4280,42 @@ void SVGAttributeComplete (Attribute attr, Element el, Document doc)
             }
         }
       break;
-    case SVG_ATTR_offset:
-      offset = ParseFloatAttribute (attr);
-      TtaSetStopOffsetColorGradient (offset, el);
+    case SVG_ATTR_spreadMethod:
+      /* get the value of attribute spreadMethod */
+      method = TtaGetAttributeValue (attr);
+      TtaSetGradientSpreadMethod (method, el);
       break;
-    case SVG_ATTR_stop_color:
-      color = get_char_attribute_from_el (el, attrType.AttrTypeNum);
-      TtaGiveRGB (color, &red, &green, &blue);
-      TtaFreeMemory (color);
-      TtaSetStopColorGradient (red, green, blue, el);
+    case SVG_ATTR_gradientUnits:
+      elType = TtaGetElementType (el);
+      if (elType.ElTypeNum == SVG_EL_linearGradient ||
+	  elType.ElTypeNum == SVG_EL_radialGradient)
+	{
+	  /* get the value of attribute gradientUnits */
+	  value = TtaGetAttributeValue (attr);
+	  TtaSetGradientUnits ((value == SVG_ATTR_gradientUnits_VAL_userSpaceOnUse), el);
+	}
+      break;
+    case SVG_ATTR_gradientTransform:
+      ParseTransformAttribute (attr, el, doc, FALSE, TRUE);
+      break;
+    case SVG_ATTR_offset:
+      /* parse <number> or <percentage> */
+      offset = ParseNumberPercentAttribute (attr);
+      TtaSetGradientStopOffset (offset, el);
       break;
     case SVG_ATTR_id:
-      CheckUniqueName (el, doc, attr, attrType);
+      elType = TtaGetElementType (el);
+      if (elType.ElTypeNum != SVG_EL_use_ && elType.ElTypeNum != SVG_EL_marker)
+	CheckUniqueName (el, doc, attr, attrType);
       break;
+
+    case SVG_ATTR_marker_start:
+    case SVG_ATTR_marker_mid:
+    case SVG_ATTR_marker_end:
+      ParseCSSequivAttribute (attrType.AttrTypeNum, attr, el, doc, FALSE);
+      break;
+
     default:
       break;
     }
 }
-
-
-

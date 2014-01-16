@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2007
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -298,7 +298,7 @@ void FreeGlTextureNoCache (void *imageDesc)
   img = (ThotPictInfo *)imageDesc;
   if (img->TextureBind && glIsTexture (img->TextureBind))
     {      
-      glDeleteTextures (1,  (GLuint*)&(img->TextureBind));
+      glDeleteTextures (1, (GLuint*)&(img->TextureBind));
 #ifdef _TRACE_GL_PICTURE
       printf ("\n Image %s Freed", img->PicFileName);      
 #endif /* _TRACE_GL_PICTURE */
@@ -337,7 +337,9 @@ void FreeGlTexture (void *imagedesc)
       if (FreeAPicCache (img->TextureBind, ActiveFrame) == 0)
 #endif /* WITH_CACHE */
         /*not found in cache, we free it manually.*/
-        glDeleteTextures (1,  (GLuint*)&(img->TextureBind));
+		if (glIsTexture(img->TextureBind))
+        glDeleteTextures (1, (GLuint*)&(img->TextureBind));
+
 #ifdef _PCLDEBUG
       printf ("\n img %s Freed", img->PicFileName);      
 #endif /*_PCLDEBUG*/
@@ -366,13 +368,13 @@ static int ceil_pow2_minus_1(unsigned int x)
 }
 
 /*----------------------------------------------------------------------
-  p2 :  Lowest power of two bigger than the argument.
+   GetLowerPowerLowest power of two bigger than the argument.
   ----------------------------------------------------------------------*/
-static int p2(int p)
+int GetLowerPower (int p)
 {
-  if (p ==1)
+  if (p == 1)
     return 2;
-  else if (p && p > 0)
+  else if (p > 0)
     return (ceil_pow2_minus_1((unsigned int) p) + 1);
   else
     return p;
@@ -471,7 +473,7 @@ static void GL_TextureBind (ThotPictInfo *img, ThotBool isPixmap,
             img->PicShiftX = 0;
         }
       else
-        p2_w = p2 (img->PicWidth);
+        p2_w = GetLowerPower (img->PicWidth);
       if (glhard () && img->PicHeight > MAX_GL_SIZE)
         {
           // keep only a part of the image height
@@ -497,7 +499,7 @@ static void GL_TextureBind (ThotPictInfo *img, ThotBool isPixmap,
             img->PicShiftY = 0;
         }
       else
-        p2_h = p2 (img->PicHeight);
+        p2_h = GetLowerPower (img->PicHeight);
       /* We have resized the picture to match a power of 2
          We don't want to see all the picture, just the w and h 
          portion*/
@@ -509,7 +511,8 @@ static void GL_TextureBind (ThotPictInfo *img, ThotBool isPixmap,
         GL_h = (GLfloat).1; // avoid nul value
       /* We give te texture to opengl Pipeline system */	    
       Mode = (img->RGBA)?GL_RGBA:GL_RGB;
-      glGenTextures (1,  (GLuint*)&(img->TextureBind));
+	  if (img->TextureBind == 0)
+        glGenTextures (1,  (GLuint*)&(img->TextureBind));
       glBindTexture (GL_TEXTURE_2D, img->TextureBind);
       /*Texture Parameter : Here Faster ones...*/
       glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -554,9 +557,9 @@ static void GL_TextureBind (ThotPictInfo *img, ThotBool isPixmap,
         /* create a texture whose sizes are power of 2*/
         glTexImage2D (GL_TEXTURE_2D, 0, Mode, p2_w, p2_h, 0, Mode, 
                       GL_UNSIGNED_BYTE, NULL);
-#ifdef _GL_DEBUG
+//#ifdef _GL_DEBUG
       GL_Err ();
-#endif
+//#endif
       if (!Printing)
         img->PicPixmap = NULL;
       img->TexCoordW = GL_w;
@@ -636,7 +639,7 @@ static void GL_TexturePartialMap (ThotPictInfo *desc, int dx, int dy,
 #ifdef _WINDOWS
   /* Test to avoid a crash with background images > 1024 on Windows */
   /* Laurent and Irene 28/11/2007 */
-  if ((float)desc->PicWidth < 1024)
+  if ((float)desc->PicWidth < MAX_GL_SIZE)
   {
 #endif /* _WINDOWS */
   
@@ -647,8 +650,8 @@ static void GL_TexturePartialMap (ThotPictInfo *desc, int dx, int dy,
     {
       if (GL_NotInFeedbackMode ())
         {
-          glBindTexture (GL_TEXTURE_2D, desc->TextureBind); 	
           glEnable (GL_TEXTURE_2D);
+          glBindTexture (GL_TEXTURE_2D, desc->TextureBind); 	
         }
 
       /* Not sure of the vertex order 
@@ -668,16 +671,16 @@ static void GL_TexturePartialMap (ThotPictInfo *desc, int dx, int dy,
          to the size of the square */
       /* lower left */
       glTexCoord2f (texX, texH);
-      glVertex2i   (x, y + h);
+      glVertex2f   ((float)x, (float)(y + h));
       /* upper right*/
       glTexCoord2f (texW, texH);
-      glVertex2i   (x + w, y + h);
+      glVertex2f   ((float)(x + w), (float)(y + h));
       /* lower right */
       glTexCoord2f (texW, texY);
-      glVertex2i   (x + w, y);
+      glVertex2f   ((float)(x + w), (float)y);
       /* upper left */
       glTexCoord2f (texX, texY);
-      glVertex2i   (x, y);
+      glVertex2f   ((float)x, (float)y);
       glEnd ();
 
       /* State disabling */
@@ -1008,13 +1011,16 @@ ThotBool DisplayGradient (PtrAbstractBox pAb, PtrBox box, int frame,
                           ThotBool selected, int t, int b, int l, int r)
 {
 #ifdef _GL
-  GradDef           *gradient;
+  Gradient           *gradient;
   int                x, y, width, height;
   unsigned char     *pattern;
 
-  gradient = (GradDef *)pAb->AbElement->ElParent->ElGradient;
-  if (gradient->next == NULL)
-    return FALSE;
+  gradient = (Gradient *)pAb->AbElement->ElParent->ElGradient;
+  if (gradient->firstStop == NULL)
+    {
+      pAb->AbFillPattern = 0;
+      return FALSE;
+    }
   
   /* orientation*/
   /* gradient->x2 - gradient->x1;
@@ -1030,8 +1036,8 @@ ThotBool DisplayGradient (PtrAbstractBox pAb, PtrBox box, int frame,
   if (box->Pre_computed_Pic == NULL)
     {
       /*create the gradient pattern and put it on a texture*/
-      pattern = fill_linear_gradient_image (gradient->next, width, height);
-      box->Pre_computed_Pic = PutTextureOnImageDesc (pattern, width, height);    
+      pattern = FillGradientImage (gradient, x, y, width, height);
+      box->Pre_computed_Pic = PutTextureOnImageDesc (pattern, width, height);
     }
     
   /* GL_GetCurrentClipping (&clipx, &clipy, &clipw, &cliph); */
@@ -1427,11 +1433,13 @@ static void ComputeBgPosition (int val, TypeUnit unit, int start, int end,
   by the drawable.
   if picXOrg or picYOrg are postive, the copy operation is shifted
   Parameters t l give top and left extra margins.
+  The parameter self is TRUE when the picture is not generated by an
+  enclosing dummy box.
   ----------------------------------------------------------------------*/
 static void LayoutPicture (ThotPixmap pixmap, ThotDrawable drawable, int picXOrg,
                            int picYOrg, int w, int h, int xFrame, int yFrame,
                            int t, int l, int frame, ThotPictInfo *imageDesc,
-                           PtrBox box)
+                           PtrBox box, ThotBool self)
 {
   ViewFrame*        pFrame;
   PtrAbstractBox    pAb;
@@ -1499,56 +1507,6 @@ static void LayoutPicture (ThotPixmap pixmap, ThotDrawable drawable, int picXOrg
     {
 #ifdef _GL
       GL_TextureMap (imageDesc, xFrame, yFrame, w, h, frame);
-#else /*_GL*/
-#ifdef _GTK
-      if (imageDesc->PicMask)
-        {
-          gdk_gc_set_clip_origin (TtGraphicGC, xFrame - picXOrg, 
-                                  yFrame - picYOrg);
-          gdk_gc_set_clip_mask (TtGraphicGC, 
-                                (ThotPixmap) imageDesc->PicMask);
-        }
-      gdk_draw_pixmap ((GdkDrawable *)drawable, TtGraphicGC,
-                       (ThotPixmap) imageDesc->PicPixmap, 
-                       picXOrg, picYOrg, xFrame, yFrame, w, h);
-      /*Restablish to normal clip*/
-      if (imageDesc->PicMask)
-        {
-          gdk_gc_set_clip_mask (TtGraphicGC, (ThotPixmap)None);
-          gdk_gc_set_clip_origin (TtGraphicGC, 0, 0);
-        }
-#endif /* _GTK */
-#ifdef _WINGUI
-      if (imageDesc->PicBgMask != -1 && imageDesc->PicType != -1)
-        {
-          TransparentPicture (pixmap, xFrame, yFrame,
-                              imageDesc->PicWArea, imageDesc->PicHArea,
-                              imageDesc->PicBgMask);
-        }
-      else
-        {
-          /* No color transparence */
-          /* size of the copied zone */
-          clipWidth = pFrame->FrClipXEnd - pFrame->FrClipXBegin;
-          clipHeight = pFrame->FrClipYEnd - pFrame->FrClipYBegin;
-          /* shift in the source image */
-          x = pFrame->FrClipXBegin - box->BxXOrg - l;
-          y = pFrame->FrClipYBegin - box->BxYOrg - t;
-          hMemDC = CreateCompatibleDC (TtDisplay);
-          SetMapMode (hMemDC, GetMapMode (TtDisplay));
-          GetObject (pixmap, sizeof (BITMAP), (LPVOID) &bm);
-          if (x > 0 && clipWidth > bm.bmWidth - x)
-            clipWidth = bm.bmWidth - x;
-          if (y > 0 && clipHeight > bm.bmHeight - y)
-            clipHeight = bm.bmHeight - y;
-          bitmap = SelectObject (hMemDC, pixmap);
-          BitBlt (TtDisplay, xFrame + x, yFrame + y,
-                  clipWidth, clipHeight, hMemDC, x, y, SRCCOPY);
-          SelectObject (hMemDC, bitmap);
-          if (hMemDC)
-            DeleteDC (hMemDC);
-        }
-#endif /* _WINGUI */
 #endif /* _GL */
     }
   else
@@ -1563,7 +1521,7 @@ static void LayoutPicture (ThotPixmap pixmap, ThotDrawable drawable, int picXOrg
           if (pAb->AbLeafType == LtGraphics)
             box = pAb->AbBox;
         }
-      // x,y,w,h define the area to be painted
+      // x, y, w, h define the area to be painted
       x = box->BxXOrg;
       y = box->BxYOrg;
       w = box->BxW + box->BxLPadding + box->BxRPadding;
@@ -1573,7 +1531,7 @@ static void LayoutPicture (ThotPixmap pixmap, ThotDrawable drawable, int picXOrg
       iw = imageDesc->PicWidth;
       ih = imageDesc->PicHeight;
       picXOrg = picYOrg = 0;
-      if (pAb &&
+      if (pAb && self &&
           !TypeHasException (ExcSetWindowBackground, pAb->AbElement->ElTypeNumber,
                              pAb->AbElement->ElStructSchema))
         {
@@ -1729,17 +1687,6 @@ static void LayoutPicture (ThotPixmap pixmap, ThotDrawable drawable, int picXOrg
                   GL_TexturePartialMap (imageDesc, dx, dy, x+i, y+j,
                                         /*dx+*/dw, /*dy+*/dh, frame);
 #else /* _GL */
-#ifdef _GTK
-                  if (imageDesc->PicMask)
-                    {
-                      gdk_gc_set_clip_origin (TtGraphicGC, x+i-dx, y+j-dy);
-                      gdk_gc_set_clip_mask (TtGraphicGC, 
-                                            (ThotPixmap) imageDesc->PicMask);
-                    }
-                  gdk_draw_pixmap ((GdkDrawable *)drawable, TtGraphicGC,
-                                   (ThotPixmap) imageDesc->PicPixmap, 
-                                   dx, dy, x+i, y+j, dw, dh);
-#endif /* _GTK */
 #ifdef _WINGUI
                   BitBlt (hMemDC, i, j, dw, dh, hOrigDC, dx, dy, SRCCOPY);
 #endif /* _WINGUI */
@@ -2095,7 +2042,7 @@ static void DrawEpsBox (PtrBox box, ThotPictInfo *imageDesc, int frame,
 
 #ifndef _GL
   LayoutPicture (pixmap, drawable, picXOrg, picYOrg, w, h, x, y, 0, 0,
-                 frame, imageDesc, box);
+                 frame, imageDesc, box, TRUE);
 #endif /*_GL*/
   if (pixmap)
     DeleteObject (pixmap);
@@ -2107,9 +2054,11 @@ static void DrawEpsBox (PtrBox box, ThotPictInfo *imageDesc, int frame,
   DrawPicture draws the picture in the frame window.
   Parameters x, y, w, h give the displayed area of the box.
   Parameters t l give top and left extra margins.
+  The parameter self is TRUE when the picture is not generated by an
+  enclosing dummy box.
   ----------------------------------------------------------------------*/
 void DrawPicture (PtrBox box, ThotPictInfo *imageDesc, int frame,
-                  int x, int y, int w, int h, int t, int l)
+                  int x, int y, int w, int h, int t, int l, ThotBool self)
 {
   PathBuffer          fileName;
   PictureScaling      pres;
@@ -2215,7 +2164,7 @@ void DrawPicture (PtrBox box, ThotPictInfo *imageDesc, int frame,
             LayoutPicture ((ThotPixmap) imageDesc->PicPixmap, drawable,
                            picXOrg, picYOrg, w, h, 
                            x + xTranslate, y + yTranslate, 
-                           t, l, frame, imageDesc, box);
+                           t, l, frame, imageDesc, box, self);
         }
     }
   else if (typeImage < InlineHandlers && typeImage > -1)
@@ -2451,7 +2400,7 @@ void *PutTextureOnImageDesc (unsigned char *pattern, int width, int height)
   ThotPictInfo *imageDesc = NULL;
 
   imageDesc = (ThotPictInfo*)malloc (sizeof (ThotPictInfo));  
-  imageDesc->PicFileName = NULL;  /*"testinggrad";*/
+  memset (imageDesc, 0, sizeof (ThotPictInfo));
   imageDesc->RGBA = TRUE;
   imageDesc->PicWidth = width;
   imageDesc->PicHeight = height;
@@ -2864,7 +2813,8 @@ void LoadPicture (int frame, PtrBox box, ThotPictInfo *imageDesc)
 
   /* Picture didn't load (corrupted, don't exists...)
      or format isn't supported*/
-  if (imageDesc->PicPixmap == None && !glIsTexture (imageDesc->TextureBind))
+  if (imageDesc->PicPixmap == None &&
+	  !glIsTexture (imageDesc->TextureBind))
     {
       if (PictureLogo == None)
         /* create a special logo for lost pictures */
@@ -3013,11 +2963,6 @@ void LoadPicture (int frame, PtrBox box, ThotPictInfo *imageDesc)
   if (status != Supported_Format)
     {
       pres = RealSize;
-#if defined (_GTK) || defined (_WINGUI)
-      if (PictureLogo == None)
-        /* create a special logo for lost pictures */
-        CreateGifLogo ();
-#endif 
 #ifdef _WINGUI
 #ifdef _WIN_PRINT
       if (TtDisplay == NULL)
@@ -3034,13 +2979,6 @@ void LoadPicture (int frame, PtrBox box, ThotPictInfo *imageDesc)
       drw = PictureLogo;
 #endif /* _WIN_PRINT */
 #endif  /* _WINGUI */
-#ifdef _GTK 
-      imageDesc->PicType = 3;
-      imageDesc->PicPresent = pres;
-      imageDesc->PicHeight = 40;
-      imageDesc->PicWidth = 40;
-      drw = (ThotPixmap) PictureLogo;
-#endif /*_GTK*/
       wBox = w = 40;
       hBox = h = 40;
     }
@@ -3105,53 +3043,6 @@ void LoadPicture (int frame, PtrBox box, ThotPictInfo *imageDesc)
                                                                  (void *)&height,
                                                                  NULL/*ViewFrameTable[frame - 1].FrMagnification*/);
 #endif /* _WINGUI */
-#ifdef _GTK
-      if (typeImage == eps_type)
-        drw = (ThotPixmap) (*(PictureHandlerTable[typeImage].Produce_Picture)) (
-                                                                                (void *)fileName,
-                                                                                (void *)imageDesc,
-                                                                                (void *)&xBox,
-                                                                                (void *)&yBox,
-                                                                                (void *)&wBox,
-                                                                                (void *)&hBox,
-                                                                                (void *)Bgcolor,
-                                                                                (void *)&width,
-                                                                                (void *)&height,
-                                                                                NULL/*ViewFrameTable[frame - 1].FrMagnification*/);
-      else
-        {
-          /* load the picture using ImLib */
-          im = gdk_imlib_load_image (fileName);
-          if (im)
-            {
-              if (pres == RealSize)
-                {
-                  /* if it's a background, dont rescale the picture */
-                  wBox = im->rgb_width;
-                  hBox = im->rgb_height;
-                }
-              else
-                {
-                  if (wBox == 0)
-                    wBox = im->rgb_width;
-                  if (hBox == 0)
-                    hBox = im->rgb_height;
-                }
-              /* if only one info interpolate 
-                 the other with a correct ratio*/
-              if (xBox == 0)
-                xBox = im->rgb_width;
-              if (yBox == 0)
-                yBox = im->rgb_height;
-	      
-              gdk_imlib_render (im, (gint) xBox, (gint) yBox);
-              drw = (ThotPixmap) gdk_imlib_move_image (im);
-              imageDesc->PicMask = (ThotPixmap) gdk_imlib_move_mask (im);
-            }
-        }
-      width = (gint) wBox;
-      height = (gint) hBox;
-#endif /* _GTK */
       redo = Ratio_Calculate (pAb, imageDesc, width, height, w, h, frame);
        
       if (drw == NULL)

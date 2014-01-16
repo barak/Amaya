@@ -11,6 +11,8 @@ extern ThotBool IsTemplateDocument ( Document doc );
 extern char *GetUsedTypeName ( Element el );
 extern ThotBool IsInLineTemplateElement ( Element el,
                                           Document doc );
+extern Element GetParentLine ( Element el,
+                               SSchema templateSSchema );
 extern ThotBool IsInternalTemplateDocument ( Document doc );
 extern char* GetDocumentInstanceTemplateUrl ( Document doc );
 extern ThotBool CheckPromptIndicator ( Element el,
@@ -18,9 +20,8 @@ extern ThotBool CheckPromptIndicator ( Element el,
 extern ThotBool RemovePromptIndicator ( NotifyOnTarget *event );
 extern void* AllocTemplateRepositoryListElement ( const char* path,
                                                   void* prevElement );
-extern void FreeTemplateRepositoryList ( void* list );
-extern void GetTemplateRepositoryList ( void* list );
-extern void SetTemplateRepositoryList ( const void* list );
+extern void FreeTemplateRepositoryList ( void );
+extern void SaveTemplateRepositoryList ( void );
 extern void InitTemplates ( void );
 extern void CreateInstanceOfTemplate ( Document doc,
                                        char *templatename,
@@ -46,6 +47,7 @@ extern void DoReplicateUseElement ( XTigerTemplate t,
                                     Element repeatEl,
                                     char *name );
 extern ThotBool RepeatButtonClicked ( NotifyElement *event );
+extern ThotBool ElementIsOptional ( Element el );
 extern ThotBool UseButtonClicked ( NotifyElement *event );
 extern ThotBool UseSimpleButtonClicked ( NotifyElement *event );
 extern ThotBool OptionButtonClicked ( NotifyElement *event );
@@ -112,6 +114,8 @@ extern ThotBool IsTemplateDocument ( Document doc );
 extern char *GetUsedTypeName ( Element el );
 extern ThotBool IsInLineTemplateElement ( Element el,
                                             Document doc );
+extern Element GetParentLine ( Element el,
+                                 SSchema templateSSchema );
 extern ThotBool IsInternalTemplateDocument ( Document doc );
 extern char* GetDocumentInstanceTemplateUrl ( Document doc );
 extern ThotBool CheckPromptIndicator ( Element el,
@@ -119,9 +123,8 @@ extern ThotBool CheckPromptIndicator ( Element el,
 extern ThotBool RemovePromptIndicator ( NotifyOnTarget *event );
 extern void* AllocTemplateRepositoryListElement ( const char* path,
                                                     void* prevElement );
-extern void FreeTemplateRepositoryList ( void* list );
-extern void GetTemplateRepositoryList ( void* list );
-extern void SetTemplateRepositoryList ( const void* list );
+extern void FreeTemplateRepositoryList ( void );
+extern void SaveTemplateRepositoryList ( void );
 extern void InitTemplates ( void );
 extern void CreateInstanceOfTemplate ( Document doc,
                                          char *templatename,
@@ -147,6 +150,7 @@ extern void DoReplicateUseElement ( XTigerTemplate t,
                                       Element repeatEl,
                                       char *name );
 extern ThotBool RepeatButtonClicked ( NotifyElement *event );
+extern ThotBool ElementIsOptional ( Element el );
 extern ThotBool UseButtonClicked ( NotifyElement *event );
 extern ThotBool UseSimpleButtonClicked ( NotifyElement *event );
 extern ThotBool OptionButtonClicked ( NotifyElement *event );

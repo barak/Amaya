@@ -22,10 +22,11 @@ extern char *UpdateDocResource ( Document doc,
                                  ThotBool fullCopy );
 extern void SetRelativeURLs ( Document doc,
                               char *newpath,
-                              char *cssbase,
+                              char *resbase,
                               ThotBool savedImages,
                               ThotBool savedResources,
-                              ThotBool fullCopy );
+                              ThotBool fullCopy,
+                              ThotBool saveAs );
 extern void InitSaveObjectForm ( Document document,
                                  View view,
                                  char *object,
@@ -114,10 +115,11 @@ extern char *UpdateDocResource ( Document doc,
                                    ThotBool fullCopy );
 extern void SetRelativeURLs ( Document doc,
                                 char *newpath,
-                                char *cssbase,
+                                char *resbase,
                                 ThotBool savedImages,
                                 ThotBool savedResources,
-                                ThotBool fullCopy );
+                                ThotBool fullCopy,
+                                ThotBool saveAs );
 extern void InitSaveObjectForm ( Document document,
                                    View view,
                                    char *object,

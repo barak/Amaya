@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA 1996-2005
+ *  (c) COPYRIGHT INRIA 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -365,17 +365,20 @@ static void         CreatePRule (PRuleType t, indLine wi)
     case PtFillPattern:
     case PtBackground:
     case PtForeground:
+    case PtColor:
+    case PtStopColor:
     case PtBorderTopColor:
     case PtBorderRightColor:
     case PtBorderBottomColor:
     case PtBorderLeftColor:
-      CurRule->PrAttrValue = False;
+      CurRule->PrValueType = PrNumValue;
       CurRule->PrIntValue = 0;
       break;
     case PtOpacity:
     case PtStrokeOpacity:
     case PtFillOpacity:
-      CurRule->PrAttrValue = False;
+    case PtStopOpacity:
+      CurRule->PrValueType = PrNumValue;
       CurRule->PrIntValue = 1000;
     case PtListStyleType:
       CurRule->PrChrValue = 'N';       /* None par defaut */
@@ -2230,7 +2233,7 @@ static void         CheckDefaultRules ()
       CreateDefaultRule ();
       CurRule->PrType = PtDepth;
       CurRule->PrPresMode = PresImmediate;
-      CurRule->PrAttrValue = False;
+      CurRule->PrValueType = PrNumValue;
       CurRule->PrIntValue = 0;
     }
   if (GetTypedRule (PtAdjust, pPSchema->PsFirstDefaultPRule) == NULL)
@@ -2305,7 +2308,7 @@ static void         CheckDefaultRules ()
     {
       CreateDefaultRule ();
       CurRule->PrType = PtOpacity;
-      CurRule->PrAttrValue = FALSE;
+      CurRule->PrValueType = PrNumValue;
       InheritRule (InheritParent);
     }
   if (GetTypedRule (PtFillOpacity, pPSchema->PsFirstDefaultPRule) == NULL)
@@ -2324,6 +2327,15 @@ static void         CheckDefaultRules ()
       CurRule->PrType = PtStrokeOpacity;
       InheritRule (InheritParent);
     }
+  if (GetTypedRule (PtOpacity, pPSchema->PsFirstDefaultPRule) == NULL)
+    /*  pas de regle Opacity par defaut, on en cree une : */
+    /*  Opacity: 100%; */
+    {
+      CreateDefaultRule ();
+      CurRule->PrType = PtOpacity;
+      CurRule->PrValueType = PrNumValue;
+      CurRule->PrIntValue = 1000;
+    }
   if (GetTypedRule (PtBackground, pPSchema->PsFirstDefaultPRule) == NULL)
     /* pas de regle Background par defaut, on en cree une : */
     /* Background: Enclosing =; */
@@ -2338,6 +2350,66 @@ static void         CheckDefaultRules ()
     {
       CreateDefaultRule ();
       CurRule->PrType = PtForeground;
+      InheritRule (InheritParent);
+    }
+  if (GetTypedRule (PtColor, pPSchema->PsFirstDefaultPRule) == NULL)
+    /* pas de regle Color par defaut, on en cree une : */
+    /* Color: Enclosing =; */
+    {
+      CreateDefaultRule ();
+      CurRule->PrType = PtColor;
+      InheritRule (InheritParent);
+    }
+  if (GetTypedRule (PtStopColor, pPSchema->PsFirstDefaultPRule) == NULL)
+    /* pas de regle StopColor par defaut, on en cree une : */
+    /* StopColor: Black; */
+    {
+      CreateDefaultRule ();
+      CurRule->PrType = PtStopColor;
+      CurRule->PrPresMode = PresImmediate;
+      CurRule->PrValueType = PrNumValue;
+      CurRule->PrIntValue = 1;
+    }
+  if (GetTypedRule (PtStopOpacity, pPSchema->PsFirstDefaultPRule) == NULL)
+    /* pas de regle StopOpacity par defaut, on en cree une : */
+    /* StopOpacity: 100%; */
+    {
+      CreateDefaultRule ();
+      CurRule->PrType = PtStopOpacity;
+      CurRule->PrPresMode = PresImmediate;
+      CurRule->PrValueType = PrNumValue;
+      CurRule->PrIntValue = 1000;
+    }
+  if (GetTypedRule (PtMarker, pPSchema->PsFirstDefaultPRule) == NULL)
+    /* pas de regle Marker par defaut, on en cree une : */
+    /* Marker: Enclosing =; */
+    {
+      CreateDefaultRule ();
+      CurRule->PrType = PtMarker;
+      InheritRule (InheritParent);
+    }
+  if (GetTypedRule (PtMarkerStart, pPSchema->PsFirstDefaultPRule) == NULL)
+    /* pas de regle MarkerStart par defaut, on en cree une : */
+    /* MarkerStart: Enclosing =; */
+    {
+      CreateDefaultRule ();
+      CurRule->PrType = PtMarkerStart;
+      InheritRule (InheritParent);
+    }
+  if (GetTypedRule (PtMarkerMid, pPSchema->PsFirstDefaultPRule) == NULL)
+    /* pas de regle MarkerMid par defaut, on en cree une : */
+    /* MarkerMid: Enclosing =; */
+    {
+      CreateDefaultRule ();
+      CurRule->PrType = PtMarkerMid;
+      InheritRule (InheritParent);
+    }
+  if (GetTypedRule (PtMarkerEnd, pPSchema->PsFirstDefaultPRule) == NULL)
+    /* pas de regle MarkerEnd par defaut, on en cree une : */
+    /* MarkerEnd: Enclosing =; */
+    {
+      CreateDefaultRule ();
+      CurRule->PrType = PtMarkerEnd;
       InheritRule (InheritParent);
     }
   if (GetTypedRule (PtHyphenate, pPSchema->PsFirstDefaultPRule) == NULL)
@@ -3403,7 +3475,7 @@ static void ProcessLongKeyWord (int x, SyntacticCode gCode, indLine wi)
       else if (gCode == RULE_BorderColor)
         {
           CurRule->PrPresMode = PresImmediate;
-          CurRule->PrAttrValue = False;
+          CurRule->PrValueType = PrNumValue;
           CurRule->PrIntValue = -1;   /* -1 means Foreground color */
         }
       break;
@@ -3538,7 +3610,7 @@ static void ProcessLongKeyWord (int x, SyntacticCode gCode, indLine wi)
       break;
     case KWD_Transparent:
       CurRule->PrPresMode = PresImmediate;
-      CurRule->PrAttrValue = False;
+      CurRule->PrValueType = PrNumValue;
       CurRule->PrIntValue = -2;   /* -2 means Transparent */
       break;
     case KWD_None:
@@ -3558,7 +3630,7 @@ static void ProcessLongKeyWord (int x, SyntacticCode gCode, indLine wi)
         /* list style image = none */
         {
           CurRule->PrPresMode = PresImmediate;
-          CurRule->PrAttrValue = False;
+          CurRule->PrValueType = PrNumValue;
           CurRule->PrIntValue = 0;
         }
       else
@@ -4389,7 +4461,7 @@ static void IntAttribute (int attr, SyntacticCode prevRule, indLine wi)
       case RULE_OpacityInherit:
         /* Integer or OpacityInherit */
         CurRule->PrIntValue = attr;
-        CurRule->PrAttrValue = True;
+        CurRule->PrValueType = PrAttrValue;
         break;
       case RULE_DimRatioA:
         /* DimRatioA */
@@ -4482,7 +4554,7 @@ static void     ColorName (indLine wi, indLine wl)
     CompilerMessage (wi, PRS, FATAL, MISSING_COLOR, inputLine, LineNum);
   else
     {
-      CurRule->PrAttrValue = False;
+      CurRule->PrValueType = PrNumValue;
       CurRule->PrIntValue = i;
     }
 }
@@ -5464,7 +5536,7 @@ static void ProcessName (SyntacticCode gCode, int identnum, SyntacticCode prevRu
           else
             /* on met le rang du pattern dans la regle */
             {
-              CurRule->PrAttrValue = False;
+              CurRule->PrValueType = PrNumValue;;
               CurRule->PrIntValue = i;
             }
         }
@@ -5646,7 +5718,7 @@ static void ProcessInteger (SyntacticCode gCode, indLine wl, indLine wi)
     case RULE_Integer:
       /* Integer */
       CurRule->PrIntValue = n;
-      CurRule->PrAttrValue = False;
+      CurRule->PrValueType = PrNumValue;
       break;
     case RULE_OpPercent:
       /* OpPercent */
@@ -5658,7 +5730,7 @@ static void ProcessInteger (SyntacticCode gCode, indLine wl, indLine wi)
       else
         {
           CurRule->PrIntValue = n * 10;
-          CurRule->PrAttrValue = False;
+          CurRule->PrValueType = PrNumValue;
         }
       break;
     case RULE_Size:
@@ -5870,7 +5942,7 @@ static void ProcessString (SyntacticCode gCode, indLine wl, indLine wi)
         if (gCode == RULE_ListStyleImageURI)
           {
             NewConst (wi);
-            CurRule->PrAttrValue = False;
+            CurRule->PrValueType = PrNumValue;
             CurRule->PrIntValue = pPSchema->PsNConstants;
           }
         pPresConst = &pPSchema->PsConstant[pPSchema->PsNConstants - 1];
@@ -6148,11 +6220,13 @@ static ThotBool      PageCounter (int counter)
   de ce type dans la chaine et retourne un pointeur sur la        
   regle creee.                                                    
   ----------------------------------------------------------------------*/
-static PtrPRule SearchPRule (PtrPRule *firstRule, PRuleType ruleType, int view)
+static PtrPRule SearchPRule (PtrPRule *firstRule, PRuleType ruleType, int view,
+			     ThotBool *newRule)
 {
   PtrPRule            pR, pPRule;
-  ThotBool             stop, cree;
+  ThotBool            stop, cree;
 
+  *newRule = False;  
   pR = *firstRule;
   pPRule = NULL;
   stop = False;
@@ -6195,22 +6269,26 @@ static PtrPRule SearchPRule (PtrPRule *firstRule, PRuleType ruleType, int view)
       GetPresentRule (&pR);
       if (pR == NULL)
         TtaDisplaySimpleMessage (FATAL, PRS, NO_MORE_MEM_LEFT);
-      pR->PrType = ruleType;
-      /* on insere la regle cree */
-      if (pPRule == NULL)
-        {
-          pR->PrNextPRule = *firstRule;
-          *firstRule = pR;
-        }
       else
-        {
-          pR->PrNextPRule = pPRule->PrNextPRule;
-          pPRule->PrNextPRule = pR;
-        }
-      pR->PrCond = NULL;
-      pR->PrViewNum = view;
-      pR->PrSpecifAttr = 0;
-      pR->PrSpecifAttrSSchema = NULL;
+	{
+	  *newRule = True;
+	  pR->PrType = ruleType;
+	  /* on insere la regle cree */
+	  if (pPRule == NULL)
+	    {
+	      pR->PrNextPRule = *firstRule;
+	      *firstRule = pR;
+	    }
+	  else
+	    {
+	      pR->PrNextPRule = pPRule->PrNextPRule;
+	      pPRule->PrNextPRule = pR;
+	    }
+	  pR->PrCond = NULL;
+	  pR->PrViewNum = view;
+	  pR->PrSpecifAttr = 0;
+	  pR->PrSpecifAttrSSchema = NULL;
+	}
     }
   return pR;
 }
@@ -6223,9 +6301,8 @@ static PtrPRule SearchPRule (PtrPRule *firstRule, PRuleType ruleType, int view)
 static void         CheckPageBoxes ()
 {
   PtrPRule            pR, pHeadR, pPRule, pRule;
-  int                 b, hfB, el, view, footHeight, headHeight, h, i,
-    counter;
-  ThotBool            stop, stop1, exist;
+  int                 b, hfB, el, view, footHeight, headHeight, h, i, counter;
+  ThotBool            stop, stop1, exist, newRule;
   PtrPresentationBox  pPresBox;
   PresVariable       *pPresVar;
   PtrCondition        pCond;
@@ -6793,7 +6870,7 @@ static void         CheckPageBoxes ()
     /* cherche la regle de positionnement vertical */
     {
       pR = SearchPRule (&pPSchema->PsElemPRule->ElemPres[PageBreak],
-                        PtVertPos, view);
+                        PtVertPos, view, &newRule);
       /* modifie la regle: positionnement au-dessous de l'element */
       /* precedent */
       pR->PrPresMode = PresImmediate;
@@ -6810,7 +6887,7 @@ static void         CheckPageBoxes ()
       pR->PrPosRule.PoRefIdent = 0;
       /* cherche la regle de positionnement horizontal */
       pR = SearchPRule (&pPSchema->PsElemPRule->ElemPres[PageBreak],
-                        PtHorizPos, view);
+                        PtHorizPos, view, &newRule);
       /* modifie la regle: positionnement sur le bord gauche de la */
       /* boite racine */
       pR->PrPresMode = PresImmediate;
@@ -6827,7 +6904,7 @@ static void         CheckPageBoxes ()
       pR->PrPosRule.PoRefIdent = 0;
       /* cherche la regle de largeur */
       pR = SearchPRule (&pPSchema->PsElemPRule->ElemPres[PageBreak],
-                        PtWidth, view);
+                        PtWidth, view, &newRule);
       /* modifie la regle: largeur du contenu */
       pR->PrPresMode = PresImmediate;
       pR->PrDimRule.DrPosition = False;
@@ -6842,7 +6919,7 @@ static void         CheckPageBoxes ()
       pR->PrDimRule.DrRefIdent = 0;
       /* cherche la regle de hauteur */
       pR = SearchPRule (&pPSchema->PsElemPRule->ElemPres[PageBreak],
-                        PtHeight, view);
+                        PtHeight, view, &newRule);
       /* modifie la regle: hauteur du contenu */
       pR->PrPresMode = PresImmediate;
       pR->PrDimRule.DrPosition = False;
@@ -6857,7 +6934,7 @@ static void         CheckPageBoxes ()
       pR->PrDimRule.DrRefIdent = 0;
       /* modifie la regle: HorizOverflow: True; */
       pR = SearchPRule (&pPSchema->PsElemPRule->ElemPres[PageBreak],
-                        PtHorizOverflow, view);
+                        PtHorizOverflow, view, &newRule);
       pR->PrType = PtHorizOverflow;
       pR->PrPresMode = PresImmediate;
       pR->PrBoolValue = True;
@@ -7002,6 +7079,7 @@ int PRSmain (HWND hwnd, HWND statusBar, int argc, char **argv, int *Y)
                              identificateur */
   int                 i;
   int                 param;
+  PtrPRule            pR;
 #ifdef _WINGUI
   char               *CMD;
   char               *cmd[100];
@@ -7015,7 +7093,7 @@ int PRSmain (HWND hwnd, HWND statusBar, int argc, char **argv, int *Y)
 #else  /* !_WINGUI */
   char                cmd[800];
 #endif /* _WINGUI */
-  ThotBool            fileOK;
+  ThotBool            fileOK, newRule;
 
 #ifdef _WINGUI 
   COMPWnd = hwnd;
@@ -7247,6 +7325,14 @@ int PRSmain (HWND hwnd, HWND statusBar, int argc, char **argv, int *Y)
                           TtaGetMessage (PRS, SINGLE_VIEW));
                   pPSchema->PsHostViewList[0] = NULL;
                 }
+	      /* check that there exists a FillRule rule in the default
+		 presentation rules */
+	      pR = SearchPRule (&pPSchema->PsFirstDefaultPRule, PtFillRule,
+				1, &newRule);
+	      if (newRule)
+		/* there was no FillRule in the default presentation rules.
+		   Make an inheritance rule. */
+		pR->PrPresMode = PresInherit;
               /* verifie que toutes les boites de presentation declarees */
               /* pour les pages sont bien utilisees et adapte les regles. */
               /* cela ne peut se faire qu'apres avoir ajoute' la vue par */

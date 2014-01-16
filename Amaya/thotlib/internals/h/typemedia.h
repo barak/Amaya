@@ -477,10 +477,10 @@ typedef struct _AbstractBox
                                       created presentation abstract box */
   PtrDelayedPRule AbDelayedPRule;  /* Used by the editor */
   int             AbVolume;	   /* Equivalent characters number */
-  int	            AbTypeNum;	   /* Type number/presentation box number */
+  int	          AbTypeNum;	   /* Type number/presentation box number */
   int             AbVarNum;        /* number of the variable that defines the
                                       content of this box (pres. boxes only) */
-  int	            AbNum;	   /* Abstract box number for debug */
+  int	          AbNum;	   /* Abstract box number for debug */
   AbPosition      AbVertRef;	   /* Vertical reference mark position */
   AbPosition      AbHorizRef;	   /* Horizontal reference mark position */
   AbPosition      AbVertPos;	   /* Vertical position in the box */
@@ -491,17 +491,27 @@ typedef struct _AbstractBox
   int             AbThickness;	   /* Underlining thickness */
   int             AbIndent;	   /* Indentation for line breaking */
   int             AbDepth;	   /* Abstract box display plane */
-  int	            AbVisibility;    /* Abstract box visibility degree */
+  int	          AbVisibility;    /* Abstract box visibility degree */
   int             AbFont;	   /* Font family: index in the family table */
   int             AbFontStyle;	   /* Font style: roman, italic, oblique */
   int             AbFontWeight;	   /* Font weight: normal, bold */
-  int             AbFontVariant;	 /* Font variant: normal, smallcaps, script.. */
+  int             AbFontVariant;   /* Font variant: normal, smallcaps, script.. */
   int             AbSize;	   /* Character logical/real size */
   int             AbLineWeight;    /* Line thickness */
   int             AbLineSpacing;   /* Linespacing */
+  PtrElement      AbMarker;        /* 0 (none) or marker element */
+  PtrElement      AbMarkerStart;   /* 0 (none) or marker element */
+  PtrElement      AbMarkerMid;     /* 0 (none) or marker element */
+  PtrElement      AbMarkerEnd;     /* 0 (none) or marker element */
   int             AbFillPattern;   /* Fill pattern */	
   int             AbBackground;    /* Background color */
+  ThotBool        AbGradientBackground; /* Abbackground is the number of a
+				      constant string that contains the URL of
+				      a gradient (SVG) */
   int             AbForeground;    /* Drawing color */
+  int             AbColor;         /* color, in SVG sense */
+  int             AbStopColor;     /* stop-color, in SVG sense */
+  int             AbStopOpacity;   /* SVG stop-opacity */
   int             AbFillOpacity;   /* opacity of the fill part of element*/
   int             AbStrokeOpacity; /* opacity of the stroke part element*/
   int             AbOpacity;       /* opacity of all the element*/
@@ -536,6 +546,7 @@ typedef struct _AbstractBox
                                          list item marker */
   char            AbFloat;            /* Float mode */
   char            AbClear;            /* Clear mode */
+  char            AbFillRule;         /* SVG fill rule */
   BAlignment      AbAdjust;	      /* Alignment of lines in the box */
   TypeUnit        AbSizeUnit;         /* Unit for the size */
   TypeUnit        AbIndentUnit;       /* Indentation unit */

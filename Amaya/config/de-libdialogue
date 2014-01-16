@@ -273,7 +273,7 @@
 270 Sie können zu einer anderen Registerkarte wechseln indem Sie auf das Pfeil-nach-unten Symbol rechts neben den Registerleisten klicken.
 271 Falls Sie "Ziele anzeigen" im "Darstellungen"-Menü wählen, werde sie formatiert dargestellt. Dies ist günstig bei der Erzeugung von Verweisen: Ein Ziel kan durch Klicken ausgewählt werden 
 272 Wenn Sie ein SVG-Objekt drehen, wird der Drehpunkt durch ein Kreuz angezeigt. Sie können die Maus zum Bewegen verwenden.
-273 SVG-Grundformen haben Marker die zur Bearbeitung der Form verwendet werden können. Blaue Dreiecke oder grüne Quadrate ermöglichen es die Größe der Form zu ändern. Bei 
+273 SVG-Grundformen haben Marker die zur Bearbeitung der Form verwendet werden können. Blaue Dreiecke oder grüne Quadrate ermöglichen es die Größe der Form zu ändern. Bei <rect>>-Elementen gibt es rote Kreise um den Radius abgerundeter Ecken zu bearbeiten.
 274 Bei SVG-Zeichnungen werden Linien mit einer Genauigkeit von 15º erstellt wenn Sie dei Hochtaste drücken. Das ist sehr nützlich, wenn Sie gerade Linien zeichnen wollen.
 275 Beim Vergrößern und Verkleinern von Bildern oder SVG-Objekten erhält das Drücken der Hochtaste die Seitenverhältnisse
 276 Verwenden Sie Bearbeiten>Einstellungen>Sprache zur Auswahl der Sprache
@@ -392,33 +392,37 @@
 389 Herz
 390 Blume
 391 Verboten
-392 gerundeter Doppelpfeil
-393 Hinweispfeil in 3 Richtungen
-394 Pfeil in 3 Richtungen
-395 Hinweispfeil in 4 Richtungen
-396 Pfeil in 4 Richtungen
-397 Winkel
-398 Pfeil im Kreis
-399 Winkelpfeil
-400 Hinweispfeil über Eck
-401 Pfeil über Eck
-402 Hinweisdoppelpfeil
-403 Doppelpfeil
-404 Eingekerbter Pfeil
-405 Abgerundeter Pfeil
-406 Einfacher Hinweispfeil
-407 Einfacher Pfeil
-408 Aufgesplitteter Pfeil
-409 S-förmiger Pfeil
-410 Gestreifter Pfeil
-411 Eine Vorlage aus dem aktuellen Dokument erstellen
-412 Ein Textfeld erstellen
-413 Eine Komponente oder Element verwenden
-414 Erstellen und Verwenden einer Komponente
-415 Aktuelle Anwendung wiederholen
-416 Erstellen und vervielfältigen einer Komponente
-417 Eine freie Editierbox erstellen
-418 Verursachen Sie neue Typen Anschluss
-419 Knopf bis zum Abschluss
-420 Doppeltes Klicken zum zu schließen
-421 Klicken zum zu schließen
+392 Fünfeck
+393 gerundeter Doppelpfeil
+394 Hinweispfeil in 3 Richtungen
+395 Pfeil in 3 Richtungen
+396 Hinweispfeil in 4 Richtungen
+397 Pfeil in 4 Richtungen
+398 Winkel
+399 Pfeil im Kreis
+400 Winkelpfeil
+401 Hinweispfeil über Eck
+402 Pfeil über Eck
+403 Hinweisdoppelpfeil
+404 Doppelpfeil
+405 Eingekerbter Pfeil
+406 Abgerundeter Pfeil
+407 Einfacher Hinweispfeil
+408 Einfacher Pfeil
+409 Aufgesplitteter Pfeil
+410 S-förmiger Pfeil
+411 Gestreifter Pfeil
+412 Eine Vorlage aus dem aktuellen Dokument erstellen
+413 Ein Textfeld erstellen
+414 Eine Komponente oder Element verwenden
+415 Erstellen und Verwenden einer Komponente
+416 Aktuelle Anwendung wiederholen
+417 Erstellen und vervielfältigen einer Komponente
+418 Eine freie Editierbox erstellen
+419 Verursachen Sie neue Typen Anschluss
+420 Knopf bis zum Abschluss
+421 Doppeltes Klicken zum zu schließen
+422 Klicken zum zu schließen
+423 **Locked resource
+424 **Unlocked resource
+425 **Not a WebDAV resource

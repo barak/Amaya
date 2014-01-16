@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1999-2005
+ *  (c) COPYRIGHT INRIA and W3C, 1999-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -196,28 +196,28 @@ typedef struct Prop_Annot_t
   ThotBool AnnotRAutoLoadRst;
 } Prop_Annot;
 
+typedef struct Prop_DAV_Path_t {
+  char                   *Path;
+  struct Prop_DAV_Path_t *NextPath;
+} Prop_DAV_Path;
+
+extern Prop_DAV_Path *DAV_Paths;
+
 typedef struct Prop_DAV_t
 {
   char textUserReference[MAX_LENGTH];
-  char textUserResources[MAX_LENGTH];
   char radioDepth[MAX_LENGTH];
   char radioTimeout[MAX_LENGTH];
   int  numberTimeout;
   char radioLockScope[MAX_LENGTH];
-  ThotBool toggleAwareness1;
-  ThotBool toggleAwareness2;
 } Prop_DAV;
 
 typedef struct Prop_Templates_Path_t {
-  char Path[MAX_LENGTH];
-  struct Prop_Templates_Path_t* NextPath;
+  char                         *Path;
+  struct Prop_Templates_Path_t *NextPath;
 } Prop_Templates_Path;
 
-typedef struct Prop_Templates_t
-{
-  ThotBool S_Templates;
-  Prop_Templates_Path* FirstPath;
-} Prop_Templates;
+extern Prop_Templates_Path *TemplateRepositoryPaths;
 
 typedef struct Prop_Emails_t
 {

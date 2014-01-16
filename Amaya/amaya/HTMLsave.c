@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2008
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -33,7 +33,7 @@
 #include "message_wx.h"
 #include "wxdialogapi_f.h"
 #include "archives.h"
-
+#include "registry_wx.h"
 #include "email.h"
 #include "wxdialog/SendByMailDlgWX.h"
 
@@ -125,12 +125,12 @@ typedef struct WIKI_context {
   char *localfile;
   char *output;
 } WIKI_context;
+
 // use HTMLform buffer to store post parameters
 extern char  *FormBuf;    /* temporary buffer used to build the query string */
 extern int    FormLength;  /* size of the temporary buffer */
 extern int    FormBufIndex; /* gives the index of the last char + 1 added to
                               the buffer (only used in AddBufferWithEos) */
-
 
 /*----------------------------------------------------------------------
   CheckValidProfile
@@ -185,18 +185,6 @@ ThotBool CheckGenerator (NotifyElement *event)
               if (ptr == NULL)
                 /* it's not a pure Amaya document -> remove the meta element */
                 return TRUE;
-#ifdef IV
-              else
-                {
-                  /* update the version */
-                  strcpy (buff, TtaGetAppName()); 
-                  strcat (buff, " ");
-                  strcat (buff, TtaGetAppVersion());
-                  strcat (buff, ", see http://www.w3.org/Amaya/");
-                  TtaSetAttributeText (attr, buff, event->element,
-                                       event->document);
-                }
-#endif /* IV */
             }
         }
     }
@@ -374,6 +362,7 @@ char *UpdateDocResource (Document doc, char *oldpath, char *newpath,
   CSSInfoPtr          css;
   PInfoPtr            pInfo;
   ElementType         elType;
+  LoadedImageDesc    *desc;
   char               *b, *e, *newString, *oldptr;
   char                old_url[MAX_LENGTH];
   char                new_url[MAX_LENGTH];
@@ -381,35 +370,21 @@ char *UpdateDocResource (Document doc, char *oldpath, char *newpath,
   char                oldname[MAX_LENGTH];
   char                newname[MAX_LENGTH];
   char               *tempdocument = NULL;
-  int                 len, newlen, res;
+  int                 len, newlen;
   ThotBool            src_is_local, dst_is_local;
-  ThotBool            toSave = FALSE, isCSS = FALSE;
+  ThotBool            toSave = saveResources, isCSS = FALSE;
 
   newString = NULL;
-  if (!saveResources && !isLink &&
-      (strstr (sString, ".htm") != NULL ||
-       strstr (sString, ".xhtm") != NULL || strstr (sString, ".xml") != NULL))
+  if (saveResources && !IsResourceName (sString))
     // don't consider a html document as a resource
     return newString;
-  // look for a javascript
-  b = strstr (sString, ".js");
-  if (b == NULL)
-    {
-      b = strstr (sString, ".xsl");
-      if (b == NULL)
-        {
-          // look for a css
-          b = strstr (sString, ".css");
-          if (b == NULL && isLink)
-            b = sString;
-          else if (saveResources)
-            isCSS = TRUE; // check if this CSS must be saved
-        }
-      else
-        toSave = saveResources;
-    }
+
+  // look for a css
+  b = strstr (sString, ".css");
+  if (b && saveResources)
+    isCSS = TRUE; // check if this CSS must be saved
   else
-      toSave = saveResources;
+    b = sString;
 
   if (b)
     {
@@ -532,19 +507,11 @@ fprintf(stderr, "Move file: from %s to %s\n", old_url, new_url);
               if (saveResources)
                 {
               if (dst_is_local)
-                {
-                  /* copy the file to the new location */
-                  TtaFileCopy (old_url, new_url);
-                }
+                /* copy the file to the new location */
+                TtaFileCopy (old_url, new_url);
               else
-                {
-                  /* save to a remote server */
-                  ActiveTransfer (doc);
-                  TtaHandlePendingEvents ();
-                  res = PutObjectWWW (doc, old_url, new_url, "text/javascript", NULL,
-                                      AMAYA_SYNC | AMAYA_NOCACHE | AMAYA_FLUSH_REQUEST,
-                                      NULL, NULL);
-                }
+                AddLocalResource (old_url, filename, new_url, doc,
+                                  &desc, &LoadedResources, TRUE);
               if (!src_is_local)
                 // remove the temporay file
                 TtaFileUnlink (tempdocument);
@@ -559,14 +526,15 @@ fprintf(stderr, "Move file: from %s to %s\n", old_url, new_url);
 /*----------------------------------------------------------------------
   SetRelativeURLs updates all URLs of the current document according to
   the new path. If possible, new URLs will be relative to this new path.
-  cssbase points to the directory where resource (CSS + scripts) are stored.
+  resbase points to the directory where resource (CSS + scripts) are stored.
   When savedImages is TRUE Images src are not updated,
   When savedResources is TRUE CSS links are not updated as they are saved.
   fullCopy is TRUE if local resources must be copied.
+  saveAs is TRUE if changes concern a saveAs command.
   ----------------------------------------------------------------------*/
-void SetRelativeURLs (Document doc, char *newpath, char *cssbase,
+void SetRelativeURLs (Document doc, char *newpath, char *resbase,
                       ThotBool savedImages, ThotBool savedResources,
-                      ThotBool fullCopy)
+                      ThotBool fullCopy, ThotBool saveAs)
 {
   SSchema             XHTMLSSchema, MathSSchema, SVGSSchema, XLinkSSchema;
 #ifdef TEMPLATES
@@ -684,18 +652,22 @@ void SetRelativeURLs (Document doc, char *newpath, char *cssbase,
               buflen = TtaGetTextLength (content) + 1;
               orgString = (char *)TtaGetMemory (buflen);
               TtaGiveTextContent (content, (unsigned char *)orgString, &buflen, &lang);
-              if ((elType.ElSSchema == XHTMLSSchema || elType.ElSSchema == SVGSSchema) &&
+              if ((elType.ElSSchema == XHTMLSSchema ||
+                   elType.ElSSchema == SVGSSchema) &&
                   elType.ElTypeNum == searchedType1.ElTypeNum)
                 // Manage the style string with no image save and no import update
                 newString = UpdateCSSURLs (doc, oldpath, newpath, NULL, orgString,
                                         FALSE, FALSE);
+              else if (strstr (orgString, ".xtd") == NULL &&
+                       strstr (orgString, ".css") == NULL)
+                // skip that PI
+                newString = NULL;
               else
-                {
                 // Update the XML PI content
                 newString = UpdateDocResource (doc, oldpath, newpath,
-					       cssbase, orgString,
-                                               el, savedResources, FALSE, fullCopy);
-                }
+                                               resbase, orgString,
+                                               el, savedResources, TRUE, fullCopy);
+
               if (newString)
                 {
                   /* register the modification to be able to undo it */
@@ -714,7 +686,7 @@ void SetRelativeURLs (Document doc, char *newpath, char *cssbase,
               else
                 // next text unit
                 next = TtaSearchTypedElementInTree (contentType, SearchForward, next,
-                                                    content);
+                                                    next);
             }
         }
 
@@ -791,7 +763,7 @@ void SetRelativeURLs (Document doc, char *newpath, char *cssbase,
                             elType.ElTypeNum != SVG_EL_PICTURE_UNIT)  ||
                            elType.ElSSchema != SVGSSchema))))
                 {
-                  newString = UpdateDocResource (doc, oldpath, newpath, cssbase,
+                  newString = UpdateDocResource (doc, oldpath, newpath, resbase,
                                                  orgString, el, savedResources,
                                                  TRUE, fullCopy);
                   if (newString)
@@ -819,8 +791,7 @@ void SetRelativeURLs (Document doc, char *newpath, char *cssbase,
   ----------------------------------------------------------------------*/
 static void InitSaveForm (Document document, View view, char *pathname)
 {
-  LoadedImageDesc *pImage;
-  ThotBool         created, saveImgs;
+  ThotBool         created, saveImgs, saveRes;
 
   if (TextFormat)
     {
@@ -840,24 +811,14 @@ static void InitSaveForm (Document document, View view, char *pathname)
       SaveAsXML = FALSE;
       SaveAsText = FALSE;
     }
-  
-  saveImgs = FALSE;
-  if (IsW3Path (pathname))
-    {
-      // check idf some images must be saved
-      pImage = ImageURLs;
-      while (!saveImgs && pImage)
-        {
-          saveImgs = (pImage->document == document && pImage->status == IMAGE_MODIFIED);
-          pImage = pImage->nextImage;
-        }
-    }
+  TtaGetEnvBoolean ("COPY_IMAGES", &saveImgs);
+  TtaGetEnvBoolean ("COPY_CSS", &saveRes);
   created = CreateSaveAsDlgWX (BaseDialog + SaveForm,
                                TtaGetViewFrame (document, view), pathname,
-                               document, saveImgs,
+                               document, saveImgs, saveRes,
                                IsTemplateInstanceDocument(document));
   if (created)
-    TtaShowDialogue (BaseDialog + SaveForm, FALSE);
+    TtaShowDialogue (BaseDialog + SaveForm, FALSE, TRUE);
 }
 
 
@@ -931,7 +892,7 @@ void DoSaveObjectAs (void)
         {
           Saving_lock = FALSE;
           TtaSetDialoguePosition ();
-          TtaShowDialogue (BaseDialog + SaveForm, FALSE);
+          TtaShowDialogue (BaseDialog + SaveForm, FALSE, TRUE);
           return;
         }
       SavingObject = 0;
@@ -950,7 +911,7 @@ void DoSaveObjectAs (void)
         {
           /* the user has to change the name of the saving file */
           TtaSetDialoguePosition ();
-          TtaShowDialogue (BaseDialog + SaveForm, FALSE);
+          TtaShowDialogue (BaseDialog + SaveForm, FALSE, TRUE);
           // redisplay Save form
           res = SavingObject;
           SavingObject = 0;
@@ -1440,8 +1401,16 @@ void SetNamespacesAndDTD (Document doc, ThotBool removeTemplate)
 	}
 
       if (xmlDecl)
-	// check if the user wants to generate xml declaration
-	TtaGetEnvBoolean ("USE_XML_DECLARATION", &xmlDecl);
+        {
+#ifdef IV
+          if (DocumentTypes[doc]  == docHTML)
+            // according to new specs don't generate it
+            xmlDecl = FALSE;
+          else
+#endif
+            // check if the user wants to generate xml declaration
+            TtaGetEnvBoolean ("USE_XML_DECLARATION", &xmlDecl);
+        }
       if (xmlDecl && charsetname[0] != EOS)
 	{
 	  /* generate the XML declaration */
@@ -1972,7 +1941,7 @@ static ThotBool SaveDocumentLocally (Document doc, char *directoryName,
   strcat (tempname, DIR_STR);
   strcat (tempname, documentName);
   ok = FALSE;
-  if (SaveAsText) 
+  if (SaveAsText)
     {
       /* the document will be exported without line numbers */
       SetInternalLinks (doc);
@@ -2120,8 +2089,8 @@ ThotBool HasSavingName (Document doc, View view, char *url, ThotBool *with_suffi
           if (ok)
             {
               // check isf there is a suffix
-	      strcpy (documentname, DocumentMeta[doc]->content_location);
-	      TtaExtractSuffix (documentname, suffix);
+              strcpy (documentname, DocumentMeta[doc]->content_location);
+              TtaExtractSuffix (documentname, suffix);
               *with_suffix = (suffix[0] != EOS);
             }
           else
@@ -2328,7 +2297,6 @@ static int SaveWikiFile (Document doc, char *localfile,
     }
   /* it's not the wiki server! */
   return res;
-  
 }
 
 /*----------------------------------------------------------------------
@@ -2344,22 +2312,17 @@ static int SafeSaveFileThroughNet (Document doc, char *localfile,
   char              msg[MAX_LENGTH];
   char              tempfile[MAX_LENGTH]; /* File name used to refetch */
   char              tempURL[MAX_LENGTH];  /* May be redirected */
-  const char       *verify_publish;
   int               res;
   int               mode = 0;
 #ifdef AMAYA_DEBUG
   unsigned long     file_size = 0;
 #endif
+  ThotBool          verify_publish;
 
   res = SaveWikiFile (doc, localfile, remotefile, content_type,use_preconditions);
   if (res != 2)
     return res;
-
-  verify_publish = TtaGetEnvString("VERIFY_PUBLISH");
-  /* verify the PUT by default */
-  if (verify_publish == NULL)
-    verify_publish = "yes";
-
+  TtaGetEnvBoolean ("VERIFY_PUBLISH", &verify_publish);
 #ifdef AMAYA_DEBUG
   fprintf(stderr, "Save %s to %s type=%s", localfile, remotefile, content_type);
   AM_GetFileSize (localfile, &file_size);
@@ -2370,16 +2333,15 @@ static int SafeSaveFileThroughNet (Document doc, char *localfile,
   /* JK: SYNC requests assume that the remotefile name is a static array */
   strcpy (tempfile, remotefile);
   mode = AMAYA_SYNC | AMAYA_NOCACHE | AMAYA_FLUSH_REQUEST;
-  mode = mode | ((use_preconditions) ? AMAYA_USE_PRECONDITIONS : 0);
-
+  if (use_preconditions)
+  mode = mode | AMAYA_USE_PRECONDITIONS;
   res = PutObjectWWW (doc, localfile, tempfile, content_type, NULL,
                       mode, NULL, NULL);
   if (res != 0)
     /* The HTTP PUT method failed ! */
     return (res);
-
   /* does the user want to verify the PUT? */
-  if (!verify_publish || !*verify_publish || strcmp (verify_publish, "yes"))
+  if (!verify_publish)
     return (0);
 
   /* Refetch */
@@ -2501,6 +2463,78 @@ static ThotBool SaveObjectThroughNet (Document doc, View view,
 }
 
 /*----------------------------------------------------------------------
+  SaveLocalCopy saves a copy of the remote file.
+  The parameter url is the distant location.
+  The parameter tempname points to the local file.
+  When the parameter ask is TRUE, a confirmation is requested
+  Return 0 if okay, -1 otherwise
+  ----------------------------------------------------------------------*/
+static int SaveLocalCopy (Document doc, View view, char *url,
+                          char *tempname, ThotBool ask)
+{
+  char                pathname[MAX_LENGTH], *ptr, *last = NULL;
+  char                msg[MAX_LENGTH];
+  char               *docdir;
+  int                 res = -1;
+
+  if (url && !strncmp (url, "http://", 7))
+    {
+      ptr = strstr (url, "?");
+      if (ptr == NULL)
+        ptr = strstr (url, "#");
+      if (ptr == NULL)
+        {
+          docdir = TtaGetDocumentsDir ();
+          if (DocumentMeta[doc] && DocumentMeta[doc]->full_content_location)
+            // use the full name
+          sprintf (pathname, "%s%c%s", docdir, DIR_SEP,
+                   &(DocumentMeta[doc]->full_content_location[7]));
+          else
+            sprintf (pathname, "%s%c%s", docdir, DIR_SEP,&url[7]);
+          ptr = strstr (pathname, "/");
+          while (ptr)
+            {
+              last = ptr;
+              ptr = strstr (&last[1], "/");              
+#ifdef _WINDOWS
+              *last = DIR_SEP;
+#endif /* _WINDOWS */
+            }
+          if (last[1] == EOS && DocumentMeta[doc] &&
+              DocumentMeta[doc]->content_location)
+              // add the default name
+            strcat (pathname, DocumentMeta[doc]->content_location);
+          if (ask)
+            {
+              sprintf (msg, TtaGetMessage (AMAYA, AM_CANNOT_SAVE), DocumentURLs[doc]);
+              InitConfirm3L (doc, 1, msg, TtaGetMessage (AMAYA, AM_SAVING_FAILED),
+                             pathname, TRUE);
+            }
+          else
+            UserAnswer = TRUE;
+          // create the subdirectory if needed
+          if (UserAnswer && last)
+            {
+              *last = EOS;
+              if (TtaCheckMakeDirectory (pathname, TRUE))
+                res = 0;
+              *last = DIR_SEP;
+            }
+          // save a copy of the document file
+          if (res == 0 && TtaFileCopy (tempname, pathname))
+            {
+              /* switch Amaya buttons and menus */
+              DocStatusUpdate (doc, FALSE);
+              TtaSetStatus (doc, 1, TtaGetMessage (AMAYA, AM_SAVED), pathname);
+              /* Notify the document as modified */
+              TtaSetDocumentModified (doc);
+            }
+        }
+    }
+  return res;
+}
+
+/*----------------------------------------------------------------------
   SaveDocumentThroughNet
   Save a document and the included images to a remote network location.
   confirm = TRUE form SAVE_AS and FALSE from SAVE
@@ -2516,7 +2550,8 @@ static ThotBool SaveDocumentThroughNet (Document doc, View view, char *url,
   int              remainder = 10000;
   int              index = 0, len, nb = 0;
   int              i, res;
-  ThotBool*imgToSave = NULL;
+  ThotBool        *imgToSave = NULL, savecopy = FALSE;
+  ThotBool         manage_images = TRUE;
 
   msg = (char *)TtaGetMemory (remainder);
   if (msg == NULL)
@@ -2565,9 +2600,14 @@ static ThotBool SaveDocumentThroughNet (Document doc, View view, char *url,
   msg[0] = EOS;
   len = 0;
   pImage = ImageURLs;
+  if (pImage == NULL)
+    {
+      manage_images = FALSE;
+      pImage = LoadedResources;
+    }
   while (pImage)
     {
-      if (pImage->document == doc && pImage->status == IMAGE_MODIFIED)
+      if (pImage->document == doc && pImage->status == RESOURCE_MODIFIED)
         {
           if (nb > 30)
             {
@@ -2587,6 +2627,12 @@ static ThotBool SaveDocumentThroughNet (Document doc, View view, char *url,
           nb++;
         }
       pImage = pImage->nextImage;
+      // next list
+      if (pImage == NULL && manage_images)
+        {
+          manage_images = FALSE;
+          pImage = LoadedResources;
+        }
     }
 
   if (msg[0] != EOS)
@@ -2605,15 +2651,23 @@ static ThotBool SaveDocumentThroughNet (Document doc, View view, char *url,
       if (created)
         {
           TtaSetDialoguePosition ();
-          TtaShowDialogue (BaseDialog + ConfirmSave, FALSE);
+          TtaShowDialogue (BaseDialog + ConfirmSave, FALSE, TRUE);
           /* wait for an answer */
           TtaWaitShowDialogue ();
         }
       if (!UserAnswer)
         /* do not continue */
         res = -1;
+      else if (ImageURLs)
+        {
+          pImage = ImageURLs;
+          manage_images = TRUE;
+        }
       else
-        pImage = ImageURLs;
+        {
+          pImage = LoadedResources;
+          manage_images = FALSE;
+        }
     }
   else
     {
@@ -2637,13 +2691,22 @@ static ThotBool SaveDocumentThroughNet (Document doc, View view, char *url,
       res = SafeSaveFileThroughNet (doc, tempname, url, content_type, use_preconditions);
       if (res != 0)
         {
-          DocNetworkStatus[doc] |= AMAYA_NET_ERROR;
           ResetStop (doc);
-          if (AmayaLastHTTPErrorMsg[0] == EOS)
-              sprintf (AmayaLastHTTPErrorMsg, TtaGetMessage (AMAYA, AM_CANNOT_SAVE),
-                       DocumentURLs[doc]);
-          InitInfo ("", AmayaLastHTTPErrorMsg);
-          res = -1;
+          TtaHandlePendingEvents ();
+          savecopy = TRUE;
+          if (savecopy)
+            // save a local copy
+            res = SaveLocalCopy (doc, view, url, tempname, TRUE);
+          else
+            {
+              char err_msg[MAX_LENGTH];
+              DocNetworkStatus[doc] |= AMAYA_NET_ERROR;
+              sprintf (err_msg, TtaGetMessage (AMAYA, AM_CANNOT_SAVE), DocumentURLs[doc]);
+              ConfirmError3L (doc, 1, err_msg,
+                              NULL,
+                              AmayaLastHTTPErrorMsg, NULL, FALSE);
+              res = -1;
+            }
         }
 
       if (res == 0)
@@ -2651,20 +2714,27 @@ static ThotBool SaveDocumentThroughNet (Document doc, View view, char *url,
           i = 0;
           while (pImage)
             {
-              if (pImage->document == doc && pImage->status == IMAGE_MODIFIED)
+              if (pImage->document == doc && pImage->status == RESOURCE_MODIFIED)
                 {
                   if (imgToSave[i++])
                     {
-                      /* we get the MIME type of the image. We reuse whatever the
-                         server sent if we have it, otherwise, we try to infer it from
-                         the image type as discovered by the handler */
-                      if (pImage->content_type)
-                        content_type = pImage->content_type;
+                      if (savecopy)
+                        // save a local copy
+                        res = SaveLocalCopy (doc, view, pImage->originalName,
+                                             pImage->tempfile, FALSE);
                       else
-                        content_type = PicTypeToMIME ((PicType)pImage->imageType);
-                      res = SafeSaveFileThroughNet(doc, pImage->tempfile,
-                                                   pImage->originalName, content_type,
-                                                   use_preconditions);
+                        {
+                          /* we get the MIME type of the image. We reuse whatever the
+                             server sent if we have it, otherwise, we try to infer it from
+                             the image type as discovered by the handler */
+                          if (pImage->content_type)
+                            content_type = pImage->content_type;
+                          else
+                            content_type = PicTypeToMIME ((PicType)pImage->imageType);
+                          res = SafeSaveFileThroughNet(doc, pImage->tempfile,
+                                                       pImage->originalName, content_type,
+                                                       use_preconditions);
+                        }
                       if (res)
                         {
                           /* message not null if an error is detected */
@@ -2678,15 +2748,29 @@ static ThotBool SaveDocumentThroughNet (Document doc, View view, char *url,
                           /* continue */
                           /*pImage = NULL;*/
                         }
-                      else
-                        pImage->status = IMAGE_LOADED;
+                      else if (!savecopy)
+                        pImage->status = RESOURCE_LOADED;
                     }
                 }
               
-              if (pImage != NULL)
+              if (pImage)
                 pImage = pImage->nextImage;
+              // next list
+              if (pImage == NULL && manage_images)
+                {
+                  manage_images = FALSE;
+                  pImage = LoadedResources;
+                }
             }
+          if (!savecopy)
+            // resources are now saved
+            RemoveLoadedResources (doc, &LoadedResources);
+          // keep URI changes
+          ClearSaveAsUpdate (FALSE);
         }
+      else
+        // restore previous URIs
+        ClearSaveAsUpdate (TRUE);
       ResetStop (doc);
     }
 
@@ -3160,9 +3244,9 @@ void SaveDocument (Document doc, View view)
           else
             ptr = DocumentURLs[doc];
           if (TextFormat)
-            ok = SaveObjectThroughNet (doc, view, ptr, FALSE, TRUE);
+            ok = SaveObjectThroughNet (doc, view, ptr, FALSE, FALSE);
           else
-            ok = SaveDocumentThroughNet (doc, view, ptr, TRUE, TRUE, TRUE);
+            ok = SaveDocumentThroughNet (doc, view, ptr, TRUE, TRUE, FALSE);
         }
     }
   else
@@ -3393,7 +3477,7 @@ void BackUpDocs ()
   AutoSaveDocument
   Entry point called when the auto-save procedure is triggered
   ----------------------------------------------------------------------*/
-static ThotBool  AutoSaveDocument (Document doc, View view, char *local_url)
+static ThotBool AutoSaveDocument (Document doc, View view, char *local_url)
 {
   char                tempname[MAX_LENGTH];
   ThotBool            ok;
@@ -3682,7 +3766,7 @@ static ThotBool UpdateDocImage (Document doc, ThotBool src_is_local,
           if (pImage->localName)
             TtaFreeMemory (pImage->localName);
           pImage->localName = localName;
-          pImage->status = IMAGE_LOADED;
+          pImage->status = RESOURCE_LOADED;
         }
       else
         {
@@ -3713,23 +3797,22 @@ static ThotBool UpdateDocImage (Document doc, ThotBool src_is_local,
           pImage->elImage = NULL;
           pImage->imageType = TtaGetPictureType (el);
         }
-      pImage->status = IMAGE_LOADED;
+      pImage->status = RESOURCE_LOADED;
     }
   return TRUE;
 }
 
 
 /*----------------------------------------------------------------------
-  UpdateImages
-  if CopyImage is TRUE change all picture SRC attribute and CSS background
-  images.
+  CheckCopiedObjects
+  if CopyImage is TRUE change all SRC attribute and CSS background images.
   If pictures are saved locally, make the copy
   else add them to the list of remote images to be copied.
   The parameter imgbase gives the relative path of the new image directory.
   The parameter newURL gives the new document URL (or local file).
   ----------------------------------------------------------------------*/
-static void UpdateImages (Document doc, ThotBool src_is_local,
-                          ThotBool dst_is_local, char *imgbase, char *newURL)
+static void CheckCopiedObjects (Document doc, ThotBool src_is_local,
+                                ThotBool dst_is_local, char *imgbase, char *newURL)
 {
   SSchema             XHTMLSSchema, MathSSchema, SVGSSchema, XLinkSSchema;
   AttributeType       attrType;
@@ -3944,7 +4027,8 @@ static void UpdateImages (Document doc, ThotBool src_is_local,
                               if (src_is_local && !dst_is_local)
                                 {
                                   /* add the localfile to the images list */
-                                  AddLocalImage (buf, imgname, tempname, doc, &pImage);
+                                  AddLocalResource (buf, imgname, tempname, doc,
+                                                    &pImage, &ImageURLs, FALSE);
                                   /* get image type */
                                   if (pImage)
                                     pImage->imageType = TtaGetPictureType (el);
@@ -3992,22 +4076,22 @@ static void UpdateImages (Document doc, ThotBool src_is_local,
                                       /* update the descriptor */
                                       if (pImage)
                                         {
+                                          if (pImage->originalName &&
+                                              strcmp (pImage->originalName, tempname))
+                                            RegisterSaveAsUpdate (pImage, tempname);
+#ifdef IV
                                           /* image was already loaded */
-                                          if (pImage->originalName != NULL)
-                                            TtaFreeMemory (pImage->originalName);
-                                          pImage->originalName = TtaStrdup (tempname);
-                                          if (TtaFileExist(pImage->tempfile))
-                                            pImage->status = IMAGE_MODIFIED;
-                                          else
-                                            pImage->status = IMAGE_NOT_LOADED;
-                                          /*pImage->elImage = (struct _ElemImage *) el;*/
+                                            {
+                                              TtaFreeMemory (pImage->originalName);
+                                              pImage->originalName = TtaStrdup (tempname);
+                                              if (TtaFileExist(pImage->tempfile))
+                                                pImage->status = RESOURCE_MODIFIED;
+                                              else
+                                                pImage->status = RESOURCE_NOT_LOADED;
+                                            }
+#endif
                                         }
                                     }
-#if 0 /* JK Not sure if this is needed (tempfile isn't initialized for local files */
-                                  else
-                                    /* add the localfile to the images list */
-                                    AddLocalImage (tempfile, imgname, tempname, doc, &pImage);
-#endif
                                 }
                             }
                           TtaFreeMemory (buf);
@@ -4023,18 +4107,19 @@ static void UpdateImages (Document doc, ThotBool src_is_local,
 
 /*----------------------------------------------------------------------
   UpdateCss
-  if CopyCss is TRUE change all CSS links
+  if CopyResources is TRUE change all CSS links
   If Css are saved locally, make the copy
   else add them to the list of remote files to be copied.
-  The parameter cssbase gives the relative path of the new css directory.
+  The parameter resbase gives the relative path of the new css directory.
   The parameter newURL gives the new document URL (or local file).
   ----------------------------------------------------------------------*/
 static void UpdateCss (Document doc, ThotBool src_is_local,
-                       ThotBool dst_is_local, char *cssbase, char *newURL)
+                       ThotBool dst_is_local, char *resbase, char *newURL)
 {
   CSSInfoPtr          css, cssnext, cssnew, cssdone[20];
   PInfoPtr            pInfo, pnext;
-  int                 buflen, res, index, i;
+  LoadedImageDesc    *desc;
+  int                 buflen, index, i;
   CSSmedia            media;
   CSSCategory         category;
   char                oldpath[MAX_LENGTH];
@@ -4050,10 +4135,10 @@ static void UpdateCss (Document doc, ThotBool src_is_local,
   for (index = 0; index < 20; index++)
     cssdone[index] = NULL;
   index = 0;
-  if (cssbase[0] != EOS)
+  if (resbase[0] != EOS)
     {
       // new path directory
-      NormalizeURL (cssbase, 0, newpath, cssname, newURL);
+      NormalizeURL (resbase, 0, newpath, cssname, newURL);
     }
   else
     {
@@ -4125,11 +4210,15 @@ static void UpdateCss (Document doc, ThotBool src_is_local,
                     TtaFileCopy (localname, url);
                   else
                     {
+                      AddLocalResource (localname, cssname, url, doc,
+                                        &desc, &LoadedResources, TRUE);
+#ifdef IV
                       ActiveTransfer (doc);
                       TtaHandlePendingEvents ();
                       res = PutObjectWWW (doc, localname, url, "text/css", NULL,
                                           AMAYA_SYNC | AMAYA_NOCACHE | AMAYA_FLUSH_REQUEST,
                                           NULL, NULL);
+#endif
                     }
                 }
               // update the link
@@ -4152,10 +4241,10 @@ static void UpdateCss (Document doc, ThotBool src_is_local,
                       if (!strcmp (s, "HTML") && elType.ElTypeNum == HTML_EL_LINK)
                         attrType.AttrTypeNum = HTML_ATTR_HREF_;
                       /* save the new attr value */
-                      if (cssbase[0] != EOS)
+                      if (resbase[0] != EOS)
                         {
                           /* compose the relative or absolute name */
-                          strcpy (url, cssbase);
+                          strcpy (url, resbase);
                           strcat (url, cssname);
                         }
                       else
@@ -4210,7 +4299,7 @@ void DoSaveAs (char *user_charset, char *user_mimetype, ThotBool fullCopy)
   char               *documentFile;
   char               *tempname, *oldLocal, *newLocal = NULL;
   char               *imagePath = NULL, *cssPath = NULL, *base;
-  char                imgbase[MAX_LENGTH], cssbase[MAX_LENGTH];
+  char                imgbase[MAX_LENGTH], resbase[MAX_LENGTH];
   char                documentname[MAX_LENGTH];
   char                tempdir[MAX_LENGTH];
   char                msg[MAX_LENGTH];
@@ -4349,7 +4438,7 @@ void DoSaveAs (char *user_charset, char *user_mimetype, ThotBool fullCopy)
         base = NULL;
       /* Create the base directory/url for the images output */
       imgbase[0] = EOS;
-      cssbase[0] = EOS;
+      resbase[0] = EOS;
       if (CopyImages)
         {
           if (SaveImgsURL[0] != EOS)
@@ -4383,7 +4472,7 @@ void DoSaveAs (char *user_charset, char *user_mimetype, ThotBool fullCopy)
             }
         }
 
-      if (CopyCss)
+      if (CopyResources)
         {
           if (SaveCssURL[0] != EOS)
             {
@@ -4396,21 +4485,21 @@ void DoSaveAs (char *user_charset, char *user_mimetype, ThotBool fullCopy)
             cssPath = MakeRelativeURL (SavePath, base);
           if (cssPath)
             {
-              strcpy (cssbase, cssPath);
+              strcpy (resbase, cssPath);
               TtaFreeMemory (cssPath);
               /* add the separator if needed */
-              if (cssbase[0] != EOS)
+              if (resbase[0] != EOS)
                 {
-                  buflen = strlen (cssbase) - 1;
-                  if (dst_is_local && !IsW3Path (cssbase))
+                  buflen = strlen (resbase) - 1;
+                  if (dst_is_local && !IsW3Path (resbase))
                     {
-                      if (cssbase[buflen] != DIR_SEP)
-                        strcat (cssbase, DIR_STR);
+                      if (resbase[buflen] != DIR_SEP)
+                        strcat (resbase, DIR_STR);
                     }
                   else
                     {
-                      if (cssbase[buflen] != URL_SEP)
-                        strcat (cssbase, URL_STR);
+                      if (resbase[buflen] != URL_SEP)
+                        strcat (resbase, URL_STR);
                     }
                 }
             }
@@ -4444,14 +4533,14 @@ void DoSaveAs (char *user_charset, char *user_mimetype, ThotBool fullCopy)
             }
           else
             {
-              if (cssbase[0] != DIR_SEP)
+              if (resbase[0] != DIR_SEP)
                 {
                   strcpy (tempname, SavePath);
                   strcat (tempname, DIR_STR);
-                  strcat (tempname, cssbase);
+                  strcat (tempname, resbase);
                 }
               else
-                strcpy(tempname, cssbase);
+                strcpy(tempname, resbase);
               ok = TtaCheckMakeDirectory (tempname, TRUE);
               if (!ok)
                 {
@@ -4541,16 +4630,17 @@ void DoSaveAs (char *user_charset, char *user_mimetype, ThotBool fullCopy)
         {
           TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
           /* Transform all URLs to absolute ones */
-          if (UpdateURLs || CopyCss)
+          if (UpdateURLs || CopyResources)
             {
               if (base)
                 /* URLs are still relative to the document base */
-                SetRelativeURLs (doc, base, cssbase,
-                                 CopyImages, CopyCss, fullCopy);
+                SetRelativeURLs (doc, base, resbase,
+                                 CopyImages, CopyResources, fullCopy, TRUE);
               else
                 /* URLs are relative to the new document directory */
-                SetRelativeURLs (doc, documentFile, cssbase,
-                                 CopyImages, CopyCss, fullCopy);
+                SetRelativeURLs (doc, documentFile, resbase,
+                                 CopyImages, CopyResources, fullCopy,
+                                 TRUE);
             }
           /* now free base */
           if (base)
@@ -4568,9 +4658,9 @@ void DoSaveAs (char *user_charset, char *user_mimetype, ThotBool fullCopy)
                   DocumentTypes[doc] != docMath &&
                   DocumentTypes[doc] != docTemplate &&
                   DocumentTypes[doc] != docXml)
-                UpdateImages (doc, src_is_local, dst_is_local, imgbase, documentFile);
-              if (CopyCss)
-                UpdateCss (doc, src_is_local, dst_is_local, cssbase, documentFile);
+                CheckCopiedObjects (doc, src_is_local, dst_is_local, imgbase, documentFile);
+              if (CopyResources)
+                UpdateCss (doc, src_is_local, dst_is_local, resbase, documentFile);
             }
           toUndo = TtaCloseUndoSequence (doc);
           if (dst_is_local)
@@ -4582,7 +4672,7 @@ void DoSaveAs (char *user_charset, char *user_mimetype, ThotBool fullCopy)
             /* now save the file as through the normal process of saving */
             /* to a remote URL. */
             ok = SaveDocumentThroughNet (doc, 1, documentFile, TRUE,
-                                         CopyImages, FALSE);
+                                         CopyImages, TRUE);
         }
 
       /* restore original display mode */
@@ -4723,6 +4813,8 @@ void DoSaveAs (char *user_charset, char *user_mimetype, ThotBool fullCopy)
           */
           if (toUndo)
             TtaUndoNoRedo (doc);
+          // restore previous URIs
+          ClearSaveAsUpdate (TRUE);
           if (!ok)
             {
               sprintf (msg, TtaGetMessage (AMAYA, AM_CANNOT_SAVE), documentFile);
@@ -4801,7 +4893,7 @@ ThotBool SaveTempCopy (Document doc, const char* dstdir, char** filename)
   SavePath = TtaStrdup(dstdir);
   SaveName = (char *)TtaGetMemory (MAX_LENGTH);
   TtaExtractName (DocumentURLs[doc], buff, SaveName);
-  if (SaveName[0]==EOS)
+  if (SaveName[0] == EOS)
     {
       defaultName = TtaGetEnvString ("DEFAULTNAME");
       if (defaultName == NULL || *defaultName == EOS)
@@ -4811,7 +4903,7 @@ ThotBool SaveTempCopy (Document doc, const char* dstdir, char** filename)
     }
   
   CopyImages = FALSE;
-  CopyCss    = FALSE;
+  CopyResources = FALSE;
   UpdateURLs = TRUE; // just copy local resources
   SaveAsXML = DocumentMeta[doc]->xmlformat;
   SaveAsText = FALSE; // don't generate text from HTML

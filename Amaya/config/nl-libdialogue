@@ -1,0 +1,427 @@
+# encoding= latin1
+0 Fout in X11: %s\n
+1 Bevestigen
+2 Geen alfabetbestand
+3 Nieuwe weergave kan de vorige niet vervangen
+4 Incompatibele schema's. %s opnieuw compileren.
+5 Kritieke fout: kan fonts niet vinden.
+6 Het geheugen is vol
+7 Kritieke fout: kan geen verbinding maken met X
+8 Het beeld wordt gewijzigd voordat het weergegeven wordt
+9 De tabel met regels is vol.
+10 Onjuist bestand: %s.str
+11 Onjuist bestand: %s.prs
+12 Document %s is afgedrukt
+13 Schikking
+14 1 pagina per vel
+15 2 pagina's per vel
+16 4 pagina's per vel
+17 %s
+18 Onvoldoende geheugen
+19 *** Amaya: onherstelbare fout ***
+20 gewijzigde documenten (indien van toepassing) worden opgeslagen
+21 Onjuist .TRA-bestand: %s
+22 %s is geen geldig element op hetzelfde niveau voor %s (%s)
+23 %s is geen geldig onderliggend element voor %s (%s)
+24 %s, pagina %d
+25 Taal
+26 Attributen
+27 Standaardpresentatie
+28 Toepassen
+29 Tekst
+30 Onderstrepen
+31 Afbeeldingen
+32 Indeling
+33 Standaard
+34 Uitlijnen
+35 Inspringing vergroten
+36 Bezig met afdrukken
+37 Afdrukken
+38 Handmatig papier invoeren
+39 Opties
+40 A4
+41 US
+42 Papierformaat
+43 Sluiten
+44 Mappen
+45 Document %s bestaat al. Wilt u het overschrijven?
+46 Tekstkleur instellen
+47 Achtergrondkleur instellen
+48 Fontfamilie
+49 Normaal
+50 Vet
+51 Cursief
+52 Schuin
+53 Normaal
+54 Dikte
+55 Normaal
+56 Onderstrepen
+57 Doorhalen
+58 Grootte
+59 Inspringing verkleinen
+60 Enkele regelafstand
+61 Anderhalve regelafstand
+62 Dubbele regelafstand
+63 Document opslaan
+64 Sluiten zonder opslaan
+65 Tekenstijl
+66 Kleuren
+67 Elementen
+68 Wissen
+69 Uitvoer
+70 PostScript-bestand
+71 Printer
+72 Zoeken naar:
+73 Niet hoofdlettergevoelig
+74 Vervangen door:
+75 Vervangen
+76 Niet vervangen
+77 Vervangen bevestigen
+78 Automatisch vervangen
+79 Zoekbereik
+80 Vóór selectie
+81 Binnen selectie
+82 Na selectie
+83 Gehele document
+84 Niet vervangen
+85 vóór het sluiten
+86 Een document sluiten
+87 Wiskundige symbolen
+88 Figuren
+89 Latijns alfabet
+90 Grieks alfabet
+91 Opslaan
+92 Tekst
+93 Figuur
+94 Symbool
+95 Afbeelding
+96 XML-elementen
+97 na
+98 voor
+99 rondom
+100 Insluiten
+101 Plakken
+102 om te maken
+103 Invoegen
+104 Pagina-einde
+105 Taal van element
+106 Overgeërfde taal
+107 Niet gevonden
+108 Zoeken in
+109 Zoeken
+110 Alleen-lezenelement
+111 Er moet niets vervangen worden
+112 Standaardtekens
+113 Standaardafbeeldingen
+114 Standaardformaat
+115 Standaardafmetingen
+116 pt
+117 Lijnstijl
+118 Lijndikte
+119 Opvulpatroon
+120 Splitsen
+121 Type object
+122 Ga naar paginanummer:
+123 Gelijk welke
+124 Gezocht attribuut
+125 Gezocht type
+126 Type
+127 Naam
+128 Waarde
+129 Attribuutwaarde
+130 Onbekend attribuut
+131 Annuleren
+132 Fout in PostScript-omzetting
+133 Opdracht geweigerd door spooler "%s"
+134 "%s" kan niet gemaakt worden
+135 Bovenlijn
+136 Documentformaat
+137 Attribuut verwijderen
+138 Achtergrondkleur selecteren
+139 Tekstkleur selecteren
+140 Selecteer een algemene XML-structuur
+141 Bezig met controleren
+142 Zoeken/Overslaan
+143 Vervangen (woordenlijst)
+144 Vervangen en volgende
+145 Andere taal
+146 Leren
+147 woorden met:
+148 Bezig met spellingcontrole?
+149 Romeinse cijfers
+150 Negeren
+151 woorden in hoofdletters
+152 woorden met cijfers
+153 Fout in parameterbestand
+154 Toetsenbordbestand ontbreekt
+155 Kan de woordenlijst voor dit document niet opslaan
+156 Onjuist woord "%s" kon niet worden opgenomen in deze woordenlijst
+157 Woord "%s" is toegevoegd aan de woordenlijst van dit document
+158 De spellingcontrole is voltooid
+159 De spellingcontrole is afgebroken
+160 Selecteer een document
+161 De woordenlijst van document is opgeslagen: %s
+162 Niet beschikbaar in deze versie
+163 Palet inschakelen/uitschakelen
+164 Hulpmiddelen
+165 Verplicht attribuut (kan niet verwijderd worden)
+166 Vernieuwen
+167 Links uitlijnen
+168 Rechts uitlijnen
+169 Centreren
+170 Uitvullen
+171 Klassen
+172 Selecteer een klasse of pseudoklasse
+173 Selecteren
+174 Negeren
+175 Wiskunde
+176 Diverse
+177 Binaire relaties
+178 Binaire niet-relaties
+179 Operators
+180 Grieks alfabet (hoofdletters)
+181 Pijlen
+182 Speciale tekens
+183 Overdracht stoppen
+184 Vorig document
+185 Volgend document
+186 Opnieuw laden
+187 Opslaan
+188 Alle opslaan
+189 Nieuw document
+190 Document openen
+191 Afdrukken
+192 Zoeken
+193 Startpagina
+194 Nadruk aan/uit
+195 Sterke nadruk aan/uit
+196 Code aan/uit
+197 Afbeelding invoegen of vervangen
+198 Kopniveau 1
+199 Kopniveau 2
+200 Kopniveau 3
+201 Kopniveau 4
+202 Alinea
+203 Lijst met opsommingstekens
+204 Genummerde lijst
+205 Lijst met definities
+206 Koppeling
+207 Tabel
+208 %d geopende tabbladen worden gesloten. Wilt u doorgaan?
+209 Waarschuwen wanneer meerdere tabbladen worden gesloten
+210 Tabbladen sluiten
+211 Er zijn geen fouten aangetroffen
+212 Parseerfouten weergeven
+213 Vakken
+214 Sectie
+215 Doel
+216 Ingevoegde tekst aan/uit
+217 Doorgehaalde tekst aan/uit
+218 Subscript aan/uit
+219 Superscript aan/uit
+220 Term
+221 Definitie
+222 Object
+223 Opmaak
+224 Bestanden
+225 Horizontaal splitsen/splitsing opheffen
+226 Verticaal splitsen/splitsing opheffen
+227 Hulpmiddelen weergeven/verbergen
+228 Ongedaan maken
+229 Herhalen
+230 Knippen
+231 Kopiëren
+232 Plakken
+233 Spelling controleren
+234 Diverse constructies
+235 Relaties, ordeningen en logica
+236 Verzamelingen en functies
+237 Rekenkunde, bewerkingen, complexen en constanten
+238 Analyse, lineaire algebra en statistiek
+239 Driehoeksmeting en logaritmen
+240 Inzoomen
+241 Uitzoomen
+242 Thema
+243 XML
+244 Tekst
+245 Geen recent document
+246 Klik op een element om het te selecteren
+247 Klik om de bewerkingsmodus te wijzigen
+248 Cellen samenvoegen
+249 Samengevoegde cel horizontaal splitsen
+250 Samengevoegde cel verticaal splitsen
+251 Rij invoegen
+252 Rij toevoegen
+253 Kolom invoegen
+254 Kolom toevoegen
+255 Tip van de dag ...
+256 Bij opstarten tonen
+257 Vorige tip
+258 Volgende tip
+259 Wist u dat ??
+260 Sluiten
+261 Hebt u al een profiel ingesteld? Amaya is voorzien van vijf profielen. In elk profiel worden alleen functies en menu's weergegeven die voor dat profiel relevant zijn. U kunt uw profiel instellen in het menu Voorkeuren > Algemeen.
+262 U kunt panelen eenvoudig links of rechts in het venster plaatsen en aanpassen. U doet dit in het menu Voorkeuren.
+263 Met F2 of Escape selecteert u eenvoudig het bovenliggende element in de documentstructuur. Zo bent u altijd zeker dat bewerkingen (knippen, kopiëren, attributen, opmaak enz.) correct en op het gehele element worden toegepast.
+264 Als u twee documenten naast elkaar wilt bekijken, sleept u eenvoudig het tabblad van het tweede document naar de rand (links of rechts) van het weergegeven document.
+265 U kunt de werkset aanpassen door de panelen in een andere volgorde te verslepen of ze vrij te laten zweven.
+266 U kunt de werkset aanpassen en de panelen ervan eenvoudig verslepen en links of rechts in het venster plaatsen.
+267 Klik op de knop rechtsonder in het venster om over te schakelen tussen de tekstbewerkingsmodus Tekst en XML.
+268 Als de knop rechtsonder in het venster rood is, kunt u erop klikken om de fouten weer te geven.
+269 U kunt eenvoudig een bovenliggend element selecteren door erop te klikken in het pad in de statusbalk.
+270 Gebruik het pijltje helemaal rechts ter hoogte van de tabbladen om eenvoudig een ander document te selecteren.
+271 Als u Doelen selecteert in het menu Beeld, worden doelen voor koppelingen duidelijk gemarkeerd in het venster met opgemaakte tekst. Dit is handig als u een nieuwe koppeling wilt maken: u kunt het doel eenvoudig aangeven door erop te klikken.
+272 Als u een SVG-object roteert, wordt het middelpunt ervan met een kruis aangegeven. U kunt het met de muis verplaatsen.
+273 **Basic SVG shapes have handles that can be used to edit them. Blue triangles or green square allow to change their size. For <rect/> element, red circles give a control on radius of rounded corners.
+274 **For SVG drawing, lines are created with a precision of 15Â° if you press the shift button. It is useful when you want to draw straight lines.
+275 **When you resize an image or an SVG object, pressing the shift button allows to preserve aspect ratio.
+276 **Use Edit>Preferences>Dialogue Language to choose the language of the user interface.
+277 **Classic
+278 **Modern
+279 **No theme
+280 **Title/Description
+281 **Generate a description
+282 **Square
+283 **Rounded Square
+284 **Rectangle
+285 **Rounded rectangle
+286 **Diamond
+287 **Parallelogram
+288 **Trapezium
+289 **Equilateral triangle
+290 **Isosceles triangle
+291 **Right triangle
+292 **Circle
+293 **Ellipse
+294 **Line
+295 **Arrow
+296 **Double Arrow
+297 **Zigzag
+298 **Group
+299 **Ungroup
+300 **Bring to front
+301 **Send to back
+302 **One level up
+303 **One level down
+304 **90Â° left
+305 **90Â° right
+306 **Rotate
+307 **Vertical symmetry
+308 **Horizontal symmetry
+309 **Scale
+310 **Skew
+311 **Move
+312 **Align bottom
+313 **Align center
+314 **Align left
+315 **Align middle
+316 **Align right
+317 **Align top
+318 **Distribute bottom
+319 **Distribute center
+320 **Distribute left
+321 **Distribute middle
+322 **Distribute right
+323 **Distribute top
+324 **Distribute vertical spacing
+325 **Distribute horizontal spacing
+326 **Closed Bezier curve
+327 **Bezier curve
+328 **Polyline
+329 **Polygon
+330 **Foreign Object
+331 **Image
+332 **SVG Canvas
+333 **Text
+334 **Cone
+335 **Cube
+336 **Cylinder
+337 **Octahedron
+338 **Parallelepiped
+339 **Pyramid
+340 **Beaker
+341 **Funnel
+342 **Bunsen burner
+343 **Buchner flask
+344 **Boiling flask
+345 **Burette
+346 **Erlenmeyer flask
+347 **Test tube
+348 **Pipette
+349 **Rectangular
+350 **Rounded rectangular
+351 **Round
+352 **Scream
+353 **Thought
+354 **Capacitor
+355 **Power source
+356 **Diode
+357 **Ground Point
+358 **Inductor
+359 **LED
+360 **Op-amp
+361 **Resistor
+362 **Switch
+363 **Transistor
+364 **Voltage source
+365 **Zener diode
+366 **Pentagon
+367 **Hexagon
+368 **Heptagon
+369 **Octogon
+370 **Star (4 branches)
+371 **Star (5 branches)
+372 **Star (6 branches)
+373 **AND
+374 **NAND
+375 **OR
+376 **NOR
+377 **XOR
+378 **XNOR
+379 **NOT
+380 **Cross
+381 **Frame
+382 **Ring
+383 **Cloud
+384 **Scroll
+385 **Sun
+386 **Lightning_Bolt
+387 **Moon
+388 **Smiley
+389 **Heart
+390 **Flower
+391 **Prohibited
+392 **Pentagon
+393 **2-Way Rounded Arrow
+394 **3-Way Arrow Callout
+395 **3-Way Arrow
+396 **4-Way_Arrow_Callout
+397 **4-Way Arrow
+398 **Chevron
+399 **Circular Arrow
+400 **Corner Arrow
+401 **Corner Double Arrow Callout
+402 **Corner Double Arrow
+403 **Double Arrow Callout
+404 **Double Arrow
+405 **Notched Arrow
+406 **Rounded Arrow
+407 **Simple Arrow Callout
+408 **Simple Arrow
+409 **Split Arrow
+410 **S-Shape Arrow
+411 **Striped Arrow
+412 **Create template from current document
+413 **Create a text area
+414 **Use a component or an element
+415 **Create and use a component
+416 **Repeat the current use
+417 **Create and repeat a component
+418 **Create a free editing box
+419 **Create a new types union
+420 **Button up to close
+421 **Double click to close
+422 **Click to close
+423 **Locked resource
+424 **Unlocked resource
+425 **Not a WebDAV resource
