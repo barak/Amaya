@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2008
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -2537,6 +2537,8 @@ static void AddFloatingBox (PtrAbstractBox pAb, int frame, ThotBool left)
       else if (box)
         {
           pParent = pAb->AbEnclosing;
+          if (pParent->AbBox->BxType == BoCell)
+            pParent->AbBox->BxType = BoCellBlock;
           while (pParent && pParent->AbBox &&
                  (pParent->AbBox->BxType == BoGhost ||
                   pParent->AbBox->BxType == BoFloatGhost))
@@ -2547,8 +2549,7 @@ static void AddFloatingBox (PtrAbstractBox pAb, int frame, ThotBool left)
                   pParent->AbBox->BxType != BoBlock &&
                   pParent->AbBox->BxType != BoFloatGhost))
             {
-              if (pParent->AbBox->BxType == BoCell ||
-                  pParent->AbBox->BxType == BoCellBlock)
+              if (pParent->AbBox->BxType == BoCell)
                 {
                   /* cannot be a floated box */
                   pAb->AbFloat = 'N';
@@ -5721,7 +5722,21 @@ void CheckScrollingWidthHeight (int frame)
                           if (pAb == NULL ||
                               (pAb->AbPositioning &&
                                pAb->AbPositioning->PnAlgorithm == PnRelative))
-                            xmax = pBox->BxClipX + pBox->BxClipW;
+                            {
+                              xmax = pBox->BxClipX + pBox->BxClipW;
+                              if (pBox->BxAbstractBox &&
+                                  pBox->BxAbstractBox->AbLeafType == LtText)
+                                {
+                                  pAb = pBox->BxAbstractBox->AbEnclosing;
+                                  while (pAb && pAb->AbBox &&
+                                         pAb->AbBox->BxType == BoGhost)
+                                    pAb = pAb->AbEnclosing;
+                                  if (pAb && pAb->AbBox &&
+                                      xmax < pAb->AbBox->BxClipX + pAb->AbBox->BxClipW)
+                                    xmax = pAb->AbBox->BxClipX + pAb->AbBox->BxClipW;
+                                }
+                              xmax += 4;
+                            }
                         }
                       // check if a positioned box is out of the document
                       if (ExtraFlow (pBox, frame))

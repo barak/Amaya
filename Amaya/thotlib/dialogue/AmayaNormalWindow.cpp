@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2008
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -641,7 +641,7 @@ void AmayaNormalWindow::AppendURL ( const wxString & new_url )
   // Add the url to the MRU menu
   wxMenu     *menu;
   wxMenuItem *item;
-  if(m_URLs.GetCount()<RECENT_DOC_MAX_NB)
+  if(m_URLs.GetCount() < RECENT_DOC_MAX_NB)
     {
       if(m_URLs.Index(new_url)==wxNOT_FOUND)
         {
@@ -876,38 +876,36 @@ void AmayaNormalWindow::GotoSelectedURL(ThotBool noreplace)
 {
   Document doc;
   View     view;
-
+  char     buffer[MAX_LENGTH];
+      
   FrameToView (TtaGiveActiveFrame(), &doc, &view);
   CloseTextInsertion ();
-
   /* call the callback  with the url selected text */
   PtrDocument pDoc = LoadedDocument[doc-1];
   wxASSERT(pDoc);
   if (pDoc && pDoc->Call_Text)
     {
-      char buffer[2048];
-      
       if(m_pComboBox)
-        strcpy(buffer, (m_pComboBox->GetValue()).Trim(TRUE).Trim(FALSE).mb_str(wxConvUTF8));
+        strncpy(buffer, (m_pComboBox->GetValue()).Trim(TRUE).Trim(FALSE).mb_str(wxConvUTF8), MAX_LENGTH-1);
       else
-        strcpy(buffer, m_enteredURL.Trim(TRUE).Trim(FALSE).mb_str(wxConvUTF8));
-      
-// patch to go-round a bug on Windows (TEXT_ENTER event called twice)
+        strncpy(buffer, m_enteredURL.Trim(TRUE).Trim(FALSE).mb_str(wxConvUTF8), MAX_LENGTH-1);
+      buffer[MAX_LENGTH-1] = EOS;
+      // patch to go-round a bug on Windows (TEXT_ENTER event called twice)
 #ifdef _WINDOWS
-        if (isBufUrl == FALSE)
+      if (isBufUrl == FALSE)
         {
           isBufUrl = TRUE;
-            (*(Proc4)pDoc->Call_Text) ((void *)doc, (void *)view, (void *)buffer,  (void *)noreplace);
-           strcpy (BufUrl, buffer);
+          (*(Proc4)pDoc->Call_Text) ((void *)doc, (void *)view, (void *)buffer,  (void *)noreplace);
+          strcpy (BufUrl, buffer);
           isBufUrl = FALSE;
         }
-        else if (strcmp (buffer, BufUrl) != 0)
+      else if (strcmp (buffer, BufUrl) != 0)
         {
-            (*(Proc4)pDoc->Call_Text) ((void *)doc, (void *)view, (void *)buffer,  (void *)noreplace);
-           strcpy (BufUrl, buffer);
+          (*(Proc4)pDoc->Call_Text) ((void *)doc, (void *)view, (void *)buffer,  (void *)noreplace);
+          strcpy (BufUrl, buffer);
         }
 #else /* _WINDOWS */
-        (*(Proc4)pDoc->Call_Text) ((void *)doc, (void *)view, (void *)buffer,  (void *)noreplace);
+      (*(Proc4)pDoc->Call_Text) ((void *)doc, (void *)view, (void *)buffer,  (void *)noreplace);
 #endif /* _WINDOWS */
     }
 }
@@ -1015,11 +1013,13 @@ void AmayaNormalWindow::OnMenuItem( wxCommandEvent& event )
   else
     FrameToView (TtaGiveActiveFrame(), &doc, &view);
   AmayaWindow::DoAmayaAction( action_id, doc, view );
-  if (action_id == -1 ||
-      (MenuActionList[action_id].ActionName &&
-      (!strcmp (MenuActionList[action_id].ActionName, "TtcPreviousElement") ||
-       !strcmp (MenuActionList[action_id].ActionName, "TtcNextElement"))))
-  event.Skip();
+  if (action_id == -1)
+    // Open recent documents
+    event.Skip();
+  else if (MenuActionList[action_id].ActionName &&
+           (!strcmp (MenuActionList[action_id].ActionName, "TtcPreviousElement") ||
+            !strcmp (MenuActionList[action_id].ActionName, "TtcNextElement")))
+  event.Skip(false);
 }
 
 /*----------------------------------------------------------------------

@@ -1,4 +1,4 @@
-	{ I. Vatton 	 1994-2007  }
+	{ I. Vatton 	 1994-2009  }
 
 { Variables used in ifdefs: PAGE, BLACK_WHITE, US_PAPER, LINK_NUMBER, LANDSDSCAPE}
 
@@ -4444,9 +4444,7 @@ FIELDSET: BEGIN
         Background: Enclosing =;
         ShowBox;
         FillPattern: Enclosing =;
-        MarginTop: Enclosing =;
         MarginRight: Enclosing =;
-        MarginBottom: Enclosing =;
         MarginLeft: Enclosing =;
         BorderTopWidth: Enclosing =;
         BorderRightWidth: Enclosing =;
@@ -4460,6 +4458,10 @@ FIELDSET: BEGIN
         BorderRightStyle: Enclosing =;
         BorderBottomStyle: Enclosing =;
         BorderLeftStyle: Enclosing =;
+        PaddingTop: Enclosing =;
+        PaddingBottom: Enclosing =;
+        PaddingLeft: Enclosing =;
+        PaddingRight: Enclosing =;
         IN Structure_view BEGIN
                 Visibility: 0;
                 END;
@@ -4492,27 +4494,47 @@ FIELDSET: BEGIN
         PageBreak: Yes;
 #endif
         VertPos: Top = Previous Table_head . Top;
+        BorderTopColor: Enclosing =;
+        BorderLeftColor: Enclosing = ;
+        BorderBottomColor: Enclosing =;
+        BorderRightColor: Enclosing =;
         BorderTopWidth: Enclosing =;
-        BorderRightWidth: Enclosing =;
         BorderBottomWidth: Enclosing =;
-        BorderLeftWidth: Enclosing =;
+        PaddingTop: Enclosing =;
+        PaddingBottom: Enclosing =;
         IN Structure_view BEGIN
                 Visibility: Enclosing =;
                 VertPos: Top = Previous . Bottom;
                 Width: Enclosing . Width;
+                MarginTop: 0;
+                MarginRight: 0;
+                MarginBottom: 0;
+                MarginLeft: 0;
                 BorderTopWidth: 0;
                 BorderRightWidth: 0;
                 BorderBottomWidth: 0;
                 BorderLeftWidth: 0;
+                PaddingTop: 0;
+                PaddingRight: 0;
+                PaddingBottom: 0;
+                PaddingLeft: 0;
                 END;
         IN Alternate_view BEGIN
                 Visibility: Enclosing =;
                 VertPos: Top = Previous . Bottom;
                 Width: Enclosing . Width;
+                MarginTop: 0;
+                MarginRight: 0;
+                MarginBottom: 0;
+                MarginLeft: 0;
                 BorderTopWidth: 0;
                 BorderRightWidth: 0;
                 BorderBottomWidth: 0;
                 BorderLeftWidth: 0;
+                PaddingTop: 0;
+                PaddingRight: 0;
+                PaddingBottom: 0;
+                PaddingLeft: 0;
                 END;
         END;
 
@@ -4520,10 +4542,10 @@ FIELDSET: BEGIN
         BEGIN
         CreateBefore(ElementName);
         CreateWith(VerticalLine);
-        BorderTopColor: Grey;
-        BorderLeftColor: Grey;
-        BorderBottomColor: DarkGrey1;
-        BorderRightColor: DarkGrey1;
+        BorderTopColor: Enclosing =;
+        BorderLeftColor: Enclosing = ;
+        BorderBottomColor: Enclosing =;
+        BorderRightColor: Enclosing =;
         BorderTopStyle: Solid;
         BorderLeftStyle: Solid;
         BorderRightStyle: Solid;
@@ -4536,11 +4558,19 @@ FIELDSET: BEGIN
                 HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
                 VertPos: Top = Previous . Bottom;
                 Width: Enclosing . Width - STRUCT_INDENT;
+                BorderTopWidth: 0;
+                BorderRightWidth: 0;
+                BorderBottomWidth: 0;
+                BorderLeftWidth: 0;
                 END;
         IN Alternate_view BEGIN
                 HorizPos: Left = Enclosing . Left;
                 VertPos: Top = Previous . Bottom;
                 Width: Enclosing . Width;
+                BorderTopWidth: 0;
+                BorderRightWidth: 0;
+                BorderBottomWidth: 0;
+                BorderLeftWidth: 0;
                 END;
         END;
 
@@ -4552,10 +4582,10 @@ FIELDSET: BEGIN
         PageBreak: No;
 #endif
         VertPos: Top = Previous . Bottom;
-        BorderTopColor: Grey;
-        BorderLeftColor: Grey;
-        BorderBottomColor: DarkGrey1;
-        BorderRightColor: DarkGrey1;
+        BorderTopColor: Enclosing =;
+        BorderLeftColor: Enclosing = ;
+        BorderBottomColor: Enclosing =;
+        BorderRightColor: Enclosing =;
         BorderTopStyle: Solid;
         BorderLeftStyle: Solid;
         BorderRightStyle: Solid;
@@ -4564,11 +4594,19 @@ FIELDSET: BEGIN
                 HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
                 VertPos: Top = Previous . Bottom;
                 Width: Enclosing . Width - STRUCT_INDENT;
+                BorderTopWidth: 0;
+                BorderRightWidth: 0;
+                BorderBottomWidth: 0;
+                BorderLeftWidth: 0;
                 END;
         IN Alternate_view BEGIN
                 HorizPos: Left = Enclosing . Left;
                 VertPos: Top = Previous . Bottom;
                 Width: Enclosing . Width;
+                BorderTopWidth: 0;
+                BorderRightWidth: 0;
+                BorderBottomWidth: 0;
+                BorderLeftWidth: 0;
                 END;
         END;
 
@@ -4578,6 +4616,10 @@ FIELDSET: BEGIN
         PageBreak: Yes;
 #endif
         VertPos: Top = Previous . Bottom;
+        BorderTopColor: Enclosing =;
+        BorderLeftColor: Enclosing = ;
+        BorderBottomColor: Enclosing =;
+        BorderRightColor: Enclosing =;
         BorderTopStyle: Solid;
         BorderLeftStyle: Solid;
         BorderRightStyle: Solid;
@@ -4602,19 +4644,31 @@ FIELDSET: BEGIN
         PageBreak: Yes;
 #endif
         VertPos: Top = Previous . Bottom;
+        BorderTopColor: Enclosing =;
+        BorderLeftColor: Enclosing = ;
+        BorderBottomColor: Enclosing =;
+        BorderRightColor: Enclosing =;
         BorderTopStyle: Solid;
         BorderLeftStyle: Solid;
         BorderRightStyle: Solid;
         BorderBottomStyle: Solid;
-        IN Structure_view BEGIN
+       IN Structure_view BEGIN
                 HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
                 VertPos: Top = Previous . Bottom;
                 Width: Enclosing . Width - STRUCT_INDENT;
+                BorderTopWidth: 0;
+                BorderRightWidth: 0;
+                BorderBottomWidth: 0;
+                BorderLeftWidth: 0;
                 END;
         IN Alternate_view BEGIN
                 HorizPos: Left = Enclosing . Left;
                 VertPos: Top = Previous . Bottom;
                 Width: Enclosing . Width;
+                BorderTopWidth: 0;
+                BorderRightWidth: 0;
+                BorderBottomWidth: 0;
+                BorderLeftWidth: 0;
                 END;
         END;
 
@@ -4623,6 +4677,10 @@ FIELDSET: BEGIN
         CreateBefore(ElementName);
         CreateWith(VerticalLine);
         VertPos: Top = Previous . Bottom;
+        BorderTopColor: Enclosing =;
+        BorderLeftColor: Enclosing = ;
+        BorderBottomColor: Enclosing =;
+        BorderRightColor: Enclosing =;
 #ifdef PAGE
         {**** the next rule should be deleted, but deleting it causes
               the print program to crash when formatting a very high
@@ -4654,10 +4712,10 @@ FIELDSET: BEGIN
         PaddingRight: 2 px;
         PaddingBottom: 1 px;
         PaddingLeft: 2 px;
-        BorderTopColor: Grey;
-        BorderLeftColor: Grey;
-        BorderBottomColor: DarkGrey1;
-        BorderRightColor: DarkGrey1;
+        BorderTopColor: Enclosing =;
+        BorderLeftColor: Enclosing = ;
+        BorderBottomColor: Enclosing =;
+        BorderRightColor: Enclosing =;
         BorderTopStyle: Solid;
         BorderLeftStyle: Solid;
         BorderRightStyle: Solid;
@@ -4709,10 +4767,10 @@ FIELDSET: BEGIN
         PaddingLeft: 1 px;
         PaddingBottom: 1 px;
         PaddingRight: 1 px;
-        BorderTopColor: Grey;
-        BorderLeftColor: Grey;
-        BorderBottomColor: DarkGrey1;
-        BorderRightColor: DarkGrey1;
+        BorderTopColor: Enclosing =;
+        BorderLeftColor: Enclosing = ;
+        BorderBottomColor: Enclosing =;
+        BorderRightColor: Enclosing =;
         BorderTopStyle: Solid;
         BorderLeftStyle: Solid;
         BorderRightStyle: Solid;
@@ -5098,15 +5156,15 @@ FIELDSET: BEGIN
         HorizPos: Left = Previous . Left;
         VertPos: Top = Previous . Bottom;
         HorizRef: * . Bottom;
-        Width: 10 cm;
+        Width: Enclosing . Width;
         Height: Enclosed . Height;
         LineBreak: No;
-        MarginLeft: 3 px;
+        {MarginLeft: 3 px;
         MarginRight: 3 px;
         PaddingTop: 0.2;
         PaddingLeft: 0.3;
         PaddingBottom: 0.2;
-        PaddingRight: 0.3;
+        PaddingRight: 0.3;}
         BorderTopWidth: 1 px;
         BorderLeftWidth: 1 px;
         BorderBottomWidth: 1 px;
@@ -6620,7 +6678,7 @@ ATTRIBUTES
         CreateBefore(AttrName);
         CreateBefore(AttrValue);
         if Text_Area
-           Width: Columns ex;
+           Width: Columns;
         IN Structure_view
           BEGIN
           if Text_Area

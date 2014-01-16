@@ -4,7 +4,7 @@
 // Author:      Francesco Montorsi
 // Modified by:
 // Created:     15/04/2006
-// RCS-ID:      $Id: pickerbase.cpp 52566 2008-03-16 13:50:17Z JS $
+// RCS-ID:      $Id: pickerbase.cpp 54520 2008-07-06 23:57:23Z VZ $
 // Copyright:   (c) Francesco Montorsi
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -144,9 +144,9 @@ void wxPickerBase::DoSetToolTip(wxToolTip *tip)
 // wxPickerBase - event handlers
 // ----------------------------------------------------------------------------
 
-void wxPickerBase::OnTextCtrlKillFocus(wxFocusEvent &)
+void wxPickerBase::OnTextCtrlKillFocus(wxFocusEvent& event)
 {
-    wxASSERT(m_text);
+    event.Skip();
 
     // don't leave the textctrl empty
     if (m_text->GetValue().empty())

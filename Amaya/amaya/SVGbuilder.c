@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1998-2008
+ *  (c) COPYRIGHT INRIA and W3C, 1998-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -104,8 +104,7 @@ void SVGEntityCreated (unsigned char *entityValue, Language lang,
 void ParseCSSequivAttribute (int attrType, Attribute attr, Element el,
                              Document doc, ThotBool delete_)
 {
-#define buflen 200
-  char               css_command[buflen+20];
+  char               css_command[MAX_LENGTH + 20];
   int                length, val = 0;
   float              value;
   char              *text;
@@ -120,10 +119,10 @@ void ParseCSSequivAttribute (int attrType, Attribute attr, Element el,
   else
     /* the attribute value is a character string */
     {
-      length = TtaGetTextAttributeLength (attr) + 2;
-      text = (char *)TtaGetMemory (length);
-      if (text != NULL)
-        TtaGiveTextAttributeValue (attr, text, &length);
+      length = MAX_LENGTH - 1;
+      text = (char *)TtaGetMemory (length + 1);
+      TtaGiveTextAttributeValue (attr, text, &length);
+      text[MAX_LENGTH - 1] = EOS;
     }
 
   /* builds the equivalent CSS rule */
@@ -602,9 +601,6 @@ static void CopyAMarker (Element marker, Element el, Element leaf,
   PresentationValue    presValue;
   ThotBool             oldStructureChecking, strokeWidth;
 
-  /* @@@@ disable the marker feature for the moment @@@@ */
-  /* return; */
-
   elType = TtaGetElementType (el);
   oldStructureChecking = TtaGetStructureChecking (doc);
   if (oldStructureChecking)
@@ -703,7 +699,6 @@ static void CopyAMarker (Element marker, Element el, Element leaf,
   attr = TtaGetAttribute (marker, attrType);
 
   /* @@@@ to be written @@@@ */
-
 
 
   /* add a transform to scale the coordinate system based on the viewBox and
@@ -887,7 +882,7 @@ static void SetAttributeOnRoot (Element el, int att, Document doc)
   attributes, get the referred marker elements and insert them as
   transclusions in the element.
   ----------------------------------------------------------------------*/
-static void ProcessMarkers (Element el, Document doc)
+void ProcessMarkers (Element el, Document doc)
 {
   ElementType      elType;
   AttributeType    attrType;

@@ -4,7 +4,7 @@
 // Author:      Stefan Csomor
 // Modified by:
 // Created:     01/02/97
-// RCS-ID:      $Id: dccg.cpp 50815 2007-12-18 19:35:57Z RD $
+// RCS-ID:      $Id: dccg.cpp 55129 2008-08-19 04:50:45Z SC $
 // Copyright:   (c) Stefan Csomor
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -1066,6 +1066,9 @@ void wxMacCGContext::GetTextExtent( const wxString &str, wxCoord *width, wxCoord
         *width = FixedToInt(textAfter - textBefore) ;
 
     ::ATSUDisposeTextLayout(atsuLayout);
+#if SIZEOF_WCHAR_T == 4
+    free( ubuf ) ;
+#endif
 }
 
 void wxMacCGContext::GetPartialTextExtents(const wxString& text, wxArrayInt& widths) const
@@ -1123,6 +1126,9 @@ void wxMacCGContext::GetPartialTextExtents(const wxString& text, wxArrayInt& wid
     }
 
     ::ATSUDisposeTextLayout(atsuLayout);
+#if SIZEOF_WCHAR_T == 4
+    free( ubuf ) ;
+#endif
 }
 
 void wxMacCGContext::SetFont( const wxFont &font )

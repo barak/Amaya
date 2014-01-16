@@ -2,7 +2,7 @@
 // Name:        src/gtk/bitmap.cpp
 // Purpose:
 // Author:      Robert Roebling
-// RCS-ID:      $Id: bitmap.cpp 46058 2007-05-16 07:11:11Z PC $
+// RCS-ID:      $Id: bitmap.cpp 55257 2008-08-25 14:39:48Z VZ $
 // Copyright:   (c) 1998 Robert Roebling
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -966,9 +966,7 @@ void *wxBitmap::GetRawData(wxPixelDataBase& data, int bpp)
     GdkPixbuf *pixbuf = GetPixbuf();
     const bool hasAlpha = HasAlpha();
     // allow access if bpp is valid and matches existence of alpha
-    if (pixbuf != NULL && (
-        bpp == 24 && !hasAlpha ||
-        bpp == 32 && hasAlpha))
+    if ( pixbuf && ((bpp == 24 && !hasAlpha) || (bpp == 32 && hasAlpha)) )
     {
         data.m_height = gdk_pixbuf_get_height( pixbuf );
         data.m_width = gdk_pixbuf_get_width( pixbuf );

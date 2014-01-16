@@ -4,7 +4,7 @@
 // Author:      Francesco Montorsi
 // Modified By:
 // Created:     15/04/2006
-// Id:          $Id: filepicker.cpp 51620 2008-02-09 23:30:47Z VZ $
+// Id:          $Id: filepicker.cpp 54732 2008-07-20 22:48:34Z VZ $
 // Copyright:   (c) Francesco Montorsi
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -263,8 +263,14 @@ wxDirButton::~wxDirButton()
     	m_dialog->m_widget = NULL;
 }
 
-void wxDirButton::SetPath(const wxString &str)
+void wxDirButton::SetPath(const wxString& str)
 {
+    if ( m_path == str )
+    {
+        // don't do anything and especially don't set m_bIgnoreNextChange
+        return;
+    }
+
     m_path = str;
 
     // wxDirButton uses the "current-folder-changed" signal which is triggered also

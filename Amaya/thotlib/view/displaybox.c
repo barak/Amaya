@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2008
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -23,7 +23,6 @@
 #include "typemedia.h"
 #include "picture.h"
 #include "appdialogue.h"
-#include "svgedit.h"
 
 #define THOT_EXPORT extern
 #include "boxes_tv.h"
@@ -1619,6 +1618,7 @@ static void DisplayJustifiedText (PtrBox pBox, PtrBox mbox, int frame,
   PtrBox              nbox;
   PtrAbstractBox      pAb;
   SpecFont            font;
+  PtrLine             pLine;
   ThotFont            prevfont = NULL;
   ThotFont            nextfont = NULL;
   CHAR_T              c, transc;
@@ -2262,6 +2262,24 @@ static void DisplayJustifiedText (PtrBox pBox, PtrBox mbox, int frame,
             }
         } 
 #ifdef _GL
+
+      // generate the break-line character
+      if (showSpecial && mbox && mbox->BxType == BoBlock)
+        {
+          pLine = mbox->BxFirstLine;
+          while (pLine && pLine != mbox->BxLastLine)
+            {
+              if (pBox == pLine->LiLastBox || pBox == pLine->LiLastPiece)
+                {
+                  y = pBox->BxYOrg + pBox->BxHorizRef - pFrame->FrYOrg;
+                  nextfont = (ThotFont)LoadStixFont (1, 12);
+                  DrawChar (0x40, frame, x, y, nextfont, 1);
+                  pLine = NULL;
+                }
+              else
+                pLine = pLine->LiNext;
+            }
+        }
       if (showtab_id)
         StopTextureScale (showtab_id);
       if (underline_id)
@@ -2303,7 +2321,7 @@ void DisplayBorders (PtrBox box, PtrAbstractBox pFrom, int frame,
 {
   PtrBox              from;
   int                 color;
-  int                 t, b, l, r;
+  int                 t, b, l, r, d;
   int                 xFrame, yFrame, height, width;
 
   if (pFrom == NULL || pFrom->AbBox == NULL ||
@@ -2387,9 +2405,13 @@ void DisplayBorders (PtrBox box, PtrAbstractBox pFrom, int frame,
         color = pFrom->AbForeground;
       else
         color = pFrom->AbTopBColor;
+      if (from->BxTBorder)
+        d = 0;
+      else
+        d = t/from->BxTBorder;
       DrawHorizontalLine (frame, t, pFrom->AbTopStyle, x, y,
                           w, t, 0, color, box,
-                          l, r);
+                          l*d, r*d);
     }
   if (from->BxLBorder && pFrom->AbLeftStyle > 2 &&
       pFrom->AbLeftBColor != -2 && l > 0 && bl)
@@ -2399,9 +2421,13 @@ void DisplayBorders (PtrBox box, PtrAbstractBox pFrom, int frame,
         color = pFrom->AbForeground;
       else
         color = pFrom->AbLeftBColor;
+      if (from->BxLBorder)
+        d = 0;
+      else
+        d = l/from->BxLBorder;
       DrawVerticalLine (frame, l, pFrom->AbLeftStyle, x, y,
                         l, h, 0, color, box,
-                        t , b);
+                        t*d, b*d);
     }
   if (from->BxBBorder && pFrom->AbBottomStyle > 2 &&
       pFrom->AbBottomBColor != -2 && b > 0 && bb)
@@ -2411,10 +2437,14 @@ void DisplayBorders (PtrBox box, PtrAbstractBox pFrom, int frame,
         color = pFrom->AbForeground;
       else
         color = pFrom->AbBottomBColor;
+      if (from->BxBBorder)
+        d = 0;
+      else
+        d = b/from->BxBBorder;
       DrawHorizontalLine (frame, b, pFrom->AbBottomStyle,
                           x, yFrame + height - eb - from->BxBBorder,
                           w, b, 2, color, box,
-                          l, r);
+                          l*d, r*d);
     }
   if (from->BxRBorder && pFrom->AbRightStyle > 2 &&
       pFrom->AbRightBColor != -2 && r > 0 && br)
@@ -2424,10 +2454,14 @@ void DisplayBorders (PtrBox box, PtrAbstractBox pFrom, int frame,
         color = pFrom->AbForeground;
       else
         color = pFrom->AbRightBColor;
+      if (from->BxRBorder)
+        d = 0;
+      else
+        d = t/from->BxRBorder;
       DrawVerticalLine (frame, r, pFrom->AbRightStyle,
                         xFrame + width - er - from->BxRBorder, y,
                         r, h, 2, color, box,
-                        t, b);
+                        t*d, b*d);
     }
 }
 

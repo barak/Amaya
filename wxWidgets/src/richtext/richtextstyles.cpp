@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     2005-09-30
-// RCS-ID:      $Id: richtextstyles.cpp 51782 2008-02-14 11:01:02Z JS $
+// RCS-ID:      $Id: richtextstyles.cpp 55168 2008-08-22 10:08:53Z JS $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -614,9 +614,9 @@ wxString wxRichTextStyleListBox::CreateHTML(wxRichTextStyleDefinition* def) cons
         str << wxT("<td nowrap>");
 
 #ifdef __WXMSW__
-    int size = 3;
+    int size = 2;
 #else
-    int size = 4;
+    int size = 3;
 #endif
 
     int stdFontSize = 12;

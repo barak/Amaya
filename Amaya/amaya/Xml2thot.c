@@ -1114,8 +1114,8 @@ static void  XhtmlCheckInsert (Element *el, Element  parent,
                   !strcmp (TtaGetSSchemaName (elType.ElSSchema), "HTML") &&
                   elType.ElTypeNum == HTML_EL_BODY)
                 {
-                  sprintf ((char *)msgBuffer, 
-                           "Element <%s> not allowed outside a block Element - <p> forced", typeName);
+                  snprintf ((char *)msgBuffer, MaxMsgLength,
+                           "Element <%50s> not allowed outside a block Element - <p> forced", typeName);
                   XmlParseError (errorParsing, (unsigned char *)msgBuffer, 0);
                   newElType.ElTypeNum = HTML_EL_Paragraph;
                 }
@@ -1307,7 +1307,8 @@ static void RemoveTrailingSpaces (Element el)
     }
 
   /* create an empty text element after the math element */
-  if (strcmp ((char *)CurrentParserCtxt->SSchemaName, "HTML") == 0)
+  if (CurrentParserCtxt &&
+      strcmp ((char *)CurrentParserCtxt->SSchemaName, "HTML") == 0)
     {
       lastChild = TtaGetLastChild (el);
       if (lastChild)
@@ -2014,7 +2015,7 @@ static void StartOfXmlStartElement (const char *name)
       if ((profile == L_Basic || profile == L_Strict) &&
           strcmp (nsURI, XHTML_URI))
         {
-          sprintf ((char *)msgBuffer, 
+          snprintf ((char *)msgBuffer, MaxMsgLength,
                    "The element <%s> is not allowed by the current profile", ptr);
           XmlParseError (errorParsingProfile, (unsigned char *)msgBuffer, 0);
           TtaFreeMemory (nsURI);
@@ -2041,7 +2042,7 @@ static void StartOfXmlStartElement (const char *name)
       if ((ptr = strrchr (buffer, NS_COLON)) != NULL)
         {
           /* there is an undefined prefix */
-          sprintf ((char *)msgBuffer, 
+          snprintf ((char *)msgBuffer, MaxMsgLength,
                    "Undefined prefix for the element <%s>", ptr+1);
           XmlParseError (errorParsing, (unsigned char *)msgBuffer, 0);
           CurrentParserCtxt = NULL;
@@ -2084,8 +2085,8 @@ static void StartOfXmlStartElement (const char *name)
       if (UnknownNS)
         {
           /* The element doesn't belong to a supported namespace */
-          sprintf ((char *)msgBuffer, 
-                   "The element <%s> doesn't belong to a supported namespace", name);
+          snprintf ((char *)msgBuffer, MaxMsgLength,
+                   "The element <%50s> doesn't belong to a supported namespace", name);
           XmlParseError (errorParsing, (unsigned char *)msgBuffer, 0);
           /* create an Unknown_namespace element */
           UnknownXmlNsElement (nsURI, elementName, TRUE);
@@ -2112,7 +2113,8 @@ static void StartOfXmlStartElement (const char *name)
                     {
                       /* element not found in the corresponding DTD */
                       /* don't process that element */
-                      sprintf ((char *)msgBuffer, "Invalid or unsupported %s element <%s>",
+                      snprintf ((char *)msgBuffer, MaxMsgLength,
+                                "Invalid or unsupported %s element <%50s>",
                                schemaName , elementName);
                       XmlParseError (errorParsing, (unsigned char *)msgBuffer, 0);
                       UnknownElement = TRUE;
@@ -2121,8 +2123,8 @@ static void StartOfXmlStartElement (const char *name)
                     {
                       /* invalid element for the document profile */
                       /* don't process that element */
-                      sprintf ((char *)msgBuffer,
-                               "Invalid %s element <%s> for the document profile",
+                      snprintf ((char *)msgBuffer, MaxMsgLength,
+                               "Invalid %s element <%50s> for the document profile",
                                schemaName, elementName);
                       XmlParseError (errorParsingProfile, (unsigned char *)msgBuffer, 0);
                       UnknownElement = TRUE;
@@ -2142,8 +2144,8 @@ static void StartOfXmlStartElement (const char *name)
               if (!isAllowed)
                 /* Element not allowed in the current structural context */
                 {
-                  sprintf ((char *)msgBuffer,
-                           "The XML element <%s> is not allowed here", elementName);
+                  snprintf ((char *)msgBuffer, MaxMsgLength,
+                           "The XML element <%50s> is not allowed here", elementName);
                   XmlParseError (errorParsing, (unsigned char *)msgBuffer, 0);
                   UnknownElement = TRUE;
                   elInStack = FALSE;
@@ -2365,7 +2367,8 @@ static void EndOfXmlElement (char *name)
           if (!XmlCloseElement (mappedName))
             {
               /* the end tag does not close any current element */
-              sprintf ((char *)msgBuffer, "Unexpected end tag </%s>", elementName);
+              snprintf ((char *)msgBuffer, MaxMsgLength,
+                        "Unexpected end tag </%50s>", elementName);
               XmlParseError (errorParsing, (unsigned char *)msgBuffer, 0);
             }
         }
@@ -2960,12 +2963,13 @@ static void EndOfXhtmlAttributeName (char *attrName, Element el,
         lastMappedAttr = NULL;
       else if (highEnoughLevel)
         {
-          sprintf ((char *)msgBuffer, "Invalid XHTML attribute \"%s\"", attrName);
+          snprintf ((char *)msgBuffer, MaxMsgLength,
+                    "Invalid XHTML attribute \"%s\"", attrName);
           XmlParseError (errorParsing, (unsigned char *)msgBuffer, 0);
         }
       else
         {
-          sprintf ((char *)msgBuffer,
+          snprintf ((char *)msgBuffer, MaxMsgLength,
                    "Invalid XHTML attribute \"%s\" for the document profile",
                    attrName);
           XmlParseError (errorParsingProfile, (unsigned char *)msgBuffer, 0);
@@ -3052,10 +3056,11 @@ static void EndOfXmlAttributeName (char *attrName, char *uriName,
   attrType.AttrTypeNum = 0;
 
 #ifdef OLD
-  if (strlen ((char *)attrName) > NAME_LENGTH)
+  if (strlen ((char *)attrName) >= NAME_LENGTH)
     {
       strcpy ((char *)schemaName, (char *)CurrentParserCtxt->SSchemaName);
-      sprintf ((char *)msgBuffer, "Attribute name too long for Amaya %s", attrName);
+      snprintf ((char *)msgBuffer, MaxMsgLength,
+                "Attribute name too long for Amaya %50s", attrName);
       XmlParseError (errorParsing, (unsigned char *)msgBuffer, 0);
       UnknownAttr = TRUE;
       return;
@@ -3095,12 +3100,14 @@ static void EndOfXmlAttributeName (char *attrName, char *uriName,
   if (attrType.AttrTypeNum <= 0)
     {
       /* This attribute is not in the corresponding mapping table */
-      strcpy ((char *)schemaName, (char *)CurrentParserCtxt->SSchemaName);
+      strncpy ((char *)schemaName, (char *)CurrentParserCtxt->SSchemaName,NAME_LENGTH-1);
+      schemaName[NAME_LENGTH-1] = EOS;
       // skip possible old template attributes
       if (strcmp (schemaName, "Template"))
         {
-          sprintf (msgBuffer, "Invalid or unsupported %s attribute \"%s\"",
-                   schemaName, attrName);
+          snprintf (msgBuffer, MaxMsgLength,
+                    "Invalid or unsupported %s attribute \"%50s\"",
+                    schemaName, attrName);
           XmlParseError (errorParsing, (unsigned char *)msgBuffer, 0);
           /* Attach an Invalid_attribute to the current element */
           /* It may be a valid attribute that is not yet defined in Amaya tables */
@@ -3200,8 +3207,8 @@ static void EndOfAttributeName (char *xmlName)
                   strcmp (CurrentParserCtxt->SSchemaName, "SVG") ||
                   strcmp (nsURI, "xlink"))
                 {
-                  sprintf ((char *)msgBuffer, 
-                           "Undefined prefix for the attribute <%s>", ptr+1);
+                  snprintf ((char *)msgBuffer, MaxMsgLength,
+                           "Undefined prefix for the attribute <%50s>", ptr+1);
                   XmlParseError (errorParsing, (unsigned char *)msgBuffer, 0);
                   *ptr = NS_COLON;
                   if (nsURI)
@@ -3222,8 +3229,8 @@ static void EndOfAttributeName (char *xmlName)
       if (UnknownNS)
         /* The corresponding element doesn't belong to a supported namespace */ 
         {
-          sprintf ((char *)msgBuffer, 
-                   "Namespace not supported for the attribute \"%s\"", (char *)xmlName);
+          snprintf ((char *)msgBuffer, MaxMsgLength,
+                   "Namespace not supported for the attribute \"%50s\"", (char *)xmlName);
           XmlParseError (errorParsing, (unsigned char *)msgBuffer, 0);
           /* Create an unknown attribute  */
           UnknownXmlAttribute (attrName, NULL);
@@ -3238,8 +3245,8 @@ static void EndOfAttributeName (char *xmlName)
       CurrentParserCtxt = GenericXmlParserCtxt;
 #else /* XML_GENERIC */
       CurrentParserCtxt = savParserCtxt;
-      sprintf (msgBuffer, 
-               "Namespace not supported for the attribute \"%s\"",
+      snprintf (msgBuffer, MaxMsgLength,
+               "Namespace not supported for the attribute \"%50s\"",
                xmlName);
       XmlParseError (errorParsing, (unsigned char *)msgBuffer, 0);
       /* Create an unknown attribute  */
@@ -3296,8 +3303,8 @@ static void EndOfXmlAttributeValue (char *attrValue)
                                                         (void *)&val);
       if (val <= 0)
         {
-          sprintf ((char *)msgBuffer,
-                   "Unknown attribute value \"%s\"", (char *)attrValue);
+          snprintf ((char *)msgBuffer, MaxMsgLength,
+                   "Unknown attribute value \"%50s\"", (char *)attrValue);
           XmlParseError (errorParsing, (unsigned char *)msgBuffer, 0);	
         }
       else
@@ -3342,8 +3349,8 @@ static void EndOfXmlAttributeValue (char *attrValue)
               lang = TtaGetLanguageIdFromName (attrValue);
               if (lang < 0)
                 {
-                  sprintf ((char *)msgBuffer,
-                           "warning - unsupported language: %s", (char *)attrValue);
+                  snprintf ((char *)msgBuffer, MaxMsgLength,
+                           "warning - unsupported language: %50s", (char *)attrValue);
                   XmlParseError (warningMessage, (unsigned char *)msgBuffer, 0);
                 }
               else
@@ -5412,8 +5419,10 @@ void ParseExternalDocument (char *fileName, char *originalName, Element el,
               CheckBlocksInCharElem (externalDoc);
               /* For (X)HTML documents, we paste the BODY element */
               elType.ElSSchema = TtaGetSSchema ("HTML", externalDoc);
-              elType.ElTypeNum = HTML_EL_BODY;
+              elType.ElTypeNum = HTML_EL_HEAD;
               idEl = TtaSearchTypedElement (elType, SearchForward, RootElement);
+              TtaDeleteTree (idEl, externalDoc);
+              idEl = TtaGetRootElement (externalDoc);
             }
           else
             idEl = TtaGetRootElement (externalDoc);

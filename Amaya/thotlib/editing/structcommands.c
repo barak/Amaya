@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA 1996-2008
+ *  (c) COPYRIGHT INRIA 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -114,7 +114,6 @@ static Proc5        NextCellInColumnFunction = NULL;
 #include "res_f.h"
 #include "schemas_f.h"
 #include "search_f.h"
-#include "selectmenu_f.h"
 #include "structcreation_f.h"
 #include "structmodif_f.h"
 #include "structschema_f.h"
@@ -3334,7 +3333,7 @@ ThotBool CreateNewElement (int typeNum, PtrSSchema pSS, PtrDocument pDoc,
                            son pere */
                         ChangeFirstLast (pEl, pSelDoc, TRUE, TRUE);
                     }
-                  if (pNew != NULL)
+                  if (pNew && pNew->ElStructSchema)
                     {
                       /* traite les exclusions des elements crees */
                       RemoveExcludedElem (&pNew, pSelDoc);
@@ -3579,8 +3578,9 @@ void TtaInsertAnyElement (Document document, ThotBool before)
           /* Update the attribute */
           if (newPointCreated)
             {
-              UpdatePointsOrPathAttribute(document,
-                                          TtaGetParent((Element)firstSel), 0, 0, TRUE);
+	      Element el = TtaGetParent((Element)firstSel);
+              UpdatePointsOrPathAttribute(document, el, 0, 0, TRUE);
+	      UpdateMarkers(el, document);
               TtaSetDocumentModified(document);
             }
           return;

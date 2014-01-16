@@ -4,7 +4,7 @@
 // Author:      Vaclav Slavik
 //              based on MGL implementation
 // Created:     2006-08-16
-// RCS-ID:      $Id: app.cpp 53607 2008-05-16 15:21:40Z SN $
+// RCS-ID:      $Id: app.cpp 54754 2008-07-21 17:14:32Z VZ $
 // Copyright:   (c) 2006 REA Elektronik GmbH
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -135,7 +135,9 @@ bool wxApp::Yield(bool onlyIfNeeded)
 
     s_inYield = true;
 
+#if wxUSE_LOG
     wxLog::Suspend();
+#endif // wxUSE_LOG
 
     // A guarentee that there will be an active event loop:
     wxEventLoopGuarantor dummyLoopIfNeeded;
@@ -146,7 +148,9 @@ bool wxApp::Yield(bool onlyIfNeeded)
     // OnUpdateUI() which is a nice (and desired) side effect)
     while ( ProcessIdle() ) {}
 
+#if wxUSE_LOG
     wxLog::Resume();
+#endif // wxUSE_LOG
 
     s_inYield = false;
 

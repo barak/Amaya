@@ -4,7 +4,7 @@
 // Author:      Stefan Csomor
 // Modified by:
 // Created:     04/01/98
-// RCS-ID:      $Id: toolbar.cpp 52362 2008-03-06 18:02:21Z SC $
+// RCS-ID:      $Id: toolbar.cpp 54376 2008-06-26 12:47:11Z SC $
 // Copyright:   (c) Stefan Csomor
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -1147,6 +1147,13 @@ bool wxToolBar::Realize()
 #if wxMAC_USE_NATIVE_TOOLBAR
     CFIndex currentPosition = 0;
     bool insertAll = false;
+    wxFont f;
+    wxFontEncoding enc;
+    f = GetFont();
+    if ( f.IsOk() )
+        enc = f.GetEncoding();
+    else
+        enc = wxFont::GetDefaultEncoding();
 #endif
 
     node = m_tools.GetFirst();
@@ -1191,6 +1198,11 @@ bool wxToolBar::Realize()
             HIToolbarItemRef    hiItemRef = tool->GetToolbarItemRef();
             if ( hiItemRef != NULL )
             {
+                // since setting the help texts is non-virtual we have to update
+                // the strings now
+                HIToolbarItemSetHelpText( hiItemRef,
+                    wxMacCFStringHolder( tool->GetShortHelp(), enc ),
+                    wxMacCFStringHolder( tool->GetLongHelp(), enc ) );
                 if ( insertAll || (tool->GetIndex() != currentPosition) )
                 {
                     OSStatus err = noErr;

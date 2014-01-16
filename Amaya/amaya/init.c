@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2008
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -1927,7 +1927,7 @@ static void BrowserForm (Document doc, View view, char *urlname)
 static void InitOpenDocForm (Document doc, View view, const char *name, const char *title,
                              DocumentType docType)
 {
-  char              s [MAX_LENGTH];
+  char              s[MAX_LENGTH];
   char             *thotdir;
   ThotBool          remote;
   wxString          homedir;
@@ -1939,7 +1939,8 @@ static void InitOpenDocForm (Document doc, View view, const char *name, const ch
   if (DocumentURLs[doc] && !strcmp (DocumentURLs[doc], "empty"))
     {
       strcpy (DocumentName, DocumentURLs[doc]);
-      strcpy (s, thotdir);
+      strncpy (s, thotdir,MAX_LENGTH-1);
+      s[MAX_LENGTH-1] = EOS;
     }
   else
     TtaExtractName (DocumentURLs[doc], s, DocumentName);
@@ -2013,16 +2014,6 @@ void OpenDocInNewWindow (Document document, View view)
                    TtaGetMessage (AMAYA, AM_OPEN_IN_NEW_WINDOW),
                    docText);
 }
-
-/*----------------------------------------------------------------------
-  ----------------------------------------------------------------------*/
-void OpenRecentDoc (Document document, View view)
-{
-#ifdef AMAYA_DEBUG
-  printf("OpenRecentDoc\n");
-#endif /* AMAYA_DEBUG */
-}
-
 
 
 /*----------------------------------------------------------------------
@@ -2344,7 +2335,8 @@ void WhereOpenView (Document oldDoc, Document doc, ThotBool replaceOldDoc,
     inNewWindow = TRUE;
 
   /* previous document */
-  if (DocumentURLs[oldDoc] && !strcmp (DocumentURLs[oldDoc], "empty"))
+  if (method != CE_HELP &&
+      DocumentURLs[oldDoc] && !strcmp (DocumentURLs[oldDoc], "empty"))
     // load by default in the current empty page
     replaceOldDoc = TRUE;
 
@@ -2801,8 +2793,10 @@ Document InitDocAndView (Document oldDoc, ThotBool replaceOldDoc, ThotBool inNew
   else if (doc > 0)
     {
       /* assign a presentation model to the document */
-      if (docType == docText || docType == docCSS ||
-          docType == docSource || docType == docLog)
+      if (docType == docLog)
+        TtaSetPSchema (doc, "TextFilePLOG");
+      else if (docType == docText || docType == docCSS ||
+          docType == docSource)
         TtaSetPSchema (doc, "TextFileP");
       else if (docType == docAnnot)
         {
@@ -2930,7 +2924,7 @@ static void CreateHTMLContainer (char *pathname, char *docname,
   if (local)
     fprintf (file, "<img src=\"%s\" alt=\"image\">", pathname);
   else
-    fprintf (file, "<img src=\"internal:%s\" alt=\"image\">", pathname);
+    fprintf (file, "<img src=\"internal:%s\" alt=\"image\" width=\"100%%\">", pathname);
   fprintf (file, "</body></html>");
   TtaWriteClose (file);
 }
@@ -4722,6 +4716,7 @@ void GetAmayaDoc_callback (int newdoc, int status, char *urlName, char *outputfi
   Document            res;
   DisplayMode         dispMode;
   AmayaDoc_context   *ctx;
+  XTigerTemplate      t;
   TTcbf              *cbf;
   int                 method;
   void               *ctx_cbf;
@@ -4761,10 +4756,10 @@ void GetAmayaDoc_callback (int newdoc, int status, char *urlName, char *outputfi
   inNewWindow = ctx->inNewWindow;
 
   ok = TRUE;
-  pathname = (char *)TtaGetMemory (MAX_LENGTH + 1);
-  strncpy (pathname, urlName, MAX_LENGTH);
-  pathname[MAX_LENGTH] = EOS;
-  tempfile = (char *)TtaGetMemory (MAX_LENGTH + 1);
+  pathname = (char *)TtaGetMemory (MAX_LENGTH);
+  strncpy (pathname, urlName, MAX_LENGTH / 4);
+  pathname[MAX_LENGTH / 4] = EOS;
+  tempfile = (char *)TtaGetMemory (MAX_LENGTH);
   if (method != CE_MAKEBOOK && method != CE_TEMPLATE && method != CE_ANNOT &&
       method != CE_LOG && method != CE_HELP &&
       DocumentTypes[newdoc] != docLibrary &&
@@ -4779,8 +4774,8 @@ void GetAmayaDoc_callback (int newdoc, int status, char *urlName, char *outputfi
     }
   if (outputfile != NULL)
     {
-      strncpy (tempfile, outputfile, MAX_LENGTH);
-      tempfile[MAX_LENGTH] = EOS;
+      strncpy (tempfile, outputfile, MAX_LENGTH / 4);
+      tempfile[MAX_LENGTH / 4] = EOS;
     }
   else
     tempfile[0] = EOS;
@@ -4854,14 +4849,18 @@ void GetAmayaDoc_callback (int newdoc, int status, char *urlName, char *outputfi
             CheckParsingErrors (newdoc);
 #ifdef TEMPLATES
           // Fill template internal structures and prepare the instance if any
-          dispMode = TtaGetDisplayMode (doc);
-	  if (dispMode != NoComputedDisplay)
-	    TtaSetDisplayMode (doc, NoComputedDisplay);
-	  Template_FillFromDocument (newdoc);
-	  TtaSetDisplayMode (doc, dispMode);
-          if (method == CE_TEMPLATE)
-            // avoid positionned boxes to overlap the xt:head
-            SetBodyAbsolutePosition (newdoc);
+          t = GetXTigerTemplate (pathname);
+          if (t)
+            {
+              dispMode = TtaGetDisplayMode (doc);
+              if (dispMode != NoComputedDisplay)
+                TtaSetDisplayMode (doc, NoComputedDisplay);
+              Template_FillFromDocument (newdoc);
+              TtaSetDisplayMode (doc, dispMode);
+              if (method == CE_TEMPLATE)
+                // avoid positionned boxes to overlap the xt:head
+                SetBodyAbsolutePosition (newdoc);
+            }
 #endif /* TEMPLATES */
         }
       else
@@ -5015,7 +5014,7 @@ Document GetAmayaDoc (const char *urlname, const char *form_data,
   /* Extract parameters if necessary */
   if (urlname == 0)
     return (0);
-  if (strlen (urlname) > MAX_LENGTH - 1) 
+  if (strlen (urlname) > MAX_LENGTH / 4) 
     {
       sprintf (lg_uri, "%d", MAX_LENGTH);
       TtaSetStatus (baseDoc, 1, TtaGetMessage (AMAYA, AM_TOO_LONG_URL), lg_uri);
@@ -5036,7 +5035,8 @@ Document GetAmayaDoc (const char *urlname, const char *form_data,
   tempfile[0]  = EOS;
   initial_url     = (char *)TtaGetMemory (MAX_LENGTH);
   
-  strcpy(temp_url,  urlname);
+  strncpy(temp_url,  urlname, MAX_LENGTH / 4);
+  temp_url[MAX_LENGTH / 4] = EOS;
   /* Extract parameters if any */
   ExtractParameters (temp_url, parameters);
   /* Extract the target if necessary */
@@ -6097,7 +6097,7 @@ void CallbackDialogue (int ref, int typedata, char *data)
               LinkAsJavascript = FALSE;
             }
           TtaDestroyDialogue (BaseDialog + AttrHREFForm);
-          TtaDestroyDialogue (BaseDialog + FileBrowserForm);
+          //TtaDestroyDialogue (BaseDialog + FileBrowserForm);
         }
       else if (val == 2)
         /* Browse button */
@@ -6574,7 +6574,7 @@ static ThotBool RestoreAmayaDocs ()
   FILE       *f;
   char        tempname[MAX_LENGTH], tempdoc[MAX_LENGTH];
   char        docname[MAX_LENGTH];  
-  char        line[MAX_LENGTH * 2];
+  char        line[MAX_LENGTH];
   int         docType, i, j;
   ThotBool    aDoc, iscrash, restore;
 
@@ -6895,7 +6895,8 @@ void InitAmaya (NotifyEvent * event)
     }
   
   /* add the temporary directory in document path */
-  strcpy (TempFileDirectory, s);
+  strncpy (TempFileDirectory, s, MAX_LENGTH / 4 - 10);
+  TempFileDirectory[MAX_LENGTH / 4 - 10] = EOS;
   TtaAppendDocumentPath (TempFileDirectory);
 
   /*
@@ -6986,7 +6987,8 @@ void InitAmaya (NotifyEvent * event)
   SavedDocumentURL = NULL;
   /* set path on current directory */
   wxString homedir = TtaGetHomeDir ();
-  strcpy (DirectoryName, (const char *)homedir.mb_str(wxConvUTF8));
+  strncpy (DirectoryName, (const char *)homedir.mb_str(wxConvUTF8),MAX_LENGTH / 4 - 10);
+  DirectoryName[MAX_LENGTH / 4 - 10] = EOS;
   if (DirectoryName[0] == EOS || !TtaDirExists (DirectoryName))
     getcwd (DirectoryName, MAX_LENGTH);
   DocumentName = (char *)TtaGetMemory (MAX_LENGTH);
@@ -7171,7 +7173,8 @@ void OpenNewDocFromArgv( char * url )
   else if (IsW3Path (s))
     {
       /* it's a remote document */
-      strcpy (LastURLName, s);
+      strncpy (LastURLName, s, MAX_LENGTH / 4);
+      LastURLName[MAX_LENGTH / 4] = EOS;
       CallbackDialogue (BaseDialog + OpenForm, INTEGER_DATA, (char *) 1);
     }
   else
@@ -7486,6 +7489,19 @@ void CheckAmayaClosed ()
 }
 
 /*----------------------------------------------------------------------
+  CloseDocumentDialogs
+  ----------------------------------------------------------------------*/
+void CloseDocumentDialogs (Document doc, View view)
+{
+  if (SavingDocument == doc)
+    {
+      // the dialog widget will be destroyed
+      TtaDestroyDialogue (BaseDialog + SaveForm);
+      SavingDocument = 0;
+    }
+}
+
+/*----------------------------------------------------------------------
   CloseTab close the current active page
   Shortcut : CTRL x + CTRL p
   ----------------------------------------------------------------------*/
@@ -7497,12 +7513,20 @@ void AmayaCloseTab (Document doc, View view)
   
   if (CanReplaceCurrentDocument (doc, view))
     {
+      if (DocumentTypes[doc] == docSource)
+	{
+	  // check possible changes in the formatted view
+	  doc = GetDocFromSource (doc);
+	  if (!CanReplaceCurrentDocument (doc, view))
+	    return;
+	}
+      CloseDocumentDialogs (doc, view);
       window_id = TtaGetDocumentWindowId( doc, view );
       /* Get the window id and page id of current document and
          close the corresponding page */
       TtaGetDocumentPageId( doc, view, &page_id, &page_position );
       if (TtaClosePage( window_id, page_id ))
-		TtaCleanUpWindow( window_id );
+        TtaCleanUpWindow( window_id );
     }
 }
 
@@ -7587,6 +7611,8 @@ void AmayaCloseWindow (Document doc, View view)
 {
   /* Save the current windows geometry */
   SaveGeometryOnExit( doc, NULL);
+  // close all dialogs
+  TtaFreeAllCatalogs ();
   /* get the document's parent window and try to close it */
   int window_id = TtaGetDocumentWindowId( doc, view );
   TtaCloseWindow( window_id );
@@ -7596,6 +7622,8 @@ void AmayaCloseWindow (Document doc, View view)
   ----------------------------------------------------------------------*/
 void AmayaClose (Document document, View view)
 {
+  // close all dialogs
+  TtaFreeAllCatalogs ();
   AmayaWindowIterator it;
   for( it.first(); !it.isDone(); it.next() )
     {
@@ -7619,6 +7647,9 @@ void AddURLInCombobox (char *pathname, char *form_data, ThotBool keep)
   CHARSET        encoding;
 
   if (pathname == NULL || pathname[0] == EOS)
+    return;
+  if (strlen(pathname) > 100)
+    // don't register too long paths
     return;
   if (form_data && form_data[0] != EOS)
     {
@@ -8160,33 +8191,33 @@ void ClearURLList()
  * Returns NULL if any problem occurs.
  * Dont use mktemp because doesnt exist on windows
   ----------------------------------------------------------------------*/
-char* CreateTempDirectory(const char* name)
+char* CreateTempDirectory (const char* name)
 {
   static int i = 0, len;
   char                 buff[MAX_LENGTH];
   char                 temppath[MAX_LENGTH];
   
-  strcpy(temppath, TtaGetEnvString ("APP_TMPDIR"));
+  strncpy(temppath, TtaGetEnvString ("APP_TMPDIR"), MAX_LENGTH / 4);
+  temppath[MAX_LENGTH / 4] = EOS;
   len = strlen(temppath);
-  if(len==0)
+  if (len == 0)
     return NULL;
-  if(temppath[len]!=DIR_SEP)
-  {
-    temppath[len] = DIR_SEP;
-    temppath[len+1] = 0;
-    
-  }
-  
-  while(i<10000)
-  {
-    sprintf(buff, "%s%s%04d", temppath, name, i);
-    if(!TtaCheckDirectory(buff))
+  if (temppath[len]!=DIR_SEP)
     {
-      if(TtaCheckMakeDirectory(buff, TRUE))
-        return TtaStrdup(buff);
+      temppath[len] = DIR_SEP;
+      temppath[len+1] = 0;
     }
-    i++;
-  }
+  
+  while (i < 10000)
+    {
+      sprintf(buff, "%s%s%04d", temppath, name, i);
+      if(!TtaCheckDirectory(buff))
+        {
+          if(TtaCheckMakeDirectory(buff, TRUE))
+            return TtaStrdup(buff);
+        }
+      i++;
+    }
   return NULL;
 }
 

@@ -5731,13 +5731,32 @@ ThotBool TtaTestWaitShowDialogue ()
   ----------------------------------------------------------------------*/
 void TtaFreeAllCatalogs (void)
 {
-  static struct Cat_List *current;
+  register int        icat;
+  struct Cat_List    *current, *next;
+  struct Cat_Context *catalogue;
   
   current = PtrCatalogue;
   while (current)
     {
-      PtrCatalogue = current->Cat_Next;
-      TtaFreeMemory (current);
-      current = PtrCatalogue;
+	  next = current->Cat_Next;
+      icat = 0;
+      while (icat < MAX_CAT)
+        {
+          catalogue = &current->Cat_Table[icat];
+          if (catalogue &&
+              catalogue->Cat_Type == CAT_DIALOG && catalogue->Cat_Widget)
+            catalogue->Cat_Widget->Destroy();
+		  {
+			catalogue->Cat_Ref = 0;
+			catalogue->Cat_Widget = NULL;
+		  }
+          icat++;
+        }
+	  if (current == PtrCatalogue)
+		// keep an initial list
+        current->Cat_Next = NULL;
+	  else
+        TtaFreeMemory (current);
+      current = next;
     }
 }

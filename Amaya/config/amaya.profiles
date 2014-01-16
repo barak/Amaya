@@ -282,7 +282,6 @@ ZoomNormal
 DoAction
 GoToHome
 OpenDoc
-OpenFile
 PreviousLinkOrFormElement
 Reload
 SaveDocumentAs
@@ -654,9 +653,9 @@ Anim_Play
 &CreateSVG_ForeignObject
 &CreateSVG_Text
 &CreateSVG_Group
-&CreateSVG_SimpleArrow
+&CreateSVG_StartArrow
 &CreateSVG_DoubleArrow
-&CreateSVG_Zigzag
+&CreateSVG_EndArrow
 &CreateSVG_Square
 &CreateSVG_RoundedSquare
 &CreateSVG_Diamond

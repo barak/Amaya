@@ -1,5 +1,5 @@
 #
-# $Id: version-script.in 53798 2008-05-28 06:12:34Z RD $
+# $Id: version-script.in 55514 2008-09-07 17:09:38Z VZ $
 #
 # Notes:
 #
@@ -24,18 +24,25 @@
 # and once released its version cannot be changed.
 
 
+# public symbols added in 2.8.9 (please keep in alphabetical order):
 # public symbols added in 2.8.8 (please keep in alphabetical order):
+@WX_VERSION_TAG@.9 {
+        *wxAuiTabCtrl*OnCaptureLost*;
+        *wxAuiToolBar*;
+        *wxWindow*UnsetToolTip*;
+};
+
 @WX_VERSION_TAG@.8 {
     global:
-        *wxApp*MacHideApp*;
         *TimeZone*Make*;
+        *wxApp*MacHideApp*;
         *wxBitmapButton*OnFocusChange*;
         *wxDocManager*MakeNewDocumentName*;
         *wxEventLoopGuarantor*;
         *wxGridBagSizer*AdjustForOverflow*;
         *wxRemotelyScrolledTreeCtrl*DoCalcScrolledPosition*;
         *wxRemotelyScrolledTreeCtrl*SetScrollbar*;
-	*wxRenderer_Draw*;
+        *wxRenderer_Draw*;
         *wxRichTextAction*CalculateRefreshOptimizations*;
         *wxRichTextCtrl*GetTextCursor*;
         *wxRichTextCtrl*GetURLCursor*;
@@ -46,7 +53,7 @@
         *wxSizer*ComputeFittingWindowSize*;
         *wxSizerFlags*ReserveSpaceEvenIfHidden*;
         *wxSizerItem*ShouldAccountFor*;
-	*wxWebKitNewWindowEvent*;
+        *wxWebKitNewWindowEvent*;
         *wxWindowBase*ClientToWindowSize*;
         *wxWindowBase*Get*Sibling*;
         *wxWindowBase*WindowToClientSize*;

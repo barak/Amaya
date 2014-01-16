@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<!-- $Id: files.bkl 53822 2008-05-29 17:04:18Z KO $ -->
+<!-- $Id: files.bkl 55197 2008-08-23 06:37:17Z BIW $ -->
 <makefile>
 
 <!--
@@ -3151,6 +3151,7 @@ IMPORTANT: please read docs/tech/tn0016.txt before modifying this file!
     src/aui/floatpane.cpp
     src/aui/auibook.cpp
     src/aui/tabmdi.cpp
+    src/aui/auibar.cpp
 </set>
 <set var="AUI_HDR" hints="files">
     wx/aui/framemanager.h
@@ -3158,6 +3159,7 @@ IMPORTANT: please read docs/tech/tn0016.txt before modifying this file!
     wx/aui/floatpane.h
     wx/aui/auibook.h
     wx/aui/tabmdi.h
+    wx/aui/auibar.h
     wx/aui/aui.h
 </set>
 

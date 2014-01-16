@@ -4,7 +4,7 @@
 // Author:      Stefan Csomor
 // Modified by:
 // Created:     1998-01-01
-// RCS-ID:      $Id: window.cpp 53782 2008-05-27 14:14:11Z SC $
+// RCS-ID:      $Id: window.cpp 54982 2008-08-05 17:55:14Z SC $
 // Copyright:   (c) Stefan Csomor
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -484,7 +484,7 @@ static pascal OSStatus wxMacWindowControlEventHandler( EventHandlerCallRef handl
                 WindowRef owner = cEvent.GetParameter<WindowRef>(kEventParamWindowRef);
                 if ( !IsWindowActive(owner) )
                 {
-                    cEvent.SetParameter(kEventParamClickActivation,(UInt32) kActivateAndIgnoreClick) ;
+                    cEvent.SetParameter(kEventParamClickActivation,typeClickActivationResult, (UInt32) kActivateAndIgnoreClick) ;
                     result = noErr ;
                 }
             }

@@ -4,7 +4,7 @@
 // Author:      Stefan Csomor
 // Modified by:
 // Created:     2006-09-30
-// RCS-ID:      $Id: graphics.cpp 49370 2007-10-23 21:31:43Z RD $
+// RCS-ID:      $Id: graphics.cpp 54918 2008-08-02 06:31:46Z SC $
 // Copyright:   (c) 2006 Stefan Csomor
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -1214,7 +1214,9 @@ void wxGDIPlusContext::DrawIcon( const wxIcon &icon, wxDouble x, wxDouble y, wxD
 
 void wxGDIPlusContext::DrawText( const wxString &str, wxDouble x, wxDouble y )
 {
-    if ( m_font.IsNull() || str.IsEmpty())
+    wxCHECK_RET( !m_font.IsNull(), wxT("wxGDIPlusContext::DrawText - no valid font set") );
+
+    if ( str.IsEmpty())
         return ;
 
     wxWCharBuffer s = str.wc_str( *wxConvUI );
@@ -1225,6 +1227,8 @@ void wxGDIPlusContext::DrawText( const wxString &str, wxDouble x, wxDouble y )
 void wxGDIPlusContext::GetTextExtent( const wxString &str, wxDouble *width, wxDouble *height,
                                      wxDouble *descent, wxDouble *externalLeading ) const
 {
+    wxCHECK_RET( !m_font.IsNull(), wxT("wxGDIPlusContext::GetTextExtent - no valid font set") );
+
     wxWCharBuffer s = str.wc_str( *wxConvUI );
     FontFamily ffamily ;
     Font* f = ((wxGDIPlusFontData*)m_font.GetRefData())->GetGDIPlusFont();
@@ -1269,6 +1273,8 @@ void wxGDIPlusContext::GetPartialTextExtents(const wxString& text, wxArrayDouble
 {
     widths.Empty();
     widths.Add(0, text.length());
+
+    wxCHECK_RET( !m_font.IsNull(), wxT("wxGDIPlusContext::GetPartialTextExtents - no valid font set") );
 
     if (text.empty())
         return;
