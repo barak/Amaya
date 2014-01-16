@@ -1,0 +1,2 @@
+version=3
+http://www.w3.org/Amaya/Distribution/amaya-(?:sources|src)-([\d].*)\.tgz
