@@ -1,0 +1,1399 @@
+	{ Presentation Schema de structure for MathML.
+
+	  I. Vatton			June 1997	}
+
+
+PRESENTATION MathML;
+
+VIEWS
+   Formatted_view, Math_Structure_view;
+
+#define OPERATOR_SPACE 0.27
+#define ROOT_OFFSET 0.6
+#define STRUCT_INDENT 1.5
+#define TAG_FONTSIZE 10 pt
+#define DOC_FONTSIZE 12 pt
+#define TAG_Style Bold
+#define TAG_Visibility 7
+#define ATTR_Style Bold
+#define ATTR_Visibility 7
+
+#ifdef BLACK_WHITE
+#define TAG_Color Black
+#define ATTR_Color Black
+#define ATTRVALUE_Color Black
+#else
+#define TAG_Color Blue
+#define ATTR_Color Blue
+#define ATTRVALUE_Color Black
+#endif
+
+#define TAG_Font Helvetica
+#define ATTR_Font Helvetica
+
+DEFAULT
+
+   BEGIN
+   Visibility: Enclosing =;
+   VertRef: * . Left ;
+   HorizRef: Enclosed . HRef;
+   Height: Enclosed . Height;
+   Width: Enclosed . Width;
+   VertPos: HRef = Previous . HRef;
+   HorizPos: Left = Previous . Right;
+   LineBreak: No;
+   Font: Enclosing =;
+   Style: Enclosing =;
+   Size: Enclosing =;
+   Indent: 0;
+   Justify: No;
+   Adjust: Left;
+   LineSpacing: 1;
+   Depth : 0;
+   UnderLine: Enclosing =;
+   Thickness: Enclosing =;
+   LineStyle: Enclosing =;
+   LineWeight: Enclosing =;
+   Background: Enclosing =;
+   Foreground: Enclosing =;
+   FillPattern: Enclosing =;
+   IN Math_Structure_view BEGIN
+	VertPos: Top = Previous . Bottom;
+	HorizPos: Left = Enclosing . Left;
+	END;
+   END;
+
+BOXES
+
+ MROW_S: BEGIN
+	Content: Text 'MROW';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MROOT_S: BEGIN
+	Content: Text 'MROOT';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MSQRT_S: BEGIN
+	Content: Text 'MSQRT';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MFRAC_S: BEGIN
+	Content: Text 'MFRAC';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MFENCED_S: BEGIN
+	Content: Text 'MFENCED';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MSUBSUP_S: BEGIN
+	Content: Text 'MSUBSUP';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MSUB_S: BEGIN
+	Content: Text 'MSUB';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MSUP_S: BEGIN
+	Content: Text 'MSUP';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MUNDER_S: BEGIN
+	Content: Text 'MUNDER';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MOVER_S: BEGIN
+	Content: Text 'MOVER';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MUNDEROVER_S: BEGIN
+	Content: Text 'MUNDEROVER';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MMULTISCRIPTS_S: BEGIN
+	Content: Text 'MMULTISCRIPTS';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ NONE_S: BEGIN
+	Content: Text 'NONE';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MPRESCRIPTS_S: BEGIN
+	Content: Text 'MPRESCRIPTS';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MN_S: BEGIN
+	Content: Text 'MN';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		VertPos: Top = Enclosing . Top;
+		Width: 1.5;
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MI_S: BEGIN
+	Content: Text 'MI';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		VertPos: Top = Enclosing . Top;
+		Width: 1.5;
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MO_S: BEGIN
+	Content: Text 'MO';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		VertPos: Top = Enclosing . Top;
+		Width: 1.5;
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MS_S: BEGIN
+	Content: Text 'MS';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		VertPos: Top = Enclosing . Top;
+		Width: 1.5;
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MTEXT_S: BEGIN
+	Content: Text 'MTEXT';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		VertPos: Top = Enclosing . Top;
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ SEP_S: BEGIN
+	Content: Text 'SEP';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		VertPos: Top = Enclosing . Top;
+		Width: 1.5;
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MSPACE_S: BEGIN
+	Content: Text 'MSPACE';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		VertPos: Top = Enclosing . Top;
+		Width: 1.5;
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MSTYLE_S: BEGIN
+	Content: Text 'MSTYLE';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MERROR_S: BEGIN
+	Content: Text 'MERROR';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MPADDED_S: BEGIN
+	Content: Text 'MPADDED';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ MPHANTOM_S: BEGIN
+	Content: Text 'MPHANTOM';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		Size: TAG_FONTSIZE;
+		Font: TAG_Font;
+		Style: TAG_Style;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ ATTR_fontslant_plain: BEGIN
+        Content: Text ' fontslant=plain';
+        Visibility: 0;
+        IN Math_Structure_view BEGIN
+                HorizPos: Left = Previous . Right;
+                VertPos: HRef = Previous . HRef;
+                Size: TAG_FONTSIZE;
+                Style: ATTR_Style;
+                Visibility: ATTR_Visibility;  Foreground: ATTR_Color;
+                END;
+        END;
+ ATTR_fontslant_italic: BEGIN
+        Content: Text ' fontslant=italic';
+        Visibility: 0;
+        IN Math_Structure_view BEGIN
+                HorizPos: Left = Previous . Right;
+                VertPos: HRef = Previous . HRef;
+                Size: TAG_FONTSIZE;
+                Style: ATTR_Style;
+                Visibility: ATTR_Visibility;  Foreground: ATTR_Color;
+                END;
+        END;
+
+ ATTR_open: BEGIN
+        Content: Text ' open=';
+        Visibility: 0;
+        IN Math_Structure_view BEGIN
+                HorizPos: Left = Previous . Right;
+                VertPos: HRef = Previous . HRef;
+                Size: TAG_FONTSIZE;
+                Style: ATTR_Style;
+                Visibility: ATTR_Visibility;  Foreground: ATTR_Color;
+                END;
+        END;
+ 
+ VALUE_open: BEGIN
+        Content: (open);
+        Visibility: 0;
+        IN Math_Structure_view BEGIN
+                HorizPos: Left = Previous . Right;
+                VertPos: HRef = Previous . HRef;
+                Size: TAG_FONTSIZE;
+                Style: ATTR_Style;
+                Visibility: ATTR_Visibility;  Foreground: ATTRVALUE_Color;
+                END;
+        END;
+
+ ATTR_close: BEGIN
+        Content: Text ' close=';
+        Visibility: 0;
+        IN Math_Structure_view BEGIN
+                HorizPos: Left = Previous . Right;
+                VertPos: HRef = Previous . HRef;
+                Size: TAG_FONTSIZE;
+                Style: ATTR_Style;
+                Visibility: ATTR_Visibility;  Foreground: ATTR_Color;
+                END;
+        END;
+ 
+ VALUE_close: BEGIN
+        Content: (close);
+        Visibility: 0;
+        IN Math_Structure_view BEGIN
+                HorizPos: Left = Previous . Right;
+                VertPos: HRef = Previous . HRef;
+                Size: TAG_FONTSIZE;
+                Style: ATTR_Style;
+                Visibility: ATTR_Visibility;  Foreground: ATTRVALUE_Color;
+                END;
+        END;
+
+ ATTR_separators: BEGIN
+        Content: Text ' separators=';
+        Visibility: 0;
+        IN Math_Structure_view BEGIN
+                HorizPos: Left = Previous . Right;
+                VertPos: HRef = Previous . HRef;
+                Size: TAG_FONTSIZE;
+                Style: ATTR_Style;
+                Visibility: ATTR_Visibility;  Foreground: ATTR_Color;
+                END;
+        END;
+ 
+ VALUE_separators: BEGIN
+        Content: (separators);
+        Visibility: 0;
+        IN Math_Structure_view BEGIN
+                HorizPos: Left = Previous . Right;
+                VertPos: HRef = Previous . HRef;
+                Size: TAG_FONTSIZE;
+                Style: ATTR_Style;
+                Visibility: ATTR_Visibility;  Foreground: ATTRVALUE_Color;
+                END;
+        END;
+
+ ATTR_fence_true: BEGIN
+        Content: Text ' fence=true';
+        Visibility: 0;
+        IN Math_Structure_view BEGIN
+                HorizPos: Left = Previous . Right;
+                VertPos: HRef = Previous . HRef;
+                Size: TAG_FONTSIZE;
+                Style: ATTR_Style;
+                Visibility: ATTR_Visibility;  Foreground: ATTR_Color;
+                END;
+        END;
+ ATTR_fence_false: BEGIN
+        Content: Text ' fence=false';
+        Visibility: 0;
+        IN Math_Structure_view BEGIN
+                HorizPos: Left = Previous . Right;
+                VertPos: HRef = Previous . HRef;
+                Size: TAG_FONTSIZE;
+                Style: ATTR_Style;
+                Visibility: ATTR_Visibility;  Foreground: ATTR_Color;
+                END;
+        END;
+
+ VerticalLine: BEGIN
+	Content: Graphics 'W';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		VertPos: Top = Creator . Top;
+		HorizPos: Left = Enclosing . Left;
+		Height: Creator . Height;
+		Width: 1.1;
+		LineWeight: 2 pt;
+		Visibility: TAG_Visibility;  Foreground: TAG_Color;
+		END;
+	END;
+
+ Bar:	{ fraction bar }
+	BEGIN
+	LineWeight: 1 pt;
+	Height: 0.2;
+        Width: Enclosing . Width ;
+	HorizPos: Left = Enclosing . Left;
+	Content: Graphics 'h';	{ horizontal bar }
+	LineStyle: Solid;
+	Background: Creator =;
+	Foreground: Creator =;
+	IN Math_Structure_view
+		Visibility: 0;
+	END;
+
+ RadicalSymbol:
+	BEGIN
+	Height: Enclosing . Height;
+	Width: RootBase . Width + ROOT_OFFSET;
+	VertPos: Top = Enclosing . Top;
+	HorizPos: Left = RootBase . Left - ROOT_OFFSET;
+	Content: Symbol 'r';		{ root symbol }
+	Depth: Enclosing + 1;
+	Background: Creator =;
+	Foreground: Creator =;
+	IN Math_Structure_view
+		Visibility: 0;
+	END;
+
+ MOspace: BEGIN
+	Content: text ' ';
+	Width : OPERATOR_SPACE;
+	HorizPos: Left = Previous . Right;
+	IN Math_Structure_view
+		Visibility: 0;
+	END;
+
+ OpeningQuote: BEGIN
+ 	Content: Text '"';
+	IN Math_Structure_view
+		Visibility: 0;
+	END;
+
+ ClosingQuote: BEGIN
+ 	Content: Text '"';
+	IN Math_Structure_view
+		Visibility: 0;
+	END;
+
+ HR_Graph: BEGIN
+	Content: Graphics 'h';
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		Visibility: 10;
+		Height: 0.6;
+	        Width: Enclosing . Width ;
+		HorizPos: Left = Enclosing . Left;
+		VertPos: Top = Previous . Bottom;
+		LineWeight: 2 pt;
+		Foreground: TAG_Color;
+		END;
+	END;
+
+RULES
+
+   MathML:
+	BEGIN
+	CreateLast(HR_Graph);
+	PageBreak: No;
+	LineBreak: No;
+	LineWeight: 1 pt;
+	VertPos: Top = Previous . Bottom;
+	HorizPos: Left = Enclosing . Left;
+	Visibility: Enclosing - 2;
+	IN Math_Structure_view BEGIN
+		Width: Enclosing . Width;
+		Visibility: 10;
+		END;
+	END;
+
+   MROW:
+	BEGIN
+	CreateBefore(MROW_S);
+	CreateWith(VerticalLine);
+        HorizRef: Enclosed not ElemWithAttr vertstretch . HRef;
+	VertPos: HRef = Previous not ElemWithAttr vertstretch . HRef;
+	IN Math_Structure_view BEGIN
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width - STRUCT_INDENT;
+		HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
+		Font: Helvetica;
+		END;
+  	END;
+
+   Construct:
+	BEGIN
+	if empty and immediately within MSubscript
+		CreateFirst (NONE_S);
+	if empty and immediately within MSuperscript
+		CreateFirst (NONE_S);
+	VertPos: HRef = Previous not ElemWithAttr vertstretch . HRef;
+	Fillpattern: gray2;
+	LineWeight: 0;	{ do not draw the outline }
+	ShowBox;
+	if not immediately within MSubscript and
+	   not immediately within MSuperscript
+		Width: 0.5;
+	IN Math_Structure_view BEGIN
+		Width: Enclosing . Width;
+		Height: Enclosed . Height;
+		HorizPos: Left = Enclosing . Left;
+		END;
+  	END;
+
+   MROOT:
+        BEGIN
+	CreateFirst(RadicalSymbol);
+	CreateBefore(MROOT_S);
+	CreateWith(VerticalLine);
+	HorizRef: Enclosed RootBase . HRef ;
+	VertPos: HRef = Previous not ElemWithAttr vertstretch . HRef;
+	Gather: Yes;
+	IN Math_Structure_view BEGIN
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width - STRUCT_INDENT;
+		Height: Enclosed . Height;
+		HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
+		Font: Helvetica;
+		END;
+  	END;
+
+   MSQRT:
+        BEGIN
+	CreateFirst(RadicalSymbol);
+	CreateBefore(MSQRT_S);
+	CreateWith(VerticalLine);
+	HorizRef: Enclosed RootBase . HRef ;
+	VertPos: HRef = Previous not ElemWithAttr vertstretch . HRef;
+	Gather: Yes;
+	IN Math_Structure_view BEGIN
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width - STRUCT_INDENT;
+		Height: Enclosed . Height;
+		HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
+		Font: Helvetica;
+		END;
+  	END;
+
+   Index:
+   	BEGIN
+	HorizRef: * . Top;
+   	HorizPos: Left = Enclosing . Left;
+   	VertPos: Top = Enclosing . Top;
+	Width: ROOT_OFFSET min;
+   	Size: Enclosing -2 min 1;
+	IN Math_Structure_view BEGIN
+		Width: Enclosing . Width;
+		Height: Enclosed . Height;
+		END;
+   	END;
+	
+   RootBase:	
+        BEGIN
+	VertPos: Top = Enclosing . Top + 0.1;
+	if within MROOT
+	    HorizPos: Left = Index . Right;
+	if within MSQRT
+	    HorizPos: Left = Enclosing . Left + ROOT_OFFSET;
+	IN Math_Structure_view BEGIN
+		Width: Enclosing . Width;
+		Height: Enclosed . Height;
+		END;
+  	END;
+
+   MFRAC:
+	BEGIN
+	CreateFirst(Bar);
+	CreateBefore(MFRAC_S);
+	CreateWith(VerticalLine);
+	Width: 0.7 min;
+	HorizRef: Enclosed Bar . Bottom + 0.1;
+	Gather: Yes;
+	VertPos: HRef = Previous not ElemWithAttr vertstretch . HRef;
+	IN Math_Structure_view BEGIN
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width - STRUCT_INDENT;
+		Height: Enclosed . Height;
+		HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
+		END;
+	END;
+
+   Numerator:
+	BEGIN
+	HorizRef: * . Top;
+	VertPos: Bottom = Bar . Top;
+	HorizPos: VMiddle = Bar . VMiddle;
+	IN Math_Structure_view BEGIN
+		Width: Enclosing . Width;
+		Height: Enclosed . Height;
+		END;
+	END;
+
+   Denominator:
+        BEGIN
+	HorizRef: * . Top;
+	HorizPos: VMiddle = Bar . VMiddle;
+	VertPos: Top = Bar . Bottom + 0.1;
+	IN Math_Structure_view BEGIN
+		Width: Enclosing . Width;
+		Height: Enclosed . Height;
+		END;
+	END;
+
+   MFENCED:
+        BEGIN
+	CreateBefore(MFENCED_S);
+	CreateWith(VerticalLine);
+	HorizRef: Enclosed FencedExpression . HRef ;
+	VertPos: HRef = Previous not ElemWithAttr vertstretch . HRef;
+	Gather: Yes;
+	IN Math_Structure_view BEGIN
+		Width: Enclosing . Width - STRUCT_INDENT;
+		Height: Enclosed . Height;
+		HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
+		END;
+  	END;
+
+   FencedExpression:
+        BEGIN
+	HorizRef: Enclosed . HRef ;
+	VertPos: Nil;
+	Gather: Yes;
+	IN Math_Structure_view BEGIN
+		Width: Enclosing . Width;
+		Height: Enclosed . Height;
+		HorizPos: Left = Enclosing . Left;
+		END;
+  	END;
+
+   FencedSeparator:
+	BEGIN
+	HorizPos: Left = Previous . Right;
+	IN Math_Structure_view
+		Visibility: 0;
+	END;
+
+   OpeningFence:
+        BEGIN
+	HorizRef: Enclosed . HRef ;
+	VertPos: Top = Enclosing . Top;
+	Height: Enclosing . Height;
+	HorizPos: Left = Enclosing . Left;
+	Gather: Yes;
+	IN Math_Structure_view
+		Visibility: 0;
+	END;
+
+   ClosingFence:
+        BEGIN
+	HorizRef: Enclosed . HRef ;
+	VertPos: Top = Enclosing . Top;
+	Height: Enclosing . Height;
+	HorizPos: Left = Previous . Right;
+	Gather: Yes;
+	IN Math_Structure_view
+		Visibility: 0;
+	END;
+
+   MSUBSUP:
+        BEGIN
+	Gather: Yes;
+	HorizRef: Enclosed  Base. HRef;
+	CreateBefore(MSUBSUP_S);
+	CreateWith(VerticalLine);
+	VertPos: HRef = Previous not ElemWithAttr vertstretch . HRef;
+	IN Math_Structure_view BEGIN
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width - STRUCT_INDENT;
+		Height: Enclosed . Height;
+		HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
+		END;
+	END;
+
+   MSUB:
+        BEGIN
+	Gather: Yes;
+	HorizRef: Enclosed  Base. HRef;
+	CreateBefore(MSUB_S);
+	CreateWith(VerticalLine);
+	VertPos: HRef = Previous not ElemWithAttr vertstretch . HRef;
+	IN Math_Structure_view BEGIN
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width - STRUCT_INDENT;
+		Height: Enclosed . Height;
+		HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
+		END;
+	END;
+
+   MSUP:
+        BEGIN
+	Gather: Yes;
+	HorizRef: Enclosed  Base. HRef;
+	CreateBefore(MSUP_S);
+	CreateWith(VerticalLine);
+	VertPos: HRef = Previous not ElemWithAttr vertstretch . HRef;
+	IN Math_Structure_view BEGIN
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width - STRUCT_INDENT;
+		Height: Enclosed . Height;
+		HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
+		END;
+	END;
+
+   Base:
+	BEGIN
+	VertPos: NIL;
+	HorizPos: Left = Enclosing . Left;
+	IN Math_Structure_view BEGIN
+		Width: Enclosing . Width;
+		Height: Enclosed . Height;
+		END;
+	END;
+
+   Superscript:
+	BEGIN
+	Size: Enclosing -2 min 1;
+	HorizRef: * . Top;
+	HorizPos: Left = Base . Right;
+	VertPos: Bottom = Base . Top + 0.7;
+	IN Math_Structure_view BEGIN
+		Width: Enclosing . Width;
+		Height: Enclosed . Height;
+		END;
+	END;
+
+   Subscript:
+	BEGIN
+	Size: Enclosing -2 min 1;
+	HorizRef: * . Top;
+	HorizPos: Left = Base . Right;
+	VertPos: Top = Base . Bottom - 0.7;
+	IN Math_Structure_view BEGIN
+		Width: Enclosing . Width;
+		Height: Enclosed . Height;
+		END;
+	END;
+
+   MUNDER:
+        BEGIN
+	Gather: Yes;
+	HorizRef: Enclosed UnderOverBase . HRef;
+	CreateBefore(MUNDER_S);
+	CreateWith(VerticalLine);
+	VertPos: HRef = Previous not ElemWithAttr vertstretch . HRef;
+	IN Math_Structure_view BEGIN
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width - STRUCT_INDENT;
+		Height: Enclosed . Height;
+		HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
+		END;
+	END;
+
+   MOVER:
+        BEGIN
+	Gather: Yes;
+	HorizRef: Enclosed UnderOverBase . HRef;
+	CreateBefore(MOVER_S);
+	CreateWith(VerticalLine);
+	VertPos: HRef = Previous not ElemWithAttr vertstretch . HRef;
+	IN Math_Structure_view BEGIN
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width - STRUCT_INDENT;
+		Height: Enclosed . Height;
+		HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
+		END;
+	END;
+
+   MUNDEROVER:
+        BEGIN
+	Gather: Yes;
+	HorizRef: Enclosed UnderOverBase . HRef;
+	CreateBefore(MUNDEROVER_S);
+	CreateWith(VerticalLine);
+	VertPos: HRef = Previous not ElemWithAttr vertstretch . HRef;
+	IN Math_Structure_view BEGIN
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width - STRUCT_INDENT;
+		Height: Enclosed . Height;
+		HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
+		END;
+	END;
+
+   UnderOverBase:
+	BEGIN
+	VertPos: NIL;
+	HorizPos: VMiddle = Enclosing . VMiddle;
+	IN Math_Structure_view BEGIN
+		Width: Enclosing . Width;
+		Height: Enclosed . Height;
+		END;
+	END;
+
+   Underscript:
+	BEGIN
+	Size: Enclosing -2 min 1;
+	HorizRef: * . Top;
+	HorizPos: VMiddle = Enclosing . VMiddle;
+	VertPos: Top = UnderOverBase . Bottom;
+	IN Math_Structure_view BEGIN
+		Width: Enclosing . Width;
+		Height: Enclosed . Height;
+		END;
+	END;
+
+   Overscript:
+	BEGIN
+	Size: Enclosing -2 min 1;
+	HorizRef: * . Top;
+	HorizPos: VMiddle = Enclosing . VMiddle;
+	VertPos: Bottom = UnderOverBase . Top;
+	IN Math_Structure_view BEGIN
+		Width: Enclosing . Width;
+		Height: Enclosed . Height;
+		END;
+	END;
+
+   MMULTISCRIPTS:
+        BEGIN
+	Gather: Yes;
+	HorizRef: Enclosed MultiscriptBase . HRef;
+	CreateBefore(MMULTISCRIPTS_S);
+	CreateWith(VerticalLine);
+	VertPos: HRef = Previous not ElemWithAttr vertstretch . HRef;
+	IN Math_Structure_view BEGIN
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width - STRUCT_INDENT;
+		Height: Enclosed . Height;
+		HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
+		END;
+	END;
+
+   MultiscriptBase:
+	BEGIN
+	VertPos: NIL;
+	HorizPos: NIL;
+	IN Math_Structure_view BEGIN
+		Width: Enclosing . Width;
+		Height: Enclosed . Height;
+		END;
+	END;
+
+   PostscriptPairs:
+	BEGIN
+	Size: Enclosing -2 min 1;
+	HorizRef: * . Top;
+	HorizPos: Left = MultiscriptBase . Right;
+	Height: MultiscriptBase . Height + 1;
+	VertPos: Top = MultiscriptBase . Top - 0.5;
+	IN Math_Structure_view BEGIN
+		Width: Enclosing . Width;
+		Height: Enclosed . Height;
+		END;
+	END;
+
+   PrescriptPairs:
+	BEGIN
+	CreateBefore(MPRESCRIPTS_S);
+	Size: Enclosing -2 min 1;
+	HorizRef: * . Top;
+	HorizPos: Right = MultiscriptBase . Left;
+	Height: MultiscriptBase . Height + 1;
+	VertPos: Top = MultiscriptBase . Top - 0.5;
+	IN Math_Structure_view BEGIN
+		Width: Enclosing . Width;
+		Height: Enclosed . Height;
+		END;
+	END;
+
+   PrescriptPair:
+	BEGIN
+	HorizRef: * . Top;
+	HorizPos: Left = Previous . Right + 0.2;
+	VertPos: Top = Enclosing . Top;
+	Height: Enclosing . Height;
+	IN Math_Structure_view BEGIN
+		Width: Enclosing . Width;
+		Height: Enclosed . Height;
+		END;
+	END;
+
+   PostscriptPair:
+	BEGIN
+	HorizRef: * . Top;
+	HorizPos: Left = Previous . Right + 0.2;
+	VertPos: Top = Enclosing . Top;
+	Height: Enclosing . Height;
+	IN Math_Structure_view BEGIN
+		Width: Enclosing . Width;
+		Height: Enclosed . Height;
+		END;
+	END;
+
+   MSubscript:
+	BEGIN
+	HorizRef: * . Top;
+	HorizPos: Left = Enclosing . Left;
+	VertPos: Bottom = Enclosing . Bottom;
+	IN Math_Structure_view BEGIN
+		Width: Enclosing . Width;
+		Height: Enclosed . Height;
+		END;
+	END;
+
+   MSuperscript:
+	BEGIN
+	HorizRef: * . Top;
+	HorizPos: Left = Enclosing . Left;
+	VertPos: Top = Enclosing . Top;
+	IN Math_Structure_view BEGIN
+		Width: Enclosing . Width;
+		Height: Enclosed . Height;
+		END;
+	END;
+
+   MF:
+	BEGIN
+	CreateFirst(MO_S);
+	Height: Enclosing . Height;
+	HorizPos: Left = Previous . Right;
+	VertPos: Top =  Enclosing . Top;
+	IN Math_Structure_view BEGIN
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width;
+		Height: 1;
+		END;
+	END;
+
+   MI:
+	BEGIN
+	CreateFirst(MI_S);
+	VertPos: HRef = Previous not ElemWithAttr vertstretch . HRef;
+	Style: Italics;
+	IN Math_Structure_view BEGIN
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width;
+		Height: Enclosed . Height;
+		Style: Enclosing =;
+		END;
+	END;
+
+   MO:
+	BEGIN
+	CreateFirst(MO_S);
+	VertPos: HRef = Previous not ElemWithAttr vertstretch . HRef;
+	IN Math_Structure_view BEGIN
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width;
+		Height: Enclosed . Height;
+		END;
+	END;
+
+   MN:
+	BEGIN
+	CreateFirst(MN_S);
+	VertPos: HRef = Previous not ElemWithAttr vertstretch . HRef;
+	IN Math_Structure_view BEGIN
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width;
+		Height: Enclosed . Height;
+		END;
+	END;
+
+   MS:
+	BEGIN
+	CreateFirst(MS_S);
+	CreateFirst (OpeningQuote);
+	CreateLast (ClosingQuote);
+	VertPos: HRef = Previous not ElemWithAttr vertstretch . HRef;
+	IN Math_Structure_view BEGIN
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width;
+		Height: Enclosed . Height;
+		END;
+	END;
+
+   MTEXT:
+	BEGIN
+	CreateFirst(MTEXT_S);
+	VertPos: HRef = Previous not ElemWithAttr vertstretch . HRef;
+	IN Math_Structure_view BEGIN
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width;
+		Height: Enclosed . Height;
+		END;
+	END;
+
+   C_Empty:
+	IN Math_Structure_view
+		Visibility: 0;
+
+   SEP:
+	BEGIN
+	CreateFirst(SEP_S);
+	Visibility: 0;
+	IN Math_Structure_view BEGIN
+		Visibility: Enclosing =;
+		Size: DOC_FONTSIZE;
+		Font: Helvetica;
+		END;		
+	END;
+
+   MSPACE:
+	BEGIN
+	CreateFirst(MSPACE_S);
+	VertPos: HRef = Previous not ElemWithAttr vertstretch . HRef;
+	IN Math_Structure_view BEGIN
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width;
+		Height: Enclosed . Height;
+		END;
+	END;
+
+   MSTYLE:
+	BEGIN
+	CreateBefore(MSTYLE_S);
+	CreateWith(VerticalLine);
+        HorizRef: Enclosed . HRef;
+	VertPos: HRef = Previous . HRef;
+	IN Math_Structure_view BEGIN
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width - STRUCT_INDENT;
+		HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
+		Font: Helvetica;
+		END;
+  	END;
+
+   MERROR:
+	BEGIN
+	CreateBefore(MERROR_S);
+	CreateWith(VerticalLine);
+	Foreground: Red;
+        HorizRef: Enclosed . HRef;
+	VertPos: HRef = Previous . HRef;
+	IN Math_Structure_view BEGIN
+		Foreground: Enclosing =;
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width - STRUCT_INDENT;
+		HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
+		Font: Helvetica;
+		END;
+  	END;
+
+   MPADDED:
+	BEGIN
+	CreateBefore(MPADDED_S);
+	CreateWith(VerticalLine);
+        HorizRef: Enclosed . HRef;
+	VertPos: HRef = Previous . HRef;
+	IN Math_Structure_view BEGIN
+		Foreground: Enclosing =;
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width - STRUCT_INDENT;
+		HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
+		Font: Helvetica;
+		END;
+  	END;
+
+   MPHANTOM:
+	BEGIN
+	CreateBefore(MPHANTOM_S);
+	CreateWith(VerticalLine);
+	Foreground: White;	{****** should be Transparent ****}
+        HorizRef: Enclosed . HRef;
+	VertPos: HRef = Previous . HRef;
+	IN Math_Structure_view BEGIN
+		Foreground: Enclosing =;
+		Size: DOC_FONTSIZE;
+		Width: Enclosing . Width - STRUCT_INDENT;
+		HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
+		Font: Helvetica;
+		END;
+  	END;
+
+   SYMBOL_UNIT:
+	BEGIN
+	Height: Enclosing . Height;
+	Width: Enclosed . Width;
+	VertPos: Nil;
+	HorizPos: Nil;
+	IN Math_Structure_view BEGIN
+		Size: DOC_FONTSIZE;
+		Height: 1;
+		HorizPos: Left = Previous . Right + 0.5;
+		VertPos: HRef = Previous . HRef;
+		END;
+	END;
+
+   TEXT_UNIT:
+	BEGIN
+	VertRef: Enclosed . VRef;
+	LineBreak: Yes;
+	IF immediately within MF
+	   VertPos: HMiddle = Enclosing . HMiddle;
+	IN Math_Structure_view BEGIN
+		Size: DOC_FONTSIZE;
+		Height: Enclosed . Height;
+		HorizPos: Left = Previous . Right + 0.5;
+		VertPos: HRef = Previous . HRef;
+		END;
+	END;
+
+ATTRIBUTES
+
+  fontslant = plain:
+	BEGIN
+	Style: roman;
+	CreateFirst(ATTR_fontslant_plain);
+	END;
+  fontslant = italic:
+	BEGIN
+	Style: Italics;
+	CreateFirst(ATTR_fontslant_italic);
+	END;
+  open:
+	BEGIN
+	CreateBefore(ATTR_open);
+	CreateBefore(VALUE_open);
+	END;
+  close:
+	BEGIN
+	CreateBefore(ATTR_close);
+	CreateBefore(VALUE_close);
+	END;
+  separators:
+	BEGIN
+	CreateBefore(ATTR_separators);
+	CreateBefore(VALUE_separators);
+	END;
+  fence = true:
+	CreateFirst(ATTR_fence_true);
+  fence = false:
+	CreateFirst(ATTR_fence_false);
+  IntFontslant = IntPlain:
+	Style: roman;
+  IntFontslant = IntItalic:
+	Style: Italics;
+
+  addspace = nospace:
+	BEGIN
+	HorizPos: Left = Previous . Right;
+	IN Math_Structure_view
+		HorizPos: Left = Enclosing . Left;
+	END;
+  addspace = spacebefore:
+	BEGIN
+	HorizPos: Left = Previous . Right + OPERATOR_SPACE;
+	IN Math_Structure_view
+		HorizPos: Left = Enclosing . Left;
+	END;
+  addspace = spaceafter:
+	BEGIN
+	HorizPos: Left = Previous . Right;
+{***	Width: Enclosed . Width + OPERATOR_SPACE;
+****}	CreateAfter(MOspace);
+	IN Math_Structure_view
+		HorizPos: Left = Enclosing . Left;
+	END;
+  addspace = both:
+	BEGIN
+	HorizPos: Left = Previous . Right + OPERATOR_SPACE;
+{***	Width: Enclosed . Width + OPERATOR_SPACE;
+****}	CreateAfter(MOspace);	
+	IN Math_Structure_view
+		HorizPos: Left = Enclosing . Left;
+	END;
+
+  entity:
+	BEGIN
+	Visibility: 0;
+	IN Math_Structure_view
+		Visibility: Enclosing =;
+	END;
+
+  placeholder:
+	BEGIN
+	Fillpattern: nopattern;
+	Width: Enclosed . Width;
+	END;
+
+  horizstretch:
+	BEGIN
+        Width: Enclosing . Width ;
+	HorizPos: Left = Enclosing . Left;
+	END;
+  horizstretch (MO):
+	BEGIN
+        Width: Enclosing . Width ;
+	HorizPos: Left = Enclosing . Left;
+	END;
+  horizstretch (SYMBOL_UNIT):
+	BEGIN
+	Height: Enclosed . Height;
+	Width: Enclosing . Width;
+	HorizPos: Left = Enclosing . Left;
+	IN Math_Structure_view BEGIN
+		HorizPos: Left = Previous . Right + 0.5;
+		Height: 1;
+		Width: 2;
+		END;
+	END;
+
+  vertstretch:
+	BEGIN
+	if MO
+		BEGIN
+		Height: Next not Construct . Height;
+		VertPos: Top = Next not Construct . Top;
+		END;
+	if MSUBSUP
+		BEGIN
+		Height: Next not Construct . Height + 1;
+		VertPos: Top = Next not Construct . Top - 0.5;
+		END;
+	if MSUB
+		BEGIN
+		Height: Next not Construct . Height + 0.5;
+		VertPos: Top = Next not Construct . Top;
+		END;
+	if MSUP
+		BEGIN
+		Height: Next not Construct . Height + 0.5;
+		VertPos: Top = Next not Construct . Top - 0.5;
+		END;
+	if MUNDEROVER
+		BEGIN
+		Height: Next not Construct . Height + 1.6;
+		VertPos: Top = Next not Construct . Top - 0.8;
+		END;
+	if MUNDER
+		BEGIN
+		Height: Next not Construct . Height + 0.8;
+		VertPos: Top = Next not Construct . Top;
+		END;
+	if MOVER
+		BEGIN
+		Height: Next not Construct . Height + 0.8;
+		VertPos: Top = Next not Construct . Top - 0.8;
+		END;
+	IN Math_Structure_view BEGIN
+		Height: Enclosed . Height;
+		VertPos: Top = Previous . Bottom;
+		END;
+	END;
+  vertstretch (Base):
+	BEGIN
+	IF within MSUBSUP BEGIN
+		Height: Enclosing . Height - 1;
+		VertPos: Top = Enclosing . Top + 0.5;
+		END;
+	IF within MSUB BEGIN
+		Height: Enclosing . Height - 0.5;
+		VertPos: Top = Enclosing . Top;
+		END;
+	IF within MSUP BEGIN
+		Height: Enclosing . Height - 0.5;
+		VertPos: Top = Enclosing . Top + 0.5;
+		END;
+	IN Math_Structure_view BEGIN
+		Height: Enclosed . Height;
+		VertPos: Top = Enclosing . Top;
+		END;
+	END;
+  vertstretch (UnderOverBase):
+	BEGIN
+	VertPos: Top = Overscript . Bottom;
+	Height: Bottom = Underscript . Top;
+	IN Math_Structure_view BEGIN
+		Height: Enclosed . Height;
+		VertPos: Top = Enclosing . Top;
+		END;
+	END;
+  vertstretch (Overscript):
+	BEGIN
+	VertPos: Top = Enclosing . Top;
+	IN Math_Structure_view
+		VertPos: Top = Previous . Bottom;
+	END;
+  vertstretch (Underscript):
+	BEGIN
+	VertPos: Bottom = Enclosing . Bottom;	
+	IN Math_Structure_view
+		VertPos: Top = Previous . Bottom;
+	END;
+  vertstretch (MO):
+	BEGIN
+	IF immediately within UnderOverBase
+		BEGIN
+		Height: Enclosing . Height;
+		VertPos: Top = Enclosing . Top;
+		HorizRef: * . HMiddle + 0.3;
+		END;
+	IF immediately within Base
+		BEGIN
+		Height: Enclosing . Height;
+		VertPos: Top = Enclosing . Top;
+		HorizRef: * . HMiddle + 0.3;
+		END;
+	IN Math_Structure_view BEGIN
+		Height: Enclosed . Height;
+		VertPos: Top = Previous . Bottom;
+		HorizRef: Enclosed . HRef;
+		END;
+	END;
+END

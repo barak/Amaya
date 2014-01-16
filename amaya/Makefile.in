@@ -1,0 +1,342 @@
+#
+# Makefile for Amaya WWW Browser/Editor
+# Generated from amaya/Makefile.in
+# Daniel Veillard and Irene Vatton, 1997
+#
+
+@VPATHOPT@= @srcdir@
+THOTDIR = @top_srcdir@
+
+include ../Options
+
+INCLUDES= -DHAVE_CONFIG_H $(AMAYA_INCLUDES) $(X_FLAGS)
+LIBS	=  $(AMAYA_OPTION_LIBS) \
+          -L../tablelib -L../thotlib -L.. -lThotTable -lThotEditor \
+          $(IMGLIBS) $(AMAYA_OPTION_EXTRA_LIBS) \
+	  $(MOTIF_LIBRARIES) -lXm $(X_LIBS) -lXt $(X_PRE_LIBS) \
+	  -lXext -lX11 $(X_EXTRA_LIBS) @LIBS@ @EXTRA_LIBS@ -lm
+
+CONFIGFILES=XKeysymDB thot.ini amaya.keyboard en-amayadialogue \
+            en-printdialogue en-amayamsg en-javamsg en-libdialogue \
+	    en-transdialogue en-corrdialogue fr-amayadialogue \
+            fr-printdialogue fr-amayamsg fr-javamsg fr-libdialogue \
+	    fr-transdialogue fr-corrdialogue java.properties
+
+DICOFILES= *.ptn alphabet clavier
+
+AMAYAFILES=COPYRIGHT COPYRIGHT.html HTML.STR HTML.conf HTML.trans HTML.en \
+           HTML.fr HTML*.PRS HTML*.TRA MathML.S MathMLP.P MathMLT.T
+
+FONTSFILES=Families.list fonts.dir icones*
+
+AMAYA	= @top_srcdir@/amaya
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+libdir = @libdir@
+datadir = @datadir@
+bindir = @bindir@
+
+#
+# specific entry point check the dependancies
+#
+amaya : amaya_schemas amaya_src ../thotlib/libThotEditor.a ../tablelib/libThotTable.a ../bin/amaya
+
+#
+# General entry point everything should have compiled correctly
+#
+all : amaya_schemas amaya_src ../bin/amaya
+
+clean :
+	$(RM) *.o *.h *.c EDITOR* HTML* logo.*
+
+../bin/print : 
+	@(cd ../thotlib ; $(MAKE) print)
+
+include .depends
+
+force :
+
+../bin/str :
+	@(cd ../batch ; $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" app str prs tra)
+
+../bin/tra :
+	@(cd ../batch ; $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" app str prs tra)
+
+../bin/prs :
+	@(cd ../batch ; $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" app str prs tra)
+
+../bin/app :
+	@(cd ../batch ; $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" app str prs tra)
+
+../bin/printstr: 
+	@(cd ../batch ; $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" printstr)
+
+../thotlib/libThotEditor.a : force
+	@(cd ../thotlib ; $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" libThotEditor)
+
+../tablelib/libThotTable.a : force
+	@(cd ../tablelib ; $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" libThotTable)
+
+../libjpeg.a :
+	@(cd ../libjpeg ; $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)")
+
+../libpng.a :
+	@(cd ../libpng ; $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)")
+
+../libz.a :
+	@(cd ../libpng/zlib ; $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)")
+
+../tools/mkdep/mkdep : 
+	@(cd ../tools/mkdep ; $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)")
+
+.depends depend : ../tools/mkdep/mkdep
+	../tools/mkdep/mkdep -relative -vpath $(VPATH) $(INCLUDES) $(VPATH)/*.c  > .depends
+
+#########################################################################
+#									#
+#		Optional configuration rules				#
+#									#
+#########################################################################
+
+#include the fragment "javalib/Makefile.java" for java if configured in
+@java_frag@
+
+#include the fragment "pluginlib/Makefile.plugin" for plugins if configured in
+@plugin_frag@
+
+#include the fragment "amaya/Makefile.libwww" for libwww if configured in
+@www_frag@
+
+#include the fragment "amaya/Makefile.math" for math if configured in
+@math_frag@
+
+#include the fragment "ilulib/Makefile.ilu" for ILU if configured in
+@ilu_frag@
+
+#########################################################################
+#									#
+#		         General rules					#
+#									#
+#########################################################################
+
+
+ALL_AMAYA_OPTIONS= $(AMAYA_OPTIONS) $(AMAYA_JAVA_OPTIONS) \
+	 $(AMAYA_PLUGIN_OPTIONS) $(AMAYA_LIBWWW_OPTIONS) \
+	 $(AMAYA_MATH_OPTIONS) $(AMAYA_ILU_OPTIONS)
+
+AMAYA_OPTION_INCLUDES= $(AMAYA_JAVA_INCLUDES) $(AMAYA_PLUGIN_INCLUDES) \
+         $(AMAYA_LIBWWW_INCLUDES) $(AMAYA_MATH_INCLUDES) \
+	 $(AMAYA_ILU_INCLUDES)
+
+AMAYA_OPTION_OBJ= $(AMAYA_JAVA_OBJ) $(AMAYA_PLUGIN_OBJ) \
+         $(AMAYA_LIBWWW_OBJ) $(AMAYA_MATH_OBJ) $(AMAYA_ILU_OBJ)
+
+AMAYA_SRC= $(AMAYA_JAVA_SRC) $(AMAYA_PLUGIN_SRC) \
+         $(AMAYA_LIBWWW_SRC) $(AMAYA_MATH_SRC) $(AMAYA_ILU_SRC)
+
+AMAYA_OPTION_LIBS= $(AMAYA_JAVA_LIBS) $(AMAYA_PLUGIN_LIBS) \
+         $(AMAYA_LIBWWW_LIBS) $(AMAYA_MATH_LIBS) $(AMAYA_ILU_LIBS)
+
+AMAYA_OPTION_EXTRA_LIBS= $(AMAYA_JAVA_EXTRA_LIBS) $(AMAYA_PLUGIN_EXTRA_LIBS) \
+         $(AMAYA_LIBWWW_EXTRA_LIBS) $(AMAYA_MATH_EXTRA_LIBS) $(AMAYA_ILU_EXTRA_LIBS)
+
+AMAYA_OPTION_SCHEMAS= $(AMAYA_JAVA_SCHEMAS) $(AMAYA_PLUGIN_SCHEMAS) \
+         $(AMAYA_LIBWWW_SCHEMAS) $(AMAYA_MATH_SCHEMAS) $(AMAYA_ILU_SCHEMAS)
+
+AMAYA_INCLUDES= -I. -I.. -I@top_srcdir@/thotlib/include -I@srcdir@ -I@srcdir@/f \
+                -I@top_srcdir@/libpng/zlib $(AMAYA_OPTION_INCLUDES)
+
+AMAYA_LIBS= ../thotlib/libThotEditor.a ../tablelib/libThotTable.a \
+            $(AMAYA_OPTION_LIBS) ../libpng.a ../libz.a ../libjpeg.a
+
+HTML2THOT_LIBS= ../thotlib/libThotKernel.a
+
+amaya_schemas : compHTML compHTMLP compHTMLT amaya_math_schema
+
+amaya_src : $(AMAYA_SRC) 
+
+#
+# Rule to build objects
+#
+.c.o :
+	$(CC) $(CFLAGS) $(ALL_AMAYA_OPTIONS) $(INCLUDES) -c $< -o $@
+
+#########################################################################
+#									#
+#		Rules to build the binary				#
+#									#
+#########################################################################
+
+AMAYA_OBJ = \
+	HTMLAPP.o \
+	EDITORAPP.o \
+	init.o \
+	EDITORactions.o \
+	HTMLactions.o \
+	HTMLbook.o \
+	HTMLform.o \
+	HTMLedit.o \
+	HTMLsave.o \
+	html2thot.o \
+	HTMLstyle.o \
+	EDITstyle.o \
+	HTMLimage.o \
+	EDITimage.o \
+	HTMLpresentation.o \
+	p2css.o \
+	UIcss.o \
+	css.o \
+	javaamaya.o \
+	HTMLhistory.o \
+	AHTURLTools.o \
+	trans.o \
+	transparse.o \
+	HTMLtable.o
+
+#
+# Structure schema compilation.
+#
+compHTML: $(AMAYA)/HTML.STR
+$(AMAYA)/HTML.STR : $(AMAYA)/HTML.S ../bin/str
+	STR=`pwd`/../bin/str;PRS=`pwd`/../bin/prs;TRA=`pwd`/../bin/tra;\
+	cd $(AMAYA); THOTDIR=`pwd`/.. ;export THOTDIR; \
+	$$STR $(ALL_AMAYA_OPTIONS) HTML ;\
+	$$PRS $(ALL_AMAYA_OPTIONS) HTMLP ;\
+	$$PRS $(ALL_AMAYA_OPTIONS) -DPAGE HTMLP HTMLPP ;\
+	$$PRS $(ALL_AMAYA_OPTIONS) -DUS_PAPER HTMLP HTMLPPUS ;\
+	$$PRS $(ALL_AMAYA_OPTIONS) -DLINK_NUMBER -DPAGE HTMLP HTMLPLP ;\
+	$$PRS $(ALL_AMAYA_OPTIONS) -DLINK_NUMBER -DUS_PAPER HTMLP HTMLPLPUS ;\
+	$$PRS $(ALL_AMAYA_OPTIONS) -DBLACK_WHITE HTMLP HTMLPBW ;\
+	$$TRA $(ALL_AMAYA_OPTIONS) HTMLT ;\
+	$$TRA $(ALL_AMAYA_OPTIONS) HTMLTT
+
+#
+# Presentation schemas compilation
+#
+compHTMLP: $(AMAYA)/HTMLP.PRS
+$(AMAYA)/HTMLP.PRS : $(AMAYA)/HTMLP.P ../bin/prs
+	PRS=`pwd`/../bin/prs ; \
+	cd $(AMAYA); THOTDIR=`pwd`/.. ;export THOTDIR; \
+	$$PRS $(ALL_AMAYA_OPTIONS) HTMLP ;\
+	$$PRS $(ALL_AMAYA_OPTIONS) -DPAGE HTMLP HTMLPP ;\
+	$$PRS $(ALL_AMAYA_OPTIONS) -DUS_PAPER HTMLP HTMLPPUS ;\
+	$$PRS $(ALL_AMAYA_OPTIONS) -DLINK_NUMBER -DPAGE HTMLP HTMLPLP ;\
+	$$PRS $(ALL_AMAYA_OPTIONS) -DLINK_NUMBER -DUS_PAPER HTMLP HTMLPLPUS ;\
+	$$PRS $(ALL_AMAYA_OPTIONS) -DBLACK_WHITE HTMLP HTMLPBW
+
+#
+# Traduction schemas compilation
+#
+compHTMLT: $(AMAYA)/HTMLT.TRA
+$(AMAYA)/HTMLT.TRA : $(AMAYA)/HTMLT.T ../bin/tra
+	TRA=`pwd`/../bin/tra ; \
+	cd $(AMAYA); THOTDIR=`pwd`/.. ;export THOTDIR ;\
+	$$TRA $(ALL_AMAYA_OPTIONS) HTMLT ;\
+	$$TRA $(ALL_AMAYA_OPTIONS) HTMLTT
+
+
+#
+# Interface schemas compilation
+#
+HTMLAPP.o : HTMLAPP.c
+	$(CC) $(CFLAGS) $(ALL_AMAYA_OPTIONS) $(INCLUDES) -c HTMLAPP.c -o $@
+
+HTML.h HTMLAPP.c : @srcdir@/HTML.STR @srcdir@/HTML.A
+	(if test "@srcdir@" != "" -a "@srcdir@" != "." -a \
+	         "@srcdir@" != "../amaya"; then \
+	    $(CP) @srcdir@/HTML.A .  ; \
+	    $(CP) @srcdir@/HTML.STR .  ; \
+	fi)
+	THOTDIR=$(THOTDIR) ; export THOTDIR ; \
+	../bin/app $(ALL_AMAYA_OPTIONS) HTML.A
+
+EDITORAPP.o : EDITORAPP.c
+	$(CC) $(CFLAGS) $(ALL_AMAYA_OPTIONS) $(INCLUDES) -c EDITORAPP.c -o $@
+
+EDITORAPP.c : @srcdir@/EDITOR.A
+	(if test "@srcdir@" != "" -a "@srcdir@" != "." -a \
+	         "@srcdir@" != "../amaya" ; then \
+	    $(CP) @srcdir@/EDITOR.A . ; \
+	    $(CP) @srcdir@/logo.xpm . ; \
+	fi)
+	THOTDIR=$(THOTDIR) ; export THOTDIR ; \
+	../bin/app $(ALL_AMAYA_OPTIONS) EDITOR.A
+
+../bin/amaya : $(AMAYA_OBJ) $(AMAYA_OPTION_OBJ) $(AMAYA_LIBS)
+	@(if test ! -d ../bin ; then $(MKDIR) ../bin ; fi)
+	$(CC) $(LDFLAGS) -o ../bin/amaya $(AMAYA_OBJ) $(AMAYA_OPTION_OBJ) $(LIBS)
+	@$(ECHO) "====>" amaya is done
+
+# html2thot is the standalone HTML parser
+html2thotsta.o : @srcdir@/html2thot.c
+	$(CC) $(CFLAGS) -DSTANDALONE $(AMAYA_INCLUDES) $(INCLUDES) -c @srcdir@/html2thot.c -o html2thotsta.o
+
+html2piv: ../bin/html2piv
+../bin/html2piv : @srcdir@/html2thot.c
+	@(if test ! -d ../bin ; then $(MKDIR) ../bin ; fi)
+	$(CC) $(LDFLAGS) -DSTANDALONE $(AMAYA_INCLUDES) $(INCLUDES) -o ../bin/html2piv  @srcdir@/html2thot.c $(HTML2THOT_LIBS)
+	@$(ECHO) "====>" html2piv is done
+
+install : all ../bin/print $(AMAYA_JAVA_INSTALL) $(AMAYA_PLUGIN_INSTALL) \
+	   $(AMAYA_LIBWWW_INSTALL)
+	@(if test ! -d $(datadir) ; then $(MKDIR) $(datadir) ; fi)
+	@(if test ! -d $(datadir)/thot ; then $(MKDIR) $(datadir)/thot ; fi)
+	@(if test ! -d $(datadir)/thot/amaya ; then $(MKDIR) $(datadir)/thot/amaya ; fi)
+	@(if test ! -d $(datadir)/thot/config ; then $(MKDIR) $(datadir)/thot/config ; fi)
+	@(if test ! -d $(datadir)/thot/fonts ; then $(MKDIR) $(datadir)/thot/fonts ; fi)
+	@(if test ! -d $(datadir)/thot/dicopar ; then $(MKDIR) $(datadir)/thot/dicopar ; fi)
+	@(if test ! -d $(datadir)/thot/applis ; then $(MKDIR) $(datadir)/thot/applis ; fi)
+	@(if test ! -d $(datadir)/thot/applis/bin ; then $(MKDIR) $(datadir)/thot/applis/bin ; fi)
+	$(INSTALL_BIN) ../bin/amaya $(datadir)/thot/applis/bin
+	$(INSTALL_BIN) ../bin/print $(datadir)/thot/applis/bin
+	$(LN_S) $(datadir)/thot/applis/bin/amaya $(bindir)/amaya
+	(for i in $(AMAYAFILES) ; do \
+	  for file in `$(ECHO) $(THOTDIR)/amaya/$$i` ; do \
+	    $(INSTALL_DATA) $$file $(datadir)/thot/amaya ; \
+	  done ; done)
+	(for i in $(CONFIGFILES) ; do \
+	  for file in `$(ECHO) $(THOTDIR)/config/$$i` ; do \
+	    $(INSTALL_DATA) $$file $(datadir)/thot/config ; \
+	  done ; done)
+	(for i in $(DICOFILES) ; do \
+	  for file in `$(ECHO) $(THOTDIR)/dicopar/$$i` ; do \
+	    $(INSTALL_DATA) $$file $(datadir)/thot/dicopar ; \
+	  done ; done)
+	(for i in $(FONTSFILES) ; do \
+	  for file in `$(ECHO) $(THOTDIR)/fonts/$$i` ; do \
+	    $(INSTALL_DATA) $$file $(datadir)/thot/fonts ; \
+	  done ; done)
+
+uninstall : $(AMAYA_JAVA_UNINSTALL) $(AMAYA_PLUGIN_UNINSTALL) \
+	   $(AMAYA_LIBWWW_UNINSTALL)
+	$(RM) -rf $(datadir)/thot
+
+CEXTRACT= ../bin/cextract
+
+$(CEXTRACT) :
+	@(cd ../tools/cextract-$(CEXTRACT_VER) ; $(MAKE))
+
+proto : ../bin/cextract
+	@(for i in @srcdir@/*.c ; \
+	  do \
+	  dir=`dirname $$i`;base=`basename $$i .c`; \
+	  if [ ! -d $$dir/f ] ; then $(MKDIR) $$dir/f ;fi;\
+	  $(CEXTRACT) $(CEXTRACT_FLAGS) -o /tmp/cextract.$$base.$$$$ $$i 2> /dev/null ; \
+	  if [ -f $$dir/f/"$$base"_f.h ] ; \
+	  then \
+	      delta=`$(DIFF) /tmp/cextract.$$base.$$$$ $$dir/f/"$$base"_f.h` ; \
+	      if [ "$$delta" != "" ] ; \
+	      then \
+	          echo "  $$i proto changed" ; \
+		  $(MV) /tmp/cextract.$$base.$$$$ $$dir/f/"$$base"_f.h ; \
+              else \
+	          $(RM) /tmp/cextract.$$base.$$$$ ; \
+	      fi ; \
+	  else \
+	      echo "  $$i proto added" ; \
+	      $(MV) /tmp/cextract.$$base.$$$$ $$dir/f/"$$base"_f.h ; \
+	  fi ; \
+	 done)
+
+

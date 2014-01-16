@@ -1,0 +1,136 @@
+#
+# Makefile for tablelib directory
+# Generated from tablelib/Makefile.in
+# Daniel Veillard, 1997
+#
+
+@VPATHOPT@= @srcdir@
+THOTDIR = @top_srcdir@
+
+include ../Options
+
+INCLUDES= -DHAVE_CONFIG_H -I.. -I@srcdir@/f @THOTINCLUDES@ $(X_FLAGS)
+
+SCHEMAS	= @top_srcdir@/schemas
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+libdir = @libdir@
+
+#
+# Rule to build objects
+#
+.c.o :
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+
+all : libThotDraw.a
+
+clean :
+	$(RM) libThotDraw.a
+	$(RM) *.o
+
+install :
+
+uninstall :
+
+include .depends
+
+force :
+
+../bin/app ../bin/str ../bin/prs : force
+	@(cd ../batch ; $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" app str prs)
+
+../tools/mkdep/mkdep : 
+	@(cd ../tools/mkdep ; $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)")
+
+.depends depend : ../tools/mkdep/mkdep
+	../tools/mkdep/mkdep -relative -vpath $(VPATH) $(INCLUDES) $(VPATH)/*.c  > .depends
+
+#########################################################################
+#									#
+#		Rules to build the library				#
+#									#
+#########################################################################
+
+DRAW_OBJ = \
+	Draw3APP.o \
+	Draw3actions.o \
+	PaletteAPP.o \
+	Paletteactions.o \
+	boutons.o \
+	edition.o \
+	initdraw.o \
+	liens.o \
+	menus.o \
+	objets.o \
+	paloutils.o \
+	utilitaires.o
+
+Draw3APP.o : Draw3APP.c
+	$(CC) $(CFLAGS) $(INCLUDES) -c Draw3APP.c -o $@
+
+Draw3APP.c : @srcdir@/Draw3.A $(SCHEMAS)/Draw3.STR $(SCHEMAS)/Draw3P.PRS ../bin/app
+	(if test "@srcdir@" != "" -a "@srcdir@" != "." ; then \
+	    $(CP) @srcdir@/Draw3.A .  ; \
+	fi)
+	../bin/app ${DRAW_OPTIONS} Draw3.A
+
+$(SCHEMAS)/Draw3.STR : $(SCHEMAS)/Draw3.S ../bin/str
+	STR=`pwd`/../bin/str; cd $(SCHEMAS) ; THOTDIR=`pwd`/.. ;\
+	export THOTDIR ; $$STR Draw3.S
+
+$(SCHEMAS)/Draw3P.PRS : $(SCHEMAS)/Draw3P.P ../bin/prs
+	PRS=`pwd`/../bin/prs; cd $(SCHEMAS) ; THOTDIR=`pwd`/.. ;\
+	export THOTDIR ; $$PRS Draw3P.P
+
+PaletteAPP.o : PaletteAPP.c
+	$(CC) $(CFLAGS) $(INCLUDES) -c PaletteAPP.c -o $@
+
+PaletteAPP.c: @srcdir@/Palette.A $(SCHEMAS)/Palette.STR $(SCHEMAS)/PaletteP.PRS
+	(if test "@srcdir@" != "" -a "@srcdir@" != "." ; then \
+	    $(CP) @srcdir@/Palette.A .  ; \
+	fi)
+	../bin/app ${DRAW_OPTIONS} Palette.A
+
+$(SCHEMAS)/Palette.STR : $(SCHEMAS)/Palette.S ../bin/str
+	STR=`pwd`/../bin/str; cd $(SCHEMAS) ; THOTDIR=`pwd`/.. ;\
+	export THOTDIR ; $$STR Palette.S
+
+$(SCHEMAS)/PaletteP.PRS : $(SCHEMAS)/PaletteP.P ../bin/prs
+	PRS=`pwd`/../bin/prs; cd $(SCHEMAS) ; THOTDIR=`pwd`/.. ;\
+	export THOTDIR ; $$PRS PaletteP.P
+
+libThotDraw : libThotDraw.a
+
+libThotDraw.a : $(DRAW_OBJ)
+	$(AR) libThotDraw.a $(DRAW_OBJ)
+	$(RANLIB) libThotDraw.a
+
+CEXTRACT= ../bin/cextract
+
+$(CEXTRACT) :
+	@(cd ../tools/cextract-$(CEXTRACT_VER) ; $(MAKE) )
+
+proto : ../bin/cextract
+	@(for i in @srcdir@/*.c ; \
+	  do \
+	  dir=`dirname $$i`;base=`basename $$i .c`; \
+	  if [ ! -d $$dir/f ] ; then $(MKDIR) $$dir/f ;fi;\
+	  $(CEXTRACT) $(CEXTRACT_FLAGS) -o /tmp/cextract.$$base.$$$$ $$i 2> /dev/null ; \
+	  if [ -f $$dir/f/"$$base"_f.h ] ; \
+	  then \
+	      delta=`$(DIFF) /tmp/cextract.$$base.$$$$ $$dir/f/"$$base"_f.h` ; \
+	      if [ "$$delta" != "" ] ; \
+	      then \
+	          echo "  $$i proto changed" ; \
+		  $(MV) /tmp/cextract.$$base.$$$$ $$dir/f/"$$base"_f.h ; \
+              else \
+	          $(RM) /tmp/cextract.$$base.$$$$ ; \
+	      fi ; \
+	  else \
+	      echo "  $$i proto added" ; \
+	      $(MV) /tmp/cextract.$$base.$$$$ $$dir/f/"$$base"_f.h ; \
+	  fi ; \
+	 done)
+
+

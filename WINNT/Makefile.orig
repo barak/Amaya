@@ -1,0 +1,107 @@
+#
+# Base definitions
+#
+THOTDIR	= ${HOME}/Thot
+MACHINE	= WINNT
+
+#
+# Link options : dynamic vs. static
+#
+LINK_OPTIONS	=
+#LINK_OPTIONS	=  -static
+
+#
+# CFLAGS : with or without debug support
+#
+CFLAGS=-g
+#CFLAGS=-O
+#CFLAGS=-O2 # gcc specific
+
+#
+#AMAYA_OPTIONS: options to compile Amaya
+#
+
+#AMAYA_OPTIONS = -DCOUGAR -DAMAYA_PLUGIN
+#AMAYA_LIBS = $(THOTBIN)/libPlugin.a
+#AMAYA_LINK = -lPlugin -lwww
+
+AMAYA_OPTIONS = -DCOUGAR -DAMAYA_JAVA
+AMAYA_LIBS = $(THOTBIN)/libJava.a
+AMAYA_LINK = -lkaffe_vm -lkaffe_native -lkaffe_agent -lkaffe_net -lkaffe_bissawt
+
+JAVA_OPTIONS = # -DDEBUG_KAFFE -DDEBUG_LOCK -DDEBUG_SELECT # -DDEBUG_SELECT_CHANNELS -DDEBUG_TIMING -DSYNC_DNS 
+               
+#
+# SYSTEM_FLAGS : more system specific options
+#
+SYSTEM_FLAGS  = -fwritable-strings -D_WINDOWS -Wall
+#SYSTEM_FLAGS = -fwritable-strings -Wall		# for GCC on Linux
+#SYSTEM_FLAGS = -Wall -DRISC -DSVR4 -DSYSV		# for GCC on Solaris
+#SYSTEM_FLAGS = -Wall -DBSD -DRISC			# for GCC on SunOs
+#SYSTEM_FLAGS = -Wall					# for GCC on SGI
+#SYSTEM_FLAGS = -Wall -DRISC -DSVR4 -DSYSV		# for GCC on AIX 4.1
+
+#
+# MOTIFLIBS : how to grab Motif at link time.
+#             X11R6 probably need -lSM -lICE
+#
+#MOTIFLIBS = -L/usr/X11/lib -lXm -lXt
+MOTIFLIBS  = -lgdi32 -lcomctl32
+#MOTIFLIBS = -L/usr/X11R6/lib -lXm -lXt -lSM -lICE	# Linux
+#MOTIFLIBS = -L/usr/X11/lib -lXm -lXt			# Solaris
+#MOTIFLIBS = -L/usr/X11/lib -lXm -lXt			# SunOs
+#MOTIFLIBS = -L/usr/X11/lib -lXm -lXt			# AIX 4.1
+#MOTIFLIBS = -L/usr/lib -lXm -lXt			# SGI
+
+# AMAYA_OPTIONS: options to compile Amaya
+#AMAYA_OPTIONS = -DAMAYA_DEBUG -DCOUGAR -DAMAYA_PLUGIN
+#AMAYA_LINK = -lPlugin -lwww
+AMAYA_OPTIONS = 
+AMAYA_LINK = -lwww
+
+#
+# STDLIBS : standard libraries, Xext, X11, network, math and C
+#	    SYSV machines probably need -lsocket -lnsl
+#
+#STDLIBS  = -L/usr/X11/lib -lX11 -lm
+STDLIBS   = -luser32
+#STDLIBS  = -L/usr/X11R6/lib -lXext -lX11 -lm		# Linux
+#STDLIBS  = -L/usr/X11/lib -lX11 -lsocket -lnsl -lm -lc # Solaris
+#STDLIBS  = -L/usr/X11/lib -lX11 -lm			# SunOs
+#STDLIBS  = -L/usr/X11/lib -lX11 -lsocket -lnsl -lm -lc # AIX 4.1
+#STDLIBS  = -L/usr/lib -lX11 -lm  -lc			# SGI
+#
+
+
+#
+# Standard Unix program name.
+#
+
+CP	= cp
+CC	= /usr/local/win32/i586-pc-cygwin32/bin/gcc
+ECHO	= echo
+CAT	= cat
+CHMOD	= chmod
+SED	= sed
+AR	= /usr/local/win32/i586-pc-cygwin32/bin/ar rc
+RANLIB  = /usr/local/win32/i586-pc-cygwin32/bin/ranlib
+
+#
+# COMPIL_OPTIONS : Complete compile time options 
+#
+COMPIL_OPTIONS	= -c $(CFLAGS) $(SYSTEM_FLAGS) -I/usr/X11/include -I$(THOTDIR)/${MACHINE} -DHAVE_CONFIG_H
+
+# Standard Thot libraries : not to edit
+THOTLIBS  = -L${THOTDIR}/${MACHINE}/ -lpng -lz -ljpeg
+XLIBS     =  ${THOTLIBS} ${STDLIBS}
+LIBS	  =  ${THOTLIBS} ${MOTIFLIBS} ${STDLIBS} 
+
+start : all
+
+../makes/CommonMake : ../makes/Imakefile
+	@(echo Rebuilding CommonMake)
+	@(cd ../makes ; ./makemake);
+	@(echo CommonMake rebuilt)
+
+include ../makes/CommonMake
+

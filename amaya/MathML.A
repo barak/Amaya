@@ -1,0 +1,50 @@
+APPLICATION MathML;
+
+DEFAULT
+   BEGIN
+	ElemPaste.Post -> MathElementPasted;
+	ElemDelete.Pre -> MathElementWillBeDeleted;
+	ElemDelete.Post -> MathElementDeleted;
+   END;
+
+ELEMENTS
+
+   OpeningFence:
+	ElemGraphModify.Post -> FenceModified;
+   ClosingFence:
+	ElemGraphModify.Post -> FenceModified;
+   FencedSeparator:
+	ElemTextModify.Post -> FencedSeparatorModified;
+   MTEXT:
+	ElemTextModify.Post -> MathStringModified;
+   MI:
+	ElemTextModify.Post -> MathStringModified;
+   MO:
+	ElemTextModify.Post -> MathStringModified;
+   MN:
+	ElemTextModify.Post -> MathStringModified;
+   TEXT_UNIT:
+	ElemNew.Post -> NewMathString;
+
+ATTRIBUTES
+
+   open:
+	BEGIN
+	AttrCreate.Post -> AttrOpenCloseChanged;
+	AttrModify.Post -> AttrOpenCloseChanged;
+	AttrDelete.Post -> AttrOpenCloseChanged;
+	END;
+   close:
+	BEGIN
+	AttrCreate.Post -> AttrOpenCloseChanged;
+	AttrModify.Post -> AttrOpenCloseChanged;
+	AttrDelete.Post -> AttrOpenCloseChanged;
+	END;
+   separators:
+	BEGIN
+	AttrCreate.Post -> AttrSeparatorsChanged;
+	AttrModify.Post -> AttrSeparatorsChanged;
+	AttrDelete.Post -> AttrSeparatorsChanged;
+	END;
+
+END

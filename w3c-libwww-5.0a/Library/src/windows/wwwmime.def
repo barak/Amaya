@@ -1,0 +1,64 @@
+EXPORTS
+;HTBound.c		@ 100
+HTBoundary		@ 101
+
+;HTHeader.c		@ 200
+HTGenerator_add		@ 201
+HTGenerator_delete	@ 202
+HTGenerator_deleteAll	@ 203
+HTHeader_setMIMEParseSet @ 204
+HTHeader_MIMEParseSet	@ 205
+HTHeader_addParser	@ 206
+HTHeader_addRegexParser	@ 207
+HTHeader_deleteParser	@ 208
+HTHeader_setGenerator	@ 209
+HTHeader_generator	@ 210
+HTHeader_addGenerator	@ 211
+HTHeader_deleteGenerator @ 212
+HTHeader_deleteAll	@ 213
+
+;HTMIME.c		@ 300
+HTMIMEConvert		@ 301
+HTMIMEHeader		@ 302
+HTMIMEFooter		@ 303
+HTMIMEPartial		@ 304
+
+;HTMIMERq.c		@ 400
+HTMIMERequest_new	@ 401
+
+;HTMIMImp.c		@ 500
+HTMIME_accept		@ 501
+HTMIME_acceptCharset	@ 502
+HTMIME_acceptEncoding	@ 503
+HTMIME_acceptLanguage	@ 504
+HTMIME_acceptRanges	@ 505
+HTMIME_authenticate	@ 506
+HTMIME_authorization	@ 507
+HTMIME_cacheControl	@ 508
+HTMIME_connection	@ 509
+HTMIME_contentEncoding	@ 510
+HTMIME_contentLength	@ 511
+HTMIME_contentRange	@ 512
+HTMIME_contentTransferEncoding @ 513
+HTMIME_contentType	@ 514
+HTMIME_link		@ 515
+HTMIME_location		@ 516
+HTMIME_maxForwards	@ 517
+HTMIME_messageDigest	@ 518
+HTMIME_pragma		@ 519
+HTMIME_protocol		@ 520
+HTMIME_protocolInfo	@ 521
+HTMIME_protocolRequest	@ 522
+HTMIME_proxyAuthorization @ 523
+HTMIME_public		@ 524
+HTMIME_range		@ 525
+HTMIME_referer		@ 526
+HTMIME_retryAfter	@ 527
+HTMIME_server		@ 528
+HTMIME_upgrade		@ 529
+HTMIME_userAgent	@ 530
+HTMIME_vary		@ 531
+HTMIME_via		@ 532
+HTMIME_warning		@ 533
+
+

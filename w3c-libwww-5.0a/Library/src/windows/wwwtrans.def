@@ -1,0 +1,35 @@
+EXPORTS
+;HTANSI.c		@ 100
+HTANSIReader_new	@ 101
+HTANSIWriter_new	@ 102
+
+;HTBufWrt.c		@ 200
+HTBufferWriter_new	@ 201
+
+;HTLocal.c		@ 300
+HTFileOpen		@ 301
+HTFileClose		@ 302
+
+;HTMux.c		@ 400
+HTSession_new		@ 401
+HTW3mux_new		@ 402
+HTW3mux_delete		@ 403
+HTW3mux_isEmpty		@ 404
+HTW3mux_shutdown	@ 405
+
+;HTReader.c		@ 500
+HTReader_new		@ 501
+
+;HTSocket.c		@ 600
+HTLoadSocket		@ 601
+
+;HTTCP.c		@ 700
+HTDoConnect		@ 701
+HTDoAccept		@ 702
+HTDoListen		@ 703
+HTDoClose		@ 704
+
+;HTWriter.c		@ 800
+HTWriter_new		@ 801
+HTWriter_set		@ 802
+

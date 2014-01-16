@@ -1,0 +1,298 @@
+#
+# Main Makefile for Thot/Amaya source tree
+# Generated from Makefile.in
+# Daniel Veillard, 1997
+#
+
+@VPATHOPT@= @srcdir@
+THOTDIR = @top_srcdir@
+
+include Options
+
+LIBWWW	= w3c-libwww-$(LIBWWW_VER)
+KAFFE	= kaffe-$(KAFFE_VER)
+LIBJPEG	= libjpeg
+LIBPNG	= libpng
+LIBZ	= libz
+
+SUBDIRS	= tools tablelib thotlib batch drawlib indexlib thot amaya misc/annotations
+EXTRA_SUBDIRS= misc classes javalib
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+libdir = @libdir@
+bindir = @bindir@
+datadir = @datadir@
+
+srcdir	= $(THOTDIR)
+
+@SET_MAKE@
+
+default : thotlib tools amaya thot
+
+Options:
+	@CP@ Options.orig Options
+
+force :
+
+tools: rebuild force
+	@(if test -d tools ; then cd tools ; \
+	  $(MAKE) CC="$(CC)" CFLAGS="-O" all ; fi)
+
+thotlib: rebuild force
+	@(if test -d thotlib ; then cd thotlib ; \
+	  $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" all ; fi)
+
+thot: rebuild force
+	@(if test -d thot ; then cd thot ; \
+	  $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" thot ; fi)
+
+annotations: rebuild force
+	@(if test -d misc/annotations ; then cd misc/annotations ; \
+	  $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" annotations ; fi)
+
+
+html2piv: rebuild force
+	@(if test -d amaya ; then cd amaya ; \
+	  $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" html2piv ; fi)
+
+amaya: rebuild force bin/str
+	@(if test -d amaya ; then cd amaya ; \
+	  $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" amaya ; fi)
+
+misc: rebuild force
+	@(if test -d misc ; then cd misc ; \
+	  $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" all ; fi)
+
+all : rebuild
+	@(for dir in $(SUBDIRS) ;\
+	  do if test -d $$dir ; then cd $$dir ; \
+	  $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" all ; \
+	  cd .. ; fi ;done )
+
+clean : rebuild
+	@(for dir in $(SUBDIRS) $(EXTRA_SUBDIRS) ;\
+	  do if test -d $$dir ; then cd $$dir ; \
+	  $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" clean ; \
+	  cd .. ; fi ;done )
+
+install : rebuild
+	@(for dir in $(SUBDIRS) ;\
+	  do if test -d $$dir ; then cd $$dir ; \
+	  $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" install ; \
+	  cd .. ; fi ;done )
+
+uninstall : 
+	@(for dir in $(SUBDIRS) ;\
+	  do if test -d $$dir ; then cd $$dir ; \
+	  $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" uninstall ; \
+	  cd .. ; fi ;done )
+	$(RM) -rf $(datadir)/thot
+
+update :
+	@(cd $(THOTDIR) ; cvs update)
+
+commit :
+	@(cd $(THOTDIR) ; cvs commit)
+
+stubs:
+	@(cd javalib ; $(MAKE) stubs)
+
+classes: force
+	@(PWD=`pwd` ; PATH="$$PWD/bin:$$PATH" ; export PATH ; \
+	  if test -d $$PWD/$(THOTDIR) ; then CLASSES=$$PWD/$(THOTDIR)/classes;\
+	  else CLASSES=$(THOTDIR)/classes ; fi ; \
+	  CLASSPATH=".:$$CLASSES:$$CLASSES/classes.zip:$$CLASSES/thotlib.zip:$$CLASSES/jigsaw.zip:$$CLASSES/amaya.zip:$$CLASSES/biss.zip";export CLASSPATH;\
+	  cd $(THOTDIR)/classes ; $(MAKE) )
+
+zips: force
+	@(cd javalib ;  $(MAKE) zips);
+
+# 	@(PWD=`pwd` ; PATH="$$PWD/bin:$$PATH" ; export PATH ; \
+# 	  if test -d $$PWD/$(THOTDIR) ; then CLASSES=$$PWD/$(THOTDIR)/classes;\
+# 	  else CLASSES=$(THOTDIR)/classes ; fi ; \
+# 	  CLASSPATH=".:$$CLASSES:$$CLASSES/classes.zip:$$CLASSES/thotlib.zip:\
+# $$CLASSES/jigsaw.zip:$$CLASSES/amaya.zip:$$CLASSES/biss.zip";export CLASSPATH;\
+# 	  cd $(THOTDIR)/classes ; $(MAKE) zips)
+
+tools/mkdep/mkdep :
+	@(cd tools/mkdep ; $(MAKE) CC="$(CC)" CFLAGS="-O" mkdep)
+
+depend depends : rebuild tools/mkdep/mkdep
+	@(for dir in $(SUBDIRS) ;\
+	  do if test -d $$dir ; then cd $$dir ; \
+	  $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" depend ; \
+	  cd .. ; fi ;done )
+
+bin/cextract :
+	@(cd tools/cextract-$(CEXTRACT_VER) ; $(MAKE) CC="-O" CFLAGS="$(CFLAGS)" cextract)
+
+proto : rebuild bin/cextract
+	@(for dir in $(SUBDIRS) ;\
+	  do if test -d $$dir ; then cd $$dir ; \
+	  $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" proto ; \
+	  cd .. ; fi ;done )
+
+mkid : 
+	@(echo rebuilding $(THOTDIR)/ID reference file)
+	@(cd $(THOTDIR); mkid --lang-map=makes/id-lang.map . classes/org/w3c/*)
+
+#
+# Rule du rebuild the Thot schemas
+#
+
+bin/str : force
+	@(cd batch ; $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" str prs tra printstr)
+
+schemas : rebuild bin/str
+	@(bindir=`pwd`/bin ; cd $(THOTDIR)/schemas ; \
+	  $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" THOTDIR=".." THOTSCH="../schemas:../schemasOPERA" \
+	  COMPSCH="."  COMPSTR="$$bindir/str" COMPPRS="$$bindir/prs" \
+	  COMPTRA="$$bindir/tra" PRINTSTR="$$bindir/printstr" all)
+
+#
+# Rules to rebuild the libWWW package
+#
+
+libwww libwww.a :
+	@(if [ ! -d $(THOTDIR)/$(LIBWWW) ] ; \
+	  then \
+	      cd $(THOTDIR) ; cvs update -d $(LIBWWW) ; \
+	  fi)
+	@(if test ! -d $(LIBWWW) ; then $(MKDIR) $(LIBWWW) ;  fi)
+	@(localdir=`pwd` ; libwwwdir="$(THOTDIR)/$(LIBWWW)" ; cd $(LIBWWW) ; \
+	  unset LANG; if [ -x $$libwwwdir/configure ] ; then \
+	      $$libwwwdir/configure ; \
+	  else \
+	      ../$$libwwwdir/configure ; \
+	  fi)
+	-@(cd $(THOTDIR)/$(LIBWWW)/Library/src ; \
+	   touch *.html ; touch *.h ; touch *.c)
+	@(cd $(LIBWWW)/Library/src ; $(MAKE) CC=$(CC) CFLAGS="-O" libwww.a)
+	@($(CP) $(LIBWWW)/Library/src/libwww.a libwww.a)
+	@echo libwww.a reinstalled
+
+#
+# Rules to rebuild the libjpeg package
+#
+
+libjpeg libjpeg.a : force
+	@($(RM) $(THOTDIR)/libjpeg/*.o)
+	@(cd libjpeg ; $(MAKE) CC="$(CC)" CFLAGS="-O")
+
+#
+# Rules to rebuild the libpng package
+#
+
+libpng libpng.a : force
+	@($(RM) $(THOTDIR)/libpng/*.o)
+	@(cd libpng ; $(MAKE) CC="$(CC)" CFLAGS="-O")
+
+#
+# Rules to rebuild the libpng package
+#
+
+libz libz.a : force
+	@($(RM) $(THOTDIR)/libpng/libz/*.o)
+	@(cd libpng/libz ; $(MAKE) CC="$(CC)" CFLAGS="-O")
+
+#
+# Rules to rebuild the Kaffe package
+#
+
+kaffe_get :
+	@(if [ ! -d $(THOTDIR)/$(KAFFE) ] ; \
+	  then \
+	      cd $(THOTDIR) ; cvs get $(KAFFE) ; \
+	  fi)
+	@(if [ ! -d $(THOTDIR)/classes ] ; \
+	  then \
+	      cd $(THOTDIR) ; cvs get classes ; \
+	  fi)
+	@(if [ ! -d $(THOTDIR)/javalib ] ; \
+	  then \
+	      cd $(THOTDIR) ; cvs get javalib ; \
+	  fi)
+	@(if [ ! -d $(KAFFE) ] ; \
+	  then \
+	      mkdir $(KAFFE) ; \
+	  fi)
+
+kaffe_clean :
+	@($(RM) -f libkaffe*)
+
+kaffe_config :
+	@(localdir=`pwd` ; kaffedir="$(THOTDIR)/$(KAFFE)" ; cd $(KAFFE) ; \
+	  unset LANG; unset CC; unset CFLAGS; \
+	  if [ -x $$kaffedir/configure ] ; then \
+	      $$kaffedir/configure --prefix=$$localdir --libdir=$$localdir \
+	      --bindir=$$localdir/bin --enable-staticlib --with-x \
+	      @KAFFE_ENGINE@ ; \
+	  else \
+	      ../$$kaffedir/configure --prefix=$$localdir --libdir=$$localdir \
+	      --bindir=$$localdir/bin --enable-staticlib --with-x \
+	      @KAFFE_ENGINE@ ; \
+	  fi)
+
+kaffe_make :
+	@(cd $(KAFFE) ; unset CC ; unset CFLAGS; $(MAKE))
+
+kaffe_install:
+	@(cd $(KAFFE) ; $(MAKE) install)
+	@(if [ ! -d $(THOTDIR)/classes ] ; \
+	  then \
+	      $(MKDIR) $(THOTDIR)/classes ; \
+	  fi)
+	@(if [ ! -d $(THOTDIR)/classes/lib ] ; \
+	  then \
+	      $(MKDIR) $(THOTDIR)/classes/lib ; \
+	  fi)
+	@($(CP) -R share/kaffe/. $(THOTDIR)/classes)
+	@$(ECHO) Cleaning temp $(KAFFE) files
+	@($(RM) -r share man )
+
+#	@($(CP) libagent* libkaffevm* libnative* libnet* libzip* bin)
+#	@($(RM) libagent* libkaffevm* libnative* libnet* libzip*)
+
+kaffe : kaffe_get kaffe_clean kaffe_config kaffe_make kaffe_install
+	@(echo $(KAFFE) reinstalled)
+
+#
+# This section try to maintain the Makefile(s) up-to-date in
+# case the autoconf sources are modified.
+#
+
+MAKEFILE_IN= \
+@EXTRA_MAKEFILE_IN@ \
+$(THOTDIR)/Options.in \
+$(THOTDIR)/configure.in \
+$(THOTDIR)/Makefile.in \
+$(THOTDIR)/libjpeg/Makefile.in \
+$(THOTDIR)/batch/Makefile.in \
+$(THOTDIR)/libjpeg/Makefile.in \
+$(THOTDIR)/libpng/Makefile.in \
+$(THOTDIR)/libpng/zlib/Makefile.in \
+$(THOTDIR)/tablelib/Makefile.in \
+$(THOTDIR)/thotlib/Makefile.in \
+$(THOTDIR)/thotlib/include/Makefile.in \
+$(THOTDIR)/tools/Makefile.in \
+$(THOTDIR)/tools/mkdep/Makefile.in \
+$(THOTDIR)/tools/cextract-1.7/Makefile.in
+
+rebuild : tools/mkdep/mkdep Makefile
+
+${srcdir}/config.h.in: stamp-h.in
+
+${srcdir}/stamp-h.in: configure.in config.h.in
+	cd ${srcdir} && autoheader
+	echo timestamp > ${srcdir}/stamp-h.in
+
+stamp.h: config.h.in config.status
+	./config.status
+
+Makefile: $(MAKEFILE_IN) config.status
+	./config.status
+
+config.status: configure
+	./config.status --recheck
+

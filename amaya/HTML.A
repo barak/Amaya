@@ -1,0 +1,282 @@
+APPLICATION HTML;
+
+DEFAULT
+   BEGIN
+	ElemActivate.Pre -> DoubleClick;
+	DocClose.Post -> DocumentClosed;
+	DocSave.Pre -> DocumentToSave;
+	ElemPaste.Post -> ElementPasted;
+	ElemNew.Post -> ElementCreated;
+	PRuleCreate.Pre -> ChangePRule;
+	PRuleModify.Pre -> ChangePRule;
+	PRuleDelete.Post -> SetStyle;
+	ViewOpen.Pre -> ViewToOpen;
+	ViewClose.Pre -> ViewToClose;
+	ElemSelect.Post -> SelectionChanged;
+	ElemExtendSelect.Post -> SelectionChanged;
+	ElemTransform.Pre -> ElemToTransform;
+   END;
+
+ELEMENTS
+
+   PICTURE_UNIT:
+	BEGIN
+	ElemNew.Post -> UpdateSRCattribute;
+	ElemTextModify.Post -> UpdateSRCattribute;
+	END;
+
+   GRAPHICS_UNIT:
+      	BEGIN
+      	ElemGraphModify.Post -> GraphicsModified;
+      	END;
+
+   TEXT_UNIT:
+	BEGIN
+	ElemDelete.Pre -> DeleteText;
+	END;
+
+   Text_Input:
+	BEGIN
+	ElemTextModify.Pre -> SaveDocumentStatus;
+	ElemTextModify.Post -> RestoreDocumentStatus;
+	ElemSelect.Pre -> SelectIncludedText;
+	END;
+
+   Password_Input:
+	BEGIN
+	ElemTextModify.Pre -> SaveDocumentStatus;
+	ElemTextModify.Post -> RestoreDocumentStatus;
+	ElemSelect.Pre -> SelectIncludedText;
+	END;
+
+   Text_Area:
+	BEGIN
+	ElemTextModify.Pre -> SaveDocumentStatus;
+	ElemTextModify.Post -> RestoreDocumentStatus;
+	ElemSelect.Pre -> SelectIncludedText;
+	END;
+
+   TITLE:
+	ElemTextModify.Post -> TitleModified;
+
+   Table:
+	ElemNew.Post -> TableCreated;
+
+   Table_body:
+	ElemDelete.Post -> TablebodyDeleted;
+
+   Data_cell:
+	BEGIN
+	ElemNew.Post -> CellCreated;
+	ElemPaste.Post -> CellPasted;
+	ElemDelete.Pre -> DeleteCell;
+	ElemDelete.Post -> CellDeleted;
+	END;
+
+   Heading_cell:
+	BEGIN
+	ElemNew.Post -> CellCreated;
+	ElemPaste.Post -> CellPasted;
+	ElemDelete.Pre -> DeleteCell;
+	ElemDelete.Post -> CellDeleted;
+	END;
+
+   Table_row:
+	BEGIN
+	ElemNew.Post -> RowCreated;
+	ElemPaste.Post -> RowPasted;
+	ElemDelete.Pre -> DeleteRow;
+	ElemDelete.Post -> RowDeleted;
+	END;
+
+   StyleRule:
+	BEGIN
+	ElemChange.Pre -> DeleteStyleRule;
+	ElemChange.Post -> SetStyleRule;
+	ElemDelete.Pre -> DeleteStyleRule;
+	END;
+
+   List_Item:
+	BEGIN
+	ElemNew.Post -> ListItemCreated;
+	ElemPaste.Post -> ListItemCreated;
+	END;
+
+   Unnumbered_List:
+	ElemChange.Post -> ListChangedType;
+
+   Numbered_List:
+	ElemChange.Post -> ListChangedType;
+
+ATTRIBUTES
+
+   SRC:
+	BEGIN
+	AttrModify.Post -> SRCattrModified;
+	END;
+   coords:
+     	BEGIN
+      	AttrModify.Post -> CoordsModified;
+      	END;
+      
+   x_coord:
+     	BEGIN
+      	AttrModify.Post -> GraphicsModified;
+     	END;
+     
+   y_coord:
+     	BEGIN
+      	AttrModify.Post -> GraphicsModified;
+     	END;
+     
+   IntWidthPxl:
+   	BEGIN
+    	AttrModify.Post -> GraphicsModified;
+    	END;
+    
+   height\240:
+   	BEGIN
+   	AttrModify.Post -> GraphicsModified;
+   	END;
+
+   colspan_:
+	BEGIN
+	AttrCreate.Post -> ColspanCreated;
+	AttrModify.Pre ->  RegisterColspan;
+	AttrModify.Post -> ColspanModified;
+	AttrDelete.Pre ->  ColspanDelete;
+	END;
+
+   rowspan_:
+	BEGIN
+	AttrCreate.Post -> RowspanCreated;
+	AttrModify.Pre ->  RegisterRowspan;
+	AttrModify.Post -> RowspanModified;
+	AttrDelete.Pre ->  RowspanDelete;
+	END;
+
+   NAME:
+	AttrMenu.Pre ->    AttrNAMEinMenu;
+
+   Width__:
+	BEGIN
+	AttrCreate.Post -> AttrWidthModified;
+	AttrModify.Post -> AttrWidthModified;
+	AttrDelete.Pre ->  AttrWidthDelete;	
+	END;
+
+   Font_size:
+	BEGIN
+	AttrCreate.Post -> AttrFontSizeCreated;
+	AttrModify.Post -> AttrFontSizeCreated;
+	AttrDelete.Pre ->  AttrFontSizeDelete;	
+	END;
+
+   color:
+	BEGIN
+	AttrCreate.Post -> AttrColorCreated;
+	AttrModify.Post -> AttrColorCreated;
+	AttrDelete.Pre ->  AttrColorDelete;	
+	END;
+
+   TextColor:
+	BEGIN
+	AttrCreate.Post -> AttrColorCreated;
+	AttrModify.Post -> AttrColorCreated;
+	AttrDelete.Pre ->  AttrColorDelete;	
+	END;
+   BackgroundColor:
+	BEGIN
+	AttrCreate.Post -> AttrColorCreated;
+	AttrModify.Post -> AttrColorCreated;
+	AttrDelete.Pre ->  AttrColorDelete;	
+	END;
+   background_:
+	BEGIN
+	AttrCreate.Post -> AttrColorCreated;
+	AttrModify.Post -> AttrColorCreated;
+	AttrDelete.Pre ->  AttrColorDelete;	
+	END;
+   LinkColor:
+	BEGIN
+	AttrCreate.Post -> AttrColorCreated;
+	AttrModify.Post -> AttrColorCreated;
+	AttrDelete.Pre ->  AttrColorDelete;	
+	END;
+   VisitedLinkColor:
+	BEGIN
+	AttrCreate.Post -> AttrColorCreated;
+	AttrModify.Post -> AttrColorCreated;
+	AttrDelete.Pre ->  AttrColorDelete;	
+	END;
+   ActiveLinkColor:   
+	BEGIN
+	AttrCreate.Post -> AttrColorCreated;
+	AttrModify.Post -> AttrColorCreated;
+	AttrDelete.Pre ->  AttrColorDelete;
+	END;
+
+   BulletStyle:
+	BEGIN
+	AttrCreate.Post -> UpdateAttrIntItemStyle;
+	AttrModify.Post -> UpdateAttrIntItemStyle;
+	AttrDelete.Post -> UpdateAttrIntItemStyle;
+	END;
+
+   NumberStyle:
+	BEGIN
+	AttrCreate.Post -> UpdateAttrIntItemStyle;
+	AttrModify.Post -> UpdateAttrIntItemStyle;
+	AttrDelete.Post -> UpdateAttrIntItemStyle;
+	END;
+
+   ItemStyle:
+	BEGIN
+	AttrCreate.Post -> AttrItemStyle;
+	AttrModify.Post -> AttrItemStyle;
+	AttrDelete.Post -> AttrItemStyle;
+	END;
+
+   Style\240:
+	BEGIN
+	AttrCreate.Post -> UpdateStylePost;
+	AttrModify.Post -> UpdateStylePost;
+	AttrDelete.Pre ->  UpdateStyleDelete;
+	AttrDelete.Post -> AttrStyleDeleted;
+	END;
+
+   Class:
+	BEGIN
+	AttrCreate.Post -> AttrClassChanged;
+	AttrModify.Post -> AttrClassChanged;
+	AttrDelete.Post -> AttrClassChanged;
+	END;
+
+   Langue:
+	BEGIN
+	AttrCreate.Post -> AttrLangCreated;
+	AttrDelete.Post -> AttrLangDeleted;
+	END;
+
+   Selected:
+	BEGIN
+	AttrCreate.Post -> UpdateAttrSelected;
+	AttrModify.Post -> UpdateAttrSelected;
+	AttrDelete.Post -> AttrSelectedDeleted;	
+	END;
+
+   Multiple:
+	AttrDelete.Post -> UpdateAttrSelected;
+
+   Checked:
+	BEGIN
+	AttrDelete.Pre ->  DeleteAttrSelected;	
+	END;
+
+   ID:
+	BEGIN
+	AttrCreate.Post -> UpdateAttrID;
+	AttrModify.Post -> UpdateAttrID;	
+	AttrDelete.Post -> UpdateAttrID;
+	END;
+END

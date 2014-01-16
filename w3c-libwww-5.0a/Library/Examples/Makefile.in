@@ -1,0 +1,691 @@
+# Makefile.in generated automatically by automake 1.1f from Makefile.am
+
+# Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
+# This Makefile.in is free software; the Free Software Foundation
+# gives unlimited permission to copy, distribute and modify it.
+
+
+SHELL = /bin/sh
+
+srcdir = @srcdir@
+top_srcdir = @top_srcdir@
+VPATH = @srcdir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+
+bindir = @bindir@
+sbindir = @sbindir@
+libexecdir = @libexecdir@
+datadir = @datadir@
+sysconfdir = @sysconfdir@
+sharedstatedir = @sharedstatedir@
+localstatedir = @localstatedir@
+libdir = @libdir@
+infodir = @infodir@
+mandir = @mandir@
+includedir = @includedir@
+oldincludedir = /usr/include
+
+pkgdatadir = $(datadir)/@PACKAGE@
+pkglibdir = $(libdir)/@PACKAGE@
+pkgincludedir = $(includedir)/@PACKAGE@
+
+top_builddir = ../..
+
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_DATA = @INSTALL_DATA@
+INSTALL_SCRIPT = @INSTALL_SCRIPT@
+transform = @program_transform_name@
+target_alias = @target_alias@
+build_alias = @build_alias@
+host_triplet = @host@
+target_triplet = @target@
+build_triplet = @build@
+host_alias = @host_alias@
+
+AUTOMAKE_OPTIONS = foreign
+
+noinst_PROGRAMS = head libapp_1 libapp_2 libapp_3 libapp_4 init chunk chunkbody
+
+LDADD = ../../Library/src/libwww.a -lm
+
+DEPENDENCIES = \
+	../../Library/src/libwww.a
+
+INCLUDES = -I$(srcdir)/../../Library/src
+mkinstalldirs = $(top_srcdir)/config/mkinstalldirs
+CONFIG_HEADER = ../../config.h
+CONFIG_CLEAN_FILES = 
+PROGRAMS =  $(noinst_PROGRAMS)
+
+
+DEFS = @DEFS@ -I. -I$(srcdir) -I../..
+CPPFLAGS = @CPPFLAGS@
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
+head_SOURCES = head.c
+head_OBJECTS =  head.o
+EXTRA_head_SOURCES = 
+head_LDADD = $(LDADD)
+head_DEPENDENCIES =  ../../Library/src/libwww.a
+libapp_1_SOURCES = libapp_1.c
+libapp_1_OBJECTS =  libapp_1.o
+EXTRA_libapp_1_SOURCES = 
+libapp_1_LDADD = $(LDADD)
+libapp_1_DEPENDENCIES =  ../../Library/src/libwww.a
+libapp_2_SOURCES = libapp_2.c
+libapp_2_OBJECTS =  libapp_2.o
+EXTRA_libapp_2_SOURCES = 
+libapp_2_LDADD = $(LDADD)
+libapp_2_DEPENDENCIES =  ../../Library/src/libwww.a
+libapp_3_SOURCES = libapp_3.c
+libapp_3_OBJECTS =  libapp_3.o
+EXTRA_libapp_3_SOURCES = 
+libapp_3_LDADD = $(LDADD)
+libapp_3_DEPENDENCIES =  ../../Library/src/libwww.a
+libapp_4_SOURCES = libapp_4.c
+libapp_4_OBJECTS =  libapp_4.o
+EXTRA_libapp_4_SOURCES = 
+libapp_4_LDADD = $(LDADD)
+libapp_4_DEPENDENCIES =  ../../Library/src/libwww.a
+init_SOURCES = init.c
+init_OBJECTS =  init.o
+EXTRA_init_SOURCES = 
+init_LDADD = $(LDADD)
+init_DEPENDENCIES =  ../../Library/src/libwww.a
+chunk_SOURCES = chunk.c
+chunk_OBJECTS =  chunk.o
+EXTRA_chunk_SOURCES = 
+chunk_LDADD = $(LDADD)
+chunk_DEPENDENCIES =  ../../Library/src/libwww.a
+chunkbody_SOURCES = chunkbody.c
+chunkbody_OBJECTS =  chunkbody.o
+EXTRA_chunkbody_SOURCES = 
+chunkbody_LDADD = $(LDADD)
+chunkbody_DEPENDENCIES =  ../../Library/src/libwww.a
+CC = @CC@
+CFLAGS = @CFLAGS@
+COMPILE = $(CC) $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CFLAGS)
+LINK = $(CC) $(LDFLAGS) -o $@
+DIST_COMMON =  Makefile.am Makefile.in
+
+
+PACKAGE = @PACKAGE@
+VERSION = @VERSION@
+
+DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) \
+	$(TEXINFOS) $(INFOS) $(MANS) $(EXTRA_DIST)
+DEP_DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) \
+	$(TEXINFOS) $(INFO_DEPS) $(MANS) $(EXTRA_DIST)
+
+TAR = tar
+SOURCES = head.c libapp_1.c libapp_2.c libapp_3.c libapp_4.c init.c chunk.c chunkbody.c
+OBJECTS = head.o libapp_1.o libapp_2.o libapp_3.o libapp_4.o init.o chunk.o chunkbody.o
+
+default: all
+
+
+$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in
+	cd $(top_srcdir) && automake $(subdir)/Makefile
+
+Makefile: $(top_builddir)/config.status $(srcdir)/Makefile.in
+	cd $(top_builddir) && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= ./config.status
+
+mostlyclean-noinstPROGRAMS:
+
+clean-noinstPROGRAMS:
+	test -z "$(noinst_PROGRAMS)" || rm -f $(noinst_PROGRAMS)
+
+distclean-noinstPROGRAMS:
+
+maintainer-clean-noinstPROGRAMS:
+
+.c.o:
+	$(COMPILE) -c $<
+
+mostlyclean-compile:
+	rm -f *.o core
+
+clean-compile:
+
+distclean-compile:
+	rm -f *.tab.c
+
+maintainer-clean-compile:
+$(head_OBJECTS): ../../config.h
+
+head: $(head_OBJECTS) $(head_DEPENDENCIES)
+	$(LINK) $(head_OBJECTS) $(head_LDADD) $(LIBS)
+$(libapp_1_OBJECTS): ../../config.h
+
+libapp_1: $(libapp_1_OBJECTS) $(libapp_1_DEPENDENCIES)
+	$(LINK) $(libapp_1_OBJECTS) $(libapp_1_LDADD) $(LIBS)
+$(libapp_2_OBJECTS): ../../config.h
+
+libapp_2: $(libapp_2_OBJECTS) $(libapp_2_DEPENDENCIES)
+	$(LINK) $(libapp_2_OBJECTS) $(libapp_2_LDADD) $(LIBS)
+$(libapp_3_OBJECTS): ../../config.h
+
+libapp_3: $(libapp_3_OBJECTS) $(libapp_3_DEPENDENCIES)
+	$(LINK) $(libapp_3_OBJECTS) $(libapp_3_LDADD) $(LIBS)
+$(libapp_4_OBJECTS): ../../config.h
+
+libapp_4: $(libapp_4_OBJECTS) $(libapp_4_DEPENDENCIES)
+	$(LINK) $(libapp_4_OBJECTS) $(libapp_4_LDADD) $(LIBS)
+$(init_OBJECTS): ../../config.h
+
+init: $(init_OBJECTS) $(init_DEPENDENCIES)
+	$(LINK) $(init_OBJECTS) $(init_LDADD) $(LIBS)
+$(chunk_OBJECTS): ../../config.h
+
+chunk: $(chunk_OBJECTS) $(chunk_DEPENDENCIES)
+	$(LINK) $(chunk_OBJECTS) $(chunk_LDADD) $(LIBS)
+$(chunkbody_OBJECTS): ../../config.h
+
+chunkbody: $(chunkbody_OBJECTS) $(chunkbody_DEPENDENCIES)
+	$(LINK) $(chunkbody_OBJECTS) $(chunkbody_LDADD) $(LIBS)
+
+ID: $(HEADERS) $(SOURCES)
+	here=`pwd` && cd $(srcdir) && mkid -f$$here/ID $(SOURCES) $(HEADERS)
+
+tags: TAGS
+
+TAGS: $(HEADERS) $(SOURCES) $(TAGS_DEPENDENCIES)
+	here=`pwd` && cd $(srcdir) && etags $(ETAGS_ARGS) $(SOURCES) $(HEADERS) -o $$here/TAGS
+
+mostlyclean-tags:
+
+clean-tags:
+
+distclean-tags:
+	rm -f TAGS ID
+
+maintainer-clean-tags:
+
+distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
+
+subdir = Library/Examples
+distdir: $(DEP_DISTFILES)
+	@for file in `cd $(srcdir) && echo $(DISTFILES)`; do \
+	  test -f $(distdir)/$$file \
+	  || ln $(srcdir)/$$file $(distdir)/$$file 2> /dev/null \
+	  || cp -p $(srcdir)/$$file $(distdir)/$$file; \
+	done
+chunk.o: chunk.c ../../Library/src/WWWLib.h ../../Library/src/sysdep.h \
+	../../config.h ../../Library/src/WWWUtil.h \
+	../../Library/src/HTUtils.h ../../Library/src/HTMemory.h \
+	../../Library/src/HTArray.h ../../Library/src/HTAssoc.h \
+	../../Library/src/HTList.h ../../Library/src/HTAtom.h \
+	../../Library/src/HTChunk.h ../../Library/src/HTString.h \
+	../../Library/src/HTUU.h ../../Library/src/WWWCore.h \
+	../../Library/src/HTLib.h ../../Library/src/HTUser.h \
+	../../Library/src/HTReq.h ../../Library/src/HTEvent.h \
+	../../Library/src/HTFormat.h ../../Library/src/HTStream.h \
+	../../Library/src/HTAnchor.h ../../Library/src/HTLink.h \
+	../../Library/src/HTMethod.h ../../Library/src/HTResponse.h \
+	../../Library/src/HTError.h ../../Library/src/HTNet.h \
+	../../Library/src/HTTrans.h ../../Library/src/HTIOStream.h \
+	../../Library/src/HTChannl.h ../../Library/src/HTHost.h \
+	../../Library/src/HTDNS.h ../../Library/src/HTParse.h \
+	../../Library/src/HTEscape.h ../../Library/src/HTUTree.h \
+	../../Library/src/HTWWWStr.h ../../Library/src/HTAlert.h \
+	../../Library/src/HTBind.h ../../Library/src/HTStruct.h \
+	../../Library/src/HTFWrite.h ../../Library/src/HTInet.h \
+	../../Library/src/HTProt.h ../../Library/src/WWWHTTP.h \
+	../../Library/src/HTTPUtil.h ../../Library/src/HTTP.h \
+	../../Library/src/HTTPServ.h ../../Library/src/HTTPGen.h \
+	../../Library/src/HTTPReq.h ../../Library/src/HTTPRes.h \
+	../../Library/src/HTTChunk.h ../../Library/src/HTPEP.h \
+	../../Library/src/HTAAUtil.h ../../Library/src/HTAABrow.h \
+	../../Library/src/WWWInit.h ../../Library/src/HTProfil.h \
+	../../Library/src/HTInit.h ../../Library/src/WWWApp.h \
+	../../Library/src/HTEvntrg.h ../../Library/src/HTHome.h \
+	../../Library/src/HTDialog.h ../../Library/src/HTAccess.h \
+	../../Library/src/HTRules.h ../../Library/src/HTProxy.h \
+	../../Library/src/HTFilter.h ../../Library/src/HTLog.h \
+	../../Library/src/HTHist.h ../../Library/src/WWWTrans.h \
+	../../Library/src/HTANSI.h ../../Library/src/HTLocal.h \
+	../../Library/src/HTTCP.h ../../Library/src/HTSocket.h \
+	../../Library/src/HTReader.h ../../Library/src/HTWriter.h \
+	../../Library/src/HTBufWrt.h ../../Library/src/HTMux.h \
+	../../Library/src/WWWFile.h ../../Library/src/HTFile.h \
+	../../Library/src/HTMulti.h ../../Library/src/WWWFTP.h \
+	../../Library/src/HTFTP.h ../../Library/src/HTFTPDir.h \
+	../../Library/src/WWWGophe.h ../../Library/src/HTGopher.h \
+	../../Library/src/WWWTelnt.h ../../Library/src/HTTelnet.h \
+	../../Library/src/WWWNews.h ../../Library/src/HTNews.h \
+	../../Library/src/HTNewsRq.h ../../Library/src/HTNewsLs.h \
+	../../Library/src/HTNDir.h ../../Library/src/WWWMIME.h \
+	../../Library/src/HTMIME.h ../../Library/src/HTHeader.h \
+	../../Library/src/HTMIMERq.h ../../Library/src/HTMIMImp.h \
+	../../Library/src/HTBound.h ../../Library/src/HTMulpar.h \
+	../../Library/src/WWWHTML.h ../../Library/src/HTMLPDTD.h \
+	../../Library/src/SGML.h ../../Library/src/HTMLGen.h \
+	../../Library/src/HTTeXGen.h ../../Library/src/WWWStream.h \
+	../../Library/src/HTConLen.h ../../Library/src/HTGuess.h \
+	../../Library/src/HTTee.h ../../Library/src/HTMerge.h \
+	../../Library/src/HTSChunk.h ../../Library/src/HTXParse.h \
+	../../Library/src/WWWDir.h ../../Library/src/HTDir.h \
+	../../Library/src/HTIcons.h ../../Library/src/HTDescpt.h \
+	../../Library/src/WWWCache.h ../../Library/src/HTCache.h \
+	../../Library/src/HTHInit.h ../../Library/src/HTML.h \
+	../../Library/src/HTPlain.h ../../Library/src/HTBInit.h
+chunkbody.o: chunkbody.c ../../Library/src/WWWLib.h \
+	../../Library/src/sysdep.h ../../config.h \
+	../../Library/src/WWWUtil.h ../../Library/src/HTUtils.h \
+	../../Library/src/HTMemory.h ../../Library/src/HTArray.h \
+	../../Library/src/HTAssoc.h ../../Library/src/HTList.h \
+	../../Library/src/HTAtom.h ../../Library/src/HTChunk.h \
+	../../Library/src/HTString.h ../../Library/src/HTUU.h \
+	../../Library/src/WWWCore.h ../../Library/src/HTLib.h \
+	../../Library/src/HTUser.h ../../Library/src/HTReq.h \
+	../../Library/src/HTEvent.h ../../Library/src/HTFormat.h \
+	../../Library/src/HTStream.h ../../Library/src/HTAnchor.h \
+	../../Library/src/HTLink.h ../../Library/src/HTMethod.h \
+	../../Library/src/HTResponse.h ../../Library/src/HTError.h \
+	../../Library/src/HTNet.h ../../Library/src/HTTrans.h \
+	../../Library/src/HTIOStream.h ../../Library/src/HTChannl.h \
+	../../Library/src/HTHost.h ../../Library/src/HTDNS.h \
+	../../Library/src/HTParse.h ../../Library/src/HTEscape.h \
+	../../Library/src/HTUTree.h ../../Library/src/HTWWWStr.h \
+	../../Library/src/HTAlert.h ../../Library/src/HTBind.h \
+	../../Library/src/HTStruct.h ../../Library/src/HTFWrite.h \
+	../../Library/src/HTInet.h ../../Library/src/HTProt.h \
+	../../Library/src/WWWHTTP.h ../../Library/src/HTTPUtil.h \
+	../../Library/src/HTTP.h ../../Library/src/HTTPServ.h \
+	../../Library/src/HTTPGen.h ../../Library/src/HTTPReq.h \
+	../../Library/src/HTTPRes.h ../../Library/src/HTTChunk.h \
+	../../Library/src/HTPEP.h ../../Library/src/HTAAUtil.h \
+	../../Library/src/HTAABrow.h ../../Library/src/WWWInit.h \
+	../../Library/src/HTProfil.h ../../Library/src/HTInit.h \
+	../../Library/src/WWWApp.h ../../Library/src/HTEvntrg.h \
+	../../Library/src/HTHome.h ../../Library/src/HTDialog.h \
+	../../Library/src/HTAccess.h ../../Library/src/HTRules.h \
+	../../Library/src/HTProxy.h ../../Library/src/HTFilter.h \
+	../../Library/src/HTLog.h ../../Library/src/HTHist.h \
+	../../Library/src/WWWTrans.h ../../Library/src/HTANSI.h \
+	../../Library/src/HTLocal.h ../../Library/src/HTTCP.h \
+	../../Library/src/HTSocket.h ../../Library/src/HTReader.h \
+	../../Library/src/HTWriter.h ../../Library/src/HTBufWrt.h \
+	../../Library/src/HTMux.h ../../Library/src/WWWFile.h \
+	../../Library/src/HTFile.h ../../Library/src/HTMulti.h \
+	../../Library/src/WWWFTP.h ../../Library/src/HTFTP.h \
+	../../Library/src/HTFTPDir.h ../../Library/src/WWWGophe.h \
+	../../Library/src/HTGopher.h ../../Library/src/WWWTelnt.h \
+	../../Library/src/HTTelnet.h ../../Library/src/WWWNews.h \
+	../../Library/src/HTNews.h ../../Library/src/HTNewsRq.h \
+	../../Library/src/HTNewsLs.h ../../Library/src/HTNDir.h \
+	../../Library/src/WWWMIME.h ../../Library/src/HTMIME.h \
+	../../Library/src/HTHeader.h ../../Library/src/HTMIMERq.h \
+	../../Library/src/HTMIMImp.h ../../Library/src/HTBound.h \
+	../../Library/src/HTMulpar.h ../../Library/src/WWWHTML.h \
+	../../Library/src/HTMLPDTD.h ../../Library/src/SGML.h \
+	../../Library/src/HTMLGen.h ../../Library/src/HTTeXGen.h \
+	../../Library/src/WWWStream.h ../../Library/src/HTConLen.h \
+	../../Library/src/HTGuess.h ../../Library/src/HTTee.h \
+	../../Library/src/HTMerge.h ../../Library/src/HTSChunk.h \
+	../../Library/src/HTXParse.h ../../Library/src/WWWDir.h \
+	../../Library/src/HTDir.h ../../Library/src/HTIcons.h \
+	../../Library/src/HTDescpt.h ../../Library/src/WWWCache.h \
+	../../Library/src/HTCache.h ../../Library/src/HTHInit.h \
+	../../Library/src/HTML.h ../../Library/src/HTPlain.h \
+	../../Library/src/HTBInit.h
+head.o: head.c ../../Library/src/WWWLib.h ../../Library/src/sysdep.h \
+	../../config.h ../../Library/src/WWWUtil.h \
+	../../Library/src/HTUtils.h ../../Library/src/HTMemory.h \
+	../../Library/src/HTArray.h ../../Library/src/HTAssoc.h \
+	../../Library/src/HTList.h ../../Library/src/HTAtom.h \
+	../../Library/src/HTChunk.h ../../Library/src/HTString.h \
+	../../Library/src/HTUU.h ../../Library/src/WWWCore.h \
+	../../Library/src/HTLib.h ../../Library/src/HTUser.h \
+	../../Library/src/HTReq.h ../../Library/src/HTEvent.h \
+	../../Library/src/HTFormat.h ../../Library/src/HTStream.h \
+	../../Library/src/HTAnchor.h ../../Library/src/HTLink.h \
+	../../Library/src/HTMethod.h ../../Library/src/HTResponse.h \
+	../../Library/src/HTError.h ../../Library/src/HTNet.h \
+	../../Library/src/HTTrans.h ../../Library/src/HTIOStream.h \
+	../../Library/src/HTChannl.h ../../Library/src/HTHost.h \
+	../../Library/src/HTDNS.h ../../Library/src/HTParse.h \
+	../../Library/src/HTEscape.h ../../Library/src/HTUTree.h \
+	../../Library/src/HTWWWStr.h ../../Library/src/HTAlert.h \
+	../../Library/src/HTBind.h ../../Library/src/HTStruct.h \
+	../../Library/src/HTFWrite.h ../../Library/src/HTInet.h \
+	../../Library/src/HTProt.h ../../Library/src/WWWApp.h \
+	../../Library/src/HTEvntrg.h ../../Library/src/HTHome.h \
+	../../Library/src/HTDialog.h ../../Library/src/HTAccess.h \
+	../../Library/src/HTRules.h ../../Library/src/HTProxy.h \
+	../../Library/src/HTFilter.h ../../Library/src/HTLog.h \
+	../../Library/src/HTHist.h ../../Library/src/WWWInit.h \
+	../../Library/src/HTProfil.h ../../Library/src/HTInit.h \
+	../../Library/src/WWWTrans.h ../../Library/src/HTANSI.h \
+	../../Library/src/HTLocal.h ../../Library/src/HTTCP.h \
+	../../Library/src/HTSocket.h ../../Library/src/HTReader.h \
+	../../Library/src/HTWriter.h ../../Library/src/HTBufWrt.h \
+	../../Library/src/HTMux.h ../../Library/src/WWWHTTP.h \
+	../../Library/src/HTTPUtil.h ../../Library/src/HTTP.h \
+	../../Library/src/HTTPServ.h ../../Library/src/HTTPGen.h \
+	../../Library/src/HTTPReq.h ../../Library/src/HTTPRes.h \
+	../../Library/src/HTTChunk.h ../../Library/src/HTPEP.h \
+	../../Library/src/HTAAUtil.h ../../Library/src/HTAABrow.h \
+	../../Library/src/WWWFile.h ../../Library/src/HTFile.h \
+	../../Library/src/HTMulti.h ../../Library/src/WWWFTP.h \
+	../../Library/src/HTFTP.h ../../Library/src/HTFTPDir.h \
+	../../Library/src/WWWGophe.h ../../Library/src/HTGopher.h \
+	../../Library/src/WWWTelnt.h ../../Library/src/HTTelnet.h \
+	../../Library/src/WWWNews.h ../../Library/src/HTNews.h \
+	../../Library/src/HTNewsRq.h ../../Library/src/HTNewsLs.h \
+	../../Library/src/HTNDir.h ../../Library/src/WWWMIME.h \
+	../../Library/src/HTMIME.h ../../Library/src/HTHeader.h \
+	../../Library/src/HTMIMERq.h ../../Library/src/HTMIMImp.h \
+	../../Library/src/HTBound.h ../../Library/src/HTMulpar.h \
+	../../Library/src/WWWHTML.h ../../Library/src/HTMLPDTD.h \
+	../../Library/src/SGML.h ../../Library/src/HTMLGen.h \
+	../../Library/src/HTTeXGen.h ../../Library/src/WWWStream.h \
+	../../Library/src/HTConLen.h ../../Library/src/HTGuess.h \
+	../../Library/src/HTTee.h ../../Library/src/HTMerge.h \
+	../../Library/src/HTSChunk.h ../../Library/src/HTXParse.h \
+	../../Library/src/WWWDir.h ../../Library/src/HTDir.h \
+	../../Library/src/HTIcons.h ../../Library/src/HTDescpt.h \
+	../../Library/src/WWWCache.h ../../Library/src/HTCache.h \
+	../../Library/src/HTHInit.h ../../Library/src/HTML.h \
+	../../Library/src/HTPlain.h ../../Library/src/HTBInit.h
+init.o: init.c ../../Library/src/WWWLib.h ../../Library/src/sysdep.h \
+	../../config.h ../../Library/src/WWWUtil.h \
+	../../Library/src/HTUtils.h ../../Library/src/HTMemory.h \
+	../../Library/src/HTArray.h ../../Library/src/HTAssoc.h \
+	../../Library/src/HTList.h ../../Library/src/HTAtom.h \
+	../../Library/src/HTChunk.h ../../Library/src/HTString.h \
+	../../Library/src/HTUU.h ../../Library/src/WWWCore.h \
+	../../Library/src/HTLib.h ../../Library/src/HTUser.h \
+	../../Library/src/HTReq.h ../../Library/src/HTEvent.h \
+	../../Library/src/HTFormat.h ../../Library/src/HTStream.h \
+	../../Library/src/HTAnchor.h ../../Library/src/HTLink.h \
+	../../Library/src/HTMethod.h ../../Library/src/HTResponse.h \
+	../../Library/src/HTError.h ../../Library/src/HTNet.h \
+	../../Library/src/HTTrans.h ../../Library/src/HTIOStream.h \
+	../../Library/src/HTChannl.h ../../Library/src/HTHost.h \
+	../../Library/src/HTDNS.h ../../Library/src/HTParse.h \
+	../../Library/src/HTEscape.h ../../Library/src/HTUTree.h \
+	../../Library/src/HTWWWStr.h ../../Library/src/HTAlert.h \
+	../../Library/src/HTBind.h ../../Library/src/HTStruct.h \
+	../../Library/src/HTFWrite.h ../../Library/src/HTInet.h \
+	../../Library/src/HTProt.h ../../Library/src/WWWHTTP.h \
+	../../Library/src/HTTPUtil.h ../../Library/src/HTTP.h \
+	../../Library/src/HTTPServ.h ../../Library/src/HTTPGen.h \
+	../../Library/src/HTTPReq.h ../../Library/src/HTTPRes.h \
+	../../Library/src/HTTChunk.h ../../Library/src/HTPEP.h \
+	../../Library/src/HTAAUtil.h ../../Library/src/HTAABrow.h \
+	../../Library/src/WWWInit.h ../../Library/src/HTProfil.h \
+	../../Library/src/HTInit.h ../../Library/src/WWWApp.h \
+	../../Library/src/HTEvntrg.h ../../Library/src/HTHome.h \
+	../../Library/src/HTDialog.h ../../Library/src/HTAccess.h \
+	../../Library/src/HTRules.h ../../Library/src/HTProxy.h \
+	../../Library/src/HTFilter.h ../../Library/src/HTLog.h \
+	../../Library/src/HTHist.h ../../Library/src/WWWTrans.h \
+	../../Library/src/HTANSI.h ../../Library/src/HTLocal.h \
+	../../Library/src/HTTCP.h ../../Library/src/HTSocket.h \
+	../../Library/src/HTReader.h ../../Library/src/HTWriter.h \
+	../../Library/src/HTBufWrt.h ../../Library/src/HTMux.h \
+	../../Library/src/WWWFile.h ../../Library/src/HTFile.h \
+	../../Library/src/HTMulti.h ../../Library/src/WWWFTP.h \
+	../../Library/src/HTFTP.h ../../Library/src/HTFTPDir.h \
+	../../Library/src/WWWGophe.h ../../Library/src/HTGopher.h \
+	../../Library/src/WWWTelnt.h ../../Library/src/HTTelnet.h \
+	../../Library/src/WWWNews.h ../../Library/src/HTNews.h \
+	../../Library/src/HTNewsRq.h ../../Library/src/HTNewsLs.h \
+	../../Library/src/HTNDir.h ../../Library/src/WWWMIME.h \
+	../../Library/src/HTMIME.h ../../Library/src/HTHeader.h \
+	../../Library/src/HTMIMERq.h ../../Library/src/HTMIMImp.h \
+	../../Library/src/HTBound.h ../../Library/src/HTMulpar.h \
+	../../Library/src/WWWHTML.h ../../Library/src/HTMLPDTD.h \
+	../../Library/src/SGML.h ../../Library/src/HTMLGen.h \
+	../../Library/src/HTTeXGen.h ../../Library/src/WWWStream.h \
+	../../Library/src/HTConLen.h ../../Library/src/HTGuess.h \
+	../../Library/src/HTTee.h ../../Library/src/HTMerge.h \
+	../../Library/src/HTSChunk.h ../../Library/src/HTXParse.h \
+	../../Library/src/WWWDir.h ../../Library/src/HTDir.h \
+	../../Library/src/HTIcons.h ../../Library/src/HTDescpt.h \
+	../../Library/src/WWWCache.h ../../Library/src/HTCache.h \
+	../../Library/src/HTHInit.h ../../Library/src/HTML.h \
+	../../Library/src/HTPlain.h ../../Library/src/HTBInit.h
+libapp_1.o: libapp_1.c ../../Library/src/WWWLib.h \
+	../../Library/src/sysdep.h ../../config.h \
+	../../Library/src/WWWUtil.h ../../Library/src/HTUtils.h \
+	../../Library/src/HTMemory.h ../../Library/src/HTArray.h \
+	../../Library/src/HTAssoc.h ../../Library/src/HTList.h \
+	../../Library/src/HTAtom.h ../../Library/src/HTChunk.h \
+	../../Library/src/HTString.h ../../Library/src/HTUU.h \
+	../../Library/src/WWWCore.h ../../Library/src/HTLib.h \
+	../../Library/src/HTUser.h ../../Library/src/HTReq.h \
+	../../Library/src/HTEvent.h ../../Library/src/HTFormat.h \
+	../../Library/src/HTStream.h ../../Library/src/HTAnchor.h \
+	../../Library/src/HTLink.h ../../Library/src/HTMethod.h \
+	../../Library/src/HTResponse.h ../../Library/src/HTError.h \
+	../../Library/src/HTNet.h ../../Library/src/HTTrans.h \
+	../../Library/src/HTIOStream.h ../../Library/src/HTChannl.h \
+	../../Library/src/HTHost.h ../../Library/src/HTDNS.h \
+	../../Library/src/HTParse.h ../../Library/src/HTEscape.h \
+	../../Library/src/HTUTree.h ../../Library/src/HTWWWStr.h \
+	../../Library/src/HTAlert.h ../../Library/src/HTBind.h \
+	../../Library/src/HTStruct.h ../../Library/src/HTFWrite.h \
+	../../Library/src/HTInet.h ../../Library/src/HTProt.h
+libapp_2.o: libapp_2.c ../../Library/src/WWWLib.h \
+	../../Library/src/sysdep.h ../../config.h \
+	../../Library/src/WWWUtil.h ../../Library/src/HTUtils.h \
+	../../Library/src/HTMemory.h ../../Library/src/HTArray.h \
+	../../Library/src/HTAssoc.h ../../Library/src/HTList.h \
+	../../Library/src/HTAtom.h ../../Library/src/HTChunk.h \
+	../../Library/src/HTString.h ../../Library/src/HTUU.h \
+	../../Library/src/WWWCore.h ../../Library/src/HTLib.h \
+	../../Library/src/HTUser.h ../../Library/src/HTReq.h \
+	../../Library/src/HTEvent.h ../../Library/src/HTFormat.h \
+	../../Library/src/HTStream.h ../../Library/src/HTAnchor.h \
+	../../Library/src/HTLink.h ../../Library/src/HTMethod.h \
+	../../Library/src/HTResponse.h ../../Library/src/HTError.h \
+	../../Library/src/HTNet.h ../../Library/src/HTTrans.h \
+	../../Library/src/HTIOStream.h ../../Library/src/HTChannl.h \
+	../../Library/src/HTHost.h ../../Library/src/HTDNS.h \
+	../../Library/src/HTParse.h ../../Library/src/HTEscape.h \
+	../../Library/src/HTUTree.h ../../Library/src/HTWWWStr.h \
+	../../Library/src/HTAlert.h ../../Library/src/HTBind.h \
+	../../Library/src/HTStruct.h ../../Library/src/HTFWrite.h \
+	../../Library/src/HTInet.h ../../Library/src/HTProt.h \
+	../../Library/src/WWWHTTP.h ../../Library/src/HTTPUtil.h \
+	../../Library/src/HTTP.h ../../Library/src/HTTPServ.h \
+	../../Library/src/HTTPGen.h ../../Library/src/HTTPReq.h \
+	../../Library/src/HTTPRes.h ../../Library/src/HTTChunk.h \
+	../../Library/src/HTPEP.h ../../Library/src/HTAAUtil.h \
+	../../Library/src/HTAABrow.h ../../Library/src/WWWTrans.h \
+	../../Library/src/HTANSI.h ../../Library/src/HTLocal.h \
+	../../Library/src/HTTCP.h ../../Library/src/HTSocket.h \
+	../../Library/src/HTReader.h ../../Library/src/HTWriter.h \
+	../../Library/src/HTBufWrt.h ../../Library/src/HTMux.h
+libapp_3.o: libapp_3.c ../../Library/src/WWWLib.h \
+	../../Library/src/sysdep.h ../../config.h \
+	../../Library/src/WWWUtil.h ../../Library/src/HTUtils.h \
+	../../Library/src/HTMemory.h ../../Library/src/HTArray.h \
+	../../Library/src/HTAssoc.h ../../Library/src/HTList.h \
+	../../Library/src/HTAtom.h ../../Library/src/HTChunk.h \
+	../../Library/src/HTString.h ../../Library/src/HTUU.h \
+	../../Library/src/WWWCore.h ../../Library/src/HTLib.h \
+	../../Library/src/HTUser.h ../../Library/src/HTReq.h \
+	../../Library/src/HTEvent.h ../../Library/src/HTFormat.h \
+	../../Library/src/HTStream.h ../../Library/src/HTAnchor.h \
+	../../Library/src/HTLink.h ../../Library/src/HTMethod.h \
+	../../Library/src/HTResponse.h ../../Library/src/HTError.h \
+	../../Library/src/HTNet.h ../../Library/src/HTTrans.h \
+	../../Library/src/HTIOStream.h ../../Library/src/HTChannl.h \
+	../../Library/src/HTHost.h ../../Library/src/HTDNS.h \
+	../../Library/src/HTParse.h ../../Library/src/HTEscape.h \
+	../../Library/src/HTUTree.h ../../Library/src/HTWWWStr.h \
+	../../Library/src/HTAlert.h ../../Library/src/HTBind.h \
+	../../Library/src/HTStruct.h ../../Library/src/HTFWrite.h \
+	../../Library/src/HTInet.h ../../Library/src/HTProt.h \
+	../../Library/src/WWWStream.h ../../Library/src/HTConLen.h \
+	../../Library/src/HTGuess.h ../../Library/src/HTTee.h \
+	../../Library/src/HTMerge.h ../../Library/src/HTSChunk.h \
+	../../Library/src/HTXParse.h ../../Library/src/HTReader.h \
+	../../Library/src/WWWInit.h ../../Library/src/HTProfil.h \
+	../../Library/src/HTInit.h ../../Library/src/WWWApp.h \
+	../../Library/src/HTEvntrg.h ../../Library/src/HTHome.h \
+	../../Library/src/HTDialog.h ../../Library/src/HTAccess.h \
+	../../Library/src/HTRules.h ../../Library/src/HTProxy.h \
+	../../Library/src/HTFilter.h ../../Library/src/HTLog.h \
+	../../Library/src/HTHist.h ../../Library/src/WWWTrans.h \
+	../../Library/src/HTANSI.h ../../Library/src/HTLocal.h \
+	../../Library/src/HTTCP.h ../../Library/src/HTSocket.h \
+	../../Library/src/HTWriter.h ../../Library/src/HTBufWrt.h \
+	../../Library/src/HTMux.h ../../Library/src/WWWHTTP.h \
+	../../Library/src/HTTPUtil.h ../../Library/src/HTTP.h \
+	../../Library/src/HTTPServ.h ../../Library/src/HTTPGen.h \
+	../../Library/src/HTTPReq.h ../../Library/src/HTTPRes.h \
+	../../Library/src/HTTChunk.h ../../Library/src/HTPEP.h \
+	../../Library/src/HTAAUtil.h ../../Library/src/HTAABrow.h \
+	../../Library/src/WWWFile.h ../../Library/src/HTFile.h \
+	../../Library/src/HTMulti.h ../../Library/src/WWWFTP.h \
+	../../Library/src/HTFTP.h ../../Library/src/HTFTPDir.h \
+	../../Library/src/WWWGophe.h ../../Library/src/HTGopher.h \
+	../../Library/src/WWWTelnt.h ../../Library/src/HTTelnet.h \
+	../../Library/src/WWWNews.h ../../Library/src/HTNews.h \
+	../../Library/src/HTNewsRq.h ../../Library/src/HTNewsLs.h \
+	../../Library/src/HTNDir.h ../../Library/src/WWWMIME.h \
+	../../Library/src/HTMIME.h ../../Library/src/HTHeader.h \
+	../../Library/src/HTMIMERq.h ../../Library/src/HTMIMImp.h \
+	../../Library/src/HTBound.h ../../Library/src/HTMulpar.h \
+	../../Library/src/WWWHTML.h ../../Library/src/HTMLPDTD.h \
+	../../Library/src/SGML.h ../../Library/src/HTMLGen.h \
+	../../Library/src/HTTeXGen.h ../../Library/src/WWWDir.h \
+	../../Library/src/HTDir.h ../../Library/src/HTIcons.h \
+	../../Library/src/HTDescpt.h ../../Library/src/WWWCache.h \
+	../../Library/src/HTCache.h ../../Library/src/HTHInit.h \
+	../../Library/src/HTML.h ../../Library/src/HTPlain.h \
+	../../Library/src/HTBInit.h
+libapp_4.o: libapp_4.c ../../Library/src/WWWLib.h \
+	../../Library/src/sysdep.h ../../config.h \
+	../../Library/src/WWWUtil.h ../../Library/src/HTUtils.h \
+	../../Library/src/HTMemory.h ../../Library/src/HTArray.h \
+	../../Library/src/HTAssoc.h ../../Library/src/HTList.h \
+	../../Library/src/HTAtom.h ../../Library/src/HTChunk.h \
+	../../Library/src/HTString.h ../../Library/src/HTUU.h \
+	../../Library/src/WWWCore.h ../../Library/src/HTLib.h \
+	../../Library/src/HTUser.h ../../Library/src/HTReq.h \
+	../../Library/src/HTEvent.h ../../Library/src/HTFormat.h \
+	../../Library/src/HTStream.h ../../Library/src/HTAnchor.h \
+	../../Library/src/HTLink.h ../../Library/src/HTMethod.h \
+	../../Library/src/HTResponse.h ../../Library/src/HTError.h \
+	../../Library/src/HTNet.h ../../Library/src/HTTrans.h \
+	../../Library/src/HTIOStream.h ../../Library/src/HTChannl.h \
+	../../Library/src/HTHost.h ../../Library/src/HTDNS.h \
+	../../Library/src/HTParse.h ../../Library/src/HTEscape.h \
+	../../Library/src/HTUTree.h ../../Library/src/HTWWWStr.h \
+	../../Library/src/HTAlert.h ../../Library/src/HTBind.h \
+	../../Library/src/HTStruct.h ../../Library/src/HTFWrite.h \
+	../../Library/src/HTInet.h ../../Library/src/HTProt.h \
+	../../Library/src/WWWInit.h ../../Library/src/HTProfil.h \
+	../../Library/src/HTInit.h ../../Library/src/WWWApp.h \
+	../../Library/src/HTEvntrg.h ../../Library/src/HTHome.h \
+	../../Library/src/HTDialog.h ../../Library/src/HTAccess.h \
+	../../Library/src/HTRules.h ../../Library/src/HTProxy.h \
+	../../Library/src/HTFilter.h ../../Library/src/HTLog.h \
+	../../Library/src/HTHist.h ../../Library/src/WWWTrans.h \
+	../../Library/src/HTANSI.h ../../Library/src/HTLocal.h \
+	../../Library/src/HTTCP.h ../../Library/src/HTSocket.h \
+	../../Library/src/HTReader.h ../../Library/src/HTWriter.h \
+	../../Library/src/HTBufWrt.h ../../Library/src/HTMux.h \
+	../../Library/src/WWWHTTP.h ../../Library/src/HTTPUtil.h \
+	../../Library/src/HTTP.h ../../Library/src/HTTPServ.h \
+	../../Library/src/HTTPGen.h ../../Library/src/HTTPReq.h \
+	../../Library/src/HTTPRes.h ../../Library/src/HTTChunk.h \
+	../../Library/src/HTPEP.h ../../Library/src/HTAAUtil.h \
+	../../Library/src/HTAABrow.h ../../Library/src/WWWFile.h \
+	../../Library/src/HTFile.h ../../Library/src/HTMulti.h \
+	../../Library/src/WWWFTP.h ../../Library/src/HTFTP.h \
+	../../Library/src/HTFTPDir.h ../../Library/src/WWWGophe.h \
+	../../Library/src/HTGopher.h ../../Library/src/WWWTelnt.h \
+	../../Library/src/HTTelnet.h ../../Library/src/WWWNews.h \
+	../../Library/src/HTNews.h ../../Library/src/HTNewsRq.h \
+	../../Library/src/HTNewsLs.h ../../Library/src/HTNDir.h \
+	../../Library/src/WWWMIME.h ../../Library/src/HTMIME.h \
+	../../Library/src/HTHeader.h ../../Library/src/HTMIMERq.h \
+	../../Library/src/HTMIMImp.h ../../Library/src/HTBound.h \
+	../../Library/src/HTMulpar.h ../../Library/src/WWWHTML.h \
+	../../Library/src/HTMLPDTD.h ../../Library/src/SGML.h \
+	../../Library/src/HTMLGen.h ../../Library/src/HTTeXGen.h \
+	../../Library/src/WWWStream.h ../../Library/src/HTConLen.h \
+	../../Library/src/HTGuess.h ../../Library/src/HTTee.h \
+	../../Library/src/HTMerge.h ../../Library/src/HTSChunk.h \
+	../../Library/src/HTXParse.h ../../Library/src/WWWDir.h \
+	../../Library/src/HTDir.h ../../Library/src/HTIcons.h \
+	../../Library/src/HTDescpt.h ../../Library/src/WWWCache.h \
+	../../Library/src/HTCache.h ../../Library/src/HTHInit.h \
+	../../Library/src/HTML.h ../../Library/src/HTPlain.h \
+	../../Library/src/HTBInit.h
+
+info:
+dvi:
+check: all
+installcheck:
+install-exec: 
+	$(NORMAL_INSTALL)
+
+install-data: 
+	$(NORMAL_INSTALL)
+
+install: install-exec install-data all
+	@:
+
+uninstall: 
+
+all: $(PROGRAMS) Makefile
+
+install-strip:
+	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' install
+installdirs:
+
+
+mostlyclean-generic:
+	test -z "$(MOSTLYCLEANFILES)" || rm -f $(MOSTLYCLEANFILES)
+
+clean-generic:
+	test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
+
+distclean-generic:
+	rm -f Makefile $(DISTCLEANFILES)
+	rm -f config.cache config.log stamp-h
+	test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
+
+maintainer-clean-generic:
+	test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
+	test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
+mostlyclean:  mostlyclean-noinstPROGRAMS mostlyclean-compile \
+		mostlyclean-tags mostlyclean-generic
+
+clean:  clean-noinstPROGRAMS clean-compile clean-tags clean-generic \
+		mostlyclean 
+
+distclean:  distclean-noinstPROGRAMS distclean-compile distclean-tags \
+		distclean-generic clean 
+	rm -f config.status
+
+maintainer-clean:  maintainer-clean-noinstPROGRAMS \
+		maintainer-clean-compile maintainer-clean-tags \
+		maintainer-clean-generic distclean 
+	@echo "This command is intended for maintainers to use;"
+	@echo "it deletes files that may require special tools to rebuild."
+
+.PHONY: default mostlyclean-noinstPROGRAMS distclean-noinstPROGRAMS \
+clean-noinstPROGRAMS maintainer-clean-noinstPROGRAMS \
+mostlyclean-compile distclean-compile clean-compile \
+maintainer-clean-compile tags mostlyclean-tags distclean-tags \
+clean-tags maintainer-clean-tags distdir info dvi check installcheck \
+install-exec install-data install uninstall all installdirs \
+mostlyclean-generic distclean-generic clean-generic \
+maintainer-clean-generic clean mostlyclean distclean maintainer-clean
+
+.SUFFIXES:
+.SUFFIXES: .c .o
+
+# Tell versions [3.59,3.63) of GNU make to not export all variables.
+# Otherwise a system limit (for SysV at least) may be exceeded.
+.NOEXPORT:

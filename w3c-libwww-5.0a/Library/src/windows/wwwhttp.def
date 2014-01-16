@@ -1,0 +1,48 @@
+EXPORTS
+;HTAABrow.c		@ 100
+HTBasic_delete		@ 101
+HTBasic_generate	@ 102
+HTBasic_parse		@ 103
+HTDigest_delete		@ 104
+HTDigest_generate	@ 105
+HTDigest_parse		@ 106
+
+;HTAAUtil.c		@ 200
+HTAA_newModule		@ 201
+HTAA_findModule		@ 202
+HTAA_deleteModule	@ 203
+HTAA_deleteAllModules	@ 204
+HTAA_updateNode		@ 205
+HTAA_beforeFilter	@ 206
+HTAA_afterFilter	@ 207
+HTAA_proxyBeforeFilter	@ 208
+
+;HTTChunk.c		@ 300
+HTChunkedDecoder	@ 301
+HTChunkedEncoder	@ 302
+
+;HTTP.c			@ 400
+HTTPStatus_new		@ 401
+HTLoadHTTP		@ 402
+
+;HTTPGen.c		@ 500
+HTTPGen_new		@ 501
+
+;HTTPReq.c		@ 600
+HTTPRequest_new		@ 601
+
+;HTTPRes.c		@ 700
+HTTPResponse_new	@ 701
+
+;HTTPServ.c		@ 800
+HTServHTTP		@ 801
+
+;HTPEP.c		@ 900
+HTPEP_newModule		@ 901
+HTPEP_findModule	@ 902
+HTPEP_deleteModule	@ 903
+HTPEP_deleteAllModules	@ 904
+HTPEP_addNode		@ 905
+HTPEP_beforeFilter	@ 906
+HTPEP_afterFilter	@ 907
+

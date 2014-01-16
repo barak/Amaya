@@ -1,0 +1,21 @@
+EXPORTS
+;HTConLen.c		@ 100
+HTContentCounter	@ 101
+HTBuffer_new		@ 102
+HTPipeBuffer_new	@ 103
+
+;HTGuess.c		@ 200
+HTGuess_new		@ 201
+
+;HTSChunk.c		@ 300
+HTStreamToChunk		@ 301
+
+;HTTee.c		@ 400
+HTTee			@ 401
+
+;HTMerge.c		@ 500
+HTMerge			@ 501
+
+;HTXParse.c		@ 600
+HTXParse		@ 601
+
