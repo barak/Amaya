@@ -4,7 +4,7 @@
 // Author:      Stefan Csomor
 // Modified by:
 // Created:     1998-01-01
-// RCS-ID:      $Id: settings.cpp,v 1.1.1.1 2005/07/06 09:30:53 gully Exp $
+// RCS-ID:      $Id: settings.cpp,v 1.1.1.2 2005/07/26 09:31:08 gully Exp $
 // Copyright:   (c) Stefan Csomor
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -76,7 +76,7 @@ wxColour wxSystemSettingsNative::GetColour(wxSystemColour index)
         case wxSYS_COLOUR_HIGHLIGHT:
             {
                 RGBColor hilite ;
-                LMGetHiliteRGB(&hilite) ;
+                GetThemeBrushAsColor( kThemeBrushPrimaryHighlightColor, 32, true, &hilite );
                 return wxColor( hilite.red >> 8 , hilite.green >> 8  , hilite.blue >> 8  ) ;
             }
             break ;
@@ -94,7 +94,7 @@ wxColour wxSystemSettingsNative::GetColour(wxSystemColour index)
         case wxSYS_COLOUR_HIGHLIGHTTEXT :
             {
                 RGBColor hilite ;
-                LMGetHiliteRGB(&hilite) ;
+                GetThemeBrushAsColor( kThemeBrushPrimaryHighlightColor, 32, true, &hilite );
                 if ( ( hilite.red + hilite.green + hilite.blue ) == 0 )
                         return *wxWHITE ;
                 else

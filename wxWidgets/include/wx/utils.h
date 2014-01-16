@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     29/01/98
-// RCS-ID:      $Id: utils.h,v 1.1.1.1 2005/07/06 09:30:08 gully Exp $
+// RCS-ID:      $Id: utils.h,v 1.1.1.2 2005/07/26 09:30:53 gully Exp $
 // Copyright:   (c) 1998 Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -324,8 +324,10 @@ WXDLLIMPEXP_BASE bool wxHandleFatalExceptions(bool doit = true);
 
 #endif // wxUSE_ON_FATAL_EXCEPTION
 
+#if wxABI_VERSION >= 20601
 // Launch url in the user's default internet browser
 WXDLLIMPEXP_BASE bool wxLaunchDefaultBrowser(const wxString& url);
+#endif
 
 // ----------------------------------------------------------------------------
 // Environment variables

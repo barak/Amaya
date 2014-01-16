@@ -9,8 +9,8 @@
 
 #include <sys/types.h>
 #ifndef _WINDOWS
-  #include <sys/time.h>
-  #include <unistd.h>
+#include <sys/time.h>
+#include <unistd.h>
 #endif /* _WINDOWS */
 
 /* at begining m_RegistredSocket must be initialized */
@@ -33,16 +33,14 @@ int                  wxAmayaSocketEvent::m_UsedSocket[MAX_SOCKET];
 wxAmayaSocketEventLoop * wxAmayaSocketEvent::m_pEventLoop = NULL;
 
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  wxAmayaSocketEvent
  *      Method:  InitSocketEvent
  * Description:  used to init the socket eventloop
  *               when the eventloop is known, it's possible to optimize the polling
  *               if a socket is active, the polling is enabled
  *               if nothing is active, the polling is disabled
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void wxAmayaSocketEvent::InitSocketEvent( wxAmayaSocketEventLoop * p_eventloop )
 {
   TTALOGDEBUG_0( TTA_LOG_SOCKET | TTA_LOG_INIT, _T("wxAmayaSocketEvent::InitSocketEvent") );
@@ -52,17 +50,15 @@ void wxAmayaSocketEvent::InitSocketEvent( wxAmayaSocketEventLoop * p_eventloop )
     m_pEventLoop->Start();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  wxAmayaSocketEvent
  *      Method:  RegisterSocket
  * Description:  register a socket for a given condition
  *               if the condition occure, the given callback is called
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 int wxAmayaSocketEvent::RegisterSocket( int socket,
-					wxAmayaSocketCondition condition,
-					wxAmayaSocketCallback  callback )
+                                        wxAmayaSocketCondition condition,
+                                        wxAmayaSocketCallback  callback )
 {
   TTALOGDEBUG_2( TTA_LOG_SOCKET, _T("wxAmayaSocketEvent::RegisterSocket %d %d"), socket, condition );
 
@@ -72,7 +68,7 @@ int wxAmayaSocketEvent::RegisterSocket( int socket,
   int new_entry = AddSocketEntry();
   /* no more free entry ? */
   if (!new_entry)
-      return 0;
+    return 0;
 
   /* fdmax update */
   if( !SocketExists( socket ) )
@@ -89,21 +85,19 @@ int wxAmayaSocketEvent::RegisterSocket( int socket,
   if (m_SocketFDMax - socket == 0)
     {
       if (m_pEventLoop)
-	m_pEventLoop->Start();
+        m_pEventLoop->Start();
     }
 
   return new_entry;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  wxAmayaSocketEvent
  *      Method:  UnregisterSocket
  * Description:  unregister a socket 
  *               this methode free an entry 
  *               and stop the pooling if nomore socket si active
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 bool wxAmayaSocketEvent::UnregisterSocket( int register_id )
 {
   /* the socket array must be initialized before do something */
@@ -125,21 +119,19 @@ bool wxAmayaSocketEvent::UnregisterSocket( int register_id )
   if (m_SocketFDMax <= 0)
     {
       if (m_pEventLoop)
-	m_pEventLoop->Stop();
+        m_pEventLoop->Stop();
     }
 
   return removed;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  wxAmayaSocketEvent
  *      Method:  CheckSocketStatus
  * Description:  used to check periodicaly if something happend on a socket
  *               use the system call "select()" to know if something is comming or not
  *               int bloking_time is the time to wait for (by default 0)
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 bool wxAmayaSocketEvent::CheckSocketStatus( int bloking_time )
 {
   if (m_NbRegistredSocket <= 0)
@@ -158,17 +150,17 @@ bool wxAmayaSocketEvent::CheckSocketStatus( int bloking_time )
     {
       entry = m_UsedSocket[id_entry];
       switch (m_RegistredSocket[entry].condition)
-	{
-	case WXAMAYASOCKET_READ:
-	  FD_SET(m_RegistredSocket[entry].socket, &read_fds);
-	  break;
-	case WXAMAYASOCKET_WRITE:
-	  FD_SET(m_RegistredSocket[entry].socket, &write_fds);
-	  break;
-	case WXAMAYASOCKET_EXCEPTION:
-	  FD_SET(m_RegistredSocket[entry].socket, &except_fds);
-	  break;
-	}
+        {
+        case WXAMAYASOCKET_READ:
+          FD_SET(m_RegistredSocket[entry].socket, &read_fds);
+          break;
+        case WXAMAYASOCKET_WRITE:
+          FD_SET(m_RegistredSocket[entry].socket, &write_fds);
+          break;
+        case WXAMAYASOCKET_EXCEPTION:
+          FD_SET(m_RegistredSocket[entry].socket, &except_fds);
+          break;
+        }
       id_entry++;
     }
 
@@ -177,10 +169,10 @@ bool wxAmayaSocketEvent::CheckSocketStatus( int bloking_time )
   tv.tv_sec  = 0;
   tv.tv_usec = bloking_time;
   int status = select( m_SocketFDMax + 1,
-		       &read_fds,
-		       &write_fds,
-		       &except_fds,
-		       &tv );
+                       &read_fds,
+                       &write_fds,
+                       &except_fds,
+                       &tv );
   if (status == -1)
     {
       TTALOGDEBUG_0( TTA_LOG_SOCKET, _T("wxAmayaSocketEvent: Select failed") );
@@ -194,37 +186,37 @@ bool wxAmayaSocketEvent::CheckSocketStatus( int bloking_time )
     {
       entry = m_UsedSocket[id_entry];
       switch (m_RegistredSocket[entry].condition)
-	{
-	case WXAMAYASOCKET_READ:
-	  if (FD_ISSET(m_RegistredSocket[entry].socket, &read_fds))
-	    {
-	      TTALOGDEBUG_1( TTA_LOG_SOCKET, _T("wxAmayaSocketEvent::WXAMAYASOCKET_READ %d"), m_RegistredSocket[entry].socket );
-	      (*m_RegistredSocket[entry].callback)(entry,
-						   m_RegistredSocket[entry].socket,
-						   m_RegistredSocket[entry].condition);
-	    }
-	  break;
+        {
+        case WXAMAYASOCKET_READ:
+          if (FD_ISSET(m_RegistredSocket[entry].socket, &read_fds))
+            {
+              TTALOGDEBUG_1( TTA_LOG_SOCKET, _T("wxAmayaSocketEvent::WXAMAYASOCKET_READ %d"), m_RegistredSocket[entry].socket );
+              (*m_RegistredSocket[entry].callback)(entry,
+                                                   m_RegistredSocket[entry].socket,
+                                                   m_RegistredSocket[entry].condition);
+            }
+          break;
 
-	case WXAMAYASOCKET_WRITE:
-	  if (FD_ISSET(m_RegistredSocket[entry].socket, &write_fds))
-	    {
-	      TTALOGDEBUG_1( TTA_LOG_SOCKET, _T("wxAmayaSocketEvent::WXAMAYASOCKET_WRITE %d"), m_RegistredSocket[entry].socket );
-	      (*m_RegistredSocket[entry].callback)(entry,
-						   m_RegistredSocket[entry].socket,
-						   m_RegistredSocket[entry].condition);
-	    }
-	  break;
+        case WXAMAYASOCKET_WRITE:
+          if (FD_ISSET(m_RegistredSocket[entry].socket, &write_fds))
+            {
+              TTALOGDEBUG_1( TTA_LOG_SOCKET, _T("wxAmayaSocketEvent::WXAMAYASOCKET_WRITE %d"), m_RegistredSocket[entry].socket );
+              (*m_RegistredSocket[entry].callback)(entry,
+                                                   m_RegistredSocket[entry].socket,
+                                                   m_RegistredSocket[entry].condition);
+            }
+          break;
 
-	case WXAMAYASOCKET_EXCEPTION:
-	  if (FD_ISSET(m_RegistredSocket[entry].socket, &except_fds))
-	    {
-	      TTALOGDEBUG_1( TTA_LOG_SOCKET, _T("wxAmayaSocketEvent::WXAMAYASOCKET_EXCEPTION %d"), m_RegistredSocket[entry].socket );
-	      (*m_RegistredSocket[entry].callback)(entry,
-						   m_RegistredSocket[entry].socket,
-						   m_RegistredSocket[entry].condition);
-	    }
-	  break;
-	}
+        case WXAMAYASOCKET_EXCEPTION:
+          if (FD_ISSET(m_RegistredSocket[entry].socket, &except_fds))
+            {
+              TTALOGDEBUG_1( TTA_LOG_SOCKET, _T("wxAmayaSocketEvent::WXAMAYASOCKET_EXCEPTION %d"), m_RegistredSocket[entry].socket );
+              (*m_RegistredSocket[entry].callback)(entry,
+                                                   m_RegistredSocket[entry].socket,
+                                                   m_RegistredSocket[entry].condition);
+            }
+          break;
+        }
       id_entry++;
     }
 
@@ -232,32 +224,28 @@ bool wxAmayaSocketEvent::CheckSocketStatus( int bloking_time )
 }
 
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  wxAmayaSocketEvent
  *      Method:  SocketExists
  * Description:  private methode used to detect if a given socket is allready registred
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 bool wxAmayaSocketEvent::SocketExists( int socket )
 {
   int id_entry = 0;
   while ( id_entry < m_NbRegistredSocket )
     {
       if ( socket == m_RegistredSocket[m_UsedSocket[id_entry]].socket )
-	return true;
+        return true;
       id_entry++;
     }
   return false;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  wxAmayaSocketEvent
  *      Method:  AddSocketEntry
  * Description:  private methode used to reserve a socket slot
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 int wxAmayaSocketEvent::AddSocketEntry()
 {
   /* look for a free place */
@@ -291,13 +279,11 @@ int wxAmayaSocketEvent::AddSocketEntry()
   return entry+1;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  wxAmayaSocketEvent
  *      Method:  RemoveSocketEntry
  * Description:  private methode used to remove a socket slot
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 bool wxAmayaSocketEvent::RemoveSocketEntry( int entry )
 {
   /* entry-- because the entry 0 is invalide for the interface */
@@ -328,13 +314,11 @@ bool wxAmayaSocketEvent::RemoveSocketEntry( int entry )
   return true;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  wxAmayaSocketEvent
  *      Method:  Initialize
  * Description:  private methode used to init the socket's arrays
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void wxAmayaSocketEvent::Initialize()
 {
   if (!m_IsInitialized)

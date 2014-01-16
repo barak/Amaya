@@ -83,6 +83,7 @@ MENUS
 	File.Charset1 button:BWINDOWS_1255 -> ReadAsWINDOWS_1255;
 	File.Charset1 button:BISO_8859_9 -> ReadAsISO_8859_9;
 	File.Charset1 button:BWINDOWS_1254 -> ReadAsWINDOWS_1254;
+	File.Charset1 button:BGB_2312 -> ReadAsGB_2312;
 	File.Charset1 button:BISO_2022_JP -> ReadAsISO_2022_JP;
 	File.Charset1 button:BEUC_JP -> ReadAsEUC_JP;
 	File.Charset1 button:BSHIFT_JIS -> ReadAsSHIFT_JIS;
@@ -208,7 +209,7 @@ MENUS
 	Types button:BRule -> CreateHorizontalRule icon:XHTML_hr.png;
 	Types button:BImage -> CreateImage icon:XHTML_Image.png;
 	Types button:BBreak -> CreateBreak icon: XHTML_br.png;
-	Types button:BDivision -> CreateDivision;
+	Types button:BDivision -> CreateDivision icon:XHTML_Div.png;
 	Types button:BBlockQuote -> CreateBlockQuote icon:XHTML_quote.png;
 	Types button:BIFrame -> CreateIFrame;
 	Types button:BRuby -> CreateRuby;
@@ -216,7 +217,7 @@ MENUS
 
 	Types button:TSectionNumber -> SectionNumbering;
 	Types button:BMakeToc -> MakeToc;
-	Types button:BDate -> CreateDate;
+	Types button:BDate -> CreateDate icon:XHTML_date.png;
 	Types button:BMakeBook -> MakeBook;
 
 	Types Separator;
@@ -243,29 +244,29 @@ MENUS
     Types.Font toggle:TQuotation -> SetOnOffQuotation;
     Types.Font toggle:TBDO -> SetOnOffBDO;
 
-	XMLTypes button:BDisplayMath -> CreateMath icon:MATHML_Bmath.png;
-	XMLTypes.MathElement button:BMText -> CreateMTEXT;
-	XMLTypes.MathElement button:BMIdentifier -> CreateMI;
-	XMLTypes.MathElement button:BMNumber -> CreateMN;
-	XMLTypes.MathElement button:BMOperator -> CreateMO;
-	XMLTypes.MathElement button:BMSpace -> CreateMSPACE;
-	XMLTypes.MathElement button:BMEntity -> CreateMathEntity icon:MATHML_greek.png;
-	XMLTypes.MathElement button:BMInvisibleTimes -> CreateInvisibleTimes;
-	XMLTypes.MathElement button:BMApplyFunction -> CreateApplyFunction;
-        XMLTypes.MathConstruct button:BNthRoot -> CreateMROOT icon:MATHML_root.png;
-        XMLTypes.MathConstruct button:BSquareRoot -> CreateMSQRT icon:MATHML_sqrt.png;
-        XMLTypes.MathConstruct button:BEnclose -> CreateMENCLOSE;
-        XMLTypes.MathConstruct button:BFraction -> CreateMFRAC icon:MATHML_frac.png;
-        XMLTypes.MathConstruct button:BSubscriptAndSuperscript -> CreateMSUBSUP icon:MATHML_subsup.png;
-        XMLTypes.MathConstruct button:BSubscript -> CreateMSUB icon:MATHML_sub.png;
-        XMLTypes.MathConstruct button:BSuperscript -> CreateMSUP icon:MATHML_sup.png;
-        XMLTypes.MathConstruct button:BUnderAndOver -> CreateMUNDEROVER icon:MATHML_overunder.png;
-        XMLTypes.MathConstruct button:BUnder -> CreateMUNDER icon:MATHML_under.png;
-        XMLTypes.MathConstruct button:BOver -> CreateMOVER icon:MATHML_over.png;
-        XMLTypes.MathConstruct button:BParentheses -> CreateMROW icon:MATHML_fence.png;
-        XMLTypes.MathConstruct button:BMultiscripts -> CreateMMULTISCRIPTS icon:MATHML_mscript.png;
-        XMLTypes.MathMatrics button:BMatrix -> CreateMTABLE icon:MATHML_matrix.png;
-	XMLTypes.MathMatrics Separator;
+    XMLTypes button:BDisplayMath -> CreateMath icon:MATHML_Bmath.png;
+    XMLTypes.MathElement button:BMText -> CreateMTEXT;
+    XMLTypes.MathElement button:BMIdentifier -> CreateMI;
+    XMLTypes.MathElement button:BMNumber -> CreateMN;
+    XMLTypes.MathElement button:BMOperator -> CreateMO;
+    XMLTypes.MathElement button:BMSpace -> CreateMSPACE;
+    XMLTypes.MathElement button:BMEntity -> CreateMathEntity icon:MATHML_greek.png;
+    XMLTypes.MathElement button:BMInvisibleTimes -> CreateInvisibleTimes;
+    XMLTypes.MathElement button:BMApplyFunction -> CreateApplyFunction;
+    XMLTypes.MathConstruct button:BNthRoot -> CreateMROOT icon:MATHML_root.png;
+    XMLTypes.MathConstruct button:BSquareRoot -> CreateMSQRT icon:MATHML_sqrt.png;
+    XMLTypes.MathConstruct button:BEnclose -> CreateMENCLOSE;
+    XMLTypes.MathConstruct button:BFraction -> CreateMFRAC icon:MATHML_frac.png;
+    XMLTypes.MathConstruct button:BSubscriptAndSuperscript -> CreateMSUBSUP icon:MATHML_subsup.png;
+    XMLTypes.MathConstruct button:BSubscript -> CreateMSUB icon:MATHML_sub.png;
+    XMLTypes.MathConstruct button:BSuperscript -> CreateMSUP icon:MATHML_sup.png;
+    XMLTypes.MathConstruct button:BUnderAndOver -> CreateMUNDEROVER icon:MATHML_overunder.png;
+    XMLTypes.MathConstruct button:BUnder -> CreateMUNDER icon:MATHML_under.png;
+    XMLTypes.MathConstruct button:BOver -> CreateMOVER icon:MATHML_over.png;
+    XMLTypes.MathConstruct button:BParentheses -> CreateMROW icon:MATHML_fence.png;
+    XMLTypes.MathConstruct button:BMultiscripts -> CreateMMULTISCRIPTS icon:MATHML_mscript.png;
+    XMLTypes.MathMatrics button:BMatrix -> CreateMTABLE icon:MATHML_matrix.png;
+  XMLTypes.MathMatrics Separator;
 	XMLTypes.MathMatrics button:BMCellHExtend -> CellHorizExtend;
 	XMLTypes.MathMatrics button:BMCellVExtend -> CellVertExtend;
 	XMLTypes.MathMatrics button:BMCellHShrink -> CellHorizShrink;
@@ -285,6 +286,9 @@ MENUS
 	XMLTypes button:BXMLComment -> CreateComment icon:XHTML_Comment.png;
 	XMLTypes button:BXMLElement -> CreateXMLElementMenu;
 
+	Links button:BCopyLocation -> CopyLocation;
+	Links button:BPasteLocation -> PasteLocation;
+	Links button:BCopyLink -> CopyLink;
 	Links button:BLinkTarget -> LinkToPreviousTarget;
 	Links button:BCreateLink -> CreateOrChangeLink icon:XHTML_Link.png;
 	Links button:BCreateTarget -> CreateTarget icon:XHTML_Target.png;
@@ -312,6 +316,7 @@ MENUS
 
   Style button:BCharacterStyle -> TtcChangeCharacters;
   Style button:BColors -> TtcChangeColors;
+  Style button:BCSSStyle -> SetCSSStyle icon:css.png;
   Style button:BFormat -> TtcChangeFormat;
 	Style button:BBackgroundImage -> ChangeBackgroundImage icon:BG_repeat.png;
 	Style Separator;
@@ -344,19 +349,12 @@ MENUS
 	Annotations_ button:BCustomQuery -> CustomQuery;
 	Annotations_ button:BFilterAnnotations -> FilterAnnot;
 
-	Bookmarks_ button:BViewBookmarks -> ViewBookmarks;
-	Bookmarks_ button:BBookmarkFile -> BookmarkFile;
-	Bookmarks_ button:BEditTopics -> EditTopics;
-        Bookmarks_ Separator;
-	Bookmarks_ button:BAddSeparator -> AddSeparator;
-	Bookmarks_ button:BMoveItem -> MoveItem;
-
 	Cooperation_ button:BLock -> LockDocument;
 	Cooperation_ button:BUnlock -> UnlockDocument;
 	Cooperation_ button:BProp -> PropDocument;
 	Cooperation_ button:BCopyLock -> CopyLockInformation;
 	Cooperation_ Separator;
-        Cooperation_ toggle:BLockIndicator -> LockIndicator;
+  Cooperation_ toggle:BLockIndicator -> LockIndicator;
 
 	Help_ button:BInformation -> HelpAmaya icon:about.png;
 	Help_ button:BAtW3C -> HelpAtW3C;
@@ -385,7 +383,6 @@ MENUS
 	Help_ button:BHelpNumbering -> HelpNumbering;
 	Help_ button:BHelpMakeBook -> HelpMakeBook;
 	Help_ button:BHelpAnnotation -> HelpAnnotation;
-	Help_ button:BHelpBookmarks -> HelpBookmarks;
 	Help_ button:BHelpConfigure -> HelpConfigure;
 	Help_ button:BHelpShortCuts -> HelpShortCuts;
 	Help_ button:BHelpAccess -> HelpAccess;
@@ -403,5 +400,7 @@ FUNCTIONS
   DoLeftAlign,
   DoCenter,
   DoRightAlign,
-  DoJustify;
+  DoJustify,
+  CreateMIntegral,
+  CreateMSum;
 END

@@ -46,6 +46,7 @@
 #include "AHTURLTools_f.h"
 #include "EDITORactions_f.h"
 #include "EDITimage_f.h"
+#include "fetchXMLname_f.h"
 #include "HTMLactions_f.h"
 #include "HTMLedit_f.h"
 #include "HTMLhistory_f.h"
@@ -373,6 +374,7 @@ void InitializeNewDoc (char *url, int docType, Document doc, int profile,
   DocumentMeta[doc]->initial_url = NULL;
   DocumentMeta[doc]->method = CE_ABSOLUTE;
   DocumentMeta[doc]->xmlformat = FALSE;
+  DocumentMeta[doc]->compound = FALSE;
   DocumentSource[doc] = 0;
 
   /* store the document profile */
@@ -403,6 +405,7 @@ void InitializeNewDoc (char *url, int docType, Document doc, int profile,
       /*-------------  New XHTML document ------------*/
       /* force the XML parsing */
       DocumentMeta[doc]->xmlformat = isXML;
+      DocumentMeta[doc]->compound = FALSE;
       TtaGetEnvBoolean ("ENABLE_XHTML_MIMETYPE", &xhtml_mimetype);
       if (xhtml_mimetype)
         DocumentMeta[doc]->content_type = TtaStrdup (AM_XHTML_MIME_TYPE);
@@ -526,6 +529,7 @@ void InitializeNewDoc (char *url, int docType, Document doc, int profile,
 
       /* force the XML parsing */
       DocumentMeta[doc]->xmlformat = TRUE;
+      DocumentMeta[doc]->compound = FALSE;
       /* Search the first Construct to set the initial selection */
       elType.ElTypeNum = MathML_EL_Construct;
       el = TtaSearchTypedElement (elType, SearchInTree, docEl);
@@ -575,6 +579,7 @@ void InitializeNewDoc (char *url, int docType, Document doc, int profile,
 
       /* force the XML parsing */
       DocumentMeta[doc]->xmlformat = TRUE;
+      DocumentMeta[doc]->compound = FALSE;
       /* Search the last element to set the initial selection */
       el = TtaGetLastLeaf (docEl);
       /* set the initial selection */
@@ -652,14 +657,15 @@ static void CreateOrChangeDoctype (Document doc, View view, int new_doctype,
   
   /* The document has to be parsed with the new doctype */
   tempdoc = GetLocalPath (doc, DocumentURLs[doc]);
-  if (TtaIsDocumentUpdated (doc))
+  if (TtaIsDocumentUpdated (doc) ||
+      (!DocumentMeta[doc]->xmlformat && xmlDoctype))
     {
       /* save the current state of the document */
       if (DocumentTypes[doc] == docLibrary || DocumentTypes[doc] == docHTML)
         {
           if (TtaGetDocumentProfile (doc) == L_Xhtml11)
             TtaExportDocumentWithNewLineNumbers (doc, tempdoc, "HTMLT11");
-          else if (DocumentMeta[doc]->xmlformat)
+          else if (DocumentMeta[doc]->xmlformat || xmlDoctype)
             TtaExportDocumentWithNewLineNumbers (doc, tempdoc, "HTMLTX");
           else
             TtaExportDocumentWithNewLineNumbers (doc, tempdoc, "HTMLT");
@@ -691,6 +697,7 @@ static void CreateOrChangeDoctype (Document doc, View view, int new_doctype,
           RestartParser (doc, tempdoc, tempdir, documentname, FALSE);
           TtaSetDocumentModified (doc);
         }
+      TtaSetDocumentUnupdated (doc);
     }
   else
     /* restore the document profile */
@@ -738,34 +745,6 @@ void RemoveDoctype (Document document, View view)
 }
 
 /*--------------------------------------------------------------------------
-  HasNatures
-  Check if there are MathML and/or SVG natures
-  --------------------------------------------------------------------------*/
-void HasNatures (Document document, ThotBool *useMathML, ThotBool *useSVG)
-{
-  SSchema         nature;
-  char           *ptr;
-
-  /* look for a MathML or SVG nature within the document */
-  nature = NULL;
-  *useMathML = FALSE;
-  *useSVG = FALSE;
-  do
-    {
-      TtaNextNature (document, &nature);
-      if (nature)
-        {
-          ptr = TtaGetSSchemaName (nature);
-          if (!strcmp (ptr, "MathML"))
-            *useMathML = TRUE;
-          if (!strcmp (ptr, "SVG"))
-            *useSVG = TRUE;
-        }
-    }
-  while (nature);
-}
-
-/*--------------------------------------------------------------------------
   AddDoctype
   Add the doctype declaration
   --------------------------------------------------------------------------*/
@@ -774,7 +753,7 @@ void AddDoctype (Document document, View view)
 
   DocumentType    docType;
   int             profile;
-  ThotBool	  useMathML, useSVG;
+  ThotBool	      useMathML, useSVG;
  
   HasNatures (document, &useMathML, &useSVG);
   profile =  L_Other;
@@ -905,8 +884,6 @@ void PasteBuffer (Document document, View view)
   ----------------------------------------------------------------------*/
 void SpellCheck (Document document, View view)
 {
-  AttributeType       attrType;
-  Attribute           attr;
   Element             docEl, el, body;
   ElementType         elType;
   int                 firstchar, lastchar;
@@ -919,17 +896,6 @@ void SpellCheck (Document document, View view)
       body = TtaSearchTypedElement (elType, SearchInTree, docEl);
       if (body == NULL)
         return;
-      /* if there is no Language attribute on the BODY, create one */
-      attrType.AttrSSchema = elType.ElSSchema;
-      attrType.AttrTypeNum = HTML_ATTR_Language;
-      attr = TtaGetAttribute (body, attrType);
-      if (attr == NULL)
-        {
-          /* create the Language attribute */
-          attr = TtaNewAttribute (attrType);
-          TtaAttachAttribute (body, attr, document);
-          TtaSetAttributeText (attr, "en", body, document);
-        }
       /* get the current selection */
       TtaGiveFirstSelectedElement (document, &el, &firstchar, &lastchar);
       if (el == NULL)
@@ -1221,6 +1187,9 @@ void CreateDate (Document doc, View view)
   if (el == NULL)
     /* no selection */
     TtaDisplaySimpleMessage (CONFIRM, AMAYA, AM_NO_INSERT_POINT);
+  else if (TtaIsReadOnly (el))
+    /* no selection */
+    TtaDisplaySimpleMessage (CONFIRM, LIB, TMSG_EL_RO);
   else
     {
       elType = TtaGetElementType (el);
@@ -1429,7 +1398,7 @@ ThotBool HTMLelementAllowed (Document doc)
       TtaDisplaySimpleMessage (CONFIRM, AMAYA, AM_NO_INSERT_POINT);
       return FALSE;
     }
-         
+  
   elType = TtaGetElementType (el);
   s = TtaGetSSchemaName (elType.ElSSchema);
   if (strcmp (s, "HTML") == 0)
@@ -1575,7 +1544,39 @@ void CreateHeading6 (Document document, View view)
   ----------------------------------------------------------------------*/
 void CreateMap (Document doc, View view)
 {
-  CreateHTMLelement (HTML_EL_map, doc);
+  ElementType    elType;
+  Element        el, div, map, p;
+  int            i, j;
+  ThotBool       oldStructureChecking;
+
+  CreateHTMLelement (HTML_EL_Division, doc);
+  TtaExtendUndoSequence (doc);
+  TtaGiveFirstSelectedElement (doc, &el, &i, &j);
+  oldStructureChecking = TtaGetStructureChecking (doc);
+  TtaSetStructureChecking (FALSE, doc);
+  elType = TtaGetElementType (el);
+  elType.ElTypeNum = HTML_EL_map;
+  div = TtaGetParent (el);
+  map = TtaNewElement (doc, elType);
+  TtaInsertFirstChild (&map, div, doc);
+  TtaDeleteTree (el, doc);
+  // generate the id and or name attribute
+  CreateTargetAnchor (doc, map, FALSE, TRUE);
+  // generate a division
+  elType.ElTypeNum = HTML_EL_Division;
+  div = TtaNewElement (doc, elType);
+  TtaInsertFirstChild (&div, map, doc);
+  elType.ElTypeNum = HTML_EL_Pseudo_paragraph;
+  p =  TtaNewElement (doc, elType);
+  TtaInsertFirstChild (&p, div, doc);
+  elType.ElTypeNum = HTML_EL_TEXT_UNIT;
+  el =  TtaNewElement (doc, elType);
+  TtaInsertFirstChild (&el, p, doc);
+  TtaRegisterElementCreate (map, doc);
+  TtaSelectElement (doc, el);
+  TtaSetStructureChecking (oldStructureChecking, doc);
+  // it should include a link
+  CreateOrChangeLink (doc, view);
 }
 
 /*----------------------------------------------------------------------
@@ -2107,6 +2108,8 @@ void CreateCaption (Document document, View view)
             }
         }
     }
+  else
+    TtaDisplaySimpleMessage (CONFIRM, AMAYA, AM_NO_INSERT_POINT);
 }
 
 /*----------------------------------------------------------------------
@@ -2179,6 +2182,8 @@ void CreateColgroup (Document document, View view)
             }
         }
     }
+  else
+    TtaDisplaySimpleMessage (CONFIRM, AMAYA, AM_NO_INSERT_POINT);
 }
 
 /*----------------------------------------------------------------------
@@ -2254,6 +2259,8 @@ void CreateCol (Document document, View view)
             }
         }
     }
+  else
+    TtaDisplaySimpleMessage (CONFIRM, AMAYA, AM_NO_INSERT_POINT);
 }
 
 /*----------------------------------------------------------------------
@@ -2364,6 +2371,8 @@ static void ChangeCell (Document doc, View view, int typeCell)
       if (open)
         TtaCloseUndoSequence (doc);
     }
+  else
+    TtaDisplaySimpleMessage (CONFIRM, AMAYA, AM_NO_INSERT_POINT);
 }
 
 /*----------------------------------------------------------------------
@@ -3600,7 +3609,7 @@ void CreateImageInput (Document doc, View view)
                   TtaFreeMemory (value);
                   /* Check attribute NAME or ID in order to make sure that its
                      value unique in the document */
-                  MakeUniqueName (input, doc, TRUE);
+                  MakeUniqueName (input, doc, TRUE, FALSE);
                 }
               /* add a text before if needed */
               elType.ElTypeNum = HTML_EL_TEXT_UNIT;
@@ -3692,9 +3701,78 @@ void  CreateNOSCRIPT (Document document, View view)
 }
 
 /*----------------------------------------------------------------------
+  CreateIFrame
+  ----------------------------------------------------------------------*/
+void  CreateIFrame (Document document, View view)
+{
+  ElementType         elType;
+  Element             el, child;
+  Attribute           attr;
+  AttributeType       attrType;
+  int                 firstchar, lastchar;
+
+  if (HTMLelementAllowed (document))
+    {
+      /* Don't check mandatory attributes */
+      TtaSetStructureChecking (FALSE, document);
+      elType.ElSSchema = TtaGetSSchema ("HTML", document);
+      elType.ElTypeNum = HTML_EL_IFRAME;
+      TtaInsertElement (elType, document);
+      /* Check the Thot abstract tree against the structure schema. */
+      TtaSetStructureChecking (TRUE, document);
+
+      /* get the first selected element, i.e. the Object element */
+      TtaGiveFirstSelectedElement (document, &el, &firstchar, &lastchar);
+      
+      elType = TtaGetElementType (el);
+      while (el != NULL &&
+             elType.ElTypeNum != HTML_EL_IFRAME)
+        {
+          el = TtaGetParent (el);
+          elType = TtaGetElementType (el);
+        }
+      
+      if (el == NULL)
+        return;
+
+      TtaExtendUndoSequence (document);
+      /* copy SRC attribute */
+      attrType.AttrSSchema = elType.ElSSchema;
+      attrType.AttrTypeNum = HTML_ATTR_FrameSrc;
+      attr = TtaGetAttribute (el, attrType);
+      if (attr == NULL)
+        {
+           attr = TtaNewAttribute (attrType);
+           TtaAttachAttribute (el, attr, document);
+           TtaSetAttributeText (attr, "source.html", el, document);
+           TtaRegisterAttributeCreate (attr, el, document);
+         }
+      /* now create a child element */
+      child = TtaGetLastChild (el);
+      if (child == NULL)
+        {
+          elType.ElTypeNum = HTML_EL_Iframe_Content;
+          child = TtaNewElement (document, elType);
+          TtaInsertFirstChild (&child, el, document);
+          TtaRegisterElementCreate (child, document);
+        }
+      elType.ElTypeNum = HTML_EL_Pseudo_paragraph;
+      el = TtaNewElement (document, elType);
+      TtaInsertFirstChild (&el, child, document);
+      TtaRegisterElementCreate (el, document);
+      elType.ElTypeNum = HTML_EL_TEXT_UNIT;
+      child = TtaNewElement (document, elType);
+      TtaInsertFirstChild (&child, el, document);
+      TtaSelectElement (document, child);
+      TtaRegisterElementCreate (child, document);
+      TtaCloseUndoSequence (document);
+  }
+}
+
+/*----------------------------------------------------------------------
   CreateObject
   ----------------------------------------------------------------------*/
-void  CreateObject (Document document, View view)
+void  CreateObject (Document doc, View view)
 {
   ElementType         elType;
   Element             el, image;
@@ -3703,18 +3781,18 @@ void  CreateObject (Document document, View view)
   char               *text;
   int                 length, firstchar, lastchar;
 
-  if (HTMLelementAllowed (document))
+  if (HTMLelementAllowed (doc))
     {
       /* Don't check mandatory attributes */
-      TtaSetStructureChecking (FALSE, document);
-      elType.ElSSchema = TtaGetSSchema ("HTML", document);
+      TtaSetStructureChecking (FALSE, doc);
+      elType.ElSSchema = TtaGetSSchema ("HTML", doc);
       elType.ElTypeNum = HTML_EL_Object;
-      TtaInsertElement (elType, document);
+      TtaInsertElement (elType, doc);
       /* Check the Thot abstract tree against the structure schema. */
-      TtaSetStructureChecking (TRUE, document);
+      TtaSetStructureChecking (TRUE, doc);
 
       /* get the first selected element, i.e. the Object element */
-      TtaGiveFirstSelectedElement (document, &el, &firstchar, &lastchar);
+      TtaGiveFirstSelectedElement (doc, &el, &firstchar, &lastchar);
       
       elType = TtaGetElementType (el);
       while (el != NULL &&
@@ -3732,7 +3810,7 @@ void  CreateObject (Document document, View view)
       attrType.AttrSSchema = elType.ElSSchema;
       attrType.AttrTypeNum = HTML_ATTR_SRC;
       attr = TtaGetAttribute (image, attrType);
-      if (attr != NULL)
+      if (attr)
         {
           length = TtaGetTextAttributeLength (attr);
           if (length > 0)
@@ -3741,8 +3819,8 @@ void  CreateObject (Document document, View view)
               TtaGiveTextAttributeValue (attr, text, &length);
               attrType.AttrTypeNum = HTML_ATTR_data;
               attr = TtaNewAttribute (attrType);
-              TtaAttachAttribute (el, attr, document);
-              TtaSetAttributeText (attr, text, el, document);
+              TtaAttachAttribute (el, attr, doc);
+              TtaSetAttributeText (attr, text, el, doc);
               TtaFreeMemory (text);
             }
         }
@@ -3755,14 +3833,6 @@ void  CreateObject (Document document, View view)
 void  CreateParameter (Document document, View view)
 {
   CreateHTMLelement (HTML_EL_Parameter, document);
-}
-
-/*----------------------------------------------------------------------
-  CreateIFrame
-  ----------------------------------------------------------------------*/
-void  CreateIFrame (Document document, View view)
-{
-  CreateHTMLelement (HTML_EL_IFRAME, document);
 }
 
 /*----------------------------------------------------------------------
@@ -3819,47 +3889,64 @@ void  CreateOrChangeLink (Document doc, View view)
           SelectDestination (doc, el, TRUE, FALSE);
         }
     }
+  else
+    TtaDisplaySimpleMessage (CONFIRM, AMAYA, AM_NO_INSERT_POINT);
 }
 
 /*----------------------------------------------------------------------
-  DeleteAnchor
-  Delete the surrounding anchor.                    
+  DoDeleteAnchor
+  Delete the surrounding anchor.
+  noCallback is TRUE when it's not a callback action
   ----------------------------------------------------------------------*/
-void DeleteAnchor (Document doc, View view)
+void DoDeleteAnchor (Document doc, View view, ThotBool noCallback)
 {
-  Element             firstSelectedElement, lastSelectedElement, anchor,
-    child, next, previous;
-  int                 firstSelectedChar, lastSelectedChar, i;
+  Element             firstSelectedElement, lastSelectedElement;
+  Element             anchor, child, next, previous;
   ElementType         elType;
   DisplayMode         dispMode;
+  int                 firstSelectedChar, lastSelectedChar, i;
 
   if (!TtaGetDocumentAccessMode (doc))
     /* the document is in ReadOnly mode */
     return;
 
-  /* get the first selected element */
-  TtaGiveFirstSelectedElement (doc, &firstSelectedElement,
-                               &firstSelectedChar, &lastSelectedChar);
-  if (firstSelectedElement == NULL)
-    /* no selection. Do nothing */
-    return;
-  if (TtaIsReadOnly (firstSelectedElement))
-    /* the selected element is read-only */
-    return;
+  if (noCallback)
+    {
+      /* get the first selected element */
+      TtaGiveFirstSelectedElement (doc, &firstSelectedElement,
+                                   &firstSelectedChar, &lastSelectedChar);
+      if (firstSelectedElement == NULL)
+        {
+          /* no selection. Do nothing */
+          TtaDisplaySimpleMessage (CONFIRM, AMAYA, AM_NO_INSERT_POINT);
+          return;
+        }
+      if (TtaIsReadOnly (firstSelectedElement))
+        /* the selected element is read-only */
+        return;
 
-  elType = TtaGetElementType (firstSelectedElement);
-  if (strcmp(TtaGetSSchemaName (elType.ElSSchema), "HTML") != 0)
-    /* the first selected element is not an HTML element. Do nothing */
-    return;
+      elType = TtaGetElementType (firstSelectedElement);
+      if (strcmp(TtaGetSSchemaName (elType.ElSSchema), "HTML") != 0)
+        /* the first selected element is not an HTML element. Do nothing */
+        return;
 
-  TtaGiveLastSelectedElement (doc, &lastSelectedElement, &i, 
-                              &lastSelectedChar);
-  TtaOpenUndoSequence (doc, firstSelectedElement, lastSelectedElement,
-                       firstSelectedChar, lastSelectedChar);
+      TtaGiveLastSelectedElement (doc, &lastSelectedElement, &i, 
+                                  &lastSelectedChar);
+      TtaOpenUndoSequence (doc, firstSelectedElement, lastSelectedElement,
+                           firstSelectedChar, lastSelectedChar);
+      anchor = firstSelectedElement;
+    }
+  else
+    {
+      anchor = AttrHREFelement;
+      firstSelectedElement = lastSelectedElement = anchor;
+      elType = TtaGetElementType (anchor);
+      firstSelectedChar = 0;
+    }
+
   if (elType.ElTypeNum == HTML_EL_Anchor)
     /* the first selected element is an anchor */
     {
-      anchor = firstSelectedElement;
       /* prepare the elements to be selected later */
       firstSelectedElement = TtaGetFirstChild (anchor);
       lastSelectedElement = TtaGetLastChild (anchor);
@@ -3868,7 +3955,6 @@ void DeleteAnchor (Document doc, View view)
     }
   else if (elType.ElTypeNum == HTML_EL_AREA)
     {
-      anchor = firstSelectedElement;
       /* prepare the elements to be selected later */
       firstSelectedElement = NULL;
       lastSelectedElement = NULL;
@@ -3877,17 +3963,18 @@ void DeleteAnchor (Document doc, View view)
     }
   else if (elType.ElTypeNum == HTML_EL_Cite)
     {
+      anchor = NULL;
       SetOnOffCite (doc, 1);
       return;
     }
-  else
+  else if (elType.ElTypeNum != HTML_EL_LINK)
     {
       /* search the surrounding Anchor element */
       elType.ElTypeNum = HTML_EL_Anchor;
       anchor = TtaGetTypedAncestor (firstSelectedElement, elType);
     }
 
-  if (anchor != NULL)
+  if (anchor)
     {
       /* ask Thot to stop displaying changes made in the document */
       dispMode = TtaGetDisplayMode (doc);
@@ -3917,12 +4004,16 @@ void DeleteAnchor (Document doc, View view)
         firstSelectedElement = TtaGetParent (anchor);
       /* delete the anchor element itself */
       TtaDeleteTree (anchor, doc);
-      TtaSetDocumentModified (doc);
       /* ask Thot to display changes made in the document */
       TtaSetDisplayMode (doc, dispMode);
     }
 
-  TtaCloseUndoSequence (doc);
+  if (noCallback)
+    {
+      TtaCloseUndoSequence (doc);
+      TtaSetDocumentModified (doc);
+    }
+
   /* set the selection */
   if (firstSelectedChar > 1)
     {
@@ -3936,6 +4027,15 @@ void DeleteAnchor (Document doc, View view)
     TtaSelectElement (doc, firstSelectedElement);
   if (firstSelectedElement != lastSelectedElement)
     TtaExtendSelection (doc, lastSelectedElement, lastSelectedChar);
+}
+
+/*----------------------------------------------------------------------
+  DeleteAnchor
+  Delete the surrounding anchor.                    
+  ----------------------------------------------------------------------*/
+void DeleteAnchor (Document doc, View view)
+{
+  DoDeleteAnchor (doc, view, TRUE);
 }
 
 /*----------------------------------------------------------------------

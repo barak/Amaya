@@ -71,11 +71,15 @@
 
 
 
-20;#Symbols (...)
+18;#Georgian
 1;1=$THOTDIR/fonts/FreeSerif.ttf;2=$THOTDIR/fonts/FreeSerifBold.ttf;3=$THOTDIR/fonts/FreeSerifItalic.ttf;4=$THOTDIR/fonts/FreeSerifBoldItalic.ttf;
 2;1=$THOTDIR/fonts/FreeSans.ttf;2=$THOTDIR/fonts/FreeSansBold.ttf;3=$THOTDIR/fonts/FreeSansOblique.ttf;4=$THOTDIR/fonts/FreeSansBoldOblique.ttf;
 3;1=$THOTDIR/fonts/FreeMono.ttf;2=$THOTDIR/fonts/FreeMonoBold.ttf;3=$THOTDIR/fonts/FreeMonoOblique.ttf;4=$THOTDIR/fonts/FreeMonoBoldOblique.ttf;
 
+20;#Symbols (...)
+1;1=$THOTDIR/fonts/FreeSerif.ttf;2=$THOTDIR/fonts/FreeSerifBold.ttf;3=$THOTDIR/fonts/FreeSerifItalic.ttf;4=$THOTDIR/fonts/FreeSerifBoldItalic.ttf;
+2;1=$THOTDIR/fonts/FreeSans.ttf;2=$THOTDIR/fonts/FreeSansBold.ttf;3=$THOTDIR/fonts/FreeSansOblique.ttf;4=$THOTDIR/fonts/FreeSansBoldOblique.ttf;
+3;1=$THOTDIR/fonts/FreeMono.ttf;2=$THOTDIR/fonts/FreeMonoBold.ttf;3=$THOTDIR/fonts/FreeMonoOblique.ttf;4=$THOTDIR/fonts/FreeMonoBoldOblique.ttf;
 
 
 21;#esstix (...)
@@ -83,7 +87,6 @@
 2;1=$THOTDIR/fonts/ESSTIX6_.TTF;2=$THOTDIR/fonts/ESSTIX7_.TTF;3=$THOTDIR/fonts/ESSTIX8_.TTF;4=$THOTDIR/fonts/ESSTIX9_.TTF;5=$THOTDIR/fonts/ESSTIX10.TTF;
 3;1=$THOTDIR/fonts/ESSTIX11.TTF;2=$THOTDIR/fonts/ESSTIX12.TTF;3=$THOTDIR/fonts/ESSTIX13.TTF;4=$THOTDIR/fonts/ESSTIX14.TTF;5=$THOTDIR/fonts/ESSTIX15.TTF;
 4;1=$THOTDIR/fonts/ESSTIX16.TTF;2=$THOTDIR/fonts/ESSTIX17.TTF;3=$THOTDIR/fonts/ESSTIX16.TTF;4=$THOTDIR/fonts/ESSTIX17.TTF;
-
 
 
 0;#Unicode (.or ... JAPANESe)

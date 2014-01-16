@@ -4,7 +4,7 @@
 // Author:      Guilhem Lavaux, Vadim Zeitlin, Vaclav Slavik
 // Modified by:
 // Created:     20/07/98
-// RCS-ID:      $Id: dynlib.h,v 1.1.1.1 2005/07/06 09:30:08 gully Exp $
+// RCS-ID:      $Id: dynlib.h,v 1.1.1.2 2005/07/26 09:30:53 gully Exp $
 // Copyright:   (c) 1998 Guilhem Lavaux
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -23,10 +23,8 @@
 #include "wx/string.h"
 #include "wx/dynarray.h"
 
-// FIXME: can this go in private.h or something too??
 #if defined(__WXPM__) || defined(__EMX__)
-#define INCL_DOS
-#include <os2.h>
+#include "wx/os2/private.h"
 #endif
 
 #ifdef __WXMSW__

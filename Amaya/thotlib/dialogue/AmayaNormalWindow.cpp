@@ -3,6 +3,7 @@
 #include "wx/wx.h"
 #include "wx/tglbtn.h"
 #include "wx/string.h"
+#include "wx/spinctrl.h"
 
 #include "thot_gui.h"
 #include "thot_sys.h"
@@ -38,8 +39,10 @@
 #include "appdialogue_wx_f.h"
 #include "displayview_f.h"
 #include "appdialogue_wx.h"
+#include "input_f.h"
 
 #include "AmayaNormalWindow.h"
+#include "AmayaSubPanelManager.h"
 #include "AmayaPanel.h"
 #include "AmayaNotebook.h"
 #include "AmayaPage.h"
@@ -47,18 +50,16 @@
 #include "AmayaCallback.h"
 #include "AmayaToolBar.h"
 #include "AmayaQuickSplitButton.h"
-#include "AmayaSubPanelManager.h"
+/*#include "AmayaSubPanelManager.h"*/
 #include "AmayaStatusBar.h"
 
 IMPLEMENT_DYNAMIC_CLASS(AmayaNormalWindow, AmayaWindow)
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  AmayaNormalWindow
  * Description:  create a new AmayaNormalWindow
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaNormalWindow::AmayaNormalWindow (  int             window_id
 					,wxWindow *     p_parent_window
 					,const wxPoint& pos
@@ -141,38 +142,32 @@ AmayaNormalWindow::AmayaNormalWindow (  int             window_id
   SetAutoLayout(TRUE);
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  ~AmayaNormalWindow
  * Description:  destructor
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaNormalWindow::~AmayaNormalWindow()
 {
   delete m_pStatusBar;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  GetAmayaStatusBar
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaStatusBar * AmayaNormalWindow::GetAmayaStatusBar()
 {
   return m_pStatusBar;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  CreatePage
  * Description:  create a new AmayaPage, the notebook will be the parent page
  *               it's possible to attach automaticaly this page to the window or not
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaPage * AmayaNormalWindow::CreatePage( bool attach, int position )
 {
   AmayaPage * p_page = new AmayaPage( m_pNotebook, this );
@@ -183,13 +178,11 @@ AmayaPage * AmayaNormalWindow::CreatePage( bool attach, int position )
   return p_page;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  AttachPage
  * Description:  really attach a page to the current window
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 bool AmayaNormalWindow::AttachPage( int position, AmayaPage * p_page )
 {
   bool ret;
@@ -223,25 +216,21 @@ bool AmayaNormalWindow::AttachPage( int position, AmayaPage * p_page )
   return ret;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  DetachPage
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 bool AmayaNormalWindow::DetachPage( int position )
 {
   return false;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  ClosePage
  * Description:  ferme une page
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 bool AmayaNormalWindow::ClosePage( int page_id )
 {
   bool dummy = false;
@@ -285,13 +274,11 @@ bool AmayaNormalWindow::ClosePage( int page_id )
     return false;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  GetPage
  * Description:  search the page at given position
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaPage * AmayaNormalWindow::GetPage( int position ) const
 {
   TTALOGDEBUG_0( TTA_LOG_DIALOG, _T("AmayaNormalWindow::GetPage") );
@@ -302,13 +289,11 @@ AmayaPage * AmayaNormalWindow::GetPage( int position ) const
   return (AmayaPage *)m_pNotebook->GetPage(position);
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  GetPage
  * Description:  how many page into the window
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 int AmayaNormalWindow::GetPageCount() const
 {
   if (!m_pNotebook)
@@ -316,13 +301,11 @@ int AmayaNormalWindow::GetPageCount() const
   return (int)m_pNotebook->GetPageCount();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  DoClose
  * Description:  close every pages contained by the notebook
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaNormalWindow::DoClose(bool & veto)
 {
   m_IsClosing = TRUE;
@@ -339,14 +322,12 @@ void AmayaNormalWindow::DoClose(bool & veto)
   m_IsClosing = FALSE;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  OnMenuItem
  * Description:  this method is called when a menu item is pressed
  *               it will generate an event to differe the menu item action
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaNormalWindow::OnMenuItem( wxCommandEvent& event )
 {
   wxMenu * p_menu = (wxMenu *)event.GetEventObject();
@@ -354,6 +335,76 @@ void AmayaNormalWindow::OnMenuItem( wxCommandEvent& event )
   int action_id   = -1;
 
   action_id = FindMenuActionFromMenuItemID (DocumentMenuList, id);
+  /* do not allow CTRL-C CTRL-X CTRL-V in "text" widgets */
+  wxWindow *       p_win_focus         = wxWindow::FindFocus();
+  wxTextCtrl *     p_text_ctrl         = wxDynamicCast(p_win_focus, wxTextCtrl);
+  wxComboBox *     p_combo_box         = wxDynamicCast(p_win_focus, wxComboBox);
+  wxSpinCtrl *     p_spinctrl          = wxDynamicCast(p_win_focus, wxSpinCtrl);
+  if (( p_text_ctrl || p_combo_box || p_spinctrl ) &&
+      action_id >= 0 && action_id < MaxMenuAction && 
+      MenuActionList[action_id].ActionName)
+     {
+       if (p_text_ctrl)
+         {
+           if (!strcmp (MenuActionList[action_id].ActionName, "TtcCutSelection"))
+             {
+               p_text_ctrl->Cut();
+               return;
+             }
+           else if (!strcmp (MenuActionList[action_id].ActionName, "TtcCopySelection"))
+             {
+               p_text_ctrl->Copy();
+               return;
+             }
+           else if (!strcmp (MenuActionList[action_id].ActionName, "PasteBuffer"))
+             {
+               p_text_ctrl->Paste();
+               return;
+             }
+           else if (!strcmp (MenuActionList[action_id].ActionName, "TtcUndo"))
+             {
+               p_text_ctrl->Undo();
+               return;
+             }
+           else if (!strcmp (MenuActionList[action_id].ActionName, "TtcRedo"))
+             {
+               p_text_ctrl->Redo();
+               return;
+             }
+           else if (!strcmp (MenuActionList[action_id].ActionName, "TtcDeleteSelection"))
+             return;
+         }
+       else if (p_combo_box)
+         {
+           if (!strcmp (MenuActionList[action_id].ActionName, "TtcCutSelection"))
+             {
+               p_combo_box->Cut();
+               return;
+             }
+           else if (!strcmp (MenuActionList[action_id].ActionName, "TtcCopySelection"))
+             {
+               p_combo_box->Copy();
+               return;
+             }
+           else if (!strcmp (MenuActionList[action_id].ActionName, "PasteBuffer"))
+             {
+               p_combo_box->Paste();
+               return;
+             }
+           else if (!strcmp (MenuActionList[action_id].ActionName, "TtcUndo"))
+             {
+               p_combo_box->Undo();
+               return;
+             }
+           else if (!strcmp (MenuActionList[action_id].ActionName, "TtcRedo"))
+             {
+               p_combo_box->Redo();
+               return;
+             }
+           else if (!strcmp (MenuActionList[action_id].ActionName, "TtcDeleteSelection"))
+             return;
+         }
+    }
 
   TTALOGDEBUG_2( TTA_LOG_DIALOG, _T("AmayaNormalWindow::OnMenuItem id=%d action_id=%d"), id, action_id );
   
@@ -368,13 +419,11 @@ void AmayaNormalWindow::OnMenuItem( wxCommandEvent& event )
   AmayaWindow::DoAmayaAction( action_id, doc, view );
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  GetActivePage
  * Description:  return the current selected page
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaPage * AmayaNormalWindow::GetActivePage() const
 {
   TTALOGDEBUG_0( TTA_LOG_DIALOG, _T("AmayaNormalWindow::GetActivePage") );
@@ -383,13 +432,11 @@ AmayaPage * AmayaNormalWindow::GetActivePage() const
   return (m_pNotebook->GetSelection() >= 0) ? GetPage(m_pNotebook->GetSelection()) : NULL;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  GetActiveFrame
  * Description:  return the current selected frame
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaFrame * AmayaNormalWindow::GetActiveFrame() const
 {
   TTALOGDEBUG_0( TTA_LOG_DIALOG, _T("AmayaNormalWindow::GetActiveFrame") );
@@ -401,26 +448,26 @@ AmayaFrame * AmayaNormalWindow::GetActiveFrame() const
     return NULL;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  SetURL
  * Description:  set the current url value
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaNormalWindow::SetURL ( const wxString & new_url )
 {
+  // do not update window url if the url is empty
+  if (new_url.IsEmpty() )
+    return;
+
   if (m_pToolBar)
     m_pToolBar->SetURLValue( new_url );
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  GetURL
  * Description:  get the current url value
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 wxString AmayaNormalWindow::GetURL( )
 {
   if (m_pToolBar)
@@ -429,51 +476,43 @@ wxString AmayaNormalWindow::GetURL( )
     return wxString(_T(""));
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  AppendURL
  * Description:  TODO
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaNormalWindow::AppendURL ( const wxString & new_url )
 {
   if (m_pToolBar)
     m_pToolBar->AppendURL( new_url );
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  EmptyURLBar
  * Description:  remove all items in the url bar
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaNormalWindow::EmptyURLBar()
 {
   if (m_pToolBar)
     m_pToolBar->ClearURL();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  GetAmayaToolBar
  * Description:  return the current toolbar
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaToolBar * AmayaNormalWindow::GetAmayaToolBar()
 {
   return m_pToolBar;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  CleanUp
  * Description:  check that there is no empty pages
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaNormalWindow::CleanUp()
 {
   bool dummy = false;
@@ -500,39 +539,33 @@ void AmayaNormalWindow::CleanUp()
     DoClose(dummy);
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  OnMenuOpen
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaNormalWindow::OnMenuOpen( wxMenuEvent& event )
 {
   TTALOGDEBUG_1( TTA_LOG_DIALOG, _T("AmayaNormalWindow::OnMenuOpen - menu_id=%d"), event.GetMenuId() );
   event.Skip();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  OnMenuClose
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaNormalWindow::OnMenuClose( wxMenuEvent& event )
 {
   TTALOGDEBUG_1( TTA_LOG_DIALOG, _T("AmayaNormalWindow::OnMenuClose - menu_id=%d"), event.GetMenuId() );
   event.Skip();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  OnMenuHighlight
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaNormalWindow::OnMenuHighlight( wxMenuEvent& event )
 {
   TTALOGDEBUG_1( TTA_LOG_DIALOG, _T("AmayaNormalWindow::OnMenuHighlight - menu_id=%d"), event.GetMenuId() );
@@ -541,13 +574,11 @@ void AmayaNormalWindow::OnMenuHighlight( wxMenuEvent& event )
     p_frame->RefreshStatusBarText();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  OnSplitterPosChanged
  * Description:  this method is called when the splitter position has changed
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaNormalWindow::OnSplitterPosChanged( wxSplitterEvent& event )
 {
   TTALOGDEBUG_1( TTA_LOG_DIALOG, _T("AmayaNormalWindow::OnSplitterPosChanged now = %d"), event.GetSashPosition() );
@@ -559,14 +590,12 @@ void AmayaNormalWindow::OnSplitterPosChanged( wxSplitterEvent& event )
   //  event.Skip();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  OnSplitterDClick
  * Description:  called when a double click is done on the splitbar
  *               detach the panel area (hide it)
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaNormalWindow::OnSplitterDClick( wxSplitterEvent& event )
 {
   TTALOGDEBUG_0( TTA_LOG_DIALOG, _T("AmayaNormalWindow::OnSplitterDClick") );
@@ -575,13 +604,11 @@ void AmayaNormalWindow::OnSplitterDClick( wxSplitterEvent& event )
   //  event.Skip();  
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  OnSplitPanelButton
  * Description:  this method is called when the button for quick split is pushed
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaNormalWindow::OnSplitPanelButton( wxCommandEvent& event )
 {
   if ( event.GetId() != m_pSplitPanelButton->GetId() )
@@ -601,13 +628,11 @@ void AmayaNormalWindow::OnSplitPanelButton( wxCommandEvent& event )
   //event.Skip();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  ClosePanel
  * Description:  close the side panel
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaNormalWindow::ClosePanel()
 {
   TTALOGDEBUG_0( TTA_LOG_PANELS, _T("AmayaNormalWindow::ClosePanel") );
@@ -624,13 +649,11 @@ void AmayaNormalWindow::ClosePanel()
     }
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  OpenPanel
  * Description:  open the side panel
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaNormalWindow::OpenPanel()
 {
   TTALOGDEBUG_0( TTA_LOG_PANELS, _T("AmayaNormalWindow::OpenPanel") );
@@ -652,39 +675,33 @@ void AmayaNormalWindow::OpenPanel()
     }
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  IsPanelOpened
  * Description:  returns true if the side panel is opened
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 bool AmayaNormalWindow::IsPanelOpened()
 {
   return m_pSplitterWindow->IsSplit();
 }
 
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  GetAmayaPanel
  * Description:  return the window's panel (exists only on AmayaNormalWindow)
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaPanel * AmayaNormalWindow::GetAmayaPanel() const
 {
   return m_pPanel;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaNormalWindow
  *      Method:  RefreshShowPanelToggleMenu
  * Description:  is called to toggle on/off the "Show/Hide panel" menu item depeding on
  *               the panel showing state.
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaNormalWindow::RefreshShowPanelToggleMenu()
 {
   TTALOGDEBUG_0( TTA_LOG_DIALOG, _T("AmayaNormalWindow::RefreshShowPanelToggleMenu") );

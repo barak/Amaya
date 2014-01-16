@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by: Vadim Zeitlin to be less MSW-specific on 10.10.98
 // Created:     1997
-// RCS-ID:      $Id: treectrl.cpp,v 1.1.1.1 2005/07/06 09:30:55 gully Exp $
+// RCS-ID:      $Id: treectrl.cpp,v 1.1.1.2 2005/07/26 09:31:10 gully Exp $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -2817,8 +2817,8 @@ bool wxTreeCtrl::MSWOnNotify(int idCtrl, WXLPARAM lParam, WXLPARAM *result)
                 // fabricate the lParam and wParam parameters sufficiently
                 // similar to the ones from a "real" WM_KEYDOWN so that
                 // CreateKeyEvent() works correctly
-                WXLPARAM lParam =
-                     (::GetKeyState(VK_MENU) < 0 ? KF_ALTDOWN : 0) << 16;
+                const bool isAltDown = ::GetKeyState(VK_MENU) < 0;
+                WXLPARAM lParam = (isAltDown ? KF_ALTDOWN : 0) << 16;
 
                 WXWPARAM wParam = info->wVKey;
 
@@ -2836,7 +2836,7 @@ bool wxTreeCtrl::MSWOnNotify(int idCtrl, WXLPARAM lParam, WXLPARAM *result)
                                                 wParam);
 
                 // a separate event for Space/Return
-                if ( !wxIsCtrlDown() && !wxIsShiftDown() &&
+                if ( !wxIsCtrlDown() && !wxIsShiftDown() && !isAltDown &&
                      ((info->wVKey == VK_SPACE) || (info->wVKey == VK_RETURN)) )
                 {
                     wxTreeEvent event2(wxEVT_COMMAND_TREE_ITEM_ACTIVATED,

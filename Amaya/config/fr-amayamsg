@@ -4,11 +4,11 @@
 2 Nouveau document XHTML 1.1
 3 Nouveau document XHTML 1.0 Transitional
 4 Nouveau document XHTML 1.0 Strict
-5 Nouveau document XHTML 1.0 Basic 
+5 Nouveau document XHTML 1.0 Basic
 6 Nouveau document MathML
 7 Nouveau document SVG
 8 Nouvelle feuille de style
-9 Modèle
+9 À partir du modèle
 10 Ouvrir
 11 Ouvrir dans un nouvel onglet
 12 Ouvrir dans nouvelle fenêtre
@@ -75,10 +75,10 @@
 73 Image de fond
 74 Image de fond interdite ici
 75 CSS
-76 La sauvegarde sauvera aussi les images suivantes ?
+76 La sauvegarde sauvera aussi les images suivantes?
 77 Erreur de sauvegarde de l'URL
 78 Sauvegarder sur le disque ?
-79 Copier images
+79 Copier les images
 80 Transformer les URL
 81 Adresse du document
 82 Répertoire des images
@@ -136,7 +136,7 @@
 134 Nombre de colonnes
 135 Bordure
 136 Texte de remplacement
-137 Le texte remplacement est obligatoire
+137 Le texte de remplacement est obligatoire
 138 Imprimer l'URL
 139 Appliquer
 140 Défauts
@@ -183,7 +183,7 @@
 181 Couleur de fond
 182 Couleur des menus
 183 Couleur de fond des menus
-184 Impossible d'initialiser le cache. Vous avez peut-être specifié un répertoire invalide ou vous exécutez un autre Amaya en méme-temps.
+184 Impossible d'initialiser le cache. Vous avez peut-être specifié un répertoire invalide ou vous exécutez un autre Amaya en même-temps.
 185 Liste des langues préférées comme "fr, en" :
 186 Ces changements seront effectifs lors du prochain démarrage.
 187 Autoriser la redirection automatique du PUT vers ces domaines
@@ -215,7 +215,7 @@
 213 Essayer l'entrée "Fichier/Forcer un code caractère"
 214 Caractères invalides
 215 Profil du document :
-216 Erreurs détectées - voir Fichier/Montrer les erreurs
+216 Erreurs détectées - voir Fichier > Montrer les erreurs
 217 Le codage de ce document n'est pas supporté par Amaya
 218 Editer et sauver ce document changera son type
 219 Non disponible
@@ -258,7 +258,7 @@
 256 L'URL doit être de type HTTP pour utiliser
 257 Erreur: type MIME incorrect
 258 Inconnu
-259 Styles ignorés - voir Vues/Montrer les erreurs
+259 Styles ignorés - voir Fichier > Montrer les erreurs
 260 Ce document est déjà affiché dans une autre fenêtre.
 261 Sauver cette instance peut provoquer des problèmes de mise à jour.
 262 Ajouter ou modifier le doctype du document supprimera certains éléments ou attributs
@@ -362,12 +362,22 @@
 360 Fichier
 361 Remplacer le document courant
 362 Dans un nouvel onglet
-363 Dans un nouvel onglet (pas encore disponible sous Mac OSX)
-364 Dans une nouvelle fenêtre
-365 Anti-aliasing
-366 Date au format ISO
-367 Ouvrir les nouveaux documents dans
-368 Endroit d'ouverture
-369 Avertir avant de fermer plusieurs onglets
-370 Nombre max d'url dans l'historique
-371 Vider la liste des urls
+363 Dans une nouvelle fenêtre
+364 Anti-aliasing
+365 Date au format ISO
+366 Ouvrir les nouveaux documents dans
+367 Endroit d'ouverture
+368 Avertir avant de fermer plusieurs onglets
+369 Nombre max d'url dans l'historique
+370 Vider la liste des urls
+371 Montrer tous les raccourcis
+372 Longueur de ligne fixée (0 = valeur par défaut)
+373 Modèle
+374 Enregistrer le document sous...
+375 Le modèle n'existe pas
+376 Montrer les cadres des modèles
+377 Appliquer ferme le dialogue
+378 Non autorisé dans ce document
+379 Element protégé
+380 La sélection ne peut pas traverser un élément de ce type
+381 Pas d'en-tête trouvé après la sélection

@@ -4,7 +4,7 @@
 // Author:      Ryan Norton
 // Modified by:
 // Created:     04/16/2005
-// RCS-ID:      $Id: mimetmac.cpp,v 1.1.1.1 2005/07/06 09:30:53 gully Exp $
+// RCS-ID:      $Id: mimetmac.cpp,v 1.1.1.2 2005/07/26 09:31:08 gully Exp $
 // Copyright:   (c) 2005 Ryan Norton (<wxprojects@comcast.net>)
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -58,8 +58,10 @@
 
 // other standard headers
 #include <ctype.h>
-#include <InternetConfig.h> //For mime types
 
+#ifndef __DARWIN__
+#include <InternetConfig.h> //For mime types
+#endif
 
 /*   START CODE SAMPLE FROM TECHNOTE 1002 (http://developer.apple.com/technotes/tn/tn1002.html) */
 
@@ -389,7 +391,7 @@ wxFileTypeImpl::GetPrintCommand(wxString *printCmd,
 #if defined(__DARWIN__)
 
 //on darwin, use launch services
-#include "LaunchServices.h"
+#include <ApplicationServices/ApplicationServices.h>
 
 wxString wxFileTypeImpl::GetCommand(const wxString& verb) const
 {

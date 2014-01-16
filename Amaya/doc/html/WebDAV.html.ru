@@ -4,8 +4,8 @@
 <html>
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=windows-1251">
-  <title>&#xd4;&#xf3;&#xed;&#xea;&#xf6;&#xe8;&#xff; WebDAV &#xe2;
-  Amaya</title>
+  <title>Фун:ция WebDAV в Amaya
+</title>
   <meta name="generator" content="amaya 8.5, see http://www.w3.org/Amaya/">
   <link href="style.css" rel="stylesheet" type="text/css">
 </head>
@@ -104,7 +104,7 @@ href="http://andrew2.andrew.cmu.edu/rfc/rfc2518.html">RFC 2518</a>, а также
 изменения.</p>
 
 <p><a id="L654"><img alt="Меню Совместная работа"
-src="../images/CooperationMenu-ru.gif"></a></p>
+src="../images/CooperationMenu.gif"></a></p>
 
 <p>Поэтому, если вы хотите знать, блокировал ли ваш коллега веб страницу, для
 этого вы можете использовать пункт <em>Просмотр свойств ресурса</em> из меню

@@ -41,9 +41,9 @@ certains caractères non disponibles au clavier comme :</p>
   </li>
   <li>Pour obtenir un &euro; (euro), vous devez taper <code>Alt -
   e</code>.</li>
-  <li>Pour obtenir un &#x153; (oelig), vous devez taper <code>Control -
+  <li>Pour obtenir un &oelig; (oelig), vous devez taper <code>Control -
     o</code> puis <code>Control - e</code>.</li>
-  <li>Pour obtenir un &#x152; (OElig), vous devez taper <code>Shift - Control
+  <li>Pour obtenir un &OElig; (OElig), vous devez taper <code>Shift - Control
     - o</code> puis <code>Shift - Control - e</code>.</li>
   <li>Pour obtenir un «, vous devez taper <code>Control - &lt;</code> ou
     <code>Shift</code> - <code>Control - &lt;</code> (cela dépend de votre
@@ -54,7 +54,7 @@ certains caractères non disponibles au clavier comme :</p>
 </ul>
 
 <p>On donne une description de la méthode multi-touches standard des versions
-Unix.</p>
+Unix et celle du système Mac OS X</p>
 
 <h3><a name="Standard">Le support multi-touches standard des versions
 Unix</a></h3>
@@ -65,7 +65,7 @@ deux caractères disponibles précédés par la touche spéciale
 <strong>Composer</strong>. Sur Amaya il est possible d'inverser la première
 touche et la deuxième.</p>
 
-<p>Si la touche <strong>Composer</strong>n'existe pas vous pouvez l'attacher
+<p>Si la touche <strong>Composer</strong> n'existe pas vous pouvez l'attacher
 à une touche existante comme <strong>Alt-Gr</strong> par la commande
 <code>xmodmap</code> suivante :</p>
 <pre>keycode 113 = Multi_key</pre>
@@ -721,6 +721,22 @@ elle pourra être appliquée dès qu'on lancera le serveur X.</p>
 </table>
 
 <div id="Creating1">
+<h3><a>Saisie de caractères accentués sous Mac OS X</a></h3>
+
+<p>Avec un clavier US (qwerty), la saisie de caractères accentués sous la
+version Mac OS X se fait de la manière suivante:</p>
+<ul>
+  <li>Pour un accent aigu: <strong>alt-e</strong> puis la lettre (donc pour
+    é: alt-e et e)</li>
+  <li>Pour un accent grave: <strong>alt-`</strong> puis la lettre</li>
+  <li>Pour un accent circonflexe: <strong>alt-i</strong> puis la lettre</li>
+  <li>Pour un tréma: <strong>alt-u</strong> puis la lettre</li>
+  <li>Pour un ç: <strong>alt-c</strong></li>
+</ul>
+
+<p>La touche <strong>alt</strong> est également appelée touche
+<strong>option</strong>.</p>
+
 <h3><a>Traitement des espaces</a></h3>
 
 <p>Pour les documents XHTML, <a href="Math.html.fr#Math">MathML</a>, <a

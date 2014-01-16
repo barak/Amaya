@@ -4,7 +4,7 @@
 // Author:      David Webster
 // Modified by:
 // Created:     10/13/99
-// RCS-ID:      $Id: choice.cpp,v 1.1.1.1 2005/07/06 09:30:55 gully Exp $
+// RCS-ID:      $Id: choice.cpp,v 1.1.1.2 2005/07/26 09:31:10 gully Exp $
 // Copyright:   (c) David Webster
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -327,13 +327,11 @@ wxClientData* wxChoice::DoGetItemClientObject(
 // wxOS2 specific helpers
 // ----------------------------------------------------------------------------
 
-void wxChoice::DoSetSize(
-  int                               nX
-, int                               nY
-, int                               nWidth
-, int                               nHeight
-, int                               nSizeFlags
-)
+void wxChoice::DoSetSize(int nX,
+                         int nY,
+                         int nWidth,
+                         int WXUNUSED(nHeight),
+                         int nSizeFlags)
 {
     //
     // Ignore height parameter because height doesn't mean 'initially
@@ -345,7 +343,7 @@ void wxChoice::DoSetSize(
     wxControl::DoSetSize( nX
                          ,nY
                          ,nWidth
-                         ,-1
+                         ,wxDefaultCoord
                          ,nSizeFlags
                         );
 } // end of wxChoice::DoSetSize

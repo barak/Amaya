@@ -5,7 +5,7 @@ dnl Vadim Zeitlin and Ron Lee
 dnl
 dnl This script is under the wxWindows licence.
 dnl
-dnl Version: $Id: acinclude.m4,v 1.1.1.1 2005/07/06 09:29:53 gully Exp $
+dnl Version: $Id: acinclude.m4,v 1.1.1.2 2005/07/26 09:30:46 gully Exp $
 dnl ---------------------------------------------------------------------------
 
 
@@ -51,7 +51,7 @@ AC_DEFUN([WX_PATH_FIND_LIBRARIES],
 ac_find_libraries=
 for ac_dir in $1 /usr/lib;
   do
-    for ac_extension in a so sl dylib; do
+    for ac_extension in a so sl dylib dll.a; do
       if test -f "$ac_dir/lib$2.$ac_extension"; then
         ac_find_libraries=$ac_dir
         break 2

@@ -163,11 +163,10 @@ STRUCT
 		{ hspace            vspace }
 	Object;							{ OBJECT }
 	Applet;							{ APPLET }
-	MathML;						        { MATH }
-        SVG;			                                { SVG }
-	map; MAP;						{ MAP }
-	XLink;							{ Annotations }
-	External_Object						{ IMG type=svg}
+	MathML;						  { MATH }
+  SVG;			          { SVG }
+  XLink;							{ Annotations }
+	External_Object		  { IMG type=svg}
 	    (ATTR SRC;
 		{ src }
 		  Height_; Width__;
@@ -292,6 +291,7 @@ STRUCT
 	Subscript = Basic_Set;					{ SUB }
 	Superscript = Basic_Set;				{ SUP }
 	Span = Basic_Set;					{ SPAN }
+  map; MAP;						{ MAP }
 	BDO (ATTR !dir) = Basic_Set;				{ BDO }
 	Object;							{ OBJECT }
 	Embed_;							{ EMBED }
@@ -540,9 +540,9 @@ STRUCT
 	Basic_Set;
 
   Input = CASE OF					{ formctrl }
-	Text_Input					{ INPUT / TEXT }
+    Text_Input					{ INPUT / TEXT }
 	   (ATTR  NAME; Value_; disabled; readonly;
-	        { name  value   disabled  readonly }
+	  { name  value   disabled  readonly }
 		  Area_Size = Integer; MaxLength = Integer;
 		{ size                 maxlength }
 		  IntAreaSize = Integer;
@@ -552,9 +552,10 @@ STRUCT
 		{ onfocus  onblur  onselect  onchange }
 		  Default_Value) =
 		Input_Text - (Input);
-	Password_Input					{ INPUT / PASSWORD }
-	   (ATTR  NAME; Value_; disabled; readonly;
-		{ name  value   disabled  readonly }
+
+    Password_Input					{ INPUT / PASSWORD }
+	   (ATTR  NAME; Value_; disabled; readonly; ALT;
+		{ name  value   disabled  readonly alt}
 		  Area_Size; IntAreaSize; MaxLength;
 		{ size                    maxlength }
 		  tabindex; accesskey;
@@ -563,9 +564,10 @@ STRUCT
 		{ onfocus  onblur  onselect  onchange }
 		  Default_Value) =
 		Input_Text  - (Input);
-	File_Input					{ INPUT / FILE }
-	   (ATTR  NAME; Value_; disabled; readonly;
-		{ name  value   disabled  readonly }
+
+    File_Input					{ INPUT / FILE }
+	   (ATTR  NAME; Value_; disabled; readonly; ALT;
+		{ name  value   disabled  readonly alt }
 		  Area_Size; IntAreaSize; MaxLength;
 		{ size                    maxlength }
 		  tabindex; accesskey;
@@ -574,18 +576,20 @@ STRUCT
 		{ onfocus  onblur }
 		  Default_Value) =
 		Input_Text - (Input);
-	Checkbox_Input					{ INPUT / CHECKBOX }
-	   (ATTR  NAME; Value_; Checked = Yes_, No_;
-		{ name  value   checked }
+
+    Checkbox_Input					{ INPUT / CHECKBOX }
+	   (ATTR  NAME; Value_; Checked = Yes_, No_; ALT;
+		{ name  value   checked alt }
 		  disabled; readonly;
 		{ disabled  readonly }
 		  tabindex; accesskey; onfocus; onblur;
 		{ tabindex  accesskey  onfocus  onblur }
 		  DefaultChecked = Yes_, No_) =
 		CONSTANT C_Empty with Checked ?= No_;
-	Radio_Input					{ INPUT / RADIO }
-	   (ATTR  NAME; Value_; Checked; disabled;
-		{ name  value   checked  disabled }
+
+    Radio_Input					{ INPUT / RADIO }
+	   (ATTR  NAME; Value_; Checked; disabled; ALT;
+		{ name  value   checked  disabled alt }
 		  readonly; tabindex; accesskey;
 		{ readonly  tabindex  accesskey }
 		  onfocus; onblur;
@@ -593,19 +597,21 @@ STRUCT
 		  DefaultChecked) =
 		CONSTANT C_Empty with Checked ?= No_,
 				      NAME ?= 'radio';
-	Submit_Input					{ INPUT / SUBMIT }
-	   (ATTR  NAME; Value_; disabled; readonly;
-		{ name  value   disabled; readonly }
+
+    Submit_Input					{ INPUT / SUBMIT }
+	   (ATTR  NAME; Value_; disabled; readonly; ALT;
+		{ name  value   disabled; readonly alt }
 		  tabindex; accesskey;
 		{ tabindex  accesskey }
 		  onfocus; onblur) =
 		{ onfocus  onblur }
-		BEGIN
-		CONSTANT C_Empty;
-		END with Value_ ?= 'Submit';
-	Reset_Input					{ INPUT / RESET }
-	   (ATTR  NAME; Value_; disabled; readonly;
-		{ name  value   disabled  readonly }
+    BEGIN
+    CONSTANT C_Empty;
+    END with Value_ ?= 'Submit';
+
+    Reset_Input					{ INPUT / RESET }
+	   (ATTR  NAME; Value_; disabled; readonly; ALT;
+		{ name  value   disabled  readonly alt }
 		  tabindex; accesskey;
 		{ tabindex  accesskey }
 		  onfocus; onblur) =
@@ -614,9 +620,10 @@ STRUCT
 		CONSTANT C_Empty;
 		END  - (Input) with NAME ?= 'Reset',
 				    Value_ ?= 'Reset';
-        Button_Input					{ INPUT / BUTTON }
-	   (ATTR  NAME; Value_; disabled; readonly;
-		{ name  value   disabled  readonly }
+
+    Button_Input					{ INPUT / BUTTON }
+	   (ATTR  NAME; Value_; disabled; readonly; ALT;
+		{ name  value   disabled  readonly alt }
 		  tabindex; accesskey;
 		{ tabindex  accesskey }
 		  onfocus; onblur) =
@@ -625,16 +632,16 @@ STRUCT
 		CONSTANT C_Empty;
 		END;
 
-	Hidden_Input					{ INPUT / HIDDEN }
-	   (ATTR  NAME; Value_; disabled;
-		{ name  value   disabled }
+    Hidden_Input					{ INPUT / HIDDEN }
+	   (ATTR  NAME; Value_; disabled; ALT;
+		{ name  value   disabled alt }
 		  tabindex; accesskey;
 		{ tabindex  accesskey }
 		  onfocus; onblur) =
 		{ onfocus  onblur }
 		CONSTANT C_Empty;
 
-        BUTTON_						{ BUTTON }
+    BUTTON_						{ BUTTON }
 	   (ATTR  NAME; Value_;
 		{ name  value }
 		  Button_type = button, submit, reset;
@@ -650,12 +657,13 @@ STRUCT
 		  accesskey; onfocus; onblur) =
 		{ accesskey  onfocus  onblur }
 		Basic_Set;
-	Option_Menu;					{ SELECT }
-	Text_Area;					{ TEXTAREA }
+
+    Option_Menu;					{ SELECT }
+    Text_Area;					{ TEXTAREA }
 	END;
 
   Input_Text = BEGIN
-	Inserted_Text = TEXT;
+  Inserted_Text = TEXT;
 	END;
 
   Table_							{ TABLE }
@@ -770,12 +778,12 @@ STRUCT
 	LIST OF (Element);
 
   MAP								{ MAP }
-     (ATTR !NAME; Ref_IMG = REFERENCE(Any)) =
+     (ATTR NAME; Ref_IMG = REFERENCE(Any)) =
 	 { name linked to an image}
 	LIST OF (ElemOrArea = CASE OF Element; AREA; END);
 
   map								{ MAP }
-     (ATTR !NAME) =
+     (ATTR NAME) =
 	 { name }
 	LIST OF (Element);
 
@@ -880,20 +888,20 @@ EXCEPT
 	Definition_Item:Hidden;
 	Term_List:	Hidden, CanCut;
 	Definitions:	Hidden;
-        XMLPI:	        ReturnCreateNL, NoSpellCheck, NoReplicate;
+  XMLPI:	        ReturnCreateNL, NoSpellCheck, NoReplicate;
 	Comment\240:	ReturnCreateNL, NoReplicate;
 	Comment_line:	Hidden, MarkupPreserve;
 	PI_line:	Hidden, MarkupPreserve;
 	DOCTYPE:	NoCut, NoSpellCheck;
 	DOCTYPE_line:	Hidden, NoCut;
-        CDATA_line:     Hidden, MarkupPreserve;
-	GRAPHICS:	NoMove, NoResize;
+  CDATA_line:     Hidden, MarkupPreserve;
+	GRAPHICS:	NoMove, NoResize, SelectParent;
 	TEXT:		NoMove, NoResize;
 	PICTURE:	MoveResize;
 	Invalid_element:NoCreate;
 	Unknown_namespace:NoCreate;
 	XHTML_Unknown_namespace:NoCreate;
-        BR:	        IsBreak;
+  BR:	        IsBreak;
 	Pseudo_paragraph: ParagraphBreak, Hidden;
 	Basic_Elem:	Hidden;
 	Paragraph:	ParagraphBreak;
@@ -907,6 +915,7 @@ EXCEPT
 	Term:		ParagraphBreak;
 	MAP:		IsDraw;
 	AREA:		MoveResize, ClickableSurface, HighlightChildren;
+  Anchor: ClickableSurface;
 	Password_Input: Shadow;
 	Preformatted:	ReturnCreateNL, NoReplicate;
 	STYLE_:		ReturnCreateNL, NoSpellCheck, NoReplicate;
@@ -952,29 +961,27 @@ EXCEPT
 	Heading_cell:	IsCell, NoMove, NoResize, NoBreakByReturn;
 	Table_cell:	IsCell, NoMove, NoResize, NoBreakByReturn;
 	Table_:		IsTable, PageBreak, NoReplicate, NoBreakByReturn;
+  CAPTION:  IsCaption;
 	Column_head:	IsColHead, NoCut, Hidden, NoBreakByReturn;
 	Table_head:	NoCut, Hidden, NoSelect, NoBreakByReturn;
 	C_Head:		Hidden, NoSelect;
 	Cols:		Hidden, NoSelect, NoCreate;
 	Table_body:	PageBreakAllowed, Hidden, NoBreakByReturn;
-        thead:		NoBreakByReturn; 
-        tbody:	        NoBreakByReturn;
-        tfoot:	        NoBreakByReturn;
+  thead:		NoBreakByReturn; 
+  tbody:	        NoBreakByReturn;
+  tfoot:	        NoBreakByReturn;
 	Table_row:	IsRow, PageBreakPlace, NoBreakByReturn;
-	IFRAME:	        NoBreakByReturn;
-	Iframe_Content: Hidden, NoCreate, NoCut, NoBreakByReturn;
-	Iframe_Src_Content: Hidden;
-        rbc:	        Hidden;
-        rtc1:	        Hidden;
-        rtc2:	        Hidden;
+  rbc:	        Hidden;
+  rtc1:	        Hidden;
+  rtc2:	        Hidden;
 	ColExt:		Invisible;
 	RowExt:		Invisible;
 	Ref_column:	ColRef, Invisible;
 	colspan_:	ColSpan;
 	rowspan_:	RowSpan;
 	Ghost_restruct:	Invisible;
-        IntEntity:	Invisible;
-        EntityName:	Invisible;
+  IntEntity:	Invisible;
+  EntityName:	Invisible;
 	onclick:	EventAttr;
 	ondblclick:	EventAttr;
 	onmousedown:	EventAttr;
@@ -996,11 +1003,17 @@ EXCEPT
 	ID :		CssId; {Default id attribute}
 	Class:		CssClass;
 	External_Object_Content: Hidden;
+	Embed_:	        NoBreakByReturn, NoReplicate;
 	Embed_Content:  Hidden, NoSelect;
-	Object_Content: Hidden, NoCreate, NoCut, NoBreakByReturn;
-	Applet_Content: Hidden, NoCreate, NoCut, NoBreakByReturn;
+	Object:	        NoBreakByReturn, NoReplicate;
+	Object_Content: Hidden, NoSelect, NoCreate, NoCut, NoBreakByReturn;
+	Applet:	        NoBreakByReturn, NoReplicate;
+	Applet_Content: Hidden, NoSelect, NoCreate, NoCut, NoBreakByReturn;
+	IFRAME:	        NoBreakByReturn, NoReplicate;
+	Iframe_Content: Hidden, NoSelect, NoCut, NoBreakByReturn;
+	Iframe_Src_Content: Hidden, NoCut, NoSelect;
 	is_css:	        Invisible;
-        Start:	        StartCounter;
-        ItemValue:	SetCounter;
+  Start:	        StartCounter;
+  ItemValue:	SetCounter;
 	xml_space:      SpacePreserve;
 END

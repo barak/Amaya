@@ -4,7 +4,7 @@
 // Author:      David Webster
 // Modified by:
 // Created:     11/28/99
-// RCS-ID:      $Id: bitmap.h,v 1.1.1.1 2005/07/06 09:30:10 gully Exp $
+// RCS-ID:      $Id: bitmap.h,v 1.1.1.2 2005/07/26 09:30:54 gully Exp $
 // Copyright:   (c) David Webster
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -106,10 +106,7 @@ public:
             );
 
     // If depth is omitted, will create a bitmap compatible with the display
-    wxBitmap( int nWidth
-             ,int nHeight
-             ,int nDepth = -1
-            );
+    wxBitmap( int nWidth, int nHeight, int nDepth = -1 );
 
     wxBitmap( const wxImage& image, int depth = -1 )
                          { (void)CreateFromImage(image, depth); }
@@ -339,14 +336,14 @@ public:
                       ,int             lType
                      );
 private:
-    inline virtual bool Load( wxGDIImage*     pImage
-                             ,const wxString& rName
-                             ,HPS             hPs
-                             ,long            lFlags
-                             ,int             nDesiredWidth
-                             ,int             nDesiredHeight
+    inline virtual bool Load( wxGDIImage*     WXUNUSED(pImage)
+                             ,const wxString& WXUNUSED(rName)
+                             ,HPS             WXUNUSED(hPs)
+                             ,long            WXUNUSED(lFlags)
+                             ,int             WXUNUSED(nDesiredWidth)
+                             ,int             WXUNUSED(nDesiredHeight)
                             )
-    { return FALSE; }
+    { return false; }
     DECLARE_DYNAMIC_CLASS(wxBitmapHandler)
 }; // end of CLASS wxBitmapHandler
 

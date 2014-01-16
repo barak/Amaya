@@ -4,7 +4,7 @@
 // Author:      David Webster
 // Modified by:
 // Created:     01.21.99
-// RCS-ID:      $Id: mimetype.h,v 1.1.1.1 2005/07/06 09:30:10 gully Exp $
+// RCS-ID:      $Id: mimetype.h,v 1.1.1.2 2005/07/26 09:30:54 gully Exp $
 // Copyright:   adopted from msw port -- (c) 1998 Vadim Zeitlin <zeitlin@dptmaths.ens-cachan.fr>
 // Licence:     wxWindows licence (part of wxExtra library)
 /////////////////////////////////////////////////////////////////////////////
@@ -63,10 +63,10 @@ public:
     bool Unassociate();
 
     // set an arbitrary command, ask confirmation if it already exists and
-    // overwriteprompt is TRUE
+    // overwriteprompt is true
     bool SetCommand(const wxString& cmd,
                     const wxString& verb,
-                    bool overwriteprompt = TRUE);
+                    bool overwriteprompt = true);
 
     bool SetDefaultIcon(const wxString& cmd = wxEmptyString, int index = 0);
 
@@ -101,10 +101,10 @@ public:
     size_t EnumAllFileTypes(wxArrayString& mimetypes);
 
     // these are NOPs under OS/2
-    bool ReadMailcap(const wxString& filename, bool fallback = TRUE)
-        { return TRUE; }
-    bool ReadMimeTypes(const wxString& filename)
-        { return TRUE; }
+    bool ReadMailcap(const wxString& WXUNUSED(filename), bool WXUNUSED(fallback) = true)
+        { return true; }
+    bool ReadMimeTypes(const wxString& WXUNUSED(filename))
+        { return true; }
 
     void AddFallback(const wxFileTypeInfo& ft) { m_fallbacks.Add(ft); }
 
@@ -116,4 +116,3 @@ private:
 
 #endif
   //_MIMETYPE_IMPL_H
-

@@ -40,13 +40,11 @@
 
 IMPLEMENT_DYNAMIC_CLASS(AmayaColorsPanel, AmayaSubPanel)
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaColorsPanel
  *      Method:  AmayaColorsPanel
  * Description:  construct a panel (bookmarks, elements, attributes, colors ...)
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaColorsPanel::AmayaColorsPanel( wxWindow * p_parent_window, AmayaNormalWindow * p_parent_nwindow )
   : AmayaSubPanel( p_parent_window, p_parent_nwindow, _T("wxID_PANEL_COLORS") )
     ,m_ThotBGColor(-1)
@@ -56,9 +54,9 @@ AmayaColorsPanel::AmayaColorsPanel( wxWindow * p_parent_window, AmayaNormalWindo
   RefreshToolTips();
   m_pTitleText->SetLabel(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_COLORS)));
 
-  m_Bitmap_Empty        = wxBitmap( TtaGetResourcePathWX(WX_RESOURCES_ICON_MISC, "empty.png" ), wxBITMAP_TYPE_PNG );
+  m_Bitmap_Empty = wxBitmap( TtaGetResourcePathWX(WX_RESOURCES_ICON_MISC, "empty.png" ), wxBITMAP_TYPE_PNG );
   m_Bitmap_DefaultColor = wxBitmap( TtaGetResourcePathWX(WX_RESOURCES_ICON_16X16, "default.png" ), wxBITMAP_TYPE_PNG );
-  m_Color_ButtonBG      = XRCCTRL(*m_pPanelContentDetach, "wxID_BUTTON_FGCOLOR", wxBitmapButton)->GetBackgroundColour();
+  m_Color_ButtonBG = XRCCTRL(*m_pPanelContentDetach, "wxID_BUTTON_FGCOLOR", wxBitmapButton)->GetBackgroundColour();
 
   XRCCTRL(*this, "wxID_BUTTON_BGCOLOR", wxBitmapButton)->SetBitmapLabel(m_Bitmap_DefaultColor);
   XRCCTRL(*this, "wxID_BUTTON_FGCOLOR", wxBitmapButton)->SetBitmapLabel(m_Bitmap_DefaultColor);
@@ -70,38 +68,32 @@ AmayaColorsPanel::AmayaColorsPanel( wxWindow * p_parent_window, AmayaNormalWindo
   m_pManager->RegisterSubPanel( this );
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaColorsPanel
  *      Method:  ~AmayaColorsPanel
  * Description:  destructor
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaColorsPanel::~AmayaColorsPanel()
 {  
   // unregister myself to the manager, so nothing should be asked to me in future
   m_pManager->UnregisterSubPanel( this );
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaColorsPanel
  *      Method:  GetPanelType
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 int AmayaColorsPanel::GetPanelType()
 {
   return WXAMAYA_PANEL_COLORS;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaColorsPanel
  *      Method:  RefreshToolTips
  * Description:  reassign the tooltips values
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaColorsPanel::RefreshToolTips()
 {  
   XRCCTRL(*m_pPanelContentDetach, "wxID_BUTTON_DEFAULTCOLORS", wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_STD_COLORS)));
@@ -113,13 +105,11 @@ void AmayaColorsPanel::RefreshToolTips()
   XRCCTRL(*m_pPanelContentDetach,"wxID_APPLY",wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_APPLY)));
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaColorPanel
  *      Method:  OnModifyColor
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaColorsPanel::OnModifyColor( wxCommandEvent& event )
 {
   ModifyColor (m_ThotFGColor, FALSE);
@@ -129,53 +119,45 @@ void AmayaColorsPanel::OnModifyColor( wxCommandEvent& event )
   TtaRedirectFocus();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaColorPanel
  *      Method:  OnGetColor
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaColorsPanel::OnGetColor( wxCommandEvent& event )
 {
   ThotGetSelectedElementColor();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaColorPanel
  *      Method:  OnDefaultColors
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaColorsPanel::OnDefaultColors( wxCommandEvent& event )
 {
   ThotSelectPalette (-1, -1);
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaColorPanel
  *      Method:  OnSwitchColors
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaColorsPanel::OnSwitchColors( wxCommandEvent& event )
 {
   ThotSelectPalette (m_ThotFGColor, m_ThotBGColor);
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaColorsPanel
  *      Method:  SendDataToPanel
  * Description:  refresh the button widgets of the frame's panel
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaColorsPanel::SendDataToPanel( AmayaParams& p )
 {
   // update button background colors
-  m_ThotBGColor = (long int)p.param1;
+  m_ThotBGColor = p.param1;
   if (m_ThotBGColor >= 0)
     {
       wxColour * p_bg_colour = ColorPixel(m_ThotBGColor);
@@ -189,7 +171,7 @@ void AmayaColorsPanel::SendDataToPanel( AmayaParams& p )
       XRCCTRL(*m_pPanelContentDetach, "wxID_BUTTON_BGCOLOR", wxBitmapButton)->SetBitmapLabel(m_Bitmap_DefaultColor);
     }
 
-  m_ThotFGColor = (long int)p.param2;
+  m_ThotFGColor = p.param8;
   if (m_ThotFGColor >= 0)
     {
       wxColour * p_fg_colour = ColorPixel(m_ThotFGColor);
@@ -204,38 +186,32 @@ void AmayaColorsPanel::SendDataToPanel( AmayaParams& p )
     }
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaColorsPanel
  *      Method:  DoUpdate
  * Description:  force a refresh when the user expand or detach this panel
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaColorsPanel::DoUpdate()
 {
   AmayaSubPanel::DoUpdate();
   ThotUpdatePalette();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaColorsPanel
  *      Method:  IsActive
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 bool AmayaColorsPanel::IsActive()
 {
   return AmayaSubPanel::IsActive();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaColorPanel
  *      Method:  OnChooseFGColor
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaColorsPanel::OnChooseFGColor( wxCommandEvent& event )
 {
   wxColour * p_fg_colour   = ColorPixel(m_ThotFGColor);
@@ -245,13 +221,11 @@ void AmayaColorsPanel::OnChooseFGColor( wxCommandEvent& event )
     ThotSelectPalette (m_ThotBGColor, thot_col);
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaColorPanel
  *      Method:  OnChooseBGColor
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaColorsPanel::OnChooseBGColor( wxCommandEvent& event )
 {
   wxColour * p_bg_colour = ColorPixel(m_ThotBGColor);
@@ -261,13 +235,11 @@ void AmayaColorsPanel::OnChooseBGColor( wxCommandEvent& event )
     ThotSelectPalette (thot_col, m_ThotFGColor);
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaColorPanel
  *      Method:  ChooseCustomColor
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 int AmayaColorsPanel::ChooseCustomColor( const wxColour & start_colour )
 {
   m_ColourData.SetColour( start_colour );

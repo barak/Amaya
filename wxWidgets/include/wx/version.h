@@ -4,7 +4,7 @@
 *  Author:      Julian Smart
 *  Modified by: Ryan Norton (Converted to C)
 *  Created:     29/01/98
-*  RCS-ID:      $Id: version.h,v 1.1.1.1 2005/07/06 09:30:08 gully Exp $
+*  RCS-ID:      $Id: version.h,v 1.1.1.2 2005/07/26 09:30:53 gully Exp $
 *  Copyright:   (c) 1998 Julian Smart
 *  Licence:     wxWindows licence
 */
@@ -21,9 +21,9 @@
 /*      so don't change its format too much or they could break */
 #define wxMAJOR_VERSION      2
 #define wxMINOR_VERSION      6
-#define wxRELEASE_NUMBER     1
+#define wxRELEASE_NUMBER     2
 #define wxSUBRELEASE_NUMBER  1
-#define wxVERSION_STRING   _T("wxWidgets 2.6.1")
+#define wxVERSION_STRING   _T("wxWidgets 2.6.2")
 
 /*  nothing to update below this line when updating the version */
 /*  ---------------------------------------------------------------------------- */
@@ -35,10 +35,7 @@
  * version of wxWidgets being used. A single number with two decimal digits
  * for each component, e.g. 20601 for 2.6.1 */
 #ifndef wxABI_VERSION
-#define wxABI_VERSION ( \
-            wxMAJOR_VERSION * 10000 + \
-            wxMINOR_VERSION * 100 + \
-            wxRELEASE_NUMBER )
+#define wxABI_VERSION ( wxMAJOR_VERSION * 10000 + wxMINOR_VERSION * 100 + 99 )
 #endif
 
 /*  helpers for wxVERSION_NUM_XXX */

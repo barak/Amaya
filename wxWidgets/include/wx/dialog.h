@@ -4,7 +4,7 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     29.06.99
-// RCS-ID:      $Id: dialog.h,v 1.1.1.1 2005/07/06 09:30:08 gully Exp $
+// RCS-ID:      $Id: dialog.h,v 1.1.1.2 2005/07/26 09:30:53 gully Exp $
 // Copyright:   (c) Vadim Zeitlin
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -49,6 +49,19 @@ public:
     // The identifier for the affirmative button
     void SetAffirmativeId(int affirmativeId) { m_affirmativeId = affirmativeId; }
     int GetAffirmativeId() const { return m_affirmativeId; }
+
+    // Identifier for Esc key translation
+#if wxCHECK_VERSION(2, 7, 0)
+    #error "Uncomment SetEscapeId() implementation"
+
+    // this is what we should do in 2.7: remove the "#else" part and add
+    // m_escapeId declaration and the docs for Set/GetEscapeId()
+    void SetEscapeId(int escapeId) { m_escapeId = escapeId; }
+    int GetEscapeId() const { return m_escapeId; }
+#elif wxABI_VERSION > 20601
+    // just a stub for 2.6
+    int GetEscapeId() const { return wxID_ANY; }
+#endif
 
 #if wxUSE_STATTEXT // && wxUSE_TEXTCTRL
     // splits text up at newlines and places the

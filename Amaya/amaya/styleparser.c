@@ -188,14 +188,29 @@ static void CSSPrintError (char *msg, char *value)
         }
       CSSErrorsFound = TRUE;
       if (LineNumber < 0)
-        fprintf (ErrFile, "  In style attribute, %s \"%s\"\n", msg, value);
+        {
+          if (value)
+            fprintf (ErrFile, "  In style attribute, %s \"%s\"\n", msg, value);
+          else
+            fprintf (ErrFile, "  In style attribute, %s\n", msg);
+        }
       else
         {
-          fprintf (ErrFile, "@  line %d: %s \"%s\"\n",
-                   LineNumber+NewLineSkipped, msg, value);
-          if (CSSErrFile)
-            fprintf (CSSErrFile, "@  line %d: %s \"%s\"\n",
+          if (value)
+            fprintf (ErrFile, "@  line %d: %s \"%s\"\n",
                      LineNumber+NewLineSkipped, msg, value);
+          else
+            fprintf (ErrFile, "@  line %d: %s\n", LineNumber+NewLineSkipped,
+                     msg);
+          if (CSSErrFile)
+            {
+              if (value)
+                fprintf (CSSErrFile, "@  line %d: %s \"%s\"\n",
+                         LineNumber+NewLineSkipped, msg, value);
+              else
+                fprintf (CSSErrFile, "@  line %d: %s\n",
+                         LineNumber+NewLineSkipped, msg);
+            }
         }
     }
 }
@@ -221,6 +236,20 @@ static void CSSParseError (char *msg, char *value, char *endvalue)
 }
 
 /*----------------------------------------------------------------------
+  SkipString move to the end of the string
+  ----------------------------------------------------------------------*/
+static char *SkipString (char *ptr)
+{
+  char        c = *ptr;
+
+  ptr++;
+  while (*ptr != EOS &&
+         (*ptr != c || (*ptr == c && ptr[-1] == '\\')))
+    ptr++;
+  return ptr;
+}
+
+/*----------------------------------------------------------------------
   CSSCheckEndValue
   print an error message if another character is found
   ----------------------------------------------------------------------*/
@@ -234,7 +263,12 @@ static char *CSSCheckEndValue (char *cssRule, char *endvalue, char *msg)
       while (*endvalue != EOS && *endvalue != SPACE && *endvalue != '/' &&
              *endvalue != ';' && *endvalue != '}' && *endvalue != EOL &&
              *endvalue != TAB && *endvalue !=  __CR__)
-        endvalue++;
+        {
+          if (*endvalue == '"' || *endvalue == '\'')
+            endvalue = SkipString (endvalue);
+          if (*endvalue != EOS)
+            endvalue++;
+        }
       /* close the string here */
       c = *endvalue;
       *endvalue = EOS;
@@ -251,35 +285,32 @@ static char *CSSCheckEndValue (char *cssRule, char *endvalue, char *msg)
 static char *SkipProperty (char *ptr, ThotBool reportError)
 {
   char       *deb;
-#ifdef IV
   char        c;
-#endif
 
   deb = ptr;
   while (*ptr != EOS && *ptr != ';' && *ptr != '}' && *ptr != '}')
     {
-      if (*ptr == '"' && (ptr == deb || ptr[-1] != '\\'))
-        {
-          /* skip to the end of the string "..." */
-          ptr++;
-          while (*ptr != EOS &&
-                 (*ptr != '"' || (*ptr == '"' && ptr[-1] == '\\')))
-            ptr++;
-        }
-      ptr++;
+      if (*ptr == '"' || *ptr == '\'')
+        ptr = SkipString (ptr);
+      if (*ptr != EOS)
+        ptr++;
     }
-#ifdef IV
   /* print the skipped property */
   c = *ptr;
   *ptr = EOS;
   if (reportError && *deb != EOS &&
+      strncasecmp (deb, "azimuth", 7) &&
       strncasecmp (deb, "border-collapse", 15) &&
       strncasecmp (deb, "border-spacing", 14) &&
       strncasecmp (deb, "caption-side", 12) &&
       strncasecmp (deb, "clip", 4) &&
       strncasecmp (deb, "counter-increment", 16) &&
       strncasecmp (deb, "counter-reset", 13) &&
+      strncasecmp (deb, "cue-after", 9) &&
+      strncasecmp (deb, "cue-before", 10) &&
+      strncasecmp (deb, "cue", 3) &&
       strncasecmp (deb, "cursor", 6) &&
+      strncasecmp (deb, "elevation", 9) &&
       strncasecmp (deb, "empty-cells", 11) &&
       strncasecmp (deb, "font-strech", 11) &&
       strncasecmp (deb, "letter-spacing", 14) &&
@@ -294,14 +325,26 @@ static char *SkipProperty (char *ptr, ThotBool reportError)
       strncasecmp (deb, "outline-width", 13) &&
       strncasecmp (deb, "outline", 7) &&
       strncasecmp (deb, "overflow", 8) &&
+      strncasecmp (deb, "pause-after", 11) &&
+      strncasecmp (deb, "pause-before", 12) &&
+      strncasecmp (deb, "pause", 5) &&
       strncasecmp (deb, "quotes", 6) &&
+      strncasecmp (deb, "richness", 8) &&
+      strncasecmp (deb, "speech-rate", 11) &&
+      strncasecmp (deb, "speak-header", 12) &&
+      strncasecmp (deb, "speak-punctuation", 17) &&
+      strncasecmp (deb, "speak-numeral", 13) &&
+      strncasecmp (deb, "speak", 5) &&
+      strncasecmp (deb, "pitch-range", 11) &&
+      strncasecmp (deb, "pitch", 5) &&
+      strncasecmp (deb, "stress", 6) &&
       strncasecmp (deb, "table-layout", 12) &&
       strncasecmp (deb, "text-shadow", 11) &&
-      strncasecmp (deb, "visibility", 10) &&
+      strncasecmp (deb, "voice-family", 12) &&
+      strncasecmp (deb, "volume", 6) &&
       strncasecmp (deb, "widows", 6))
     CSSPrintError ("CSS property ignored:", deb);
   *ptr = c;
-#endif /* IV */
   return (ptr);
 }
 
@@ -315,16 +358,12 @@ static char *SkipValue (char *msg, char *ptr)
   char        c;
 
   deb = ptr;
-  while (*ptr != EOS && *ptr != ';' && *ptr != '}' && *ptr != '}')
+  while (*ptr != EOS && *ptr != ';' && *ptr != '}' && *ptr != '}' && *ptr != '\n')
     {
-      if (*ptr == '"' && (ptr == deb || ptr[-1] != '\\'))
-        {
-          /* skip to the end of the string "..." */
-          ptr++;
-          while (*ptr != '"' || (ptr[0] == '"' && ptr[-1] == '\\'))
-            ptr++;
-        }
-      ptr++;
+      if (*ptr == '"' || *ptr == '\'')
+        ptr = SkipString (ptr);
+      if (*ptr != EOS)
+        ptr++;
     }
   /* print the skipped property */
   c = *ptr;
@@ -620,8 +659,6 @@ static char *ParseBorderStyle (char *cssRule, PresentationValue *border)
       border->typed_data.unit = UNIT_INVALID;
       return (cssRule);
     }
-  /* the value is parsed now */
-  /*cssRule = CSSCheckEndValue (ptr, cssRule, "Invalid border-style value");*/
   return (cssRule);
 }
 
@@ -1273,7 +1310,10 @@ static char *ParseCSSBorderTop (Element element, PSchema tsch,
 
   cssRule = SkipBlanksAndComments (cssRule);
   /* register given values */
-  style = width = FALSE;
+  if (!strncmp (cssRule, "none", 4))
+    style = width = TRUE;
+  else
+    style = width = FALSE;
   while (*cssRule != ';' && *cssRule != '}' && *cssRule != EOS && *cssRule != ',')
     {
       ptr = cssRule;
@@ -1319,7 +1359,10 @@ static char *ParseCSSBorderLeft (Element element, PSchema tsch,
 
   cssRule = SkipBlanksAndComments (cssRule);
   /* register given values */
-  style = width = FALSE;
+  if (!strncmp (cssRule, "none", 4))
+    style = width = TRUE;
+  else
+    style = width = FALSE;
   while (*cssRule != ';' && *cssRule != '}' && *cssRule != EOS && *cssRule != ',')
     {
       ptr = cssRule;
@@ -1365,7 +1408,10 @@ static char *ParseCSSBorderBottom (Element element, PSchema tsch,
 
   cssRule = SkipBlanksAndComments (cssRule);
   /* register given values */
-  style = width = FALSE;
+  if (!strncmp (cssRule, "none", 4))
+    style = width = TRUE;
+  else
+    style = width = FALSE;
   while (*cssRule != ';' && *cssRule != '}' && *cssRule != EOS && *cssRule != ',')
     {
       ptr = cssRule;
@@ -1411,7 +1457,10 @@ static char *ParseCSSBorderRight (Element element, PSchema tsch,
 
   cssRule = SkipBlanksAndComments (cssRule);
   /* register given values */
-  style = width = FALSE;
+  if (!strncmp (cssRule, "none", 4))
+    style = width = TRUE;
+  else
+    style = width = FALSE;
   while (*cssRule != ';' && *cssRule != '}' && *cssRule != EOS && *cssRule != ',')
     {
       ptr = cssRule;
@@ -1570,6 +1619,52 @@ static char *ParseCSSClear (Element element, PSchema tsch,
     }
   return (cssRule);
 }
+
+/*----------------------------------------------------------------------
+  ParseCSSVisibility: parse a CSS visibility attribute string        
+  ----------------------------------------------------------------------*/
+static char *ParseCSSVisibility(Element element, PSchema tsch,
+                                PresentationContext context, char *cssRule,
+                                CSSInfoPtr css, ThotBool isHTML)
+{
+  PresentationValue   pval;
+  char               *ptr = cssRule;
+
+  pval.typed_data.unit = UNIT_REL;
+  pval.typed_data.real = FALSE;
+  cssRule = SkipBlanksAndComments (cssRule);
+  if (!strncasecmp (cssRule, "hidden", 6))
+    {
+      cssRule += 6;
+      pval.typed_data.value = VsHidden;
+    }
+  else if (!strncasecmp (cssRule, "visible", 7))
+    {
+      cssRule += 7;
+      pval.typed_data.value = VsVisible;
+    }
+  else if (!strncasecmp (cssRule, "collapse", 8))
+    {
+      cssRule += 8;
+      pval.typed_data.value = VsCollapse;
+    }
+  else if (!strncasecmp (cssRule, "inherit", 7))
+    {
+      cssRule += 7;
+      pval.typed_data.value = VsInherit;
+    }
+  else
+    {
+      cssRule = SkipValue ("Invalid visibility value", cssRule);
+      return (cssRule);
+    }
+  cssRule = CheckImportantRule (cssRule, context);
+  if (DoApply)
+    TtaSetStylePresentation (PRVis, element, tsch, context, pval);
+  cssRule = CSSCheckEndValue (ptr, cssRule, "Invalid visibility value");
+  return (cssRule);
+}
+
 
 /*----------------------------------------------------------------------
   ParseCSSDisplay: parse a CSS display attribute string        
@@ -1855,11 +1950,9 @@ void ParseCSSImageCallback (Document doc, Element element, char *file,
   Element                    el;
   PSchema                    tsch;
   CSSInfoPtr                 css;
-  PInfoPtr                   pInfo;
   PresentationContext        ctxt;
   PresentationValue          image;
   PresentationValue          value;
-  ThotBool                   enabled;
 
   callblock = (CSSImageCallbackPtr) extra;
   if (callblock == NULL)
@@ -1881,6 +1974,7 @@ void ParseCSSImageCallback (Document doc, Element element, char *file,
     }
   else
     {
+      dispMode = TtaGetDisplayMode (RedisplayDoc);
       /* check if the CSS still exists */
       css = CSSList;
       while (css && css != callblock->css)
@@ -1913,7 +2007,8 @@ void ParseCSSImageCallback (Document doc, Element element, char *file,
     }
 
   TtaFreeMemory (callblock);
-  RedisplayImages--;
+  if (css)
+    RedisplayImages--;
   if (doc)
     {
       if (dispMode == DisplayImmediately)
@@ -1923,28 +2018,22 @@ void ParseCSSImageCallback (Document doc, Element element, char *file,
   else if (css && Style_parsing == 0 && RedisplayImages == 0 && RedisplayDoc)
     {
       /* all background images are now loaded */
-      doc = RedisplayDoc;
-      if (css->infos[doc] &&
+      if (css->infos[RedisplayDoc] &&
           /* don't manage a document used by make book */
-          (DocumentMeta[doc] == NULL ||
-           DocumentMeta[doc]->method != CE_MAKEBOOK))
+          (DocumentMeta[RedisplayDoc] == NULL ||
+           DocumentMeta[RedisplayDoc]->method != CE_MAKEBOOK))
         {
-          pInfo = css->infos[doc];
-          enabled = FALSE;
-          while (pInfo && !enabled)
-            {
-              enabled = pInfo->PiEnabled;
-              pInfo = pInfo->PiNext;
-            }
           /* Change the Display Mode to take into account the new
              presentation */
-          dispMode = TtaGetDisplayMode (doc);
-printf ("ParseCSSImageCallback Show BGimages\n");
+          dispMode = TtaGetDisplayMode (RedisplayDoc);
+#ifdef AMAYA_DEBUG
+          //printf ("ParseCSSImageCallback Show BGimages\n");
+#endif /* AMAYA_DEBUG */
           /* force the redisplay of this box */
-          TtaSetDisplayMode (doc, NoComputedDisplay);
-          TtaSetDisplayMode (doc, dispMode);
-          RedisplayBGImage = FALSE;
+          TtaSetDisplayMode (RedisplayDoc, NoComputedDisplay);
+          TtaSetDisplayMode (RedisplayDoc, dispMode);
         }
+      RedisplayBGImage = FALSE;
     }
   else
     RedisplayBGImage = TRUE;
@@ -1980,7 +2069,7 @@ static char *SetCSSImage (Element element, PSchema tsch,
       image.pointer = NULL;
       TtaSetStylePresentation (ruleType, element, tsch, ctxt,image);
     }
-  else if (url)
+  else if (url && DoApply)
     {
       bg_image = TtaGetEnvString ("ENABLE_BG_IMAGES");
       if (bg_image == NULL || !strcasecmp (bg_image, "yes"))
@@ -1996,7 +2085,6 @@ static char *SetCSSImage (Element element, PSchema tsch,
               callblock->ruleType = ruleType;
               /* new use of the context */
               ctxt->uses += 1;
-              RedisplayImages++;
               /* check if the image url is related to an external CSS */
               if (css)
                 {
@@ -2008,8 +2096,9 @@ static char *SetCSSImage (Element element, PSchema tsch,
                     /* the image concerns a style element */
                     NormalizeURL (url, ctxt->doc, tempname, imgname, NULL);
                   /* fetch and display background image of element */
-                  FetchImage (0, el, tempname, AMAYA_LOAD_IMAGE,
-                              ParseCSSImageCallback, callblock);
+                  if (FetchImage (0, el, tempname, AMAYA_LOAD_IMAGE,
+                                  ParseCSSImageCallback, callblock))
+                    RedisplayImages++;
                 }
               else
                 FetchImage (ctxt->doc, el, url, AMAYA_LOAD_IMAGE,
@@ -2689,19 +2778,19 @@ static char *ParseACSSFontSize (Element element, PSchema tsch,
   else if (!strncasecmp (cssRule, "xx-small", 8))
     {
       pval.typed_data.unit = UNIT_PT;
-      pval.typed_data.value = 8;
+      pval.typed_data.value = 6;
       cssRule += 8;
     }
   else if (!strncasecmp (cssRule, "x-small", 7))
     {
       pval.typed_data.unit = UNIT_PT;
-      pval.typed_data.value = 10;
+      pval.typed_data.value = 8;
       cssRule += 7;
     }
   else if (!strncasecmp (cssRule, "small", 5))
     {
       pval.typed_data.unit = UNIT_PT;
-      pval.typed_data.value = 11;
+      pval.typed_data.value = 10;
       cssRule += 5;
     }
   else if (!strncasecmp (cssRule, "medium", 6))
@@ -4099,7 +4188,7 @@ static char *ParseSVGFill (Element element, PSchema tsch,
 }
 
 /*----------------------------------------------------------------------
-  ParseSVGOpacity: parse a SVG fill property
+  ParseSVGOpacity: parse a SVG opacity property
   ----------------------------------------------------------------------*/
 static char *ParseSVGOpacity (Element element, PSchema tsch,
                               PresentationContext context, char *cssRule,
@@ -4116,8 +4205,9 @@ static char *ParseSVGOpacity (Element element, PSchema tsch,
     TtaSetStylePresentation (PROpacity, element, tsch, context, best);
   return (cssRule);
 }
+
 /*----------------------------------------------------------------------
-  ParseSVGOpacity: parse a SVG fill property
+  ParseSVGStrokeOpacity: parse a SVG stroke-opacity property
   ----------------------------------------------------------------------*/
 static char *ParseSVGStrokeOpacity (Element element, PSchema tsch,
                                     PresentationContext context, char *cssRule,
@@ -4134,8 +4224,9 @@ static char *ParseSVGStrokeOpacity (Element element, PSchema tsch,
     TtaSetStylePresentation (PRStrokeOpacity, element, tsch, context, best);
   return (cssRule);
 }
+
 /*----------------------------------------------------------------------
-  ParseSVGOpacity: parse a SVG fill property
+  ParseSVGFillOpacity: parse a SVG fil-opacityl property
   ----------------------------------------------------------------------*/
 static char *ParseSVGFillOpacity (Element element, PSchema tsch,
                                   PresentationContext context, char *cssRule,
@@ -4177,13 +4268,14 @@ static char *ParseCSSContent (Element element, PSchema tsch,
                               CSSInfoPtr css, ThotBool isHTML)
 {
   PresentationValue   value;
-  char                *p, quoteChar;
+  char                *p, *last, *start, quoteChar, savedChar;
   ThotBool            repeat;
 
   value.typed_data.unit = UNIT_REL;
   value.typed_data.real = FALSE;
   value.typed_data.value = 0;
-  TtaSetStylePresentation (PRContent, element, tsch, ctxt, value);
+  if (DoApply)
+    TtaSetStylePresentation (PRContent, element, tsch, ctxt, value);
   cssRule = SkipBlanksAndComments (cssRule);
   repeat = TRUE;
   while (repeat)
@@ -4194,6 +4286,13 @@ static char *ParseCSSContent (Element element, PSchema tsch,
         {
           /* @@@@@@ */
           cssRule += 6;
+          repeat = FALSE;
+        }
+      else if (!strncasecmp (cssRule, "none", 4))
+        /* The pseudo-element is not generated */
+        {
+          /* @@@@@@ */
+          cssRule += 4;
           repeat = FALSE;
         }
       else if (*cssRule == '"' || *cssRule == '\'')
@@ -4214,8 +4313,9 @@ static char *ParseCSSContent (Element element, PSchema tsch,
               value.typed_data.unit = UNIT_REL;
               value.typed_data.real = FALSE;
               value.pointer = p;
-              TtaSetStylePresentation (PRContentString, element, tsch, ctxt,
-                                       value);
+              if (DoApply)
+                TtaSetStylePresentation (PRContentString, element, tsch, ctxt,
+                                         value);
               *cssRule = quoteChar;
               cssRule++;
             }
@@ -4223,7 +4323,8 @@ static char *ParseCSSContent (Element element, PSchema tsch,
       else if (!strncasecmp (cssRule, "url", 3))
         {  
           cssRule += 3;
-          cssRule = SetCSSImage (element, tsch, ctxt, cssRule, css, PRContentURL);
+          cssRule = SetCSSImage (element, tsch, ctxt, cssRule, css,
+                                 PRContentURL);
         }
       else if (!strncasecmp (cssRule, "counter", 7))
         {
@@ -4239,9 +4340,46 @@ static char *ParseCSSContent (Element element, PSchema tsch,
         }
       else if (!strncasecmp (cssRule, "attr", 4))
         {
+          value.pointer = NULL;
           cssRule += 4;
-          /* @@@@@@ */
-          cssRule = SkipProperty (cssRule, FALSE);
+          cssRule = SkipBlanksAndComments (cssRule);
+          if (*cssRule == '(')
+            {
+              cssRule++;
+              cssRule = SkipBlanksAndComments (cssRule);
+              start = cssRule;
+              while (*cssRule != EOS && *cssRule != ')')
+                cssRule++;
+              if (*cssRule != ')')
+                cssRule = start;
+              else
+                {
+                  last = cssRule;
+                  /* remove extra spaces */
+                  if (last[-1] == SPACE)
+                    {
+                      *last = SPACE;
+                      last--;
+                      while (last[-1] == SPACE)
+                        last--;
+                    }
+                  savedChar = *last;
+                  *last = EOS;
+                  value.typed_data.unit = UNIT_REL;
+                  value.typed_data.real = FALSE;
+                  value.pointer = start;
+                  if (DoApply)
+                    TtaSetStylePresentation (PRContentAttr, element, tsch,
+                                             ctxt, value);
+                  *last = savedChar;
+                }
+            }
+          if (value.pointer == NULL)
+            {
+              CSSParseError ("Invalid content value", p, cssRule);
+              cssRule = SkipProperty (cssRule, FALSE);
+            }
+          cssRule++;
         }
       else if (!strncasecmp (cssRule, "open-quote", 10))
         {
@@ -4431,8 +4569,6 @@ static char *ParseACSSBackgroundPosition (Element element, PSchema tsch,
                                           char *cssRule, CSSInfoPtr css,
                                           ThotBool isHTML)
 {
-  PresentationValue     repeat;
-  char                 *ptr;
   ThotBool              ok;
 
   cssRule = SkipBlanksAndComments (cssRule);
@@ -4456,18 +4592,10 @@ static char *ParseACSSBackgroundPosition (Element element, PSchema tsch,
   else
     ok = FALSE;
 
-  if (ok && DoApply)
+  if (ok)
     {
-      /* force no-repeat for that background image */
-      ptr = "no-repeat";
-      ParseACSSBackgroundRepeat (element, tsch, ctxt, ptr, css, isHTML);
-      /* force realsize for the background image */
-      repeat.typed_data.value = REALSIZE;
-      repeat.typed_data.unit = UNIT_REL;
-      repeat.typed_data.real = FALSE;
       /* check if it's an important rule */
       cssRule = CheckImportantRule (cssRule, ctxt);
-      /*TtaSetStylePresentation (PRPictureMode, element, tsch, ctxt, repeat);*/
     }
   cssRule = SkipBlanksAndComments (cssRule);
   return (cssRule);
@@ -4488,9 +4616,6 @@ static char *ParseCSSBackgroundPosition (Element element, PSchema tsch,
   cssRule = ParseACSSBackgroundPosition (element, tsch, ctxt,
                                          cssRule, css, isHTML);
   if (ptr == cssRule)
-    cssRule = ParseACSSBackgroundPosition (element, tsch, ctxt,
-                                           cssRule, css, isHTML);
-  if (ptr == cssRule)
     {
       cssRule = SkipValue ("Invalid background-position value", cssRule);
       /* check if it's an important rule */
@@ -4502,9 +4627,6 @@ static char *ParseCSSBackgroundPosition (Element element, PSchema tsch,
       ptr = cssRule;
       cssRule = ParseACSSBackgroundPosition (element, tsch, ctxt,
                                              cssRule, css, isHTML);
-      if (ptr == cssRule)
-        cssRule = ParseACSSBackgroundPosition (element, tsch, ctxt,
-                                               cssRule, css, isHTML);
       if (ptr == cssRule)
         {
           cssRule = SkipValue ("Invalid background-position value", cssRule);
@@ -4533,6 +4655,8 @@ static char *ParseCSSBackground (Element element, PSchema tsch,
       /* perhaps a Background Image */
       if (!strncasecmp (cssRule, "url", 3) || !strncasecmp (cssRule, "none", 4))
         {
+          if (!strncasecmp (cssRule, "none", 4))
+            repeat = TRUE;
           cssRule = ParseCSSBackgroundImage (element, tsch, ctxt, cssRule,
                                              css, isHTML);
           img = TRUE;
@@ -4795,15 +4919,30 @@ static char *ParseCSSPosition (Element element, PSchema tsch,
   cssRule = SkipBlanksAndComments (cssRule);
   ptr = cssRule;
   if (!strncasecmp (cssRule, "static", 6))
-    pval.typed_data.value = PositionStatic;
-  else if (!strncasecmp (cssRule, "relative", 7))
-    pval.typed_data.value = PositionRelative;
+    {
+      pval.typed_data.value = PositionStatic;
+      cssRule += 6;
+    }
+  else if (!strncasecmp (cssRule, "relative", 8))
+    {
+      pval.typed_data.value = PositionRelative;
+      cssRule += 8;
+    }
   else if (!strncasecmp (cssRule, "absolute", 8))
-    pval.typed_data.value = PositionAbsolute;
+    {
+      pval.typed_data.value = PositionAbsolute;
+      cssRule += 8;
+    }
   else if (!strncasecmp (cssRule, "fixed", 5))
-    pval.typed_data.value = PositionFixed;
+    {
+      pval.typed_data.value = PositionFixed;
+      cssRule += 5;
+    }
   else if (!strncasecmp (cssRule, "inherit", 7))
-    pval.typed_data.unit = VALUE_INHERIT;
+    {
+      pval.typed_data.unit = VALUE_INHERIT;
+      cssRule += 7;
+    }
 
   if (pval.typed_data.value == 0 && pval.typed_data.unit != VALUE_INHERIT)
     {
@@ -4813,9 +4952,11 @@ static char *ParseCSSPosition (Element element, PSchema tsch,
     }
   else
     {
-      cssRule = SkipValue (NULL, cssRule);
       cssRule = CheckImportantRule (cssRule, ctxt);
-      if (DoApply)
+      cssRule = SkipBlanksAndComments (cssRule);
+      if (*cssRule != EOS && *cssRule != ';')
+        SkipValue ("Invalid position value", ptr);
+      else if (DoApply)
         TtaSetStylePresentation (PRPosition, element, tsch, ctxt, pval);
     }
   return (cssRule);
@@ -5019,11 +5160,11 @@ static char *ParseCSSZIndex (Element element, PSchema tsch,
   return (cssRule);
 }
 
-/************************************************************************
- *									*  
- *	FUNCTIONS STYLE DECLARATIONS             			*
- *									*  
- ************************************************************************/
+/*----------------------------------------------------------------------
+ *
+ *	FUNCTIONS STYLE DECLARATIONS
+ *
+ *----------------------------------------------------------------------*/
 /*
  * NOTE: Long attribute name MUST be placed before shortened ones !
  *        e.g. "FONT-SIZE" must be placed before "FONT"
@@ -5103,6 +5244,7 @@ static CSSProperty CSSProperties[] =
     {"vertical-align", ParseCSSVerticalAlign},
     {"white-space", ParseCSSWhiteSpace},
     {"width", ParseCSSWidth},
+    {"visibility", ParseCSSVisibility},
     {"word-spacing", ParseCSSWordSpacing},
     {"z-index", ParseCSSZIndex},
 
@@ -5164,11 +5306,11 @@ static void  ParseCSSRule (Element element, PSchema tsch,
               !strcasecmp (CSSProperties[i].name, "content") &&
               ((GenericContext)ctxt)->pseudo != PbBefore &&
               ((GenericContext)ctxt)->pseudo != PbAfter)
-            /* property content is allowed only for pseudo-elements before and
-               after */
+            /* property content is allowed only for pseudo-elements :before and
+               :after */
             {
               end = cssRule;
-              end = SkipProperty (end, TRUE);
+              end = SkipProperty (end, FALSE);
               CSSParseError ("content is allowed only for pseudo-elements",
                              cssRule, end);
               i = NB_CSSSTYLEATTRIBUTE;
@@ -5321,6 +5463,106 @@ void  ParseHTMLSpecificStyle (Element el, char *cssRule, Document doc,
     TtaFreeMemory(ctxt);
 }
 
+/*----------------------------------------------------------------------
+  AddClassName adds the class name into the class list of css if it's
+  not already there.
+  ----------------------------------------------------------------------*/
+static void AddClassName (char *name, CSSInfoPtr css)
+{
+  int		         l, index, k, length, add;
+  char          *buf;
+  ThotBool       found, previous;
+
+  l = strlen (name);
+  if (l == 0 || css == NULL)
+    return;
+  if (css->class_list)
+    {
+      buf = css->class_list;
+      length = strlen (css->class_list);
+    }
+  else
+    {
+      if (l > 200)
+        length = l + 1;
+      else
+        length = 200;
+      buf = (char *)TtaGetMemory (length * sizeof (char));
+      memset (buf, 0, length);
+      css->class_list = buf;
+      css->lg_class_list = length;
+      length = 0;
+    }
+
+  /* compare that name with all class names already known */
+  index = 0;
+  found = FALSE;
+  previous = FALSE;
+  while (index < length && !found && !previous)
+    {
+      k = 0;
+      while (k < l && buf[index + k] != EOS && buf[index + k] != SPACE)
+        {
+          if (name[k] == buf[index+k])
+            k++;
+          else
+            {
+              previous = (name[k] < buf[index + k]);
+              break;
+            }
+        }
+      found = (k == l);
+      if (!previous)
+        {
+          index += k;
+          while (buf[index] != EOS && buf[index] != SPACE)
+            index++;
+          if (buf[index] == SPACE)
+            index++;
+        }
+    }
+  
+  if (!found)
+    /* this class name is not known, append it */
+    {
+      l++; /* add a space before */
+      if (css->lg_class_list <= length + l)
+        {
+          // increase the list size
+          if (l > 200)
+            add = l + 1;
+          else
+            add = 200 ;
+          buf = (char *)TtaRealloc (buf, css->lg_class_list + (add * sizeof (char)));
+          if (buf == NULL)
+            return;
+          else
+            {
+            css->class_list = buf;
+            memset (&buf[css->lg_class_list], 0, add);
+            css->lg_class_list += add;
+            }
+        }
+
+      if (previous)
+        {
+          // move the tail of the current list
+          for (k = length; k >= index; k--)
+            buf[k+l] = buf[k];
+          /* add this new class name at the current position */
+           strcpy (&buf[index], name);
+          buf[index + l - 1] = SPACE;
+        }
+      else
+        {
+          /* add this new class name at the end */
+          if (index != 0)
+            buf[index++] = SPACE;
+          strcpy (&buf[index], name);
+        }
+     }
+}
+
 
 /*----------------------------------------------------------------------
   ParseGenericSelector: Create a generic context for a given selector
@@ -5343,19 +5585,22 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
   char              *deb, *cur, *sel, *next, c;
   char              *schemaName, *mappedName, *saveURL;
   char              *names[MAX_ANCESTORS];
-  char              *ids[MAX_ANCESTORS];
-  char              *classes[MAX_ANCESTORS];
-  char              *pseudoclasses[MAX_ANCESTORS];
-  char              *attrs[MAX_ANCESTORS];
+  ElemRel            rel[MAX_ANCESTORS];
+  char              *attrnames[MAX_ANCESTORS];
+  int                attrnums[MAX_ANCESTORS];
+  int                attrlevels[MAX_ANCESTORS];
   char              *attrvals[MAX_ANCESTORS];
   AttrMatch          attrmatch[MAX_ANCESTORS];
-  ElemRel            rel[MAX_ANCESTORS];
-  int                i, j, k, max;
+  int                nbnames, nbattrs;
+  int                i, j;
   int                att, kind;
   int                specificity, xmlType;
   int                skippedNL;
   ThotBool           isHTML;
-  ThotBool           level, quoted;
+  ThotBool           level, quoted, doubleColon;
+#define ATTR_ID 1
+#define ATTR_CLASS 2
+#define ATTR_PSEUDO 3
 
   sel = ctxt->sel;
   sel[0] = EOS;
@@ -5363,15 +5608,13 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
   for (i = 0; i < MAX_ANCESTORS; i++)
     {
       names[i] = NULL;
-      ids[i] = NULL;
-      classes[i] = NULL;
-      pseudoclasses[i] = NULL;
-      attrs[i] = NULL;
+      rel[i] = RelAncestor;
+      attrnames[i] = NULL;
+      attrnums[i] = 0;
+      attrlevels[i] = 0;
       attrvals[i] = NULL;
       attrmatch[i] = Txtmatch;
-      rel[i] = RelAncestor;
       ctxt->name[i] = 0;
-      ctxt->names_nb[i] = 0;
       ctxt->attrType[i] = 0;
       ctxt->attrLevel[i] = 0;
       ctxt->attrText[i] = NULL;
@@ -5391,7 +5634,8 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
   selector = SkipBlanksAndComments (selector);
   NewLineSkipped = skippedNL;
   cur = &sel[0];
-  max = 0; /* number of loops */
+  nbnames = 0;
+  nbattrs = 0;
   while (1)
     {
       /* point to the following word in sel[] */
@@ -5406,6 +5650,7 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
         *cur++ = *selector++;
       *cur++ = EOS; /* close the first string  in sel[] */
       if (deb[0] != EOS)
+        /* the selector starts with an element name */
         {
           if (deb[0] <= 64 && deb[0] != '*')
             {
@@ -5425,28 +5670,25 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
             }
         }
       else
-        names[0] = NULL;
+        names[0] = NULL; /* no element name */
 
-      classes[0] = NULL;
-      pseudoclasses[0] = NULL;
-      ids[0] = NULL;
-      attrs[0] = NULL;
-      attrvals[0] = NULL;
-      attrmatch[0] = Txtmatch;
-      rel[0] = RelAncestor;
+      rel[0] = RelVoid;
 
       /* now names[0] points to the beginning of the parsed item
-         and cur to the next chain to be parsed */
+         and cur to the next string to be parsed */
       while (*selector == '.' || *selector == ':' ||
              *selector == '#' || *selector == '[')
         {
           /* point to the following word in sel[] */
           deb = cur;
           if (*selector == '.')
+            /* class */
             {
               selector++;
-              while (*selector != EOS && *selector != ',' &&
-                     *selector != '.' && *selector != ':' &&
+              while (*selector != '.' && *selector != ':' &&
+                     *selector != '#' && *selector != '[' &&
+                     *selector != EOS && *selector != ',' &&
+                     *selector != '+' && *selector != '>' &&
                      !TtaIsBlank (selector))
                 {
                   if (*selector == '\\')
@@ -5460,7 +5702,7 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
                 }
               /* close the word */
               *cur++ = EOS;
-              /* point to the class in sel[] if it's valid name */
+              /* point to the class in sel[] if it's a valid name */
               if (deb[0] <= 64)
                 {
                   CSSPrintError ("Invalid class", deb);
@@ -5468,72 +5710,157 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
                 }
               else
                 {
-                  classes[0] = deb;
+                  /* simulate selector [class ~= "xxx"] */
+                  nbattrs++;
+                  if (nbattrs == MAX_ANCESTORS)
+                    /* abort parsing */
+                    {
+                      CSSPrintError ("Selector too long", deb);
+                      return (selector);
+                    }
+                  for (i = nbattrs; i > 0; i--)
+                    {
+                      attrnames[i] = attrnames[i - 1];
+                      attrnums[i] = attrnums[i - 1];
+                      attrlevels[i] = attrlevels[i - 1];
+                      attrvals[i] = attrvals[i - 1];
+                      attrmatch[i] = attrmatch[i - 1];
+                    }
+                  attrnames[0] = NULL;
+                  attrnums[0] = ATTR_CLASS;
+                  attrlevels[0] = 0;
+                  attrmatch[0] = Txtword;
+                  attrvals[0] = deb;
                   specificity += 10;
-                  if (names[0] && !strcmp (names[0], "*"))
-                    names[0] = NULL;
-                }
+                 }
             }
           else if (*selector == ':')
+            /* pseudo-class or pseudo-element */
             {
               selector++;
-              while (*selector != EOS && *selector != ',' &&
-                     *selector != '.' && *selector != ':' &&
+              doubleColon = FALSE;
+              if (*selector == ':')
+                /* it's a double "::". Probably CSS3 syntax */
+                {
+                  selector++;
+                  doubleColon = TRUE;
+                }
+              while (*selector != '.' && *selector != ':' &&
+                     *selector != '#' && *selector != '[' &&
+                     *selector != EOS && *selector != ',' &&
+                     *selector != '+' && *selector != '>' &&
                      !TtaIsBlank (selector))
                 *cur++ = *selector++;
               /* close the word */
               *cur++ = EOS;
-              /* point to the pseudoclass in sel[] if it's a valid name */
+              /* point to the pseudo-class or pseudo-element in sel[] if it's
+                 a valid name */
               if (deb[0] <= 64)
                 {
-                  CSSPrintError ("Invalid pseudoclass", deb);
+                  CSSPrintError ("Invalid pseudo-element", deb);
                   DoApply = FALSE;
                 }
               else
                 {
                   if (!strcmp (deb, "first-letter") ||
-                      !strcmp (deb, "first-line") ||
-                      !strcmp (deb, "hover") ||
-                      !strcmp (deb, "focus"))
+                      !strcmp (deb, "first-line"))
+                    {
+                      if (doubleColon)
+                        CSSPrintError ("Warning: \"::\" is CSS3 syntax", NULL);
+                      /* not supported */
+                      DoApply = FALSE;
+                    }
+                  else if (!strcmp (deb, "hover") ||
+                           !strcmp (deb, "focus"))
                     /* not supported */
                     DoApply = FALSE;
                   else
                     specificity += 10;
-                  if (!strncmp (deb, "before", 6) || !strncmp (deb, "after", 5))
-                    pseudoclasses[0] = deb;
+                  if (!strncmp (deb, "before", 6))
+                    {
+                      if (doubleColon)
+                        CSSPrintError ("Warning: \"::before\" is CSS3 syntax",
+                                       NULL);
+                      ctxt->pseudo = PbBefore;
+                    }
+                  else if (!strncmp (deb, "after", 5))
+                    {
+                      if (doubleColon)
+                        CSSPrintError ("Warning: \"::after\" is CSS3 syntax",
+                                       NULL);
+                      ctxt->pseudo = PbAfter;
+                    }
                   else if (!strncmp (deb, "lang", 4))
                     /* it's the lang pseudo-class */
                     {
                       if (deb[4] != '(' || deb[strlen(deb)-1] != ')')
-                        /* at least one paranthesis is missing. Error */
+                        /* at least one parenthesis is missing. Error */
                         {
-                          CSSPrintError ("Invalid :lang pseudoclass", deb);
+                          CSSPrintError ("Invalid :lang pseudo-class", deb);
                           DoApply = FALSE;
                         }
                       else
-                        /* simulate selector [lang|="xxx"] if there is no
-                           attribute yet in the selector */
-                        if (!attrs[0])
-                          {
-                            deb[strlen(deb)-1] = EOS;
-                            deb[4] = EOS;
-                            attrmatch[0] = Txtsubstring;
-                            attrs[0] = deb;
-                            attrvals[0] = &deb[5];
-                          }
+                        /* simulate selector [lang|="xxx"] */
+                        {
+                          nbattrs++;
+                          if (nbattrs == MAX_ANCESTORS)
+                            /* abort parsing */
+                            {
+                              CSSPrintError ("Selector too long", deb);
+                              return (selector);
+                            }
+                          deb[strlen(deb)-1] = EOS;
+                          deb[4] = EOS;
+                          for (i = nbattrs; i > 0; i--)
+                            {
+                              attrnames[i] = attrnames[i - 1];
+                              attrnums[i] = attrnums[i - 1];
+                              attrlevels[i] = attrlevels[i - 1];
+                              attrvals[i] = attrvals[i - 1];
+                              attrmatch[i] = attrmatch[i - 1];
+                            }
+                          attrnames[0] = deb;
+                          attrnums[0] = 0;
+                          attrlevels[0] = 0;
+                          attrmatch[0] = Txtsubstring;
+                          attrvals[0] = &deb[5];
+                        }
                     }
                   else
-                    pseudoclasses[0] = deb;
+                    {
+                      nbattrs++;
+                      if (nbattrs == MAX_ANCESTORS)
+                        /* abort parsing */
+                        {
+                          CSSPrintError ("Selector too long", deb);
+                          return (selector);
+                        }
+                      for (i = nbattrs; i > 0; i--)
+                        {
+                          attrnames[i] = attrnames[i - 1];
+                          attrnums[i] = attrnums[i - 1];
+                          attrlevels[i] = attrlevels[i - 1];
+                          attrvals[i] = attrvals[i - 1];
+                          attrmatch[i] = attrmatch[i - 1];
+                        }
+                      attrnames[0] = NULL;
+                      attrnums[0] = ATTR_PSEUDO;
+                      attrlevels[0] = 0;
+                      attrmatch[0] = Txtmatch;
+                      attrvals[0] = deb;
+                    }
                   if (names[0] && !strcmp (names[0], "*"))
                     names[0] = NULL;
                 }
             }
           else if (*selector == '#')
+            /* unique identifier */
             {
               selector++;
-              while (*selector != EOS && *selector != ',' &&
-                     *selector != '.' && *selector != ':' &&
-                     *selector != '#' &&
+              while (*selector != '.' && *selector != ':' &&
+                     *selector != '#' && *selector != '[' &&
+                     *selector != '+' && *selector != '>' &&
+                     *selector != EOS && *selector != ',' &&
                      !TtaIsBlank (selector))
                 *cur++ = *selector++;
               /* close the word */
@@ -5546,42 +5873,41 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
                 }
               else
                 {
-                  if (ids[0] && strcmp(ids[0], deb))
+                  nbattrs++;
+                  if (nbattrs == MAX_ANCESTORS)
+                    /* abort parsing */
                     {
-                      CSSPrintError ("Too many ids", deb);
-                      DoApply = FALSE;
-                    }		  
-                  else
-                    {
-                      ids[0] = deb;
-                      specificity += 100;
-                      if (names[0] && !strcmp (names[0], "*"))
-                        names[0] = NULL;
+                      CSSPrintError ("Selector too long", deb);
+                      return (selector);
                     }
+                  for (i = nbattrs; i > 0; i--)
+                    {
+                      attrnames[i] = attrnames[i - 1];
+                      attrnums[i] = attrnums[i - 1];
+                      attrlevels[i] = attrlevels[i - 1];
+                      attrvals[i] = attrvals[i - 1];
+                      attrmatch[i] = attrmatch[i - 1];
+                    }
+                  attrnames[0] = NULL;
+                  attrnums[0] = ATTR_ID;
+                  attrlevels[0] = 0;
+                  attrmatch[0] = Txtmatch;
+                  attrvals[0] = deb;
+                  specificity += 100;
+                  if (names[0] && !strcmp (names[0], "*"))
+                    names[0] = NULL;
                 }
             }
           else if (*selector == '[')
             {
               selector++;
+              selector = SkipBlanksAndComments (selector);
               while (*selector != EOS && *selector != ']' &&
                      *selector != '=' && *selector != '~' &&
                      *selector != '|' && *selector != '^' &&
-                     *selector != '!')
+                     !TtaIsBlank (selector))
                 *cur++ = *selector++;
-              /* check matching */
-              if (*selector == '~')
-                {
-                  attrmatch[0] = Txtword;
-                  selector++;
-                }
-              else if (*selector == '|')
-                {
-                  attrmatch[0] = Txtsubstring;
-                  selector++;
-                }
-              else
-                attrmatch[0] = Txtmatch;
-              /* close the word */
+              /* close the word (attribute name) */
               *cur++ = EOS;
               /* point to the attribute in sel[] if it's valid name */
               if (deb[0] <= 64)
@@ -5591,13 +5917,50 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
                 }
               else
                 {
-                  attrs[0] = deb;
+                  nbattrs++;
+                  if (nbattrs == MAX_ANCESTORS)
+                    /* abort parsing */
+                    {
+                      CSSPrintError ("Selector too long", deb);
+                      return (selector);
+                    }
+                  for (i = nbattrs; i > 0; i--)
+                    {
+                      attrnames[i] = attrnames[i - 1];
+                      attrnums[i] = attrnums[i - 1];
+                      attrlevels[i] = attrlevels[i - 1];
+                      attrvals[i] = attrvals[i - 1];
+                      attrmatch[i] = attrmatch[i - 1];
+                    }
+                  attrnames[0] = deb;
+                  attrnums[0] = 0;
+                  attrlevels[0] = 0;
                   specificity += 10;
+                  /* check matching */
+                  selector = SkipBlanksAndComments (selector);
+                  if (*selector == '~')
+                    {
+                      attrmatch[0] = Txtword;
+                      selector++;
+                    }
+                  else if (*selector == '|')
+                    {
+                      attrmatch[0] = Txtsubstring;
+                      selector++;
+                    }
+                  else if (*selector == '^')
+                    {
+                      attrmatch[0] = Txtsubstring;
+                      selector++;
+                    }
+                  else
+                    attrmatch[0] = Txtmatch;
                 }
               if (*selector == '=')
                 {
                   /* look for a value "xxxx" */
                   selector++;
+                  selector = SkipBlanksAndComments (selector);
                   if (*selector != '"')
                     quoted = FALSE;
                   else
@@ -5634,6 +5997,7 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
                       selector++;
                       quoted = FALSE;
                     }
+                  selector = SkipBlanksAndComments (selector);
                   if (*selector != ']')
                     {
                       CSSPrintError ("Invalid attribute value", deb);
@@ -5664,8 +6028,10 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
           else
             {
               /* not supported selector */
-              while (*selector != EOS && *selector != ',' &&
-                     *selector != '.' && *selector != ':' &&
+              while (*selector != '.' && *selector != ':' &&
+                     *selector != '#' && *selector != '[' &&
+                     *selector != EOS && *selector != ',' &&
+                     *selector != '+' && *selector != '>' &&
                      !TtaIsBlank (selector))
                 *cur++ = *selector++;
               /* close the word */
@@ -5702,47 +6068,54 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
         {
           if (*selector == '>')
             {
-              /* handle immediat parent as a simple parent */
+              /* handle parent */
               selector++;
               skippedNL = NewLineSkipped;
               selector = SkipBlanksAndComments (selector);
               NewLineSkipped = skippedNL;
-              rel[0] = RelImmediat;
+              rel[0] = RelParent;
             }
           else if (*selector == '+')
             {
-              /* handle immediat parent as a simple parent */
+              /* handle immediate sibling */
               selector++;
               skippedNL = NewLineSkipped;
               selector = SkipBlanksAndComments (selector);
               NewLineSkipped = skippedNL;
               rel[0] = RelPrevious;
             }
-          /* shifts the list to make room for the new name */
-          max++; /* a new level in ancestor tables */
-          if (max == MAX_ANCESTORS)
-            /* abort the CSS parsing */
-            return (selector);
-          for (i = max; i > 0; i--)
+          else
+            rel[0] = RelAncestor;
+          nbnames++; /* a new level in ancestor tables */
+          if (nbnames == MAX_ANCESTORS)
+            /* abort parsing */
+            {
+              CSSPrintError ("Selector too long", deb);
+              return (selector);
+            }
+          /* shift the list to make room for the next part of the selector */
+          for (i = nbnames; i > 0; i--)
             {
               names[i] = names[i - 1];
-              ids[i] = ids[i - 1];
-              classes[i] = classes[i - 1];
-              pseudoclasses[i] = pseudoclasses[i - 1];
-              attrs[i] = attrs[i - 1];
-              attrvals[i] = attrvals[i - 1];
-              attrmatch[i] = attrmatch[i - 1];
               rel[i] = rel[i - 1];
             }
+          /* increase the level of all attributes */
+          for (i = 0; i < nbattrs; i++)
+              attrlevels[i]++;
         }
     }
 
+  /* Now update the list of classes defined by the CSS */
+  for (i = 0; i < nbattrs; i++)
+    if (attrvals[i] && attrnums[i] == ATTR_CLASS)
+      AddClassName (attrvals[i], css);
+
   /* Now set up the context block */
   i = 0;
-  k = 0;
   j = 0;
   /* default schema name */
   ctxt->schema = NULL;
+  ctxt->nbElem = nbnames;
   elType.ElSSchema = NULL;
   schemaName = TtaGetSSchemaName(TtaGetDocumentSSchema (doc));
   if (!strcmp (schemaName, "HTML"))
@@ -5757,9 +6130,13 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
     xmlType = ANNOT_TYPE;
   else
     xmlType = XML_TYPE;
-  while (i <= max && j < MAX_ANCESTORS)
+  while (i <= nbnames)
     {
-      if (names[i])
+      ctxt->rel[i] = rel[i];
+      if (!names[i])
+        ctxt->name[i] = HTML_EL_ANY_TYPE;
+      else
+        /* store element information */
         {
           /* get the element type of this name in the current document */
           if (xmlType == XML_TYPE)
@@ -5787,10 +6164,11 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
                                    &level, doc);
             }
           if (i == 0)
+            /* rightmost part of the selector */
             {
               if (elType.ElSSchema == NULL)
                 {
-                  /* Selector not found: Search in the list of loaded schemas */
+                  /* element name not found. Search in all loaded schemas */
                   TtaGetXmlElementType (names[i], &elType, NULL, doc);
                   if (elType.ElSSchema)
                     {
@@ -5855,245 +6233,217 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
                 DoApply = FALSE;
               else
                 {
-                  /* Store the element type */
+                  /* Store the element type contained in the rightmost part of
+                     the selector */
+                  ctxt->schema = elType.ElSSchema;
                   ctxt->type = elType.ElTypeNum;
                   ctxt->name[0] = elType.ElTypeNum;
-                  ctxt->names_nb[0] = 0;
-                  ctxt->rel[0] = RelAncestor;
-                  ctxt->schema = elType.ElSSchema;
+                  ctxt->rel[0] = RelVoid;
                 }
             }
-          else if (elType.ElTypeNum != 0)
+          else
+            /* not the rightmost part of the selector */
             {
-              /* look at the current context to see if the type is already
-                 stored */
-              j = 1;
-              while (j < k &&
-                     (ctxt->name[j] != elType.ElTypeNum ||
-                      ctxt->rel[j] != RelAncestor))
-                j++;
-              if (j == k)
-                {
-                  ctxt->name[j] = elType.ElTypeNum;
-                  if (j != 0)
-                    {
-                      ctxt->names_nb[j] = 1;
-                      ctxt->rel[j] = rel[i];
-                    }
-                }
-              else
-                /* increment the number of ancestor levels */
-                ctxt->names_nb[j]++;
-            }
-#ifdef XML_GENERIC
-          else if (xmlType == XML_TYPE)
-            {
-              TtaGetXmlElementType (names[i], &elType, NULL, doc);
-              if (elType.ElTypeNum == 0)
-                {
-                  /* Creation of a new element type in the main schema */
-                  elType.ElSSchema = TtaGetDocumentSSchema (doc);
-                  TtaAppendXmlElement (names[i], &elType, &mappedName, doc);
-                }
               if (elType.ElTypeNum != 0)
-                {
-                  /* look at the current context to see if the type is already
-                     stored */
-                  j = 1;
-                  while (j < k &&
-                         (ctxt->name[j] != elType.ElTypeNum ||
-                          ctxt->rel[j] != RelAncestor))
-                    j++;
-                  if (j == k)
-                    {
-                      ctxt->name[j] = elType.ElTypeNum;
-                      if (j != 0)
-                        {
-                          ctxt->names_nb[j] = 1;
-                          ctxt->rel[j] = rel[i];
-                        }
-                      else
-                        ctxt->rel[j] = RelAncestor;
-                    }
-                  else
-                    /* increment the number of ancestor levels */
-                    ctxt->names_nb[j]++;
-                }
-            }
-#endif /* XML_GENERIC */
-          else
-            j = k;
-        }
-      else
-        j = k;
-
-      /* store attributes information */
-      if (classes[i])
-        {
-          ctxt->attrText[j] = classes[i];
-          if (xmlType == SVG_TYPE)
-            ctxt->attrType[j] = SVG_ATTR_class;
-          else if (xmlType == MATH_TYPE)
-            ctxt->attrType[j] = MathML_ATTR_class;
-          else if (xmlType == XHTML_TYPE)
-            ctxt->attrType[j] = HTML_ATTR_Class;
-          else
-#ifdef XML_GENERIC
-            ctxt->attrType[j] = XML_ATTR_class;
-#else /* XML_GENERIC */
-          ctxt->attrType[j] = HTML_ATTR_Class;
-#endif /* XML_GENERIC */
-          /* a "class" attribute on an element may contain several
-             words, one for each class it matches */
-          ctxt->attrMatch[j] = Txtword;
-          /* add a new entry */
-          /* update attrLevel */
-          ctxt->attrLevel[j] = i;
-          j++;
-        }
-      if (pseudoclasses[i])
-        {
-          ctxt->attrText[j] = pseudoclasses[i];
-          if (!strncmp (deb, "before", 6))
-            ctxt->pseudo = PbBefore;
-          else if (!strncmp (deb, "after", 5))
-            ctxt->pseudo = PbAfter;
-          else
-            {
-              if (xmlType == SVG_TYPE)
-                ctxt->attrType[j] = SVG_ATTR_PseudoClass;
-              else if (xmlType == MATH_TYPE)
-                ctxt->attrType[j] = MathML_ATTR_PseudoClass;
-              else if (xmlType == XHTML_TYPE)
-                ctxt->attrType[j] = HTML_ATTR_PseudoClass;
-              else
-#ifdef XML_GENERIC
-                ctxt->attrType[j] = XML_ATTR_PseudoClass;
-#else /* XML_GENERIC */
-              ctxt->attrType[j] = HTML_ATTR_PseudoClass;
-#endif /* XML_GENERIC */
-              ctxt->attrMatch[j] = Txtmatch;
-            }
-          /* add a new entry */
-          /* update attrLevel */
-          ctxt->attrLevel[j] = i;
-          j++;
-        }
-      if (ids[i])
-        {
-          ctxt->attrText[j] = ids[i];
-          if (xmlType == SVG_TYPE)
-            ctxt->attrType[j] = SVG_ATTR_id;
-          else if (xmlType == MATH_TYPE)
-            ctxt->attrType[j] = MathML_ATTR_id;
-          else if (xmlType == XHTML_TYPE)
-            ctxt->attrType[j] = HTML_ATTR_ID;
-          else
-#ifdef XML_GENERIC
-            ctxt->attrType[j] = XML_ATTR_xmlid;
-#else /* XML_GENERIC */
-          ctxt->attrType[j] = HTML_ATTR_ID;
-#endif /* XML_GENERIC */
-          ctxt->attrMatch[j] = Txtmatch;
-          /* add a new entry */
-          /* update attrLevel */
-          ctxt->attrLevel[j] = i;
-          j++;
-        }
-      if (attrs[i])
-        {
-          /* it's an attribute */
-          if (xmlType == XML_TYPE)
-            {
-              attrType.AttrSSchema = TtaGetDocumentSSchema (doc);
-              TtaGetXmlAttributeType (attrs[i], &attrType, doc);
-              att = attrType.AttrTypeNum;
-            }
-          else
-            {
-              MapXMLAttribute (xmlType, attrs[i], names[i], &level, doc, &att);
-              if (ctxt->schema == NULL && att != 0)
-                ctxt->schema = TtaGetDocumentSSchema (doc);
-            }
-          if (att == 0)
-            /* Attribute name not found: Search in the list of all loaded
-               schemas */
-            {
-              attrType.AttrSSchema = NULL;
-              TtaGetXmlAttributeType (attrs[i], &attrType, doc);
-              att = attrType.AttrTypeNum;
-            }
-          if (att == DummyAttribute && !strcmp (schemaName, "HTML"))
-            /* it's the "type" attribute for an "input" element. In the tree
-               it's represented by the element type, not by an attribute */
-            att = 0;
-          ctxt->attrType[j] = att;
-          ctxt->attrMatch[j] = attrmatch[i];
-          attrType.AttrSSchema = ctxt->schema;
-          attrType.AttrTypeNum = att;
-          if (i == 0 && att == 0 && ctxt->schema == NULL)
-            {
-              /* Not found -> search in the list of loaded schemas */
-              attrType.AttrSSchema = NULL;
-              TtaGetXmlAttributeType (attrs[i], &attrType, doc);
-              ctxt->attrType[j] = attrType.AttrTypeNum;
-              if (attrType.AttrSSchema)
-                /* the element type concerns an imported nature */
-                schemaName = TtaGetSSchemaName(attrType.AttrSSchema);
+                ctxt->name[i] = elType.ElTypeNum;
 #ifdef XML_GENERIC
               else if (xmlType == XML_TYPE)
                 {
-                  /* The attribute is not yet present in the tree */
-                  /* Create a new global attribute */
-                  attrType.AttrSSchema = TtaGetDocumentSSchema (doc);
-                  TtaAppendXmlAttribute (attrs[i], &attrType, doc);
+                  TtaGetXmlElementType (names[i], &elType, NULL, doc);
+                  if (elType.ElTypeNum == 0)
+                    {
+                      /* Creation of a new element type in the main schema */
+                      elType.ElSSchema = TtaGetDocumentSSchema (doc);
+                      TtaAppendXmlElement (names[i], &elType, &mappedName, doc);
+                    }
+                  if (elType.ElTypeNum != 0)
+                    ctxt->name[i] = elType.ElTypeNum;
                 }
 #endif /* XML_GENERIC */
-
-              if (attrType.AttrSSchema == NULL)
-                /* cannot apply these CSS rules */
-                DoApply = FALSE;
-              else if (elType.ElSSchema)
-                ctxt->schema = elType.ElSSchema;
-              else
-                ctxt->schema = attrType.AttrSSchema;
             }
-          /* check the attribute type */
-          if (!strcmp (schemaName, "HTML"))
-            xmlType = XHTML_TYPE;
-          else if (!strcmp (schemaName, "MathML"))
-            xmlType = MATH_TYPE;
-          else if (!strcmp (schemaName, "SVG"))
-            xmlType = SVG_TYPE;
-          else if (!strcmp (schemaName, "XLink"))
-            xmlType = XLINK_TYPE;
-          else if (!strcmp (schemaName, "Annot"))
-            xmlType = ANNOT_TYPE;
-          else
-            xmlType = XML_TYPE;
-          kind = TtaGetAttributeKind (attrType);
-          if (kind == 0 && attrvals[i])
-            {
-              /* enumerated value */
-              MapXMLAttributeValue (xmlType, attrvals[i], &attrType, &kind);
-              /* store the attribute value */
-              ctxt->attrText[j] = (char *) kind;
-            }
-          else
-            ctxt->attrText[j] = attrvals[i];
-          /* update attrLevel */
-          ctxt->attrLevel[j] = i;
-          j++;
         }
-      i++;
+
+      /* store attribute information for this element */
+      while (j < nbattrs && attrlevels[j] <= i)
+        {
+          if (attrnames[j] || attrnums[j])
+            {
+              if (attrnums[j] > 0)
+                {
+                  if (attrnums[j] == ATTR_CLASS)
+                    {
+                      if (xmlType == SVG_TYPE)
+                        ctxt->attrType[j] = SVG_ATTR_class;
+                      else if (xmlType == MATH_TYPE)
+                        ctxt->attrType[j] = MathML_ATTR_class;
+                      else if (xmlType == XHTML_TYPE)
+                        ctxt->attrType[j] = HTML_ATTR_Class;
+                      else
+#ifdef XML_GENERIC
+                        ctxt->attrType[j] = XML_ATTR_class;
+#else /* XML_GENERIC */
+                        ctxt->attrType[j] = HTML_ATTR_Class;
+#endif /* XML_GENERIC */
+                    }
+                  else if (attrnums[j] == ATTR_PSEUDO)
+                    {
+                      if (xmlType == SVG_TYPE)
+                        ctxt->attrType[j] = SVG_ATTR_PseudoClass;
+                      else if (xmlType == MATH_TYPE)
+                        ctxt->attrType[j] = MathML_ATTR_PseudoClass;
+                      else if (xmlType == XHTML_TYPE)
+                        ctxt->attrType[j] = HTML_ATTR_PseudoClass;
+                      else
+#ifdef XML_GENERIC
+                        ctxt->attrType[j] = XML_ATTR_PseudoClass;
+#else /* XML_GENERIC */
+                        ctxt->attrType[j] = HTML_ATTR_PseudoClass;
+#endif /* XML_GENERIC */
+                    }
+                  else if (attrnums[j] == ATTR_ID)
+                    {
+                      if (xmlType == SVG_TYPE)
+                        ctxt->attrType[j] = SVG_ATTR_id;
+                      else if (xmlType == MATH_TYPE)
+                        ctxt->attrType[j] = MathML_ATTR_id;
+                      else if (xmlType == XHTML_TYPE)
+                        ctxt->attrType[j] = HTML_ATTR_ID;
+                      else
+#ifdef XML_GENERIC
+                        ctxt->attrType[j] = XML_ATTR_xmlid;
+#else /* XML_GENERIC */
+                        ctxt->attrType[j] = HTML_ATTR_ID;
+#endif /* XML_GENERIC */
+                    }
+                  attrType.AttrTypeNum = ctxt->attrType[j];
+                  attrType.AttrSSchema =  ctxt->schema;
+                }
+              else if (attrnames[j])
+                {
+                  if (xmlType == XML_TYPE)
+                    {
+                      if (ctxt->schema)
+                        attrType.AttrSSchema = ctxt->schema;
+                      else
+                        attrType.AttrSSchema = TtaGetDocumentSSchema (doc);
+                      TtaGetXmlAttributeType (attrnames[j], &attrType, doc);
+                      att = attrType.AttrTypeNum;
+                      if (ctxt->schema == NULL && att != 0)
+                        ctxt->schema = attrType.AttrSSchema;
+                    }
+                  else
+                    {
+                      MapXMLAttribute (xmlType, attrnames[j], names[i], &level,
+                                       doc, &att);
+                      if (ctxt->schema == NULL && att != 0)
+                        ctxt->schema = TtaGetDocumentSSchema (doc);
+                    }
+                  if (att == 0 && ctxt->schema == NULL)
+                    /* Attribute name not found: Search in the list of all
+                       schemas loaded for this document */
+                    {
+                      attrType.AttrSSchema = NULL;
+                      TtaGetXmlAttributeType (attrnames[j], &attrType, doc);
+                      att = attrType.AttrTypeNum;
+                      if (att != 0)
+                        ctxt->schema = attrType.AttrSSchema;
+                    }
+                  attrType.AttrSSchema = ctxt->schema;
+                  attrType.AttrTypeNum = att;
+                  if (i == 0 && att == 0 && ctxt->schema == NULL)
+                    {
+                      /* Not found -> search in the list of loaded schemas */
+                      attrType.AttrSSchema = NULL;
+                      TtaGetXmlAttributeType (attrnames[j], &attrType, doc);
+                      att = attrType.AttrTypeNum;
+                      if (attrType.AttrSSchema)
+                        /* the element type concerns an imported nature */
+                        schemaName = TtaGetSSchemaName(attrType.AttrSSchema);
+#ifdef XML_GENERIC
+                      else if (xmlType == XML_TYPE)
+                        {
+                          /* The attribute is not yet present in the tree */
+                          /* Create a new global attribute */
+                          attrType.AttrSSchema = TtaGetDocumentSSchema (doc);
+                          TtaAppendXmlAttribute (attrnames[j], &attrType, doc);
+                        }
+#endif /* XML_GENERIC */
+                      if (attrType.AttrSSchema == NULL)
+                        /* cannot apply these CSS rules */
+                        DoApply = FALSE;
+                      else if (elType.ElSSchema)
+                        ctxt->schema = elType.ElSSchema;
+                      else
+                        ctxt->schema = attrType.AttrSSchema;
+                    }
+                  if (att == 0)
+                    {
+                      CSSPrintError ("Unknown attribute", attrnames[j]);
+                      DoApply = FALSE;	    
+                    }
+                  else
+                    {
+                      ctxt->attrType[j] = att;
+                      if (att == DummyAttribute && !strcmp (schemaName,"HTML"))
+                        /* it's the "type" attribute for an "input" element.
+                           In the tree, it is represented by the element type,
+                           not by an attribute */
+                        {
+                          ctxt->attrType[j] = 0;
+                          if (attrvals[j] && attrmatch[i] == Txtmatch)
+                            /* a value is specified for attribute type. This
+                               value provides the Thot element type */
+                            {
+                              MapXMLAttributeValue (xmlType, attrvals[j],
+                                                    &attrType, &kind);
+                              /* attrType contains the element type */
+                              if (i == 0)
+                                ctxt->type = kind;
+                              ctxt->name[i] = kind;
+                            } 
+                        }
+                    }
+                }
+              if (ctxt->attrType[j])
+                {
+                  /* check the attribute type */
+                  if (!strcmp (schemaName, "HTML"))
+                    xmlType = XHTML_TYPE;
+                  else if (!strcmp (schemaName, "MathML"))
+                    xmlType = MATH_TYPE;
+                  else if (!strcmp (schemaName, "SVG"))
+                    xmlType = SVG_TYPE;
+                  else if (!strcmp (schemaName, "XLink"))
+                    xmlType = XLINK_TYPE;
+                  else if (!strcmp (schemaName, "Annot"))
+                    xmlType = ANNOT_TYPE;
+                  else
+                    xmlType = XML_TYPE;
+                  kind = TtaGetAttributeKind (attrType);
+                  if (kind == 0 && attrvals[j])
+                    {
+                      /* enumerated value */
+                      MapXMLAttributeValue (xmlType, attrvals[j], &attrType,
+                                            &kind);
+                      /* store the attribute value */
+                      ctxt->attrText[j] = (char *) kind;
+                    }
+                  else
+                    ctxt->attrText[j] = attrvals[j];
+                  /* update attrLevel */
+                  ctxt->attrMatch[j] = attrmatch[j];
+                  ctxt->attrLevel[j] = attrlevels[j];
+                    }
+              j++;
+            }
+        }
       /* add a new entry */
-      k++;
-      if (k < j)
-        k = j;
+      i++;
       if (i == 1 && ctxt->schema == NULL)
         /* use the document schema */
         ctxt->schema = TtaGetDocumentSSchema (doc);
     }
+
   ctxt->important = FALSE;
   /* set the selector specificity */
   ctxt->cssSpecificity = specificity;
@@ -6413,8 +6763,7 @@ void ApplyCSSRules (Element el, char *cssRule, Document doc, ThotBool destroy)
   structure and content have to be registered in the Undo queue or not.
   ----------------------------------------------------------------------*/
 char ReadCSSRules (Document docRef, CSSInfoPtr css, char *buffer, char *url,
-                   int numberOfLinesRead, ThotBool withUndo,
-                   Element link)
+                   int numberOfLinesRead, ThotBool withUndo, Element link)
 {
   DisplayMode         dispMode;
   CSSInfoPtr          refcss = NULL;
@@ -6429,8 +6778,8 @@ char ReadCSSRules (Document docRef, CSSInfoPtr css, char *buffer, char *url,
   int                 openRule;
   int                 newlines;
   ThotBool            HTMLcomment;
-  ThotBool            toParse, eof, quoted;
-  ThotBool            ignore, media, page;
+  ThotBool            toParse, eof, quoted, s_quoted;
+  ThotBool            ignore, media, page, lineComment;
   ThotBool            noRule, ignoreImport, fontface;
 
   CSScomment = MAX_CSS_LENGTH;
@@ -6440,9 +6789,9 @@ char ReadCSSRules (Document docRef, CSSInfoPtr css, char *buffer, char *url,
   noRule = FALSE;
   media = FALSE;
   ignoreImport = FALSE;
-  ignore = FALSE;
+  ignore = lineComment = FALSE;
   page = FALSE;
-  quoted = FALSE;
+  quoted = s_quoted = FALSE;
   fontface = FALSE;
   eof = FALSE;
   openRule = 0;
@@ -6482,8 +6831,11 @@ char ReadCSSRules (Document docRef, CSSInfoPtr css, char *buffer, char *url,
         pInfo = refcss->infos[docRef];
     }
 
-  /* register parsed CSS file and the document to which CSS are to be applied*/
+  /* register parsed CSS file and the document to which CSS are to be applied */
   ParsedDoc = docRef;
+  /* clean up the list of classes */
+  TtaFreeMemory (refcss->class_list);
+  refcss->class_list = NULL;
   if (url)
     DocURL = url;
   else
@@ -6497,18 +6849,18 @@ char ReadCSSRules (Document docRef, CSSInfoPtr css, char *buffer, char *url,
       c = buffer[index++];
       eof = (c == EOS);
       CSSbuffer[CSSindex] = c;
-      if (CSScomment == MAX_CSS_LENGTH ||
-          c == '*' || c == '/' || c == '<' || c == EOL)
+      if (!lineComment &&
+          (CSScomment == MAX_CSS_LENGTH || c == '*' || c == '/' || c == '<' || c == EOL))
         {
           /* we're not within a comment or we're parsing * or / */
           switch (c)
             {
             case '@': /* perhaps an import primitive */
-              if (!fontface && !page && !quoted)
+              if (!fontface && !page && !quoted && !s_quoted)
                 import = CSSindex;
               break;
             case ';':
-              if (!quoted && !media && import != MAX_CSS_LENGTH)
+              if (!quoted && !s_quoted && !media && import != MAX_CSS_LENGTH)
                 { 
                   if (strncasecmp (&CSSbuffer[import+1], "import", 6))
                     /* it's not an import */
@@ -6518,13 +6870,13 @@ char ReadCSSRules (Document docRef, CSSInfoPtr css, char *buffer, char *url,
                 }
               break;
             case '*':
-              if (!quoted && CSScomment == MAX_CSS_LENGTH && CSSindex > 0 &&
+              if (!quoted && !s_quoted && CSScomment == MAX_CSS_LENGTH && CSSindex > 0 &&
                   CSSbuffer[CSSindex - 1] == '/')
                 /* start a comment */
                 CSScomment = CSSindex - 1;
               break;
             case '/':
-              if (!quoted && CSSindex > 1 && CSScomment != MAX_CSS_LENGTH &&
+              if (!quoted && !s_quoted && CSSindex > 1 && CSScomment != MAX_CSS_LENGTH &&
                   CSSbuffer[CSSindex - 1] == '*')
                 {
                   while (CSSindex > 0 && CSSindex >= CSScomment)
@@ -6555,17 +6907,26 @@ char ReadCSSRules (Document docRef, CSSInfoPtr css, char *buffer, char *url,
                         CSSindex--;
                       }
                 }
-              else if (!fontface && !page && !quoted &&
+              else if (!fontface && !page && !quoted && !s_quoted &&
                        CSScomment == MAX_CSS_LENGTH && CSSindex > 0 &&
                        CSSbuffer[CSSindex - 1] ==  '<')
                 {
                   /* this is the closing tag ! */
                   CSSindex -= 2; /* remove </ from the CSS string */
                   noRule = TRUE;
-                } 
+                }
+              else if (!quoted && !s_quoted &&
+                       (CSSindex == 1 || (CSSindex > 1 && CSSbuffer[CSSindex - 2] == EOL))  &&
+                       CSScomment == MAX_CSS_LENGTH &&
+                       CSSbuffer[CSSindex - 1] == '/')
+                {
+                  CSSindex--;
+                  lineComment = TRUE;
+                }
+                
               break;
             case '<':
-              if (!fontface && !page && !quoted &&
+              if (!fontface && !page && !quoted && !s_quoted &&
                   CSScomment == MAX_CSS_LENGTH)
                 {
                   /* only if we're not parsing a comment */
@@ -6583,22 +6944,22 @@ char ReadCSSRules (Document docRef, CSSInfoPtr css, char *buffer, char *url,
                 }
               break;
             case '-':
-              if (!fontface && !page && !quoted &&
+              if (!fontface && !page && !quoted && !s_quoted &&
                   CSSindex > 0 && CSSbuffer[CSSindex - 1] == '-' &&
                   HTMLcomment)
                 /* CSS within an HTML comment */
                 noRule = TRUE;
               break;
             case '>':
-              if (!fontface && !page && !quoted && HTMLcomment)
+              if (!fontface && !page && !quoted && !s_quoted && HTMLcomment)
                 noRule = TRUE;
               break;
             case ' ':
-              if (!quoted && import != MAX_CSS_LENGTH && openRule == 0)
+              if (!quoted && !s_quoted && import != MAX_CSS_LENGTH && openRule == 0)
                 media = !strncasecmp (&CSSbuffer[import+1], "media", 5);
               break;
             case '{':
-              if (!quoted)
+              if (!quoted && !s_quoted)
                 {
                   openRule++;
                   if (import != MAX_CSS_LENGTH)
@@ -6628,7 +6989,7 @@ char ReadCSSRules (Document docRef, CSSInfoPtr css, char *buffer, char *url,
                 }
               break;
             case '}':
-              if (!quoted)
+              if (!quoted && !s_quoted)
                 {
                   openRule--;
                   if (page)
@@ -6655,13 +7016,22 @@ char ReadCSSRules (Document docRef, CSSInfoPtr css, char *buffer, char *url,
             case '"':
               if (quoted)
                 {
-                  if (CSSbuffer[CSSindex - 1] != '\\')
+                  if (CSSindex > 0 && CSSbuffer[CSSindex - 1] != '\\')
                     quoted = FALSE;
                 }
-              else
+              else if (!s_quoted)
                 quoted = TRUE;
               break;
-            default:
+             case '\'':
+              if (s_quoted)
+                {
+                  if (CSSindex > 0 && CSSbuffer[CSSindex - 1] != '\\')
+                    s_quoted = FALSE;
+                }
+              else if (!quoted)
+                s_quoted = TRUE;
+              break;
+           default:
               if (c == EOL)
                 {
                   newlines++;
@@ -6672,10 +7042,11 @@ char ReadCSSRules (Document docRef, CSSInfoPtr css, char *buffer, char *url,
       else if (c == EOL)
         {
           LineNumber++;
+          lineComment = FALSE;
           c = CR;
         }
 
-      if (c != CR)
+      if (!lineComment && c != CR)
         CSSindex++;
 
       if (CSSindex >= MAX_CSS_LENGTH && CSScomment < MAX_CSS_LENGTH)
@@ -6802,16 +7173,19 @@ char ReadCSSRules (Document docRef, CSSInfoPtr css, char *buffer, char *url,
     }
   /* closing the CSS parsing */
   Style_parsing--;
-  if (RedisplayImages == 0 && RedisplayBGImage)
+  if (RedisplayImages == 0 && RedisplayBGImage && Style_parsing == 0)
     {
       /* CSS parsing finishes after a BG image was loaded */
       RedisplayBGImage = FALSE;
-      RedisplayDoc = 0;
-      //printf ("ReadCSS Show BGimages\n");
-      TtaSetDisplayMode (docRef, NoComputedDisplay);
-      TtaSetDisplayMode (docRef, dispMode);
+      if (dispMode != NoComputedDisplay)
+        {
+          RedisplayDoc = 0;
+          //printf ("ReadCSS Show BGimages\n");
+          TtaSetDisplayMode (docRef, NoComputedDisplay);
+          TtaSetDisplayMode (docRef, dispMode);
+        }
     }
-  else if (dispMode == DisplayImmediately)
+  else if (dispMode != NoComputedDisplay)
     /* restore the display mode */
     TtaSetDisplayMode (docRef, dispMode);
 

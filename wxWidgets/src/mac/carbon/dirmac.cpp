@@ -4,7 +4,7 @@
 // Author:      Stefan Csomor
 // Modified by:
 // Created:     08.12.99
-// RCS-ID:      $Id: dirmac.cpp,v 1.1.1.1 2005/07/06 09:30:53 gully Exp $
+// RCS-ID:      $Id: dirmac.cpp,v 1.1.1.2 2005/07/26 09:31:08 gully Exp $
 // Copyright:   (c) 1999 Stefan Csomor <csomor@advanced.ch>
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -243,12 +243,12 @@ wxString wxDir::GetName() const
     wxString name;
     if ( m_data )
     {
-    name = M_DIR->GetName();
-    if ( !name.empty() && (name.Last() == _T('/')) )
-    {
-        // chop off the last (back)slash
-        name.Truncate(name.length() - 1);
-    }
+        name = M_DIR->GetName();
+        if ( !name.empty() && (name.Last() == _T('/')) )
+        {
+            // chop off the last (back)slash
+            name.Truncate(name.length() - 1);
+        }
     }
 
     return name;

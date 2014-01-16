@@ -4,7 +4,7 @@
 // Author:      Michael Bedward (based on code by Julian Smart, Robin Dunn)
 // Modified by: Robin Dunn, Vadim Zeitlin
 // Created:     1/08/1999
-// RCS-ID:      $Id: grid.cpp,v 1.1.1.1 2005/07/06 09:30:50 gully Exp $
+// RCS-ID:      $Id: grid.cpp,v 1.1.1.2 2005/07/26 09:31:05 gully Exp $
 // Copyright:   (c) Michael Bedward (mbedward@ozemail.com.au)
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -260,7 +260,7 @@ private:
     // Work around the fact that a focus kill event can be sent to
     // a combobox within a set focus event.
     bool                m_inSetFocus;
-    
+
     DECLARE_EVENT_TABLE()
     DECLARE_DYNAMIC_CLASS(wxGridCellEditorEvtHandler)
     DECLARE_NO_COPY_CLASS(wxGridCellEditorEvtHandler)
@@ -1972,21 +1972,19 @@ void wxGridCellFloatRenderer::SetParameters(const wxString& params)
             {
                 wxLogDebug(_T("Invalid wxGridCellFloatRenderer width parameter string '%s ignored"), params.c_str());
             }
-
         }
-                tmp = params.AfterFirst(_T(','));
-                if ( !tmp.empty() )
-                {
-                    long precision;
+        tmp = params.AfterFirst(_T(','));
+        if ( !tmp.empty() )
+        {
+            long precision;
             if ( tmp.ToLong(&precision) )
-                    {
+            {
                 SetPrecision((int)precision);
-                    }
-                    else
-                    {
+            }
+            else
+            {
                 wxLogDebug(_T("Invalid wxGridCellFloatRenderer precision parameter string '%s ignored"), params.c_str());
-        }
-
+            }
         }
     }
 }
@@ -7864,11 +7862,7 @@ void wxGrid::HideCellEditControl()
         editor->DecRef();
         attr->DecRef();
 
-        // if the focus moved completely outside this application, set it to
-        // ourselves so that it's not "lost" when the user switches back to
-        // this app
-        if ( !FindFocus() )
-            m_gridWin->SetFocus();
+        m_gridWin->SetFocus();
 
         // refresh whole row to the right
         wxRect rect( CellToRect(row, col) );

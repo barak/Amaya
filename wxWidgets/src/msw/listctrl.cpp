@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     04/01/98
-// RCS-ID:      $Id: listctrl.cpp,v 1.1.1.1 2005/07/06 09:30:55 gully Exp $
+// RCS-ID:      $Id: listctrl.cpp,v 1.1.1.2 2005/07/26 09:31:09 gully Exp $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -1090,6 +1090,24 @@ wxColour wxListCtrl::GetItemBackgroundColour( long item ) const
         col = data->attr->GetBackgroundColour();
 
     return col;
+}
+
+void wxListCtrl::SetItemFont( long item, const wxFont &f )
+{
+    wxListItem info;
+    info.m_itemId = item;
+    info.SetFont( f );
+    SetItem( info );
+}
+
+wxFont wxListCtrl::GetItemFont( long item ) const
+{
+    wxFont f;
+    wxListItemInternalData *data = wxGetInternalData(this, item);
+    if ( data && data->attr )
+        f = data->attr->GetFont();
+
+    return f;
 }
 
 // Gets the number of selected items in the list control

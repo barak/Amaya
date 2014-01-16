@@ -131,21 +131,46 @@ void TtaShowWindow( int window_id, ThotBool show )
 int TtaMakeWindow( int x, int y, int w, int h, int kind, int parent_window_id )
 {
 #ifdef _WX
-  AmayaWindow * p_window = NULL;
-  int window_id = TtaGetFreeWindowId();
+  AmayaWindow  *p_window = NULL;
+  wxSize        window_size;
+  int           window_id = TtaGetFreeWindowId();
+  int           display_width_px, display_height_px;
  
   if (window_id >= MAX_WINDOW)
     return 0; /* there is no more free windows */
 
   /* get the parent window pointer */
   AmayaWindow * p_parent_window = TtaGetWindowFromId( parent_window_id );
-  
-  wxSize window_size;
-  if (w != 0 && h != 0)
+
+  /* check if the window is not displayed out of the current screen */
+  wxDisplaySize(&display_width_px, &display_height_px);
+  if (w <= 0)
+    w = 800;
+  if (h <= 0)
+    h = 600;
+  if (w >= display_width_px)
+    {
+      w = display_width_px;
+      x = 0;
+    }
+  if (h >= display_height_px)
+    {
+      h = display_height_px;
+      y = 0;
+    }
+  if (x + w > display_width_px)
+    x = display_width_px - w;
+  if (y + h > display_height_px)
+    y = display_height_px - h;
+  if (w > 0 && h > 0)
     window_size = wxSize(w, h);
   else
     window_size = wxSize(800, 600);
 
+#ifdef _MACOS
+  if (y < 20)
+    y = 20;
+#endif /* _MACOS */
   wxPoint window_pos(x, y);
 
   /* Create the window */
@@ -156,12 +181,16 @@ int TtaMakeWindow( int x, int y, int w, int h, int kind, int parent_window_id )
                                         p_parent_window,
                                         window_pos,
                                         window_size );
-      // setup the maximized state (only for normal windows)
-      ThotBool maximized;
-      TtaGetEnvBoolean("WINDOW_MAXIMIZED", &maximized);
+      if (parent_window_id == 0)
+        {
+          // setup the maximized state (only for normal windows)
+          ThotBool maximized;
+          TtaGetEnvBoolean("WINDOW_MAXIMIZED", &maximized);
 #ifndef _MACOS
-      p_window->Maximize(maximized);
+          if (maximized)
+            p_window->Maximize(maximized);
 #endif /* !_MACOS */
+        }
       break;
     case WXAMAYAWINDOW_SIMPLE:
       p_window = new AmayaSimpleWindow( window_id,
@@ -481,7 +510,8 @@ void TtaInitTopMenuStats( int doc_id )
 #ifdef _WX
   /* enable every menu */
   PtrDocument pDoc = LoadedDocument[doc_id-1];
-  memset(pDoc->EnabledMenus, TRUE, sizeof(pDoc->EnabledMenus));
+  if (pDoc && pDoc->EnabledMenus)
+    memset(pDoc->EnabledMenus, TRUE, sizeof(pDoc->EnabledMenus));
 #endif /* _WX */
 }
 
@@ -1588,7 +1618,7 @@ void TtaRefreshPanelButton( Document doc, View view, int panel_type )
           
           /* get the subpanel depending on panel_type */
           AmayaSubPanel * p_subpanel = NULL;
-          bool * p_checked_array     = NULL;
+          bool * p_checked_array = NULL;
           switch (panel_type)
             {
             case WXAMAYA_PANEL_XHTML:
@@ -1602,7 +1632,7 @@ void TtaRefreshPanelButton( Document doc, View view, int panel_type )
           
           /* refresh the subpanel with button stats */
           AmayaParams p;
-          p.param1 = (void*)p_checked_array;
+          p.param2 = (void*)p_checked_array;
           AmayaSubPanelManager::GetInstance()->SendDataToPanel( p_subpanel->GetPanelType(), p );
         }
     }
@@ -1950,6 +1980,7 @@ void TtaRedirectFocus ()
 {
 #ifdef _WX
   int active_frame_id = TtaGiveActiveFrame();
+
   AmayaFrame * p_frame = TtaGetFrameFromId( active_frame_id );
   if (p_frame)
     p_frame->GetCanvas()->SetFocus();
@@ -1969,9 +2000,15 @@ void TtaRedirectFocus ()
 ThotBool TtaHandleUnicodeKey (wxKeyEvent& event)
 {
   int thot_keycode = event.GetKeyCode();
-  int thot_keysym = event.GetUnicodeKey();  
+  int thot_keysym = event.GetUnicodeKey();
+  int ret = 0;
+
   if ((thot_keysym != 0) && !TtaIsSpecialKey(thot_keycode) &&
-      !event.CmdDown() && !event.AltDown())
+      !event.CmdDown()
+#ifndef _MACOS
+       && !event.AltDown()
+#endif /* _MACOS */
+       )
     {
       wxWindow *p_win_focus = wxWindow::FindFocus();
       wxTextCtrl *p_text_ctrl = wxDynamicCast(p_win_focus, wxTextCtrl);
@@ -1987,18 +2024,15 @@ ThotBool TtaHandleUnicodeKey (wxKeyEvent& event)
                 (p_button || p_check_listbox)))
             {
               int thotMask = 0;
-              if (event.CmdDown())
+              if (event.CmdDown() || event.ControlDown())
                 thotMask |= THOT_MOD_CTRL;
               if (event.AltDown())
                 thotMask |= THOT_MOD_ALT;
               if (event.ShiftDown())
                 thotMask |= THOT_MOD_SHIFT; 
- #ifdef _MACOS
-             //if (event.ControlDown())
-              //  thotMask |= THOT_MOD_CTRL; 
-#endif /* _MACOS */
-              
-              if (ThotInput (TtaGiveActiveFrame(), thot_keysym, 0, thotMask, thot_keycode) == 3)
+              ret = ThotInput (TtaGiveActiveFrame(), thot_keysym, 0, thotMask, thot_keycode);
+              if (ret == 3)
+                {
                 /* if a simple caractere has been entred, give focus to canvas
                  * it resolves accesibility problems when the focus is blocked on a panel */
                 TtaRedirectFocus();
@@ -2008,6 +2042,9 @@ ThotBool TtaHandleUnicodeKey (wxKeyEvent& event)
               // before the user release the key.
               GL_DrawAll();
               return true;
+                }
+              else 
+                return false;
             }
           else
             event.Skip();	  
@@ -2034,15 +2071,14 @@ ThotBool TtaHandleShortcutKey( wxKeyEvent& event )
   wxChar thot_keysym = event.GetKeyCode();  
   
   int thotMask = 0;
-  if (event.CmdDown())
+  if (event.CmdDown() || event.ControlDown())
     thotMask |= THOT_MOD_CTRL;
   if (event.AltDown())
     thotMask |= THOT_MOD_ALT;
   if (event.ShiftDown())
     thotMask |= THOT_MOD_SHIFT;
   
-#ifdef _WINDOWS
-  /* on windows, +/= key generate '+' key code, but is should generates '=' value */
+  /* +/= key generate '+' key code, but is should generates '=' value */
   if (thot_keysym == '+' && !event.ShiftDown())
     thot_keysym = '=';
   
@@ -2052,34 +2088,29 @@ ThotBool TtaHandleShortcutKey( wxKeyEvent& event )
   wxComboBox *     p_combo_box         = wxDynamicCast(p_win_focus, wxComboBox);
   wxSpinCtrl *     p_spinctrl          = wxDynamicCast(p_win_focus, wxSpinCtrl);
   if (( p_text_ctrl || p_combo_box || p_spinctrl )
-      && (event.CmdDown() && (thot_keysym == 'C' || thot_keysym == 'X' || thot_keysym == 'V')) )
+      && (event.CmdDown() &&
+          (thot_keysym == 'C' || thot_keysym == 'X' || thot_keysym == 'V' ||
+           thot_keysym == 'c' || thot_keysym == 'x' || thot_keysym == 'v')) )
     {
       event.Skip();
       return true;      
     }
-#endif /* _WINDOWS */
+
 #ifdef _MACOS
-  /* do not allow CTRL-C CTRL-X CTRL-V in "text" widgets */
-  wxWindow *       p_win_focus         = wxWindow::FindFocus();
-  wxTextCtrl *     p_text_ctrl         = wxDynamicCast(p_win_focus, wxTextCtrl);
-  wxComboBox *     p_combo_box         = wxDynamicCast(p_win_focus, wxComboBox);
-  wxSpinCtrl *     p_spinctrl          = wxDynamicCast(p_win_focus, wxSpinCtrl);
-  if (( p_text_ctrl || p_combo_box || p_spinctrl ))
-    {
-      event.Skip();
-      return true;      
-    }
-#endif /* _MACOS */
-  
   // on windows, CTRL+ALT is equivalent to ALTGR key
-  if ( ((event.CmdDown() && !event.AltDown()) || (event.AltDown() && !event.CmdDown()))
-       && !TtaIsSpecialKey(thot_keysym)
-       // this is for the Windows menu shortcuts, 
-       // ALT+F => should open File menu
-       && !(thot_keysym >= 'A' && thot_keysym <= 'Z' && event.AltDown() && !event.CmdDown())  
-       )
+  if (!TtaIsSpecialKey(thot_keysym) &&
+      ((event.ControlDown() && !event.AltDown()) ||
+       (event.AltDown() && !event.CmdDown() && (thot_keysym < 'A' || thot_keysym > 'Z'))))
+       // this is for the Windows menu shortcuts, ALT+F => should open File menu
+#else /* _MACOS */
+  // on windows, CTRL+ALT is equivalent to ALTGR key
+  if (!TtaIsSpecialKey(thot_keysym) &&
+      ((event.CmdDown() && !event.AltDown()) ||
+       (event.AltDown() && !event.CmdDown() && (thot_keysym < 'A' || thot_keysym > 'Z'))))
+       // this is for the Windows menu shortcuts, ALT+F => should open File menu
+#endif /* _MACOS */
     {
-      // le code suivant permet de convertire les majuscules
+      // le code suivant permet de convertir les majuscules
       // en minuscules pour les racourcis clavier specifiques a amaya.
       // OnKeyDown recoit tout le temps des majuscule que Shift soit enfonce ou pas.
       if (!event.ShiftDown())
@@ -2104,7 +2135,6 @@ ThotBool TtaHandleShortcutKey( wxKeyEvent& event )
       
       return true;
     }
-  /* it is now the turn of special key shortcuts : CTRL+RIGHT, CTRL+ENTER ...*/
   else if ((event.CmdDown() || event.AltDown()) &&
            (thot_keysym == (int) WXK_RIGHT ||
             thot_keysym == (int) WXK_LEFT ||
@@ -2112,8 +2142,10 @@ ThotBool TtaHandleShortcutKey( wxKeyEvent& event )
             thot_keysym == (int) WXK_DOWN ||
             thot_keysym == (int) WXK_UP ||
             thot_keysym == (int) WXK_HOME ||
+            /*thot_keysym == (int) WXK_INSERT ||*/
             thot_keysym == (int) WXK_END))
     {
+      /* it is now the turn of special key shortcuts : CTRL+RIGHT, CTRL+ENTER ...*/
       TTALOGDEBUG_1( TTA_LOG_KEYINPUT, _T("TtaHandleShortcutKey : special shortcut thot_keysym=%x"), thot_keysym );
       ThotInput (TtaGiveActiveFrame(), thot_keysym, 0, thotMask, thot_keysym);
       
@@ -2128,7 +2160,7 @@ ThotBool TtaHandleShortcutKey( wxKeyEvent& event )
             thot_keysym == (int) WXK_F5 ||
             thot_keysym == (int) WXK_F7 ||
             thot_keysym == (int) WXK_F11 ||
-            thot_keysym == (int) WXK_F12 )
+            thot_keysym == (int) WXK_F12)
     {
       ThotInput (TtaGiveActiveFrame(), thot_keysym, 0, thotMask, thot_keysym);
       
@@ -2156,24 +2188,35 @@ ThotBool TtaHandleShortcutKey( wxKeyEvent& event )
 #ifdef _WX
 ThotBool TtaHandleSpecialKey( wxKeyEvent& event )
 {
-  if ( !event.CmdDown() && !event.AltDown() && TtaIsSpecialKey(event.GetKeyCode()))
+  if ( /*!event.CmdDown() &&*/ !event.AltDown() && TtaIsSpecialKey(event.GetKeyCode()))
     {
       int thot_keysym = event.GetKeyCode();  
       
-      bool proceed_key = ( thot_keysym == WXK_INSERT ||
-                           thot_keysym == WXK_DELETE ||
-                           thot_keysym == WXK_HOME   ||
-                           thot_keysym == WXK_PRIOR  ||
-                           thot_keysym == WXK_NEXT   ||
-                           thot_keysym == WXK_END    ||
-                           thot_keysym == WXK_LEFT   ||
-                           thot_keysym == WXK_RIGHT  ||
-                           thot_keysym == WXK_UP     ||
-                           thot_keysym == WXK_DOWN   ||
-                           thot_keysym == WXK_ESCAPE ||
-                           thot_keysym == WXK_BACK   ||
-                           thot_keysym == WXK_RETURN ||
+      bool proceed_key = ( thot_keysym == WXK_INSERT   ||
+                           thot_keysym == WXK_DELETE   ||
+                           thot_keysym == WXK_HOME     ||
+                           thot_keysym == WXK_PRIOR    ||
+                           thot_keysym == WXK_NEXT     ||
+#ifdef _MACOS
+                           thot_keysym == WXK_PAGEUP   ||
+                           thot_keysym == WXK_PAGEDOWN ||
+#endif /* _MACOS */
+                           thot_keysym == WXK_END      ||
+                           thot_keysym == WXK_LEFT     ||
+                           thot_keysym == WXK_RIGHT    ||
+                           thot_keysym == WXK_UP       ||
+                           thot_keysym == WXK_DOWN     ||
+                           thot_keysym == WXK_ESCAPE   ||
+                           thot_keysym == WXK_BACK     ||
+                           thot_keysym == WXK_RETURN   ||
                            thot_keysym == WXK_TAB );
+
+#ifdef _MACOS
+      if (proceed_key && thot_keysym == WXK_PAGEUP)
+	    thot_keysym = WXK_PRIOR;
+      if (proceed_key && thot_keysym == WXK_PAGEDOWN)
+	    thot_keysym = WXK_NEXT;
+#endif /* _MACOS */
       
       wxWindow *       p_win_focus         = wxWindow::FindFocus();
       wxGLCanvas *     p_gl_canvas         = wxDynamicCast(p_win_focus, wxGLCanvas);
@@ -2207,7 +2250,6 @@ ThotBool TtaHandleSpecialKey( wxKeyEvent& event )
         }
 #endif /* _WINDOWS */
 #endif /* 0 */
-      
       if ( proceed_key )
         {
           int thotMask = 0;
@@ -2217,10 +2259,6 @@ ThotBool TtaHandleSpecialKey( wxKeyEvent& event )
             thotMask |= THOT_MOD_ALT;
           if (event.ShiftDown())
             thotMask |= THOT_MOD_SHIFT;
-#ifdef _MACOS
-          //if (event.ControlDown())
-          // thotMask |= THOT_MOD_CTRL;
-#endif /* _MACOS */
 
           TTALOGDEBUG_1( TTA_LOG_KEYINPUT, _T("TtaHandleSpecialKey: thot_keysym=%x"), thot_keysym);
           
@@ -2255,7 +2293,7 @@ ThotBool TtaIsSpecialKey( int wx_keycode )
            wx_keycode == WXK_TAB  ||
            wx_keycode == WXK_RETURN ||
            wx_keycode == WXK_ESCAPE ||
-           /*wx_keycode == WXK_SPACE  ||*/
+           /*wx_keycode == WXK_INSERT  ||*/
            wx_keycode == WXK_DELETE ||
            (wx_keycode >= WXK_START && wx_keycode <= WXK_COMMAND)
            );

@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     11/07/98
-// RCS-ID:      $Id: wfstream.cpp,v 1.1.1.1 2005/07/06 09:30:50 gully Exp $
+// RCS-ID:      $Id: wfstream.cpp,v 1.1.1.2 2005/07/26 09:31:04 gully Exp $
 // Copyright:   (c) Guilhem Lavaux
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -37,6 +37,8 @@ wxFileInputStream::wxFileInputStream(const wxString& fileName)
 {
     m_file = new wxFile(fileName, wxFile::read);
     m_file_destroy = true;
+    if ( !m_file->IsOpened() )
+        m_lasterror = wxSTREAM_READ_ERROR;
 }
 
 wxFileInputStream::wxFileInputStream()
@@ -115,14 +117,7 @@ wxFileOutputStream::wxFileOutputStream(const wxString& fileName)
     m_file_destroy = true;
 
     if (!m_file->IsOpened())
-    {
         m_lasterror = wxSTREAM_WRITE_ERROR;
-    }
-    else
-    {
-        if (m_file->Error())
-            m_lasterror = wxSTREAM_WRITE_ERROR;
-    }
 }
 
 wxFileOutputStream::wxFileOutputStream(wxFile& file)

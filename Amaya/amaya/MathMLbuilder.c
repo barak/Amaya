@@ -675,13 +675,16 @@ static void  CheckIntDisplaystyle (Element el, Document doc)
   ElementType  elType;
 
   elType = TtaGetElementType (el);
-  if (elType.ElTypeNum == MathML_EL_Index ||
+  if (elType.ElTypeNum == MathML_EL_Numerator ||
+      elType.ElTypeNum == MathML_EL_Denominator ||
+      elType.ElTypeNum == MathML_EL_Index ||
       elType.ElTypeNum == MathML_EL_Subscript ||
       elType.ElTypeNum == MathML_EL_Superscript ||
       elType.ElTypeNum == MathML_EL_Underscript ||
       elType.ElTypeNum == MathML_EL_Overscript ||
       elType.ElTypeNum == MathML_EL_PostscriptPairs ||
-      elType.ElTypeNum == MathML_EL_PrescriptPairs)
+      elType.ElTypeNum == MathML_EL_PrescriptPairs ||
+      elType.ElTypeNum == MathML_EL_MTable_body)
     {
       ApplyDisplaystyle (el, doc);
     }
@@ -2028,7 +2031,7 @@ ThotBool      ChildOfMRowOrInferred (Element el)
 
 /*----------------------------------------------------------------------
   CheckFence
-  If el is a MO element of a fence,
+  If el is a MO element or a fence,
   if it's a child of a MROW (or equivalent) element and if it contains
   a single fence character, transform the MO into a MF and the fence
   character into a Thot stretchable symbol.
@@ -2090,14 +2093,18 @@ void      CheckFence (Element el, Document doc)
                               /* attach a IntVertStretch attribute to the MF element */
                               attrType.AttrTypeNum = MathML_ATTR_IntVertStretch;
                               attr = TtaGetAttribute (el, attrType);
-                              if (!attr)
+                              if (attr)
+                                TtaSetAttributeValue (attr,
+                                           MathML_ATTR_IntVertStretch_VAL_yes_,
+                                           el, doc);
+                              else
                                 {
                                   attr = TtaNewAttribute (attrType);
+                                  TtaSetAttributeValue (attr,
+                                           MathML_ATTR_IntVertStretch_VAL_yes_,
+                                           el, doc);
                                   TtaAttachAttribute (el, attr, doc);
                                 }
-                              TtaSetAttributeValue (attr,
-                                                    MathML_ATTR_IntVertStretch_VAL_yes_,
-                                                    el, doc);
                             }
                           /* create a new content for the MF element */
                           elType.ElTypeNum = MathML_EL_SYMBOL_UNIT;
@@ -2112,8 +2119,8 @@ void      CheckFence (Element el, Document doc)
                              schema while inserting this child element  */
                           oldStructureChecking = TtaGetStructureChecking (doc);
                           TtaSetStructureChecking (FALSE, doc);
-                          TtaInsertFirstChild (&content, el, doc);
                           TtaSetGraphicsShape (content, c, doc);
+                          TtaInsertFirstChild (&content, el, doc);
                           /* resume structure checking */
                           TtaSetStructureChecking (oldStructureChecking, doc);
                         }

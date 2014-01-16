@@ -2,7 +2,7 @@
 // Name:        dataobj.cpp
 // Purpose:     wxDataObject class
 // Author:      Robert Roebling
-// Id:          $Id: dataobj.cpp,v 1.1.1.1 2005/07/06 09:30:51 gully Exp $
+// Id:          $Id: dataobj.cpp,v 1.1.1.2 2005/07/26 09:31:05 gully Exp $
 // Copyright:   (c) 1998 Robert Roebling
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -15,6 +15,9 @@
 #include "wx/wxprec.h"
 
 #include "wx/dataobj.h"
+
+#if wxUSE_DATAOBJ
+
 #include "wx/app.h"
 #include "wx/debug.h"
 #include "wx/mstream.h"
@@ -396,4 +399,4 @@ void wxBitmapDataObject::DoConvertToPng()
     image.SaveFile(mstream, wxBITMAP_TYPE_PNG);
 }
 
-
+#endif // wxUSE_DATAOBJ

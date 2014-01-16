@@ -4,7 +4,7 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     29/01/98
-// RCS-ID:      $Id: log.cpp,v 1.1.1.1 2005/07/06 09:30:49 gully Exp $
+// RCS-ID:      $Id: log.cpp,v 1.1.1.2 2005/07/26 09:31:04 gully Exp $
 // Copyright:   (c) 1998 Vadim Zeitlin <zeitlin@dptmaths.ens-cachan.fr>
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -802,7 +802,8 @@ const wxChar *wxSysErrorMsg(unsigned long nErrCode)
     // copy it to our buffer and free memory
     // Crashes on SmartPhone (FIXME)
 #if !defined(__SMARTPHONE__) /* of WinCE */
-     if( lpMsgBuf != 0 ) {
+    if( lpMsgBuf != 0 )
+    {
         wxStrncpy(s_szBuf, (const wxChar *)lpMsgBuf, WXSIZEOF(s_szBuf) - 1);
         s_szBuf[WXSIZEOF(s_szBuf) - 1] = wxT('\0');
 

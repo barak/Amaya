@@ -24,7 +24,7 @@
                       <object class="sizeritem">
                         <object class="wxStaticText" name="wxID_LABEL_TITLE">
                           <label>*Apply class*</label>
-                          <style>wxALIGN_CENTRE</style>
+                          <style>wxALIGN_LEFT</style>
                         </object>
                         <option>1</option>
                         <flag>wxALIGN_CENTRE</flag>
@@ -37,7 +37,7 @@
                         <flag>wxALIGN_CENTRE</flag>
                       </object>
                     </object>
-                    <style>wxTAB_TRAVERSAL|wxSIMPLE_BORDER</style>
+                    <style>wxNO_BORDER|wxTAB_TRAVERSAL</style>
                   </object>
                   <flag>wxEXPAND</flag>
                 </object>

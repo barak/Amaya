@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by: VZ on 13.05.99: no more Default(), MSWOnXXX() reorganisation
 // Created:     04/01/98
-// RCS-ID:      $Id: window.cpp,v 1.1.1.1 2005/07/06 09:30:55 gully Exp $
+// RCS-ID:      $Id: window.cpp,v 1.1.1.2 2005/07/26 09:31:10 gully Exp $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -54,6 +54,7 @@
     #include "wx/ownerdrw.h"
 #endif
 
+#include "wx/evtloop.h"
 #include "wx/module.h"
 #include "wx/sysopt.h"
 
@@ -1940,38 +1941,6 @@ bool wxWindowMSW::MSWProcessMessage(WXMSG* pMsg)
                         bProcess = false;
                     break;
 
-                case VK_ESCAPE:
-                    {
-#if wxUSE_BUTTON
-                        wxButton *btn = wxDynamicCast(FindWindow(wxID_CANCEL),wxButton);
-
-                        // our own wxLogDialog should react to Esc
-                        // without Cancel button but this is a private class
-                        // so let's try recognize it by content
-    #if wxUSE_LOG_DIALOG
-                        if ( !btn &&
-                             wxDynamicCast(this,wxDialog) &&
-                             FindWindow(wxID_MORE) &&
-                             FindWindow(wxID_OK) &&
-                             !FindWindow(wxID_CANCEL) &&
-                             GetTitle().MakeLower().StartsWith(wxTheApp->GetAppName().c_str())
-                             )
-                            btn = wxDynamicCast(FindWindow(wxID_OK),wxButton);
-    #endif // wxUSE_LOG_DIALOG
-                        if ( btn && btn->IsEnabled() )
-                        {
-                            // if we do have a cancel button, do press it
-                            btn->MSWCommand(BN_CLICKED, 0 /* unused */);
-
-                            // we consumed the message
-                            return true;
-                        }
-#endif // wxUSE_BUTTON
-
-                        bProcess = false;
-                    }
-                    break;
-
                 case VK_RETURN:
                     {
                         if ( (lDlgCode & DLGC_WANTMESSAGE) && !bCtrlDown )
@@ -2261,7 +2230,7 @@ LRESULT WXDLLEXPORT APIENTRY _EXPORT wxWndProc(HWND hWnd, UINT message, WPARAM w
 
     LRESULT rc;
 
-    if ( wnd )
+    if ( wnd && wxEventLoop::AllowProcessing(wnd) )
         rc = wnd->MSWWindowProc(message, wParam, lParam);
     else
         rc = ::DefWindowProc(hWnd, message, wParam, lParam);
@@ -4606,11 +4575,14 @@ bool wxWindowMSW::HandleMouseMove(int x, int y, WXUINT flags)
 bool wxWindowMSW::HandleMouseWheel(WXWPARAM wParam, WXLPARAM lParam)
 {
 #if wxUSE_MOUSEWHEEL
+    // notice that WM_MOUSEWHEEL position is in screen coords (as it's
+    // forwarded up to the parent by DefWindowProc()) and not in the client
+    // ones as all the other messages, translate them to the client coords for
+    // consistency
+    const wxPoint
+        pt = ScreenToClient(wxPoint(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)));
     wxMouseEvent event(wxEVT_MOUSEWHEEL);
-    InitMouseEvent(event,
-                   GET_X_LPARAM(lParam),
-                   GET_Y_LPARAM(lParam),
-                   LOWORD(wParam));
+    InitMouseEvent(event, pt.x, pt.y, LOWORD(wParam));
     event.m_wheelRotation = (short)HIWORD(wParam);
     event.m_wheelDelta = WHEEL_DELTA;
 

@@ -9,57 +9,57 @@
 7 E&stilo
 8 At&ributos
 9 A&notaciones
-10 &Marcadores
-11 &Cooperación
-12 A&yuda
-13 &Nuevo
-14 Nuevo documento &XHTML...
-15 Nuevo documento &XHTML 1.1...
-16 Nuevo documento XHTML 1.0 &Transitional...
-17 Nuevo documento XHTML 1.0 &Strict...
-18 Nuevo documento XHTML 1.0 &Basic...
-19 Nuevo documento &MathML...
-20 Nuevo documento SV&G...
-21 Nueva hoja de estilo &CSS...
-22 Desde &plantilla
-23 &Abrir documento...
-24 A&brir en ventana nueva...
-25 Actualiza&r
-26 A&trás
-27 A&delante
-28 &Guardar
-29 G&uardar como...
-30 Sincroni&zar
-31 Ca&mbiar doctype
-32 &Borrar doctype
-33 &Añadir doctype
-34 Cambiar a &XHTML 1.1
-35 Cambiar a XHTML 1.0 &Transitional
-36 Cambiar a XHTML 1.0 &Strict
-37 Cambiar a XHTML 1.0 &Basic
-38 Cambiar a HTML 4.01 T&ransitional
-39 Cambiar a HTML 4.01 Str&ict
-40 &Forzar codificación de caracteres
-41 Unicode (UTF-8)
-42 Occidental (ISO-8859-1)
-43 Occidental (ISO-8859-15)
-44 Occidental (Windows-1252)
-45 Europa central (ISO-8859-2)
-46 Europa Central (Windows-1250)
-47 Europa del Sur (ISO-8859-3)
-48 Báltico (ISO-8859-4)
-49 Báltico (Windows-1257)
-50 Cirílico (ISO-8859-5)
-51 Cirílico (Windows-1251)
-52 Cirílico (KOI8-R)
-53 Árabe (ISO-8859-6)
-54 Árabe (Windows-1256)
-55 Griego (ISO-8859-7)
-56 Griego (Windows-1253)
-57 Hebreo (ISO-8859-8)
-58 Hebreo (Windows-1255)
-59 Turco (ISO-8859-9)
-60 Turco (Windows-125)
+10 &Cooperación
+11 A&yuda
+12 &Nuevo
+13 Nuevo documento &XHTML...
+14 Nuevo documento &XHTML 1.1...
+15 Nuevo documento XHTML 1.0 &Transitional...
+16 Nuevo documento XHTML 1.0 &Strict...
+17 Nuevo documento XHTML 1.0 &Basic...
+18 Nuevo documento &MathML...
+19 Nuevo documento SV&G...
+20 Nueva hoja de estilo &CSS...
+21 Desde &plantilla
+22 &Abrir documento...
+23 A&brir en ventana nueva...
+24 Actualiza&r
+25 A&trás
+26 A&delante
+27 &Guardar
+28 G&uardar como...
+29 Sincroni&zar
+30 Ca&mbiar doctype
+31 &Borrar doctype
+32 &Añadir doctype
+33 Cambiar a &XHTML 1.1
+34 Cambiar a XHTML 1.0 &Transitional
+35 Cambiar a XHTML 1.0 &Strict
+36 Cambiar a XHTML 1.0 &Basic
+37 Cambiar a HTML 4.01 T&ransitional
+38 Cambiar a HTML 4.01 Str&ict
+39 &Forzar codificación de caracteres
+40 Unicode (UTF-8)
+41 Occidental (ISO-8859-1)
+42 Occidental (ISO-8859-15)
+43 Occidental (Windows-1252)
+44 Europa central (ISO-8859-2)
+45 Europa Central (Windows-1250)
+46 Europa del Sur (ISO-8859-3)
+47 Báltico (ISO-8859-4)
+48 Báltico (Windows-1257)
+49 Cirílico (ISO-8859-5)
+50 Cirílico (Windows-1251)
+51 Cirílico (KOI8-R)
+52 Árabe (ISO-8859-6)
+53 Árabe (Windows-1256)
+54 Griego (ISO-8859-7)
+55 Griego (Windows-1253)
+56 Hebreo (ISO-8859-8)
+57 Hebreo (Windows-1255)
+58 Turco (ISO-8859-9)
+59 Turco (Windows-125)
+60 Chino simplificó (GB-2312)
 61 Japonés (ISO-2022-JP)
 62 Japonés (EUC-JP)
 63 Japonés (Shift-JIS)
@@ -244,88 +244,86 @@
 242 &Añadir la selección a la Biblioteca SVG
 243 Comentario
 244 Elementos XML...
-245 Enlazar último destino &creado
-246 Crear o cambiar &enlace...
-247 Crear &destino (a / id)
-248 &Borrar ancla (a)
-249 &Crear/Borrar atributos id...
-250 Ventana de &herramientas
-251 &Pantalla completa
-252 &Barra de botones
-253 D&irección
-254 Áreas de &mapas
-255 &Destinos
-256 &Aumentar tamaño de texto
-257 &Reducir tamaño de texto
-258 &Vista formateada
-259 Es&tructura
-260 Código &fuente
-261 &Enlaces
-262 A&lternativo
-263 Tabla de &contenidos
-264 Planificación
-265 Dividir vista horizontalmente
-266 Dividir vista verticalmente
-267 &Carácter...
-268 C&olores...
-269 &Párrafo...
-270 &Imagen de fondo...
-271 Crear &regla...
-272 A&plicar clase...
-273 &Mostrar estilo aplicado...
-274 &Enlazar hoja de estilo...
-275 &Abrir hoja de estilo enlazada...
-276 &Desactivar hoja de estilo enlazada...
-277 Acti&var hoja de estilo enlazada...
-278 &Borrar enlace a hoja de estilo...
-279 Anotar &selección
-280 Anotar &documento
-281 &Mover a selección
-282 Guardar selección como &XPointer
-283 Mover a &XPointer guardado
-284 &Responder a anotación
-285 &Enviar al servidor
-286 &Borrar
-287 &Cargar
-288 &Personalizar consulta...
-289 &Filtro local...
-290 Ver marcadores
-291 Nuevo marcador
-292 Nuevo tema
-293 Nuevo separador
-294 Mover elemento
-295 Bloquear recurso
-296 Desbloquear recurso...
-297 Ver propiedades del recurso...
-298 Copiar información de bloqueo
-299 ¿Bloqueado?
-300 Acerca de Amaya
-301 Página web de Amaya en el W3C
-302 Índice
-303 Navegar
-304 Vistas
-305 Seleccionar
-306 Documentos
-307 Crear elementos
-308 Atributos
-309 Caracteres
-310 Reestructurar
-311 Enlaces
-312 Tablas
-313 Mapas de imagen
-314 MathML
-315 Gráficos
-316 Soporte XML
-317 Hojas de estilo
-318 Buscar
-319 Revisar ortografía
-320 Publicar
-321 WebDAV
-322 Imprimir
-323 Numerar
-324 Hacer libros
-325 Anotaciones
-326 &Marcadores
-327 Configurar
-328 Atajos de teclado
-329 Accesibilidad
+245 Copiar localización
+246 Pegar localización
+247 Copiar localización del enlace
+248 Enlazar último destino &creado
+249 Crear o cambiar &enlace...
+250 Crear &destino (a / id)
+251 &Borrar ancla (a)
+252 &Crear/Borrar atributos id...
+253 Ventana de &herramientas
+254 &Pantalla completa
+255 &Barra de botones
+256 D&irección
+257 Áreas de &mapas
+258 &Destinos
+259 &Aumentar tamaño de texto
+260 &Reducir tamaño de texto
+261 &Vista formateada
+262 Es&tructura
+263 Código &fuente
+264 &Enlaces
+265 A&lternativo
+266 Tabla de &contenidos
+267 Planificación
+268 Dividir vista horizontalmente
+269 Dividir vista verticalmente
+270 &Carácter...
+271 C&olores...
+272 &Estilo CSS...
+273 &Párrafo...
+274 &Imagen de fondo...
+275 Crear &regla...
+276 A&plicar clase...
+277 &Mostrar estilo aplicado...
+278 &Enlazar hoja de estilo...
+279 &Abrir hoja de estilo enlazada...
+280 &Desactivar hoja de estilo enlazada...
+281 Acti&var hoja de estilo enlazada...
+282 &Borrar enlace a hoja de estilo...
+283 Anotar &selección
+284 Anotar &documento
+285 &Mover a selección
+286 Guardar selección como &XPointer
+287 Mover a &XPointer guardado
+288 &Responder a anotación
+289 &Enviar al servidor
+290 &Borrar
+291 &Cargar
+292 &Personalizar consulta...
+293 &Filtro local...
+294 Bloquear recurso
+295 Desbloquear recurso...
+296 Ver propiedades del recurso...
+297 Copiar información de bloqueo
+298 ¿Bloqueado?
+299 Acerca de Amaya
+300 Página web de Amaya en el W3C
+301 Índice
+302 Navegar
+303 Vistas
+304 Seleccionar
+305 Documentos
+306 Crear elementos
+307 Atributos
+308 Caracteres
+309 Reestructurar
+310 Enlaces
+311 Tablas
+312 Mapas de imagen
+313 MathML
+314 Gráficos
+315 Soporte XML
+316 Hojas de estilo
+317 Buscar
+318 Revisar ortografía
+319 Publicar
+320 WebDAV
+321 Imprimir
+322 Numerar
+323 Hacer libros
+324 Anotaciones
+325 Configurar
+326 Atajos de teclado
+327 Accesibilidad

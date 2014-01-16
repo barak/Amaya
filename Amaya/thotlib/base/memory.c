@@ -263,7 +263,9 @@ void TtaFreeAnimation (void *void_a_list)
   else
     TtaFreeMemory (a_list->from);  
   TtaFreeMemory (a_list->to);
-  TtaFreeMemory (a_list->AttrName);
+  // pay attention: transformation store a value instead of a string
+  if (a_list->AnimType != Transformation)
+    TtaFreeMemory (a_list->AttrName);
   TtaFreeMemory (a_list);
 }
 
@@ -964,22 +966,25 @@ void GetAbstractBox (PtrAbstractBox *pAb)
   ----------------------------------------------------------------------*/
 void FreeAbstractBox (PtrAbstractBox pAb)
 {
+  ThotPictInfo *image;
 
   if (pAb->AbLeafType == LtCompound)
     {
       if (pAb->AbPictBackground)
         {
-          if (((ThotPictInfo *)pAb->AbPictBackground)->PicFileName[0] != EOS)
-            TtaFreeMemory (((ThotPictInfo *)pAb->AbPictBackground)->PicFileName);
-          CleanPictInfo ((ThotPictInfo *)pAb->AbPictBackground);
+          image = (ThotPictInfo *)pAb->AbPictBackground;
+          if (image->PicFileName && image->PicFileName[0] != EOS)
+            TtaFreeMemory (image->PicFileName);
+          CleanPictInfo (image);
           TtaFreeMemory (pAb->AbPictBackground);
           pAb->AbPictBackground = NULL;
         }
       if (pAb->AbPictListStyle)
         {
-          if (((ThotPictInfo *)pAb->AbPictListStyle)->PicFileName[0] != EOS)
-            TtaFreeMemory (((ThotPictInfo *)pAb->AbPictListStyle)->PicFileName);
-          CleanPictInfo ((ThotPictInfo *)pAb->AbPictListStyle);
+          image = (ThotPictInfo *)pAb->AbPictListStyle;
+          if (image->PicFileName && image->PicFileName[0] != EOS)
+            TtaFreeMemory (image->PicFileName);
+          CleanPictInfo (image);
           TtaFreeMemory (pAb->AbPictListStyle);
           pAb->AbPictListStyle = NULL;
         }
@@ -1670,26 +1675,27 @@ void GetPresentRule (PtrPRule * pRP)
   ----------------------------------------------------------------------*/
 void FreePresentRule (PtrPRule pRP, PtrSSchema pSS)
 {
-   PtrCondition        pCond, nextCond;
+  PtrCondition        pCond, nextCond;
 
-   pCond = pRP->PrCond;
-   while (pCond)
-     {
-       nextCond = pCond->CoNextCondition;
-       if ((pCond->CoCondition == PcAttribute ||
-	    pCond->CoCondition == PcInheritAttribute) &&
-	   pSS &&
-	   pSS->SsAttribute->TtAttr[pCond->CoTypeAttr - 1]->AttrType == AtTextAttr)
-	 TtaFreeMemory (pCond->CoAttrTextValue);
-       else if (pCond->CoCondition == PcWithin)
-	 TtaFreeMemory (pCond->CoAncestorName);
-       FreePresentRuleCond (pCond);
-       pCond = nextCond;
-     }
-   pRP->PrCSSLine = 0;
-   pRP->PrCSSURL = NULL;
-   TtaFreeMemory (pRP);
-   NbUsed_PresRule--;
+  pCond = pRP->PrCond;
+  while (pCond)
+    {
+      nextCond = pCond->CoNextCondition;
+      if ((pCond->CoCondition == PcAttribute ||
+           pCond->CoCondition == PcInheritAttribute) &&
+          pSS &&
+          pSS->SsAttribute->TtAttr[pCond->CoTypeAttr - 1]->AttrType == AtTextAttr)
+        TtaFreeMemory (pCond->CoAttrTextValue);
+      else if (pCond->CoCondition == PcWithin ||
+               pCond->CoCondition == PcSibling)
+        TtaFreeMemory (pCond->CoAncestorName);
+      FreePresentRuleCond (pCond);
+      pCond = nextCond;
+    }
+  pRP->PrCSSLine = 0;
+  pRP->PrCSSURL = NULL;
+  TtaFreeMemory (pRP);
+  NbUsed_PresRule--;
 }
 
 /*----------------------------------------------------------------------

@@ -257,7 +257,8 @@ typedef enum _ClickEvent {
 #define CSSForm         0
 #define CSSSelect       1
 #define CSSEntry        2
-#define MAX_CSS_REF     3
+#define CSSValue        3
+#define MAX_CSS_REF     4
 
 #define FormMaths 0
 #define MenuMaths 1
@@ -503,6 +504,7 @@ typedef struct _DocumentMetaDataElement
 
   ClickEvent method;           /* method used to send this data */
   ThotBool   xmlformat;        /* the document should be exported in xml format */
+  ThotBool   compound;        /* the document is a compound document */
 #ifdef ANNOTATIONS
   Document   source_doc;       /* if the document is an annotation,
 				  this variable giveso the annoted document
@@ -510,8 +512,8 @@ typedef struct _DocumentMetaDataElement
 #endif /* ANNOTATIONS */
 
 #ifdef TEMPLATES
-  char      *template_location;   /* if this document is derived from a template,
-				     The location of the template used to create the document 
+  char      *template_version;   /* if this document is derived from a template,
+				     The name and the version of the template used to create the document 
 				     is stored in this variable */
 #endif /* TEMPLATES */
   
@@ -525,8 +527,6 @@ THOT_EXPORT char                    *DocumentURLs[DocumentTableLength];
 THOT_EXPORT DocumentMetaDataElement *DocumentMeta[DocumentTableLength];
 /* Type of document */
 THOT_EXPORT DocumentType             DocumentTypes[DocumentTableLength];
-/* Document is in read only mode */
-THOT_EXPORT ThotBool                 ReadOnlyDocument[DocumentTableLength];
 /* Document that shows buttons */
 THOT_EXPORT ThotBool                 SButtons[DocumentTableLength];
 /* Document that shows address */

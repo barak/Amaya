@@ -4,7 +4,7 @@
 // Author:      Vaclav Slavik
 // Modified by:
 // Created:     2004-04-11
-// RCS-ID:      $Id: libraries.h,v 1.1.1.1 2005/07/06 09:30:10 gully Exp $
+// RCS-ID:      $Id: libraries.h,v 1.1.1.2 2005/07/26 09:30:54 gully Exp $
 // Copyright:   (c) 2004 Vaclav Slavik
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -24,6 +24,10 @@
 #if defined(__VISUALC__) && defined(__WXWINCE__)
 #if (_WIN32_WCE >= 400) || defined(__POCKETPC__)
     #pragma comment(lib,"commdlg.lib")
+#endif
+
+#if (_WIN32_WCE >= 400) && !defined(wxNO_RTTI)
+    #pragma comment(lib,"ccrtrtti.lib")
 #endif
 
 #if defined(__WINCE_STANDARDSDK__)

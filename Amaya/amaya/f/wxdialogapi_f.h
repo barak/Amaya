@@ -66,7 +66,8 @@ extern ThotBool CreatePrintDlgWX ( int ref,
 extern ThotBool CreateSaveAsDlgWX ( int ref,
                                     ThotWindow parent,
                                     char* pathname,
-                                    int doc );
+                                    int doc,
+                                    ThotBool saveImgs );
 extern ThotBool CreateSaveObject ( int ref,
                                    ThotWindow parent,
                                    char* objectname );
@@ -99,6 +100,7 @@ extern ThotBool CreateHRefDlgWX ( int ref,
                                   ThotWindow parent,
                                   const char *url_list,
                                   const char *HRefValue,
+                                  Document doc,
                                   int doc_type );
 extern ThotBool CreateTextDlgWX ( int ref,
                                   int subref,
@@ -118,17 +120,15 @@ extern ThotBool CreateSpellCheckDlgWX ( int ref,
                                         int base,
                                         ThotWindow parent,
                                         int checkingArea );
-extern ThotBool CreateBgImageDlgWX ( int ref,
-                                     ThotWindow parent,
-                                     const char * urlToOpen,
-                                     int RepeatValue );
+extern ThotBool CreateStyleDlgWX ( int ref,
+                                   ThotWindow parent );
 extern ThotBool CreateListEditDlgWX ( int ref,
                                       ThotWindow parent,
                                       const char *title,
                                       const char * list_title,
                                       int nb_item,
                                       const char *items,
-                                      const char * selected_item );
+                                      const char *selected_item );
 extern ThotBool CreateEnumListDlgWX ( int ref,
                                       int subref,
                                       ThotWindow parent,
@@ -206,7 +206,8 @@ extern ThotBool CreatePrintDlgWX ( int ref,
 extern ThotBool CreateSaveAsDlgWX ( int ref,
                                       ThotWindow parent,
                                       char* pathname,
-                                      int doc );
+                                      int doc,
+                                      ThotBool saveImgs );
 extern ThotBool CreateSaveObject ( int ref,
                                      ThotWindow parent,
                                      char* objectname );
@@ -239,6 +240,7 @@ extern ThotBool CreateHRefDlgWX ( int ref,
                                     ThotWindow parent,
                                     const char *url_list,
                                     const char *HRefValue,
+                                    Document doc,
                                     int doc_type );
 extern ThotBool CreateTextDlgWX ( int ref,
                                     int subref,
@@ -258,17 +260,15 @@ extern ThotBool CreateSpellCheckDlgWX ( int ref,
                                           int base,
                                           ThotWindow parent,
                                           int checkingArea );
-extern ThotBool CreateBgImageDlgWX ( int ref,
-                                       ThotWindow parent,
-                                       const char * urlToOpen,
-                                       int RepeatValue );
+extern ThotBool CreateStyleDlgWX ( int ref,
+                                     ThotWindow parent );
 extern ThotBool CreateListEditDlgWX ( int ref,
                                         ThotWindow parent,
                                         const char *title,
                                         const char * list_title,
                                         int nb_item,
                                         const char *items,
-                                        const char * selected_item );
+                                        const char *selected_item );
 extern ThotBool CreateEnumListDlgWX ( int ref,
                                         int subref,
                                         ThotWindow parent,

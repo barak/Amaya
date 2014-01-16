@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<!-- $Id: files.bkl,v 1.1.1.1 2005/07/06 09:29:57 gully Exp $ -->
+<!-- $Id: files.bkl,v 1.1.1.2 2005/07/26 09:30:48 gully Exp $ -->
 <makefile>
 
 <!--
@@ -1626,6 +1626,7 @@ IMPORTANT: please read docs/tech/tn0016.txt before modifying this file!
     src/os2/ownerdrw.cpp
     src/os2/palette.cpp
     src/os2/pen.cpp
+    src/os2/popupwin.cpp
     src/os2/print.cpp
     src/os2/radiobox.cpp
     src/os2/radiobut.cpp

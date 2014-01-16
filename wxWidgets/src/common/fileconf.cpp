@@ -4,7 +4,7 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     07.04.98 (adapted from appconf.cpp)
-// RCS-ID:      $Id: fileconf.cpp,v 1.1.1.1 2005/07/06 09:30:49 gully Exp $
+// RCS-ID:      $Id: fileconf.cpp,v 1.1.1.2 2005/07/26 09:31:04 gully Exp $
 // Copyright:   (c) 1997 Karsten Ballüder   &  Vadim Zeitlin
 //                       Ballueder@usa.net     <zeitlin@dptmaths.ens-cachan.fr>
 // Licence:     wxWindows licence
@@ -1351,8 +1351,11 @@ wxFileConfigGroup::~wxFileConfigGroup()
 
 void wxFileConfigGroup::SetLine(wxFileConfigLineList *pLine)
 {
-    // shouldn't be called twice unless we are resetting the line
-    wxASSERT( m_pLine == 0 || pLine == 0 );
+    // for a normal (i.e. not root) group this method shouldn't be called twice
+    // unless we are resetting the line
+    wxASSERT_MSG( !m_pParent || !m_pLine || !pLine,
+                   _T("changing line for a non-root group?") );
+
     m_pLine = pLine;
 }
 

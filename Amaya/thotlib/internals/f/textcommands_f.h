@@ -40,6 +40,10 @@ extern void TtcPreviousSelWord ( Document document,
                                  View view );
 extern void TtcNextSelWord ( Document document,
                              View view );
+extern void TtcClearClipboard ( void );
+extern void DoCopyToClipboard ( Document doc,
+                                View view,
+                                ThotBool force );
 extern void TtcCopyToClipboard ( Document doc,
                                  View view );
 extern void SelectCurrentWord ( int frame,
@@ -89,6 +93,10 @@ extern void TtcPreviousSelWord ( Document document,
                                    View view );
 extern void TtcNextSelWord ( Document document,
                                View view );
+extern void TtcClearClipboard ( void );
+extern void DoCopyToClipboard ( Document doc,
+                                  View view,
+                                  ThotBool force );
 extern void TtcCopyToClipboard ( Document doc,
                                    View view );
 extern void SelectCurrentWord ( int frame,

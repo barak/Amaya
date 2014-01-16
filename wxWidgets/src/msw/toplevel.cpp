@@ -4,7 +4,7 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     24.09.01
-// RCS-ID:      $Id: toplevel.cpp,v 1.1.1.1 2005/07/06 09:30:55 gully Exp $
+// RCS-ID:      $Id: toplevel.cpp,v 1.1.1.2 2005/07/26 09:31:10 gully Exp $
 // Copyright:   (c) 2001 SciTech Software, Inc. (www.scitechsoft.com)
 // License:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -668,6 +668,14 @@ void wxTopLevelWindowMSW::Maximize(bool maximize)
         // we can't maximize the hidden frame because it shows it as well, so
         // just remember that we should do it later in this case
         m_maximizeOnShow = maximize;
+
+        // after calling Maximize() the client code expects to get the frame
+        // "real" size and doesn't want to know that, because of implementation
+        // details, the frame isn't really maximized yet but will be only once
+        // it's shown, so return our size as it will be then in this case
+
+        // we don't know which display we're on yet so use the default one
+        SetSize(wxGetClientDisplayRect().GetSize());
     }
 }
 
@@ -676,7 +684,7 @@ bool wxTopLevelWindowMSW::IsMaximized() const
 #ifdef __WXWINCE__
     return false;
 #else
-    return ::IsZoomed(GetHwnd()) != 0;
+    return m_maximizeOnShow || ::IsZoomed(GetHwnd()) != 0;
 #endif
 }
 

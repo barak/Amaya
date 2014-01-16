@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by: Ron Lee
 // Created:     01/02/97
-// RCS-ID:      $Id: object.h,v 1.1.1.1 2005/07/06 09:30:08 gully Exp $
+// RCS-ID:      $Id: object.h,v 1.1.1.2 2005/07/26 09:30:53 gully Exp $
 // Copyright:   (c) 1997 Julian Smart
 //              (c) 2001 Ron Lee <ron@debian.org>
 // Licence:     wxWindows licence
@@ -409,9 +409,9 @@ public:
     virtual ~wxObject() { UnRef(); }
 
     wxObject(const wxObject& other)
-        {
-            InitFrom(other);
-        }
+    {
+        InitFrom(other);
+    }
 
     wxObject& operator=(const wxObject& other)
     {

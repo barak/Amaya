@@ -3,13 +3,9 @@
        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=windows-1251" />
-  <meta name="GENERATOR" content="amaya 8.5, see http://www.w3.org/Amaya/" />
-  <title>&#xd0;&#xe0;&#xe1;&#xee;&#xf2;&#xe0; &#xf1;
-  &#xe1;&#xf0;&#xe0;&#xf3;&#xe7;&#xe5;&#xf0;&#xee;&#xec; &#xe8;
-  &#xf0;&#xe5;&#xe4;&#xe0;&#xea;&#xf2;&#xee;&#xf0;&#xee;&#xec; Amaya</title>
-  <style type="text/css">
-  </style>
+  <meta http-equiv="content-type" content="text/html; charset=windows-1251" />
+  <meta name="GENERATOR" content="amaya 9.3, see http://www.w3.org/Amaya/" />
+  <title>Работа с браузером и редактором Amaya</title>
   <link href="../style.css" rel="stylesheet" type="text/css" />
 </head>
 
@@ -67,28 +63,6 @@ href="../configuring_amaya/menu_preferences.html.ru#Browsing"></a>
   <li><a href="../Tables.html.ru">Редактирование таблиц</a></li>
   <li><a href="../Math.html.ru">Редактирование математики</a></li>
 </ul>
-
-<h2>Режим редактора и режим браузера</h2>
-
-<p>По умолчанию, Amaya запускается в режиме редактора. В этом режиме, вы
-можете редактировать текущий документ также легко как и просматривать его.</p>
-
-<p>Когда окно находится в режиме редактирования, на панели кнопок, активная
-кнопка выглядит как - <img src="../../images/Editor.gif"
-alt="Кнопка Редактор" />, а когда окно находится в режиме просмотра, активная
-кнопка выглядит как - <img src="../../images/Browser.gif"
-alt="Кнопка Браузер" />. В режиме просмотра, вы можете только просматривать
-документы и заполнять формы.</p>
-
-<p>Для переключения между этими режимами нажимайте кнопку <img
-src="../../images/Editor.gif" alt="Кнопка Редактор" />. Щёлкните по кнопке
-<img src="../../images/Browser.gif" alt="Кнопка Браузер" /> чтобы вернуться в
-режим редактирования. Также, вы можете выбрать этот режим, выбрав пункт
-<strong>Режим правки</strong> из меню <strong>Правка</strong>.</p>
-
-<p class="Note"><b>Примечание</b>: <br />
-Вы можете установить необходимый режим для каждого окна документа, причём
-разный.</p>
 
 <h2>Набор символов (кодировка)</h2>
 

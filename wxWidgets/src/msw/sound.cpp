@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     04/01/98
-// RCS-ID:      $Id: sound.cpp,v 1.1.1.1 2005/07/06 09:30:55 gully Exp $
+// RCS-ID:      $Id: sound.cpp,v 1.1.1.2 2005/07/26 09:31:10 gully Exp $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -126,32 +126,32 @@ bool wxSound::DoPlay(unsigned flags) const
 
 bool wxSound::Free()
 {
-  if (m_waveData)
-  {
-#ifdef __WXWINCE__
-    HGLOBAL waveData = (HGLOBAL) m_waveData;
-#else
-    HGLOBAL waveData = GlobalHandle(m_waveData);
-#endif
-
-    if (waveData)
+    if (m_waveData)
     {
-#ifndef __WXWINCE__
-        if (m_isResource)
-        ::FreeResource(waveData);
-      else
+#ifdef __WXWINCE__
+        HGLOBAL waveData = (HGLOBAL) m_waveData;
+#else
+        HGLOBAL waveData = GlobalHandle(m_waveData);
 #endif
-      {
-        GlobalUnlock(waveData);
-        GlobalFree(waveData);
-      }
 
-      m_waveData = NULL;
-      m_waveLength = 0;
-      return true;
+        if (waveData)
+        {
+#ifndef __WXWINCE__
+            if (m_isResource)
+                ::FreeResource(waveData);
+            else
+#endif
+            {
+                GlobalUnlock(waveData);
+                GlobalFree(waveData);
+            }
+
+            m_waveData = NULL;
+            m_waveLength = 0;
+            return true;
+        }
     }
-  }
-  return false;
+    return false;
 }
 
 /*static*/ void wxSound::Stop()

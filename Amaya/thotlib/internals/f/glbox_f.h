@@ -6,7 +6,21 @@
 #ifndef __CEXTRACT__
 #ifdef __STDC__
 
+extern void ComputeBoundingBox ( PtrBox box,
+                                 int frame,
+                                 int xmin,
+                                 int xmax,
+                                 int ymin,
+                                 int ymax );
+
 #else /* __STDC__ */
+
+extern void ComputeBoundingBox ( PtrBox box,
+                                   int frame,
+                                   int xmin,
+                                   int xmax,
+                                   int ymin,
+                                   int ymax );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

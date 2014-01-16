@@ -14,6 +14,7 @@ extern void SetLanguagInHTMLStack ( Language lang );
 extern ThotBool IsHtmlParsingCSS ( void );
 extern void SetHtmlParsingCSS ( ThotBool value );
 extern void SetHtmlParsingTextArea ( ThotBool value );
+extern void SetHtmlParsingScript ( ThotBool value );
 extern void SetHtmlElemLineNumber ( Element el );
 extern int IsWithinHtmlTable ( void );
 extern void InitMapping ( void );
@@ -36,6 +37,10 @@ extern void GetFallbackCharacter ( int code,
                                    Language *lang );
 extern void InitAutomaton ( void );
 extern void FreeHTMLParser ( void );
+extern void GetNextHTMLbuffer ( FILE *infile,
+                                ThotBool *endOfFile,
+                                char **buff,
+                                int *lastchar );
 extern void SetElemLineNumber ( Element el );
 extern char GetNextInputChar ( FILE *infile,
                                int *index,
@@ -44,6 +49,7 @@ extern void CheckDocHeader ( char *fileName,
                              ThotBool *xmlDec,
                              ThotBool *docType,
                              ThotBool *isXML,
+                             ThotBool *useMath,
                              ThotBool *isknown,
                              int *docProfile,
                              CHARSET *charset,
@@ -83,6 +89,7 @@ extern void SetLanguagInHTMLStack ( Language lang );
 extern ThotBool IsHtmlParsingCSS ( void );
 extern void SetHtmlParsingCSS ( ThotBool value );
 extern void SetHtmlParsingTextArea ( ThotBool value );
+extern void SetHtmlParsingScript ( ThotBool value );
 extern void SetHtmlElemLineNumber ( Element el );
 extern int IsWithinHtmlTable ( void );
 extern void InitMapping ( void );
@@ -105,6 +112,10 @@ extern void GetFallbackCharacter ( int code,
                                      Language *lang );
 extern void InitAutomaton ( void );
 extern void FreeHTMLParser ( void );
+extern void GetNextHTMLbuffer ( FILE *infile,
+                                  ThotBool *endOfFile,
+                                  char **buff,
+                                  int *lastchar );
 extern void SetElemLineNumber ( Element el );
 extern char GetNextInputChar ( FILE *infile,
                                  int *index,
@@ -113,6 +124,7 @@ extern void CheckDocHeader ( char *fileName,
                                ThotBool *xmlDec,
                                ThotBool *docType,
                                ThotBool *isXML,
+                               ThotBool *useMath,
                                ThotBool *isknown,
                                int *docProfile,
                                CHARSET *charset,

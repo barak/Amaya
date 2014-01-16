@@ -5,29 +5,79 @@
 
 TRANSLATION Template;
 
+LINELENGTH 78;
+
 BUFFERS
+   ElemPrefixBuffer (variable);
    AttrPrefixBuffer (variable);
 
+CONST
+   DoubleQuote = '"';
+   CloseTagNL = '>\12';
+   CloseEmptyTagNL = '/>\12';
+   tagend = '>\12';   
+
 VAR
+   SOT : '<' ElemPrefixBuffer;	{ Start of opening tag }
+   SCT : '</' ElemPrefixBuffer;	{ Start of closing tag }
    SAN : ' ' AttrPrefixBuffer;  { Start of attribute name }
+   SUA : '';                    { Start of unknown attribute }
 
 RULES
-
    Template: begin
-        end;
+  	Use HTMLTX for HTML;
+    Use XLinkT for XLink;
+  	Use SVGT for SVG;
+    Use MathMLT for MathML;
+   end;
+
+  FREE_STRUCT:
+    begin
+    create SOT;
+    create 'free_struct';
+    create Attributes;
+    create tagend;
+    indent +2;
+    indent -2 after;
+    create SCT after;
+    create 'free_struct>\12' after;
+  end;
+
+  FREE_CONTENT:
+    begin
+    create SOT;
+    create 'free_content';
+    create Attributes;
+    create tagend;
+    indent +2;
+    indent -2 after;
+    create SCT after;
+    create 'free_content>\12' after;
+  end;
 
 ATTRIBUTES
 
-      Unknown_attribute:
-	begin
+  xmlid:
+	  begin
+	    create SAN;
+	    create 'xml:id="';
+	    create xmlid;
+	    create '"';
+	  end;
+
+
+  Unknown_attribute:
+	  begin
         if Template begin
            remove;
            end;
         if NOT Template begin
            create SAN;
 	   create Unknown_attribute;
-	   end;
-	end;
+	  end;
+  end;  
+
+
 
 {****
    role = TEXT;

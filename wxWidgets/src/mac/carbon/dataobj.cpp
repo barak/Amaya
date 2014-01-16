@@ -4,7 +4,7 @@
 // Author:      Stefan Csomor
 // Modified by:
 // Created:     10/21/99
-// RCS-ID:      $Id: dataobj.cpp,v 1.1.1.1 2005/07/06 09:30:53 gully Exp $
+// RCS-ID:      $Id: dataobj.cpp,v 1.1.1.2 2005/07/26 09:31:08 gully Exp $
 // Copyright:   (c) 1999 Stefan Csomor
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -37,7 +37,9 @@
 #include "wx/image.h"
 #include "wx/metafile.h"
 #include "wx/mac/private.h"
+#ifndef __DARWIN__
 #include <Scrap.h>
+#endif
 
 // ----------------------------------------------------------------------------
 // functions

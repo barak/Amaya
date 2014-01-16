@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     22/6/2000
-// RCS-ID:      $Id: quantize.cpp,v 1.1.1.1 2005/07/06 09:30:49 gully Exp $
+// RCS-ID:      $Id: quantize.cpp,v 1.1.1.2 2005/07/26 09:31:04 gully Exp $
 // Copyright:   (c) Thomas G. Lane, Vaclav Slavik, Julian Smart
 // Licence:     wxWindows licence + JPEG library licence
 /////////////////////////////////////////////////////////////////////////////
@@ -77,7 +77,7 @@
 
 typedef unsigned short UINT16;
 typedef signed short INT16;
-#ifndef __WATCOMC__
+#if !(defined(__WATCOMC__) && defined(__WXMSW__))
 typedef signed int INT32;
 #endif
 
@@ -1656,4 +1656,3 @@ bool wxQuantize::Quantize(const wxImage& src,
 
 #endif
     // wxUSE_IMAGE
-

@@ -9,10 +9,10 @@ DEFPRES TemplateP;
 
 ATTR
    { No global attributes for protected areas }
-
+   xmlid = Text;		{ xml:id }
+   
    { generic attributes for internal use }
    Unknown_attribute = TEXT;	{ to store an unknown attribute }
-   Ghost_restruct = TEXT;	{ to help structure transformation }
 
 CONST
 
@@ -20,14 +20,17 @@ CONST
 
 STRUCT
 
-  Template { No attribute for the root } =
+  Template { The root has no attribute } =
 	CASE OF
-		free_struct = ANY ;
-		free_content = ANY ;
+    FREE_STRUCT = ANY ;
+		FREE_CONTENT = ANY ;
 	END; 
 	
 EXCEPT
 
     Unknown_attribute: Invisible;
+    FREE_STRUCT: NoCreate;
+		FREE_CONTENT: NoCreate;
+    xmlid: CssId;
 
 END

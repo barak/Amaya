@@ -9,57 +9,57 @@
 7 T&yyli
 8 &Asetukset
 9 Mer&kinnät
-10 **&Bookmarks
-11 Yht&eistyö
-12 &Ohje
-13 Uusi
-14 Uusi XHTML dokumentti...
-15 Uusi XHTML 1.1 dokumentti...
-16 Uusi XHTML 1.0 Transitional document...
-17 Uusi XHTML 1.0 Strict document...
-18 Uusi XHTML 1.0 Basic dokumentti...
-19 Uusi MathML dokumentti...
-20 Uusi SVG dokumentti...
-21 Uusi CSS tyylitiedosto...
-22 Valmiista mallista
-23 Avaa dokumentti...
-24 Avaa uudessa ikkunassa...
-25 Päivitä dokumentti
-26 Takaisin
-27 Eteenpäin
-28 Tallenna
-29 Tallenna nimellä...
-30 Päivitä
-31 Muuta tyyppi
-32 Poista tyyppi
-33 **&Add a doctype
-34 Aseta tyypiksi XHTML 1.1
-35 **Change to XHTML 1.0 &Transitional
-36 Aseta tyypiksi XHTML 1.0 Strict
-37 Aseta tyypiksi XHTML 1.0 Basic
-38 Aseta tyypiksi HTML 4.01 Transitional
-39 Aseta tyypiksi HTML 4.01 Strict
-40 **Force a Character Coding
-41 Unicode (UTF-8)
-42 Western (ISO-8859-1)
-43 Western (ISO-8859-15)
-44 Western (Windows-1252)
-45 Central Europe (ISO-8859-2)
-46 Central Europe (Windows-1250)
-47 South Europe (ISO-8859-3)
-48 Baltic (ISO-8859-4)
-49 Baltic (Windows-1257)
-50 Cyrillic (ISO-8859-5)
-51 Cyrillic (Windows-1251)
-52 Cyrillic (KOI8-R)
-53 Arabic (ISO-8859-6)
-54 Arabic (Windows-1256)
-55 Greek (ISO-8859-7)
-56 Greek (Windows-1253)
-57 Hebrew (ISO-8859-8)
-58 Hebrew (Windows-1255)
-59 Turkish (ISO-8859-9)
-60 Turkish (Windows-125)
+10 Yht&eistyö
+11 &Ohje
+12 Uusi
+13 Uusi XHTML dokumentti...
+14 Uusi XHTML 1.1 dokumentti...
+15 Uusi XHTML 1.0 Transitional document...
+16 Uusi XHTML 1.0 Strict document...
+17 Uusi XHTML 1.0 Basic dokumentti...
+18 Uusi MathML dokumentti...
+19 Uusi SVG dokumentti...
+20 Uusi CSS tyylitiedosto...
+21 Valmiista mallista
+22 Avaa dokumentti...
+23 Avaa uudessa ikkunassa...
+24 Päivitä dokumentti
+25 Takaisin
+26 Eteenpäin
+27 Tallenna
+28 Tallenna nimellä...
+29 Päivitä
+30 Muuta tyyppi
+31 Poista tyyppi
+32 **&Add a doctype
+33 Aseta tyypiksi XHTML 1.1
+34 **Change to XHTML 1.0 &Transitional
+35 Aseta tyypiksi XHTML 1.0 Strict
+36 Aseta tyypiksi XHTML 1.0 Basic
+37 Aseta tyypiksi HTML 4.01 Transitional
+38 Aseta tyypiksi HTML 4.01 Strict
+39 **Force a Character Coding
+40 Unicode (UTF-8)
+41 Western (ISO-8859-1)
+42 Western (ISO-8859-15)
+43 Western (Windows-1252)
+44 Central Europe (ISO-8859-2)
+45 Central Europe (Windows-1250)
+46 South Europe (ISO-8859-3)
+47 Baltic (ISO-8859-4)
+48 Baltic (Windows-1257)
+49 Cyrillic (ISO-8859-5)
+50 Cyrillic (Windows-1251)
+51 Cyrillic (KOI8-R)
+52 Arabic (ISO-8859-6)
+53 Arabic (Windows-1256)
+54 Greek (ISO-8859-7)
+55 Greek (Windows-1253)
+56 Hebrew (ISO-8859-8)
+57 Hebrew (Windows-1255)
+58 Turkish (ISO-8859-9)
+59 Turkish (Windows-125)
+60 Chinese (GB-2312)
 61 Japanese (ISO-2022-JP)
 62 Japanese (EUC-JP)
 63 Japanese (Shift-JIS)
@@ -244,88 +244,86 @@
 242 **Add the selected graphics in the library
 243 Merkintä
 244 **XML elements...
-245 Linkki edelliseen kohteeseen
-246 Luo tai muuta linkki...
-247 Luo kohde
-248 Poista linkki
-249 Lisää/Poista elementti...
-250 **Show &tools
-251 **&Fullscreen
-252 Näytä painikerivi
-253 Näytä osoite
-254 Näytä kartta alueet
-255 Näytä kohteet
-256 Lähennä
-257 Loitonna
-258 **Show &formatted view
-259 Näytä rakenne
-260 Näytä lähdekoodi
-261 Näytä linkit
-262 Show alternate
-263 Näytä sisällysluettelo
-264 Aikajana
-265 **Split view horizontally
-266 **Split view vertically
-267 Fontin tyyli...
-268 Värit...
-269 Muoto...
-270 Taustakuva...
-271 Tee sääntö...
-272 Käytä luokkaa...
-273 **Show applied style...
-274 Linkki...
-275 Avaa...
-276 Poista käytöstä...
-277 Ota käyttöön...
-278 Poista...
-279 Valinnan lisätiedot
-280 Dokumentin lisätiedot
-281 Siirrä valintaan
-282 Tallenna valinta XPointer:iin
-283 Siirrä XPointer:iin
-284 Vastaa merkintään
-285 Lähetä palvelimelle
-286 Poista
-287 Lataa
-288 Mukauta tiedustelu...
-289 Paikalliset rajoitukset...
-290 **View Bookmarks
-291 **New Bookmark
-292 **New Topic
-293 **New Separator
-294 **Move Item
-295 Lukitse objekti...
-296 Vapauta objekti...
-297 Näytä objektin ominaisuudet...
-298 Kopioi lukitustiedot...
-299 Lukittu?
-300 Tietoja Amayasta
-301 Lisätietoa Amayasta W3C:ssä
-302 Hakemisto
-303 Selaaminen
-304 Näkymät
-305 Valinta
-306 Dokumentti
-307 Elementtien luominen
-308 Asetukset
-309 Fontit
-310 Rakenteen muunto
-311 Linkit
-312 Taulukot
-313 Kuvakartat
-314 Matematiikka
-315 Grafiikka
-316 XML-tuki
-317 Tyylitiedostot (CSS)
-318 Etsiminen
-319 Oikeinkirjoituksen tarkastus
-320 Julkaisu
-321 WebDAV
-322 Tulostus
-323 Numerointi
-324 Koosteen valmistus
-325 Merkinnät
-326 **&Bookmarks
-327 Asetuksien määritys
-328 Näppäinkomennot
-329 Amayan helppokäyttötoiminnot
+245 **Copy location
+246 **Paste location
+247 **Copy link
+248 Linkki edelliseen kohteeseen
+249 Luo tai muuta linkki...
+250 Luo kohde
+251 Poista linkki
+252 Lisää/Poista elementti...
+253 **Show &tools
+254 **&Fullscreen
+255 Näytä painikerivi
+256 Näytä osoite
+257 Näytä kartta alueet
+258 Näytä kohteet
+259 Lähennä
+260 Loitonna
+261 **Show &formatted view
+262 Näytä rakenne
+263 Näytä lähdekoodi
+264 Näytä linkit
+265 Show alternate
+266 Näytä sisällysluettelo
+267 Aikajana
+268 **Split view horizontally
+269 **Split view vertically
+270 Fontin tyyli...
+271 Värit...
+272 **CSS &Style...
+273 Muoto...
+274 Taustakuva...
+275 Tee sääntö...
+276 Käytä luokkaa...
+277 **Show applied style...
+278 Linkki...
+279 Avaa...
+280 Poista käytöstä...
+281 Ota käyttöön...
+282 Poista...
+283 Valinnan lisätiedot
+284 Dokumentin lisätiedot
+285 Siirrä valintaan
+286 Tallenna valinta XPointer:iin
+287 Siirrä XPointer:iin
+288 Vastaa merkintään
+289 Lähetä palvelimelle
+290 Poista
+291 Lataa
+292 Mukauta tiedustelu...
+293 Paikalliset rajoitukset...
+294 Lukitse objekti...
+295 Vapauta objekti...
+296 Näytä objektin ominaisuudet...
+297 Kopioi lukitustiedot...
+298 Lukittu?
+299 Tietoja Amayasta
+300 Lisätietoa Amayasta W3C:ssä
+301 Hakemisto
+302 Selaaminen
+303 Näkymät
+304 Valinta
+305 Dokumentti
+306 Elementtien luominen
+307 Asetukset
+308 Fontit
+309 Rakenteen muunto
+310 Linkit
+311 Taulukot
+312 Kuvakartat
+313 Matematiikka
+314 Grafiikka
+315 XML-tuki
+316 Tyylitiedostot (CSS)
+317 Etsiminen
+318 Oikeinkirjoituksen tarkastus
+319 Julkaisu
+320 WebDAV
+321 Tulostus
+322 Numerointi
+323 Koosteen valmistus
+324 Merkinnät
+325 Asetuksien määritys
+326 Näppäinkomennot
+327 Amayan helppokäyttötoiminnot

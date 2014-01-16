@@ -13,6 +13,7 @@ extern void XmlParseError ( ErrorType type,
 extern ThotBool IsXmlParsingCSS ( void );
 extern void SetXmlParsingCSS ( ThotBool value );
 extern void SetParsingTextArea ( ThotBool value );
+extern void SetParsingScript ( ThotBool value );
 extern void SetLanguagInXmlStack ( Language lang );
 extern int IsWithinXmlTable ( void );
 extern void SubWithinTable ( void );
@@ -37,7 +38,7 @@ extern ThotBool ParseXmlBuffer ( char *xmlBuffer,
                                  Language lang,
                                  char *typeName );
 extern ThotBool ParseIncludedXml ( FILE *infile,
-                                   char *infileBuffer,
+                                   char **infileBuffer,
                                    int infileBufferLength,
                                    ThotBool *infileEnd,
                                    ThotBool *infileNotToRead,
@@ -59,6 +60,7 @@ extern void StartXmlParser ( Document doc,
                              char *pathURL,
                              ThotBool withDec,
                              ThotBool withDoctype,
+                             ThotBool useMath,
                              ThotBool externalDoc );
 
 #else /* __STDC__ */
@@ -70,6 +72,7 @@ extern void XmlParseError ( ErrorType type,
 extern ThotBool IsXmlParsingCSS ( void );
 extern void SetXmlParsingCSS ( ThotBool value );
 extern void SetParsingTextArea ( ThotBool value );
+extern void SetParsingScript ( ThotBool value );
 extern void SetLanguagInXmlStack ( Language lang );
 extern int IsWithinXmlTable ( void );
 extern void SubWithinTable ( void );
@@ -94,7 +97,7 @@ extern ThotBool ParseXmlBuffer ( char *xmlBuffer,
                                    Language lang,
                                    char *typeName );
 extern ThotBool ParseIncludedXml ( FILE *infile,
-                                     char *infileBuffer,
+                                     char **infileBuffer,
                                      int infileBufferLength,
                                      ThotBool *infileEnd,
                                      ThotBool *infileNotToRead,
@@ -116,6 +119,7 @@ extern void StartXmlParser ( Document doc,
                                char *pathURL,
                                ThotBool withDec,
                                ThotBool withDoctype,
+                               ThotBool useMath,
                                ThotBool externalDoc );
 
 #endif /* __STDC__ */

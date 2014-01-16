@@ -4,7 +4,7 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     19.08.03
-// RCS-ID:      $Id: listbkg.cpp,v 1.1.1.1 2005/07/06 09:30:50 gully Exp $
+// RCS-ID:      $Id: listbkg.cpp,v 1.1.1.2 2005/07/26 09:31:05 gully Exp $
 // Copyright:   (c) 2003 Vadim Zeitlin <vadim@wxwindows.org>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -241,7 +241,8 @@ void wxListbook::OnSize(wxSizeEvent& event)
     // vertical and horizontal scrollbar (with one of them being added because
     // the other one is not accounted for in client size computations)
     m_list->Arrange();
-    m_list->Move(posList.x, posList.y);
+    if ( m_list->GetPosition() != posList )
+        m_list->Move(posList.x, posList.y);
     m_list->SetClientSize(sizeList.x, sizeList.y);
 
 #if wxUSE_LINE_IN_LISTBOOK

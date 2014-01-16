@@ -40,22 +40,16 @@
 
 IMPLEMENT_DYNAMIC_CLASS(AmayaSimpleWindow, AmayaWindow)
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaSimpleWindow
  *      Method:  AmayaSimpleWindow
  * Description:  create a new AmayaSimpleWindow
- *--------------------------------------------------------------------------------------
- */
-AmayaSimpleWindow::AmayaSimpleWindow (  int             window_id
-					,wxWindow *     p_parent_window
-					,const wxPoint& pos
-					,const wxSize&  size
-					) : 
+  -----------------------------------------------------------------------*/
+  AmayaSimpleWindow::AmayaSimpleWindow ( int window_id, wxWindow *p_parent_window,
+                                         const wxPoint& pos,const wxSize&  size) : 
   AmayaWindow( window_id, p_parent_window, pos, size, WXAMAYAWINDOW_SIMPLE, wxDEFAULT_FRAME_STYLE | wxFRAME_FLOAT_ON_PARENT ),
   m_pFrame( NULL )
 {
-
   // Creation of the top sizer to contain simple frame
   m_pTopSizer = new wxBoxSizer ( wxVERTICAL );
   SetSizer(m_pTopSizer);
@@ -67,31 +61,25 @@ AmayaSimpleWindow::AmayaSimpleWindow (  int             window_id
 #endif /* 0 */
 
   SetAutoLayout(TRUE);
-
   CenterOnParent();
-
   // NOTICE : the menu bar is created for each AmayaFrame, 
   //          the menu bar is not managed by the window
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaSimpleWindow
  *      Method:  ~AmayaSimpleWindow
  * Description:  destructor
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaSimpleWindow::~AmayaSimpleWindow()
 {
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaSimpleWindow
  *      Method:  OnCloseButton
  * Description:  just close the window
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaSimpleWindow::OnCloseButton(wxCommandEvent& event)
 {
   bool dummy = false;
@@ -100,13 +88,11 @@ void AmayaSimpleWindow::OnCloseButton(wxCommandEvent& event)
     DoClose(dummy);
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaSimpleWindow
  *      Method:  DoClose
  * Description:  just close the window
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaSimpleWindow::DoClose(bool& veto)
 {
   // do nothing if the windows is allready closing itself
@@ -145,25 +131,21 @@ void AmayaSimpleWindow::DoClose(bool& veto)
   m_IsClosing = FALSE; 
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaSimpleWindow
  *      Method:  GetActiveFrame
  * Description:  return the current selected frame
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaFrame * AmayaSimpleWindow::GetActiveFrame() const
 {
   return m_pFrame;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaSimpleWindow
  *      Method:  AttachFrame
  * Description:  for a SIMPLE window type, attach directly a frame to the window
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 bool AmayaSimpleWindow::AttachFrame( AmayaFrame * p_frame )
 {
   wxLogDebug( _T("AmayaSimpleWindow::AttachFrame window_id=%d"), m_WindowId );
@@ -193,13 +175,11 @@ bool AmayaSimpleWindow::AttachFrame( AmayaFrame * p_frame )
   return true;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaSimpleWindow
  *      Method:  DetachFrame
  * Description:  for a SIMPLE window type, detach directly a frame from the window
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaFrame * AmayaSimpleWindow::DetachFrame()
 {
   wxLogDebug( _T("AmayaSimpleWindow::DetachFrame window_id=%d"), m_WindowId );
@@ -221,13 +201,11 @@ AmayaFrame * AmayaSimpleWindow::DetachFrame()
   return p_frame;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaSimpleWindow
  *      Method:  CleanUp
  * Description:  check that this is not an empty window
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaSimpleWindow::CleanUp()
 {
   bool dummy = false;

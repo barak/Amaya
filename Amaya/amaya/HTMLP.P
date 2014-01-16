@@ -21,7 +21,7 @@ PRINT
 #endif
 
 #define STRUCT_INDENT 1.5
-#define TAG_FONTSIZE 12 pt
+#define TAG_FONTSIZE 11 pt
 #define DOC_FONTSIZE 12 pt
 #define TAG_Weight Bold
 #define TAG_Visibility 7
@@ -112,9 +112,9 @@ DEFAULT
 	Indent: Enclosing =;
 	Depth: Enclosing =;
 	FillPattern: nopattern;
-        Opacity: Enclosing =;
-        FillOpacity: Enclosing =;
-        StrokeOpacity: Enclosing =;
+  Opacity: Enclosing =;
+  FillOpacity: Enclosing =;
+  StrokeOpacity: Enclosing =;
 	ListStyleType: Enclosing =;
 	END;
 
@@ -197,7 +197,7 @@ BOXES
 #endif
 
  ElementName: BEGIN
-        Content: (ElemName);
+  Content: (ElemName);
 	Visibility: 0;
 	IN Structure_view BEGIN
 		Size: TAG_FONTSIZE;
@@ -1681,18 +1681,17 @@ RULES
 	Weight: Normal;
 	LineWeight: 0;
 	Width: Enclosing . Width;
+	Size: DOC_FONTSIZE;
 #ifdef PAGE
-	Size: 11 pt;
 	{HorizPos: VMiddle = Enclosing.VMiddle;}
 	Page(ThePage);
 #else
 	Height: Enclosing . Height min;
-	Size: DOC_FONTSIZE;
 #endif
 	HorizPos: Left = Enclosing . Left;
 	VertPos: Top = Enclosing . Top;
 	IN Structure_view BEGIN
-		Size: DOC_FONTSIZE;
+    Size: TAG_FONTSIZE;
 		Width: Enclosing . Width;
 		Height: Enclosed . Height;
 		HorizPos: Left = Enclosing . Left;
@@ -1700,6 +1699,7 @@ RULES
 		Font: Helvetica;
 		END;
 	IN Links_view BEGIN
+    Size: TAG_FONTSIZE;
 #ifdef PAGE
 		Page(LinksPage);
 #endif
@@ -1744,8 +1744,8 @@ RULES
 	CreateBefore(ElementName);
 	CreateWith(VerticalLine);
 	if not within NOFRAMES BEGIN
-	        MarginLeft: 8 px;
-	        MarginRight: 8 px;
+	  MarginLeft: 8 px;
+	  MarginRight: 8 px;
 		MarginTop: 8 px;
 		MarginBottom: 8 px;
 		VertPos: Top = Previous AnyElem . Bottom;
@@ -2712,6 +2712,7 @@ RULES
  Span:	BEGIN
 	CreateBefore(ElementName);
 	CreateWith(VerticalLine);
+	Width: auto;
 	HorizPos: Left = Previous . Right;
 	VertPos: HRef = Previous . HRef;
 	IN Structure_view BEGIN
@@ -2779,6 +2780,8 @@ RULES
 	Width: auto{Enclosing . Width};
 	VertPos: Top = Previous not MAP . Bottom;
 	IN Structure_view BEGIN
+		Width: Enclosing . Width;
+		HorizPos: Left = Enclosing . Left;
 		VertPos: Top = Previous . Bottom;
 		NoLine;
 		END;
@@ -3198,7 +3201,7 @@ RULES
  Text_Area: BEGIN
 	CreateBefore(ElementName);
 	CreateWith(VerticalLine);
-        CreateBefore(NEW_LINE);
+  CreateBefore(NEW_LINE);
 	CreateAfter(NEW_LINE);
 	BorderTopWidth: 1 px;
 	BorderLeftWidth: 1 px;
@@ -3300,8 +3303,8 @@ RULES
 	Width: Enclosed . Width;
 	{VertPos: Top = Enclosing . Top - 0.6;}
 	HorizPos: Left = Enclosing . Left;
-        PaddingLeft: 0.3;
-        PaddingRight: 0.3;
+  PaddingLeft: 0.3;
+  PaddingRight: 0.3;
 	MarginTop: -0.5;
 	MarginBottom: 0.5;
 	Background: Enclosing =;
@@ -3313,16 +3316,16 @@ RULES
 		HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
 		Width: Enclosing . Width - STRUCT_INDENT;
 		VertPos: Top = Previous . Bottom;
-        	PaddingLeft: 0;
-        	PaddingRight: 0;
+    PaddingLeft: 0;
+    PaddingRight: 0;
 		MarginTop: 0;
 		MarginBottom: 0;
 		NoLine;
 		END;
 	IN Alternate_view BEGIN
 		VertPos: Top = Enclosing . Top;
-       		PaddingLeft: 0;
-        	PaddingRight: 0;
+    PaddingLeft: 0;
+    PaddingRight: 0;
 		MarginTop: 0;
 		MarginBottom: 0.8;
 		END;
@@ -3342,8 +3345,9 @@ RULES
 	FillPattern: nopattern;
         Foreground: Black;
 	IN Structure_view BEGIN
-		HorizPos: Left = Enclosing . Left;
-		Width: Enclosing . Width;
+		HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
+		Width: Enclosing . Width - STRUCT_INDENT;
+		VertPos: Top = Previous . Bottom;
 		END;
 	IN Alternate_view BEGIN
 		IF within Text_Area
@@ -3843,14 +3847,16 @@ RULES
 	END;
 
  PICTURE_UNIT: BEGIN
+	if not Immediately within Object and not IsInput
+		CreateBefore(ElementName);
+	if within Object_Content
+		CreateBefore(ElementName);
 	if ALT
-	        CreateBefore(IMG_ALT);
+	  CreateBefore(IMG_ALT);
 	if IsInput BEGIN
 		CreateBefore(IMG_in_S);
 		CreateBefore(IMG_type_image);
-	        END;
-	if not Immediately within Object and not IsInput
-		CreateBefore(ElementName);
+	END;
 	LineBreak: No;
 	PageBreak: No;
 	HorizRef: * . Bottom;
@@ -3987,14 +3993,23 @@ RULES
 		Visibility: 0;
 	END;
 
-
  Anchor: BEGIN
 	CreateBefore(ElementName);
 	CreateWith(VerticalLine);
-	Width: auto;
 #ifdef PAGE
 	CreateAfter(LinkPageNumber);
 #endif
+	Width: auto;
+        if within Superscript
+	   BEGIN
+	   VertPos: HRef = Previous . HRef;
+	   HorizPos: Left = Previous . Right;
+	   END;
+        if within Subscript
+	   BEGIN
+	   VertPos: HRef = Previous . HRef;
+	   HorizPos: Left = Previous . Right;
+	   END;
 	IN Structure_view BEGIN
 		Foreground: Enclosing =;
 		Underline: Enclosing =;
@@ -4080,9 +4095,11 @@ RULES
 	CreateAfter(MAP_dummy);
 	Depth: Enclosing + 8;
 	LineBreak: No;
-	Visibility: 0;
+	Visibility: 10;
+  Height: 0;
 	Gather: Yes;
 	InLine: No;
+  VertOverflow: Yes;
 	IN Structure_view BEGIN
 		Visibility: Enclosing =;
 	        Gather: No;
@@ -4090,7 +4107,9 @@ RULES
 		Width: Enclosing . Width - STRUCT_INDENT;
 		HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
 		VertPos: Top = Previous . Bottom;
+		Height: Enclosed . Height;
 		Depth: 0;
+    VertOverflow: No;
 		END;
 	IN Alternate_view BEGIN
 		Visibility: 10;
@@ -4101,6 +4120,7 @@ RULES
 		HorizPos: Left = Enclosing . Left;
 		Depth: 0;
 		Line;
+    VertOverflow: No;
 		END;
 	END;
 
@@ -4183,6 +4203,14 @@ RULES
 	BEGIN
 	CreateBefore(ElementName);
 	CreateWith(VerticalLine);
+	BorderTopColor: Grey;
+	BorderLeftColor: Grey;
+	BorderBottomColor: DarkGrey1;
+	BorderRightColor: DarkGrey1;
+	BorderTopStyle: Solid;
+	BorderLeftStyle: Solid;
+	BorderBottomStyle: Solid;
+	BorderRightStyle: Solid;
 	Gather: Yes;
 	LineBreak: No;
 	Adjust: Left;
@@ -4219,6 +4247,8 @@ RULES
 	BEGIN
 	CreateBefore(ElementName);
 	CreateWith(VerticalLine);
+  Foreground: GrandFather =;
+	Background: GrandFather =;
 	Line;
 #ifdef PAGE
 	PageBreak: No;
@@ -4311,6 +4341,10 @@ RULES
 	BEGIN
 	CreateBefore(ElementName);
 	CreateWith(VerticalLine);
+	BorderTopColor: Grey;
+	BorderLeftColor: Grey;
+	BorderBottomColor: DarkGrey1;
+	BorderRightColor: DarkGrey1;
 	BorderTopStyle: Solid;
 	BorderLeftStyle: Solid;
 	BorderRightStyle: Solid;
@@ -4338,7 +4372,11 @@ RULES
 #ifdef PAGE
 	PageBreak: No;
 #endif
-	VertPos: Top = Previous . Bottom + 0.1;
+	VertPos: Top = Previous . Bottom;
+	BorderTopColor: Grey;
+	BorderLeftColor: Grey;
+	BorderBottomColor: DarkGrey1;
+	BorderRightColor: DarkGrey1;
 	BorderTopStyle: Solid;
 	BorderLeftStyle: Solid;
 	BorderRightStyle: Solid;
@@ -4360,7 +4398,7 @@ RULES
 #ifdef PAGE
 	PageBreak: Yes;
 #endif
-	VertPos: Top = Previous . Bottom + 0.1;
+	VertPos: Top = Previous . Bottom;
 	BorderTopStyle: Solid;
 	BorderLeftStyle: Solid;
 	BorderRightStyle: Solid;
@@ -4384,7 +4422,7 @@ RULES
 #ifdef PAGE
 	PageBreak: Yes;
 #endif
-	VertPos: Top = Previous . Bottom + 0.1;
+	VertPos: Top = Previous . Bottom;
 	BorderTopStyle: Solid;
 	BorderLeftStyle: Solid;
 	BorderRightStyle: Solid;
@@ -4433,10 +4471,14 @@ RULES
 	HorizPos: Left = Previous Table_cell . Right;
 	Width: Enclosed . Width {20 px};
 	Adjust: Enclosing =;
-	PaddingTop: 0.2;
-	PaddingRight: 0.2;
-	PaddingBottom: 0.2;
-	PaddingLeft: 0.2;
+	PaddingTop: 1 px;
+	PaddingRight: 1 px;
+	PaddingBottom: 1 px;
+	PaddingLeft: 1 px;
+	BorderTopColor: Grey;
+	BorderLeftColor: Grey;
+	BorderBottomColor: DarkGrey1;
+	BorderRightColor: DarkGrey1;
 	BorderTopStyle: Solid;
 	BorderLeftStyle: Solid;
 	BorderRightStyle: Solid;
@@ -4468,15 +4510,20 @@ RULES
 	CreateWith(VerticalLine);
 	if not RowExt
 	  CreateBefore(CellFrame);
-	VertPos : Top = Enclosing . Top;
+	{ VertPos : Top = Enclosing . Top; }
+	VertPos : HMiddle = Previous AnyBox . HMiddle;
 	HorizPos: Left = Previous Table_cell . Right;
 	Width: Enclosed . Width{20 px};
 	Weight: Bold;
 	Adjust: VMiddle;
-	PaddingTop: 0.2;
-	PaddingLeft: 0.2;
-	PaddingBottom: 0.2;
-	PaddingRight: 0.2;
+	PaddingTop: 1 px;
+	PaddingLeft: 1 px;
+	PaddingBottom: 1 px;
+	PaddingRight: 1 px;
+	BorderTopColor: Grey;
+	BorderLeftColor: Grey;
+	BorderBottomColor: DarkGrey1;
+	BorderRightColor: DarkGrey1;
 	BorderTopStyle: Solid;
 	BorderLeftStyle: Solid;
 	BorderRightStyle: Solid;
@@ -4781,7 +4828,7 @@ RULES
 	VertPos: Top = Previous . Bottom;
 	HorizRef: * . Bottom;
 	Width: 10 cm;
-	Line;
+	Height: Enclosed . Height;
 	LineBreak: No;
 	MarginLeft: 3 px;
 	MarginRight: 3 px;
@@ -4793,10 +4840,10 @@ RULES
 	BorderLeftWidth: 1 px;
 	BorderBottomWidth: 1 px;
 	BorderRightWidth: 1 px;
-	BorderTopColor: Black;
-	BorderLeftColor: Black;
-	BorderBottomColor: Grey;
-	BorderRightColor: Grey;
+	BorderTopColor: Grey;
+	BorderLeftColor: Grey;
+	BorderBottomColor: DarkGrey1;
+	BorderRightColor: DarkGrey1;
 	BorderTopStyle: Solid;
 	BorderLeftStyle: Solid;
 	BorderBottomStyle: Solid;
@@ -5051,9 +5098,9 @@ ATTRIBUTES
  NoImages(PICTURE_UNIT*):
 	BEGIN
 	Visibility: 1;
-	if ALT and not within Object and not within Embed_
-            CreateBefore(SHOW_ALT);
-	if Not ALT and not within Object and not within Embed_
+	if ALT and not Immediately within Object and not within Embed_
+      CreateBefore(SHOW_ALT);
+	if Not ALT and not Immediately within Object and not within Embed_
 	    CreateBefore(SHOW_IMG);
 	IN Alternate_view
 		Visibility: Enclosing =;
@@ -5094,38 +5141,38 @@ ATTRIBUTES
 	END;
  NoObjects(Object_Content):
 	BEGIN
- 	  if not within HEAD
+ 	if not within HEAD
 	    Visibility: Enclosing =;
 	END;
  NoObjects(Iframe_Src_Content):
 	BEGIN
- 	  if not within HEAD
+ 	if not within HEAD
 	    Visibility: 0;
 	END;
  NoObjects(Iframe_Content):
 	BEGIN
- 	  if not within HEAD
+ 	if not within HEAD
 	    Visibility: Enclosing =;
 	END;
 
  Language:
 	BEGIN
-        IF Root and RealLang
+  IF Root and RealLang
 	    BEGIN
-            CreateBefore(AttrName);
+      CreateBefore(AttrName);
 	    CreateBefore(AttrValue);
 	    END;
         IF not Root
 	    BEGIN
-            CreateBefore(AttrName);
+      CreateBefore(AttrName);
 	    CreateBefore(AttrValue);
 	    END;
 	END;
 
  HREF_:
 	BEGIN
-        CreateBefore(AttrName);
-        CreateBefore(AttrValue);
+  CreateBefore(AttrName);
+  CreateBefore(AttrValue);
 	if Anchor
 	   BEGIN
 	   CreateLast(ATTR_HREF_LINKS_VIEW);
@@ -5133,20 +5180,20 @@ ATTRIBUTES
 #ifdef PAGE
 	   Underline: Enclosing =;
 #else
-           Underline: Underlined;
+     Underline: Underlined;
 #endif
 	   END;
-        if AREA
+  if AREA
 	   BEGIN
 	   CreateLast(ATTR_HREF_LINKS_VIEW);
 	   CreateLast(VALUE_HREF_LINKS_VIEW);
 	   END;
 #ifdef LINK_NUMBER
-        if Anchor and not InternalLink
-           BEGIN
-           CreateFirst(AnchorNumInLinkView);
-           CreateAfter(AnchorNumInFormattedView);
-           END;
+  if Anchor and not InternalLink
+     BEGIN
+     CreateFirst(AnchorNumInLinkView);
+     CreateAfter(AnchorNumInFormattedView);
+     END;
 #endif
 #ifdef PAGE
 	IN Links_view
@@ -5158,7 +5205,7 @@ ATTRIBUTES
 	IN Links_view BEGIN
 		Foreground: ATTRVALUE_Color;
 		if Anchor
-                   Underline: Enclosing =;
+       Underline: Enclosing =;
 		END;
 #endif
 	IN Structure_view BEGIN
@@ -5519,7 +5566,7 @@ ATTRIBUTES
 	BEGIN
 	if Data_cell
 	   Height: IntHeightPxl px min;
-        if Heading_cell
+  if Heading_cell
 	   Height: IntHeightPxl px min;
 	if AREA
 	   Height: IntHeightPxl px UserSpecified;
@@ -6251,14 +6298,14 @@ ATTRIBUTES
 	if Text_Area
 	   Width: Columns ex;
 	IN Structure_view
-	    BEGIN
-	    if Text_Area
-		BEGIN
-		VertPos: HRef = Previous . HRef;
-		HorizPos: Left = Previous . Right;
-		Width: Enclosed . Width;
-		END;
-	    END;
+	  BEGIN
+	  if Text_Area
+		   BEGIN
+		   {VertPos: HRef = Previous . HRef;
+		   HorizPos: Left = Previous . Right;}
+		   Width: Enclosed . Width;
+		   END;
+	  END;
 	END;
 
 { ---- Table ---- }
@@ -6279,7 +6326,6 @@ ATTRIBUTES
 	BEGIN
 	PaddingLeft: cellspacing px;	
 	PaddingRight: cellspacing px;
-	BorderRightWidth: Border px;
 	END;
  cellspacing (Column_head):
 	BEGIN
@@ -6287,21 +6333,13 @@ ATTRIBUTES
 	IN Structure_view
 	   VertPos: Top = Previous . Bottom;
 	END;
- cellspacing (Column_head) > 0:
-	BorderRightWidth: Border px;
  cellspacing (thead) > 0:
 	BEGIN
 	VertPos: Top = Previous . Bottom + cellspacing px;
-	BorderTopWidth: Border px;
-	BorderRightWidth: Border px;
 	PaddingTop: cellspacing px;
-	PaddingRight: cellspacing px;
 	PaddingBottom: cellspacing px;
-	PaddingLeft: cellspacing px;
 	IN Structure_view BEGIN
 		VertPos: Top = Previous . Bottom;
-		BorderTopWidth: 0;
-		BorderRightWidth: 0;
 		PaddingTop: 0;
 		PaddingRight: 0;
 		PaddingBottom: 0;
@@ -6309,41 +6347,19 @@ ATTRIBUTES
 		END;
 	IN  Alternate_view BEGIN
 		VertPos: Top = Previous . Bottom;
-		BorderTopWidth: 0;
-		BorderRightWidth: 0;
 		PaddingTop: 0;
 		PaddingRight: 0;
 		PaddingBottom: 0;
 		PaddingLeft: 0;
-		END;
-	END;
- cellspacing (Table_body):
-	BEGIN
-	VertPos: Top = Previous . Bottom + cellspacing px;
-	IN Structure_view BEGIN
-		VertPos: Top = Previous . Bottom;
-		BorderTopWidth: 0;
-		BorderRightWidth: 0;
-		END;
-	IN  Alternate_view BEGIN
-		VertPos: Top = Previous . Bottom;
-		BorderTopWidth: 0;
-		BorderRightWidth: 0;
 		END;
 	END;
  cellspacing (tbody) > 0:
 	BEGIN
 	VertPos: Top = Previous tbody . Bottom + cellspacing px;
-	BorderTopWidth: Border px;
-	BorderRightWidth: Border px;
 	PaddingTop: cellspacing px;
-	PaddingRight: cellspacing px;
 	PaddingBottom: cellspacing px;
-	PaddingLeft: cellspacing px;
 	IN Structure_view BEGIN
 		VertPos: Top = Previous . Bottom;
-		BorderTopWidth: 0;
-		BorderRightWidth: 0;
 		PaddingTop: 0;
 		PaddingRight: 0;
 		PaddingBottom: 0;
@@ -6351,8 +6367,6 @@ ATTRIBUTES
 		END;
 	IN  Alternate_view BEGIN
 		VertPos: Top = Previous . Bottom;
-		BorderTopWidth: 0;
-		BorderRightWidth: 0;
 		PaddingTop: 0;
 		PaddingRight: 0;
 		PaddingBottom: 0;
@@ -6362,16 +6376,10 @@ ATTRIBUTES
  cellspacing (tfoot) > 0:
 	BEGIN
 	VertPos: Top = Previous . Bottom + cellspacing px;
-	BorderTopWidth: Border px;
-	BorderRightWidth: Border px;
 	PaddingTop: cellspacing px;
-	PaddingRight: cellspacing px;
 	PaddingBottom: cellspacing px;
-	PaddingLeft: cellspacing px;
 	IN Structure_view BEGIN
 		VertPos: Top = Previous . Bottom;
-		BorderTopWidth: 0;
-		BorderRightWidth: 0;
 		PaddingTop: 0;
 		PaddingRight: 0;
 		PaddingBottom: 0;
@@ -6379,8 +6387,6 @@ ATTRIBUTES
 		END;
 	IN  Alternate_view BEGIN
 		VertPos: Top = Previous . Bottom;
-		BorderTopWidth: 0;
-		BorderRightWidth: 0;
 		PaddingTop: 0;
 		PaddingRight: 0;
 		PaddingBottom: 0;
@@ -6394,32 +6400,6 @@ ATTRIBUTES
 	   VertPos: Top = Previous . Bottom;
 	IN Alternate_view
 	   VertPos: Top = Previous . Bottom;
-	END;
- cellspacing (Heading_cell) > 0:
-	BEGIN
-	BorderBottomWidth: Border px;
-	BorderLeftWidth: Border px;
-	IN Structure_view BEGIN
-		BorderBottomWidth: 0;
-		BorderLeftWidth: 0;
-		END;
-	IN Alternate_view BEGIN
-		BorderBottomWidth: 0;
-		BorderLeftWidth: 0;
-		END;
-	END;
- cellspacing (Data_cell) > 0:
-	BEGIN
-	BorderBottomWidth: Border px;
-	BorderLeftWidth: Border px;
-	IN Structure_view BEGIN
-		BorderBottomWidth: 0;
-		BorderLeftWidth: 0;
-		END;
-	IN Alternate_view BEGIN
-		BorderBottomWidth: 0;
-		BorderLeftWidth: 0;
-		END;
 	END;
  cellspacing:
 	BEGIN
@@ -6472,87 +6452,76 @@ ATTRIBUTES
 	CreateBefore(AttrValue);
 	END;
 
- Border (Table_head)> 0:
-	BEGIN
-	MarginLeft: Border px;
-	IN Structure_view 
-		MarginLeft: 0;
-	END;
- Border (Column_head)> 0:
-	BEGIN
-	MarginRight: Border px;
-	IN Structure_view 
-		MarginRight: 0;
-	END;
- Border (thead)> 0:
-	BEGIN
-	BorderBottomWidth: Border px;
-	BorderLeftWidth: Border px;
-	IN Structure_view BEGIN
-		BorderBottomWidth: 0;
-		BorderLeftWidth: 0;
-		END;
-	IN Alternate_view BEGIN
-		BorderBottomWidth: 0;
-		BorderLeftWidth: 0;
-		END;
-	END;
- Border (tbody) > 0:
-	BEGIN
-	BorderBottomWidth: Border px;
-	BorderLeftWidth: Border px;
-	IN Structure_view BEGIN
-		BorderBottomWidth: 0;
-		BorderLeftWidth: 0;
-		END;
-	IN Alternate_view BEGIN
-		BorderBottomWidth: 0;
-		BorderLeftWidth: 0;
-		END;
-	END;
- Border (tfoot) > 0:
-	BEGIN
-	BorderBottomWidth: Border px;
-	BorderLeftWidth: Border px;
-	IN Structure_view BEGIN
-		BorderBottomWidth: 0;
-		BorderLeftWidth: 0;
-		END;
-	IN Alternate_view BEGIN
-		BorderBottomWidth: 0;
-		BorderLeftWidth: 0;
-		END;
-	END;
  Border (Heading_cell) > 0:
 	BEGIN
-	BorderTopWidth: Border px;
-	BorderRightWidth: Border px;
+	BorderTopWidth: 1 px;
+	BorderRightWidth: 1 px;
+	BorderBottomWidth: 1 px;
+	BorderLeftWidth: 1 px;
+  MarginTop: -1 px;
+  MarginLeft: -1 px;
 	IN Structure_view BEGIN
 		BorderTopWidth: 0;
 		BorderRightWidth: 0;
+		BorderBottomWidth: 0;
+		BorderLeftWidth: 0;
+    MarginTop: 0;
+    MarginLeft: 0;
 		END;
 	IN Alternate_view BEGIN
 		BorderTopWidth: 0;
 		BorderRightWidth: 0;
+		BorderBottomWidth: 0;
+		BorderLeftWidth: 0;
+    MarginTop: 0;
+    MarginLeft: 0;
 		END;
 	END;
  Border (Data_cell) > 0:
 	BEGIN
-	BorderTopWidth: Border px;
-	BorderRightWidth: Border px;
+	BorderTopWidth: 1 px;
+	BorderRightWidth: 1 px;
+	BorderBottomWidth: 1 px;
+	BorderLeftWidth: 1 px;
+  MarginTop: -1 px;
+  MarginLeft: -1 px;
 	IN Structure_view BEGIN
 		BorderTopWidth: 0;
 		BorderRightWidth: 0;
+		BorderBottomWidth: 0;
+		BorderLeftWidth: 0;
+    MarginTop: 0;
+    MarginLeft: 0;
 		END;
 	IN Alternate_view BEGIN
 		BorderTopWidth: 0;
 		BorderRightWidth: 0;
+		BorderBottomWidth: 0;
+		BorderLeftWidth: 0;
+    MarginTop: 0;
+    MarginLeft: 0;
 		END;
 	END;
  Border:
 	BEGIN
 	CreateBefore(AttrName);
 	CreateBefore(AttrValue);
+	BorderTopWidth: Border px;
+	BorderRightWidth: Border px;
+	BorderBottomWidth: Border px;
+  BorderLeftWidth: Border px;
+	IN Structure_view BEGIN
+	   BorderTopWidth: 0;
+	   BorderLeftWidth: 0;
+	   BorderBottomWidth: 0;
+	   BorderRightWidth: 0;
+     END;
+	IN Alternate_view BEGIN
+	   BorderTopWidth: 0;
+	   BorderLeftWidth: 0;
+	   BorderBottomWidth: 0;
+	   BorderRightWidth: 0;
+     END;
 	END;
 
  datapagesize:

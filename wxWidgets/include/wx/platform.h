@@ -4,7 +4,7 @@
 * Author:      Vadim Zeitlin
 * Modified by:
 * Created:     29.10.01 (extracted from wx/defs.h)
-* RCS-ID:      $Id: platform.h,v 1.1.1.1 2005/07/06 09:30:08 gully Exp $
+* RCS-ID:      $Id: platform.h,v 1.1.1.2 2005/07/26 09:30:53 gully Exp $
 * Copyright:   (c) 1997-2001 Vadim Zeitlin
 * Licence:     wxWindows licence
 */
@@ -494,6 +494,7 @@
     ( defined( __CYGWIN__ ) && defined( __WINDOWS__ ) ) || \
       (defined(__WATCOMC__) && __WATCOMC__ >= 1200) ) && \
     !defined(__DOS__) && \
+    !defined(__WXOS2__) && \
     !defined(__WXMOTIF__) && \
     !defined(__WXGTK__) && \
     !defined(__WXX11__) && \
@@ -560,4 +561,3 @@
 #endif
 
 #endif /* _WX_PLATFORM_H_ */
-

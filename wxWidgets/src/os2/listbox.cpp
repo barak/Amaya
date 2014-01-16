@@ -4,7 +4,7 @@
 // Author:      David Webster
 // Modified by:
 // Created:     10/09/99
-// RCS-ID:      $Id: listbox.cpp,v 1.1.1.1 2005/07/06 09:30:55 gully Exp $
+// RCS-ID:      $Id: listbox.cpp,v 1.1.1.2 2005/07/26 09:31:10 gully Exp $
 // Copyright:   (c) David Webster
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -65,9 +65,7 @@ wxListBoxItem::wxListBoxItem(
     SetMarginWidth(0);
 } // end of wxListBoxItem::wxListBoxItem
 
-wxOwnerDrawn* wxListBox::CreateItem(
-  size_t                            n
-)
+wxOwnerDrawn* wxListBox::CreateItem( size_t WXUNUSED(n) )
 {
     return new wxListBoxItem();
 } // end of wxListBox::CreateItem
@@ -508,9 +506,7 @@ bool wxListBox::HasMultipleSelection() const
     return (m_windowStyle & wxLB_MULTIPLE) || (m_windowStyle & wxLB_EXTENDED);
 } // end of wxListBox::HasMultipleSelection
 
-int wxListBox::GetSelections(
-  wxArrayInt&                       raSelections
-) const
+int wxListBox::GetSelections( wxArrayInt& raSelections ) const
 {
     int                             nCount = 0;
     LONG                            lItem;
@@ -557,7 +553,6 @@ int wxListBox::GetSelections(
             }
             return nCount;
         }
-        return 0;
     }
     else  // single-selection listbox
     {
@@ -892,14 +887,10 @@ bool wxListBox::OS2OnDraw (
 
     wxCHECK(pData, false );
 
-    wxDC                              vDc;
-    wxRect                            vRect( wxPoint( pDrawStruct->rclItem.xLeft
-                                                     ,pDrawStruct->rclItem.yTop
-                                                    )
-                                            ,wxPoint( pDrawStruct->rclItem.xRight
-                                                     ,pDrawStruct->rclItem.yBottom
-                                                    )
-                                           );
+    wxDC    vDc;
+    wxPoint pt1( pDrawStruct->rclItem.xLeft, pDrawStruct->rclItem.yTop );
+    wxPoint pt2( pDrawStruct->rclItem.xRight, pDrawStruct->rclItem.yBottom );
+    wxRect  vRect( pt1, pt2 );
 
     vDc.SetHPS(pDrawStruct->hps);
 
@@ -976,4 +967,3 @@ bool wxListBox::OS2OnDraw (
 #endif // ndef for wxUSE_OWNER_DRAWN
 
 #endif // ndef for wxUSE_LISTBOX
-

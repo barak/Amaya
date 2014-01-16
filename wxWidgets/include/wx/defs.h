@@ -4,7 +4,7 @@
 *  Author:      Julian Smart and others
 *  Modified by: Ryan Norton (Converted to C)
 *  Created:     01/02/97
-*  RCS-ID:      $Id: defs.h,v 1.1.1.1 2005/07/06 09:30:08 gully Exp $
+*  RCS-ID:      $Id: defs.h,v 1.1.1.2 2005/07/26 09:30:53 gully Exp $
 *  Copyright:   (c) Julian Smart
 *  Licence:     wxWindows licence
 */
@@ -902,7 +902,7 @@ inline void *wxUIntToPtr(wxUIntPtr p)
     #define wxLongLong_t __int64
     #define wxLongLongSuffix i64
     #define wxLongLongFmtSpec _T("L")
-#elif (defined(__WATCOMC__) && (defined(__WIN32__) || defined(__DOS__)))
+#elif (defined(__WATCOMC__) && (defined(__WIN32__) || defined(__DOS__) || defined(__OS2__)))
       #define wxLongLong_t __int64
       #define wxLongLongSuffix i64
       #define wxLongLongFmtSpec _T("L")
@@ -1617,22 +1617,21 @@ enum wxBackgroundStyle
 /*  standard IDs */
 /*  ---------------------------------------------------------------------------- */
 
-/*  any id: means that we don't care about the id, whether when installing an */
-/*  event handler or when creating a new window */
-enum
-{
-    wxID_ANY = -1
-};
-
-/*  id for a separator line in the menu (invalid for normal item) */
-enum
-{
-    wxID_SEPARATOR = -2
-};
-
 /*  Standard menu IDs */
 enum
 {
+    /* no id matches this one when compared to it */
+    wxID_NONE = -3,
+
+    /*  id for a separator line in the menu (invalid for normal item) */
+    wxID_SEPARATOR = -2,
+
+    /* any id: means that we don't care about the id, whether when installing
+     * an event handler or when creating a new window */
+    wxID_ANY = -1,
+
+
+    /* all predefined ids are between wxID_LOWEST and wxID_HIGHEST */
     wxID_LOWEST = 4999,
 
     wxID_OPEN,

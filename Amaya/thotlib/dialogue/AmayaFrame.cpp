@@ -53,13 +53,11 @@
 
 IMPLEMENT_DYNAMIC_CLASS(AmayaFrame, wxPanel)
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  AmayaFrame
  * Description:  just construct a frame : AmayaCanvas + 2 AmayaScrollBar into a wxFlexGridSizer
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaFrame::AmayaFrame(
                        int             frame_id
                        ,wxWindow * p_parent /* the final parent : the page splitter window */
@@ -124,13 +122,11 @@ AmayaFrame::AmayaFrame(
 }
 
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  ~AmayaFrame
  * Description:  destructor do nothing for the moment
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaFrame::~AmayaFrame()
 {
   TTALOGDEBUG_1( TTA_LOG_DIALOG, _T("AmayaFrame::~AmayaFrame() - frame_id=%d"), m_FrameId );
@@ -210,11 +206,9 @@ void AmayaFrame::ReplaceDrawingArea( AmayaCanvas * p_new_canvas )
   m_pHSizer->Layout();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  * Description:  some attribut getters ...
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 int AmayaFrame::GetFrameId()
 {
   return m_FrameId;
@@ -232,8 +226,7 @@ AmayaCanvas * AmayaFrame::GetCanvas()
   return m_pCanvas;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  HideScrollbar
  * Description:  hide a scrollbar (remove it from the sizer ...)
@@ -241,8 +234,7 @@ AmayaCanvas * AmayaFrame::GetCanvas()
  *            + int scrollbar_id:
  *            + 1 => Vertical scrollbar
  *            + 2 => Horizontal scrollbar
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaFrame::HideScrollbar( int scrollbar_id )
 {
   TTALOGDEBUG_1( TTA_LOG_DIALOG, _T("AmayaFrame::HideScrollbar = %d"), scrollbar_id );
@@ -268,8 +260,7 @@ void AmayaFrame::HideScrollbar( int scrollbar_id )
   Layout();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  ShowScrollbar
  * Description:  show a scrollbar (add it to the sizer)
@@ -277,8 +268,7 @@ void AmayaFrame::HideScrollbar( int scrollbar_id )
  *            + int scrollbar_id:
  *            + 1 => Vertical scrollbar
  *            + 2 => Horizontal scrollbar
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaFrame::ShowScrollbar( int scrollbar_id )
 {
   TTALOGDEBUG_1( TTA_LOG_DIALOG, _T("AmayaFrame::ShowScrollbar = %d"), scrollbar_id );
@@ -323,14 +313,12 @@ void AmayaFrame::ShowScrollbar( int scrollbar_id )
 
 #ifdef _GL
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  SetCurrent
  * Description:  just give focus to this OpenGL canvas -> 
  *               now opengl commands are forwared to this canvas
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 bool AmayaFrame::SetCurrent()
 {
   if ( DisplayIsReady() )
@@ -346,28 +334,24 @@ bool AmayaFrame::SetCurrent()
     }
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  DisplayIsReady
  * Description:  return true if the canvas is ready to recived drawing instructions
  *               usefull with opengl because on certains implementations, it's important to wait 
  *               for initialisation before sending commands to opengl.
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 bool AmayaFrame::DisplayIsReady()
 {
   return (m_pCanvas && m_pCanvas->IsInit());
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  SwapBuffers
  * Description:  swap the buffer because opengl draw into a backbuffer not visible
  *               to show this backbuffer this command must be called
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 bool AmayaFrame::SwapBuffers()
 {
   if (DisplayIsReady())
@@ -384,13 +368,11 @@ bool AmayaFrame::SwapBuffers()
 }
 #endif // #ifdef _GL
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  OnSize
  * Description:  nothing is done for the moment
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaFrame::OnSize( wxSizeEvent& event )
 {
   TTALOGDEBUG_5( TTA_LOG_DIALOG, _T("AmayaFrame::OnSize: frame=%d w=%d h=%d wc=%d, hc=%d"),
@@ -404,16 +386,15 @@ void AmayaFrame::OnSize( wxSizeEvent& event )
   event.Skip();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  SetFrameTitle
  * Description:  set the frame name =>
  *               used to set the page name (tab name) or the window parent name
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaFrame::SetFrameTitle(const wxString & frame_name)
 {
+  TTALOGDEBUG_1( TTA_LOG_DIALOG, _T("AmayaFrame::SetFrameTitle - frameid=%d title=")+frame_name, GetFrameId() );
   m_FrameTitle = frame_name;
 
   // do not update window title if the title is empty
@@ -446,41 +427,40 @@ void AmayaFrame::SetFrameTitle(const wxString & frame_name)
   SetWindowTitle( m_FrameTitle );
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  UpdateFrameIcon
  * Description:  set the frame's icon. icon depends on frame's document type (html, css, xml ...)
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaFrame::UpdateFrameIcon()
 {
   AmayaFrame * p_frame = TtaGetFrameFromId(GetMasterFrameId());
   if (p_frame)
     {
       int doc_id = FrameTable[p_frame->GetFrameId()].FrDoc;
-      wxASSERT(doc_id > 0);
-      const char * icon_type = LoadedDocument[doc_id-1]->DocTypeName;
-      wxASSERT(icon_type);
-      AmayaPage * p_page = p_frame->GetPageParent();
-      wxASSERT(p_page);
-      AmayaNotebook * p_notebook = p_page->GetNotebookParent();
-      wxASSERT(p_notebook);
-      int page_id = p_notebook->GetPageId(p_page);
-      p_notebook->SetPageImage(page_id, AmayaApp::GetDocumentIconId(icon_type));
+      if (doc_id > 0)
+      {
+        const char * icon_type = LoadedDocument[doc_id-1]->DocTypeName;
+        wxASSERT(icon_type);
+        AmayaPage * p_page = p_frame->GetPageParent();
+        wxASSERT(p_page);
+        AmayaNotebook * p_notebook = p_page->GetNotebookParent();
+        wxASSERT(p_notebook);
+        int page_id = p_notebook->GetPageId(p_page);
+        p_notebook->SetPageImage(page_id, AmayaApp::GetDocumentIconId(icon_type));
+      }
     }
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  GetFrameTitle
  * Description:  get the frame name 
  *               used to setup the page name or window parent name
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 wxString AmayaFrame::GetFrameTitle()
 {
+  TTALOGDEBUG_1( TTA_LOG_DIALOG, _T("AmayaFrame::GetFrameTitle - frameid=%d title=")+m_FrameTitle, GetFrameId() );
   if (GetMasterFrameId() == GetFrameId())
     return m_FrameTitle;
   else
@@ -493,13 +473,11 @@ wxString AmayaFrame::GetFrameTitle()
     }
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  SetWindowTitle
  * Description:  set the top window name
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaFrame::SetWindowTitle(const wxString & window_name)
 {
   m_WindowTitle = window_name;
@@ -521,28 +499,27 @@ void AmayaFrame::SetWindowTitle(const wxString & window_name)
                       TtaConvMessageToWX(TtaGetAppVersion()) );
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  GetWindowTitle
  * Description:  get the top window name
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 wxString AmayaFrame::GetWindowTitle()
 {
   return m_WindowTitle;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  UpdateFrameURL
  * Description:  just update the internal frame url value
  *               (the master frame is updated.)
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaFrame::UpdateFrameURL( const wxString & new_url )
 {
+  TTALOGDEBUG_1( TTA_LOG_DIALOG, _T("AmayaFrame::UpdateFrameURL - frame=%d")+
+                 wxString(_T(" url="))+new_url, GetFrameId() );
+
   if (GetMasterFrameId() == GetFrameId())
     m_FrameUrl = new_url;
   else
@@ -555,34 +532,35 @@ void AmayaFrame::UpdateFrameURL( const wxString & new_url )
     }
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  SetFrameURL
  * Description:  setup the current frame url
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaFrame::SetFrameURL( const wxString & new_url )
 {
   TTALOGDEBUG_1( TTA_LOG_DIALOG, _T("AmayaFrame::SetFrameURL - frame=%d")+
                  wxString(_T(" url="))+new_url, GetFrameId() );
   m_FrameUrl = new_url;
   
+  // do not update window url if the url is empty
+  if ( m_FrameUrl.IsEmpty() && new_url.IsEmpty() )
+    return;
+
   // update the window url if the frame is active
   if ( IsActive() && GetWindowParent() )
     GetWindowParent()->SetURL( m_FrameUrl );
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  GetFrameURL
  * Description:  return the corresponding document url
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 wxString AmayaFrame::GetFrameURL()
 {
   TTALOGDEBUG_1( TTA_LOG_DIALOG, _T("AmayaFrame::GetFrameURL - frameid=%d url=")+m_FrameUrl, GetFrameId() );
+
   if (GetMasterFrameId() == GetFrameId())
     return m_FrameUrl;
   else
@@ -596,14 +574,12 @@ wxString AmayaFrame::GetFrameURL()
 }
 
 #if 0
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  SetFrameEnableURL
  * Description:  force the urlbar to be enable or disable for the current frame
  *               exemple : the source vue of a document doen't have an urlbar
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaFrame::SetFrameEnableURL( bool urlenabled )
 {
   m_FrameUrlEnable = urlenabled;
@@ -613,14 +589,12 @@ void AmayaFrame::SetFrameEnableURL( bool urlenabled )
     GetWindowParent()->SetEnableURL( GetFrameEnableURL() );
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  GetFrameEnableURL
  * Description:  get the frame url status (enable or disable)
  *               exemple : the source vue of a document doen't have an urlbar
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 bool AmayaFrame::GetFrameEnableURL( )
 {
   if (GetMasterFrameId() == GetFrameId())
@@ -636,13 +610,11 @@ bool AmayaFrame::GetFrameEnableURL( )
 }
 #endif /* 0 */
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  SetPageParent / GetPageParent
  * Description:  set/get the parent page (tab)
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaFrame::SetPageParent( AmayaPage * p_page )
 {
   m_pPageParent = p_page;
@@ -652,13 +624,11 @@ AmayaPage * AmayaFrame::GetPageParent()
   return m_pPageParent;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaWindow
  *      Method:  GetWindowParent
  * Description:  return the window parent
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 AmayaWindow * AmayaFrame::GetWindowParent()
 {
   return TtaGetWindowFromId( TtaGetFrameWindowParentId(GetFrameId()) );
@@ -731,13 +701,11 @@ bool AmayaFrame::IsActive()
   return m_IsActive;
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  RaiseFrame
  * Description:  popup the frame container and activate it
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaFrame::RaiseFrame()
 {
   AmayaWindow * p_window = GetWindowParent();
@@ -764,25 +732,21 @@ void AmayaFrame::RaiseFrame()
     }
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  RefreshStatusBarText
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaFrame::RefreshStatusBarText()
 {
   SetStatusBarText( m_StatusBarText );
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  SetStatusBarText
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaFrame::SetStatusBarText( const wxString & text )
 {
   TTALOGDEBUG_1( TTA_LOG_DIALOG, _T("AmayaFrame::SetStatusBarText - len=%d"), text.Length() );
@@ -806,13 +770,11 @@ void AmayaFrame::SetStatusBarText( const wxString & text )
     }
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  FreeFrame
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaFrame::FreeFrame()
 {
   // Create a new drawing area
@@ -828,13 +790,11 @@ void AmayaFrame::FreeFrame()
   Destroy();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  OnIdle
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaFrame::OnIdle( wxIdleEvent& event )
 {
   //  if ( m_ToDestroy )
@@ -843,13 +803,11 @@ void AmayaFrame::OnIdle( wxIdleEvent& event )
   event.Skip();
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  OnContextMenu
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 void AmayaFrame::OnContextMenu( wxContextMenuEvent & event )
 {
   TTALOGDEBUG_2( TTA_LOG_DIALOG, _T("AmayaFrame::OnContextMenu - (x,y)=(%d,%d)"),
@@ -868,13 +826,11 @@ void AmayaFrame::OnContextMenu( wxContextMenuEvent & event )
   //  event.Skip();  
 }
 
-/*
- *--------------------------------------------------------------------------------------
+/*----------------------------------------------------------------------
  *       Class:  AmayaFrame
  *      Method:  GetMasterFrameId
  * Description:  
- *--------------------------------------------------------------------------------------
- */
+  -----------------------------------------------------------------------*/
 int AmayaFrame::GetMasterFrameId()
 {
   AmayaPage * p_page = GetPageParent();

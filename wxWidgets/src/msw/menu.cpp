@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by: Vadim Zeitlin
 // Created:     04/01/98
-// RCS-ID:      $Id: menu.cpp,v 1.1.1.1 2005/07/06 09:30:55 gully Exp $
+// RCS-ID:      $Id: menu.cpp,v 1.1.1.2 2005/07/26 09:31:09 gully Exp $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -305,6 +305,16 @@ void wxMenu::UpdateAccel(wxMenuItem *item)
     }
     else if ( !item->IsSeparator() )
     {
+        // recurse upwards: we should only modify m_accels of the top level
+        // menus, not of the submenus as wxMenuBar doesn't look at them
+        // (alternative and arguable cleaner solution would be to recurse
+        // downwards in GetAccelCount() and CopyAccels())
+        if ( GetParent() )
+        {
+            GetParent()->UpdateAccel(item);
+            return;
+        }
+
         // find the (new) accel for this item
         wxAcceleratorEntry *accel = wxGetAccelFromString(item->GetText());
         if ( accel )

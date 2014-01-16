@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     17/09/98
-// RCS-ID:      $Id: app.cpp,v 1.1.1.1 2005/07/06 09:30:54 gully Exp $
+// RCS-ID:      $Id: app.cpp,v 1.1.1.2 2005/07/26 09:31:09 gully Exp $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -38,7 +38,6 @@
 #pragma message disable nosimpint
 #endif
 #include <Xm/Xm.h>
-#include <Xm/Label.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xresource.h>
@@ -307,9 +306,9 @@ WXWidget wxCreateTopLevelWidget( WXDisplay* display )
 
 WXWidget wxCreateTopLevelRealizedWidget( WXDisplay* display )
 {
-    Widget rTlw = XtVaCreateWidget( "dummy_widget", xmLabelWidgetClass,
+    Widget rTlw = XtVaCreateWidget( "dummy_widget", topLevelShellWidgetClass,
                                     (Widget)wxTheApp->GetTopLevelWidget(),
-                                    NULL);
+                                     NULL, 0 );
     XtSetMappedWhenManaged( rTlw, False );
     XtRealizeWidget( rTlw );
 

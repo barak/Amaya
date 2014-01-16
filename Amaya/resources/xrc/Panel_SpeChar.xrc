@@ -24,7 +24,7 @@
                       <object class="sizeritem">
                         <object class="wxStaticText" name="wxID_LABEL_TITLE">
                           <label>*Special characters*</label>
-                          <style>wxALIGN_CENTRE</style>
+                          <style>wxALIGN_LEFT</style>
                         </object>
                         <option>1</option>
                         <flag>wxALIGN_CENTRE</flag>
@@ -37,7 +37,7 @@
                         <flag>wxALIGN_CENTRE</flag>
                       </object>
                     </object>
-                    <style>wxTAB_TRAVERSAL|wxSIMPLE_BORDER</style>
+                    <style>wxNO_BORDER|wxTAB_TRAVERSAL</style>
                   </object>
                   <flag>wxEXPAND</flag>
                 </object>
@@ -85,11 +85,6 @@
                                             <tooltip>*Filtre4*</tooltip>
                                           </object>
                                         </object>
-                                      </object>
-                                    </object>
-                                    <object class="sizeritem">
-                                      <object class="wxBoxSizer">
-                                        <orient>wxHORIZONTAL</orient>
                                         <object class="sizeritem">
                                           <object class="wxBitmapButton" name="wxID_PANEL_MATH_F5">
                                             <bitmap>../icons/16x16/MATHML_F_relations_binaires.png</bitmap>

@@ -150,7 +150,7 @@
 148 Reemplazar (+ dic)
 149 Reemplazar y siguiente
 150 Otro idioma
-151 Saltar (+ dic)
+151 Agregar
 152 Palabras que contengan:
 153 Revisar ortografía:
 154 Números romanos
@@ -212,3 +212,6 @@
 210 Cerrar pestañas
 211 Ningún error detectado
 212 Mostrar errores sintácticos
+213 Cajas
+214 División
+215 Destino

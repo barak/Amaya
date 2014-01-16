@@ -4,7 +4,7 @@
 // Author:      David Webster
 // Modified by:
 // Created:     10/14/99
-// RCS-ID:      $Id: dcmemory.cpp,v 1.1.1.1 2005/07/06 09:30:55 gully Exp $
+// RCS-ID:      $Id: dcmemory.cpp,v 1.1.1.2 2005/07/26 09:31:10 gully Exp $
 // Copyright:   (c) David Webster
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -58,14 +58,12 @@ void wxMemoryDC::Init()
     memset(&m_vRclPaint, 0, sizeof(m_vRclPaint));
 } // end of wxMemoryDC::Init
 
-bool wxMemoryDC::CreateCompatible(
-  wxDC*                             pDC
-)
+bool wxMemoryDC::CreateCompatible( wxDC* WXUNUSED(pDC) )
 {
-    HDC                             hDC;
-    HPS                             hPS;
-    DEVOPENSTRUC                    vDOP = {0L, "DISPLAY", NULL, 0L, 0L, 0L, 0L, 0L, 0L};
-    SIZEL                           vSize = {0, 0};
+    HDC           hDC;
+    HPS           hPS;
+    DEVOPENSTRUC  vDOP = {0L, "DISPLAY", NULL, 0L, 0L, 0L, 0L, 0L, 0L};
+    SIZEL         vSize = {0, 0};
 
     //
     // Create a memory device context
@@ -78,8 +76,8 @@ bool wxMemoryDC::CreateCompatible(
         {
             m_hPS = hPS;
             m_hDC = hDC;
-            m_ok = TRUE;
-            m_bOwnsDC = TRUE;
+            m_ok = true;
+            m_bOwnsDC = true;
             //
             // Set the wxWidgets color table
             //
@@ -117,7 +115,7 @@ bool wxMemoryDC::CreateCompatible(
     //
     // As we created the DC, we must delete it in the dtor
     //
-    m_bOwnsDC = TRUE;
+    m_bOwnsDC = true;
     m_ok = m_hDC != 0;
     return m_ok;
 } // end of wxMemoryDC::CreateCompatible
@@ -202,4 +200,3 @@ void wxMemoryDC::DoGetSize(
     *pWidth = m_vSelectedBitmap.GetWidth();
     *pHeight = m_vSelectedBitmap.GetHeight();
 } // end of wxMemoryDC::DoGetSize
-

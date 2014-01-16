@@ -6,7 +6,9 @@
 #ifndef __CEXTRACT__
 #ifdef __STDC__
 
+extern ThotBool CheckValidProfile ( NotifyElement *event );
 extern ThotBool CheckGenerator ( NotifyElement *event );
+extern ThotBool CheckUSEMAP ( NotifyAttribute *event );
 extern ThotBool CheckValidEntity ( NotifyAttribute *event );
 extern ThotBool CheckValidID ( NotifyAttribute *event );
 extern void SetRelativeURLs ( Document doc,
@@ -57,7 +59,9 @@ extern void DoSaveAs ( char *user_charset,
 
 #else /* __STDC__ */
 
+extern ThotBool CheckValidProfile ( NotifyElement *event );
 extern ThotBool CheckGenerator ( NotifyElement *event );
+extern ThotBool CheckUSEMAP ( NotifyAttribute *event );
 extern ThotBool CheckValidEntity ( NotifyAttribute *event );
 extern ThotBool CheckValidID ( NotifyAttribute *event );
 extern void SetRelativeURLs ( Document doc,

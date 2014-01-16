@@ -3,9 +3,10 @@
        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fr" lang="fr">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
   <title>Créer des éléments</title>
-  <meta name="GENERATOR" content="amaya 9.1, see http://www.w3.org/Amaya/" />
+  <meta name="GENERATOR" content="amaya 9.3.1, see http://www.w3.org/Amaya/"
+  />
   <link href="style.css" rel="stylesheet" type="text/css" />
 </head>
 
@@ -21,33 +22,29 @@ accesskey="t"><img alt="top" src="../../resources/icons/misc/up.png" /></a>
 src="../../resources/icons/misc/right.png" /></a></p>
 </div>
 
+<div id="Creating">
+
 <div class="toc">
 <ul>
-  <li><a href="#L1103">Créer de nouveaux <span xml:lang="fr"
-    lang="fr">éléments</span></a>
+  <li><a href="#Boutons">Boutons et menus</a></li>
+  <li><a href="#Point">Point d'insertion</a></li>
+  <li><a href="#Sous-menu">Sous-menu Structure</a></li>
+  <li><a href="#L1179">Eléments créés automatiquement</a></li>
+  <li><a href="#touche">La touche Enter (ou Return)</a>
     <ul>
-      <li><a href="#Boutons">Boutons et menus</a></li>
-      <li><a href="#Point">Point d'insertion</a></li>
-      <li><a href="#Sous-menu">Sous-menu Structure</a></li>
-      <li><a href="#L1179">Eléments créés automatiquement</a></li>
-      <li><a href="#touche">La touche Enter (ou Return)</a>
-        <ul>
-          <li><a href="#end-anchor">Sortir des ancres ou des chaînes
-            d'éléments de style</a></li>
-          <li><a href="#multi-enter">Création de structures
-          imbriquées</a></li>
-          <li><a href="#edit-dl">Editer les listes de définitions
-            (dl/dt/dd)</a></li>
-        </ul>
-      </li>
-      <li><a href="#Changer">Changer le titre du document</a></li>
-      <li><a href="#Traitement">Traitement des blancs</a></li>
+      <li><a href="#end-anchor">Sortir des ancres ou des chaînes d'éléments
+        de style</a></li>
+      <li><a href="#multi-enter">Création de structures imbriquées</a></li>
+      <li><a href="#edit-dl">Editer les listes de définitions
+      (dl/dt/dd)</a></li>
     </ul>
   </li>
+  <li><a href="#Changer">Changer le titre du document</a></li>
+  <li><a href="#date">Insérer la date de mise à jour</a></li>
+  <li><a href="#Traitement">Traitement des blancs</a></li>
 </ul>
 </div>
 
-<div id="Creating">
 <h2 id="L1103">Créer de nouveaux <span xml:lang="fr"
 lang="fr">éléments</span></h2>
 
@@ -79,14 +76,14 @@ position choisie à cause des contraintes imposées par les langages HTML, SVG
 ou MathML. Amaya tente alors de créer l'élément à l'endroit le plus proche
 possible. Par exemple, si le point d'insertion se trouve à la fin de la
 dernière ligne d'un paragraphe quand vous cliquez sur le bouton <img
-src="../../resources/icons/22x22/XHTML_H2.png" alt="H2" /> , Amaya ne crée
-pas la nouvelle en-tête à cette position (elle serait invalide) mais après le
+src="../../resources/icons/16x16/XHTML_H2.png" alt="H2" />, Amaya ne crée pas
+la nouvelle en-tête à cette position (elle serait invalide) mais après le
 paragraphe, à la position valide la plus proche.</p>
 
 <p>Dans d'autres cas, Amaya modifie la structure existante pour créer
 l'élément désiré tout en respectant les contraintes du langage. Si le point
 d'insertion est quelque part dans un item de liste (li) quand vous créez une
-en-tête (avec le bouton <img src="../../resources/icons/22x22/XHTML_H2.png"
+en-tête (avec le bouton <img src="../../resources/icons/16x16/XHTML_H2.png"
 alt="H2" /> de la palette ou à partir du menu), l'item et la liste à laquelle
 il appartient sont automatiquement divisés afin de créer l'en-tête demandé et
 de se conformer aux contraintes du langage HTML.</p>
@@ -120,6 +117,11 @@ cellules. Le point d'insertion est automatiquement placé dans le premier de
 ces composants. Vous pouvez saisir le contenu de ce composant immédiatement
 ou plus tard. Vous pouvez vous déplacer jusqu'au prochain composant (vide)
 avec la souris ou avec les flèches de direction.</p>
+
+<p>HTML définit certains éléments de niveau de caractère qui permettent
+d'associer du style aux chaînes de caractères. Voir <a
+href="StyleSheets.html.fr#L1371">Créer des éléments de style HTML</a> pour
+créer de tels éléments.</p>
 
 <h3 id="touche"><a name="L906" id="L906">La touche Enter (ou Return)</a></h3>
 
@@ -183,7 +185,7 @@ rapidement des structures complexes emboîtées.</p>
 <ol>
   <li>Créez d'abord une liste numérotée avec un premier item, par exemple en
     cliquant sur le bouton <img alt="Numbered List "
-    src="../../resources/icons/22x22/XHTML_Num.png" align="middle" />.</li>
+    src="../../resources/icons/16x16/XHTML_Num.png" />.</li>
   <li>Tapez le contenu de la première ligne et pressez la touche
     <kbd>Enter</kbd> : cela crée un nouveau paragraphe dans l'item de
   liste.</li>
@@ -193,8 +195,8 @@ rapidement des structures complexes emboîtées.</p>
   <li>Entrez le contenu de la première ligne du second item.</li>
   <li>A la fin de la première ligne de l'item 2, créez une liste nouvelle
     avec son premier item (cliquez par exemple sur le bouton <img
-    alt="Numbered List " src="../../resources/icons/22x22/XHTML_Num.png"
-    align="middle" />). La nouvelle liste sera automatiquement emboîtée.</li>
+    alt="Numbered List " src="../../resources/icons/16x16/XHTML_Num.png" />).
+    La nouvelle liste sera automatiquement emboîtée.</li>
   <li>Entrez le contenu du premier item de la nouvelle liste et créez l'item
     b en appuyant deux fois sur la touche <kbd>Enter</kbd> à la fin de l'item
     a.</li>
@@ -260,6 +262,17 @@ structure</a>.</p>
 </div>
 
 <div id="Creating1">
+<h3 id="date">Insérer la date de mise à jour</h3>
+
+<p>L'entrée de menu <strong>XHTML/Insérer date de mise à jour</strong> vous
+permet d'insérer la date courante soit au format ISO (YYY-MM-DD) soit au
+format européen (DD-MM-YYYY). Le format de la date est fixé par le menu des
+Préférences.</p>
+
+<p>Une fois cette date insérée, Amaya la met automatiquement à jour chaque
+fois que le document est sauvé et maintenir ainsi la dernière date de mise à
+jour.</p>
+
 <h3 id="Traitement"><a>Traitement des blancs</a></h3>
 
 <p>Pour les documents XHTML, <a href="Math.html.fr#Math">MathML</a>, <a

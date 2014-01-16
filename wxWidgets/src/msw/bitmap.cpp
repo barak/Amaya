@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     04/01/98
-// RCS-ID:      $Id: bitmap.cpp,v 1.1.1.1 2005/07/06 09:30:54 gully Exp $
+// RCS-ID:      $Id: bitmap.cpp,v 1.1.1.2 2005/07/26 09:31:09 gully Exp $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -1091,7 +1091,7 @@ wxBitmap wxBitmap::GetSubBitmap( const wxRect& rect) const
 #ifndef __WXMICROWIN__
     // handle alpha channel, if any
     if (HasAlpha())
-    ret.UseAlpha();
+        ret.UseAlpha();
 
     // copy bitmap data
     MemoryHDC dcSrc,

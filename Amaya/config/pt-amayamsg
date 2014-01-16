@@ -215,8 +215,8 @@
 213 **Try the 'File/Force a Character Coding' entry
 214 Caracteres inválidos
 215 Perfil del documento:
-216 Erros - veja Vistas/Exibir erros de gramática (parsing)
-217 A codificação deste documento não é suportada por Amaya
+216 Erros - veja Arquivo > Exibir erros de gramática (parsing)
+217 A codificação deste documento não é suportada porAmaya
 218 Editar ou salvar este documento vai mudar seu tipo
 219 Indisponível
 220 Navegar
@@ -258,7 +258,7 @@
 256 O destino deve ser uma URL HTTP para usar esta opção
 257 Erro: tipo MIME inválido
 258 Desconhecido
-259 Estilos ignorados -veja Vistas/Exibir erros de gramática (parsing)
+259 Estilos ignorados -veja Arquivo > Exibir erros de gramática (parsing)
 260 Este documento já está carregado em outra Janela
 261 Salvar esta instância pode causar um problema de perda de atualização
 262 **Adding or changing the doctype will remove some elements or attributes
@@ -271,13 +271,13 @@
 269 Documento %s está travado!
 270 Documento %s foi travado por %s (tempo restante %s)
 271 Sobrepor trava?
-272 Copiar informação da trava? 
+272 Copiar informação da trava?
 273 Tente destravar o documento...
 274 Documento foi destravado com sucesso!
 275 Documento não pode ser destravado com sucesso!
 276 Destravando %s...
 277 Documento %s está destravado!
-278 Destravar o documento? 
+278 Destravar o documento?
 279 Propriedades do documento
 280 Propriedades do documento não estão disponíveis
 281 Propriedades do documento estão temporariamente indisponíveis. Tente de novo mais tarde...
@@ -288,7 +288,7 @@
 286 Lamento, esta operação não é permitida para %s
 287 Operação falhou! Causa: Falha de dependência
 288 Operaçã falhou! Causa: %s
-289 Tentar de novo? 
+289 Tentar de novo?
 290 WebDAV
 291 Referência Pessoal do Usuário (URL)
 292 Lista de Recursos WebDAV do Usuário (URL URL)
@@ -362,12 +362,22 @@
 360 **File
 361 **Replace current
 362 **In new tab
-363 **In new tab (not yet available on Mac OSX)
-364 **In new Window
-365 Anti-aliasing
-366 **ISO format for date
-367 **New documents location
-368 **Opening location
-369 **Warn when closing multiple tabs
-370 **Max url number in history
-371 **Clear url list
+363 **In new Window
+364 Anti-aliasing
+365 **ISO format for date
+366 **New documents location
+367 **Opening location
+368 **Warn when closing multiple tabs
+369 **Max url number in history
+370 **Clear url list
+371 **Display all shortcuts
+372 **Fixed line length (0 = default value)
+373 **Template
+374 **Save the document as...
+375 **Template not found
+376 **Show template's boxes
+377 **Apply closes the dialogue
+378 **Not allowed in this document
+379 **Protected element
+380 **The selection should not cross an element of this type
+381 **No heading found after the selection

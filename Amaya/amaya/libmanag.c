@@ -606,7 +606,7 @@ void AddNewModelIntoLibraryForm (Document doc, View view)
 void CallbackLibrary (int ref, int typedata, char *data)
 {
 #ifdef _SVG
-  int                 val;
+  long int            val;
   Document            svgDoc, res, libDoc;
   char               *id, *buffer;
   char                tempname[MAX_LENGTH], pathname[MAX_LENGTH];
@@ -615,7 +615,7 @@ void CallbackLibrary (int ref, int typedata, char *data)
   Element             copiedElement, el = NULL;
   PRule               PRuleSearch;
 
-  val = (int) data + 1;
+  val = (long int) data + 1;
   switch (ref - BaseLibrary)
     {
     case FormLibrary:
@@ -1144,6 +1144,7 @@ Document CreateNewLibraryFile (char *libUrl, char *libtitle)
   DocumentMeta[newLibraryDoc]->initial_url = NULL;
   DocumentMeta[newLibraryDoc]->method = CE_ABSOLUTE;
   DocumentMeta[newLibraryDoc]->xmlformat = FALSE;
+  DocumentMeta[newLibraryDoc]->compound = FALSE;
   DocumentSource[newLibraryDoc] = 0;
 
   /*
@@ -1165,6 +1166,7 @@ Document CreateNewLibraryFile (char *libUrl, char *libtitle)
   /* create the DOCTYPE element corresponding to the document's profile */
   /* force the XML parsing */
   DocumentMeta[newLibraryDoc]->xmlformat = TRUE;
+  DocumentMeta[newLibraryDoc]->compound = FALSE;
 
   elType = TtaGetElementType (docEl);
   attrType.AttrSSchema = elType.ElSSchema;
@@ -2128,7 +2130,7 @@ Element PasteLibraryGraphicElement (Element sourceEl, Document sourceDoc, int Me
 		{
 		  TtaInsertFirstChild (&copiedElement, parent, destDoc);
 		  /* check that id attribute is unique */
-		  MakeUniqueName (copiedElement, destDoc, TRUE);
+		  MakeUniqueName (copiedElement, destDoc, TRUE, FALSE);
 		  sibling = copiedElement;
 		}
 	    }
@@ -2139,7 +2141,7 @@ Element PasteLibraryGraphicElement (Element sourceEl, Document sourceDoc, int Me
 		{
 		  TtaInsertSibling (copiedElement, sibling, FALSE, destDoc);
 		  /* check that id attribute is unique */
-		  MakeUniqueName (copiedElement, destDoc, TRUE);
+		  MakeUniqueName (copiedElement, destDoc, TRUE, FALSE);
 		  sibling = copiedElement;
 		}
 	    }
@@ -2329,6 +2331,7 @@ Document CreateNewSVGFileofSVGSelected (char *url)
       DocumentMeta[newSVGDoc]->method = CE_ABSOLUTE;
       /* force the XML parsing */
       DocumentMeta[newSVGDoc]->xmlformat = TRUE;
+      DocumentMeta[newSVGDoc]->xmlformat = FALSE;
 
       /* Set the document charset */
       TtaSetDocumentCharset (newSVGDoc, ISO_8859_1, FALSE);
@@ -2413,7 +2416,7 @@ Document CreateNewSVGFileofSVGSelected (char *url)
             }
           /* initialize id attribute text content of the groupe element*/
           TtaSetAttributeText (newAttr, "object", newEl, newSVGDoc);
-          MakeUniqueName (newEl, newSVGDoc, TRUE);
+          MakeUniqueName (newEl, newSVGDoc, TRUE, FALSE);
         }
 
       TtaSetStructureChecking (oldStructureChecking, newSVGDoc);

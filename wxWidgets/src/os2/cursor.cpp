@@ -4,7 +4,7 @@
 // Author:      David Webster
 // Modified by:
 // Created:     10/13/99
-// RCS-ID:      $Id: cursor.cpp,v 1.1.1.1 2005/07/06 09:30:55 gully Exp $
+// RCS-ID:      $Id: cursor.cpp,v 1.1.1.2 2005/07/26 09:31:10 gully Exp $
 // Copyright:   (c) David Webster
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -97,14 +97,12 @@ wxCursor::wxCursor(
 
 } // end of wxCursor::wxCursor
 
-wxCursor::wxCursor(
-  const wxString&                   rsCursorFile
-, long                              lFlags
-, int                               nHotSpotX
-, int                               nHotSpotY
-)
+wxCursor::wxCursor( const wxString& WXUNUSED(rsCursorFile),
+                    long lFlags,
+                    int WXUNUSED(nHotSpotX),
+                    int WXUNUSED(nHotSpotY) )
 {
-    wxCursorRefData*                pRefData = new wxCursorRefData;
+    wxCursorRefData* pRefData = new wxCursorRefData;
 
     pRefData = new wxCursorRefData;
     m_refData = pRefData;
@@ -324,4 +322,3 @@ void wxSetCursor(const wxCursor& cursor)
             (*g_globalCursor) = cursor;
     }
 }
-

@@ -4,7 +4,7 @@
 *  Author:      Vadim Zeitlin
 *  Modified by: Ryan Norton (Converted to C)
 *  Created:     29/01/98
-*  RCS-ID:      $Id: debug.h,v 1.1.1.1 2005/07/06 09:30:08 gully Exp $
+*  RCS-ID:      $Id: debug.h,v 1.1.1.2 2005/07/26 09:30:53 gully Exp $
 *  Copyright:   (c) 1998 Vadim Zeitlin <zeitlin@dptmaths.ens-cachan.fr>
 *  Licence:     wxWindows licence
 */
@@ -198,7 +198,7 @@
 
  It may be used both within a function and in the global scope.
 */
-#ifdef __WATCOMC__
+#if defined(__WATCOMC__) && defined(__cplusplus)
     /* avoid "unused symbol" warning */
     #define wxCOMPILE_TIME_ASSERT(expr, msg) \
         class wxMAKE_UNIQUE_ASSERT_NAME { \
@@ -249,4 +249,3 @@
 #endif /* __cplusplus */
 
 #endif  /*  _WX_DEBUG_H_ */
-

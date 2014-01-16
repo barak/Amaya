@@ -4,7 +4,7 @@
 // Author:      Ryan Norton <wxprojects@comcast.net>
 // Modified by:
 // Created:     11/07/04
-// RCS-ID:      $Id: mediactrl.cpp,v 1.1.1.1 2005/07/06 09:30:53 gully Exp $
+// RCS-ID:      $Id: mediactrl.cpp,v 1.1.1.2 2005/07/26 09:31:08 gully Exp $
 // Copyright:   (c) 2004-2005 Ryan Norton, portions (c) 2004 Kevin Olliver
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -66,9 +66,13 @@
 //uma is for wxMacFSSpec
 #include "wx/mac/uma.h"
 #include "wx/timer.h"
+#ifndef __DARWIN__
 #include <Movies.h>
 #include <Gestalt.h>
 #include <QuickTimeComponents.h>    //Standard QT stuff
+#else
+#include <QuickTime/QuickTimeComponents.h>
+#endif
 
 //Determines whether version 4 of QT is installed (Pretty much for classic only)
 Boolean _wxIsQuickTime4Installed (void)
@@ -261,19 +265,19 @@ bool wxQTMediaBackend::CreateControl(wxControl* ctrl, wxWindow* parent,
     if ( !
 
 #if wxUSE_CREATEMOVIECONTROL
-    ctrl->wxWindow::Create(parent, id, pos, size,
-                            wxWindow::MacRemoveBordersFromStyle(style),
-                            name)
+          ctrl->wxWindow::Create(parent, id, pos, size,
+                                 wxWindow::MacRemoveBordersFromStyle(style),
+                                 name)
 #else
-    ctrl->wxControl::Create(parent, id, pos, size,
-                            wxWindow::MacRemoveBordersFromStyle(style),
-                            validator, name)
+          ctrl->wxControl::Create(parent, id, pos, size,
+                                  wxWindow::MacRemoveBordersFromStyle(style),
+                                  validator, name)
 #endif
         )
         return false;
 
 #if wxUSE_VALIDATORS
-        ctrl->SetValidator(validator);
+    ctrl->SetValidator(validator);
 #endif
 
     m_ctrl = ctrl;
@@ -411,28 +415,28 @@ void wxQTMediaBackend::FinishLoad()
                                 movieTrackEnabledOnly) != NULL)
     {
 #if wxUSE_CREATEMOVIECONTROL
-    //
-    //Native CreateMovieControl QT control (Thanks to Kevin Olliver's
-    //wxQTMovie for some of this).
-    //
-    #define GetControlPeer(whatever) ctrl->m_peer
-    wxMediaCtrl* ctrl = (wxMediaCtrl*) m_ctrl;
-        Rect bounds = wxMacGetBoundsForControl(m_ctrl,
-                                               m_ctrl->GetPosition(),
-                                               m_ctrl->GetSize());
+        //
+        //Native CreateMovieControl QT control (Thanks to Kevin Olliver's
+        //wxQTMovie for some of this).
+        //
+        #define GetControlPeer(whatever) ctrl->m_peer
+        wxMediaCtrl* ctrl = (wxMediaCtrl*) m_ctrl;
+            Rect bounds = wxMacGetBoundsForControl(m_ctrl,
+                                                   m_ctrl->GetPosition(),
+                                                   m_ctrl->GetSize());
 
-    //Dispose of old control for new one
-    if (GetControlPeer(m_ctrl) && GetControlPeer(m_ctrl)->Ok() )
-        GetControlPeer(m_ctrl)->Dispose();
+        //Dispose of old control for new one
+        if (GetControlPeer(m_ctrl) && GetControlPeer(m_ctrl)->Ok() )
+            GetControlPeer(m_ctrl)->Dispose();
 
-    //Options-
-    //kMovieControlOptionXXX
-    //HideController - hide the movie controller
-    //LocateTopLeft - movie is pinned to top left rather than centered in the control
-    //EnableEditing - Allows programmatic editing and dragn'drop
-    //HandleEditingHI- Installs event stuff for edit menu - forces EnableEditing also
-    //SetKeysEnabled - Allows keyboard input
-    //ManuallyIdled - app handles movie idling rather than internal timer event loop
+        //Options-
+        //kMovieControlOptionXXX
+        //HideController - hide the movie controller
+        //LocateTopLeft - movie is pinned to top left rather than centered in the control
+        //EnableEditing - Allows programmatic editing and dragn'drop
+        //HandleEditingHI- Installs event stuff for edit menu - forces EnableEditing also
+        //SetKeysEnabled - Allows keyboard input
+        //ManuallyIdled - app handles movie idling rather than internal timer event loop
         ::CreateMovieControl(
                     (WindowRef)
                        ctrl->MacGetTopLevelWindowRef(), //parent
@@ -447,9 +451,9 @@ void wxQTMediaBackend::FinishLoad()
 
         ::EmbedControl(ctrl->m_peer->GetControlRef(), (ControlRef)ctrl->GetParent()->GetHandle());
 #else
-    //
-    //"Emulation"
-    //
+        //
+        //"Emulation"
+        //
         SetMovieGWorld(m_movie,
                        (CGrafPtr)
                        GetWindowPort(
@@ -671,8 +675,3 @@ void wxQTMediaBackend::Move(int x, int y, int w, int h)
 FORCE_LINK_ME(basewxmediabackends);
 
 #endif //wxUSE_MEDIACTRL
-
-
-
-
-
