@@ -1,5 +1,5 @@
 /*
- * Copyright (c) INRIA 1996-2008
+ * Copyright (c) INRIA 1996-2009
  */
 
 /*
@@ -521,7 +521,7 @@ int FindMenuActionFromMenuItemID (Menu_Ctl * ptrmenu, int item_id)
 void TtaExecuteMenuActionFromActionId (int action_id, Document doc,
                                        View view, ThotBool force)
 {
-  int                 frame_id, ref;
+  int                 frame_id;
   // prevent recursive call
   if (g_DoingAction)
     return;
@@ -533,10 +533,13 @@ void TtaExecuteMenuActionFromActionId (int action_id, Document doc,
   else
     {
       frame_id = GetWindowNumber (doc, view);
-      ref = doc;
-
+      if (frame_id == 0)
+	{
+	  g_DoingAction = FALSE;
+	  return;
+	}
      if (action_id > 0 && action_id < MaxMenuAction &&
-         (MenuActionList[action_id].ActionActive[ref] || force) &&
+         (MenuActionList[action_id].ActionActive[doc] || force) &&
          MenuActionList[action_id].Call_Action)
        {
          if (!SelPosition ||
@@ -1797,15 +1800,6 @@ void ThotCallback (int ref, int typedata, char *data)
                                                    (void *)ref,
                                                    (void *)((long int) data),
                                                    (void *)frame);
-              return;
-            }
-          menuThot = FindMenu (frame, WindowTable[window_id].MenuSelect, &ptrmenu) - 1;
-          if (menu == menuThot)
-            {
-              /* traitement du menu selection */
-              (*(Proc3)ThotLocalActions[T_rselect]) ((void *)ref,
-                                                     (void *)((long int) data + 1),
-                                                     (void *)frame);
               return;
             }
         }

@@ -331,9 +331,9 @@ void AmayaFrame::ShowScrollbar( int scrollbar_id )
             HscrollShown[frame_id] = TRUE;
             m_pVSizer->Show(m_pScrollBarH, true);
           }
-#ifndef _MACOS // could crash on that platform with 6.2
+	//#ifndef _MACOS // could crash on that platform with 6.2
        m_pVSizer->Layout();
-#endif /* _MACOS */
+       //#endif /* _MACOS */
       }
       break;
     }
@@ -624,13 +624,16 @@ AmayaWindow * AmayaFrame::GetWindowParent()
 void AmayaFrame::OnClose(wxCloseEvent& event)
 {
   TTALOGDEBUG_1( TTA_LOG_DIALOG, _T("AmayaFrame::OnClose: frame=%d"), m_FrameId);
-
-  PtrDocument         pDoc;
-  int                 view;
+  PtrDocument   pDoc;
+  int           doc_id;
+  int            view;
 
   if (m_FrameId > 0)
     {
       GetDocAndView (m_FrameId, &pDoc, &view);
+      doc_id = FrameTable[m_FrameId].FrDoc;
+      TtcCloseSearchReplace (doc_id, 1);
+      TtaExecuteMenuAction ("CloseDocumentDialogs", doc_id, 1, TRUE);
       CloseView (pDoc, view);
     }
 }

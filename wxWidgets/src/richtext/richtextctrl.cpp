@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     2005-09-30
-// RCS-ID:      $Id: richtextctrl.cpp 53622 2008-05-17 17:54:51Z JS $
+// RCS-ID:      $Id: richtextctrl.cpp 55507 2008-09-07 15:35:11Z JS $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -140,6 +140,7 @@ BEGIN_EVENT_TABLE( wxRichTextCtrl, wxControl )
     EVT_MIDDLE_DOWN(wxRichTextCtrl::OnMiddleClick)
     EVT_LEFT_DCLICK(wxRichTextCtrl::OnLeftDClick)
     EVT_CHAR(wxRichTextCtrl::OnChar)
+    EVT_KEY_DOWN(wxRichTextCtrl::OnChar)
     EVT_SIZE(wxRichTextCtrl::OnSize)
     EVT_SET_FOCUS(wxRichTextCtrl::OnSetFocus)
     EVT_KILL_FOCUS(wxRichTextCtrl::OnKillFocus)
@@ -648,6 +649,65 @@ void wxRichTextCtrl::OnChar(wxKeyEvent& event)
     if (event.AltDown())
         flags |= wxRICHTEXT_ALT_DOWN;
 
+    if (event.GetEventType() == wxEVT_KEY_DOWN)
+    {
+        // Must process this before translation, otherwise it's translated into a WXK_DELETE event.
+        if (event.CmdDown() && event.GetKeyCode() == WXK_BACK)
+        {
+            BeginBatchUndo(_("Delete Text"));
+
+            long newPos = m_caretPosition;
+
+            DeleteSelectedContent(& newPos);
+
+            // Submit range in character positions, which are greater than caret positions,
+            // so subtract 1 for deleted character and add 1 for conversion to character position.
+            if (newPos > -1)
+            {
+                bool processed = false;
+                if (event.CmdDown())
+                {
+                    long pos = wxRichTextCtrl::FindNextWordPosition(-1);
+                    if (pos != -1 && (pos < newPos))
+                    {
+                        GetBuffer().DeleteRangeWithUndo(wxRichTextRange(pos+1, newPos), this);
+                        processed = true;
+                    }
+                }
+
+                if (!processed)
+                    GetBuffer().DeleteRangeWithUndo(wxRichTextRange(newPos, newPos), this);
+            }
+
+            EndBatchUndo();
+
+            if (GetLastPosition() == -1)
+            {
+                GetBuffer().Reset();
+
+                m_caretPosition = -1;
+                PositionCaret();
+                SetDefaultStyleToCursorStyle();
+            }
+
+            ScrollIntoView(m_caretPosition, WXK_LEFT);
+
+            wxRichTextEvent cmdEvent(
+                wxEVT_COMMAND_RICHTEXT_DELETE,
+                GetId());
+            cmdEvent.SetEventObject(this);
+            cmdEvent.SetFlags(flags);
+            cmdEvent.SetPosition(m_caretPosition+1);
+            GetEventHandler()->ProcessEvent(cmdEvent);
+
+            Update();
+        }
+        else
+            event.Skip();
+
+        return;
+    }
+
     if (event.GetKeyCode() == WXK_LEFT ||
         event.GetKeyCode() == WXK_RIGHT ||
         event.GetKeyCode() == WXK_UP ||
@@ -691,6 +751,8 @@ void wxRichTextCtrl::OnChar(wxKeyEvent& event)
             wxString text;
             text = wxRichTextLineBreakChar;
             GetBuffer().InsertTextWithUndo(newPos+1, text, this);
+            m_caretAtLineStart = true;
+            PositionCaret();
         }
         else
             GetBuffer().InsertNewlineWithUndo(newPos+1, this, wxRICHTEXT_INSERT_WITH_PREVIOUS_PARAGRAPH_STYLE|wxRICHTEXT_INSERT_INTERACTIVE);
@@ -721,14 +783,28 @@ void wxRichTextCtrl::OnChar(wxKeyEvent& event)
     {
         BeginBatchUndo(_("Delete Text"));
 
+        long newPos = m_caretPosition;
+
+        DeleteSelectedContent(& newPos);
+
         // Submit range in character positions, which are greater than caret positions,
         // so subtract 1 for deleted character and add 1 for conversion to character position.
-        if (m_caretPosition > -1 && !HasSelection())
+        if (newPos > -1)
         {
-            GetBuffer().DeleteRangeWithUndo(wxRichTextRange(m_caretPosition, m_caretPosition), this);
+            bool processed = false;
+            if (event.CmdDown())
+            {
+                long pos = wxRichTextCtrl::FindNextWordPosition(-1);
+                if (pos != -1 && (pos < newPos))
+                {
+                    GetBuffer().DeleteRangeWithUndo(wxRichTextRange(pos+1, newPos), this);
+                    processed = true;
+                }
+            }
+
+            if (!processed)
+                GetBuffer().DeleteRangeWithUndo(wxRichTextRange(newPos, newPos), this);
         }
-        else
-            DeleteSelectedContent();
 
         EndBatchUndo();
 
@@ -757,25 +833,27 @@ void wxRichTextCtrl::OnChar(wxKeyEvent& event)
     {
         BeginBatchUndo(_("Delete Text"));
 
+        long newPos = m_caretPosition;
+
+        DeleteSelectedContent(& newPos);
+
         // Submit range in character positions, which are greater than caret positions,
-        if (m_caretPosition < GetBuffer().GetRange().GetEnd()+1 && !HasSelection())
+        if (newPos < GetBuffer().GetRange().GetEnd()+1)
         {
             bool processed = false;
             if (event.CmdDown())
             {
-                long pos = wxRichTextCtrl::FindNextWordPosition(-1);
-                if (pos != -1 && (pos < m_caretPosition))
+                long pos = wxRichTextCtrl::FindNextWordPosition(1);
+                if (pos != -1 && (pos > newPos))
                 {
-                    GetBuffer().DeleteRangeWithUndo(wxRichTextRange(pos+1, m_caretPosition), this);
+                    GetBuffer().DeleteRangeWithUndo(wxRichTextRange(newPos+1, pos), this);
                     processed = true;
                 }
             }
 
             if (!processed)
-                GetBuffer().DeleteRangeWithUndo(wxRichTextRange(m_caretPosition+1, m_caretPosition+1), this);
+                GetBuffer().DeleteRangeWithUndo(wxRichTextRange(newPos+1, newPos+1), this);
         }
-        else
-            DeleteSelectedContent();
 
         EndBatchUndo();
 
@@ -1089,6 +1167,9 @@ bool wxRichTextCtrl::ExtendSelection(long oldPos, long newPos, int flags)
 {
     if (flags & wxRICHTEXT_SHIFT_DOWN)
     {
+        if (oldPos == newPos)
+            return false;
+
         wxRichTextRange oldSelection = m_selectionRange;
 
         // If not currently selecting, start selecting
@@ -1107,6 +1188,8 @@ bool wxRichTextCtrl::ExtendSelection(long oldPos, long newPos, int flags)
             // the end.
             if (newPos > m_selectionAnchor)
                 m_selectionRange.SetRange(m_selectionAnchor+1, newPos);
+            else if (newPos == m_selectionAnchor)
+                m_selectionRange = wxRichTextRange(-2, -2);
             else
                 m_selectionRange.SetRange(newPos+1, m_selectionAnchor);
         }
@@ -2288,7 +2371,7 @@ bool wxRichTextCtrl::WriteImage(const wxBitmap& bitmap, int bitmapType)
 /// Insert a newline (actually paragraph) at the current insertion point.
 bool wxRichTextCtrl::Newline()
 {
-    return GetBuffer().InsertNewlineWithUndo(m_caretPosition+1, this);
+    return GetBuffer().InsertNewlineWithUndo(m_caretPosition+1, this, wxRICHTEXT_INSERT_WITH_PREVIOUS_PARAGRAPH_STYLE);
 }
 
 /// Insert a line break at the current insertion point.

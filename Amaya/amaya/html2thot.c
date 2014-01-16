@@ -2774,18 +2774,20 @@ static void EndOfEndTag (char c)
               if (DocumentMeta[HTMLcontext.doc] &&
                   DocumentMeta[HTMLcontext.doc]->xmlformat)
                 {
-                  sprintf (msgBuffer, "Invalid tag <%s> (removed when saving)", inputBuffer);
+                  snprintf (msgBuffer, MaxMsgLength,
+			    "Invalid tag <%50s> (removed when saving)", inputBuffer);
                   HTMLParseError (HTMLcontext.doc, msgBuffer, 0);
                   removed = TRUE;
                 }
               else
                 {
-                  sprintf (msgBuffer, "Warning - unknown tag </%s>", inputBuffer);
+                  snprintf (msgBuffer, MaxMsgLength,
+			    "Warning - unknown tag </%50s>", inputBuffer);
                   HTMLParseError (HTMLcontext.doc, msgBuffer, 0);
                   removed = FALSE;
                 }
               /* create an Invalid_element */
-              sprintf (msgBuffer, "</%s", inputBuffer);
+              snprintf (msgBuffer, MaxMsgLength, "</%50s", inputBuffer);
               InsertInvalidEl (msgBuffer, removed);
             }
           else if (entry >= 0 &&
@@ -2795,9 +2797,9 @@ static void EndOfEndTag (char c)
               /* Invalid element for the document profile */
               if (strlen ((char *)inputBuffer) > MaxMsgLength - 20)
                 inputBuffer[MaxMsgLength - 20] = EOS;
-              sprintf (msgBuffer,
-                       "Invalid end element <%s> for the document profile",
-                       inputBuffer);
+              snprintf (msgBuffer, MaxMsgLength,
+			"Invalid end element <%50s> for the document profile",
+			inputBuffer);
               HTMLParseError (HTMLcontext.doc, msgBuffer, 0);
               XMLErrorsFoundInProfile = TRUE;
             }
@@ -2807,7 +2809,8 @@ static void EndOfEndTag (char c)
               if (DocumentMeta[HTMLcontext.doc] &&
                   DocumentMeta[HTMLcontext.doc]->xmlformat)
                 {
-                  sprintf (msgBuffer, "Invalid end tag <%s>", inputBuffer);
+                  snprintf (msgBuffer, MaxMsgLength,
+			    "Invalid end tag <%50s>", inputBuffer);
                   HTMLParseError (HTMLcontext.doc, msgBuffer, 0);
                 }
               else
@@ -4398,7 +4401,7 @@ static char GetNextChar (FILE *infile, char* buffer, int *index,
 {
   wchar_t        wcharRead = EOS;
   unsigned char  charRead;
-  unsigned char  fallback[5];
+  unsigned char  fallback[8];
   unsigned char *ptr;
   char          *buff;
   int            res = 0;

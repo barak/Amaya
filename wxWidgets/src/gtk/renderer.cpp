@@ -4,7 +4,7 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     20.07.2003
-// RCS-ID:      $Id: renderer.cpp 53829 2008-05-29 23:47:20Z RR $
+// RCS-ID:      $Id: renderer.cpp 54792 2008-07-28 05:49:04Z PC $
 // Copyright:   (c) 2003 Vadim Zeitlin <vadim@wxwindows.org>
 // License:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -638,7 +638,12 @@ wxRendererGTK::DrawItemSelectionRect(wxWindow *win,
                          GTK_STATE_SELECTED,
                          NULL,
                          win->m_wxwindow,
-                         "treeview",
+                         // Detail "treeview" causes warning with GTK+ 2.12 Clearlooks theme:
+                         // "... no property named `row-ending-details'"
+                         // Using "treeview-middle" would fix the warning, but the right
+                         // edge of the focus rect is not getting erased properly either.
+                         // Better to not specify this detail unless the drawing is fixed.
+                         NULL,
                          dc.LogicalToDeviceX(rect.x),
                          dc.LogicalToDeviceY(rect.y),
                          rect.width,

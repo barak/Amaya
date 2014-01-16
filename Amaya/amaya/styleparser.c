@@ -1025,6 +1025,12 @@ static char *ParseCSSBorderWidth (Element element, PSchema tsch,
     {
       /* First parse Border-Top */
       ptrR = ParseCSSBorderTopWidth (element, tsch, context, ptrT, css, isHTML);
+      if (ptrR == ptrT)
+	{
+	  // invalid value
+          cssRule = SkipValue ("Invalid border-width value", ptrT);
+	  return (cssRule);
+	}
       ptrR = SkipBlanksAndComments (ptrR);
       if (*ptrR == ';' || *ptrR == '}' || *ptrR == EOS || *ptrR == ',')
         {
@@ -2327,6 +2333,8 @@ static char *SetCSSImage (Element element, PSchema tsch,
   url = NULL;
   image.typed_data.real = FALSE;
   cssRule = ParseCSSUrl (cssRule, &url);
+  if (strlen (url) > MAX_LENGTH / 4)
+    url[MAX_LENGTH / 4] = EOS;
   ptr = cssRule;
   if (ctxt->destroy)
     {
@@ -6256,6 +6264,7 @@ void  ParseHTMLSpecificStyle (Element el, char *cssRule, Document doc,
   DisplayMode         dispMode;
   PresentationContext ctxt;
   ElementType         elType;
+  char               *buff, *ptr, *end;
   ThotBool            isHTML;
 
   /*  A rule applying to BODY is really meant to address HTML */
@@ -6287,13 +6296,25 @@ void  ParseHTMLSpecificStyle (Element el, char *cssRule, Document doc,
   dispMode = TtaGetDisplayMode (doc);
   /* Call the parser */
   DoDialog = FALSE; // not parsing for CSS dialog
-
   /* if it is a property applied to a COL or a COLGROUP element in a HTML table,
      associate the property to the corresponding Table_head or cell elements,
      depending on the property. */
-  if (!strncmp (cssRule, "background-color", 16) && isHTML &&
+  ptr = strstr (cssRule, "background-color");
+  if (ptr && isHTML &&
       (elType.ElTypeNum == HTML_EL_COL || elType.ElTypeNum == HTML_EL_COLGROUP))
-    ColApplyCSSRule (el, (PresentationContext) ctxt, cssRule, NULL);
+    {
+      end = strstr (ptr, ";");
+      if (end)
+        {
+          buff = TtaStrdup (ptr);
+          end = strstr (buff, ";");
+          *end = EOS;
+          ColApplyCSSRule (el, (PresentationContext) ctxt, buff, NULL);
+          TtaFreeMemory (buff);
+        }
+      else
+        ColApplyCSSRule (el, (PresentationContext) ctxt, ptr, NULL);
+    }
   else
     ParseCSSRule (el, NULL, ctxt, cssRule, NULL, isHTML);
 
@@ -7524,7 +7545,7 @@ void HTMLSetBackgroundColor (Document doc, Element el, int specificity,
 {
   char             css_command[1000];
 
-  sprintf (css_command, "background-color: %s", color);
+  snprintf (css_command, 1000, "background-color: %50s", color);
   ParseHTMLSpecificStyle (el, css_command, doc, specificity, FALSE);
 }
 
@@ -7536,7 +7557,7 @@ void HTMLSetForegroundColor (Document doc, Element el, int specificity,
 {
   char           css_command[1000];
 
-  sprintf (css_command, "color: %s", color);
+  snprintf (css_command, 1000, "color: %50s", color);
   ParseHTMLSpecificStyle (el, css_command, doc, specificity, FALSE);
 }
 
@@ -7558,7 +7579,7 @@ void HTMLResetBackgroundImage (Document doc, Element el)
 {
   char           css_command[1000];
 
-  sprintf (css_command, "background-image: url(xx); background-repeat: repeat");
+  snprintf (css_command, 1000, "background-image: url(xx); background-repeat: repeat");
   ParseHTMLSpecificStyle (el, css_command, doc, 0, TRUE);
 }
 
@@ -7581,7 +7602,7 @@ void HTMLSetAlinkColor (Document doc, Element el, char *color)
 {
   char           css_command[1000];
 
-  sprintf (css_command, ":link { color: %s }", color);
+  snprintf (css_command, 1000, ":link { color: %50s }", color);
   ApplyCSSRules (el, css_command, doc, FALSE);
 }
 
@@ -7592,7 +7613,7 @@ void HTMLSetAactiveColor (Document doc, Element el, char *color)
 {
   char           css_command[1000];
 
-  sprintf (css_command, ":active { color: %s }", color);
+  snprintf (css_command, 1000, ":active { color: %50s }", color);
   ApplyCSSRules (el, css_command, doc, FALSE);
 }
 
@@ -7603,7 +7624,7 @@ void HTMLSetAvisitedColor (Document doc, Element el, char *color)
 {
   char           css_command[1000];
 
-  sprintf (css_command, ":visited { color: %s }", color);
+  snprintf (css_command, 1000, ":visited { color: %50s }", color);
   ApplyCSSRules (el, css_command, doc, FALSE);
 }
 

@@ -4,7 +4,7 @@
 // Author:      Stefan Csomor
 // Modified by:
 // Created:     10/21/99
-// RCS-ID:      $Id: dataobj.cpp 51165 2008-01-11 19:18:57Z SC $
+// RCS-ID:      $Id: dataobj.cpp 54368 2008-06-26 07:09:17Z SC $
 // Copyright:   (c) 1999 Stefan Csomor
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -421,6 +421,11 @@ bool wxDataObject::GetFromPasteboard( void * pb )
                     flavorType = (CFStringRef)CFArrayGetValueAtIndex( flavorTypeArray,
                                                                          flavorIndex );
 
+                    // avoid utf8 being treated closer to plain-text than unicode by forcing a conversion
+                    if ( UTTypeConformsTo(flavorType, CFSTR("public.utf8-plain-text") ) )
+                    {
+                        flavorType = CFSTR("public.utf16-plain-text");
+                    }
                     wxDataFormat flavorFormat( (wxDataFormat::NativeFormat) flavorType );
  
                     if ( dataFormat == flavorFormat )

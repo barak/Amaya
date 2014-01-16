@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     01/02/97
-// RCS-ID:      $Id: filedlg.cpp 43833 2006-12-06 17:17:37Z VZ $
+// RCS-ID:      $Id: filedlg.cpp 55207 2008-08-23 17:49:04Z VZ $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -437,6 +437,13 @@ int wxFileDialog::ShowModal()
 
     DWORD errCode;
     bool success = DoShowCommFileDialog(&of, m_windowStyle, &errCode);
+
+    if ( !success && errCode == FNERR_INVALIDFILENAME && of.lpstrFile[0] )
+    {
+        // this can happen if the default file name is invalid, try without it now
+        of.lpstrFile[0] = _T('\0');
+        success = DoShowCommFileDialog(&of, m_windowStyle, &errCode);
+    }
 
 #ifdef wxTRY_SMALLER_OPENFILENAME
     // the system might be too old to support the new version file dialog

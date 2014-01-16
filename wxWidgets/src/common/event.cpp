@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     01/02/97
-// RCS-ID:      $Id: event.cpp 51404 2008-01-27 12:57:04Z VZ $
+// RCS-ID:      $Id: event.cpp 54491 2008-07-05 17:38:58Z SN $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -34,6 +34,7 @@
     #include "wx/module.h"
 
     #if wxUSE_GUI
+        #include "wx/window.h"
         #include "wx/control.h"
         #include "wx/dc.h"
         #include "wx/textctrl.h"

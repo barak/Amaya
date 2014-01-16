@@ -5,7 +5,7 @@
 // Modified by: Michael N. Filippov <michael@idisys.iae.nsk.su>
 //              (2003/09/30 - PluralForms support)
 // Created:     29/01/98
-// RCS-ID:      $Id: intl.cpp 53628 2008-05-17 22:49:30Z VZ $
+// RCS-ID:      $Id: intl.cpp 54700 2008-07-19 00:32:57Z VZ $
 // Copyright:   (c) 1998 Vadim Zeitlin <zeitlin@dptmaths.ens-cachan.fr>
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -2504,7 +2504,13 @@ wxFontEncoding wxLocale::GetSystemEncoding()
         // (a.k.a. US-ASCII) which is arguably a bug but keep it like this for
         // backwards compatibility and just take care to not return
         // wxFONTENCODING_DEFAULT from here as this surely doesn't make sense
-        if ( enc != wxFONTENCODING_MAX && enc != wxFONTENCODING_DEFAULT )
+        if ( enc == wxFONTENCODING_DEFAULT )
+        {
+            // we don't have wxFONTENCODING_ASCII, so use the closest one
+            return wxFONTENCODING_ISO8859_1;
+        }
+
+        if ( enc != wxFONTENCODING_MAX )
         {
             return enc;
         }

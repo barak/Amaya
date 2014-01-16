@@ -21,6 +21,7 @@
 static int Waiting = 0;
 static int m_doc = 0;
 static int MyRef = 0;
+static wxFileDialog *p_dlg = NULL;
 
 //-----------------------------------------------------------------------------
 // Event table: connect the events to the handler functions to process them
@@ -95,6 +96,7 @@ HRefDlgWX::~HRefDlgWX()
     {
       Waiting = 0;
       ThotCallback (MyRef, INTEGER_DATA, (char*) 0);
+      TtaDestroyDialogue( MyRef );
       m_doc = 0;
     }
 }
@@ -114,14 +116,20 @@ void HRefDlgWX::OnURLSelected( wxCommandEvent& event )
   ----------------------------------------------------------------------*/
 void HRefDlgWX::OnOk( wxCommandEvent& event )
 {
+  if (p_dlg)
+    {
+      p_dlg->Hide();
+      p_dlg->Destroy();
+      p_dlg = NULL;
+    }
   // get the combobox current url
   wxString url = XRCCTRL(*this, "wxID_COMBOBOX", wxComboBox)->GetValue( );
   url = url.Trim(TRUE).Trim(FALSE);
   Waiting = 0;
   // allocate a temporary buffer to copy the 'const char *' url buffer 
   char buffer[MAX_LENGTH];
-  wxASSERT( url.Len() < MAX_LENGTH );
-  strcpy( buffer, (const char*)url.mb_str(wxConvUTF8) );
+  strncpy( buffer, (const char*)url.mb_str(wxConvUTF8),  MAX_LENGTH / 4);
+  buffer[MAX_LENGTH / 4] = EOS;
   // give the new url to amaya (to do url completion)
   ThotCallback (BaseDialog + AttrHREFText, STRING_DATA, (char *)buffer);
   // create or load the new document
@@ -137,7 +145,12 @@ void HRefDlgWX::OnOk( wxCommandEvent& event )
 void HRefDlgWX::OnBrowse( wxCommandEvent& event )
 {
   // Create a generic filedialog
-  wxFileDialog * p_dlg = new wxFileDialog
+  if (p_dlg)
+    {
+      p_dlg->Raise();
+      return;
+    }
+  p_dlg = new wxFileDialog
     (
      this,
      TtaConvMessageToWX( TtaGetMessage (AMAYA, AM_OPEN_URL) ),
@@ -161,15 +174,19 @@ void HRefDlgWX::OnBrowse( wxCommandEvent& event )
       // destroy the dlg before calling thotcallback because it's a child of this
       // dialog and thotcallback will delete the dialog...
       // so if I do not delete it manualy here it will be deleted twice
-      p_dlg->Destroy();
-      // simulate the confirm command
-      OnOk( event );
+      if (p_dlg)
+	{
+	  p_dlg->Destroy();
+	  // simulate the confirm command
+	  OnOk( event );
+	}
     }
-  else
+  else if (p_dlg)
     {
       *m_pLastUsedFilter = p_dlg->GetFilterIndex();
       p_dlg->Destroy();
     }
+  p_dlg = NULL;
 }
 
 /*----------------------------------------------------------------------
@@ -179,6 +196,12 @@ void HRefDlgWX::OnBrowse( wxCommandEvent& event )
   ----------------------------------------------------------------------*/
 void HRefDlgWX::OnDelete( wxCommandEvent& event )
 {
+  if (p_dlg)
+    {
+      p_dlg->Hide();
+      p_dlg->Destroy();
+      p_dlg = NULL;
+    }
   ThotCallback (MyRef, INTEGER_DATA, (char*) 4);
   ThotCallback (MyRef, INTEGER_DATA, (char*)1);
 }
@@ -194,6 +217,12 @@ void HRefDlgWX::OnCancel( wxCommandEvent& event )
   // usefull to cancel the link creation process
   //  ThotCallback (MyRef, INTEGER_DATA, (char*) 0);
   //Close();
+  if (p_dlg)
+    {
+      p_dlg->Hide();
+      p_dlg->Destroy();
+      p_dlg = NULL;
+    }
   TtaDestroyDialogue( MyRef );
   TtaRedirectFocus();
 }

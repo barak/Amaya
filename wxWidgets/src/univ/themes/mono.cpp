@@ -4,7 +4,7 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     2006-08-27
-// RCS-ID:      $Id: mono.cpp 44058 2006-12-24 19:06:39Z VS $
+// RCS-ID:      $Id: mono.cpp 54496 2008-07-05 18:25:33Z SN $
 // Copyright:   (c) 2006 REA Elektronik GmbH
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -29,6 +29,7 @@
 #if wxUSE_THEME_MONO
 
 #ifndef WX_PRECOMP
+    #include "wx/window.h"
     #include "wx/dc.h"
 #endif // WX_PRECOMP
 

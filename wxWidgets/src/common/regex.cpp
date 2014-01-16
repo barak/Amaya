@@ -4,7 +4,7 @@
 // Author:      Karsten Ballueder and Vadim Zeitlin
 // Modified by:
 // Created:     13.07.01
-// RCS-ID:      $Id: regex.cpp 50711 2007-12-15 02:57:58Z VZ $
+// RCS-ID:      $Id: regex.cpp 55255 2008-08-25 14:34:23Z VZ $
 // Copyright:   (c) 2000 Karsten Ballueder <ballueder@gmx.net>
 //                  2001 Vadim Zeitlin <vadim@wxwindows.org>
 // Licence:     wxWindows licence
@@ -277,12 +277,15 @@ bool wxRegExImpl::Compile(const wxString& expr, int flags)
     // translate our flags to regcomp() ones
     int flagsRE = 0;
     if ( !(flags & wxRE_BASIC) )
+    {
 #ifndef WX_NO_REGEX_ADVANCED
         if (flags & wxRE_ADVANCED)
             flagsRE |= REG_ADVANCED;
         else
 #endif
             flagsRE |= REG_EXTENDED;
+    }
+
     if ( flags & wxRE_ICASE )
         flagsRE |= REG_ICASE;
     if ( flags & wxRE_NOSUB )

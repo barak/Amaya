@@ -40,6 +40,8 @@ extern void UpdateSVGElement ( Document doc,
                                int dy,
                                int dw,
                                int dh );
+extern void UpdateMarkers ( Element el,
+                            Document doc );
 extern void UpdatePointsOrPathAttribute ( Document doc,
                                           Element el,
                                           int w,
@@ -115,12 +117,12 @@ extern void CreateSVG_Text ( Document document,
                              View view );
 extern void CreateSVG_Group ( Document document,
                               View view );
-extern void CreateSVG_SimpleArrow ( Document document,
-                                    View view );
+extern void CreateSVG_StartArrow ( Document document,
+                                   View view );
+extern void CreateSVG_EndArrow ( Document document,
+                                 View view );
 extern void CreateSVG_DoubleArrow ( Document document,
                                     View view );
-extern void CreateSVG_Zigzag ( Document document,
-                               View view );
 extern void CreateSVG_Square ( Document document,
                                View view );
 extern void CreateSVG_RoundedSquare ( Document document,
@@ -236,6 +238,8 @@ extern void UpdateSVGElement ( Document doc,
                                  int dy,
                                  int dw,
                                  int dh );
+extern void UpdateMarkers ( Element el,
+                              Document doc );
 extern void UpdatePointsOrPathAttribute ( Document doc,
                                             Element el,
                                             int w,
@@ -311,12 +315,12 @@ extern void CreateSVG_Text ( Document document,
                                View view );
 extern void CreateSVG_Group ( Document document,
                                 View view );
-extern void CreateSVG_SimpleArrow ( Document document,
-                                      View view );
+extern void CreateSVG_StartArrow ( Document document,
+                                     View view );
+extern void CreateSVG_EndArrow ( Document document,
+                                   View view );
 extern void CreateSVG_DoubleArrow ( Document document,
                                       View view );
-extern void CreateSVG_Zigzag ( Document document,
-                                 View view );
 extern void CreateSVG_Square ( Document document,
                                  View view );
 extern void CreateSVG_RoundedSquare ( Document document,

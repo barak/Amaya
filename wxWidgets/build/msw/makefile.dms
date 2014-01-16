@@ -169,6 +169,7 @@ ____MONOLIB_GUI_SRC_FILENAMES_OBJECTS =  \
 	$(OBJS)\monodll_floatpane.obj \
 	$(OBJS)\monodll_auibook.obj \
 	$(OBJS)\monodll_tabmdi.obj \
+	$(OBJS)\monodll_auibar.obj \
 	$(OBJS)\monodll_richtextctrl.obj \
 	$(OBJS)\monodll_richtextbuffer.obj \
 	$(OBJS)\monodll_richtextstyles.obj \
@@ -792,6 +793,7 @@ ____MONOLIB_GUI_SRC_FILENAMES_1_OBJECTS =  \
 	$(OBJS)\monolib_floatpane.obj \
 	$(OBJS)\monolib_auibook.obj \
 	$(OBJS)\monolib_tabmdi.obj \
+	$(OBJS)\monolib_auibar.obj \
 	$(OBJS)\monolib_richtextctrl.obj \
 	$(OBJS)\monolib_richtextbuffer.obj \
 	$(OBJS)\monolib_richtextstyles.obj \
@@ -2769,10 +2771,10 @@ XRCLIB_CXXFLAGS =  $(__DEBUGINFO) $(__OPTIMIZEFLAG)  $(__RUNTIME_LIBS)   -D_WIN3
 XRCLIB_OBJECTS =  $(OBJS)\xrclib_dummy.obj $(OBJS)\xrclib_xh_animatctrl.obj $(OBJS)\xrclib_xh_bmp.obj $(OBJS)\xrclib_xh_bmpcbox.obj $(OBJS)\xrclib_xh_bmpbt.obj $(OBJS)\xrclib_xh_bttn.obj $(OBJS)\xrclib_xh_cald.obj $(OBJS)\xrclib_xh_chckb.obj $(OBJS)\xrclib_xh_chckl.obj $(OBJS)\xrclib_xh_choic.obj $(OBJS)\xrclib_xh_choicbk.obj $(OBJS)\xrclib_xh_clrpicker.obj $(OBJS)\xrclib_xh_collpane.obj $(OBJS)\xrclib_xh_combo.obj $(OBJS)\xrclib_xh_datectrl.obj $(OBJS)\xrclib_xh_dirpicker.obj $(OBJS)\xrclib_xh_dlg.obj $(OBJS)\xrclib_xh_frame.obj $(OBJS)\xrclib_xh_mdi.obj $(OBJS)\xrclib_xh_filepicker.obj $(OBJS)\xrclib_xh_fontpicker.obj $(OBJS)\xrclib_xh_gauge.obj $(OBJS)\xrclib_xh_gdctl.obj $(OBJS)\xrclib_xh_grid.obj $(OBJS)\xrclib_xh_html.obj $(OBJS)\xrclib_xh_hyperlink.obj $(OBJS)\xrclib_xh_listb.obj $(OBJS)\xrclib_xh_listbk.obj $(OBJS)\xrclib_xh_listc.obj $(OBJS)\xrclib_xh_menu.obj $(OBJS)\xrclib_xh_notbk.obj $(OBJS)\xrclib_xh_odcombo.obj $(OBJS)\xrclib_xh_panel.obj $(OBJS)\xrclib_xh_propdlg.obj $(OBJS)\xrclib_xh_radbt.obj $(OBJS)\xrclib_xh_radbx.obj $(OBJS)\xrclib_xh_scrol.obj $(OBJS)\xrclib_xh_scwin.obj $(OBJS)\xrclib_xh_htmllbox.obj $(OBJS)\xrclib_xh_sizer.obj $(OBJS)\xrclib_xh_slidr.obj $(OBJS)\xrclib_xh_spin.obj $(OBJS)\xrclib_xh_split.obj $(OBJS)\xrclib_xh_statbar.obj $(OBJS)\xrclib_xh_stbmp.obj $(OBJS)\xrclib_xh_stbox.obj $(OBJS)\xrclib_xh_stlin.obj $(OBJS)\xrclib_xh_sttxt.obj $(OBJS)\xrclib_xh_text.obj $(OBJS)\xrclib_xh_tglbtn.obj $(OBJS)\xrclib_xh_toolb.obj $(OBJS)\xrclib_xh_tree.obj $(OBJS)\xrclib_xh_treebk.obj $(OBJS)\xrclib_xh_unkwn.obj $(OBJS)\xrclib_xh_wizrd.obj $(OBJS)\xrclib_xmlres.obj $(OBJS)\xrclib_xmlrsall.obj
 XRCLIB_ODEP =  $(OBJS)\pch_wxprec_xrclib.sym
 AUIDLL_CXXFLAGS =  -WD $(__DEBUGINFO) $(__OPTIMIZEFLAG)  $(__RUNTIME_LIBS)   -D_WIN32_WINNT=0x0400 -D__WXMSW__ $(__WXUNIV_DEFINE_p) $(__DEBUG_DEFINE_p) $(__EXCEPTIONS_DEFINE_p) $(__RTTI_DEFINE_p) $(__THREAD_DEFINE_p) $(__UNICODE_DEFINE_p) $(__MSLU_DEFINE_p) $(__GFXCTX_DEFINE_p) -I$(SETUPHDIR) -I..\..\include -w- -I..\..\src\tiff -I..\..\src\jpeg -I..\..\src\png -I..\..\src\zlib  -I..\..\src\regex -I..\..\src\expat\lib -DWXUSINGDLL -DWXMAKINGDLL_AUI   $(__RTTIFLAG) $(__EXCEPTIONSFLAG) -H -HO- -HH$(OBJS)\pch_wxprec_auidll.sym $(CPPFLAGS) $(CXXFLAGS)
-AUIDLL_OBJECTS =  $(OBJS)\auidll_dummy.obj $(OBJS)\auidll_framemanager.obj $(OBJS)\auidll_dockart.obj $(OBJS)\auidll_floatpane.obj $(OBJS)\auidll_auibook.obj $(OBJS)\auidll_tabmdi.obj
+AUIDLL_OBJECTS =  $(OBJS)\auidll_dummy.obj $(OBJS)\auidll_framemanager.obj $(OBJS)\auidll_dockart.obj $(OBJS)\auidll_floatpane.obj $(OBJS)\auidll_auibook.obj $(OBJS)\auidll_tabmdi.obj $(OBJS)\auidll_auibar.obj
 AUIDLL_ODEP =  $(OBJS)\pch_wxprec_auidll.sym
 AUILIB_CXXFLAGS =  $(__DEBUGINFO) $(__OPTIMIZEFLAG)  $(__RUNTIME_LIBS)   -D_WIN32_WINNT=0x0400 -D__WXMSW__ $(__WXUNIV_DEFINE_p) $(__DEBUG_DEFINE_p) $(__EXCEPTIONS_DEFINE_p) $(__RTTI_DEFINE_p) $(__THREAD_DEFINE_p) $(__UNICODE_DEFINE_p) $(__MSLU_DEFINE_p) $(__GFXCTX_DEFINE_p) -I$(SETUPHDIR) -I..\..\include -w- -I..\..\src\tiff -I..\..\src\jpeg -I..\..\src\png -I..\..\src\zlib  -I..\..\src\regex -I..\..\src\expat\lib  $(__RTTIFLAG) $(__EXCEPTIONSFLAG) -H -HO- -HH$(OBJS)\pch_wxprec_auilib.sym $(CPPFLAGS) $(CXXFLAGS)
-AUILIB_OBJECTS =  $(OBJS)\auilib_dummy.obj $(OBJS)\auilib_framemanager.obj $(OBJS)\auilib_dockart.obj $(OBJS)\auilib_floatpane.obj $(OBJS)\auilib_auibook.obj $(OBJS)\auilib_tabmdi.obj
+AUILIB_OBJECTS =  $(OBJS)\auilib_dummy.obj $(OBJS)\auilib_framemanager.obj $(OBJS)\auilib_dockart.obj $(OBJS)\auilib_floatpane.obj $(OBJS)\auilib_auibook.obj $(OBJS)\auilib_tabmdi.obj $(OBJS)\auilib_auibar.obj
 AUILIB_ODEP =  $(OBJS)\pch_wxprec_auilib.sym
 RICHTEXTDLL_CXXFLAGS =  -WD $(__DEBUGINFO) $(__OPTIMIZEFLAG)  $(__RUNTIME_LIBS)   -D_WIN32_WINNT=0x0400 -D__WXMSW__ $(__WXUNIV_DEFINE_p) $(__DEBUG_DEFINE_p) $(__EXCEPTIONS_DEFINE_p) $(__RTTI_DEFINE_p) $(__THREAD_DEFINE_p) $(__UNICODE_DEFINE_p) $(__MSLU_DEFINE_p) $(__GFXCTX_DEFINE_p) -I$(SETUPHDIR) -I..\..\include -w- -I..\..\src\tiff -I..\..\src\jpeg -I..\..\src\png -I..\..\src\zlib  -I..\..\src\regex -I..\..\src\expat\lib -DWXUSINGDLL -DWXMAKINGDLL_RICHTEXT   $(__RTTIFLAG) $(__EXCEPTIONSFLAG) -H -HO- -HH$(OBJS)\pch_wxprec_richtextdll.sym $(CPPFLAGS) $(CXXFLAGS)
 RICHTEXTDLL_OBJECTS =  $(OBJS)\richtextdll_dummy.obj $(OBJS)\richtextdll_richtextctrl.obj $(OBJS)\richtextdll_richtextbuffer.obj $(OBJS)\richtextdll_richtextstyles.obj $(OBJS)\richtextdll_richtextxml.obj $(OBJS)\richtextdll_richtexthtml.obj $(OBJS)\richtextdll_richtextformatdlg.obj $(OBJS)\richtextdll_richtextsymboldlg.obj $(OBJS)\richtextdll_richtextstyledlg.obj $(OBJS)\richtextdll_richtextprint.obj
@@ -3311,7 +3313,7 @@ $(SETUPHDIR)\wx\setup.h :
 build_cfg_file :  $(SETUPHDIR)
 	@echo WXVER_MAJOR=2 >$(BUILD_CFG_FILE)
 	@echo WXVER_MINOR=8 >>$(BUILD_CFG_FILE)
-	@echo WXVER_RELEASE=8 >>$(BUILD_CFG_FILE)
+	@echo WXVER_RELEASE=9 >>$(BUILD_CFG_FILE)
 	@echo BUILD=$(BUILD) >>$(BUILD_CFG_FILE)
 	@echo MONOLITHIC=$(MONOLITHIC) >>$(BUILD_CFG_FILE)
 	@echo SHARED=$(SHARED) >>$(BUILD_CFG_FILE)
@@ -4426,6 +4428,9 @@ $(OBJS)\monodll_auibook.obj :  ..\..\src\aui\auibook.cpp $(MONODLL_ODEP)
 
 $(OBJS)\monodll_tabmdi.obj :  ..\..\src\aui\tabmdi.cpp $(MONODLL_ODEP)
 	$(CXX) -mn -c -cpp -o$@ $(MONODLL_CXXFLAGS) ..\..\src\aui\tabmdi.cpp
+
+$(OBJS)\monodll_auibar.obj :  ..\..\src\aui\auibar.cpp $(MONODLL_ODEP)
+	$(CXX) -mn -c -cpp -o$@ $(MONODLL_CXXFLAGS) ..\..\src\aui\auibar.cpp
 
 $(OBJS)\monodll_richtextctrl.obj :  ..\..\src\richtext\richtextctrl.cpp $(MONODLL_ODEP)
 	$(CXX) -mn -c -cpp -o$@ $(MONODLL_CXXFLAGS) ..\..\src\richtext\richtextctrl.cpp
@@ -6526,6 +6531,9 @@ $(OBJS)\monolib_auibook.obj :  ..\..\src\aui\auibook.cpp $(MONOLIB_ODEP)
 
 $(OBJS)\monolib_tabmdi.obj :  ..\..\src\aui\tabmdi.cpp $(MONOLIB_ODEP)
 	$(CXX) -mn -c -cpp -o$@ $(MONOLIB_CXXFLAGS) ..\..\src\aui\tabmdi.cpp
+
+$(OBJS)\monolib_auibar.obj :  ..\..\src\aui\auibar.cpp $(MONOLIB_ODEP)
+	$(CXX) -mn -c -cpp -o$@ $(MONOLIB_CXXFLAGS) ..\..\src\aui\auibar.cpp
 
 $(OBJS)\monolib_richtextctrl.obj :  ..\..\src\richtext\richtextctrl.cpp $(MONOLIB_ODEP)
 	$(CXX) -mn -c -cpp -o$@ $(MONOLIB_CXXFLAGS) ..\..\src\richtext\richtextctrl.cpp
@@ -12067,6 +12075,9 @@ $(OBJS)\auidll_auibook.obj :  ..\..\src\aui\auibook.cpp $(AUIDLL_ODEP)
 $(OBJS)\auidll_tabmdi.obj :  ..\..\src\aui\tabmdi.cpp $(AUIDLL_ODEP)
 	$(CXX) -mn -c -cpp -o$@ $(AUIDLL_CXXFLAGS) ..\..\src\aui\tabmdi.cpp
 
+$(OBJS)\auidll_auibar.obj :  ..\..\src\aui\auibar.cpp $(AUIDLL_ODEP)
+	$(CXX) -mn -c -cpp -o$@ $(AUIDLL_CXXFLAGS) ..\..\src\aui\auibar.cpp
+
 $(OBJS)\auilib_dummy.obj :  ..\..\src\common\dummy.cpp $(AUILIB_ODEP)
 	$(CXX) -mn -c -cpp -o$@ $(AUILIB_CXXFLAGS) ..\..\src\common\dummy.cpp
 
@@ -12084,6 +12095,9 @@ $(OBJS)\auilib_auibook.obj :  ..\..\src\aui\auibook.cpp $(AUILIB_ODEP)
 
 $(OBJS)\auilib_tabmdi.obj :  ..\..\src\aui\tabmdi.cpp $(AUILIB_ODEP)
 	$(CXX) -mn -c -cpp -o$@ $(AUILIB_CXXFLAGS) ..\..\src\aui\tabmdi.cpp
+
+$(OBJS)\auilib_auibar.obj :  ..\..\src\aui\auibar.cpp $(AUILIB_ODEP)
+	$(CXX) -mn -c -cpp -o$@ $(AUILIB_CXXFLAGS) ..\..\src\aui\auibar.cpp
 
 $(OBJS)\richtextdll_dummy.obj :  ..\..\src\common\dummy.cpp $(RICHTEXTDLL_ODEP)
 	$(CXX) -mn -c -cpp -o$@ $(RICHTEXTDLL_CXXFLAGS) ..\..\src\common\dummy.cpp

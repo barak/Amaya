@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by: Agron Selimaj
 // Created:     04/01/98
-// RCS-ID:      $Id: listctrl_mac.cpp 53881 2008-05-31 17:30:06Z SC $
+// RCS-ID:      $Id: listctrl_mac.cpp 55309 2008-08-27 08:21:09Z SC $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -903,7 +903,7 @@ bool wxListCtrl::SetBackgroundColour(const wxColour& colour)
     return rv;
 }
 
-wxColour wxListCtrl::GetBackgroundColour()
+wxColour wxListCtrl::GetBackgroundColour() const
 {
     if (m_genericImpl)
         return m_genericImpl->GetBackgroundColour();

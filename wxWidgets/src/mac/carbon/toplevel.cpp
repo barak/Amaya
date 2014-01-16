@@ -4,7 +4,7 @@
 // Author:      Stefan Csomor
 // Modified by:
 // Created:     24.09.01
-// RCS-ID:      $Id: toplevel.cpp 53258 2008-04-18 08:06:16Z SC $
+// RCS-ID:      $Id: toplevel.cpp 55249 2008-08-25 04:27:59Z KO $
 // Copyright:   (c) 2001-2004 Stefan Csomor
 // License:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -597,8 +597,14 @@ pascal OSStatus wxMacTopLevelMouseEventHandler( EventHandlerCallRef handler , Ev
 
         if ( currentMouseWindow->GetEventHandler()->ProcessEvent(wxevent) )
         {
+            /*
+            // this code is dangerous in case the delete in the mouse down occured further up in the chain, trying alternative
+            
             if ((currentMouseWindowParent != NULL) &&
                 (currentMouseWindowParent->GetChildren().Find(currentMouseWindow) == NULL))
+            */
+            // deleted in the meantime
+            if ( g_MacLastWindow == NULL )
                 currentMouseWindow = NULL;
 
             result = noErr;
@@ -1150,9 +1156,16 @@ void  wxTopLevelWindowMac::DoMacCreateRealWindow(
         }
         else
         {
-            wclass = kPlainWindowClass;
-			activationScopeSet = true;
-			activationScope = kWindowActivationScopeNone;
+            if ( HasFlag( wxNO_BORDER ) )
+            {
+                wclass = kSimpleWindowClass ;
+            }
+            else
+            {
+                wclass = kPlainWindowClass ;
+            }
+            activationScopeSet = true;
+            activationScope = kWindowActivationScopeNone;
         }
     }
     else if ( HasFlag( wxPOPUP_WINDOW ) )
@@ -1373,6 +1386,11 @@ void wxTopLevelWindowMac::MacActivate( long timestamp , bool inIsActivating )
 }
 
 void wxTopLevelWindowMac::SetTitle(const wxString& title)
+{
+    SetLabel( title ) ;
+}
+
+void wxTopLevelWindowMac::SetLabel(const wxString& title)
 {
     wxWindow::SetLabel( title ) ;
     UMASetWTitle( (WindowRef)m_macWindow , title , m_font.GetEncoding() ) ;

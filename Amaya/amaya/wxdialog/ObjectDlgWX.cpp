@@ -20,7 +20,7 @@
 
 static int      MyRef;
 static int      Waiting = 0;
-
+static wxFileDialog *p_dlg = NULL;
 
 //-----------------------------------------------------------------------------
 // Event table: connect the events to the handler functions to process them
@@ -135,8 +135,12 @@ ObjectDlgWX::ObjectDlgWX( int ref, wxWindow* parent, const wxString & title,
 ObjectDlgWX::~ObjectDlgWX()
 {
   if (Waiting)
-  // no return done
-    ThotCallback (MyRef, INTEGER_DATA, (char*) 0);
+    {
+      // no return done
+      Waiting = 0;
+      ThotCallback (MyRef, INTEGER_DATA, (char*) 0);
+      TtaDestroyDialogue( MyRef );
+    }
 }
 
 /*----------------------------------------------------------------------
@@ -145,9 +149,8 @@ ObjectDlgWX::~ObjectDlgWX()
 void ObjectDlgWX::OnMimeTypeCbx( wxCommandEvent& event )
 {
   wxString wx_mimetype = XRCCTRL(*this, "wxID_MIME_TYPE_CB", wxComboBox)->GetValue ();
-
-  wxASSERT( wx_mimetype.Len() < MAX_LENGTH );
-  strcpy( UserMimeType, (const char*)wx_mimetype.mb_str(wxConvUTF8) );
+  strncpy( UserMimeType, (const char*)wx_mimetype.mb_str(wxConvUTF8), MAX_LENGTH - 1);
+  UserMimeType[MAX_LENGTH - 1] = EOS;
 }
 
 /*----------------------------------------------------------------------
@@ -209,6 +212,12 @@ void ObjectDlgWX::OnOpenButton( wxCommandEvent& event )
 {
   char     buffer[MAX_LENGTH];
 
+  if (p_dlg)
+    {
+      p_dlg->Hide();
+      p_dlg->Destroy();
+      p_dlg = NULL;
+    }
   // get the current url
   wxString url = XRCCTRL(*this, "wxID_URL", wxTextCtrl)->GetValue( );
   if (url.Len() == 0)
@@ -219,7 +228,8 @@ void ObjectDlgWX::OnOpenButton( wxCommandEvent& event )
       return;
     }
 
-  strcpy( buffer, (const char*)url.mb_str(wxConvUTF8) );
+  strncpy( buffer, (const char*)url.mb_str(wxConvUTF8), MAX_LENGTH - 1);
+  buffer[MAX_LENGTH - 1] = EOS;
   // give the new url to amaya (to do url completion)
   ThotCallback (BaseImage + ImageURL,  STRING_DATA, (char *)buffer );
 
@@ -249,7 +259,12 @@ void ObjectDlgWX::OnOpenButton( wxCommandEvent& event )
 void ObjectDlgWX::OnBrowseButton( wxCommandEvent& event )
 {
   // Create a generic filedialog
-  wxFileDialog * p_dlg = new wxFileDialog
+  if (p_dlg)
+    {
+      p_dlg->Raise();
+      return;
+    }
+  p_dlg = new wxFileDialog
     (
      this,
      TtaConvMessageToWX( TtaGetMessage (AMAYA, AM_OPEN_URL) ),
@@ -269,15 +284,17 @@ void ObjectDlgWX::OnBrowseButton( wxCommandEvent& event )
       // destroy the dlg before calling thotcallback because it's a child of this
       // dialog and thotcallback will delete the dialog...
       // so if I do not delete it manualy here it will be deleted twice
-      p_dlg->Destroy();
+      if (p_dlg)
+	p_dlg->Destroy();
       // simulate the open command
       //OnOpenButton( event );
     }
-  else
+  else if (p_dlg)
     {
       *m_pLastUsedFilter = p_dlg->GetFilterIndex();
       p_dlg->Destroy();
     }
+  p_dlg = NULL;
 }
 
 /*----------------------------------------------------------------------
@@ -287,6 +304,12 @@ void ObjectDlgWX::OnBrowseButton( wxCommandEvent& event )
   ----------------------------------------------------------------------*/
 void ObjectDlgWX::OnCancelButton( wxCommandEvent& event )
 {
+  if (p_dlg)
+    {
+      p_dlg->Hide();
+      p_dlg->Destroy();
+      p_dlg = NULL;
+    }
   // return done
   Waiting = 0;
   ThotCallback (MyRef, INTEGER_DATA, (char*) 0);

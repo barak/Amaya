@@ -4,7 +4,7 @@
 // Author:      Paul Gammans, Roger Gammans
 // Modified by:
 // Created:     11/04/2001
-// RCS-ID:      $Id: gridctrl.cpp 41587 2006-10-03 14:28:36Z PC $
+// RCS-ID:      $Id: gridctrl.cpp 54421 2008-06-29 15:15:19Z SN $
 // Copyright:   (c) The Computer Surgery (paul@compsurg.co.uk)
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -380,7 +380,10 @@ wxGridCellAutoWrapStringRenderer::GetBestSize(wxGrid& grid,
                                               wxDC& dc,
                                               int row, int col)
 {
-    wxCoord x,y, height , width = grid.GetColSize(col) -10;
+    wxCoord x,y, height , width = grid.GetColSize(col) -20;
+    // for width, subtract 20 because ColSize includes a magin of 10 pixels
+    // that we do not want here and because we always start with an increment
+    // by 10 in the loop below.
     int count = 250; //Limit iterations..
 
     wxRect rect(0,0,width,10);

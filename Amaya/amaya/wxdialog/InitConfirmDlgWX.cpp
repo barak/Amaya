@@ -18,6 +18,7 @@
 #include "InitConfirmDlgWX.h"
 static int      Waiting = 0;
 static int      MyRef = 0;
+static int      Default_ret = 0;
 
 //-----------------------------------------------------------------------------
 // Event table: connect the events to the handler functions to process them
@@ -79,8 +80,8 @@ wxString cancelbutton;
     p_sizer->Show(XRCCTRL(*this, "wxID_OK", wxButton), false);
     if (extrabutton.IsEmpty())
       cancelbutton = TtaConvMessageToWX(TtaGetMessage(LIB, TMSG_LIB_CONFIRM));
-else
-  cancelbutton = TtaConvMessageToWX(TtaGetMessage(LIB, TMSG_DISCARD));
+    else
+      cancelbutton = TtaConvMessageToWX(TtaGetMessage(LIB, TMSG_DISCARD));
     }
   else
     {
@@ -117,7 +118,9 @@ InitConfirmDlgWX::~InitConfirmDlgWX()
 {
   if (Waiting)
     {
-      TtaDestroyDialogue (MyRef);
+     Waiting = 0;
+     ThotCallback (MyRef, INTEGER_DATA, (char*) Default_ret);
+     TtaRedirectFocus();
     }
 }
 
@@ -127,6 +130,7 @@ InitConfirmDlgWX::~InitConfirmDlgWX()
 void InitConfirmDlgWX::OnExtraButton( wxCommandEvent& event )
 {
   ThotCallback (MyRef, INTEGER_DATA, (char*) 2);
+  Default_ret = 2;
 }
 
 /*----------------------------------------------------------------------
@@ -147,12 +151,12 @@ void InitConfirmDlgWX::OnConfirmButton( wxCommandEvent& event )
   ----------------------------------------------------------------------*/
 void InitConfirmDlgWX::OnCancelButton( wxCommandEvent& event )
 {
- if (Waiting)
-   {
-     Waiting = 0;
-     ThotCallback (MyRef, INTEGER_DATA, (char*) 0);
-     TtaRedirectFocus();
-   }
+  if (Waiting)
+    {
+      Waiting = 0;
+      ThotCallback (MyRef, INTEGER_DATA, (char*) 0);
+      TtaRedirectFocus();
+    }
 }
 
 /*----------------------------------------------------------------------

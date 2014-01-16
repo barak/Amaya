@@ -1,5 +1,5 @@
 /*
- * Copyright (c) INRIA 1996-2008
+ * Copyright (c) INRIA 1996-2009
  */
 
 /*
@@ -1103,9 +1103,18 @@ void TtaCleanUpWindow( int window_id )
   ----------------------------------------------------------------------*/
 ThotBool TtaClosePage( int window_id, int page_id )
 {
-  AmayaWindow * p_window = TtaGetWindowFromId( window_id );
+  AmayaWindow *p_window = TtaGetWindowFromId( window_id );
+
   if (p_window && page_id >= 0)
-    return p_window->ClosePage( page_id );
+    {
+/*       if (p_window->GetPageCount() == 1) */
+/* 	{ */
+/* 	  TtaCloseWindow (window_id); */
+/* 	  return TRUE; */
+/* 	} */
+/*       else */
+	return p_window->ClosePage( page_id );
+    }
   else
     return FALSE;
 }
@@ -1416,12 +1425,7 @@ void TtaCloseWindow( int window_id )
   TtaHandlePendingEvents ();
   AmayaWindow * p_window = TtaGetWindowFromId(window_id);
   if (p_window)
-  {
-	// Windows : prevent sending size event when closing window
-	//p_window->Hide();
-
     p_window->Close();
-  }
 }
 
 /*----------------------------------------------------------------------
@@ -2011,8 +2015,17 @@ ThotBool TtaHandleUnicodeKey (wxKeyEvent& event)
 #ifdef _WX
 ThotBool TtaHandleShortcutKey( wxKeyEvent& event )
 {
-  wxChar thot_keysym = event.GetKeyCode();  
+  int    thot_keysym = event.GetKeyCode();  
   int    thotMask = 0;
+
+#ifdef _MACOS
+  if ((thot_keysym == WXK_WINDOWS_MENU || thot_keysym == WXK_F2)
+       && event.ControlDown())
+     {
+       //event.Skip();
+       return false;      
+     }
+#endif /* _MACOS */
 
   if (event.CmdDown() || event.ControlDown())
     thotMask |= THOT_MOD_CTRL;
@@ -2094,7 +2107,7 @@ ThotBool TtaHandleShortcutKey( wxKeyEvent& event )
         {
           // shift key was not pressed
           // force the lowercase
-          wxString s(thot_keysym);
+          wxString s((wxChar)thot_keysym);
           if (s.IsAscii())
             {
               TTALOGDEBUG_1( TTA_LOG_KEYINPUT, _T("TtaHandleShortcutKey : thot_keysym=%x s=")+s, thot_keysym );
@@ -2187,7 +2200,15 @@ ThotBool TtaHandleSpecialKey( wxKeyEvent& event )
   if (!event.AltDown() &&
 	  TtaIsSpecialKey(event.GetKeyCode()))
     {
-      thot_keysym = event.GetKeyCode();  
+      thot_keysym = event.GetKeyCode(); 
+#ifdef _MACOS
+      if ((thot_keysym == WXK_WINDOWS_MENU || thot_keysym == WXK_F2)
+	  && event.ControlDown())
+        {
+          //event.Skip();
+          return false;      
+	}
+#endif /* _MACOS */
       proceed_key = ( thot_keysym == WXK_INSERT   ||
                       thot_keysym == WXK_DELETE   ||
                       thot_keysym == WXK_HOME     ||
@@ -2454,17 +2475,6 @@ void TtaCloseAllHelpWindows ()
             win->Close();
         }
     }
-}
-
-/*----------------------------------------------------------------------
-  TtaRaiserPanel
-  ----------------------------------------------------------------------*/
-void TtaRaisePanel(int panel_type)
-{
-  AmayaWindow * activeWindow = TtaGetActiveWindow();
-  if(activeWindow)
-    activeWindow->RaisePanel(panel_type);
-  TtaRedirectFocus ();
 }
 
 /*----------------------------------------------------------------------

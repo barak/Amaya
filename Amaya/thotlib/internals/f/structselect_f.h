@@ -6,7 +6,6 @@
 #ifndef __CEXTRACT__
 #ifdef __STDC__
 
-extern void TtaSetCurrentKeyboard ( int keyboard );
 extern void InitSelection ( void );
 extern void CheckSelectedElement ( PtrElement pEl,
                                    Document document );
@@ -91,6 +90,8 @@ extern ThotBool ChangeSelection ( int frame,
 extern void PrepareSelectionMenu ( void );
 extern void BuildSelectionMessage ( void );
 extern ThotBool SelectPairInterval ( void );
+extern ThotBool MoveSelectionToCol ( PtrElement *firstSel,
+                                     PtrElement *lastSel );
 extern Element TtaGetColumn ( Element el );
 extern void TtaSelectEnclosingColumn ( Element el );
 extern void SelectAround ( int val );
@@ -105,7 +106,6 @@ extern void TtcChildElement ( Document document,
 
 #else /* __STDC__ */
 
-extern void TtaSetCurrentKeyboard ( int keyboard );
 extern void InitSelection ( void );
 extern void CheckSelectedElement ( PtrElement pEl,
                                      Document document );
@@ -190,6 +190,8 @@ extern ThotBool ChangeSelection ( int frame,
 extern void PrepareSelectionMenu ( void );
 extern void BuildSelectionMessage ( void );
 extern ThotBool SelectPairInterval ( void );
+extern ThotBool MoveSelectionToCol ( PtrElement *firstSel,
+                                       PtrElement *lastSel );
 extern Element TtaGetColumn ( Element el );
 extern void TtaSelectEnclosingColumn ( Element el );
 extern void SelectAround ( int val );

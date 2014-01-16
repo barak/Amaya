@@ -718,7 +718,12 @@ ThotBool UnlinkCSS (CSSInfoPtr css, Document doc, Element link,
             {
               /* disapply the CSS */
               if (pInfo->PiCategory == CSS_DOCUMENT_STYLE)
-                removed = TRUE;
+                {
+                  if (clearCSS)
+                    removed = TRUE;
+                  if (removed)
+                    css->doc = 0;
+                }
 #ifdef CSS_DEBUG
               if (pInfo->PiCategory == CSS_USER_STYLE)
                 printf ("UnlinkCSS CSS_USER_STYLE\n");

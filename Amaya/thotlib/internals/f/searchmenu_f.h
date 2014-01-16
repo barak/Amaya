@@ -9,26 +9,34 @@
 extern void ResetSearchInDocument ( PtrDocument pDoc );
 extern void CallbackWhereToSearch ( int ref,
                                     int val );
+extern void SearchLoadResources ( void );
 extern void TtcSearchText ( Document document,
                             View view );
 extern void CleanSearchContext ( void );
+extern void TtcCloseSearchReplace ( Document document,
+                                    View view );
+extern void TtcNextSearchReplace ( Document document,
+                                   View view );
 extern void CallbackTextReplace ( int ref,
                                   int val,
                                   char *txt );
-extern void SearchLoadResources ( void );
 
 #else /* __STDC__ */
 
 extern void ResetSearchInDocument ( PtrDocument pDoc );
 extern void CallbackWhereToSearch ( int ref,
                                       int val );
+extern void SearchLoadResources ( void );
 extern void TtcSearchText ( Document document,
                               View view );
 extern void CleanSearchContext ( void );
+extern void TtcCloseSearchReplace ( Document document,
+                                      View view );
+extern void TtcNextSearchReplace ( Document document,
+                                     View view );
 extern void CallbackTextReplace ( int ref,
                                     int val,
                                     char *txt );
-extern void SearchLoadResources ( void );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

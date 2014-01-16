@@ -4,7 +4,7 @@
 // Author:      Stefan Csomor
 // Modified by: Ryan Norton (MLTE GetLineLength and GetLineText)
 // Created:     1998-01-01
-// RCS-ID:      $Id: textctrl.cpp 53670 2008-05-20 13:04:32Z SC $
+// RCS-ID:      $Id: textctrl.cpp 54764 2008-07-22 15:41:53Z SC $
 // Copyright:   (c) Stefan Csomor
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -425,7 +425,7 @@ void wxTextCtrl::CreatePeer(
 
     if ( UMAGetSystemVersion() >= 0x1030 && !forceMLTE )
     {
-        if ( m_windowStyle & wxTE_MULTILINE )
+        if ( (m_windowStyle & wxTE_MULTILINE) || ( UMAGetSystemVersion() >= 0x1050 ) )
             m_peer = new wxMacMLTEHIViewControl( this , str , pos , size , style ) ;
     }
 
@@ -1707,6 +1707,7 @@ TXNFrameOptions wxMacMLTEControl::FrameOptionsFromWXStyle( long wxStyle )
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_3
     frameOptions |= kTXNDoFontSubstitutionMask;
+    frameOptions |= kTXNDisableDragAndDropMask;
 #endif
 
     if ( ! (wxStyle & wxTE_NOHIDESEL) )

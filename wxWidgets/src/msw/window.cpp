@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by: VZ on 13.05.99: no more Default(), MSWOnXXX() reorganisation
 // Created:     04/01/98
-// RCS-ID:      $Id: window.cpp 53929 2008-06-02 18:27:16Z RD $
+// RCS-ID:      $Id: window.cpp 54664 2008-07-16 15:53:44Z VZ $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -811,7 +811,11 @@ bool wxWindowMSW::SetFont(const wxFont& font)
     HWND hWnd = GetHwnd();
     if ( hWnd != 0 )
     {
-        WXHANDLE hFont = m_font.GetResourceHandle();
+        // note the use of GetFont() instead of m_font: our own font could have
+        // just been reset and in this case we need to change the font used by
+        // the native window to the default for this class, i.e. exactly what
+        // GetFont() returns
+        WXHANDLE hFont = GetFont().GetResourceHandle();
 
         wxASSERT_MSG( hFont, wxT("should have valid font") );
 
@@ -2368,10 +2372,10 @@ bool wxWindowMSW::MSWProcessMessage(WXMSG* pMsg)
                         if ( GetEventHandler()->ProcessEvent(event) )
                             return true;
 #endif // __WXWINCE__
-                        // Amaya patch
-			// let sub-windows manage Control Enter
+			// IV: let sub-windows manage Control Enter
 			if (!IsTopLevel() && bCtrlDown)
-		 	  return false;
+			  return false;
+
                     }
                     break;
 
@@ -4187,7 +4191,7 @@ bool wxWindowMSW::IsDoubleBuffered() const
             return true;
         wnd = wnd->GetParent();
     } while ( wnd && !wnd->IsTopLevel() );
-        
+
     return false;
 }
 
@@ -5965,6 +5969,7 @@ WXWORD wxCharCodeWXToMSW(int wxk, bool *isVirtual)
             break;
 
         default:
+#ifndef __WXWINCE__
             // check to see if its one of the OEM key codes.
             BYTE vks = LOBYTE(VkKeyScan(wxk));
             if ( vks != 0xff )
@@ -5972,6 +5977,7 @@ WXWORD wxCharCodeWXToMSW(int wxk, bool *isVirtual)
                 vk = vks;
             }
             else
+#endif
             {
                 if ( isVirtual )
                     *isVirtual = false;
