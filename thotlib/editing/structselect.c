@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2007
+ *  (c) COPYRIGHT INRIA, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -11,6 +11,11 @@
  * Authors: V. Quint, I. Vatton (INRIA)
  *
  */
+#ifdef _WX
+#include "wx/wx.h"
+#include "wx/colordlg.h"
+#endif /* _WX */
+
 #include "thot_gui.h"
 #include "thot_sys.h"
 #include "constmedia.h"
@@ -20,6 +25,11 @@
 #include "libmsg.h"
 #include "message.h"
 #include "appdialogue.h"
+#ifdef _WX
+#include "paneltypes_wx.h"
+#include "dialog.h"
+#include "appdialogue_wx.h"
+#endif /* _WX */
 
 #undef THOT_EXPORT
 #define THOT_EXPORT extern
@@ -33,12 +43,14 @@
 #include "applicationapi_f.h"
 #include "boxselection_f.h"
 #include "callback_f.h"
+#include "changepresent_f.h"
 #include "checkermenu_f.h"
 #include "config_f.h"
 #include "createabsbox_f.h"
 #include "displayselect_f.h"
 #include "displayview_f.h"
 #include "exceptions_f.h"
+#include "font_f.h"
 #include "frame_f.h"
 #include "keyboards_f.h"
 #include "scroll_f.h"
@@ -50,6 +62,7 @@
 #include "structmodif_f.h"
 #include "structselect_f.h"
 #include "tree_f.h"
+#include "unstructchange_f.h"
 #include "views_f.h"
 #include "windowdisplay_f.h"
 #ifdef _GL
@@ -117,7 +130,8 @@ void InitSelection ()
   AbsBoxSelectedAttr = NULL;
   FirstSelectedCharInAttr = 0;
   LastSelectedCharInAttr = 0;
-  SelectedColumn = NULL;
+  FirstSelectedColumn = NULL;
+  LastSelectedColumn = NULL;
   WholeColumnSelected = FALSE;
 }
 
@@ -618,8 +632,7 @@ PtrElement NextColumnInTable (PtrElement pCol, PtrElement pTable)
       /* next column */
       pNextCol = pCol->ElNext;
       while (pNextCol &&
-             !TypeHasException (ExcIsColHead,
-                                pNextCol->ElTypeNumber,
+             !TypeHasException (ExcIsColHead, pNextCol->ElTypeNumber,
                                 pNextCol->ElStructSchema))
         /* skip comments */
         pNextCol = pNextCol->ElNext;
@@ -627,6 +640,29 @@ PtrElement NextColumnInTable (PtrElement pCol, PtrElement pTable)
   else
     pNextCol = NULL;
   return (pNextCol);
+}
+
+/*----------------------------------------------------------------------
+  PreviousColumnInTable
+  Return the column that precedes the current column pCol in the same table.
+  ----------------------------------------------------------------------*/
+static PtrElement PreviousColumnInTable (PtrElement pCol)
+{
+  PtrElement pPrevCol;
+
+  if (pCol)
+    {
+      /* next column */
+      pPrevCol = pCol->ElPrevious;
+      while (pPrevCol &&
+             !TypeHasException (ExcIsColHead, pPrevCol->ElTypeNumber,
+                                pPrevCol->ElStructSchema))
+        /* skip comments */
+        pPrevCol = pPrevCol->ElPrevious;
+    }
+  else
+    pPrevCol = NULL;
+  return (pPrevCol);
 }
 
 /*----------------------------------------------------------------------
@@ -651,7 +687,7 @@ static PtrElement PreviousLeafInSelection (PtrElement pEl)
             if (pEl->ElPrevious)
               /* this element has a previous sibling */
               {
-                if (SelectedColumn &&
+                if (FirstSelectedColumn &&
                     TypeHasException (ExcIsCell, pEl->ElTypeNumber,
                                       pEl->ElStructSchema))
                   /* We are in column selection mode and it's a cell */
@@ -663,7 +699,7 @@ static PtrElement PreviousLeafInSelection (PtrElement pEl)
             else
               /* no previous sibling */
               {
-                if (SelectedColumn &&
+                if (FirstSelectedColumn &&
                     TypeHasException (ExcIsCell, pEl->ElTypeNumber,
                                       pEl->ElStructSchema))
                   /* We are in column selection mode and it's a cell */
@@ -673,7 +709,7 @@ static PtrElement PreviousLeafInSelection (PtrElement pEl)
                   {
                     /* check the parent element */
                     pEl = pEl->ElParent;
-                    if (pEl && SelectedColumn &&
+                    if (pEl && FirstSelectedColumn &&
                         TypeHasException (ExcIsCell, pEl->ElTypeNumber,
                                           pEl->ElStructSchema))
                       /* We are in column selection mode and the parent */
@@ -684,7 +720,7 @@ static PtrElement PreviousLeafInSelection (PtrElement pEl)
           if (found)
             /* pEl has a previous sibling. Take it */
             pEl = pEl->ElPrevious;
-          if (SelectedColumn && !pEl)
+          if (FirstSelectedColumn && !pEl)
             /* We are in column selection mode and we have not found yet */
             /* get the cell belonging to the column in the previous row */
             {
@@ -703,7 +739,8 @@ static PtrElement PreviousLeafInSelection (PtrElement pEl)
                                               pRow->ElStructSchema, NULL);
                   if (pRow)
                     {
-                      pCell = GetCellInRow (pRow, SelectedColumn, FALSE,&back);
+                      pCell = GetCellInRow (pRow, FirstSelectedColumn, FALSE,
+                                            &back);
                       if (pCell)
                         /* there is a cell for that column in the row */
                         /* take that cell */
@@ -751,7 +788,7 @@ static PtrElement PreviousLeafInSelection (PtrElement pEl)
   ----------------------------------------------------------------------*/
 PtrElement NextInSelection (PtrElement pEl, PtrElement pLastEl)
 {
-  PtrElement          pCell, pRow, pEl1, pTable;
+  PtrElement          pCell, pRow, pEl1, pTable, pCol;
   int                 i, back;
   ThotBool            found;
 
@@ -776,35 +813,52 @@ PtrElement NextInSelection (PtrElement pEl, PtrElement pLastEl)
                 if (pEl->ElNext)
                   /* this element has a following sibling */
                   {
-                    if (SelectedColumn &&
+                    if (FirstSelectedColumn &&
                         TypeHasException (ExcIsCell, pEl->ElTypeNumber,
                                           pEl->ElStructSchema))
                       /* We are in column selection mode and it's a cell */
-                      /* Don't take the next sibling. stop */
-                      pEl = NULL;
+                      /* Take the next sibling if it is before (or in) the
+                         last selected column */
+                      {
+                        if (LastSelectedColumn == FirstSelectedColumn)
+                          /* the whole selection is in a single column */
+                          pEl = NULL;
+                        else
+                          if (!TypeHasException (ExcIsCell,
+                                                 pEl->ElNext->ElTypeNumber,
+                                                 pEl->ElNext->ElStructSchema))
+                            /* the next sibling is not a cell */
+                            pEl = NULL;
+                          else
+                            {
+                              pCol = GetColHeadOfCell (pEl->ElNext);
+                              if (pCol == LastSelectedColumn)
+                                /* the next cell is in the last column selected */
+                                found = TRUE;
+                              else
+                                if (ElemIsBefore (pCol, LastSelectedColumn))
+                                  /* the next cell is before the last column
+                                     selected */
+                                  found = TRUE;
+                                else
+                                  pEl = NULL;
+                            }
+                      }
                     else
                       found = TRUE;
                   }
                 else
                   /* no following sibling */
                   {
-                    if (SelectedColumn &&
+                    if (FirstSelectedColumn &&
                         TypeHasException (ExcIsCell, pEl->ElTypeNumber,
                                           pEl->ElStructSchema))
                       /* We are in column selection mode and it's a cell */
                       /* Don't take the next sibling */
                       pEl = NULL;
                     else
-                      {
-                        /* check the parent element */
-                        pEl = pEl->ElParent;
-                        if (pEl && SelectedColumn &&
-                            TypeHasException (ExcIsCell, pEl->ElTypeNumber,
-                                              pEl->ElStructSchema))
-                          /* We are in column selection mode and the parent */
-                          /* is a cell. Don't take it */
-                          pEl = NULL;
-                      }
+                      /* check the parent element */
+                      pEl = pEl->ElParent;
                   }
               if (found)
                 /* pEl has a following sibling. Take it */
@@ -816,12 +870,13 @@ PtrElement NextInSelection (PtrElement pEl, PtrElement pLastEl)
                   while (pEl != pLastEl && ElemIsWithinSubtree (pLastEl, pEl))
                     pEl = pEl->ElFirstChild;
                 }
-              if (SelectedColumn && !pEl)
+              if (FirstSelectedColumn && !pEl)
                 /* We are in column selection mode and we have not found yet */
-                /* get the cell belonging to the column in the next row */
+                /* get the cell belonging to the first selected column in the
+                   next row */
                 {
                   /* get the table that contains our column */
-                  pTable = SelectedColumn;
+                  pTable = FirstSelectedColumn;
                   while (pTable &&
                          !TypeHasException (ExcIsTable,
                                             pTable->ElTypeNumber,
@@ -841,23 +896,80 @@ PtrElement NextInSelection (PtrElement pEl, PtrElement pLastEl)
                       pRow = NextRowInTable (pRow, pTable);
                       if (pRow)
                         {
-                          pCell = GetCellInRow (pRow, SelectedColumn, FALSE, &back);
-                          if (pCell)
-                            /* there is a cell for that column in the row */
+                          pCell = GetCellInRow (pRow, FirstSelectedColumn,
+                                                TRUE, &back);
+                          if (!pCell)
+                            /* this row has no cell in the first selected col.
+                               nor before. */
                             {
-                              if (ElemIsWithinSubtree (pLastEl, pCell))
-                                /* this cell contains the end of the
-                                   selection */
-                                {
-                                  pEl = pCell;
-                                  while (pEl != pLastEl &&
-                                         ElemIsWithinSubtree (pLastEl, pEl))
-                                    pEl = pEl->ElFirstChild;
-                                }
+                              if (LastSelectedColumn == FirstSelectedColumn)
+                                /* the whole selection is in a single column */
+                                pCell = NULL;
                               else
-                                /* take that cell */
-                                pEl = pCell;
+                                {
+                                  /* take the first cell in the row */
+                                  if (!pRow->ElTerminal)
+                                    pCell = pRow->ElFirstChild;
+                                  while (pCell && !TypeHasException (ExcIsCell,
+                                                        pCell->ElTypeNumber,
+                                                        pCell->ElStructSchema))
+                                    pCell = pCell->ElNext;
+                                  if (pCell)
+                                    {
+                                    pCol = GetColHeadOfCell (pCell);
+                                    if (pCol != LastSelectedColumn)
+                                      /* this cell is not in the last
+                                         selected column */
+                                      if (!ElemIsBefore (pCol, LastSelectedColumn))
+                                        /* this cell is after the last
+                                           selected column */
+                                        pCell = NULL;
+                                    }                                  
+                                }
                             }
+                          else
+                            {
+                              if (back > 0)
+                                /* pCell is an extended cell from a previous
+                                   column. Take next cell if it is not after
+                                   the last selected column */
+                                if (LastSelectedColumn == FirstSelectedColumn)
+                                  /*the whole selection is in a single column*/
+                                  pCell = NULL;
+                                else
+                                  {
+                                  pCell = pCell->ElNext;
+                                  while (pCell && !TypeHasException (ExcIsCell,
+                                                        pCell->ElTypeNumber,
+                                                        pCell->ElStructSchema))
+                                    pCell = pCell->ElNext;
+                                  if (pCell)
+                                    {
+                                    pCol = GetColHeadOfCell (pCell);
+                                    if (pCol != LastSelectedColumn)
+                                      /* the next cell is not in the last
+                                         selected column */
+                                      if (!ElemIsBefore (pCol, LastSelectedColumn))
+                                        /* the next cell is after the last
+                                           selected column */
+                                        pCell = NULL;
+                                    }
+                                  }
+                            }
+                          if (pCell)
+                            /* the row contains a cell that is between the
+                               selected columns */
+                            if (ElemIsWithinSubtree (pLastEl, pCell))
+                              /* this cell contains the end of the selection */
+                              {
+                                pEl = pCell;
+                                while (pEl != pLastEl &&
+                                       ElemIsWithinSubtree (pLastEl, pEl))
+                                  pEl = pEl->ElFirstChild;
+                              }
+                            else
+                              /* take that cell */
+                              pEl = pCell;
                         }
                     }
                 }
@@ -1763,6 +1875,51 @@ void SelectStringInAttr (PtrDocument pDoc, PtrAbstractBox pAb, int firstChar,
 }
 
 /*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+static void DecorationAfterSeletion (ThotBool withPath)
+{
+#ifdef _WX
+  AmayaParams         p;
+  PtrAbstractBox      pAb = NULL;
+  int                 doc;
+  int                 size, family, val;
+  TypeUnit            unit;
+
+  if (SelectedDocument == NULL)
+    return;
+
+  doc = IdentDocument (SelectedDocument);
+  if (FirstSelectedElement && FirstSelectedElement->ElStructSchema &&
+      strcmp (FirstSelectedElement->ElStructSchema->SsName, "TextFile"))
+    {
+      // update the current font
+      TtaGiveBoxFontInfo ((Element)FirstSelectedElement, doc, 1,
+                          &size, &unit, &family);
+      pAb = AbsBoxOfEl (FirstSelectedElement, 1);
+     if (size > 0 && pAb)
+        {
+          if (unit == UnPoint)
+            Current_FontSize = size;
+          else
+            {
+              if (unit != UnPixel)
+                val = PixelValue (size, unit, pAb, 0);
+              else
+                val = size;
+              Current_FontSize = LogicalValue (size, UnPoint, pAb, 0);
+            }
+        }
+      Current_FontFamily = family;
+      p.param1 = doc;
+      TtaSendDataToPanel (WXAMAYA_PANEL_STYLE, p );
+    }
+  if (withPath)
+    // update the status bar
+    TtaSetStatusSelectedElement (doc, 1, (Element) FirstSelectedElement);
+#endif /* _WX */
+}
+
+/*----------------------------------------------------------------------
   SelectStringOrPosition
 
   Set the current selection to the string beginning at position firstChar
@@ -1848,7 +2005,8 @@ static void SelectStringOrPosition (PtrDocument pDoc, PtrElement pEl,
           FixedElement = pEl;
           FixedChar = FirstSelectedChar;
           SelContinue = TRUE;
-          SelectedColumn = NULL;
+          FirstSelectedColumn = NULL;
+          LastSelectedColumn = NULL;
           WholeColumnSelected = FALSE;
           NSelectedElements = 0;
           SelPosition = !string;
@@ -1880,9 +2038,8 @@ static void SelectStringOrPosition (PtrDocument pDoc, PtrElement pEl,
                 if (ThotLocalActions[T_chsplit] != NULL)
                   (*(Proc1)ThotLocalActions[T_chsplit]) ((void *)pDoc);
 #ifdef _WX
-          // update the status bar
-          TtaSetStatusSelectedElement (IdentDocument (pDoc), 1,
-                                       (Element) FirstSelectedElement);
+          // update the status bar and style panel
+          DecorationAfterSeletion (TRUE);
 #endif /* _WX */
         }
     }
@@ -2021,7 +2178,8 @@ void SelectElement (PtrDocument pDoc, PtrElement pEl, ThotBool begin,
       /* switch the previous selection off */
       /* ignore exception NoSelect */
       SelContinue = TRUE;
-      SelectedColumn = NULL;
+      FirstSelectedColumn = NULL;
+      LastSelectedColumn = NULL;
       WholeColumnSelected = FALSE;
       NSelectedElements = 0;
       LastSelectedElement = FirstSelectedElement;
@@ -2094,11 +2252,322 @@ void SelectElement (PtrDocument pDoc, PtrElement pEl, ThotBool begin,
             (*(Proc1)ThotLocalActions[T_chattr]) ((void *)pDoc);
         }
 #ifdef _WX
-      if (withPath)
-        // update the status bar
-        TtaSetStatusSelectedElement (IdentDocument (pDoc), 1,
-                                     (Element) FirstSelectedElement);
+      DecorationAfterSeletion (withPath);
 #endif /* _WX */
+    }
+}
+
+/*----------------------------------------------------------------------
+  MakeSelectionRectangle
+  When selection is in a table, make sure that all selected cells
+  (with their horizontal and vertical extension) take the shape
+  of a rectangle.
+  ----------------------------------------------------------------------*/
+static void MakeSelectionRectangle ()
+{
+  PtrElement          pTable, pCell, pRow, pCurRow, pLastRow, pFirstRow, pR,
+                      rowOfCell, pCol, pCurCol, pC;
+  PtrAttribute        attrSpan;
+  int                 back, span, i;
+  ThotBool            change, checkCell;
+
+  if (!FirstSelectedColumn || !LastSelectedColumn ||
+      !FirstSelectedElement || !LastSelectedElement)
+    return;
+  /* get the row that contains the last selected cell */
+  pLastRow = LastSelectedElement->ElParent;
+  while (pLastRow && !TypeHasException (ExcIsRow, pLastRow->ElTypeNumber,
+                                        pLastRow->ElStructSchema))
+    pLastRow = pLastRow->ElParent;
+  if (!pLastRow)
+    return;
+  /* get the table of interest */
+  pTable = FirstSelectedColumn;
+  while (pTable && !TypeHasException (ExcIsTable, pTable->ElTypeNumber,
+                                      pTable->ElStructSchema))
+    pTable = pTable->ElParent;
+  if (!pTable)
+    return;
+  /* get the row that contains the first selected cell */
+  pCurRow = FirstSelectedElement->ElParent;
+  while (pCurRow && !TypeHasException (ExcIsRow, pCurRow->ElTypeNumber,
+                                    pCurRow->ElStructSchema))
+    pCurRow = pCurRow->ElParent;
+  pFirstRow = pCurRow;
+  /* scan all rows containing the selected cells */
+  pCurCol = FirstSelectedColumn;
+  while (pCurRow)
+    {
+      pCell = GetCellInRow (pCurRow, FirstSelectedColumn, TRUE, &back);
+      rowOfCell = pCurRow;
+      /* check the cells that are part of the current selection in this row */
+      do
+        {
+          checkCell = TRUE;
+          if (!pCell)
+            /* this row does not contain any cell up to the first selected
+               column */
+            {
+              if (pCurRow != pFirstRow)
+                /* this is not the first row of the selection */
+                {
+                  if (LastSelectedColumn == FirstSelectedColumn)
+                    /* the whole selection is in a single column */
+                    pCell = NULL;
+                  else
+                    {
+                      /* get the first cell in the row */
+                      if (!pCurRow->ElTerminal)
+                        pCell = pCurRow->ElFirstChild;
+                      while (pCell && !TypeHasException (ExcIsCell,
+                                                        pCell->ElTypeNumber,
+                                                        pCell->ElStructSchema))
+                        pCell = pCell->ElNext;
+                      if (pCell)
+                        {
+                          pCol = GetColHeadOfCell (pCell);
+                          if (pCol != LastSelectedColumn)
+                            /* this cell is not in the last selected column */
+                            if (!ElemIsBefore (pCol, LastSelectedColumn))
+                              /* this cell is after the last selected column,
+                               ignore it */
+                              pCell = NULL;
+                        }                                  
+                    }
+                }
+              else
+                /* This is the first row of the selection */
+                /* There is a cell above in the first column of the table
+                   that is extended vertically. */
+                {
+                  /* selection must start in the first column of the table */
+                  /* get the first column of the table */
+                  do
+                    {
+                      pCol = PreviousColumnInTable (FirstSelectedColumn);
+                      if (pCol)
+                        FirstSelectedColumn = pCol;
+                    }
+                  while (pCol);
+                  /* find the previous row that has a cell in the first col */
+                  pRow = PreviousRowInTable (pCurRow, pTable);
+                  while (pRow && !pCell)
+                    {
+                      pCell = GetCellInRow (pRow, FirstSelectedColumn, FALSE,
+                                            &back);
+                      if (pCell)
+                        /* there is a cell in the first column of this row */
+                        {
+                          rowOfCell = pRow;
+                          if (ElemIsBefore (pRow, pFirstRow))
+                            /* this cell is above the first selected cell.
+                               Make it the new first selected cell */
+                            {
+                              FirstSelectedElement = pCell;
+                              pFirstRow = pRow;
+                              /* check the table again starting from the new
+                                 first selected cell */
+                              MakeSelectionRectangle ();
+                              pRow = NULL;  pCell = NULL;
+                            }
+                        }
+                      else
+                        pRow = PreviousRowInTable (pRow, pTable);
+                    }
+                }
+            }
+          else if (back > 0)
+            /* pCell is in a previous column */
+            {
+              /* get the horizontal spanning of the cell */
+              attrSpan = GetAttrElementWithException (ExcColSpan, pCell);
+              if (!attrSpan)
+                span = 1;
+              else
+                span = attrSpan->AeAttrValue;
+              if (span >= back+1 || span == 0)
+                /* the previous cell in that row is extended up to (and
+                   including) the first selected column.
+                   It must be part of the selection */
+                {
+                  change = FALSE;
+                  pCol = GetColHeadOfCell (pCell);
+                  if (pCol != FirstSelectedColumn &&
+                      ElemIsBefore (pCol, FirstSelectedColumn))
+                    {
+                      FirstSelectedColumn = pCol;
+                      change = TRUE;
+                    }
+                  if (ElemIsBefore (pCell, FirstSelectedElement))
+                    {
+                      FirstSelectedElement = pCell;
+                      change = TRUE;
+                    }
+                  if (change)
+                    {
+                      /* the beginning of the selection has changed.
+                         Check again from the new beginning */
+                      MakeSelectionRectangle ();
+                      pCurRow = NULL; pCell = NULL;
+                    }
+                }
+              else
+                /* the space is occupied by a cell above that spans vertically.
+                   If it is not the first selected row, this cell has already
+                   been checked */
+                {
+                  if (pCurRow != pFirstRow)
+                    checkCell = FALSE;
+                  else
+                    {
+                      pCell = NULL;
+                      /* get the row where this cell starts */
+                      pRow = pCurRow;
+                      do
+                        {
+                          pRow = PreviousRowInTable (pRow, pTable);
+                          if (pRow)
+                            pCell = GetCellInRow (pRow, pCurCol, FALSE, &back);
+                        }
+                      while (pRow && !pCell);
+                      if (pRow && pCell)
+                        /* this cell becomes the new first selected cell */
+                        {
+                          FirstSelectedElement = pCell;
+                          pFirstRow = pRow;
+                          /* Check again from the new beginning */
+                          MakeSelectionRectangle ();
+                          pCurRow = NULL; pCell = NULL;
+                        }
+                    }
+                }
+            }
+          else
+            /* there is a cell in the first selected column in this row */
+            {
+              if (pCurRow == pFirstRow)
+                if (pCell != FirstSelectedElement &&
+                    ElemIsBefore (pCell, FirstSelectedElement))
+                  FirstSelectedElement = pCell;
+            }
+
+          /* now, check the right side of the current cell */
+          if (pCell && checkCell)
+            {
+              /* get the horizontal spanning of the cell */
+              attrSpan = GetAttrElementWithException (ExcColSpan, pCell);
+              if (attrSpan)
+                span = attrSpan->AeAttrValue;
+              else
+                span = 1;
+              if (span != 1)
+                {
+                  /* does this cell extend beyound the last selected column? */
+                  pCol = GetColHeadOfCell (pCell);
+                  pC = pCol;
+                  /* span = 0 means "to the last column of the table" */
+                  for (i = 1; pC && (i < span || span == 0); i++)
+                    {
+                      pC = NextColumnInTable (pC, pTable);
+                      if (pC)
+                        pCol = pC;
+                    }
+                  if (pCol != LastSelectedColumn &&
+                      ElemIsBefore (LastSelectedColumn, pCol))
+                    /* this cell spans outside of the current selection */
+                    /* the new last selected column is the end of the cell */
+                    {
+                      LastSelectedColumn = pCol;
+                      /* Check again from the new beginning */
+                      MakeSelectionRectangle ();
+                      pCurRow = NULL; pCell = NULL;
+                    }
+                }
+              if (pCell && pCell != LastSelectedElement &&
+                  ElemIsBefore (LastSelectedElement, pCell))
+                LastSelectedElement = pCell;
+            }
+
+          /* now, check the bottom of the current cell */
+          if (pCell && checkCell)
+            {
+              /* get the vertical spanning of the cell */
+              attrSpan = GetAttrElementWithException (ExcRowSpan, pCell);
+              if (attrSpan)
+                span = attrSpan->AeAttrValue;
+              else
+                span = 1;
+              if (span != 1)
+                {
+                  /* does this cell extend beyound the last selected row? */
+                  pRow = rowOfCell;
+                  pR = pRow;
+                  /* span = 0 means "to the bottom of the current tbody, thead
+                     or tfoot" */
+                  for (i = 1; pR && (i < span || span == 0); i++)
+                    {
+                      /* next sibling */
+                      pR = pR->ElNext;
+                      /* skip comments, PIs, etc. */
+                      while (pR &&
+                             !TypeHasException (ExcIsRow, pR->ElTypeNumber,
+                                                pR->ElStructSchema))
+                        pR = pR->ElNext;
+                      if (pR)
+                        pRow = pR;
+                    }
+                  if (pRow != pLastRow &&
+                      ElemIsBefore (pLastRow, pRow))
+                    /* this cell spans outside of the current selection */
+                    /* the new last selected row is the end of the cell */
+                    pLastRow = pRow;
+                }
+            }
+
+          /* get the next cell to be checked in this row */
+          if (pCell)
+            {
+              if (pCurRow == pFirstRow)
+                /* for the first row, check every column in the current
+                   selection */
+                {
+                  if (pCurCol == LastSelectedColumn)
+                    pCell = NULL;
+                  else
+                    {
+                      pCurCol = NextColumnInTable (pCurCol, pTable);
+                      pCell = GetCellInRow (pCurRow, pCurCol, TRUE, &back);
+                      if (pCell)
+                        rowOfCell = pCurRow;
+                    }
+                }
+              else
+                {
+                  /* get the next cell in the current row */
+                  pCell = pCell->ElNext;
+                  while (pCell &&
+                         !TypeHasException (ExcIsCell, pCell->ElTypeNumber,
+                                            pCell->ElStructSchema))
+                    pCell = pCell->ElNext;
+                  if (pCell)
+                    /* is that cell in the selected range ? */
+                    {
+                      back = 0;
+                      pCol = GetColHeadOfCell (pCell);
+                      if (pCol && ElemIsBefore (LastSelectedColumn, pCol))
+                        pCell = NULL;
+                    }
+                }
+            }
+        }
+      while (pCell);
+
+      /* get the next row to be checked */
+      if (pCurRow)
+        if (pCurRow == pLastRow)
+          pCurRow = NULL;
+        else
+          pCurRow = NextRowInTable (pCurRow, pTable);
     }
 }
 
@@ -2118,10 +2587,12 @@ void SelectElement (PtrDocument pDoc, PtrElement pEl, ThotBool begin,
   ----------------------------------------------------------------------*/
 static void DoExtendSelection (PtrElement pEl, int rank, ThotBool fixed,
                                ThotBool begin, ThotBool drag,
-                               ThotBool checkSelection)
+                               ThotBool checkSelection,
+                               ThotBool checkTableSelection)
 {
-  PtrElement          oldFirstEl, oldLastEl, pElP, pAsc, pCell;
-  PtrElement          pColHead, pNext, parent;
+  PtrElement          oldFirstEl, oldLastEl, pElP, pAsc, pCell1, pCell2,
+                      pColHead1, pColHead2, pTable1, pTable2,
+                      pNext, parent;
   int                 oldFirstChar, oldLastChar;
   ThotBool            change, done, sel;
   ThotBool            updateFixed;
@@ -2152,29 +2623,13 @@ static void DoExtendSelection (PtrElement pEl, int rank, ThotBool fixed,
         }
       if (!done)
         {
-          if (SelectedColumn)
-            /* we are in column selection mode. Check that element pEl
-               is in the column that contains the current selection */
-            {
-              /* look first for a cell ancestor for pEl */
-              pAsc = pEl;
-              while (pAsc && !TypeHasException (ExcIsCell, pAsc->ElTypeNumber,
-                                                pAsc->ElStructSchema))
-                pAsc = pAsc->ElParent;
-              if (pAsc)
-                /* we are in a cell. Is this cell part of the column? */
-                if (SelectedColumn != GetColHeadOfCell (pAsc))
-                  pAsc = NULL;
-              if (!pAsc)
-                /* invalid extension of the current selection */
-                return;
-            }
           /* keep the old selection */
           oldFirstEl = FirstSelectedElement;
           oldLastEl = LastSelectedElement;
           oldFirstChar = FirstSelectedChar;
           oldLastChar = LastSelectedChar;
-          if (oldFirstEl->ElTerminal && oldFirstEl->ElLeafType != LtPicture &&
+          if (oldFirstEl &&
+              oldFirstEl->ElTerminal && oldFirstEl->ElLeafType != LtPicture &&
               oldLastChar == 0 && oldFirstEl == oldLastEl &&
               oldFirstChar == oldLastChar)
             {
@@ -2234,7 +2689,8 @@ static void DoExtendSelection (PtrElement pEl, int rank, ThotBool fixed,
                 }
               /* a single element is selected. If we were in column selection
                  mode, it's no longer the case */
-              SelectedColumn = NULL;
+              FirstSelectedColumn = NULL;
+              LastSelectedColumn = NULL;
               WholeColumnSelected = FALSE;
             }
           else if (ElemIsAnAncestor (pEl, FixedElement))
@@ -2249,74 +2705,87 @@ static void DoExtendSelection (PtrElement pEl, int rank, ThotBool fixed,
               FixedChar = 0;
               /* a single element is selected. If we were in column selection
                  mode, it's no longer the case */
-              SelectedColumn = NULL;
+              FirstSelectedColumn = NULL;
+              LastSelectedColumn = NULL;
               WholeColumnSelected = FALSE;
             }
           else
             {
-              pAsc = FirstSelectedElement;
-              if (FirstSelectedElement != LastSelectedElement)
-                /* Several elements are in the selected range. Find the
-                   common ancestor of all selected elements */
-                do
-                  pAsc = pAsc->ElParent;
-                while (pAsc &&
-                       !ElemIsAnAncestor (pAsc, LastSelectedElement));
-              /* is the current selection within a single cell of the
-                 current table ? */
-              while (pAsc &&
-                     !TypeHasException (ExcIsCell, pAsc->ElTypeNumber,
-                                        pAsc->ElStructSchema) &&
-                     !TypeHasException (ExcIsTable, pAsc->ElTypeNumber,
-                                        pAsc->ElStructSchema))
-                pAsc = pAsc->ElParent;
-              if (pAsc && !TypeHasException (ExcIsCell, pAsc->ElTypeNumber,
-                                             pAsc->ElStructSchema))
-                pAsc = NULL;
-              if (SelectedColumn)
-                /* we are already in column selection mode */
+              /* is the fixed element (within) a table cell ? */
+              pCell1 = FixedElement;
+              while (pCell1 &&
+                     !TypeHasException (ExcIsCell, pCell1->ElTypeNumber,
+                                        pCell1->ElStructSchema))
+                pCell1 = pCell1->ElParent;
+              /* is element pEl (within) a table cell */
+              pCell2 = pEl;
+              while (pCell2 &&
+                     !TypeHasException (ExcIsCell, pCell2->ElTypeNumber,
+                                        pCell2->ElStructSchema))
+                pCell2 = pCell2->ElParent;
+              if ((pCell1 && !pCell2) || (!pCell1 && pCell2))
+                /* selection has started within a table and is being extended
+                   outside, or it has started outside of a table and the user
+                   tries to extend it in a table. This is invalid */
+                return;
+              if (pCell1 && pCell2)
                 {
-                  if (pAsc)
-                    /* the whole selection is now in a single cell. Then,
-                       we are no longer in column selection mode */
+                  /* get the table that contains pCell1 */
+                  pTable1 = pCell1;
+                  while (pTable1 && !TypeHasException (ExcIsTable,
+                                                      pTable1->ElTypeNumber,
+                                                      pTable1->ElStructSchema))
+                    pTable1 = pTable1->ElParent;
+                  /* get the table that contains pCell2 */
+                  pTable2 = pCell2;
+                  while (pTable2 && !TypeHasException (ExcIsTable,
+                                                      pTable2->ElTypeNumber,
+                                                      pTable2->ElStructSchema))
+                    pTable2 = pTable2->ElParent;
+                  /* do not allow selection extension outside of the current
+                     table */
+                  if (pTable1 != pTable2)
+                    return;
+                  if (pCell2 == pCell1)
+                    /* extending selection within the same cell. We are no
+                       longer in table selection mode */
                     {
-                      SelectedColumn = NULL;
+                      FirstSelectedColumn = NULL;
+                      LastSelectedColumn = NULL;
                       WholeColumnSelected = FALSE;
                     }
-                }
-              else
-                /* we are not (yet) in column selection mode */
-                /* are we extending the selection in a table column? */
-                {
-                  if (pAsc)
+                  else
+                    /* pEl is in a cell (pCell2), but not in the same cell as
+                       the initial selection (pCell1). */
                     {
-                      /* pCell is the cell containing the current selection */
-                      pCell = pAsc;
-                      /* is element pEl within a cell? */
-                      pAsc = pEl;
-                      while (pAsc && !TypeHasException (ExcIsCell,
-                                                        pAsc->ElTypeNumber,
-                                                        pAsc->ElStructSchema))
-                        pAsc = pAsc->ElParent;
-                      if (pAsc && pAsc != pCell)
-                        /* pEl in in a cell, but not in the same cell as the
-                           previous selection. Are both cells in the same
-                           column? */
+                      pColHead1 = GetColHeadOfCell (pCell1);
+                      pColHead2 = GetColHeadOfCell (pCell2);
+                      if (pColHead1 == pColHead2)
                         {
-                          pColHead = GetColHeadOfCell (pCell);
-                          if (pColHead == GetColHeadOfCell (pAsc))
-                            /* both cells are in the same column. Move to
-                               column selection mode */
+                          FirstSelectedColumn = pColHead1;
+                          LastSelectedColumn = pColHead2;
+                        }
+                      else
+                        {
+                          if (ElemIsBefore (pColHead1, pColHead2))
                             {
-                              SelectedColumn = pColHead;
-                              WholeColumnSelected = FALSE;
+                              FirstSelectedColumn = pColHead1;
+                              LastSelectedColumn = pColHead2;
+                            }
+                          else
+                            {
+                              FirstSelectedColumn = pColHead2;
+                              LastSelectedColumn = pColHead1;
                             }
                         }
+                      WholeColumnSelected = FALSE;
+                      pEl = pCell2;
+                      rank = 0;
                     }
                 }
 
               if (ElemIsBefore (pEl, FixedElement))
-                /* pEl is before the fixed point */
+                /* pEl is before the fixed point in the tree structure */
                 {
                   FirstSelectedElement = pEl;
                   FirstSelectedChar = rank;
@@ -2330,17 +2799,40 @@ static void DoExtendSelection (PtrElement pEl, int rank, ThotBool fixed,
                         FixedChar =  FixedElement->ElVolume + 1;
                     }
                   LastSelectedElement = FixedElement;
-                  if (FixedChar == 0)
-                    LastSelectedChar = FixedChar;
-                  else
-                    LastSelectedChar = FixedChar;
+                  LastSelectedChar = FixedChar;
+                  if (FirstSelectedColumn)
+                    /* we are in table selection mode. Select the enclosing
+                       cell of the fixed element */
+                    {
+                      LastSelectedChar = 0;
+                      pAsc = LastSelectedElement;
+                      while (pAsc && !TypeHasException (ExcIsCell,
+                                                        pAsc->ElTypeNumber,
+                                                        pAsc->ElStructSchema))
+                        pAsc = pAsc->ElParent;
+                      if (pAsc)
+                        LastSelectedElement = pAsc;
+                    }
                 }
               else
                 /* pEl is after the fixed point */
                 {
                   FirstSelectedElement = FixedElement;
                   FirstSelectedChar = FixedChar;
-                  if (rank == 1 && drag)
+                  if (FirstSelectedColumn)
+                    /* we are in table selection mode. Select the enclosing
+                       cell of the fixed element */
+                    {
+                      FirstSelectedChar = 0;
+                      pAsc = FirstSelectedElement;
+                      while (pAsc && !TypeHasException (ExcIsCell,
+                                                        pAsc->ElTypeNumber,
+                                                        pAsc->ElStructSchema))
+                        pAsc = pAsc->ElParent;
+                      if (pAsc)
+                        FirstSelectedElement = pAsc;
+                    }
+                  if (rank == 1)
                     {
                       pElP = pEl;
                       /* move the end of the selection to the end of the 
@@ -2354,7 +2846,12 @@ static void DoExtendSelection (PtrElement pEl, int rank, ThotBool fixed,
                   LastSelectedChar = rank;
                 }
             }
- 
+
+          if (FirstSelectedColumn && checkTableSelection)
+            /* we are in table selection mode. Make sure that the selection
+               has the shape of a rectangle */
+            MakeSelectionRectangle ();
+
           /* adjust selection */
           if (FirstSelectedElement->ElTerminal &&
               FirstSelectedElement->ElLeafType == LtText &&
@@ -2438,12 +2935,13 @@ static void DoExtendSelection (PtrElement pEl, int rank, ThotBool fixed,
                oldLastChar != LastSelectedChar))
             {
               change = TRUE;
-              if ((!oldFirstEl->ElTerminal || oldFirstEl->ElLeafType != LtPicture) &&
+              if (oldFirstEl)
+                if ((!oldFirstEl->ElTerminal || oldFirstEl->ElLeafType != LtPicture) &&
                   !TypeHasException (ExcIsImg, FirstSelectedElement->ElTypeNumber,
                                      FirstSelectedElement->ElStructSchema))
-                {
+                  {
                   // select the parent element if the whole content is selected
-                  if (FirstSelectedChar == 0 && !SelectedColumn)
+                  if (FirstSelectedChar == 0 && !FirstSelectedColumn)
                     while (FirstSelectedElement->ElNext == NULL
                            && FirstSelectedElement->ElPrevious == NULL
                            && FirstSelectedElement->ElParent != NULL)
@@ -2453,10 +2951,10 @@ static void DoExtendSelection (PtrElement pEl, int rank, ThotBool fixed,
                       LastSelectedElement = FirstSelectedElement;
                       LastSelectedChar = 0;
                     }
-                }
+                  }
               if (LastSelectedChar == 0 &&
                   LastSelectedElement != FirstSelectedElement &&
-                  !SelectedColumn)
+                  !LastSelectedColumn)
                 while (LastSelectedElement->ElNext == NULL
                        && LastSelectedElement->ElPrevious == NULL
                        && LastSelectedElement->ElParent != NULL)
@@ -2531,7 +3029,7 @@ static void DoExtendSelection (PtrElement pEl, int rank, ThotBool fixed,
 void ExtendSelection (PtrElement pEl, int rank, ThotBool fixed, ThotBool begin,
                       ThotBool drag)
 {
-  DoExtendSelection (pEl, rank, fixed, begin, drag, TRUE);
+  DoExtendSelection (pEl, rank, fixed, begin, drag, TRUE, TRUE);
 }
 
 /*----------------------------------------------------------------------
@@ -2739,6 +3237,8 @@ void SelectElementWithEvent (PtrDocument pDoc, PtrElement pEl,
   Document            doc;
   int                 pos;
 
+  if (IsEmptyDocument (pDoc))
+    return; // don't select within an empty document
   if (pDoc && pEl)
     {
       pos = 0;
@@ -2777,7 +3277,9 @@ void SelectPositionWithEvent (PtrDocument pDoc, PtrElement pEl, int first)
   NotifyElement       notifyEl;
   Document            doc;
 
-  if (pDoc != NULL && pEl != NULL)
+  if (IsEmptyDocument (pDoc))
+    return; // don't select within an empty document
+  if (pDoc && pEl)
     {
       SelectableAncestor (&pEl, &first);
       doc = IdentDocument (pDoc);
@@ -3451,7 +3953,8 @@ ThotBool SelectPairInterval ()
       /* they are paired elements */
       {
         SelContinue = TRUE;
-        SelectedColumn = NULL;
+        FirstSelectedColumn = NULL;
+        LastSelectedColumn = NULL;
         WholeColumnSelected = FALSE;
         LastSelectedElement = FirstSelectedElement;
         ExtendSelection (SelectedElement[1], 0, TRUE, TRUE, FALSE);
@@ -3462,29 +3965,37 @@ ThotBool SelectPairInterval ()
 
 
 /*----------------------------------------------------------------------
-  SelColumn
-  Select the whole column.
+  SelColumns
+  Select the whole columns between col1 and col2.
   ----------------------------------------------------------------------*/
-static void SelColumn (PtrElement column)
+static void SelColumns (PtrElement col1, PtrElement col2)
 {
   PtrElement          pNextRow, pCell;
   PtrElement          pFirst, pLast, pRow, pTable;
   int                 rowType, back;
+  NotifyElement       notifyEl;
+  Document            doc;
+  ThotBool            result;
   
   /* get the table ancestor first */
-  pTable = column;
-  while (pTable &&
-         !TypeHasException (ExcIsTable,
-                            pTable->ElTypeNumber,
-                            pTable->ElStructSchema))
+  pTable = col1;
+  while (pTable && !TypeHasException (ExcIsTable, pTable->ElTypeNumber,
+                                      pTable->ElStructSchema))
     pTable = pTable->ElParent;
+  if (!pTable)
+    /* we are not in a table... */
+    return;
   /* get the first row of the table */
-  rowType = GetElemWithException (ExcIsRow, column->ElStructSchema);
-  pRow = FwdSearchTypedElem (column, rowType, column->ElStructSchema, NULL);
+  rowType = GetElemWithException (ExcIsRow, col1->ElStructSchema);
+  pRow = FwdSearchTypedElem (col1, rowType, col1->ElStructSchema, NULL);
   /* get the relevant cell in the first row */
   do
     {
-      pCell = GetCellInRow (pRow, column, FALSE, &back);
+      pCell = GetCellInRow (pRow, col1, TRUE, &back);
+      if (pCell && back > 0)
+        /* in this row the cell is a horizontally extended cell from a previous
+           column. skip it */
+        pCell = NULL;
       if (!pCell)
         pRow = NextRowInTable (pRow, pTable);
     }
@@ -3501,7 +4012,11 @@ static void SelColumn (PtrElement column)
   /* get the relevant cell in the last row */
   do
     {
-      pCell = GetCellInRow (pRow, column, FALSE, &back);
+      pCell = GetCellInRow (pRow, col2, TRUE, &back);
+      if (pCell && back > 0)
+        /* in this row the cell is a horizontally extended cell from a previous
+           column. skip it */
+        pCell = NULL;
       if (!pCell)
         pRow = PreviousRowInTable (pRow, pTable);
     }
@@ -3512,10 +4027,39 @@ static void SelColumn (PtrElement column)
   else
     {
       SelectElementWithEvent (SelectedDocument, pFirst, TRUE, FALSE);
-      ExtendSelection (pLast, 0, FALSE, TRUE, FALSE);
+      /* send event TteElemExtendSelect.Pre to the application*/
+      doc = IdentDocument (SelectedDocument);
+      notifyEl.event = TteElemExtendSelect;
+      notifyEl.document = doc;
+      notifyEl.element = (Element) pLast;
+      notifyEl.info = 0; /* not sent by undo */
+      notifyEl.elementType.ElTypeNum = pLast->ElTypeNumber;
+      notifyEl.elementType.ElSSchema = (SSchema) (pLast->ElStructSchema);
+      notifyEl.position = 0;
+      result = CallEventType ((NotifyEvent *) &notifyEl, TRUE);
+      if (!result)
+        /* application accepts selection */
+        {
+          /* do select */
+          DoExtendSelection (pLast, 0, FALSE, TRUE, FALSE, TRUE, FALSE); /* the
+          last parameter should be TRUE, but we do not want multiple columns
+          to be selected as long as commands Cut, Copy and Paste can not
+          handle mutiple columns at a time */
+          
+          /* send event TteElemExtendSelect.Post to the application */
+          notifyEl.event = TteElemExtendSelect;
+          notifyEl.document = doc;
+          notifyEl.element = (Element) pLast;
+          notifyEl.elementType.ElTypeNum = pLast->ElTypeNumber;
+          notifyEl.info = 0; /* not sent by undo */
+          notifyEl.elementType.ElSSchema = (SSchema) (pLast->ElStructSchema);
+          notifyEl.position = 0;
+          CallEventType ((NotifyEvent *) & notifyEl, FALSE);
+        }
     }
   WholeColumnSelected = TRUE;
-  SelectedColumn = column;
+  FirstSelectedColumn = col1;
+  LastSelectedColumn = col2;
 }
 
 /*----------------------------------------------------------------------
@@ -3549,7 +4093,7 @@ void TtaSelectEnclosingColumn (Element el)
 {
   el = TtaGetColumn (el);
   if (el)
-    SelColumn ((PtrElement) el);
+    SelColumns ((PtrElement) el, (PtrElement) el);
 }
 
 /*----------------------------------------------------------------------
@@ -3562,7 +4106,9 @@ void TtaSelectEnclosingColumn (Element el)
   ----------------------------------------------------------------------*/
 void SelectAround (int val)
 {
-  PtrElement          pEl, pParent, pFirst, pLast, firstParent, lastParent;
+  PtrElement          pEl, pParent, pFirst, pLast, firstParent, lastParent,
+                      pRow, pRow1, pRow2, pCol, pTable;
+  int                 nRows, nCols;
   ThotBool            done;
 
   pEl = NULL;
@@ -3595,14 +4141,14 @@ void SelectAround (int val)
             pEl = SelMenuParentEl;
           else
             {
-              if (SelectedColumn)
+              if (FirstSelectedColumn)
                 /* we are in column selection mode */
                 {
                   if (WholeColumnSelected)
-                    /* the whole column is already selected. Select the enclosing
-                       table */
+                    /* the whole columns are already selected. Select the
+                       enclosing table */
                     {
-                      pParent = SelectedColumn->ElParent;
+                      pParent = FirstSelectedColumn->ElParent;
                       while (pParent && !TypeHasException (ExcIsTable,
                                                            pParent->ElTypeNumber,
                                                            pParent->ElStructSchema))
@@ -3610,7 +4156,8 @@ void SelectAround (int val)
                       if (pParent)
                         pEl = pParent;
                       /* we are no longer in column selection mode */
-                      SelectedColumn = NULL;
+                      FirstSelectedColumn = NULL;
+                      LastSelectedColumn = NULL;
                       WholeColumnSelected = FALSE;
                     }
                   else
@@ -3651,9 +4198,87 @@ void SelectAround (int val)
                         }
                       if (!done)
                         {
-                          /* the current selection contains only complete cells */
-                          /* select all cells in the column */
-                          SelColumn (SelectedColumn);
+                          /* the current selection contains only full cells */
+                          if (FirstSelectedColumn == LastSelectedColumn)
+                            /* all selected cells are in the same column.
+                               Select that column */ 
+                            SelColumns (FirstSelectedColumn,
+                                        FirstSelectedColumn);
+                          else
+                            {
+                              /* if all selected cells are in the same row,
+                                 select that row */
+                              /* get the row that contains the first selected
+                                 element */
+                              pRow1 = FirstSelectedElement->ElParent;
+                              while (pRow1 && !TypeHasException (ExcIsRow,
+                                                     pRow1->ElTypeNumber,
+                                                     pRow1->ElStructSchema))
+                                pRow1 = pRow1->ElParent;
+                              /* get the row that contains the last
+                                 selected element */
+                              pRow2 = LastSelectedElement->ElParent;
+                              while (pRow2 && !TypeHasException (ExcIsRow,
+                                                       pRow2->ElTypeNumber,
+                                                       pRow2->ElStructSchema))
+                                pRow2 = pRow2->ElParent;
+                              if (pRow1 && pRow2 == pRow1)
+                                /* all selected cells are in the same row.
+                                   Select that row */
+                                SelectElementWithEvent (SelectedDocument,
+                                                        pRow1, TRUE, FALSE);
+                              else
+                                {
+                                  /* the selected cells are in several rows and
+                                  several columns. Check the number of rows and
+                                  columns */
+                                  pTable = pRow1;
+                                  while (pTable &&
+                                         !TypeHasException (ExcIsTable,
+                                                     pTable->ElTypeNumber,
+                                                     pTable->ElStructSchema))
+                                    pTable = pTable->ElParent;
+                                  if (!pTable)
+                                    return;
+                                  nRows = 1;
+                                  pRow = pRow1;
+                                  while (pRow && pRow != pRow2)
+                                    {
+                                      pRow = NextRowInTable (pRow, pTable);
+                                      nRows++;
+                                    }
+                                  nCols = 1;
+                                  pCol = FirstSelectedColumn;
+                                  while (pCol && pCol != LastSelectedColumn)
+                                    {
+                                      pCol = NextColumnInTable (pCol, pTable);
+                                      nCols++;
+                                    }
+                                  if (nCols <= nRows)
+                                    /* we should select all columns containing
+                                       the current selection:
+                                    SelColumns (FirstSelectedColumn,
+                                                LastSelectedColumn); */
+                                    {
+                                    /* but, as commands Copy, Delete and Paste
+                                     can not yet handle several columns at a
+                                     time, we select multiple rows instead */
+                                      SelectElementWithEvent (SelectedDocument,
+                                                           pRow1, TRUE, FALSE);
+                                      ExtendSelection (pRow2, 0, FALSE, TRUE,
+                                                       FALSE);
+                                    } 
+                                  else
+                                    /* select all rows containing the
+                                       current selection */
+                                    {
+                                      SelectElementWithEvent (SelectedDocument,
+                                                           pRow1, TRUE, FALSE);
+                                      ExtendSelection (pRow2, 0, FALSE, TRUE,
+                                                       FALSE);
+                                    } 
+                                }
+                            } 
                           return;
                         }
                     }
@@ -3674,7 +4299,8 @@ void SelectAround (int val)
                               SelPosition)
                             {
                               // select the whole element
-                               DoExtendSelection (FirstSelectedElement, 0, TRUE,TRUE, TRUE, TRUE);
+                               DoExtendSelection (FirstSelectedElement, 0,
+                                                  TRUE,TRUE, TRUE, TRUE, TRUE);
                               return;
                             }
                           else if (FirstSelectedElement->ElParent &&
@@ -3749,7 +4375,7 @@ void SelectAround (int val)
                                                   TRUE, FALSE);
                           /* keep the selection as it is */
                           DoExtendSelection (lastParent, 0, FALSE, TRUE, FALSE,
-                                             FALSE);
+                                             FALSE, TRUE);
                         }
                       else
                         SelectElementWithEvent (SelectedDocument, pFirst, TRUE,

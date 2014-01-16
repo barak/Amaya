@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT MIT and INRIA, 1996-2005
+ *  (c) COPYRIGHT MIT and INRIA, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -11,6 +11,46 @@
 #include "thot_gui.h"
 #include "tree.h"
 #include "view.h"
+
+/** Flags to decorate attributes in the interface.*/
+typedef enum _RestrictionFlag
+{
+  attr_normal    = 0,
+  attr_mandatory = 1,
+  attr_readonly  = 2,
+  attr_enum      = 4, /* The type is restricted to enumerations .*/
+  attr_new       = 8, /* the attribute will be added but we
+                          dont have any value yet.*/
+}RestrictionFlag;
+
+/** Attribute content type. Use it to filter showed content.*/
+typedef enum _RestrictionContentType
+{
+  restr_content_no_restr = 0, /* no restriction. */
+  restr_content_number   = 1, /* == Template_ATTR_type_VAL_number. */
+  restr_content_string   = 2, /* == Template_ATTR_type_VAL_string. */
+  restr_content_list     = 3, /* == Template_ATTR_type_VAL_listVal. */
+  restr_content_lang     = 4, /* language */
+  restr_content_max
+}RestrictionContentType;
+
+/**
+ * Descritpion of a restrictied data.
+ * Usefull to restrict attribute values with templates (or other).
+ */
+typedef struct _TypeRestriction
+{
+  int                    RestrFlags;  /** union of RestrictionFlag. */
+  RestrictionContentType RestrType;   /** restricted type. */
+  char*                  RestrDefVal; /** default value. */
+  char*                  RestrEnumVal;/** enum values. */
+}TypeRestriction;
+
+/**
+ * Callback prototype for filtering attributes.
+ */
+typedef void        (*AttributeFilterProc) (Element, Document, SSchema, int, TypeRestriction*);
+
 
 typedef void        (*Proc) ();
 typedef void        (*Proc1) (void * );
@@ -310,15 +350,6 @@ extern void TtaClickElement (Document *document, Element *element);
   Returns the last clicked document and element.
   ----------------------------------------------------------------------*/
 extern void TtaGetClickedElement (Document *document, Element *element);
-  
-/*----------------------------------------------------------------------
-   TtaCreateBitmap
-   create a bitmap from a file
-   const char * filename : the picture filename
-   int type   : the picture type (content.h)
-   xbm_type, eps_type, xpm_type, gif_type, png_type, jpeg_type
-  ----------------------------------------------------------------------*/
-extern ThotPixmap TtaCreateBitmap( const char * filename, int type );
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
@@ -371,6 +402,8 @@ ThotBool TtaFetchOneAvailableEvent (ThotEvent *ev);
   ----------------------------------------------------------------------*/
 extern void TtaHandleOneEvent (ThotEvent *ev);
 
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
 extern int TtaXLookupString (ThotKeyEvent *event, char *buffer, int nbytes,
 			     ThotKeySym *keysym, ThotComposeStatus *status);
 
@@ -389,6 +422,24 @@ extern void TtaGiveSelectPosition (Document document, Element element,
   ----------------------------------------------------------------------*/
 extern void TtaUpdateMenus (Document doc, View view, ThotBool RO);
 
+
+/*----------------------------------------------------------------------
+  TtaRefreshMenuStats enable/disable a top menu for the given doc
+  or all menus (menu_id = -1)
+  ----------------------------------------------------------------------*/
+extern void TtaRefreshTopMenuStats(Document doc, int menu_id );
+
+
+/*----------------------------------------------------------------------
+  TtaToggleLogError enables/disables the logerror button
+  ----------------------------------------------------------------------*/
+extern void TtaToggleLogError (Document doc_id, ThotBool enable);
+
+/*----------------------------------------------------------------------
+  TtaRefreshMenuItemStats enable/disable, toggle/untoggle menu items
+  widgets for the given doc or all items of all menus (menu_id = -1)
+  ----------------------------------------------------------------------*/
+extern void TtaRefreshMenuItemStats (Document doc, void *ptrmenu, int menu_item_id );
 
 /*----------------------------------------------------------------------
    TtaListShortcuts
@@ -411,6 +462,12 @@ extern void TtaRefreshElementMenu (Document doc, View view);
   TtaStringToClipboard
   ----------------------------------------------------------------------*/
 extern void TtaStringToClipboard (unsigned char *s, CHARSET encoding);
+
+
+/*----------------------------------------------------------------------
+  TtaUpdateToolPanelLayout
+  ----------------------------------------------------------------------*/
+extern void TtaUpdateToolPanelLayout ();
 
 #endif /* __CEXTRACT__  */
 

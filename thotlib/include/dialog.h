@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT MIT and INRIA, 1996-2005
+ *  (c) COPYRIGHT MIT and INRIA, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -9,13 +9,16 @@
 #define _DIALOG_H_
 
 #if defined(_WX) && !defined(NODISPLAY)
-extern int WX_SearchResult; /* 0 if ok, 1 if no replace, 2 if not found */
+extern int WX_SearchResult;         /* 0 if ok, 1 if no replace, 2 if not found */
+extern int Current_Color;           // export the panel Color
+extern int Current_BackgroundColor; // export the panel Background Color
+extern int Current_FontFamily;      // export the panel Font family
+extern int Current_FontSize;        // export the panel Font size
+extern int SavePANEL_PREFERENCES;   // say if panel preferences are saved
 #endif /* _WX */
 
 
-#if defined(_GTK)
-  #include <X11/Intrinsic.h>
-#endif /* #if defined(_GTK) */
+
 #include "typebase.h"
 #include "tree.h"
 
@@ -29,19 +32,19 @@ enum DButtons
 
 
 #ifndef __CEXTRACT__
-#ifdef _GTK 
-#include <gtk/gtk.h> 
-/*-------------------------------------------------------------------------------
-  ExposeEvent reaffichee la page lorsqu'un :
-  evenement de type "expose_event" est emis.
-  Le parametre widget donne la reference de la drawing_area dans laquelle
-  la page doit etre redessinee.
-  Le parametre event donne des informations sur l'evenement.
-  Le parametre data contient le numero de la frame.
---------------------------------------------------------------------------------*/
-extern gint ExposeEvent (ThotWidget widget, GdkEventExpose *event, gpointer data);
-#endif /* _GTK */
 
+/*----------------------------------------------------------------------
+  TtaIsActionActive
+  Returns TRUE if the function is available for that document
+  ----------------------------------------------------------------------*/
+extern ThotBool TtaIsActionActive (char *name, Document doc);
+
+
+/*----------------------------------------------------------------------
+  TtaIsActionAvailable
+  Returns TRUE if the function is available
+  ----------------------------------------------------------------------*/
+extern ThotBool TtaIsActionAvailable (char *name);
 
 /*----------------------------------------------------------------------
    TtaNewPulldown cre'e un pull-down menu :                           

@@ -46,7 +46,8 @@
 44 Verzeichnisse
 45 %s existiert bereits. Überschreiben?
 46 Maustaste 1 setzt die Textfarbe
-47 Maustaste 2 oder 3 setzt die Hintergrundfarbe
+46 Textfarbe einstellen
+47 Hintergrundfarbe einstellen
 48 Familie
 49 Normal
 50 Fett
@@ -57,33 +58,33 @@
 55 Normal
 56 Unterstrichen
 57 Durchgestrichen
-58 Größe (pt)
-59 Einrücken (pt)
-60 Zeilenabstand (pt)
-61 Zeilenabstand
-62 Speichern
-63 Nicht Speichern
-64 Schräge
-65 Farbe
-66 XHTML
-67 Löschen
-68 Ausgabe
-69 PostScript-Datei
-70 Drucker
-71 Suchen nach
-72 Buchstabenlage ignorieren
-73 Ersetzen durch
-74 Modus
-75 Nicht ersetzen
-76 Bestätigen
-77 Alle ersetzen
-78 Suchraum
-79 Oberhalb der Markierung
-80 Innerhalb der Markierung
-81 Unterhalb der Markierung
-82 Im gesamten Dokument
-83 Überspringen
-84 Standardfarbe
+58 Größe
+59 Ohne Einrücken
+60 Einzelne Zeile Abstand
+61 Mittlere Zeile Abstand
+62 Doppelte Zeile Abstand
+63 Speichern
+64 Nicht Speichern
+65 Schräge
+66 Farbe
+67 Elemente
+68 Löschen
+69 Ausgabe
+70 PostScript-Datei
+71 Drucker
+72 Suchen nach
+73 Buchstabenlage ignorieren
+74 Ersetzen durch
+75 Modus
+76 Nicht ersetzen
+77 Bestätigen
+78 Alle ersetzen
+79 Suchraum
+80 Oberhalb der Markierung
+81 Innerhalb der Markierung
+82 Unterhalb der Markierung
+83 Im gesamten Dokument
+84 Überspringen
 85 vorher speichern?
 86 Dokument schließen
 87 Formelsatz
@@ -95,7 +96,7 @@
 93 Zeichnung
 94 Symbol
 95 Bild
-96 XML/XTiger
+96 Elemente XML
 97 nach
 98 vor
 99 um
@@ -136,98 +137,139 @@
 134 Kann "%s" nicht erzeugen
 135 Überstrichen
 136 Format
-137 Ereignisse (Events)
-138 Löschen
-139 Linke Maustaste: Farbe für markierten Text
-140 Mittlere oder rechte Maustaste: Cursorfarbe
-141 Weiter ...
-142 Holen
-143 Farbe
-144 Hintergrundfarbe
-145 Vordergrundfarbe
-146 Farben wechseln
-147 Wählen Sie eine generische XML-Struktur
-148 Überprüfe
-149 Suchen
-150 Ersetzen (PW)
-151 Ersetzen
-152 Sprache
-153 Lernen
-154 Worte mit
-155 Rechtschreibprüfung
-156 Römische Zahlen
-157 Ignorieren
-158 Worte in Großbuchstaben
-159 Worte mit Ziffern
-160 Fehler in der Parameterdatei
-161 Tastaturdatei fehlt
-162 Kann das Dokumentwörterbuch nicht speichern
-163 Fehlerhaftes Wort "%s" im Wörterbuch zurückgewiesen
-164 Wort "%s" zum Dokumentwörterbuch hinzugefügt
-165 Rechtschreibprüfung beendet
-166 Rechtschreibprüfung abgebrochen
-167 Bitte ein Dokument auswählen
-168 Dokumentwörterbuch unter %s gespeichert
-169 In dieser Version nicht verfügbar
-170 Palette aktivieren/deaktivieren
-171 Hilfsmittel
-172 Obligatorisches Attribut, kann nicht entfernt werden
-173 Erneuern
-174 Links
-175 Rechts
-176 Zentrieren
-177 Ausrichten
-178 Klasse übernehnem
-179 Klasse oder Pseudoklasse wählen
-180 Auswählen
-181 Verwerfen
-182 Formel
-183 Verschiedene
-184 Binäre Relationen
-185 Binäre negierte Relationen
-186 Operatoren
-187 Griechisches Alphabet (Großbuchstaben)
-188 Pfeile
-189 Sonderzeichen
-190 Stop
-191 Zurück
-192 Vorwärts
-193 Aktualisieren
-194 Speichern
-195 XHTML
-196 Öffnen
-197 Drucken
-198 Suchen/Ersetzen
-199 Startseite
-200 Betont On/Off
-201 Hervorgehoben On/Off
-202 Code On/Off
-203 Bild
-204 Überschrift Ebene 1
-205 Überschrift Ebene 2
-206 Überschrift Ebene 3
-207 Ungeordnete Liste
-208 Geordnete Liste
-209 Definitionsliste
-210 Verweis
-211 Tabelle
-212 Sie sind dabei, %d geöffnete Seiten zu schließen. Sind Sie sicher, dass Sie fortfahren möchten?
-213 Warnung anzeigen, wenn mehrere Seiten geschlossen werden sollen
-214 Seiten schließen
-215 Kein Fehler gefunden
-216 Parserfehler anzeigen
-217 Umrisse
-218 Ábschnitt
-219 Erzeugen
-220 Eingefügter Text On/Off
-221 Gelöschter Text On/Off
-222 Tiefgestellt On/Off
-223 Hochgestellt On/Off
-224 Begriff
-225 Definition
-226 Objekt
-227 CSS Stil
-228 Durchsuchen
-229 Ansicht horizontal teilen
-230 Ansicht vertikal teilen
-231 Hilfsmittel anzeigen
+137 Löschen
+138 Hintergrundfarbe wählen
+139 Vordergrundfarbe wählen
+140 Wählen Sie eine generische XML-Struktur
+141 Überprüfe
+142 Suchen
+143 Ersetzen (PW)
+144 Ersetzen
+145 Sprache
+146 Lernen
+147 Worte mit
+148 Rechtschreibprüfung
+149 Römische Zahlen
+150 Ignorieren
+151 Worte in Großbuchstaben
+152 Worte mit Ziffern
+153 Fehler in der Parameterdatei
+154 Tastaturdatei fehlt
+155 Kann das Dokumentwörterbuch nicht speichern
+156 Fehlerhaftes Wort "%s" im Wörterbuch zurückgewiesen
+157 Wort "%s" zum Dokumentwörterbuch hinzugefügt
+158 Rechtschreibprüfung beendet
+159 Rechtschreibprüfung abgebrochen
+160 Bitte ein Dokument auswählen
+161 Dokumentwörterbuch unter %s gespeichert
+162 In dieser Version nicht verfügbar
+163 Palette aktivieren/deaktivieren
+164 Hilfsmittel
+165 Obligatorisches Attribut, kann nicht entfernt werden
+166 Erneuern
+167 Links
+168 Rechts
+169 Zur Mitte flanken
+170 Gerechtfertigt
+171 Klasse übernehnem
+172 Klasse oder Pseudoklasse wählen
+173 Auswählen
+174 Verwerfen
+175 Formel
+176 Verschiedene
+177 Binäre Relationen
+178 Binäre negierte Relationen
+179 Operatoren
+180 Griechisches Alphabet (Großbuchstaben)
+181 Pfeile
+182 Sonderzeichen
+183 Stop
+184 Zurück
+185 Vorwärts
+186 Aktualisieren
+187 Speichern
+188 Speichern
+189 XHTML
+190 Öffnen
+191 Drucken
+192 Suchen/Ersetzen
+193 Startseite
+194 Betont On/Off
+195 Hervorgehoben On/Off
+196 Code On/Off
+197 Bild
+198 Überschrift Ebene 1
+199 Überschrift Ebene 2
+200 Überschrift Ebene 3
+201 Überschrift Ebene 4
+202 Absatz
+203 Ungeordnete Liste
+204 Geordnete Liste
+205 Definitionsliste
+206 Verweis
+207 Tabelle
+208 Sie sind dabei, %d geöffnete Seiten zu schließen. Sind Sie sicher, dass Sie fortfahren möchten?
+209 Warnung anzeigen, wenn mehrere Seiten geschlossen werden sollen
+210 Seiten schließen
+211 Kein Fehler gefunden
+212 Parserfehler anzeigen
+213 Umrisse
+214 Ábschnitt
+215 Erzeugen
+216 Eingefügter Text On/Off
+217 Gelöschter Text On/Off
+218 Tiefgestellt On/Off
+219 Hochgestellt On/Off
+220 Begriff
+221 Definition
+222 Objekt
+223 Stil
+224 Durchsuchen
+225 Ansicht horizontal teilen
+226 Ansicht vertikal teilen
+227 Hilfsmittel anzeigen
+228 Rückgängig
+229 Erneut
+230 Ausschneiden
+231 Kopieren
+232 Einfügen
+233 Rechtschreibprüfung
+234 Verschiedene Konstruktionen
+235 Abhängigkeiten, Aufträge und Verknüpfungssteuerungen
+236 Datensätze und Funktionen
+237 arithmetisch, Abläufe, Verzweigungen und Konstante
+238 Analyse, lineare Algebra und Statistik
+239 Trigonometrie und Logarithmen
+240 Schrift vergrößern
+241 Schrift verkleinern
+242 Thema
+243 XML
+244 Text
+245 Keine neuen Dokumente
+246 Klicken Sie auf ein Element um es auszuwählen
+247 Klicken Sie um den Editmodus zu wechseln
+248 Zusammenfügen die Zellen
+249 Verkleinern der Breite
+250 Verkleinern der Breite
+251 Zeile einfügen (davor)
+252 Zeile inzufügen (danach)
+253 Spalte einfügen (davor)
+254 Spalte inzufügen (danach)
+255 Tip des Tages
+256 Tips bei Programmstart anzeigen
+257 Nächster Tip
+258 Haben Sie schon gewusst?
+259 **Close
+260 Amaya kann auf Ihre Bedürfnisse angepasst werden: fünf verschiedene Profile mit verschiedenen Kombinationen von Menu Einträgen und Bedienelementen. Für weitere Informationen werfen Sie bitte einen Blick in die Einstellungen.
+261 Bedienelemente können links, rechts oder benutzerdefiniert angezeigt werden. Siehe Einstellungen.
+262 Mit F2 oder der Escape Taste können Sie das Elternelement in der Struktur auswählen und Editier Funktionen (kopieren, einfügen,Attribute usw.) auf dieses Element anzuwenden.
+263 Sie können zwei Dokumente nebeneinander im Fenster darstellen indem Sie ein Dokumenten-Tab an die Begrenzung des dargestellten Dokumentes ziehen.
+264 Im benutzerdefinierten Modus können Sie Bedienelemente verschieben um ihre Anordnung zu verändern oder um sie frei zu platzieren.
+265 Im benutzerdefinierten Modus können Sie können Sie durch das Verschieben von Bedienelementen auf beiden Seiten Leisten mit Bedienelementen erstellen.
+266 Sie können zwischen den Editiermodi (Text/XML) wechseln indem Sie auf das entsprechende Bedienfeld in der Statusleiste klicken.
+267 Bemerken Sie einen roten Button in der Statusleiste können Sie sich mit einem Klick darauf Fehler im Dokument anzeigen lassen.
+268 Sie können Vorgängerelemente durch einen Klick auf deren Bezeichnung in der Pfadanzeige unten in der Statusleiste auswählen.
+269 Sie können zu einer anderen Registerkarte wechseln indem Sie auf das Pfeil-nach-unten Symbol rechts neben den Registerleisten klicken.
+270 Klassisch
+271 Modern
+272 Kein Motiv

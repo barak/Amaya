@@ -45,8 +45,8 @@
 43 關閉
 44 目錄
 45 %s 文檔已存在，確認要覆蓋嗎?
-46 鼠標左鍵設置文本顏色
-47 鼠標中鍵或右鍵設置背景顏色
+46 **Set the text color
+47 **Set the background color
 48 字體
 49 常規
 50 加粗
@@ -57,33 +57,33 @@
 55 常規
 56 下劃線
 57 刪除線
-58 大小 (pt)
-59 縮進 (pt)
-60 行間距 (pt)
-61 行間距
-62 保存文檔
-63 不保存直接關閉
-64 字符樣式
-65 顏色
-66 XHTML
-67 刪除
-68 輸出
-69 PostScript 文件
-70 打印機
-71 搜索
-72 忽略大小寫
-73 替換為
-74 替換
-75 無替換
-76 詢問是否替換
-77 自動替換
-78 搜索范圍
-79 選定區域前
-80 選定區域中
-81 選定區域后
-82 整個文檔
-83 不替換
-84 默認顏色
+58 大小 
+59 **Unindent
+60 **Single line spacing
+61 **Middle line spacing
+62 **Double line spacing
+63 保存文檔
+64 不保存直接關閉
+65 字符樣式
+66 顏色
+67 XHTML
+68 刪除
+69 輸出
+70 PostScript 文件
+71 打印機
+72 搜索
+73 忽略大小寫
+74 替換為
+75 替換
+76 無替換
+77 詢問是否替換
+78 自動替換
+79 搜索范圍
+80 選定區域前
+81 選定區域中
+82 選定區域后
+83 整個文檔
+84 不替換
 85 關閉前
 86 關閉文檔
 87 數學符號
@@ -95,7 +95,7 @@
 93 圖形
 94 符號
 95 圖片
-96 XML/XTiger
+96 XML
 97 后
 98 前
 99 外
@@ -136,98 +136,139 @@
 134 無法創建 "%s"
 135 Overline
 136 文檔格式
-137 事件
-138 移除屬性
-139 左鍵設置所選區域顏色
-140 中鍵或右鍵設置脫字符的顏色
-141 更多 ...
-142 Get
-143 顏色
-144 背景色
-145 前景色
-146 切換顏色
-147 選擇一般性 XML 框架
-148 檢查
-149 查找/跳過
-150 替換 (+ dic)
-151 更正并查找寫一個
-152 其他語言
-153 學習
-154 包含詞語:
-155 拼寫檢查 ...
-156 羅馬數字
-157 忽略
-158 全為大寫的詞語
-159 含數字的詞語
-160 參數文件錯誤
-161 無鍵盤文件
-162 無法保存文檔字典
-163 錯誤詞語 "%s" 已被本字典拒絕
-164 詞語 "%s" 已加入字典
-165 拼寫檢查完成
-166 拼寫檢查已終止
-167 請選擇文檔
-168 文檔字典已保存: %s
-169 此版本尚未提供此功能
-170 啟用/禁用小面板
-171 工具
-172 無法移出強制性屬性
-173 刷新
-174 左
-175 中
-176 右
-177 對齊
-178 應用 class
-179 選擇一個 class 或 pseudo-class
-180 選擇
-181 放棄
-182 Maths
-183 雜項
-184 二元關系
-185 負二元關系
-186 算符
-187 希臘字母(大寫)
-188 鍵頭
-189 特殊字符
-190 終止傳輸
-191 上一文檔
-192 下一文檔
-193 重新載入
-194 保存
-195 新建 XHTML 文檔
-196 打開文檔
-197 打印
-198 搜索
-199 主頁
-200 強調 On/Off
-201 加強 On/Off
-202 代碼 On/Off
-203 插入圖片
-204 標題1
-205 標題2
-206 標題3
-207 無序列表
-208 有序列表
-209 定義性列表
-210 鏈接
-211 表格
-212 正要關閉%d個標簽頁,確定要這么做嗎?
-213 關閉多個標簽頁的時候顯示警告
-214 關閉標簽
-215 沒有檢測到錯誤
-216 顯示解析錯誤
-217 表格
-218 Div層
-219 目標
-220 插入 On/Off
-221 刪除 On/Off
-222 橋表 On/Off
-223 上標 On/Off
-224 條目
-225 說明
-226 Object
-227 CSS樣式
-228 文件
-229 水平排列視圖
-230 垂直排列視圖
-231 顯示工具欄
+137 移除屬性
+138 背景色
+139 前景色
+140 選擇一般性 XML 框架
+141 檢查
+142 查找/跳過
+143 替換 (+ dic)
+144 更正并查找寫一個
+145 其他語言
+146 學習
+147 包含詞語:
+148 拼寫檢查 ...
+149 羅馬數字
+150 忽略
+151 全為大寫的詞語
+152 含數字的詞語
+153 參數文件錯誤
+154 無鍵盤文件
+155 無法保存文檔字典
+156 錯誤詞語 "%s" 已被本字典拒絕
+157 詞語 "%s" 已加入字典
+158 拼寫檢查完成
+159 拼寫檢查已終止
+160 請選擇文檔
+161 文檔字典已保存: %s
+162 此版本尚未提供此功能
+163 啟用/禁用小面板
+164 工具
+165 無法移出強制性屬性
+166 刷新
+167 左
+168 中
+169 右
+170 對齊
+171 應用 class
+172 選擇一個 class 或 pseudo-class
+173 選擇
+174 放棄
+175 Maths
+176 雜項
+177 二元關系
+178 負二元關系
+179 算符
+180 希臘字母(大寫)
+181 鍵頭
+182 特殊字符
+183 終止傳輸
+184 上一文檔
+185 下一文檔
+186 重新載入
+187 保存
+188 保存
+189 新建 XHTML 文檔
+190 打開文檔
+191 打印
+192 搜索
+193 主頁
+194 強調 On/Off
+195 加強 On/Off
+196 代碼 On/Off
+197 插入圖片
+198 標題1
+199 標題2
+200 標題3
+201 標題4
+202 段落
+203 無序列表
+204 有序列表
+205 定義性列表
+206 鏈接
+207 表格
+208 正要關閉%d個標簽頁,確定要這么做嗎?
+209 關閉多個標簽頁的時候顯示警告
+210 關閉標簽
+211 沒有檢測到錯誤
+212 顯示解析錯誤
+213 表格
+214 Div層
+215 目標
+216 插入 On/Off
+217 刪除 On/Off
+218 橋表 On/Off
+219 上標 On/Off
+220 條目
+221 說明
+222 Object
+223 樣式
+224 文件
+225 水平排列視圖
+226 垂直排列視圖
+227 顯示工具欄
+228 撤銷
+229 重做
+230 剪切
+231 復制
+232 粘貼
+233 拼寫檢查
+234 **Various constructs
+235 **Relations, orders and logic
+236 **Sets and functions
+237 **Arithmetic, operations, complexes and constants
+238 **Analysis, linear algebra and statistic
+239 **Trigonometry and logarithms
+240 放大
+241 縮小
+242 **Theme
+243 XML
+244 Text
+245 **No recent document
+246 **Click an element to select it
+247 **Click to change the editing mode
+248 **Merge cells
+249 收縮水平范圍
+250 收縮垂直范圍
+251 插入新行
+252 附加一行
+253 插入新列
+254 附加一列
+255 **Tip of the day
+256 **Show tip at startup
+257 **Next tip
+258 **Did you know...
+259 **Close
+260 **Amaya can be adapted to your own needs: five profiles are provided with different sets of menus and panels. See Preferences/General.
+261 **Panels can be displayed on the left or on the right side of the window or even customized panel by panel. See Preferences.
+262 **With the F2 or Escape key you can select the parent element in the document structure, to apply editing functions (copy, paste, attributes, style, etc.) to the right element.
+263 **You can display two documents side by side in the window by dragging a document tab to the left or right side of the displayed document.
+264 **In customizable mode, you can drag panels to change their order or to make them floating.
+265 **With the customizable mode, you can move panels on both sides of the window just by dragging.
+266 **You can switch editing mode (Text/XML) by clicking on the corresponding button in the bottom right corner.
+267 **When there is red button in the bottom right corner, you can display errors by clicking on it.
+268 **You can select an ancestor of the current selection by clicking on its name on the path control displayed at the bottom of the window.
+269 **You can move to another tab with the menu displayed by the arrow button at right of document tabs.
+270 **Classic
+271 **Modern
+272 **No theme

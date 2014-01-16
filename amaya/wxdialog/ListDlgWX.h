@@ -36,6 +36,28 @@ private:
   int m_SubRef;
 };
 
+
+
+
+//-----------------------------------------------------------------------------
+// Class definition: NonSelListDlgWX
+//-----------------------------------------------------------------------------
+class NonSelListDlgWX : public wxDialog
+{
+public: 
+  // Constructor.
+  NonSelListDlgWX( wxWindow* parent,
+       const wxString & title,
+       const wxString & label,
+       const wxArrayString& items,
+       const wxString& button);
+    
+  // Destructor.                  
+  virtual ~NonSelListDlgWX();
+};
+
+
+
 #endif  //__LISTDLGWX_H__
 
 #endif /* _WX */

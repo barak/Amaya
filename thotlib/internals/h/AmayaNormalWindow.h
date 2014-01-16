@@ -7,94 +7,80 @@
 #include "windowtypes_wx.h"
 
 class AmayaQuickSplitButton;
-
+class AmayaPageContainer;
 /*
  * =====================================================================================
  *        Class:  AmayaNormalWindow
  * 
- *  Description:  - AmayaNormalWindow is a top container
- *                  + A normal window contains :
- *                     - several AmayaPage
- *                     - toolbar
- *                     - menubar
- *                     - statusbar
- * 
- * +[AmayaNormalWindow]-----------------------------------+
- * |+----------------------------------------------------+|
- * || MenuBar                                            ||
- * |+----------------------------------------------------+|
- * |+----------------------------------------------------+|
- * || ToolBar                                            ||
- * |+----------------------------------------------------+|
- * |+[AmayaPanel]--+ +[AmayaNoteBook]-------------------+ |
- * ||              | |+-----------+                     | |
- * ||              | ||[AmayaPage]+--------------------+| |
- * ||              | ||+------------------------------+|| |
- * ||              | |||[AmayaFrame]                  ||| |
- * ||              | |||                              ||| |
- * ||              | |||                              ||| |
- * ||              | |||  (view container)     'Top'  ||| |
- * ||              | |||---------SplitBar-------------||| |
- * ||              | |||[AmayaFrame]          'Bottom'||| |
- * ||              | |||                              ||| |
- * ||              | |||                              ||| |
- * ||              | ||+------------------------------+|| |
- * ||              | |+--------------------------------+| |
- * |+--------------+ +----------------------------------+ |
- * |+----------------------------------------------------+|
- * || AmayaStatusBar                                     ||
- * |+----------------------------------------------------+|
- * +------------------------------------------------------+
+ *  Description:  - AmayaNormalWindow is the common interface for all normal
+ *                  (classic and advaced) windows.
+ *                  A normal window can embed many pages, menu, tools, statusbar ...
  *       Author:  Stephane GULLY
  *      Created:  29/06/2004 04:45:34 PM CET
- *     Revision:  none
+ *     Revision:  Emilien Kia 02/10/2007
  * =====================================================================================
  */
 class AmayaNormalWindow : public AmayaWindow
 {
  public:
-  DECLARE_DYNAMIC_CLASS(AmayaNormalWindow)
+  DECLARE_CLASS(AmayaNormalWindow)
 
-  AmayaNormalWindow ( int window_id = -1
-                      ,wxWindow *frame = NULL
+  static AmayaNormalWindow* CreateNormalWindow(wxWindow * parent, wxWindowID id=wxID_ANY
+                    ,const wxPoint& pos  = wxDefaultPosition
+                    ,const wxSize&  size = wxDefaultSize
+                    ,int kind = WXAMAYAWINDOW_NORMAL);
+  
+  static int GetNormalWindowCount(){return s_normalWindowCount;}
+  
+  static void RegisterThotToolPanels();
+  
+  AmayaNormalWindow (  wxWindow * parent, wxWindowID id=wxID_ANY
                       ,const wxPoint& pos  = wxDefaultPosition
                       ,const wxSize&  size = wxDefaultSize
                       ,int kind = WXAMAYAWINDOW_NORMAL);
   virtual ~AmayaNormalWindow();
 
+  // Init and config :
+  virtual void CleanUp();
+  virtual bool Initialize();
+  virtual void LoadConfig();
+  virtual void SaveConfig();
+
+  // Window decorations :
+  virtual AmayaStatusBar * CreateStatusBar();
+  virtual void             CreateMenuBar();
+
+  
   virtual AmayaPage *  GetActivePage() const;
   virtual AmayaFrame * GetActiveFrame() const;
-  virtual void         CleanUp();
 
+
+  void Unused();
+
+  
   // --------------------------------------------- //
   // WXAMAYAWINDOW_NORMAL interface
-  virtual AmayaPage *    CreatePage( bool attach = false, int position = 0 );
-  virtual bool           AttachPage( int position, AmayaPage * p_page );
-  virtual bool           DetachPage( int position );
-  virtual bool           ClosePage( int position );
-  virtual bool           CloseAllButPage( int position );
-  virtual AmayaPage *    GetPage( int position ) const;
-  virtual int            GetPageCount() const;
-
-  virtual AmayaToolBar * GetAmayaToolBar();
-  virtual AmayaStatusBar * GetAmayaStatusBar();
-
+  virtual AmayaPage *    CreatePage( Document doc, bool attach = false, int position = 0 )=0;
 
   // url bar control
   virtual wxString GetURL();
   virtual void     SetURL ( const wxString & new_url );
   virtual void     AppendURL ( const wxString & new_url );
   virtual void     EmptyURLBar();
+  
+  void     GotoSelectedURL(ThotBool noreplace);
+  virtual void RefreshShowToolPanelToggleMenu();
+  
+  virtual bool AttachPage( int position, AmayaPage * p_page );
+  virtual bool ClosePage( int position );
+  virtual bool CloseAllButPage( int position );
+  virtual AmayaPage *    GetPage( int position ) const;
+  virtual int            GetPageCount() const;
 
-  AmayaPanel * GetAmayaPanel() const;
-  bool IsPanelOpened();
-  void ClosePanel();
-  void OpenPanel();
-  virtual void RefreshShowPanelToggleMenu();
-
-//  virtual void DoClose( bool & veto );
-
- protected:
+  virtual void PrepareRecentDocumentMenu(wxMenuItem* item);
+  void OnRecentDocMenu(wxCommandEvent& event);
+  
+protected:
   DECLARE_EVENT_TABLE()
 
 #ifdef __WXDEBUG__
@@ -102,29 +88,43 @@ class AmayaNormalWindow : public AmayaWindow
   void OnMenuOpen( wxMenuEvent& event );
 #endif /* __WXDEBUG__ */
 
+  virtual AmayaPage* DoCreatePage( wxWindow* parent, Document doc, bool attach = false, int position = 0 );
+  
+  virtual const AmayaPageContainer* GetPageContainer()const{return NULL;}
+  virtual AmayaPageContainer* GetPageContainer(){return NULL;}
+  
+  wxPanel* GetToolBarEditing();
+  wxPanel* GetToolBarBrowsing();
+
+  const wxPanel* GetToolBarEditing()const {return m_pToolBarEditing;}
+  const wxPanel* GetToolBarBrowsing()const {return m_pToolBarBrowsing;}
+
+  bool HaveToolBarEditing()const{return m_haveTBEditing;}
+  bool HaveToolBarBrowsing()const{return m_haveTBBrowsing;}
+  
+  virtual void ToggleFullScreen();  
+  virtual bool RegisterToolPanel(AmayaToolPanel* tool) {return false;}
+  
   void OnMenuItem( wxCommandEvent& event );
   void OnMenuHighlight( wxMenuEvent& event );
-  void OnSplitterUnsplit( wxSplitterEvent& event );
-  void OnSplitterDClick( wxSplitterEvent& event );
-  void OnSplitterPosChanged( wxSplitterEvent& event );
-  void OnSplitPanelButton( wxCommandEvent& event );
-  void OnNotebookPageChanged( wxNotebookEvent& event );
+  void OnURLTextEnter( wxCommandEvent& event );
+  void OnURLSelected( wxCommandEvent& event );
+  void OnURLText( wxCommandEvent& event );
 
-  void OnClose(wxCloseEvent& event);
+  virtual void RefreshShowToolBarToggleMenu(int toolbarID);
+  
+  wxPanel                 *m_pToolBarEditing;
+  wxPanel                 *m_pToolBarBrowsing;
+  
+  bool                    m_haveTBEditing, m_haveTBBrowsing;
+  
+  wxComboBox              *m_pComboBox;         // URL combo box
+  
+  wxArrayString           m_URLs;
+  wxString                m_enteredURL; // Setted URL, used when no combo is create (amaya lite). 
 
-  AmayaPanel *      m_pPanel;     // current selected panel
-  AmayaNotebook *   m_pNotebook;         // tabs container
-  wxPanel *         m_pNotebookPanel;
-  int               m_SlashPos;          // the slash pos in pixel
+  static int s_normalWindowCount;   
 
-  wxMenuItem * m_pMenuItemToggleFullScreen;
-  wxMenuItem * m_pMenuItemToggleToolTip;
-
-  wxSplitterWindow * m_pSplitterWindow;  
-  AmayaToolBar *     m_pToolBar;
-
-  AmayaQuickSplitButton * m_pSplitPanelButton;
-  AmayaStatusBar * m_pStatusBar;
 };
 
 #endif // __AMAYANORMALWINDOW_H__

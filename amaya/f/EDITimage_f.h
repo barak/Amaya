@@ -17,8 +17,6 @@ extern void CreateAreaCircle ( Document doc,
                                View view );
 extern void CreateAreaPoly ( Document doc,
                              View view );
-extern void ChangeBackgroundImage ( Document document,
-                                    View view );
 extern void ComputeSRCattribute ( Element el,
                                   Document doc,
                                   Document sourceDocument,
@@ -34,6 +32,8 @@ extern void AddNewImage ( Document doc,
                           ThotBool isInput );
 extern void CreateImage ( Document doc,
                           View view );
+extern void InsertImageOrObject ( Element el,
+                                  Document doc );
 extern ThotBool AddLocalImage ( char *fullname,
                                 char *name,
                                 char *url,
@@ -56,8 +56,6 @@ extern void CreateAreaCircle ( Document doc,
                                  View view );
 extern void CreateAreaPoly ( Document doc,
                                View view );
-extern void ChangeBackgroundImage ( Document document,
-                                      View view );
 extern void ComputeSRCattribute ( Element el,
                                     Document doc,
                                     Document sourceDocument,
@@ -73,6 +71,8 @@ extern void AddNewImage ( Document doc,
                             ThotBool isInput );
 extern void CreateImage ( Document doc,
                             View view );
+extern void InsertImageOrObject ( Element el,
+                                    Document doc );
 extern ThotBool AddLocalImage ( char *fullname,
                                   char *name,
                                   char *url,

@@ -10,16 +10,13 @@ extern ThotBool IsTemplateInstanceDocument ( Document doc );
 extern ThotBool IsTemplateDocument ( Document doc );
 extern ThotBool CheckPromptIndicator ( Element el,
                                        Document doc );
-extern void RemovePromptIndicator ( Element el,
-                                    Document doc );
+extern ThotBool RemovePromptIndicator ( NotifyOnTarget *event );
 extern void* AllocTemplateRepositoryListElement ( const char* path,
                                                   void* prevElement );
 extern void FreeTemplateRepositoryList ( void* list );
 extern void GetTemplateRepositoryList ( void* list );
 extern void SetTemplateRepositoryList ( const void* list );
 extern void InitTemplates ( void );
-extern void NewTemplate ( Document doc,
-                          View view );
 extern void CreateInstanceOfTemplate ( Document doc,
                                        char *templatename,
                                        char *docname );
@@ -33,20 +30,9 @@ extern void giveItems ( char *text,
                         int *nbitems );
 extern ThotBool UseToBeCreated ( NotifyElement *event );
 extern void UseCreated ( NotifyElement *event );
-extern void Template_IncrementRepeatOccurNumber ( Element el );
-extern void Template_DecrementRepeatOccurNumber ( Element el );
 extern ThotBool Template_CanInsertRepeatChild ( Element el );
-extern Element Template_InsertRepeatChildAfter ( Document doc,
-                                                 Element el,
-                                                 Declaration decl,
-                                                 Element elPrev );
-extern Element Template_InsertRepeatChild ( Document doc,
-                                            Element el,
-                                            Declaration decl,
-                                            int pos );
-extern Element Template_InsertBagChild ( Document doc,
-                                         Element el,
-                                         Declaration decl );
+extern char *Template_GetListTypes ( XTigerTemplate t,
+                                     Element el );
 extern ThotBool BagButtonClicked ( NotifyElement *event );
 extern ThotBool RepeatButtonClicked ( NotifyElement *event );
 extern ThotBool UseButtonClicked ( NotifyElement *event );
@@ -69,16 +55,13 @@ extern ThotBool IsTemplateInstanceDocument ( Document doc );
 extern ThotBool IsTemplateDocument ( Document doc );
 extern ThotBool CheckPromptIndicator ( Element el,
                                          Document doc );
-extern void RemovePromptIndicator ( Element el,
-                                      Document doc );
+extern ThotBool RemovePromptIndicator ( NotifyOnTarget *event );
 extern void* AllocTemplateRepositoryListElement ( const char* path,
                                                     void* prevElement );
 extern void FreeTemplateRepositoryList ( void* list );
 extern void GetTemplateRepositoryList ( void* list );
 extern void SetTemplateRepositoryList ( const void* list );
 extern void InitTemplates ( void );
-extern void NewTemplate ( Document doc,
-                            View view );
 extern void CreateInstanceOfTemplate ( Document doc,
                                          char *templatename,
                                          char *docname );
@@ -92,20 +75,9 @@ extern void giveItems ( char *text,
                           int *nbitems );
 extern ThotBool UseToBeCreated ( NotifyElement *event );
 extern void UseCreated ( NotifyElement *event );
-extern void Template_IncrementRepeatOccurNumber ( Element el );
-extern void Template_DecrementRepeatOccurNumber ( Element el );
 extern ThotBool Template_CanInsertRepeatChild ( Element el );
-extern Element Template_InsertRepeatChildAfter ( Document doc,
-                                                   Element el,
-                                                   Declaration decl,
-                                                   Element elPrev );
-extern Element Template_InsertRepeatChild ( Document doc,
-                                              Element el,
-                                              Declaration decl,
-                                              int pos );
-extern Element Template_InsertBagChild ( Document doc,
-                                           Element el,
-                                           Declaration decl );
+extern char *Template_GetListTypes ( XTigerTemplate t,
+                                       Element el );
 extern ThotBool BagButtonClicked ( NotifyElement *event );
 extern ThotBool RepeatButtonClicked ( NotifyElement *event );
 extern ThotBool UseButtonClicked ( NotifyElement *event );

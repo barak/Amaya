@@ -22,11 +22,14 @@ extern void TtaExecuteMenuActionFromActionId ( int action_id,
                                                Document doc,
                                                View view,
                                                ThotBool force );
+extern void TteZeroMenu ( void );
+extern ThotBool TtaIsActionActive ( char *name,
+                                    Document doc );
+extern ThotBool TtaIsActionAvailable ( char *name );
 extern void TtaExecuteMenuAction ( const char *actionName,
                                    Document doc,
                                    View view,
                                    ThotBool force );
-extern void TteZeroMenu ( void );
 extern void TteAddMenu ( int view,
                          int menuID,
                          int itemsNumber,
@@ -40,38 +43,7 @@ extern void TteAddMenuItem ( int menuID,
                              const char *actionName,
                              char itemType,
                              const char * iconName );
-extern void BuildPopdown ( Menu_Ctl *ptrmenu,
-                           int ref,
-                           ThotMenu button,
-                           int frame,
-                           int doc,
-                           ThotBool update,
-                           ThotBool RO );
 extern void TteOpenMainWindow ( char *name );
-extern int TtaAddButton ( Document document,
-                          View view,
-                          ThotIcon picture,
-                          void (*procedure) (),
-                          char *functionName,
-                          char *info,
-                          unsigned char type,
-                          ThotBool state );
-extern void TtaSwitchButton ( Document doc,
-                              View view,
-                              int index );
-extern void TtaChangeButton ( Document doc,
-                              View view,
-                              int index,
-                              ThotIcon picture,
-                              ThotBool state );
-extern void TtcSwitchButtonBar ( Document doc,
-                                 View view );
-extern ThotBool TtaIsButtonActivated ( Document document,
-                                       View view );
-extern void TtaSetButtonActivatedStatus ( ThotBool new_status );
-extern void APP_TextCallback ( ThotWidget w,
-                               int frame,
-                               void *call_d );
 extern int TtaAddTextZone ( Document doc,
                             View view,
                             char *label,
@@ -81,8 +53,6 @@ extern int TtaAddTextZone ( Document doc,
 extern void TtaSetTextZone ( Document doc,
                              View view,
                              char *listUrl );
-extern void TtcSwitchCommands ( Document doc,
-                                View view );
 extern void DrawingInput ( int *w,
                            int frame,
                            int *infos );
@@ -158,11 +128,14 @@ extern void TtaExecuteMenuActionFromActionId ( int action_id,
                                                  Document doc,
                                                  View view,
                                                  ThotBool force );
+extern void TteZeroMenu ( void );
+extern ThotBool TtaIsActionActive ( char *name,
+                                      Document doc );
+extern ThotBool TtaIsActionAvailable ( char *name );
 extern void TtaExecuteMenuAction ( const char *actionName,
                                      Document doc,
                                      View view,
                                      ThotBool force );
-extern void TteZeroMenu ( void );
 extern void TteAddMenu ( int view,
                            int menuID,
                            int itemsNumber,
@@ -176,38 +149,7 @@ extern void TteAddMenuItem ( int menuID,
                                const char *actionName,
                                char itemType,
                                const char * iconName );
-extern void BuildPopdown ( Menu_Ctl *ptrmenu,
-                             int ref,
-                             ThotMenu button,
-                             int frame,
-                             int doc,
-                             ThotBool update,
-                             ThotBool RO );
 extern void TteOpenMainWindow ( char *name );
-extern int TtaAddButton ( Document document,
-                            View view,
-                            ThotIcon picture,
-                            void (*procedure) (),
-                            char *functionName,
-                            char *info,
-                            unsigned char type,
-                            ThotBool state );
-extern void TtaSwitchButton ( Document doc,
-                                View view,
-                                int index );
-extern void TtaChangeButton ( Document doc,
-                                View view,
-                                int index,
-                                ThotIcon picture,
-                                ThotBool state );
-extern void TtcSwitchButtonBar ( Document doc,
-                                   View view );
-extern ThotBool TtaIsButtonActivated ( Document document,
-                                         View view );
-extern void TtaSetButtonActivatedStatus ( ThotBool new_status );
-extern void APP_TextCallback ( ThotWidget w,
-                                 int frame,
-                                 void *call_d );
 extern int TtaAddTextZone ( Document doc,
                               View view,
                               char *label,
@@ -217,8 +159,6 @@ extern int TtaAddTextZone ( Document doc,
 extern void TtaSetTextZone ( Document doc,
                                View view,
                                char *listUrl );
-extern void TtcSwitchCommands ( Document doc,
-                                  View view );
 extern void DrawingInput ( int *w,
                              int frame,
                              int *infos );

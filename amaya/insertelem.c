@@ -1,6 +1,6 @@
 /*
  *
- *  COPYRIGHT INRIA and W3C, 1996-2007
+ *  COPYRIGHT INRIA and W3C, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -26,6 +26,7 @@
 #include "templateLoad_f.h"
 #include "templateDeclarations_f.h"
 #include "templateInstantiate_f.h"
+#include "templateUtils_f.h"
 #include "appdialogue_wx.h"
 #include "init_f.h"
 #include "wxdialogapi_f.h"
@@ -107,15 +108,11 @@ static void FillUnionResolvedPossibleElement(XTigerTemplate t, const char* name,
                                              DLList list, int level)
 {
   Declaration dec = Template_GetDeclaration (t, name);
+  Document    doc = TtaGetDocument(elem);
   if (dec == NULL)
     return;
-    
-  if (dec->declaredIn->isPredefined)
-  {
-//    DLList_Append(list, ElemListElement_CreateComponent(level, dec->name,
-//                                                        (void*)dec, resolvedPath, elem));
-  }
-  else if (dec->nature==ComponentNat)
+  
+  if (dec->nature==ComponentNat)
   {
     DLList_Append(list, ElemListElement_CreateComponent(level, dec->name, (void*)dec,
                                                         resolvedPath, elem));
@@ -152,7 +149,7 @@ static void FillUnionResolvedPossibleElement(XTigerTemplate t, const char* name,
     
     
     listnode = (DLListNode) ForwardIterator_GetFirst(iter);
-	ITERATOR_FOREACH(iter, DLListNode, listnode)
+    ITERATOR_FOREACH(iter, DLListNode, listnode)
       DLList_Append(list, listnode->elem);
     TtaFreeMemory(iter);
 
@@ -180,10 +177,11 @@ static void FillUnionResolvedPossibleElement(XTigerTemplate t, const char* name,
       char       content;
       ThotBool    checkProfile;
       MapXMLElementType(xmlType, dec->name, &elType, &mappedName, &content,
-                        &checkProfile, TtaGetDocument(elem));
+                        &checkProfile, doc);
       if (elType.ElTypeNum!=0)
       {
-        DLList_Append(list, ElemListElement_CreateLanguageElement(level, elType,
+        if(TemplateCanInsertFirstChild(elType, elem, doc))
+          DLList_Append(list, ElemListElement_CreateLanguageElement(level, elType,
                                                                   resolvedPath, elem));
         break;
       }
@@ -199,14 +197,13 @@ static void FillInsertableElementFromElemAttribute (XTigerTemplate t,
                                                     Element elem, Element refelem,
                                                     int attrib, DLList list, int level)
 {
-  ElementType     type = TtaGetElementType(elem);
-  AttributeType   attributeType = {type.ElSSchema, attrib};
+  ElementType     elType = TtaGetElementType(elem);
+  AttributeType   attributeType = {elType.ElSSchema, attrib};
   Attribute       att = TtaGetAttribute (elem, attributeType);
   int             size = TtaGetTextAttributeLength (att);
   char*           types = (char *) TtaGetMemory (size+1); 
 
   TtaGiveTextAttributeValue (att, types, &size);
-
   HashMap         basemap = KeywordHashMap_CreateFromList(NULL, -1, types);
   HashMap         map     = Template_ExpandHashMapTypes(t, basemap);
   ForwardIterator iter;
@@ -225,85 +222,76 @@ static void FillInsertableElementFromElemAttribute (XTigerTemplate t,
 #endif/* TEMPLATES */
 
 /*----------------------------------------------------------------------
+  SortInsertableElemList
+  Sort a list of KeywordHashMap<Declaration> to be user friendly
+  First components and then XmlElements and sorted alphabeticaly.
+  ----------------------------------------------------------------------*/
+static int SortInsertableElemList(ElemListElement elem1 ,ElemListElement elem2)
+{
+#ifdef TEMPLATES
+  if(elem1->typeClass==elem2->typeClass)
+      return strcmp(ElemListElement_GetName(elem1),ElemListElement_GetName(elem2));
+  else
+    return elem1->typeClass - elem2->typeClass;
+#else  /* TEMPLATES */
+  return 0;
+#endif /* TEMPLATES */
+}
+
+
+/*----------------------------------------------------------------------
   FillInsertableElemList
   Fill an element list with all insertable elements (base element or
   XTiger comonent).
   ----------------------------------------------------------------------*/
-static void FillInsertableElemList (Document doc, Element elem, DLList list)
+void FillInsertableElemList (Document doc, Element el, DLList list)
 {
-  ElementType      type;
-  Element          parent;
 #ifdef TEMPLATES
-  Element          child;
-  ElementType      childType;
+  Element          child, elem;
+  ElementType      elType, childType;
   XTigerTemplate   t;
-  ThotBool         haveAncestorBag = FALSE;
 #endif/* TEMPLATES */
   int level;
   ThotBool cont = TRUE;
 
-  if (elem)
-  {
-    if (doc==0)
-      doc = TtaGetDocument(elem);
+  if (el)
+    {
+    if (doc == 0)
+      doc = TtaGetDocument(el);
 
 #ifdef TEMPLATES
     t = GetXTigerTemplate(DocumentMeta[doc]->template_url);
-
-
-    if (!IsTemplateElement(elem))
-      elem = GetFirstTemplateParentElement(elem);
-
-    // Search for first xt:bag ancestor.
-    parent = elem;
-    while (parent!= NULL && cont)
-      {
-        type = TtaGetElementType(parent);
-        if (type.ElTypeNum == Template_EL_bag)
-          {
-            haveAncestorBag = TRUE;
-            cont = FALSE;
-          }
-        parent = GetFirstTemplateParentElement(parent);
-      }
-
     level = 0;
     cont = TRUE;
-
+    elem = el;
     // Process for each ancestor.
-    while (elem!=NULL && cont)
+    while (elem && cont)
     {
-      type = TtaGetElementType(elem);
-      switch(type.ElTypeNum)
+      elType = TtaGetElementType (elem);
+      switch (elType.ElTypeNum)
         {
         case Template_EL_repeat:
           child = TtaGetFirstChild(elem);
           childType = TtaGetElementType(child);
-          switch(childType.ElTypeNum)
+          switch (childType.ElTypeNum)
           {
             case Template_EL_useEl:
-              FillInsertableElementFromElemAttribute(t, child, elem,
-                                                     Template_ATTR_types, list, level);
-              break;
             case Template_EL_useSimple:
-              FillInsertableElementFromElemAttribute(t, child, elem,
-                                                     Template_ATTR_types, list, level);
-              break;
             case Template_EL_bag:
-              FillInsertableElementFromElemAttribute(t, child, elem,
+              FillInsertableElementFromElemAttribute(t, el, elem,
                                                      Template_ATTR_types, list, level);
               break;
             default:
               break;
           }
-          cont = haveAncestorBag;
+          cont = FALSE;
           break;
         case Template_EL_useEl:
           // Fill for xt:use only if have no child.
           if (TtaGetFirstChild(elem)==NULL){
-            FillInsertableElementFromElemAttribute(t, elem, elem,
+            FillInsertableElementFromElemAttribute(t, el, elem,
                                                    Template_ATTR_types, list, level);
-            cont = haveAncestorBag;
+            cont = FALSE;
           }
           break;
         case Template_EL_bag:
@@ -312,11 +300,12 @@ static void FillInsertableElemList (Document doc, Element elem, DLList list)
           cont = FALSE;
           break;
         }
-      elem = GetFirstTemplateParentElement(elem);
+      elem = GetFirstTemplateParentElement (elem);
       level ++;
     }
 #endif/* TEMPLATES */
-  }
+    }
+  DLList_Sort(list, (Container_CompareFunction)SortInsertableElemList);
 }
 
 /*----------------------------------------------------------------------
@@ -341,7 +330,6 @@ DLList InsertableElement_GetList(Document doc)
   Update the insertable element list for a document.
   @param el Selected element, cant be NULL.
   @param document Document, can be NULL.
-  @param force No dont force the refresh of the list if the element is already selected.
   @return List of insertable elements.
   ----------------------------------------------------------------------*/
 DLList InsertableElement_Update(Document doc, Element el)
@@ -360,9 +348,23 @@ DLList InsertableElement_Update(Document doc, Element el)
   DLList_Empty (list->list);
   FillInsertableElemList (doc, el, list->list);
   list->elem = el;
-
   return list->list;
 }
+
+/*----------------------------------------------------------------------
+  InsertableElement_ComputeList
+  Update a insertable element list for a document.
+  @param el Selected element, cant be NULL.
+  @param document Document, can be NULL.
+  @return List of insertable elements.
+  ----------------------------------------------------------------------*/
+DLList InsertableElement_ComputeList(Document doc, Element el)
+{
+  DLList list = DLList_Create();
+  FillInsertableElemList (doc, el, list);
+  return list;
+}
+
 
 /*----------------------------------------------------------------------
   InsertableElement_DoInsertElement
@@ -397,7 +399,8 @@ void InsertableElement_DoInsertElement (void* el)
         break;
       case Template_EL_bag:
         newEl = Template_InsertBagChild (doc, ref,
-                                         (Declaration)elem->elem.component.declaration);
+                                         (Declaration)elem->elem.component.declaration,
+                                         FALSE);
         break;
       default:
         break;
@@ -407,4 +410,155 @@ void InsertableElement_DoInsertElement (void* el)
 
   if (newEl)
     TtaSelectElement (doc, newEl);
+}
+
+/*----------------------------------------------------------------------
+  GetFirstChildElementTo
+  Find and retrieve the first child of root element which is an ascendent
+  of the leaf element.
+  If leaf is a child of root, return leaf itself.
+  ----------------------------------------------------------------------*/
+static Element GetFirstChildElementTo(Element root, Element leaf)
+{
+  Element parent = TtaGetParent(leaf);
+  if(root==0 || leaf==0 || parent==0)
+    return 0;
+  
+  while(parent)
+    {
+      if(parent==root)
+        return leaf;
+      leaf = parent;
+      parent = TtaGetParent(parent);
+    }
+  return 0;
+}
+
+/*----------------------------------------------------------------------
+  InsertableElement_InsertElement
+  Insert the specified element in the given document before or after the selection.
+  \param el Element to insert (ElemListElement)
+  \param before True if inserting before given element, false after.
+  ----------------------------------------------------------------------*/
+Element InsertableElement_InsertElement (ElemListElement elem, ThotBool before)
+{
+#ifdef TEMPLATES
+  Element         ref = elem->refElem;
+  ElementType     refType = TtaGetElementType (ref);
+  Document        doc = TtaGetDocument (ref);
+  Element         newEl = NULL, sibling = NULL;
+  SSchema         templateSSchema;
+  Element         sel;
+  int             car1, car2;
+  XTigerTemplate  t = NULL;
+  Declaration     dec = NULL;
+
+  templateSSchema = TtaGetSSchema ("Template", doc);
+
+  if (templateSSchema && refType.ElSSchema == templateSSchema)
+  {
+    switch(refType.ElTypeNum)
+    {
+      case Template_EL_repeat:
+        if(elem->typeClass==DefinedComponent)
+          dec = (Declaration)elem->elem.component.declaration;
+        else if (elem->typeClass==LanguageElement)
+          {
+            t = GetXTigerDocTemplate(TtaGetDocument(elem->refElem));
+            if (t)
+                dec = Template_GetElementDeclaration(t, ElemListElement_GetName(elem));
+          }
+        if (dec)
+          {
+            
+            TtaGiveFirstSelectedElement(doc, &sel, &car1, &car2);
+            sibling = GetFirstChildElementTo(ref, sel);
+            if(sibling)
+              {
+                if(before)
+                  TtaPreviousSibling(&sibling);
+                newEl = Template_InsertRepeatChildAfter (doc, ref, dec, sibling);
+              }
+          }
+        break;
+      case Template_EL_bag:
+        if(elem->typeClass==DefinedComponent)
+          dec = (Declaration)elem->elem.component.declaration;
+        else if (elem->typeClass==LanguageElement)
+          {
+            t = GetXTigerDocTemplate(TtaGetDocument(elem->refElem));
+            if (t)
+                dec = Template_GetElementDeclaration(t, ElemListElement_GetName(elem));
+          }
+        if (dec)
+            newEl = Template_InsertBagChild (doc, ref, dec, before);           
+        break;
+      default:
+        break;
+    }
+  }
+  return newEl;
+#else /* TEMPLATES */
+  return NULL;
+#endif /* TEMPLATES */
+}
+
+
+/*----------------------------------------------------------------------
+  InsertableElement_QueryInsertElement(void* el, ThotBool bAfter)
+  Do a InsertableElement_InsertElement with undo/redo management.
+  ----------------------------------------------------------------------*/
+void InsertableElement_QueryInsertElement(ElemListElement elem, ThotBool before)
+{
+#ifdef TEMPLATES
+  Element     elSel, newEl, firstEl;
+  int         firstSel, lastSel;
+  Document    doc = TtaGetDocument(elem->refElem);
+  
+  ThotBool    oldStructureChecking;
+  DisplayMode dispMode;
+  
+  // If document is readonly, dont do anything
+  if (!TtaGetDocumentAccessMode(doc))
+    return;
+
+  TtaGiveFirstSelectedElement(doc, &elSel, &firstSel, &lastSel);
+
+  
+  dispMode = TtaGetDisplayMode (doc);
+  if (dispMode == DisplayImmediately)
+    /* don't set NoComputedDisplay
+       -> it breaks down views formatting when Enter generates new elements  */
+    TtaSetDisplayMode (doc, DeferredDisplay);
+
+  /* Prepare insertion.*/          
+  oldStructureChecking = TtaGetStructureChecking (doc);
+  TtaSetStructureChecking (FALSE, doc);
+  TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
+  
+  /* Do the insertion */
+  newEl = InsertableElement_InsertElement (elem, before);
+  
+  /* Finish insertion.*/
+  TtaCloseUndoSequence (doc);
+  TtaSetDocumentModified (doc);
+  TtaSetStructureChecking (oldStructureChecking, doc);
+  // restore the display
+  TtaSetDisplayMode (doc, dispMode);
+
+  if (newEl)
+    {
+      firstEl = GetFirstEditableElement (newEl);
+      if (firstEl)
+        {
+          TtaSelectElement (doc, firstEl);
+          TtaSetStatusSelectedElement (doc, 1, firstEl);
+        }
+      else
+        {
+          TtaSelectElement (doc, newEl);
+          TtaSetStatusSelectedElement (doc, 1, newEl);
+        }
+    }
+#endif /* TEMPLATES */
 }

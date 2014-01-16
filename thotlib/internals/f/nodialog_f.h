@@ -6,6 +6,14 @@
 #ifndef __CEXTRACT__
 #ifdef __STDC__
 
+extern int TtaGetPixelValue ( int val,
+                              int unit,
+                              Element element,
+                              Document document );
+extern int TtaGetLogicalValue ( int val,
+                                int unit,
+                                Element element,
+                                Document document );
 extern void TtaExecuteMenuAction ( const char *actionName,
                                    Document doc,
                                    View view,
@@ -15,7 +23,7 @@ extern void DisplayPRule ( PtrPRule RP,
                            PtrElement pEl,
                            PtrPSchema pSchP,
                            int indent );
-extern void DisplayStyleValue ( char *property,
+extern void DisplayStyleValue ( const char *property,
                                 char *start_value,
                                 char *end_value );
 extern void NewInitialSequence ( PtrDocument pDoc );
@@ -175,6 +183,14 @@ extern ThotBool TtaDetachFrame ( int frame_id );
 
 #else /* __STDC__ */
 
+extern int TtaGetPixelValue ( int val,
+                                int unit,
+                                Element element,
+                                Document document );
+extern int TtaGetLogicalValue ( int val,
+                                  int unit,
+                                  Element element,
+                                  Document document );
 extern void TtaExecuteMenuAction ( const char *actionName,
                                      Document doc,
                                      View view,
@@ -184,7 +200,7 @@ extern void DisplayPRule ( PtrPRule RP,
                              PtrElement pEl,
                              PtrPSchema pSchP,
                              int indent );
-extern void DisplayStyleValue ( char *property,
+extern void DisplayStyleValue ( const char *property,
                                   char *start_value,
                                   char *end_value );
 extern void NewInitialSequence ( PtrDocument pDoc );

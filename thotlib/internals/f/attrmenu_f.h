@@ -5,7 +5,6 @@
 
 #ifndef __CEXTRACT__
 #ifdef __STDC__
-
 extern void TtaSetAttributeChangeFunction ( Proc2 procedure );
 extern void CallbackReqAttrMenu ( int ref,
                                   int val,
@@ -20,7 +19,7 @@ extern void CallbackValAttrMenu ( int ref,
                                   int valmenu,
                                   char *valtext );
 extern void SetAttrValueToRange ( PtrAttrListElem elem,
-                                  void* value );
+                                  intptr_t value );
 extern void CallbackEditRefAttribute ( PtrAttrListElem pAttrElem,
                                        int frame );
 extern void CallbackEditAttribute ( PtrAttrListElem pAttrElem,
@@ -35,7 +34,6 @@ extern void CloseAttributeDialogues ( PtrDocument pDoc );
 extern void AttributeMenuLoadResources ( void );
 
 #else /* __STDC__ */
-
 extern void TtaSetAttributeChangeFunction ( Proc2 procedure );
 extern void CallbackReqAttrMenu ( int ref,
                                     int val,
@@ -49,8 +47,8 @@ extern void TtaUpdateAttrMenu ( Document document );
 extern void CallbackValAttrMenu ( int ref,
                                     int valmenu,
                                     char *valtext );
-extern void SetAttrValueToRange ( AttrListElem* elem,
-                                    void* value );
+extern void SetAttrValueToRange ( PtrAttrListElem elem,
+                                    intptr_t value );
 extern void CallbackEditRefAttribute ( PtrAttrListElem pAttrElem,
                                          int frame );
 extern void CallbackEditAttribute ( PtrAttrListElem pAttrElem,

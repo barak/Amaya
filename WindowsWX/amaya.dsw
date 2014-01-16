@@ -63,9 +63,6 @@ Package=<4>
     Project_Dep_Name thotprinter
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name libjpeg
-    End Project Dependency
-    Begin Project Dependency
     Project_Dep_Name libpng
     End Project Dependency
     Begin Project Dependency
@@ -79,9 +76,6 @@ Package=<4>
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name libraptor
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name librdf
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name printlib
@@ -109,9 +103,6 @@ Package=<4>
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name libraptor
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name librdf
     End Project Dependency
 }}}
 
@@ -196,18 +187,6 @@ Package=<4>
 ###############################################################################
 
 Project: "libraptor"=.\libraptor\libraptor.dsp - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-}}}
-
-###############################################################################
-
-Project: "librdf"=.\librdf\librdf.dsp - Package Owner=<4>
 
 Package=<5>
 {{{

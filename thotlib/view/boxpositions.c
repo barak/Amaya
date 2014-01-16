@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2007
+ *  (c) COPYRIGHT INRIA, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -84,14 +84,8 @@ ThotBool VertExtraAbFlow (PtrAbstractBox pAb, int frame)
        pAb->AbPositioning->PnAlgorithm == PnFixed))
     {
       pos = pAb->AbPositioning;
-      if ((pos->PnTopUnit == UnAuto ||
-           pos->PnTopUnit == UnUndefined) &&
-          (pos->PnBottomUnit == UnAuto ||
-           pos->PnBottomUnit == UnUndefined) &&
-          (pos->PnLeftUnit == UnAuto ||
-           pos->PnLeftUnit == UnUndefined) &&
-          (pos->PnRightUnit == UnAuto ||
-           pos->PnRightUnit == UnUndefined))
+      if ((pos->PnTopUnit == UnAuto || pos->PnTopUnit == UnUndefined) &&
+          (pos->PnBottomUnit == UnAuto || pos->PnBottomUnit == UnUndefined))
         return FALSE;
       else
         return TRUE;
@@ -117,13 +111,8 @@ ThotBool HorizExtraAbFlow (PtrAbstractBox pAb, int frame)
        pAb->AbPositioning->PnAlgorithm == PnFixed))
     {
       pos = pAb->AbPositioning;
-      if ((pos->PnLeftUnit != UnUndefined ||
-           pos->PnRightUnit != UnUndefined ||
-           pos->PnTopUnit != UnUndefined ||
-           pos->PnBottomUnit != UnUndefined) &&
-          (pos->PnAlgorithm == PnAbsolute ||
-           pos->PnAlgorithm == PnFixed ||
-           pos->PnAlgorithm == PnRelative))
+      if ((pos->PnLeftUnit == UnAuto || pos->PnLeftUnit == UnUndefined) &&
+          (pos->PnRightUnit == UnAuto || pos->PnRightUnit == UnUndefined))
         return FALSE;
       else
         return TRUE;
@@ -594,7 +583,7 @@ void AddBoxTranslations (PtrAbstractBox pAb, int visibility, int frame,
   int                 x, y, i;
   ThotBool            ghost, notEmpty;
   ThotBool            newX, newY;
-  ThotBool            x_move, y_move;
+  ThotBool            x_move = FALSE, y_move = FALSE;
   ThotBool            checkWidth, checkHeight;
 
   /* Origine de la boite du pave le plus englobant */
@@ -954,7 +943,7 @@ void AddBoxTranslations (PtrAbstractBox pAb, int visibility, int frame,
         pChildAb = pChildAb->AbNext;
       }
 
-  if (x &&
+  if (x && x_move &&
       (pBox->BxType == BoBlock ||
        pBox->BxType == BoFloatBlock || pBox->BxType == BoCellBlock))
     {

@@ -1279,7 +1279,7 @@ static ThotBool AttrCreatePresBox (PtrAttribute pAttr, PtrAbstractBox pAb,
                                    PtrDocument pDoc)
 {
   ThotBool            ret, stop;
-  int                 valNum;
+  int                 valNum, match;
   PtrPRule            pPRule;
   PtrPSchema          pSchP;
   PtrHandlePSchema    pHd;
@@ -1298,11 +1298,11 @@ static ThotBool AttrCreatePresBox (PtrAttribute pAttr, PtrAbstractBox pAb,
         {
           /* process all values of the attribute, in case of a text attribute
              with multiple values */
-          valNum = 1;
+          valNum = 1; match = 1;
           do
             {
               pPRule = AttrPresRule (pAttr, pAb->AbElement, FALSE, NULL, pSchP,
-                                     &valNum, &attrBlock);
+                                     &valNum, &match, &attrBlock);
               /* saute les regles precedant les  fonctions */
               stop = FALSE;
               do
@@ -1361,14 +1361,14 @@ static ThotBool AttrCreatePresBox (PtrAttribute pAttr, PtrAbstractBox pAb,
             /* on n'a pas encore trouve'. On cherche dans les schemas de */
             /* presentation additionnels */
             {
-              if (pHd == NULL)
-                /* on n'a pas encore traite' les schemas de presentation
-                   additionnels. On prend le premier schema additionnel. */
+              if (pHd)
+                /* get next extension schema */
+                pHd = pHd->HdNextPSchema;
+              else if (CanApplyCSSToElement (pAb->AbElement))
+                /* get first extension schema */
                 pHd = FirstPSchemaExtension (pAttr->AeAttrSSchema, pDoc,
                                              pAb->AbElement);
-              else
-                /* passe au schema additionnel suivant */
-                pHd = pHd->HdNextPSchema;
+
               if (pHd == NULL)
                 /* il n'y a pas (ou plus) de schemas additionnels */
                 pSchP = NULL;
@@ -1924,7 +1924,7 @@ FunctionType TypeCreatedRule (PtrDocument pDoc, PtrAbstractBox pAbbCreator,
   PtrPSchema          pSPR;
   PtrAttribute        pAttr;
   PtrAttribute        pA;
-  int                 valNum;
+  int                 valNum, match;
   ThotBool            ok;
   PtrPSchema          pSchP;
   PtrHandlePSchema    pHd;
@@ -1953,22 +1953,23 @@ FunctionType TypeCreatedRule (PtrDocument pDoc, PtrAbstractBox pAbbCreator,
               /* attribut dans ce schema de presentation */
               /* process all values of the attribute, in case of a text
                  attribute with multiple values */
-              valNum = 1;
+              valNum = 1; match = 1;
               do
                 {
                   pPRuleCre = AttrPresRule (pA, pAbbCreator->AbElement, FALSE,
-                                            NULL, pSchP, &valNum, &attrBlock);
+                                     NULL, pSchP, &valNum, &match, &attrBlock);
                   ok = PageCreateRule (pPRuleCre, pSchP, pAbbCreated, &result);
                 }
               while (valNum > 0);
-              if (pHd == NULL)
-                /* on n'a pas encore traite' les schemas de presentation
-                   additionnels. On prend le premier schema additionnel. */
+
+              if (pHd)
+                /* get next extension schema */
+                pHd = pHd->HdNextPSchema;
+              else if (CanApplyCSSToElement (pAbbCreator->AbElement))
+                /* get first extension schema */
                 pHd = FirstPSchemaExtension (pA->AeAttrSSchema, pDoc,
                                              pAbbCreator->AbElement);
-              else
-                /* passe au schema additionnel suivant */
-                pHd = pHd->HdNextPSchema;
+
               if (pHd == NULL)
                 /* il n'y a pas (ou plus) de schemas additionnels */
                 pSchP = NULL;
@@ -3886,6 +3887,7 @@ ThotBool ApplyRule (PtrPRule pPRule, PtrPSchema pSchP, PtrAbstractBox pAb,
                 pAb->AbFontVariant = 1;
                 break;
               }
+          break;
         case PtFont:
           c = CharRule (pPRule, pEl, pAb->AbDocView, &appl);
           if (!appl && pEl->ElParent == NULL)

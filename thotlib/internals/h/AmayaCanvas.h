@@ -76,7 +76,6 @@ public:
 #endif /* _GL */
   virtual ~AmayaCanvas( );
 
-  bool IsParentFrameActive();
   bool IsInit();
   
 protected:
@@ -93,6 +92,9 @@ protected:
   void OnTimerMouseMove( wxTimerEvent& event );
   void OnEraseBackground( wxEraseEvent& WXUNUSED(event) );
 
+  void OnContextMenu( wxContextMenuEvent & event );
+
+  
   AmayaFrame *  m_pAmayaFrame;  // amaya frame reference (parent)
 
   bool m_Init;

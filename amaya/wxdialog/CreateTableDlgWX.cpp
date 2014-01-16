@@ -21,6 +21,7 @@ static int      Waiting = 0;
 BEGIN_EVENT_TABLE(CreateTableDlgWX, AmayaDialog)
   EVT_BUTTON( XRCID("wxID_OK"), CreateTableDlgWX::OnConfirmButton )
   EVT_BUTTON( XRCID("wxID_CANCEL"),  CreateTableDlgWX::OnCancelButton )
+  EVT_BUTTON( XRCID("wxID_FORMAT_BUTTON"),  CreateTableDlgWX::OnSelectFormat )
 END_EVENT_TABLE()
 
 /*----------------------------------------------------------------------
@@ -45,9 +46,14 @@ END_EVENT_TABLE()
   Waiting = 1;
 
   // update dialog labels
+  XRCCTRL(*this, "wxID_PARAMETERS", wxStaticText)->SetLabel(TtaConvMessageToWX( TtaGetMessage(LIB, TMSG_OPTIONS) ));
+  XRCCTRL(*this, "wxID_SIZE", wxStaticText)->SetLabel(TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_SIZE) ));
+  XRCCTRL(*this, "wxID_FORMAT_BUTTON", wxButton)->SetLabel(TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_USE_THEME) ));
   XRCCTRL(*this, "wxID_NUMBER_COL_TXT", wxStaticText)->SetLabel(TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_COLS) ));
   XRCCTRL(*this, "wxID_NUMBER_ROW_TXT", wxStaticText)->SetLabel(TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_ROWS) ));
-
+  XRCCTRL(*this, "wxID_EXTEND_WIDTH", wxCheckBox)->SetLabel(TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_MAX_WIDTH) ));
+  XRCCTRL(*this, "wxID_CAPTION", wxCheckBox)->SetLabel(TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_CAPTION) ));
+  XRCCTRL(*this, "wxID_CAPTION", wxCheckBox)->SetValue(true);
 
   // update dialog Spin Ctrls
   XRCCTRL(*this, "wxID_NUMBER_ROW", wxSpinCtrl)->SetValue(def_rows);
@@ -71,6 +77,7 @@ END_EVENT_TABLE()
   XRCCTRL(*this, "wxID_NUMBER_ROW", wxSpinCtrl )->SetRange(1, 1000);
   XRCCTRL(*this, "wxID_NUMBER_COL", wxSpinCtrl )->SetRange(1, 1000);
 
+  XRCCTRL(*this, "wxID_FORMAT_BUTTON", wxButton)->Hide();
   Layout();
   
   SetAutoLayout( TRUE );
@@ -92,14 +99,19 @@ CreateTableDlgWX::~CreateTableDlgWX()
   ----------------------------------------------------------------------*/
 void CreateTableDlgWX::OnConfirmButton( wxCommandEvent& event )
 {
-  m_cols = XRCCTRL(*this, "wxID_NUMBER_COL", wxSpinCtrl)->GetValue();
-  m_rows = XRCCTRL(*this, "wxID_NUMBER_ROW", wxSpinCtrl)->GetValue();
-  m_border = XRCCTRL(*this, "wxID_TABLE_BORDER", wxSpinCtrl)->GetValue();
+  NumberCols = XRCCTRL(*this, "wxID_NUMBER_COL", wxSpinCtrl)->GetValue();
+  NumberRows = XRCCTRL(*this, "wxID_NUMBER_ROW", wxSpinCtrl)->GetValue();
+  TBorder = XRCCTRL(*this, "wxID_TABLE_BORDER", wxSpinCtrl)->GetValue();
   // return done
   Waiting = 0;
-  ThotCallback (BaseDialog + TableCols, INTEGER_DATA, (char *) m_cols);
-  ThotCallback (BaseDialog + TableRows, INTEGER_DATA, (char *) m_rows);
-  ThotCallback (BaseDialog + TableBorder, INTEGER_DATA, (char *) m_border);
+  if (XRCCTRL(*this, "wxID_EXTEND_WIDTH", wxCheckBox)->IsChecked())
+    TMAX_Width = TRUE;
+  else
+    TMAX_Width = FALSE;
+  if (XRCCTRL(*this, "wxID_CAPTION", wxCheckBox)->IsChecked())
+    TCaption = 1;
+  else
+    TCaption = 0;
   ThotCallback (BaseDialog + TableForm, INTEGER_DATA, (char *) 1);
 
 }
@@ -112,6 +124,14 @@ void CreateTableDlgWX::OnCancelButton( wxCommandEvent& event )
   // return done
   Waiting = 0;
   ThotCallback (MyRef, INTEGER_DATA, (char *) 0);
+}
+
+
+/*----------------------------------------------------------------------
+  OnSelectFormat called when clicking on selectformat
+  ----------------------------------------------------------------------*/
+void CreateTableDlgWX::OnSelectFormat( wxCommandEvent& event )
+{
 }
 
 #endif /* _WX */

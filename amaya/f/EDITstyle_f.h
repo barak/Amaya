@@ -6,6 +6,8 @@
 #ifndef __CEXTRACT__
 #ifdef __STDC__
 
+extern void UpdateStyleList ( Document doc,
+                              View view );
 extern char *UpdateCSSURLs ( Document doc,
                              char *oldpath,
                              char *newpath,
@@ -18,14 +20,22 @@ extern void UpdateStyleSheetContent ( Document doc,
                                       char *oldpath,
                                       char *newpath );
 extern ThotBool UpdateStyleDelete ( NotifyAttribute * event );
-extern ThotBool ChangeStyle ( NotifyOnTarget * event );
 extern ThotBool DeleteStyle ( NotifyElement *event );
+extern Attribute GetCurrentStyleAttribute ( void );
 extern char *GetCurrentStyle ( void );
 extern void EnableStyleElement ( Document doc,
                                  Element el );
 extern void DeleteStyleElement ( Document doc,
                                  Element el );
+extern ThotBool ChangeStyle ( NotifyOnTarget * event );
 extern void StyleChanged ( NotifyOnTarget *event );
+extern void ChangeTheme ( const char *theme );
+extern void DoClassicTheme ( Document doc,
+                             View view );
+extern void DoModernTheme ( Document doc,
+                            View view );
+extern void DoNoTheme ( Document doc,
+                        View view );
 extern void UpdateStylePost ( NotifyAttribute * event );
 extern void SetStyleString ( Document doc,
                              Element el,
@@ -44,20 +54,14 @@ extern void CreateClass ( Document doc,
                           View view );
 extern void ApplyClass ( Document doc,
                          View view );
-extern void DoLeftAlign ( Document doc,
-                          View view );
-extern void DoRightAlign ( Document doc,
-                           View view );
-extern void DoCenter ( Document doc,
-                       View view );
-extern void DoJustify ( Document doc,
-                        View view );
 extern void StyleCallbackDialogue ( int ref,
                                     int typedata,
                                     char *data );
 
 #else /* __STDC__ */
 
+extern void UpdateStyleList ( Document doc,
+                                View view );
 extern char *UpdateCSSURLs ( Document doc,
                                char *oldpath,
                                char *newpath,
@@ -70,14 +74,22 @@ extern void UpdateStyleSheetContent ( Document doc,
                                         char *oldpath,
                                         char *newpath );
 extern ThotBool UpdateStyleDelete ( NotifyAttribute * event );
-extern ThotBool ChangeStyle ( NotifyOnTarget * event );
 extern ThotBool DeleteStyle ( NotifyElement *event );
+extern Attribute GetCurrentStyleAttribute ( void );
 extern char *GetCurrentStyle ( void );
 extern void EnableStyleElement ( Document doc,
                                    Element el );
 extern void DeleteStyleElement ( Document doc,
                                    Element el );
+extern ThotBool ChangeStyle ( NotifyOnTarget * event );
 extern void StyleChanged ( NotifyOnTarget *event );
+extern void ChangeTheme ( const char *theme );
+extern void DoClassicTheme ( Document doc,
+                               View view );
+extern void DoModernTheme ( Document doc,
+                              View view );
+extern void DoNoTheme ( Document doc,
+                          View view );
 extern void UpdateStylePost ( NotifyAttribute * event );
 extern void SetStyleString ( Document doc,
                                Element el,
@@ -96,14 +108,6 @@ extern void CreateClass ( Document doc,
                             View view );
 extern void ApplyClass ( Document doc,
                            View view );
-extern void DoLeftAlign ( Document doc,
-                            View view );
-extern void DoRightAlign ( Document doc,
-                             View view );
-extern void DoCenter ( Document doc,
-                         View view );
-extern void DoJustify ( Document doc,
-                          View view );
 extern void StyleCallbackDialogue ( int ref,
                                       int typedata,
                                       char *data );

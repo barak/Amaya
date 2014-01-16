@@ -5,7 +5,6 @@
 
 #ifndef __CEXTRACT__
 #ifdef __STDC__
-
 extern void InitDocHistory ( Document doc );
 extern void FreeDocHistory ( void );
 extern Element ElementAtPosition ( Document doc,
@@ -99,6 +98,8 @@ extern void HelpShortCuts ( Document document,
                             View view );
 extern void HelpAccess ( Document document,
                          View view );
+extern void TipOfTheDay ( Document document,
+                          View view );
 extern Prop_Passwords_Site * GetFirtsPasswordsSite ( void );
 extern void UpdatePasswordsSiteList ( int i_site,
                                       const char *label_site );
@@ -132,7 +133,6 @@ extern int EncodeBuf ( char *inbuf,
                        ThotBool opt );
 
 #else /* __STDC__ */
-
 extern void InitDocHistory ( Document doc );
 extern void FreeDocHistory ( void );
 extern Element ElementAtPosition ( Document doc,
@@ -226,6 +226,8 @@ extern void HelpShortCuts ( Document document,
                               View view );
 extern void HelpAccess ( Document document,
                            View view );
+extern void TipOfTheDay ( Document document,
+                            View view );
 extern Prop_Passwords_Site * GetFirtsPasswordsSite ( void );
 extern void UpdatePasswordsSiteList ( int i_site,
                                         const char *label_site );

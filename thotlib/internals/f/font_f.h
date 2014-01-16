@@ -13,6 +13,7 @@ extern int CharacterWidth ( int c,
                             ThotFont font );
 extern int SpecialCharBoxWidth ( CHAR_T c );
 extern int BoxCharacterWidth ( CHAR_T c,
+                               int variant,
                                SpecFont specfont );
 extern int CharacterHeight ( int c,
                              ThotFont font );
@@ -63,6 +64,7 @@ extern void ChangeFontsetSize ( int size,
                                 int frame );
 extern int GetFontAndIndexFromSpec ( CHAR_T c,
                                      SpecFont fontset,
+                                     int variant,
                                      ThotFont *font );
 extern SpecFont ThotLoadFont ( char script,
                                int family,
@@ -71,7 +73,7 @@ extern SpecFont ThotLoadFont ( char script,
                                TypeUnit unit,
                                int frame );
 extern void TtaSetFontZoom ( int zoom );
-extern void InitDialogueFonts ( char *name );
+extern void InitDialogueFonts ( const char *name );
 extern void ThotFreeFont ( int frame );
 extern void ThotFreeAllFonts ( void );
 extern void LoadingArabicFont ( SpecFont fontset,
@@ -93,6 +95,7 @@ extern int CharacterWidth ( int c,
                               ThotFont font );
 extern int SpecialCharBoxWidth ( CHAR_T c );
 extern int BoxCharacterWidth ( CHAR_T c,
+                                 int variant,
                                  SpecFont specfont );
 extern int CharacterHeight ( int c,
                                ThotFont font );
@@ -143,6 +146,7 @@ extern void ChangeFontsetSize ( int size,
                                   int frame );
 extern int GetFontAndIndexFromSpec ( CHAR_T c,
                                        SpecFont fontset,
+                                       int variant,
                                        ThotFont *font );
 extern SpecFont ThotLoadFont ( char script,
                                  int family,
@@ -151,7 +155,7 @@ extern SpecFont ThotLoadFont ( char script,
                                  TypeUnit unit,
                                  int frame );
 extern void TtaSetFontZoom ( int zoom );
-extern void InitDialogueFonts ( char *name );
+extern void InitDialogueFonts ( const char *name );
 extern void ThotFreeFont ( int frame );
 extern void ThotFreeAllFonts ( void );
 extern void LoadingArabicFont ( SpecFont fontset,

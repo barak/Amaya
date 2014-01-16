@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2007
+ *  (c) COPYRIGHT INRIA, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -331,11 +331,11 @@ void DrawPoints (int frame, int x, int y, int boxWidth, int fg)
   ThotWindow          w = None;
   ThotFont            font;
   SpecFont            spec;
-  char               *ptcar;
+  const char         *ptcar;
   int                 xcour, width, nb;
 
   spec = ThotLoadFont ('L', 1, 0, 6, UnPoint, frame);
-  GetFontAndIndexFromSpec (SPACE, spec, &font);
+  GetFontAndIndexFromSpec (SPACE, spec, 1, &font);
   if (boxWidth > 0)
     {
 #ifdef _GTK
@@ -1753,8 +1753,8 @@ void DrawPath (int frame, int thick, int style, int x, int y,
                               x1, y1, 
                               x2, y2, 
                               cx1, cy1,
-                              fmod (pPa->XAxisRotation, 360), 
-                              pPa->LargeArc, pPa->Sweep,
+                              fmod ((double)pPa->XAxisRotation, 360), 
+                              (int)pPa->LargeArc, pPa->Sweep,
                               mesh);
               MeshNewPoint (x2, y2, mesh);
               break;

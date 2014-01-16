@@ -22,20 +22,23 @@ public:
   OpenDocDlgWX( int ref,
                 wxWindow* parent,
                 const wxString & title,
-                const wxString & docName,
                 const wxArrayString & urlList,
                 const wxString & urlToOpen,
                 const wxString & filter,
                 int * p_last_used_filter,
                 const wxString & profiles,
-                int newfile);
+                int doc, ThotBool newfile);
     
   // Destructor.                  
   virtual ~OpenDocDlgWX();
+  
+  bool TemplateUsed()const;
+  void UseTemplate(bool use);
 
 private:
   // Any class wishing to process wxWindows events must use this macro
   DECLARE_EVENT_TABLE()
+  void UpdateTemplateList ();
   void OnOpenButton( wxCommandEvent& event );
   void OnClearButton( wxCommandEvent& event );
   void OnCancelButton( wxCommandEvent& event );
@@ -43,7 +46,10 @@ private:
   void OnFilenameButton( wxCommandEvent& event );
   void OnURLSelected( wxCommandEvent& event );
   void OnProfileSelected( wxCommandEvent& event );
-
+  void OnUseTemplate( wxCommandEvent& event );
+  void OnTemplateSelected( wxCommandEvent& event );
+  void OnTemplateButton( wxCommandEvent& event );
+  
  private:
   wxString m_Filter;
   bool     m_LockUpdateFlag;

@@ -4,22 +4,23 @@
 #include "wx/xrc/xmlres.h"              // XRC XML resouces
 #include "wx/notebook.h"
 #include "wx/statline.h"
-
 #include "AmayaApp.h"
-#include "SaveAsDlgWX.h"
 
 #define THOT_EXPORT extern
 #include "amaya.h"
 #include "print.h"
+#include "SaveAsDlgWX.h"
+
 #include "appdialogue_wx.h"
 #include "message_wx.h"
 #include "file_filters.h"
 #include "AHTURLTools_f.h"
 
+
 static int MyRef = 0;
 static int Waiting = 0;
-static bool MysaveImgs = FALSE;
-static bool MysaveCss = FALSE;
+static ThotBool MysaveImgs = FALSE;
+static ThotBool MysaveCss = FALSE;
 
 //-----------------------------------------------------------------------------
 // Event table: connect the events to the handler functions to process them
@@ -35,6 +36,7 @@ BEGIN_EVENT_TABLE(SaveAsDlgWX, AmayaDialog)
   EVT_CHECKBOX( XRCID("wxID_CPY_IMAGES_CHK"),    SaveAsDlgWX::OnImagesChkBox )
   EVT_CHECKBOX( XRCID("wxID_CPY_CSS_CHK"),       SaveAsDlgWX::OnCssChkBox )
   EVT_CHECKBOX( XRCID("wxID_TRANSFORM_URLS_CHK"),SaveAsDlgWX::OnUrlsChkBox )
+  EVT_CHECKBOX( XRCID("wxID_REMOVE_TEMPLATE"),   SaveAsDlgWX::OnTemplateChkBox )
   EVT_TEXT( XRCID("wxID_DOC_LOCATION_CTRL"),     SaveAsDlgWX::OnDocLocation )
   EVT_TEXT( XRCID("wxID_IMG_LOCATION_CTRL"),     SaveAsDlgWX::OnImgLocation )
   EVT_TEXT( XRCID("wxID_CSS_LOCATION_CTRL"),     SaveAsDlgWX::OnCssLocation )
@@ -50,10 +52,11 @@ END_EVENT_TABLE()
     + pathname : document location
     ----------------------------------------------------------------------*/
 SaveAsDlgWX::SaveAsDlgWX( int ref, wxWindow* parent, const wxString & pathname,
-                          int doc, bool  saveImgs) :
+                          int doc, ThotBool  saveImgs, ThotBool  checkTemplate) :
   AmayaDialog( parent, ref )
 {
   wxNotebook *p_notebook;
+  wxWindow   *p_obj;
   wxPanel    *p_page;
   int         doc_type;
   int         page_id = 0;
@@ -73,7 +76,8 @@ SaveAsDlgWX::SaveAsDlgWX( int ref, wxWindow* parent, const wxString & pathname,
     {
       if ( p_page == p_notebook->GetPage(page_id))
         {
-          if ( doc_type == docSource || doc_type == docCSS ||  doc_type == docText)
+          if ( doc_type == docSource || doc_type == docCSS ||
+               doc_type == docText || doc_type == docImage)
             p_notebook->DeletePage(page_id);
           else
             p_notebook->SetPageText (page_id,
@@ -86,10 +90,9 @@ SaveAsDlgWX::SaveAsDlgWX( int ref, wxWindow* parent, const wxString & pathname,
     }
 
   // Document format radio box
-  if ( doc_type == docSource || doc_type == docCSS ||  doc_type == docText)
+  if ( doc_type == docSource || doc_type == docCSS ||  doc_type == docText ||  doc_type == docImage)
     {
       // now hide unused field
-      wxWindow * p_obj;
       p_obj = XRCCTRL(*this, "wxID_DOC_FORMAT", wxRadioBox);
       p_obj->GetContainingSizer()->Show(p_obj, FALSE);
       p_obj = XRCCTRL(*this, "wxID_OPTIONS", wxStaticText);
@@ -99,6 +102,8 @@ SaveAsDlgWX::SaveAsDlgWX( int ref, wxWindow* parent, const wxString & pathname,
       p_obj = XRCCTRL(*this, "wxID_CPY_CSS_CHK", wxCheckBox);
       p_obj->GetContainingSizer()->Show(p_obj, FALSE);
       p_obj = XRCCTRL(*this, "wxID_TRANSFORM_URLS_CHK", wxCheckBox);
+      p_obj->GetContainingSizer()->Show(p_obj, FALSE);
+      p_obj = XRCCTRL(*this, "wxID_REMOVE_TEMPLATE", wxCheckBox);
       p_obj->GetContainingSizer()->Show(p_obj, FALSE);
       p_obj = XRCCTRL(*this, "wxID_STATICLINE", wxStaticLine);
       p_obj->GetContainingSizer()->Show(p_obj, FALSE);
@@ -127,17 +132,25 @@ SaveAsDlgWX::SaveAsDlgWX( int ref, wxWindow* parent, const wxString & pathname,
         XRCCTRL(*this, "wxID_DOC_FORMAT", wxRadioBox)->SetSelection(0);
 
       // Options check box
+      // check templates
+      if (checkTemplate)
+        XRCCTRL(*this, "wxID_REMOVE_TEMPLATE", wxCheckBox)->SetLabel(TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_REMOVE_XTIGER) ));
+      else
+        {
+          p_obj = XRCCTRL(*this, "wxID_REMOVE_TEMPLATE", wxCheckBox);
+          p_obj->GetContainingSizer()->Show(p_obj, FALSE);
+        }
       XRCCTRL(*this, "wxID_OPTIONS", wxStaticText)->SetLabel(TtaConvMessageToWX( TtaGetMessage(LIB, TMSG_OPTIONS) ));
       XRCCTRL(*this, "wxID_CPY_IMAGES_CHK", wxCheckBox)->SetLabel(TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_BCOPY_IMAGES) ));
       XRCCTRL(*this, "wxID_CPY_CSS_CHK", wxCheckBox)->SetLabel(TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_BCOPY_CSS) ));
       XRCCTRL(*this, "wxID_TRANSFORM_URLS_CHK", wxCheckBox)->SetLabel(TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_BTRANSFORM_URL) ));
-      CopyImages = false;
+      CopyImages = FALSE;
       XRCCTRL(*this, "wxID_CPY_IMAGES_CHK", wxCheckBox)->SetValue(CopyImages);
-      CopyCss = false;
+      CopyCss = FALSE;
       XRCCTRL(*this, "wxID_CPY_CSS_CHK", wxCheckBox)->SetValue(CopyCss);
-      UpdateURLs = false;
+      UpdateURLs = FALSE;
       XRCCTRL(*this, "wxID_TRANSFORM_URLS_CHK", wxCheckBox)->SetValue(UpdateURLs);
-
+      RemoveTemplate = FALSE;
       // Image directory
       XRCCTRL(*this, "wxID_IMG_LOCATION", wxStaticText)->SetLabel(TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_WHERE_IMAGE) ));
       if (saveImgs)
@@ -154,12 +167,10 @@ SaveAsDlgWX::SaveAsDlgWX( int ref, wxWindow* parent, const wxString & pathname,
       XRCCTRL(*this, "wxID_CSS_LOCATION", wxStaticText)->SetLabel(TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_WHERE_RESOURCE) ));
       XRCCTRL(*this, "wxID_CSS_LOCATION_CTRL", wxTextCtrl)->SetEditable (false);
     }
-  
+
   // Document location
   XRCCTRL(*this, "wxID_DOC_LOCATION", wxStaticText)->SetLabel(TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_DOC_LOCATION) ));
   XRCCTRL(*this, "wxID_DOC_LOCATION_CTRL", wxTextCtrl)->SetValue(pathname);
-  // set te cursor to the end
-  XRCCTRL(*this, "wxID_DOC_LOCATION_CTRL", wxTextCtrl)->SetInsertionPointEnd();
 
   // Charset  
   wxString wx_label = TtaConvMessageToWX( "Charset :" );
@@ -303,14 +314,18 @@ SaveAsDlgWX::SaveAsDlgWX( int ref, wxWindow* parent, const wxString & pathname,
   XRCCTRL(*this, "wxID_SAVE", wxButton)->SetLabel(TtaConvMessageToWX( TtaGetMessage(LIB, TMSG_BUTTON_SAVE) ));
   XRCCTRL(*this, "wxID_CANCEL", wxButton)->SetLabel(TtaConvMessageToWX( TtaGetMessage(LIB, TMSG_CANCEL) ));
   XRCCTRL(*this, "wxID_BROWSE", wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_BROWSE)));
-  XRCCTRL(*this, "wxID_CLEAR", wxButton)->SetLabel(TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_CLEAR) ));
+  XRCCTRL(*this, "wxID_CLEAR", wxButton)->SetToolTip(TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_CLEAR) ));
   
-  // Set focus to ...
-  //  XRCCTRL(*this, "wxID_DOC_LOCATION_CTRL", wxTextCtrl)->SetFocus();
-
   Fit();
   Refresh();
   SetAutoLayout( TRUE );
+
+  // set te cursor to the end
+  XRCCTRL(*this, "wxID_DOC_LOCATION_CTRL", wxTextCtrl)->SetInsertionPointEnd();
+#ifndef _MACOS
+  // give focus to ...
+  XRCCTRL(*this, "wxID_DOC_LOCATION_CTRL", wxTextCtrl)->SetFocus();
+#endif /* _MACOS */
 }
 
 /*---------------------------------------------------------------------------
@@ -346,7 +361,7 @@ void SaveAsDlgWX::OnConfirmButton( wxCommandEvent& event )
       if (CopyImages)
         {
           path = XRCCTRL(*this, "wxID_IMG_LOCATION_CTRL", wxTextCtrl)->GetValue( );
-          strncpy( buffer, (const char*)path.mb_str(wxConvUTF8), MAX_LENGTH-1);
+          strncpy( buffer, (const char*)path.Trim(TRUE).Trim(FALSE).mb_str(wxConvUTF8), MAX_LENGTH-1);
           buffer[MAX_LENGTH-1] = EOS;
           ThotCallback (BaseDialog + ImgDirSave,  STRING_DATA, (char *)buffer);
         }
@@ -390,6 +405,7 @@ void SaveAsDlgWX::OnDirImgButton( wxCommandEvent& event )
   int             len;
 
   path = XRCCTRL(*this, "wxID_IMG_LOCATION_CTRL", wxTextCtrl)->GetValue();
+  path = path.Trim(TRUE).Trim(FALSE);
   if ((MysaveImgs || CopyImages) && !path.StartsWith(_T("http")))
     {
       // Create a generic filedialog
@@ -422,6 +438,7 @@ void SaveAsDlgWX::OnDirCssButton( wxCommandEvent& event )
   int             len;
 
   path = XRCCTRL(*this, "wxID_CSS_LOCATION_CTRL", wxTextCtrl)->GetValue();
+  path = path.Trim(TRUE).Trim(FALSE);
   if ((MysaveCss || CopyCss) && !path.StartsWith(_T("http")))
     {
       // Create a generic filedialog
@@ -463,7 +480,8 @@ void SaveAsDlgWX::OnBrowseButton( wxCommandEvent& event )
      );
   
   // force the directory and file name, except for W3 docs on windows 
-    path = XRCCTRL(*this, "wxID_DOC_LOCATION_CTRL", wxTextCtrl)->GetValue();
+  path = XRCCTRL(*this, "wxID_DOC_LOCATION_CTRL", wxTextCtrl)->GetValue();
+  path = path.Trim(TRUE).Trim(FALSE);
   if (path.StartsWith(_T("http")) ||
       path.StartsWith(TtaConvMessageToWX((TtaGetEnvString ("THOTDIR")))))
     p_dlg->SetDirectory(wxGetHomeDir());
@@ -554,6 +572,7 @@ void SaveAsDlgWX::OnImagesChkBox ( wxCommandEvent& event )
       // update the image path
       XRCCTRL(*this, "wxID_IMG_LOCATION_CTRL", wxTextCtrl)->SetEditable (true);
       wxString path = XRCCTRL(*this, "wxID_DOC_LOCATION_CTRL", wxTextCtrl)->GetValue( );
+      path = path.Trim(TRUE).Trim(FALSE);
       int end_pos = path.Find(DIR_SEP, true);
       wxString dir_value = path.SubString(0, end_pos);
       XRCCTRL(*this, "wxID_IMG_LOCATION_CTRL", wxTextCtrl)->SetValue(dir_value);
@@ -582,6 +601,7 @@ void SaveAsDlgWX::OnCssChkBox ( wxCommandEvent& event )
       // update the image path
       XRCCTRL(*this, "wxID_CSS_LOCATION_CTRL", wxTextCtrl)->SetEditable (true);
       wxString path = XRCCTRL(*this, "wxID_DOC_LOCATION_CTRL", wxTextCtrl)->GetValue( );
+      path = path.Trim(TRUE).Trim(FALSE);
       int end_pos = path.Find(DIR_SEP, true);
       wxString dir_value = path.SubString(0, end_pos);
       XRCCTRL(*this, "wxID_CSS_LOCATION_CTRL", wxTextCtrl)->SetValue(dir_value);
@@ -600,6 +620,14 @@ void SaveAsDlgWX::OnCssChkBox ( wxCommandEvent& event )
 }
 
 /*---------------------------------------------------------------
+  OnTemplateChkBox
+  ---------------------------------------------------------------*/
+void SaveAsDlgWX::OnTemplateChkBox ( wxCommandEvent& event )
+{
+  RemoveTemplate = XRCCTRL(*this, "wxID_REMOVE_TEMPLATE", wxCheckBox)->GetValue();
+}
+
+/*---------------------------------------------------------------
   OnUrlsChkBox
   ---------------------------------------------------------------*/
 void SaveAsDlgWX::OnUrlsChkBox ( wxCommandEvent& event )
@@ -613,6 +641,7 @@ void SaveAsDlgWX::OnUrlsChkBox ( wxCommandEvent& event )
 void SaveAsDlgWX::OnDocLocation ( wxCommandEvent& event )
 {
   wxString path = XRCCTRL(*this, "wxID_DOC_LOCATION_CTRL", wxTextCtrl)->GetValue( );
+  path = path.Trim(TRUE).Trim(FALSE);
   if (CopyImages || CopyCss)
     {
       // Update other paths

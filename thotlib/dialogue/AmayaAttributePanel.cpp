@@ -3,6 +3,7 @@
 #include "wx/wx.h"
 #include "wx/xrc/xmlres.h"              // XRC XML resouces
 #include "wx/spinctrl.h"
+#include "wx/tokenzr.h"
 
 #include "thot_gui.h"
 #include "thot_sys.h"
@@ -37,110 +38,140 @@
 #include "paneltypes_wx.h"
 #include "appdialogue_wx.h"
 #include "appdialogue_wx_f.h"
+#include "structselect_f.h"
 
 #include "AmayaAttributePanel.h"
 #include "AmayaNormalWindow.h"
 #include "AmayaFrame.h"
-#include "AmayaFloatingPanel.h"
-#include "AmayaSubPanelManager.h"
 
 #define COLOR_MANDATORY   wxColour(128, 0, 0)
 #define COLOR_READONLY    wxColour(64, 64, 64)
 #define COLOR_NEW         wxColour(0, 128, 0)
 
-IMPLEMENT_DYNAMIC_CLASS(AmayaAttributePanel, AmayaSubPanel)
-
-  /*----------------------------------------------------------------------
-   *       Class:  AmayaAttributePanel
-   *      Method:  AmayaAttributePanel
-   * Description:  construct a panel (bookmarks, elements, attributes ...)
-   *               TODO
-   -----------------------------------------------------------------------*/
-  AmayaAttributePanel::AmayaAttributePanel( wxWindow * p_parent_window,
-                                            AmayaNormalWindow * p_parent_nwindow )
-    : AmayaSubPanel( p_parent_window, p_parent_nwindow, _T("wxID_PANEL_ATTRIBUTE") )
-    ,m_attrList(NULL)
-    ,m_currentAttElem(NULL)
-    ,m_firstSel(NULL)
-    ,m_lastSel(NULL)
-    ,m_firstChar(0)
-    ,m_lastChar(0)
-    ,m_NbAttr(0)
-    ,m_NbAttr_evt(0)
-    ,m_pCurrentlyEditedControl(NULL)
-    ,m_disactiveCount(0)
+//
+//
+// AmayaAttributeToolPanel
+//
+//
+wxString AmayaAttributeToolPanel::s_subpanelClassNames[wxATTR_PANEID_MAX]=
 {
-  m_pVPanelParent       = XRCCTRL(*this, "wxID_PANEL_ATTRVALUE", wxPanel);
-  m_pVPanelSizer  = m_pVPanelParent->GetSizer();
+  wxT("AmayaEnumAttributeSubpanel"),      // wxATTR_PANEID_ENUM
+  wxT("AmayaStringAttributeSubpanel"),    // wxATTR_PANEID_TEXT
+  wxT("AmayaNumAttributeSubpanel"),       // wxATTR_PANEID_NUM
+  wxT("AmayaLangAttributeSubpanel")       // wxATTR_PANEID_LANG
+};
 
-  m_pAttrList     = XRCCTRL(*this, "wxID_CLIST_ATTR", wxListCtrl);    
-  m_pPanel_Lang   = XRCCTRL(*m_pVPanelParent, "wxID_ATTRIBUTE_LANG", wxPanel);
-  m_pPanel_Text   = XRCCTRL(*m_pVPanelParent, "wxID_ATTRIBUTE_TEXT", wxPanel);
-  m_pPanel_Enum   = XRCCTRL(*m_pVPanelParent, "wxID_ATTRIBUTE_ENUM", wxPanel);
-  m_pPanel_Num    = XRCCTRL(*m_pVPanelParent, "wxID_ATTRIBUTE_NUM", wxPanel);
+AmayaAttributeToolPanel::wxATTR_PANEID AmayaAttributeToolPanel::s_subpanelAssoc[restr_content_max][wxATTR_INTTYPE_MAX] = 
+{
+  // wxATTR_INTTYPE_NUM  wxATTR_INTTYPE_TEXT wxATTR_INTTYPE_REF  wxATTR_INTTYPE_ENUM wxATTR_INTTYPE_LANG
+    {wxATTR_PANEID_NUM,  wxATTR_PANEID_TEXT, wxATTR_PANEID_NONE, wxATTR_PANEID_ENUM, wxATTR_PANEID_LANG}, // restr_content_no_restr
+    {wxATTR_PANEID_NUM,  wxATTR_PANEID_NUM,  wxATTR_PANEID_NONE, wxATTR_PANEID_ENUM, wxATTR_PANEID_NONE}, // restr_content_number
+    {wxATTR_PANEID_NONE, wxATTR_PANEID_TEXT, wxATTR_PANEID_NONE, wxATTR_PANEID_ENUM, wxATTR_PANEID_LANG}, // restr_content_string
+    {wxATTR_PANEID_NONE, wxATTR_PANEID_NONE, wxATTR_PANEID_NONE, wxATTR_PANEID_NONE, wxATTR_PANEID_NONE}, // restr_content_list
+    {wxATTR_PANEID_NONE, wxATTR_PANEID_LANG, wxATTR_PANEID_NONE, wxATTR_PANEID_LANG, wxATTR_PANEID_LANG}  // restr_content_lang
+};
+
+IMPLEMENT_DYNAMIC_CLASS(AmayaAttributeToolPanel, AmayaToolPanel)
+
+/*----------------------------------------------------------------------
+ -----------------------------------------------------------------------*/
+AmayaAttributeToolPanel::AmayaAttributeToolPanel():
+  AmayaToolPanel()
+,m_attrList(NULL)
+,m_currentAttElem(NULL)
+,m_firstSel(NULL)
+,m_lastSel(NULL)
+,m_firstChar(0)
+,m_lastChar(0)
+,m_NbAttr(0)
+,m_NbAttr_evt(0)
+,m_currentPane(wxATTR_PANEID_NONE)
+,m_pCurrentlyEditedControl(NULL)
+,m_disactiveCount(0)
+{
+}
+
+/*----------------------------------------------------------------------
+ -----------------------------------------------------------------------*/
+AmayaAttributeToolPanel::~AmayaAttributeToolPanel()
+{
+}
+
+/*----------------------------------------------------------------------
+ -----------------------------------------------------------------------*/
+bool AmayaAttributeToolPanel::Create(wxWindow* parent, wxWindowID id, const wxPoint& pos, 
+          const wxSize& size, long style, const wxString& name, wxObject* extra)
+{
+  if(!wxXmlResource::Get()->LoadPanel((wxPanel*)this, parent, wxT("wxID_TOOLPANEL_ATTRIBUTE")))
+    return false;
+  
+  m_pVPanelParent = XRCCTRL(*this, "wxID_PANEL_ATTRVALUE", wxPanel);
+  m_pVPanelSizer = m_pVPanelParent->GetSizer();
+
+  m_pAttrList = XRCCTRL(*this, "wxID_CLIST_ATTR", wxListCtrl);
   m_pPanel_NewAttr = XRCCTRL(*m_pVPanelParent, "wxID_PANEL_CHOOSE_NEW_ATTRIBUTE", wxPanel);
   m_pNewAttrChoice = XRCCTRL(*m_pPanel_NewAttr, "wxID_CHOOSE_NEW_ATTRIBUTE", wxChoice);
-  m_pChoiceEnum    = XRCCTRL(*m_pPanel_Enum, "wxID_ATTR_CHOICE_ENUM", wxChoice);
 
   // Setup list
   m_pAttrList->InsertColumn(0, TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_ATTRIBUTE_NAME)));
   m_pAttrList->InsertColumn(1, TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_ATTRIBUTE_VALUE)));
   
   // setup labels
-  XRCCTRL(*m_pPanel_Text, "wxID_OK", wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_APPLY)));
-  XRCCTRL(*m_pPanel_Num, "wxID_OK", wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_APPLY)));
-  XRCCTRL(*m_pPanel_Lang, "wxID_BUTTON_DEL_ATTR", wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_DEL)));
-  XRCCTRL(*m_pPanel_Text, "wxID_BUTTON_DEL_ATTR", wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_DEL)));
-  XRCCTRL(*m_pPanel_Enum, "wxID_BUTTON_DEL_ATTR", wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_DEL)));
-  XRCCTRL(*m_pPanel_Num, "wxID_BUTTON_DEL_ATTR", wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_DEL)));
-
+  XRCCTRL(*m_pVPanelParent, "wxID_BUTTON_DEL_ATTR", wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_DEL)));
   XRCCTRL(*m_pPanel_NewAttr, "wxID_ATTR_LABEL_NEW_ATTR", wxStaticText)->SetLabel(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_INSERT)));
   
-  m_pTitleText->SetLabel(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_ATTR)));
-  m_pPanel_Num->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_VALUE_OF_ATTR)));
-  m_pPanel_Enum->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_VALUE_OF_ATTR)));
-  m_pPanel_Text->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_VALUE_OF_ATTR)));
-  m_pPanel_Lang->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_VALUE_OF_ATTR)));
-
-  // init value panels visibility
-  ShowAttributValue( wxATTR_TYPE_NONE );
-
-  // register myself to the manager, so I will be avertised that another panel is floating ...
-  m_pManager->RegisterSubPanel( this );
+  /* Retrieve the sizer for subpanels. */
+  wxPanel* panelSubs = XRCCTRL(*m_pVPanelParent, "wxID_PANEL_SUBPANELS", wxPanel);
+  if(panelSubs)
+    {
+      m_pSubpanelSizer = panelSubs->GetSizer();
+      if(m_pSubpanelSizer)
+        {
+          /* Init the array of embed subpanels */
+          int i;
+          for(i=0; i<wxATTR_PANEID_MAX; i++)
+            {
+              wxClassInfo* ci = wxClassInfo::FindClass(s_subpanelClassNames[i]);
+              if(ci)
+                m_subpanels[i] = wxDynamicCast(ci->CreateObject(), AmayaAttributeSubpanel);
+              if(m_subpanels[i])
+                {
+                  m_subpanels[i]->Create(panelSubs, -1);
+                  m_subpanels[i]->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_VALUE_OF_ATTR)));
+                  m_pSubpanelSizer->Add(m_subpanels[i], 1, wxEXPAND)->Show(false);
+                }
+            }
+          m_pSubpanelSizer->Layout();
+        }
+    }
   
   SetupListValue(NULL);
+  return true;
 }
 
-/*----------------------------------------------------------------------
- *       Class:  AmayaAttributePanel
- *      Method:  ~AmayaAttributePanel
- * Description:  destructor
- *               TODO
- -----------------------------------------------------------------------*/
-AmayaAttributePanel::~AmayaAttributePanel()
+wxString AmayaAttributeToolPanel::GetToolPanelName()const
 {
-  // unregister myself to the manager, so nothing should be asked to me in future
-  m_pManager->UnregisterSubPanel( this );
+  return TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_ATTR));
 }
 
-
 /*----------------------------------------------------------------------
- *       Class:  AmayaAttributePanel
- *      Method:  GetPanelType
- * Description:  
+ *       Class:  AmayaAttributeToolPanel
+ *      Method:  GetDefaultAUIConfig
+ * Description:  Return a default AUI config for the panel.
  -----------------------------------------------------------------------*/
-int AmayaAttributePanel::GetPanelType()
+wxString AmayaAttributeToolPanel::GetDefaultAUIConfig()
 {
-  return WXAMAYA_PANEL_ATTRIBUTE;
+  return wxT("dir=4;layer=0;row=0;pos=1");
 }
 
 
+
 /*----------------------------------------------------------------------
- *       Class:  AmayaAttributePanel
+ *       Class:  AmayaAttributeToolPanel
  *      Method:  RedirectFocusToEditableControl
  * Description:  Redirect the focus to the currently edited control.
  -----------------------------------------------------------------------*/
-void AmayaAttributePanel::RedirectFocusToEditableControl()
+void AmayaAttributeToolPanel::RedirectFocusToEditableControl()
 {
   if(m_pCurrentlyEditedControl)
     m_pCurrentlyEditedControl->SetFocus();
@@ -150,22 +181,26 @@ void AmayaAttributePanel::RedirectFocusToEditableControl()
   UpdateListColumnWidth
   Recompute width of list columns
   ----------------------------------------------------------------------*/
-void AmayaAttributePanel::UpdateListColumnWidth()
+void AmayaAttributeToolPanel::UpdateListColumnWidth()
 {
   // Resize columns.
-  long sz0, sz1;
+  long sz1;
+
   m_pAttrList->Freeze();
-  m_pAttrList->SetColumnWidth(0, wxLIST_AUTOSIZE_USEHEADER);
+
+  // m_pAttrList->SetColumnWidth(0, wxLIST_AUTOSIZE_USEHEADER);
+  // sz0 = m_pAttrList->GetColumnWidth(0);
+  // m_pAttrList->SetColumnWidth(0, wxLIST_AUTOSIZE);
+  // if(sz0 > m_pAttrList->GetColumnWidth(0))
+  //   m_pAttrList->SetColumnWidth(0, sz0);
+
   m_pAttrList->SetColumnWidth(1, wxLIST_AUTOSIZE_USEHEADER);
-  sz0 = m_pAttrList->GetColumnWidth(0);
   sz1 = m_pAttrList->GetColumnWidth(1);
-  m_pAttrList->SetColumnWidth(0, wxLIST_AUTOSIZE);
   m_pAttrList->SetColumnWidth(1, wxLIST_AUTOSIZE);
-  if(sz0 > m_pAttrList->GetColumnWidth(0))
-    m_pAttrList->SetColumnWidth(0, sz0);
   if(sz1 > m_pAttrList->GetColumnWidth(1))
     m_pAttrList->SetColumnWidth(1, sz1);
-    m_pAttrList->Thaw();
+
+  m_pAttrList->Thaw();
 }
 
 /*----------------------------------------------------------------------
@@ -173,7 +208,7 @@ void AmayaAttributePanel::UpdateListColumnWidth()
   if can be modified
   returns: true if mandatory
   ----------------------------------------------------------------------*/
-bool AmayaAttributePanel::IsMandatory()const
+bool AmayaAttributeToolPanel::IsMandatory()const
 {
   return (!m_currentAttElem||
           AttrListElem_IsMandatory(m_currentAttElem));
@@ -183,10 +218,23 @@ bool AmayaAttributePanel::IsMandatory()const
   Check if the current attribute (if any) is read-only
   returns: true if read-only
   ----------------------------------------------------------------------*/
-bool AmayaAttributePanel::IsReadOnly()const
+bool AmayaAttributeToolPanel::IsReadOnly()const
 {
   return (!m_currentAttElem ||
           AttrListElem_IsReadOnly (m_currentAttElem));
+}
+
+
+/*----------------------------------------------------------------------
+ * Show or hide the attribute bar, the bar where is shwon
+ *  the attribute subpanel if any.
+  ----------------------------------------------------------------------*/
+void AmayaAttributeToolPanel::ShowAttributeBar(bool bShow)
+{
+  if(m_pVPanelSizer)
+    {
+      m_pVPanelSizer->Show((size_t)0, bShow);
+    }
 }
 
 /*----------------------------------------------------------------------
@@ -194,7 +242,7 @@ bool AmayaAttributePanel::IsReadOnly()const
   params:
   returns:
   ----------------------------------------------------------------------*/
-void AmayaAttributePanel::SendDataToPanel( AmayaParams& p )
+void AmayaAttributeToolPanel::SendDataToPanel( AmayaParams& p )
 {
   DesactivatePanel();
   
@@ -205,62 +253,98 @@ void AmayaAttributePanel::SendDataToPanel( AmayaParams& p )
       m_lastSel   = (PtrElement)p.param6;
       m_firstChar = p.param7;
       m_lastChar  = p.param8;
-      ShowAttributValue( wxATTR_TYPE_NONE );
+      ShowAttributValue( wxATTR_PANEID_NONE );
       SetupListValue((DLList)p.param2);
       break;
     }
   ActivePanel();
 }
 
+/*----------------------------------------------------------------------
+  Analyse elem param to find correct internal type.
+  ----------------------------------------------------------------------*/
+AmayaAttributeToolPanel::wxATTR_INTTYPE AmayaAttributeToolPanel::GetInternalTypeFromAttrElem(PtrAttrListElem elem)
+{
+  PtrTtAttribute  pAttr = AttrListElem_GetTtAttribute(elem);
+  if(elem && pAttr)
+    {
+      switch(pAttr->AttrType)
+      {
+        case AtReferenceAttr:
+          return wxATTR_INTTYPE_REF;
+        case AtEnumAttr:
+          return wxATTR_INTTYPE_ENUM;
+        case AtNumAttr:
+          return wxATTR_INTTYPE_NUM;
+        case AtTextAttr:
+          if(elem->num == 1)
+            return wxATTR_INTTYPE_LANG;
+          else
+            return wxATTR_INTTYPE_TEXT;
+        default:
+          break;
+      }
+    }
+  return wxATTR_INTTYPE_NONE;
+}
 
 /*----------------------------------------------------------------------
   SelectAttribute
   select an attribut to the given position
   ----------------------------------------------------------------------*/
-void AmayaAttributePanel::SelectAttribute(int position)
+void AmayaAttributeToolPanel::SelectAttribute(int position)
 {
-  PtrTtAttribute  pAttr;
+  wxATTR_INTTYPE  inttype;
   if (position!=wxID_ANY)
     {
       m_currentAttElem = (PtrAttrListElem)m_pAttrList->GetItemData(position);
-      if (m_currentAttElem)
+      
+      inttype = GetInternalTypeFromAttrElem(m_currentAttElem);
+      
+      if(inttype==wxATTR_INTTYPE_REF)
         {
-          pAttr = AttrListElem_GetTtAttribute(m_currentAttElem);
-          if(pAttr)
+          // Reference has a special behavior
+          CallbackEditRefAttribute(m_currentAttElem, TtaGiveActiveFrame());
+        }
+      else if(inttype==wxATTR_INTTYPE_LANG)
+        {
+          // Lang is always lang
+          SetupAttr(m_currentAttElem, wxATTR_PANEID_LANG);
+          return;
+        }
+      else if(inttype==wxATTR_INTTYPE_ENUM)
+        {
+          // Enum is always enum
+          SetupAttr(m_currentAttElem, wxATTR_PANEID_ENUM);
+          return;          
+        }
+      else if(inttype!=wxATTR_INTTYPE_NONE)
+        {
+          if(AttrListElem_IsEnum(m_currentAttElem))
+              /* all type restricted to enum. */
+              SetupAttr(m_currentAttElem, wxATTR_PANEID_ENUM);
+          else if(s_subpanelAssoc[m_currentAttElem->restr.RestrType][inttype]!=wxATTR_PANEID_NONE)
             {
-              if(pAttr->AttrType==AtReferenceAttr)
-                CallbackEditRefAttribute(m_currentAttElem, TtaGiveActiveFrame());
-              else if(m_currentAttElem->num == 1)
-                {
-                  SetupLangAttr(m_currentAttElem);
-                  ShowAttributValue(wxATTR_TYPE_LANG);
-                  return;
-                }
-              else
-                {
-                  switch(pAttr->AttrType)
-                  {
-                    case AtEnumAttr:
-                      SetupEnumAttr(m_currentAttElem);
-                      ShowAttributValue(wxATTR_TYPE_ENUM);
-                      return;
-                    case AtTextAttr:
-                      SetupTextAttr(m_currentAttElem);
-                      ShowAttributValue(wxATTR_TYPE_TEXT);
-                      return;
-                    case AtNumAttr:
-                      SetupNumAttr(m_currentAttElem);
-                      ShowAttributValue(wxATTR_TYPE_NUM);
-                      return;
-                    default:
-                      break;
-                  }
-                }
+              SetupAttr(m_currentAttElem, s_subpanelAssoc[m_currentAttElem->restr.RestrType][inttype]);
+              return;          
             }
         }
     }
   m_currentAttElem = NULL;
-  ShowAttributValue( wxATTR_TYPE_NONE );
+  ShowAttributValue( wxATTR_PANEID_NONE );
+}
+
+/*----------------------------------------------------------------------
+  SetupAttr
+  Set the correct attribute type panel for an attribute
+  ----------------------------------------------------------------------*/
+void AmayaAttributeToolPanel::SetupAttr(PtrAttrListElem elem, wxATTR_PANEID type)
+{
+  ShowAttributValue(type);
+  m_subpanels[type]->SetSelectionPosition(m_firstSel, m_lastSel, 
+                                                  m_firstChar, m_lastChar);
+  m_subpanels[type]->SetAttrListElem(elem);
+  m_currentPane = type;
 }
 
 
@@ -269,7 +353,7 @@ void AmayaAttributePanel::SelectAttribute(int position)
   params:
   returns:
   ----------------------------------------------------------------------*/
-void AmayaAttributePanel::QueryRemoveCurrentAttribute()
+void AmayaAttributeToolPanel::QueryRemoveCurrentAttribute()
 {
   if (!IsMandatory())
     RemoveCurrentAttribute();
@@ -283,31 +367,49 @@ void AmayaAttributePanel::QueryRemoveCurrentAttribute()
   params:
   returns:
   ----------------------------------------------------------------------*/
-void AmayaAttributePanel::RemoveCurrentAttribute()
+void AmayaAttributeToolPanel::RemoveCurrentAttribute()
 {
-  Document doc = TtaGetDocument((Element)m_firstSel);
-  DisplayMode mode = TtaGetDisplayMode(doc);
+  PtrElement    pEl;
+  Attribute     attr;
+  AttributeType attrType;
+  int           kind;
+
+  Document     doc = TtaGetDocument((Element)m_firstSel);
+  DisplayMode  mode = TtaGetDisplayMode(doc);
   
   DesactivatePanel();
 
-  if (m_CurrentAttType != wxATTR_TYPE_NONE && m_firstSel &&
+  if (m_currentPane != wxATTR_PANEID_NONE && m_firstSel &&
       m_currentAttElem && m_currentAttElem->val)
     {
       TtaSetDisplayMode(doc, DeferredDisplay);
       TtaOpenUndoSequence(doc, (Element)m_firstSel, (Element)m_lastSel,
-                                                      m_firstChar, m_lastChar);
-      TtaRegisterAttributeDelete((Attribute)m_currentAttElem->val,
-                                                     (Element)m_firstSel, doc);
-      TtaRemoveAttribute((Element)m_firstSel, (Attribute)m_currentAttElem->val,
-                                                                          doc);
+			  m_firstChar, m_lastChar);
+
+      /* first selected element */
+      pEl = (PtrElement)m_firstSel;
+      attr = (Attribute)m_currentAttElem->val;
+      TtaGiveAttributeType (attr, &attrType, &kind);
+      while (pEl != NULL)
+        {
+	  if (attr)
+	    {
+	      TtaRegisterAttributeDelete(attr, (Element)pEl, doc);
+	      TtaRemoveAttribute((Element)pEl, attr, doc);
+	    }
+           /* next element in the selection */
+          pEl = NextInSelection (pEl, (PtrElement)m_lastSel);
+	  attr = TtaGetAttribute ((Element)pEl, attrType);
+        }
+      
       TtaSetDocumentModified(doc);
       TtaCloseUndoSequence(doc);
       TtaSetDisplayMode(doc, mode);
       ForceAttributeUpdate();
     }
-
+  
   ActivePanel();
-
+  
   /* try to redirect focus to canvas */
   TtaRedirectFocus();  
 }
@@ -317,7 +419,7 @@ void AmayaAttributePanel::RemoveCurrentAttribute()
   params:
   returns:
   ----------------------------------------------------------------------*/
-void AmayaAttributePanel::CreateCurrentAttribute()
+void AmayaAttributeToolPanel::CreateCurrentAttribute()
 {
   wxString        name;
   long            index;
@@ -334,14 +436,14 @@ void AmayaAttributePanel::CreateCurrentAttribute()
           if (pAttr && pAttr->AttrType == AtEnumAttr &&
               pAttr->AttrNEnumValues == 1)
             {
-              SetAttrValueToRange (elem, (void*)1);
+              SetAttrValueToRange (elem, (intptr_t)1);
               ForceAttributeUpdate();
             }
           else
             {
               index = m_pAttrList->InsertItem(m_pAttrList->GetItemCount(),
                                               TtaConvMessageToWX(AttrListElem_GetName(elem)));
-              elem->flags |= attr_new;
+              elem->restr.RestrFlags |= attr_new;
               m_pAttrList->SetItemData(index, (long)elem);
               m_pAttrList->SetItemTextColour(index, COLOR_NEW);
               m_pAttrList->SetItemState(index,
@@ -362,55 +464,28 @@ void AmayaAttributePanel::CreateCurrentAttribute()
   params:
   returns:
   ----------------------------------------------------------------------*/
-void AmayaAttributePanel::ShowAttributValue( wxATTR_TYPE type )
+void AmayaAttributeToolPanel::ShowAttributValue( wxATTR_PANEID type )
 {
-  m_CurrentAttType = type;
+  m_currentPane = type;
 
-  m_pVPanelSizer->Show( m_pPanel_Text, false );
-  m_pVPanelSizer->Show( m_pPanel_Lang, false );
-  m_pVPanelSizer->Show( m_pPanel_Enum, false );
-  m_pVPanelSizer->Show( m_pPanel_Num, false );
-
-  switch(type)
+  int i;
+  for(i=0; i<wxATTR_PANEID_MAX; i++)
+    m_pSubpanelSizer->Show(m_subpanels[i], false );
+  
+  if(type>=0 && type<wxATTR_PANEID_MAX)
     {
-    case wxATTR_TYPE_ENUM:
-      {
-        m_pVPanelSizer->Show( m_pPanel_Enum, true );
-        m_pCurrentlyEditedControl = XRCCTRL(*m_pPanel_Enum, "wxID_ATTR_CHOICE_ENUM", wxWindow);
-        m_pPanel_Enum->Refresh();
-      }
-      break;
-    case wxATTR_TYPE_TEXT:
-      {
-        m_pVPanelSizer->Show( m_pPanel_Text, true );
-        m_pCurrentlyEditedControl = XRCCTRL(*m_pPanel_Text, "wxID_ATTR_TEXT_VALUE", wxWindow);
-        m_pPanel_Text->Refresh();
-      }
-      break;
-    case wxATTR_TYPE_LANG:
-      {
-        m_pVPanelSizer->Show( m_pPanel_Lang, true );
-        m_pCurrentlyEditedControl = XRCCTRL(*m_pPanel_Lang, "wxID_ATTR_COMBO_LANG_LIST", wxWindow);
-        m_pPanel_Lang->Refresh();
-      }
-      break;
-    case wxATTR_TYPE_NUM:
-      {
-        m_pVPanelSizer->Show( m_pPanel_Num, true );
-        m_pCurrentlyEditedControl = XRCCTRL(*m_pPanel_Num, "wxID_ATTR_NUM_VALUE", wxWindow);
-        m_pPanel_Num->Refresh();
-      }
-      break;
-    default:
-      m_pCurrentlyEditedControl = NULL;
-      break;
+      m_pSubpanelSizer->Show( type, true );
+      m_pCurrentlyEditedControl = m_subpanels[type]->GetEditionControl();
+      m_subpanels[type]->Refresh();
+      m_pSubpanelSizer->Layout();
+      ShowAttributeBar(true);
     }
-
-  GetParent()->GetParent()->Layout();
-  m_pVPanelSizer->Layout();
-  GetParent()->Layout();
+  else
+    {
+      m_pCurrentlyEditedControl = NULL;
+      ShowAttributeBar(false);
+    }
   Layout();
-  m_pPanelContentDetach->Layout();
   
   RedirectFocusToEditableControl();
 }
@@ -420,7 +495,7 @@ void AmayaAttributePanel::ShowAttributValue( wxATTR_TYPE type )
   SetupListValue
   init the attribut list
   ----------------------------------------------------------------------*/
-void AmayaAttributePanel::SetupListValue(DLList attrList)
+void AmayaAttributeToolPanel::SetupListValue(DLList attrList)
 {
   ForwardIterator iter;
   DLListNode      node;
@@ -433,6 +508,8 @@ void AmayaAttributePanel::SetupListValue(DLList attrList)
 
   m_pAttrList->DeleteAllItems();
   m_pNewAttrChoice->Clear();
+  
+  m_pVPanelSizer->Hide((size_t)0);
   
   if(m_attrList)
     DLList_Destroy(m_attrList);
@@ -459,7 +536,7 @@ void AmayaAttributePanel::SetupListValue(DLList attrList)
                   case AtTextAttr:
                     size = MAX_TXT_LEN;
                     TtaGiveTextAttributeValue((Attribute)elem->val, buffer, &size);
-                    m_pAttrList->SetItem(index, 1, wxString(buffer, wxConvUTF8));
+                    m_pAttrList->SetItem(index, 1, TtaConvMessageToWX(buffer));
                     break;
                   case AtEnumAttr:
                     type.AttrSSchema = (int*) elem->pSS;
@@ -468,14 +545,11 @@ void AmayaAttributePanel::SetupListValue(DLList attrList)
                     if (pAttr->AttrNEnumValues == 1 &&
                         !strcasecmp (pAttr->AttrEnumValue[0], "yes"))
                       // this is a boolean value
-                      m_pAttrList->SetItem(index, 1, wxString(
-                                                              pAttr->AttrName,
-                                                              wxConvUTF8));
+                      m_pAttrList->SetItem(index, 1, TtaConvMessageToWX(pAttr->AttrName));
                      else
-                   m_pAttrList->SetItem(index, 1, wxString(
+                     m_pAttrList->SetItem(index, 1, TtaConvMessageToWX(
                             TtaGetAttributeValueName(type, 
-                                TtaGetAttributeValue((Attribute)elem->val)), 
-                                wxConvUTF8));
+                                TtaGetAttributeValue((Attribute)elem->val))));
                     break;
                   case AtReferenceAttr:
                   default:
@@ -504,137 +578,231 @@ void AmayaAttributePanel::SetupListValue(DLList attrList)
 }
 
 
-
 /*----------------------------------------------------------------------
-  SetupLangAttr
-  send langage's panel values
+  OnDelAttr called when the user want to remove an existing attribut (the selected one)
   params:
   returns:
   ----------------------------------------------------------------------*/
-void AmayaAttributePanel::SetupLangAttr(PtrAttrListElem elem)
+void AmayaAttributeToolPanel::OnDelAttr( wxCommandEvent& event )
 {
-  PtrAttribute        currAttr = elem->val;
-  Language            language;
-  PtrAttribute        pHeritAttr;
-  PtrElement          pElAttr;
-  char               *ptr;
-  char                languageCode[MAX_TXT_LEN];
-  char                label[200];
-  int                 defItem, nbItem;
-  char                lang_list[MAX_TXT_LEN];
-  int                 item = 0;
-  int                 index = 0;
+  RemoveCurrentAttribute();
+}
 
-  wxArrayString arr;
-
-  wxChoice     *p_combo = XRCCTRL(*m_pPanel_Lang, "wxID_ATTR_COMBO_LANG_LIST", wxChoice);
-  wxStaticText *p_stext = XRCCTRL(*m_pPanel_Lang, "wxID_ATTR_LABEL_LANG_INHER", wxStaticText);
-
-  if(elem)
+/*----------------------------------------------------------------------
+  Update the value of an attribute in the list.
+  Modify the content of the list without update it completely.
+  ----------------------------------------------------------------------*/
+void AmayaAttributeToolPanel::ModifyListAttrValue(const wxString& attrName,
+                                                       const wxString& attrVal)
+{
+  long index = m_pAttrList->FindItem(wxID_ANY, attrName);
+  if(index!=wxNOT_FOUND)
     {
-      /* Initialize the language selector */
-      languageCode[0] = EOS;
-      if (currAttr && currAttr->AeAttrText)
-        CopyBuffer2MBs (currAttr->AeAttrText, 0, (unsigned char*)languageCode,
-                        MAX_TXT_LEN);
-      if (languageCode[0] == EOS)
-        {
-          /* look for the inherited attribute value Language */
-          strcpy (label, TtaGetMessage (LIB, TMSG_INHERITED_LANG));
-          pHeritAttr = GetTypedAttrAncestor (m_firstSel, 1, NULL, &pElAttr);
-          if (pHeritAttr && pHeritAttr->AeAttrText)
-            {
-              /* the attribute value is a RFC-1766 code. Convert it into */
-              /* a language name */
-              CopyBuffer2MBs (pHeritAttr->AeAttrText, 0,
-                              (unsigned char*)languageCode, MAX_TXT_LEN);
-              language = TtaGetLanguageIdFromName (languageCode);
-              strcat (label, TtaGetLanguageName(language));
-            }
-        }
-      else
-        label[0] = EOS;
-
-      p_stext->SetLabel( TtaConvMessageToWX( label));
-
-      ptr = GetListOfLanguages (lang_list, MAX_TXT_LEN, languageCode, &nbItem, &defItem);
-
-      p_combo->Clear();
-      for(item=0, index=0; item<nbItem; item++)
-        {
-          p_combo->Append( TtaConvMessageToWX( &lang_list[index] ) );
-          index += strlen(&lang_list[index])+1; /* one entry length */
-        }
-
-      /* setup the selected language value */
-      wxString wx_selected_lang = TtaConvMessageToWX(ptr);
-      if ( wx_selected_lang != _T("") )
-        p_combo->SetStringSelection(wx_selected_lang);
+      m_pAttrList->SetItem(index, 1, attrVal);
+      UpdateListColumnWidth();
     }
 }
 
 /*----------------------------------------------------------------------
-  SetupTextValue
-  send text's panel values
+  Retrieve the name of the currently selected attribute in the list.
+  ----------------------------------------------------------------------*/
+wxString AmayaAttributeToolPanel::GetCurrentSelectedAttrName()const
+{
+  long index = m_pAttrList->GetNextItem(wxID_ANY, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+  if(index!=wxNOT_FOUND)
+    return m_pAttrList->GetItemText(index);
+  else
+    return wxT("");
+}
+
+/*----------------------------------------------------------------------
+  OnApply called when the user want to change the attribute value
   params:
   returns:
   ----------------------------------------------------------------------*/
-void AmayaAttributePanel::SetupTextValue( const char * text )
+void AmayaAttributeToolPanel::OnApply( wxCommandEvent& event )
 {
-  wxTextCtrl * p_text_ctrl = XRCCTRL(*m_pPanel_Text, "wxID_ATTR_TEXT_VALUE", wxTextCtrl);
-  p_text_ctrl->SetValue( TtaConvMessageToWX( text ) );
-  m_pPanel_Text->Refresh();
-  p_text_ctrl->SetInsertionPointEnd();
+  PtrTtAttribute  pAttr;
+  char            buffer[MAX_LENGTH];
+  Document        doc;
+  wxString        value;
+
+  if (m_currentAttElem && m_firstSel)
+    {
+      doc = TtaGetDocument((Element)m_firstSel);
+      pAttr = AttrListElem_GetTtAttribute(m_currentAttElem);
+      if(pAttr->AttrType==AtEnumAttr || pAttr->AttrType==AtNumAttr)
+        {
+          int test = m_subpanels[m_currentPane]->GetIntValue();
+          value = m_subpanels[m_currentPane]->GetStringValue();
+          SetAttrValueToRange(m_currentAttElem, (intptr_t)test);
+        }
+      else if(pAttr->AttrType==AtTextAttr)
+        {
+          value = m_subpanels[m_currentPane]->GetStringValue();
+          strncpy (buffer, (const char*)value.mb_str(wxConvUTF8), MAX_LENGTH-1);
+          SetAttrValueToRange(m_currentAttElem, (intptr_t)buffer);
+        }
+      ModifyListAttrValue(GetCurrentSelectedAttrName(), value);
+    }
+  m_currentAttElem = NULL;
+  
+  RedirectFocusToEditableControl();
 }
 
-void AmayaAttributePanel::SetupTextAttr(PtrAttrListElem elem)
+/*----------------------------------------------------------------------
+  ForceAttributeUpdate force the current document to refresh the attribute list
+  => UpdateAttrMenu is called => AmayaAttributeToolPanel::UpdateAttributeList is finaly called
+  params:
+  returns:
+  ----------------------------------------------------------------------*/
+void AmayaAttributeToolPanel::ForceAttributeUpdate()
 {
-  PtrAttribute      currAttr = elem->val;
+  /* do the update */
+  PtrDocument pDoc;
+  int         view;
+  GetDocAndView (TtaGiveActiveFrame(), &pDoc, &view);
+  if (pDoc)
+    UpdateAttrMenu (pDoc, TRUE);
+}
+
+/*----------------------------------------------------------------------
+ *       Class:  AmayaAttributeToolPanel
+ *      Method:  DoUpdate
+ * Description:  force a refresh when the user expand or detach this panel
+ -----------------------------------------------------------------------*/
+void AmayaAttributeToolPanel::DoUpdate()
+{
+  AmayaToolPanel::DoUpdate();
+  ForceAttributeUpdate();  
+}
+
+/*----------------------------------------------------------------------
+ -----------------------------------------------------------------------*/
+void AmayaAttributeToolPanel::OnListItemSelected(wxListEvent& event)
+{
+  if(IsPanelActive())
+    SelectAttribute(event.GetIndex());
+  event.Skip();
+}
+
+/*----------------------------------------------------------------------
+ -----------------------------------------------------------------------*/
+void AmayaAttributeToolPanel::OnListItemDeselected(wxListEvent& event)
+{
+  if(IsPanelActive())
+    SelectAttribute(wxID_ANY);
+  event.Skip();
+}
+
+/*----------------------------------------------------------------------
+ -----------------------------------------------------------------------*/
+void AmayaAttributeToolPanel::OnInsert( wxCommandEvent& WXUNUSED(event))
+{
+  CreateCurrentAttribute();
+}
+
+/*----------------------------------------------------------------------
+ -----------------------------------------------------------------------*/
+void AmayaAttributeToolPanel::OnUpdateDeleteButton(wxUpdateUIEvent& event)
+{
+  
+  if (IsPanelActive() && m_currentAttElem && m_currentPane!=wxATTR_PANEID_NONE)
+    event.Enable(!IsMandatory());
+  else
+    event.Enable(false);
+}
+
+/*----------------------------------------------------------------------
+ *  this is where the event table is declared
+ *  the callbacks are assigned to an event type
+ *----------------------------------------------------------------------*/
+BEGIN_EVENT_TABLE(AmayaAttributeToolPanel, AmayaToolPanel)
+  EVT_LIST_ITEM_SELECTED(XRCID("wxID_CLIST_ATTR"), AmayaAttributeToolPanel::OnListItemSelected)
+  EVT_LIST_ITEM_DESELECTED(XRCID("wxID_CLIST_ATTR"), AmayaAttributeToolPanel::OnListItemDeselected)
+  
+  EVT_TEXT_ENTER( XRCID("wxID_ATTR_TEXT_VALUE"),      AmayaAttributeToolPanel::OnApply )
+  EVT_TEXT_ENTER( XRCID("wxID_ATTR_NUM_VALUE"),       AmayaAttributeToolPanel::OnApply )
+
+  EVT_CHOICE(XRCID("wxID_ATTR_COMBO_LANG_LIST"), AmayaAttributeToolPanel::OnApply)
+  EVT_CHOICE(XRCID("wxID_ATTR_CHOICE_ENUM"), AmayaAttributeToolPanel::OnApply)
+
+  EVT_BUTTON(     XRCID("wxID_OK"),              AmayaAttributeToolPanel::OnApply )
+  
+  EVT_BUTTON(     XRCID("wxID_BUTTON_DEL_ATTR"), AmayaAttributeToolPanel::OnDelAttr )
+  EVT_CHOICE(XRCID("wxID_CHOOSE_NEW_ATTRIBUTE"), AmayaAttributeToolPanel::OnInsert)
+
+  EVT_UPDATE_UI(  XRCID("wxID_BUTTON_DEL_ATTR"), AmayaAttributeToolPanel::OnUpdateDeleteButton)
+END_EVENT_TABLE()
+
+
+
+/************************************************************************
+ ************************************************************************
+ * AmayaAttributeSubpanel
+ ************************************************************************
+ ************************************************************************/
+
+IMPLEMENT_ABSTRACT_CLASS(AmayaAttributeSubpanel, wxPanel)
+BEGIN_EVENT_TABLE(AmayaAttributeSubpanel, wxPanel)
+END_EVENT_TABLE()
+
+AmayaAttributeSubpanel::AmayaAttributeSubpanel():
+wxPanel()
+{
+}
+
+AmayaAttributeSubpanel::~AmayaAttributeSubpanel()
+{
+}
+
+bool AmayaAttributeSubpanel::SetSelectionPosition(PtrElement firstSel, PtrElement lastSel,
+                                  int firstChar, int lastChar)
+{
+  m_firstSel  = firstSel;
+  m_lastSel   = lastSel;
+  m_firstChar = firstChar;
+  m_lastChar  = lastChar;
+  return true;
+}
+
+void AmayaAttributeSubpanel::SendApplyInfoToParent(wxCommandEvent& event)
+{
+  wxCommandEvent evt(wxEVT_COMMAND_BUTTON_CLICKED, wxID_OK);
+  ProcessEvent(evt);
+}
+
+wxString AmayaAttributeSubpanel::getAttributeStringValue(PtrAttrListElem elem)
+{
   char              buffer[MAX_TXT_LEN];
   int               i = MAX_TXT_LEN-1;
   char             *tmp;
 
-  if(elem)
+  wxString str;
+  
+   if(elem && elem->val && elem->val->AeAttrText)
     {
-      if(currAttr && currAttr->AeAttrText)
-        {
-          i = CopyBuffer2MBs (currAttr->AeAttrText, 0, (unsigned char*)buffer, i);
-          tmp = (char *)TtaConvertMbsToByte ((unsigned char *)buffer,
-                                                         TtaGetDefaultCharset ());
-          SetupTextValue(tmp);
-          TtaFreeMemory (tmp);
-        }
-      else
-        SetupTextValue("");
+      i = CopyBuffer2MBs (elem->val->AeAttrText, 0, (unsigned char*)buffer, i);
+      tmp = (char *)TtaConvertMbsToByte ((unsigned char *)buffer, TtaGetDefaultCharset ());
+      str = TtaConvMessageToWX( tmp );
+      TtaFreeMemory (tmp);
+      return str;
     }
+   return wxT("");
 }
 
-/*----------------------------------------------------------------------
-  SetupEnumValue
-  params:
-  returns:
-  ----------------------------------------------------------------------*/
-void AmayaAttributePanel::SetupEnumValue( wxArrayString& enums, int selected )
+int AmayaAttributeSubpanel::getAttributeNumericValue(PtrAttrListElem elem)
 {
-  wxChoice* choice = XRCCTRL(*m_pPanel_Enum, "wxID_ATTR_CHOICE_ENUM", wxChoice);
-  if(choice)
-    {
-      choice->Clear();
-      choice->Append(enums);
-      choice->SetSelection(selected);
-    }
+  if(elem && elem->val)
+      return elem->val->AeAttrValue;
+  return 0;
 }
 
-/*----------------------------------------------------------------------
-  ----------------------------------------------------------------------*/
-void AmayaAttributePanel::SetupEnumAttr(PtrAttrListElem elem)
+void AmayaAttributeSubpanel::getAttributeEnumValues(PtrAttrListElem elem, wxArrayString& arr)
 {
-  PtrAttribute      currAttr = elem->val;
   TtAttribute      *pAttr = AttrListElem_GetTtAttribute(elem);
-  wxArrayString     arr;
-  int               i = 0, val;
-
-  if (elem)
+  int val;
+  if (elem && elem->val)
     {
       if (pAttr->AttrNEnumValues == 1 &&
           !strcasecmp (pAttr->AttrEnumValue[0], "yes"))
@@ -645,41 +813,261 @@ void AmayaAttributePanel::SetupEnumAttr(PtrAttrListElem elem)
       else
         for (val = 0; val < pAttr->AttrNEnumValues; val++)
           arr.Add(wxString(pAttr->AttrEnumValue[val], wxConvUTF8));
-      /* current value */
-      if (currAttr && currAttr->AeAttrValue > 0)
-        i = currAttr->AeAttrValue - 1;
     }
-  SetupEnumValue(arr, i);
+}
+
+
+/************************************************************************
+ ************************************************************************
+ * AmayaEnumAttributeSubpanel
+ ************************************************************************
+ ************************************************************************/
+
+IMPLEMENT_DYNAMIC_CLASS(AmayaEnumAttributeSubpanel, AmayaAttributeSubpanel)
+
+BEGIN_EVENT_TABLE(AmayaEnumAttributeSubpanel, AmayaAttributeSubpanel)
+  EVT_CHOICE(XRCID("wxID_ATTR_CHOICE_ENUM"), AmayaAttributeSubpanel::SendApplyInfoToParent)
+END_EVENT_TABLE()
+
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+AmayaEnumAttributeSubpanel::AmayaEnumAttributeSubpanel():
+AmayaAttributeSubpanel(),
+m_pChoice(NULL)
+{  
 }
 
 /*----------------------------------------------------------------------
-  SetupNumValue
-  send num's panel values
-  params:
-  returns:
   ----------------------------------------------------------------------*/
-void AmayaAttributePanel::SetupNumValue( int num, int begin, int end )
+AmayaEnumAttributeSubpanel::~AmayaEnumAttributeSubpanel()
 {
-  wxSpinCtrl * p_spin_ctrl = XRCCTRL(*m_pPanel_Num, "wxID_ATTR_NUM_VALUE", wxSpinCtrl);
-  p_spin_ctrl->SetRange(begin, end);
-  p_spin_ctrl->SetValue( num );
-  m_pPanel_Num->Refresh();
 }
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-void AmayaAttributePanel::SetupNumAttr(PtrAttrListElem elem)
+bool AmayaEnumAttributeSubpanel::Create(wxWindow* parent, wxWindowID id)
 {
-  PtrAttribute      currAttr = elem->val;
-  int               i=0, begin=0, end=1000;
+  wxXmlResource::Get()->LoadPanel((wxPanel*)this, parent,
+                                          wxT("wxID_SUBPANEL_ATTRIBUTE_ENUM"));
+  m_pChoice = XRCCTRL(*this, "wxID_ATTR_CHOICE_ENUM", wxChoice);
+  return true;
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+bool AmayaEnumAttributeSubpanel::SetAttrListElem(PtrAttrListElem elem)
+{
+  TtAttribute      *pAttr;
+  wxStringTokenizer tkz;
+  wxArrayString     arr;
+  wxString          str, def;
+  int               index, val;
+
+  m_pChoice->Clear();
+  if(elem)
+    {
+      m_type = (AmayaAttributeToolPanel::wxATTR_INTTYPE)AttrListElem_GetType(elem);
+
+      if(AttrListElem_GetType(elem)==AtEnumAttr)
+        {
+          pAttr = AttrListElem_GetTtAttribute(elem);
+          // Std enumeration
+          if (pAttr->AttrNEnumValues == 1 &&
+              !strcasecmp (pAttr->AttrEnumValue[0], "yes"))
+            {
+              // this is a boolean value
+              m_pChoice->Append(TtaConvMessageToWX(pAttr->AttrName));
+              m_pChoice->SetSelection(0);
+            }
+          else
+            {
+              for (val = 0; val < pAttr->AttrNEnumValues; val++)
+                {
+                  index = wxNOT_FOUND;
+                  if(AttrListElem_IsEnum(elem) && elem->restr.RestrEnumVal)
+                    {
+                      if(strstr(elem->restr.RestrEnumVal, pAttr->AttrEnumValue[val]))
+                          index = m_pChoice->Append(TtaConvMessageToWX(pAttr->AttrEnumValue[val]));
+                    }
+                  else
+                      index = m_pChoice->Append(TtaConvMessageToWX(pAttr->AttrEnumValue[val]));
+                  if(index!=wxNOT_FOUND)
+                    m_pChoice->SetClientData(index, (void*)val);
+                }
+              /* current value */
+              if (elem->val && elem->val->AeAttrValue > 0)
+                m_pChoice->SetSelection(elem->val->AeAttrValue-1);
+              else
+                m_pChoice->SetStringSelection(TtaConvMessageToWX(elem->restr.RestrDefVal));
+            }
+        }
+      else if(AttrListElem_IsEnum(elem) && elem->restr.RestrEnumVal)
+        {
+          // Restricted enumeration
+          tkz.SetString(TtaConvMessageToWX(elem->restr.RestrEnumVal), wxT(" "));
+          while(tkz.HasMoreTokens())
+              m_pChoice->Append(tkz.GetNextToken());
+          
+          if(elem->val)
+            {
+              if(AttrListElem_GetType(elem)==AtNumAttr)
+                {
+                  index = AmayaAttributeSubpanel::getAttributeNumericValue(elem);
+                  m_pChoice->SetStringSelection(wxString::Format(wxT("%d"), index));
+                }
+              else if(AttrListElem_GetType(elem)==AtTextAttr)
+                {
+                  str = AmayaAttributeSubpanel::getAttributeStringValue(elem);
+                  m_pChoice->SetStringSelection(str);
+                }
+            }
+          else
+            {
+              m_pChoice->SetStringSelection(TtaConvMessageToWX(elem->restr.RestrDefVal));
+            }
+          
+        }
+      return true;
+    }
+  else
+    {
+      m_type = AmayaAttributeToolPanel::wxATTR_INTTYPE_MAX;
+      return false;
+    }
+}
+
+wxString AmayaEnumAttributeSubpanel::GetStringValue()
+{
+  return m_pChoice->GetStringSelection();
+}
+
+intptr_t AmayaEnumAttributeSubpanel::GetIntValue()
+{
+  if(m_type==AmayaAttributeToolPanel::wxATTR_INTTYPE_ENUM)
+    {
+      return (intptr_t)m_pChoice->GetClientData(m_pChoice->GetSelection())+1;
+    }
+  else if(m_type==AmayaAttributeToolPanel::wxATTR_INTTYPE_NUM)
+    {
+      long i;
+      m_pChoice->GetStringSelection().ToLong(&i);
+      return i;
+    }
+  else
+    return 0;
+}
+
+
+/************************************************************************
+ ************************************************************************
+ * AmayaStringAttributeSubpanel
+ ************************************************************************
+ ************************************************************************/
+
+IMPLEMENT_DYNAMIC_CLASS(AmayaStringAttributeSubpanel, AmayaAttributeSubpanel)
+
+BEGIN_EVENT_TABLE(AmayaStringAttributeSubpanel, AmayaAttributeSubpanel)
+  EVT_TEXT_ENTER(XRCID("wxID_ATTR_TEXT_VALUE"), AmayaAttributeSubpanel::SendApplyInfoToParent)
+END_EVENT_TABLE()
+
+
+AmayaStringAttributeSubpanel::AmayaStringAttributeSubpanel():
+AmayaAttributeSubpanel(),
+m_pText(NULL)
+{
+}
+
+AmayaStringAttributeSubpanel::~AmayaStringAttributeSubpanel()
+{
+}
+
+bool AmayaStringAttributeSubpanel::Create(wxWindow* parent, wxWindowID id)
+{
+  wxXmlResource::Get()->LoadPanel((wxPanel*)this, parent,
+                                        wxT("wxID_SUBPANEL_ATTRIBUTE_STRING"));
+  m_pText = XRCCTRL(*this, "wxID_ATTR_TEXT_VALUE", wxTextCtrl);
+  XRCCTRL(*this, "wxID_OK", wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_APPLY)));
+  return true;
+}
+
+bool AmayaStringAttributeSubpanel::SetAttrListElem(PtrAttrListElem elem)
+{
+   if(elem)
+    {
+      if(AttrListElem_IsNew(elem) && elem->restr.RestrDefVal)
+        m_pText->SetValue(TtaConvMessageToWX(elem->restr.RestrDefVal));
+      else
+        {
+          if(elem->val && elem->val->AeAttrText)
+            {
+              m_pText->SetValue(AmayaAttributeSubpanel::getAttributeStringValue(elem));
+              m_pText->SetInsertionPointEnd();
+            }
+          else
+            m_pText->SetValue(wxT(""));
+        }
+    }
+  return true;
+}
+
+wxString AmayaStringAttributeSubpanel::GetStringValue()
+{
+  return m_pText->GetValue();
+}
+
+
+/************************************************************************
+ ************************************************************************
+ * AmayaNumAttributeSubpanel
+ ************************************************************************
+ ************************************************************************/
+
+IMPLEMENT_DYNAMIC_CLASS(AmayaNumAttributeSubpanel, AmayaAttributeSubpanel)
+
+BEGIN_EVENT_TABLE(AmayaNumAttributeSubpanel, AmayaAttributeSubpanel)
+  EVT_TEXT_ENTER(XRCID("wxID_ATTR_NUM_VALUE"), AmayaAttributeSubpanel::SendApplyInfoToParent)
+END_EVENT_TABLE()
+
+
+AmayaNumAttributeSubpanel::AmayaNumAttributeSubpanel():
+AmayaAttributeSubpanel(),
+m_pSpin(NULL)
+{  
+}
+
+AmayaNumAttributeSubpanel::~AmayaNumAttributeSubpanel()
+{
+}
+
+bool AmayaNumAttributeSubpanel::Create(wxWindow* parent, wxWindowID id)
+{
+  wxXmlResource::Get()->LoadPanel((wxPanel*)this, parent,
+                                          wxT("wxID_SUBPANEL_ATTRIBUTE_NUM"));
+  m_pSpin = XRCCTRL(*this, "wxID_ATTR_NUM_VALUE", wxSpinCtrl);
+  XRCCTRL(*this, "wxID_OK", wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_APPLY)));
+  return true;
+}
+
+bool AmayaNumAttributeSubpanel::SetAttrListElem(PtrAttrListElem elem)
+{
+  long               i=0, begin=0, end=1000;
   char*             title;
   TtAttribute      *pAttr = AttrListElem_GetTtAttribute(elem);
+  wxString          str;
 
   if(elem)
     {
-      if(currAttr && pAttr)
+      if(AttrListElem_IsNew(elem) && elem->restr.RestrDefVal)
         {
-          i     = currAttr->AeAttrValue;
+          str = TtaConvMessageToWX(elem->restr.RestrDefVal);
+          str.ToLong(&i);
+        }
+
+      if(elem->val)
+          i     = AmayaAttributeSubpanel::getAttributeNumericValue(elem);
+      if(pAttr)
+        {
           title = pAttr->AttrName;
           if(!strcmp (elem->pSS->SsName, "HTML") &&
               (!strcmp (title, "rowspan") ||
@@ -698,199 +1086,169 @@ void AmayaAttributePanel::SetupNumAttr(PtrAttrListElem elem)
               end = 1000;
             }
         }
-      SetupNumValue(i, begin, end);
     }
-}
-
-/*----------------------------------------------------------------------
-  OnDelAttr called when the user want to remove an existing attribut (the selected one)
-  params:
-  returns:
-  ----------------------------------------------------------------------*/
-void AmayaAttributePanel::OnDelAttr( wxCommandEvent& event )
-{
-  RemoveCurrentAttribute();
-}
-
-/*----------------------------------------------------------------------
-  Update the value of an attribute in the list.
-  Modify the content of the list without update it completely.
-  ----------------------------------------------------------------------*/
-void AmayaAttributePanel::ModifyListAttrValue(const wxString& attrName,
-                                                       const wxString& attrVal)
-{
-  long index = m_pAttrList->FindItem(wxID_ANY, attrName);
-  if(index!=wxNOT_FOUND)
-    {
-      m_pAttrList->SetItem(index, 1, attrVal);
-      UpdateListColumnWidth();
-    }
-}
-
-/*----------------------------------------------------------------------
-  Retrieve the name of the currently selected attribute in the list.
-  ----------------------------------------------------------------------*/
-wxString AmayaAttributePanel::GetCurrentSelectedAttrName()const
-{
-  long index = m_pAttrList->GetNextItem(wxID_ANY, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-  if(index!=wxNOT_FOUND)
-    return m_pAttrList->GetItemText(index);
-  else
-    return wxT("");
-}
-
-/*----------------------------------------------------------------------
-  OnApply called when the user want to change the attribute value
-  params:
-  returns:
-  ----------------------------------------------------------------------*/
-void AmayaAttributePanel::OnApply( wxCommandEvent& event )
-{
-//  DisplayMode   mode;
-  char            buffer[MAX_LENGTH];
-  Document        doc;
-  Language        language;
-  wxString        value;
-
-  if (m_currentAttElem && m_firstSel)
-    {
-      doc = TtaGetDocument((Element)m_firstSel);
-      
-      switch (m_CurrentAttType)
-        {
-        case wxATTR_TYPE_TEXT:
-          {
-
-            wxTextCtrl * p_text_ctrl = XRCCTRL(*m_pPanel_Text, "wxID_ATTR_TEXT_VALUE", wxTextCtrl);
-            value = p_text_ctrl->GetValue();
-            strncpy (buffer, (const char*)value.mb_str(wxConvUTF8), MAX_LENGTH-1);
-            SetAttrValueToRange(m_currentAttElem, (void*)buffer);
-          }
-          break;
-        case wxATTR_TYPE_ENUM:
-          {
-            SetAttrValueToRange(m_currentAttElem, (void*)(m_pChoiceEnum->GetSelection()+1));
-            value = m_pChoiceEnum->GetStringSelection();
-          }
-          break;
-        case wxATTR_TYPE_NUM:
-          {
-            wxSpinCtrl * p_spin_ctrl = XRCCTRL(*m_pPanel_Num, "wxID_ATTR_NUM_VALUE", wxSpinCtrl);
-            SetAttrValueToRange(m_currentAttElem, (void*)p_spin_ctrl->GetValue());
-            value.Printf(wxT("%d"), p_spin_ctrl->GetValue());
-          }
-          break;
-        case wxATTR_TYPE_LANG:
-          {
-            wxChoice * p_cb = XRCCTRL(*m_pPanel_Lang, "wxID_ATTR_COMBO_LANG_LIST", wxChoice);
-            value = p_cb->GetStringSelection();
-            strncpy (buffer, (const char*)value.mb_str(wxConvUTF8), MAX_LENGTH-1);
-            language = TtaGetLanguageIdFromName (buffer);
-            SetAttrValueToRange(m_currentAttElem, (void*)TtaGetLanguageCode (language));
-          }
-          break;
-        case wxATTR_TYPE_NONE:
-          wxASSERT(FALSE); /* should not append ? */
-          break;
-        }
-
-      ModifyListAttrValue(GetCurrentSelectedAttrName(), value);
-    }
-  m_currentAttElem = NULL;
-  RedirectFocusToEditableControl();
-}
-
-/*----------------------------------------------------------------------
-  ForceAttributeUpdate force the current document to refresh the attribute list
-  => UpdateAttrMenu is called => AmayaAttributePanel::UpdateAttributeList is finaly called
-  params:
-  returns:
-  ----------------------------------------------------------------------*/
-void AmayaAttributePanel::ForceAttributeUpdate()
-{
-  /* do the update */
-  PtrDocument pDoc;
-  int         view;
-  GetDocAndView (TtaGiveActiveFrame(), &pDoc, &view);
-  if (pDoc)
-    UpdateAttrMenu (pDoc, TRUE);
-}
-
-/*----------------------------------------------------------------------
- *       Class:  AmayaAttributePanel
- *      Method:  DoUpdate
- * Description:  force a refresh when the user expand or detach this panel
- -----------------------------------------------------------------------*/
-void AmayaAttributePanel::DoUpdate()
-{
-  AmayaSubPanel::DoUpdate();
-  ForceAttributeUpdate();  
-}
-
-/*----------------------------------------------------------------------
- *       Class:  AmayaAttributePanel
- *      Method:  IsActive
- * Description:  
- -----------------------------------------------------------------------*/
-bool AmayaAttributePanel::IsActive()
-{
-  return (AmayaSubPanel::IsActive());
-}
-
-
-/*----------------------------------------------------------------------
- -----------------------------------------------------------------------*/
-void AmayaAttributePanel::OnListItemSelected(wxListEvent& event)
-{
-  if(IsPanelActive())
-    SelectAttribute(event.GetIndex());
-  event.Skip();
-}
-
-/*----------------------------------------------------------------------
- -----------------------------------------------------------------------*/
-void AmayaAttributePanel::OnListItemDeselected(wxListEvent& event)
-{
-  if(IsPanelActive())
-    SelectAttribute(wxID_ANY);
-  event.Skip();
-}
-
-/*----------------------------------------------------------------------
- -----------------------------------------------------------------------*/
-void AmayaAttributePanel::OnInsert( wxCommandEvent& WXUNUSED(event))
-{
-  CreateCurrentAttribute();
-}
-
-/*----------------------------------------------------------------------
- -----------------------------------------------------------------------*/
-void AmayaAttributePanel::OnUpdateDeleteButton(wxUpdateUIEvent& event)
-{
-  if (IsPanelActive() && m_currentAttElem)
-    event.Enable(!IsMandatory());
-}
-
-/*----------------------------------------------------------------------
- *  this is where the event table is declared
- *  the callbacks are assigned to an event type
- *----------------------------------------------------------------------*/
-BEGIN_EVENT_TABLE(AmayaAttributePanel, AmayaSubPanel)
-  EVT_LIST_ITEM_SELECTED(XRCID("wxID_CLIST_ATTR"), AmayaAttributePanel::OnListItemSelected)
-  EVT_LIST_ITEM_DESELECTED(XRCID("wxID_CLIST_ATTR"), AmayaAttributePanel::OnListItemDeselected)
   
-  EVT_TEXT_ENTER( XRCID("wxID_ATTR_TEXT_VALUE"),      AmayaAttributePanel::OnApply )
-  EVT_TEXT_ENTER( XRCID("wxID_ATTR_NUM_VALUE"),       AmayaAttributePanel::OnApply )
+  m_pSpin->SetRange(begin, end);
+  m_pSpin->SetValue(i);
+  return true;
+}
 
-  EVT_CHOICE(XRCID("wxID_ATTR_COMBO_LANG_LIST"), AmayaAttributePanel::OnApply)
-  EVT_CHOICE(XRCID("wxID_ATTR_CHOICE_ENUM"), AmayaAttributePanel::OnApply)
+wxString AmayaNumAttributeSubpanel::GetStringValue()
+{
+  return wxString::Format(wxT("%d"), m_pSpin->GetValue());
+}
 
-  EVT_BUTTON(     XRCID("wxID_OK"),              AmayaAttributePanel::OnApply )
-  
-  EVT_BUTTON(     XRCID("wxID_BUTTON_DEL_ATTR"), AmayaAttributePanel::OnDelAttr )
-  EVT_CHOICE(XRCID("wxID_CHOOSE_NEW_ATTRIBUTE"), AmayaAttributePanel::OnInsert)
 
-  EVT_UPDATE_UI(  XRCID("wxID_BUTTON_DEL_ATTR"), AmayaAttributePanel::OnUpdateDeleteButton)
+intptr_t AmayaNumAttributeSubpanel::GetIntValue()
+{
+  return m_pSpin->GetValue();
+}
+
+/************************************************************************
+ ************************************************************************
+ * AmayaLangAttributeSubpanel
+ ************************************************************************
+ ************************************************************************/
+
+IMPLEMENT_DYNAMIC_CLASS(AmayaLangAttributeSubpanel, AmayaAttributeSubpanel)
+
+BEGIN_EVENT_TABLE(AmayaLangAttributeSubpanel, AmayaAttributeSubpanel)
+  EVT_TEXT_ENTER(XRCID("wxID_ATTR_COMBO_LANG_LIST"), AmayaAttributeSubpanel::SendApplyInfoToParent)
 END_EVENT_TABLE()
+
+wxArrayString AmayaLangAttributeSubpanel::s_arrLangs;
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+AmayaLangAttributeSubpanel::AmayaLangAttributeSubpanel():
+AmayaAttributeSubpanel(),
+m_pCombo(NULL),
+m_pText(NULL)
+{  
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+AmayaLangAttributeSubpanel::~AmayaLangAttributeSubpanel()
+{
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+bool AmayaLangAttributeSubpanel::Create(wxWindow* parent, wxWindowID id)
+{
+  wxXmlResource::Get()->LoadPanel((wxPanel*)this, parent, 
+                                        wxT("wxID_SUBPANEL_ATTRIBUTE_LANG"));
+  m_pCombo = XRCCTRL(*this, "wxID_ATTR_COMBO_LANG_LIST", wxChoice);
+  m_pText = XRCCTRL(*this, "wxID_ATTR_LABEL_LANG_INHER", wxStaticText);
+  return true;
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void AmayaLangAttributeSubpanel::Initialize()
+{
+  char                lang_list[MAX_TXT_LEN];
+  int                 nbItem, defItem, i;
+
+  if(s_arrLangs.IsEmpty())
+    {
+      // Fill the static array of languages.
+      GetListOfLanguages (lang_list, MAX_TXT_LEN, NULL, &nbItem, &defItem);
+      i = 0;
+      while (nbItem > 0)
+        {
+          s_arrLangs.Add(TtaConvMessageToWX(lang_list+i));
+          i += strlen(lang_list+i)+1;
+          nbItem--;
+        }
+    }
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+bool AmayaLangAttributeSubpanel::SetAttrListElem(PtrAttrListElem elem)
+{
+  Language            language;
+  PtrAttribute        pHeritAttr;
+  PtrElement          pElAttr;
+//  char               *ptr;
+  char                languageCode[MAX_TXT_LEN];
+//  char                label[200];
+  int                 i;
+  wxString            filter, code, lang, herit, str;
+  
+  
+  Initialize();
+  
+  if(elem)
+    {
+      /* Fill the wxChoice. */
+      m_pCombo->Clear();
+      if (AttrListElem_IsEnum(elem))
+        {
+          filter = TtaConvMessageToWX(elem->restr.RestrEnumVal);
+          for (i=0; i < (int)s_arrLangs.GetCount(); i++)
+            {
+              if (filter.Find(s_arrLangs[i])!=wxNOT_FOUND)
+                {
+                  m_pCombo->Append(s_arrLangs[i]);
+                }
+            }
+        }
+      else
+          m_pCombo->Append(s_arrLangs);
+      
+      /* Herited language. */
+      /* look for the inherited attribute value Language */
+      str = TtaConvMessageToWX(TtaGetMessage (LIB, TMSG_INHERITED_LANG));
+      pHeritAttr = GetTypedAttrAncestor (m_firstSel, 1, NULL, &pElAttr);
+      if (pHeritAttr && pHeritAttr->AeAttrText)
+        {
+          /* the attribute value is a RFC-1766 code. Convert it into */
+          /* a language name */
+          CopyBuffer2MBs (pHeritAttr->AeAttrText, 0,
+                          (unsigned char*)languageCode, MAX_TXT_LEN);
+          language = TtaGetLanguageIdFromName (languageCode);
+          herit = TtaConvMessageToWX(TtaGetLanguageName(language));
+        }
+      m_pText->SetLabel(str+herit);
+      
+      /* Current language. */
+      if (elem->val && elem->val->AeAttrText)
+        {
+          CopyBuffer2MBs (elem->val->AeAttrText, 0, (unsigned char*)languageCode,
+                        MAX_TXT_LEN);
+          lang = TtaConvMessageToWX(TtaGetLanguageNameFromCode(languageCode));
+        }
+      else if (elem->restr.RestrDefVal)
+        {
+          lang = TtaConvMessageToWX(TtaGetLanguageNameFromCode(elem->restr.RestrDefVal));
+        }
+      else
+        {
+          lang = herit;
+        }
+      m_pCombo->SetStringSelection(herit);
+
+    }
+  return true;
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+wxString AmayaLangAttributeSubpanel::GetStringValue()
+{
+  return TtaConvMessageToWX(TtaGetLanguageCodeFromName((char*)
+            (const char*)m_pCombo->GetStringSelection().mb_str(wxConvUTF8)));
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+intptr_t AmayaLangAttributeSubpanel::GetIntValue()
+{
+  return (int)TtaGetLanguageIdFromName((char*)
+            (const char*)m_pCombo->GetStringSelection().mb_str(wxConvUTF8));
+}
 
 #endif /* #ifdef _WX */

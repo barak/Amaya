@@ -6,7 +6,6 @@
 #include "wx/arrstr.h"
 #include "wx/spinctrl.h"
 #include "wx/notebook.h"
-#include "wx/xrc/xmlres.h"
 #include "wx/colordlg.h"
 #include "AmayaApp.h"
 
@@ -61,10 +60,10 @@ BEGIN_EVENT_TABLE(StyleDlgWX, AmayaDialog)
 
   EVT_BUTTON( XRCID("wxID_BUTTON_BGIMAGE"),      StyleDlgWX::OnBrowseButton )
   EVT_BUTTON( XRCID("wxID_BUTTON_LISTIMAGE"),    StyleDlgWX::OnBrowseButton )
-  EVT_BUTTON( XRCID("wxID_BUTTON_NOREPEAT"),     StyleDlgWX::OnButton ) 
-  EVT_BUTTON( XRCID("wxID_BUTTON_REPEAT"),       StyleDlgWX::OnButton ) 
-  EVT_BUTTON( XRCID("wxID_BUTTON_XREPEAT"),      StyleDlgWX::OnButton ) 
-  EVT_BUTTON( XRCID("wxID_BUTTON_YREPEAT"),      StyleDlgWX::OnButton )
+  EVT_TOOL( XRCID("wxID_NOREPEAT"),     StyleDlgWX::OnButton ) 
+  EVT_TOOL( XRCID("wxID_REPEAT"),       StyleDlgWX::OnButton ) 
+  EVT_TOOL( XRCID("wxID_XREPEAT"),      StyleDlgWX::OnButton ) 
+  EVT_TOOL( XRCID("wxID_YREPEAT"),      StyleDlgWX::OnButton )
 
   EVT_TEXT( XRCID("wxID_COMBO_SIZE"),     StyleDlgWX::OnValueChanged ) 
   EVT_TEXT( XRCID("wxID_COMBO_LINE"),     StyleDlgWX::OnValueChanged ) 
@@ -311,8 +310,9 @@ void StyleDlgWX::SetColorTextChanged (int id)
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-void StyleDlgWX::SetValue (char *property, char *value)
+void StyleDlgWX::SetValue (const char *property, char *value)
 {
+  wxToolBar* tb = XRCCTRL(*this, "wxID_REPEAT_TOOL", wxToolBar);
   wxCommandEvent  event;
   int             id;
   ThotBool        notfound = FALSE;
@@ -333,34 +333,34 @@ void StyleDlgWX::SetValue (char *property, char *value)
           if (!strncmp (value, "no-repeat", 9))
             {
               BG_repeat = 1;
-              XRCCTRL(*this, "wxID_BUTTON_NOREPEAT", wxBitmapButton)->SetBackgroundColour( m_OnColour );
-              XRCCTRL(*this, "wxID_BUTTON_XREPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
-              XRCCTRL(*this, "wxID_BUTTON_YREPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
-              XRCCTRL(*this, "wxID_BUTTON_REPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
+              tb->ToggleTool(XRCID("wxID_NOREPEAT"), true);
+              tb->ToggleTool(XRCID("wxID_REPEAT"), false);
+              tb->ToggleTool(XRCID("wxID_XREPEAT"), false);
+              tb->ToggleTool(XRCID("wxID_YREPEAT"), false);
             }
           else if (!strncmp (value, "repeat-x", 8))
             {
               BG_repeat = 2;
-              XRCCTRL(*this, "wxID_BUTTON_NOREPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
-              XRCCTRL(*this, "wxID_BUTTON_XREPEAT", wxBitmapButton)->SetBackgroundColour( m_OnColour );
-              XRCCTRL(*this, "wxID_BUTTON_YREPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
-              XRCCTRL(*this, "wxID_BUTTON_REPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
+              tb->ToggleTool(XRCID("wxID_NOREPEAT"), false);
+              tb->ToggleTool(XRCID("wxID_REPEAT"), false);
+              tb->ToggleTool(XRCID("wxID_XREPEAT"), true);
+              tb->ToggleTool(XRCID("wxID_YREPEAT"), false);
             }
           else if (!strncmp (value, "repeat-y", 8))
             {
               BG_repeat = 3;
-              XRCCTRL(*this, "wxID_BUTTON_NOREPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
-              XRCCTRL(*this, "wxID_BUTTON_XREPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
-              XRCCTRL(*this, "wxID_BUTTON_YREPEAT", wxBitmapButton)->SetBackgroundColour( m_OnColour );
-              XRCCTRL(*this, "wxID_BUTTON_REPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
+              tb->ToggleTool(XRCID("wxID_NOREPEAT"), false);
+              tb->ToggleTool(XRCID("wxID_REPEAT"), false);
+              tb->ToggleTool(XRCID("wxID_XREPEAT"), false);
+              tb->ToggleTool(XRCID("wxID_YREPEAT"), true);
             }
           else if (!strncmp (value, "repeat", 6))
             {
               BG_repeat = 4;
-              XRCCTRL(*this, "wxID_BUTTON_NOREPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
-              XRCCTRL(*this, "wxID_BUTTON_XREPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
-              XRCCTRL(*this, "wxID_BUTTON_YREPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
-              XRCCTRL(*this, "wxID_BUTTON_REPEAT", wxBitmapButton)->SetBackgroundColour( m_OnColour );
+              tb->ToggleTool(XRCID("wxID_NOREPEAT"), false);
+              tb->ToggleTool(XRCID("wxID_REPEAT"), true);
+              tb->ToggleTool(XRCID("wxID_XREPEAT"), false);
+              tb->ToggleTool(XRCID("wxID_YREPEAT"), false);
             }
         }
       else if (!strncmp (property, "background-attachment", 21))
@@ -576,6 +576,7 @@ void StyleDlgWX::SetValue (char *property, char *value)
   ----------------------------------------------------------------------*/
 void StyleDlgWX::InitValues ()
 {
+  wxToolBar* tb = XRCCTRL(*this, "wxID_REPEAT_TOOL", wxToolBar);
   XRCCTRL(*this, "wxID_NO_SELECTION", wxStaticText)->SetLabel(TtaConvMessageToWX(""));
 
   XRCCTRL(*this, "wxID_COMBOBOX_FAMILY", wxComboBox)->SetValue(TtaConvMessageToWX( "" ));
@@ -587,7 +588,8 @@ void StyleDlgWX::InitValues ()
   XRCCTRL(*this, "wxID_COMBO_B_COLOR", wxComboBox)->SetValue(TtaConvMessageToWX( "" ));
   XRCCTRL(*this, "wxID_COMBO_L_COLOR", wxComboBox)->SetValue(TtaConvMessageToWX( "" ));
   XRCCTRL(*this, "wxID_COMBO_R_COLOR", wxComboBox)->SetValue(TtaConvMessageToWX( "" ));
-  XRCCTRL(*this, "wxID_COMBO_BORDER_COLOR", wxComboBox)->SetValue(TtaConvMessageToWX( "" ));  XRCCTRL(*this, "wxID_COMBO_SIZE", wxComboBox)->SetValue(TtaConvMessageToWX( "" ));
+  XRCCTRL(*this, "wxID_COMBO_BORDER_COLOR", wxComboBox)->SetValue(TtaConvMessageToWX( "" ));
+  XRCCTRL(*this, "wxID_COMBO_SIZE", wxComboBox)->SetValue(TtaConvMessageToWX( "" ));
   XRCCTRL(*this, "wxID_COMBO_LINE", wxComboBox)->SetValue(TtaConvMessageToWX( "" ));
   XRCCTRL(*this, "wxID_COMBO_INDENT", wxComboBox)->SetValue(TtaConvMessageToWX( "" ));
   XRCCTRL(*this, "wxID_COMBO_VALIGN", wxComboBox)->SetValue(TtaConvMessageToWX( "" ));
@@ -636,10 +638,14 @@ void StyleDlgWX::InitValues ()
   XRCCTRL(*this, "wxID_CHOICE_LISTSTYLE", wxChoice)->SetStringSelection(TtaConvMessageToWX( "" ));
   XRCCTRL(*this, "wxID_CHOICE_LISTPOSITION", wxChoice)->SetStringSelection(TtaConvMessageToWX( "" ));
   BG_repeat = 0;
-  XRCCTRL(*this, "wxID_BUTTON_REPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
-  XRCCTRL(*this, "wxID_BUTTON_NOREPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
-  XRCCTRL(*this, "wxID_BUTTON_XREPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
-  XRCCTRL(*this, "wxID_BUTTON_YREPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
+  tb->ToggleTool(XRCID("wxID_NOREPEAT"), false);
+  tb->ToggleTool(XRCID("wxID_REPEAT"), false);
+  tb->ToggleTool(XRCID("wxID_XREPEAT"), false);
+  tb->ToggleTool(XRCID("wxID_YREPEAT"), false);
+  tb->SetToolShortHelp(XRCID("wxID_NOREPEAT"), TtaConvMessageToWX( "no-repeat" ));
+  tb->SetToolShortHelp(XRCID("wxID_REPEAT"), TtaConvMessageToWX( "repeat" ));
+  tb->SetToolShortHelp(XRCID("wxID_XREPEAT"), TtaConvMessageToWX( "repeat-x" ));
+  tb->SetToolShortHelp(XRCID("wxID_YREPEAT"), TtaConvMessageToWX( "repeat-y" ));
   XRCCTRL(*this, "wxID_BUTTON_TEXTCOLOR", wxBitmapButton)->SetBackgroundColour( m_OffColour );
   XRCCTRL(*this, "wxID_BUTTON_BACKCOLOR", wxBitmapButton)->SetBackgroundColour( m_OffColour );
   XRCCTRL(*this, "wxID_BUTTON_T_COLOR", wxBitmapButton)->SetBackgroundColour( m_OffColour );
@@ -713,12 +719,11 @@ StyleDlgWX::StyleDlgWX( int ref, wxWindow* parent ) :
   /* tooltip of browse buttons */
   XRCCTRL(*this, "wxID_BUTTON_BGIMAGE", wxBitmapButton)->SetToolTip( TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_BROWSE) ));
   XRCCTRL(*this, "wxID_BUTTON_LISTIMAGE", wxBitmapButton)->SetToolTip( TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_BROWSE) ));
-  m_OffColour = XRCCTRL(*this, "wxID_BUTTON_TEXTCOLOR", wxBitmapButton)->GetBackgroundColour();
-  m_OnColour  = wxColour(250, 200, 200);
 
   // init the close check entry
   TtaGetEnvBoolean ("CLOSE_WHEN_APPLY", &check);
   XRCCTRL(*this, "wx_CHECK_CLOSE", wxCheckBox)->SetValue(check);
+  m_OffColour = XRCCTRL(*this, "wxID_BUTTON_TEXTCOLOR", wxBitmapButton)->GetBackgroundColour();
   InitValues ();
 
   // on windows, the color selector dialog must be complete.
@@ -737,7 +742,7 @@ StyleDlgWX::~StyleDlgWX()
   /* do not call this one because it cancel the link creation */
 }
 
-
+static bool Exclude_Button = false;
 /*----------------------------------------------------------------------
   Class:  StyleDlgWX
   Method:  OnButton
@@ -745,71 +750,76 @@ StyleDlgWX::~StyleDlgWX()
   -----------------------------------------------------------------------*/
 void StyleDlgWX::OnButton( wxCommandEvent& event )
 {
+  if (Exclude_Button)
+    return;
+  Exclude_Button = true;
+  wxToolBar* tb = XRCCTRL(*this, "wxID_REPEAT_TOOL", wxToolBar);
   int id = event.GetId();
-  if ( id == wxXmlResource::GetXRCID(_T("wxID_BUTTON_NOREPEAT")) )
+  if ( id == wxXmlResource::GetXRCID(_T("wxID_NOREPEAT")) )
     {
       if (BG_repeat == 1)
         {
           BG_repeat = 0;
-          XRCCTRL(*this, "wxID_BUTTON_NOREPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
+          //tb->ToggleTool(XRCID("wxID_NOREPEAT"), false);
         }
       else
         {
           BG_repeat = 1;
-          XRCCTRL(*this, "wxID_BUTTON_NOREPEAT", wxBitmapButton)->SetBackgroundColour( m_OnColour );
-          XRCCTRL(*this, "wxID_BUTTON_XREPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
-          XRCCTRL(*this, "wxID_BUTTON_YREPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
-          XRCCTRL(*this, "wxID_BUTTON_REPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
+          tb->ToggleTool(XRCID("wxID_NOREPEAT"), true);
+          tb->ToggleTool(XRCID("wxID_REPEAT"), false);
+          tb->ToggleTool(XRCID("wxID_XREPEAT"), false);
+          tb->ToggleTool(XRCID("wxID_YREPEAT"), false);
         }
     }
-  else if ( id == wxXmlResource::GetXRCID(_T("wxID_BUTTON_XREPEAT")) )
+  else if ( id == wxXmlResource::GetXRCID(_T("wxID_XREPEAT")) )
     {
       if (BG_repeat == 2)
         {
           BG_repeat = 0;
-          XRCCTRL(*this, "wxID_BUTTON_XREPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
+          //tb->ToggleTool(XRCID("wxID_XREPEAT"), false);
         }
       else
         {
           BG_repeat = 2;
-          XRCCTRL(*this, "wxID_BUTTON_XREPEAT", wxBitmapButton)->SetBackgroundColour( m_OnColour );
-          XRCCTRL(*this, "wxID_BUTTON_NOREPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
-          XRCCTRL(*this, "wxID_BUTTON_YREPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
-          XRCCTRL(*this, "wxID_BUTTON_REPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
+          tb->ToggleTool(XRCID("wxID_NOREPEAT"), false);
+          tb->ToggleTool(XRCID("wxID_REPEAT"), false);
+          tb->ToggleTool(XRCID("wxID_XREPEAT"), true);
+          tb->ToggleTool(XRCID("wxID_YREPEAT"), false);
         }
     }
-  else if ( id == wxXmlResource::GetXRCID(_T("wxID_BUTTON_YREPEAT")) )
+  else if ( id == wxXmlResource::GetXRCID(_T("wxID_YREPEAT")) )
     {
      if (BG_repeat == 3)
         {
           BG_repeat = 0;
-          XRCCTRL(*this, "wxID_BUTTON_YREPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
+          //tb->ToggleTool(XRCID("wxID_YREPEAT"), false);
         }
       else
         {
           BG_repeat = 3;
-          XRCCTRL(*this, "wxID_BUTTON_YREPEAT", wxBitmapButton)->SetBackgroundColour( m_OnColour );
-          XRCCTRL(*this, "wxID_BUTTON_NOREPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
-          XRCCTRL(*this, "wxID_BUTTON_XREPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
-          XRCCTRL(*this, "wxID_BUTTON_REPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
+          tb->ToggleTool(XRCID("wxID_NOREPEAT"), false);
+          tb->ToggleTool(XRCID("wxID_REPEAT"), false);
+          tb->ToggleTool(XRCID("wxID_XREPEAT"), false);
+          tb->ToggleTool(XRCID("wxID_YREPEAT"), true);
         }
     }
-  else if ( id == wxXmlResource::GetXRCID(_T("wxID_BUTTON_REPEAT")) )
+  else if ( id == wxXmlResource::GetXRCID(_T("wxID_REPEAT")) )
     {
      if (BG_repeat == 4)
         {
           BG_repeat = 0;
-          XRCCTRL(*this, "wxID_BUTTON_REPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
+          //tb->ToggleTool(XRCID("wxID_REPEAT"), false);
         }
       else
         {
           BG_repeat = 4;
-          XRCCTRL(*this, "wxID_BUTTON_REPEAT", wxBitmapButton)->SetBackgroundColour( m_OnColour );
-          XRCCTRL(*this, "wxID_BUTTON_NOREPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
-          XRCCTRL(*this, "wxID_BUTTON_XREPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
-          XRCCTRL(*this, "wxID_BUTTON_YREPEAT", wxBitmapButton)->SetBackgroundColour( m_OffColour );
+          tb->ToggleTool(XRCID("wxID_NOREPEAT"), false);
+          tb->ToggleTool(XRCID("wxID_REPEAT"), true);
+          tb->ToggleTool(XRCID("wxID_XREPEAT"), false);
+          tb->ToggleTool(XRCID("wxID_YREPEAT"), false);
         }
     }
+  Exclude_Button = false;
 }
 
 /*----------------------------------------------------------------------
@@ -886,7 +896,7 @@ static ThotBool CheckValue (char *buffer, ThotBool negative, ThotBool length,
               *ptr = ptr[1];
               ptr++;
             }
-           while (*pos != EOS);
+           while (*ptr != EOS);
         }
 
       if (*ptr == EOS)
@@ -925,6 +935,18 @@ static ThotBool CheckValue (char *buffer, ThotBool negative, ThotBool length,
           return FALSE;
         }
     }
+  else if (length &&
+           (!strcmp (ptr, "px") ||
+            !strcmp (ptr, "pt") ||
+            !strcmp (ptr, "pc") ||
+            !strcmp (ptr, "in") ||
+            !strcmp (ptr, "mm") ||
+            !strcmp (ptr, "cm") ||
+            !strcmp (ptr, "em") ||
+            !strcmp (ptr, "ex")))
+        return ret;
+  else if (percent && !strcmp (ptr, "%"))
+    return ret;
   else if (!string)
     {
       buffer[0] = EOS;
@@ -934,6 +956,25 @@ static ThotBool CheckValue (char *buffer, ThotBool negative, ThotBool length,
     return ret;
 }
 
+
+/*----------------------------------------------------------------------
+  Replace px, pt, pc, in, mm, cm, em, ex, % by 0
+  -----------------------------------------------------------------------*/
+static void CopyValueOrZero (char *buffer, const char *ptr)
+{
+  if (!strcmp (ptr, "px") ||
+      !strcmp (ptr, "pt") ||
+      !strcmp (ptr, "pc") ||
+      !strcmp (ptr, "in") ||
+      !strcmp (ptr, "mm") ||
+      !strcmp (ptr, "cm") ||
+      !strcmp (ptr, "em") ||
+      !strcmp (ptr, "ex") ||
+      !strcmp (ptr, "%"))
+    strcat (buffer, "0");
+  else
+    strcat (buffer, ptr);
+}
 
 /*----------------------------------------------------------------------
   Class:  StyleDlgWX
@@ -1455,7 +1496,7 @@ void StyleDlgWX::GetValueDialog_Text()
   if (value.Len() > 0)
     {
       strcpy (&Buffer[Index], "font-size: ");
-      strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+      CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
       strcat (&Buffer[Index], End_rule);
       Index += strlen (&Buffer[Index]);
     }
@@ -1491,7 +1532,7 @@ void StyleDlgWX::GetValueDialog_Text()
   if (value.Len() > 0)
     {
       strcpy (&Buffer[Index], "line-height: ");
-      strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+      CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
       strcat (&Buffer[Index], End_rule);
       Index += strlen (&Buffer[Index]);
     }
@@ -1500,7 +1541,7 @@ void StyleDlgWX::GetValueDialog_Text()
   if (value.Len() > 0)
     {
       strcpy (&Buffer[Index], "text-indent: ");
-      strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+      CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
       strcat (&Buffer[Index], End_rule);
       Index += strlen (&Buffer[Index]);
     }
@@ -1509,7 +1550,7 @@ void StyleDlgWX::GetValueDialog_Text()
   if (value.Len() > 0)
     {
       strcpy (&Buffer[Index], "vertical-align: ");
-      strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+      CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
       strcat (&Buffer[Index], End_rule);
       Index += strlen (&Buffer[Index]);
     }
@@ -1554,7 +1595,7 @@ void StyleDlgWX::GetValueDialog_Text()
   if (value.Len() > 0)
     {
       strcpy (&Buffer[Index], "word-spacing: ");
-      strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+      CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
       strcat (&Buffer[Index], End_rule);
       Index += strlen (&Buffer[Index]);
     }
@@ -1563,7 +1604,7 @@ void StyleDlgWX::GetValueDialog_Text()
   if (value.Len() > 0)
     {
       strcpy (&Buffer[Index], "letter-spacing: ");
-      strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+      CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
       strcat (&Buffer[Index], End_rule);
       Index += strlen (&Buffer[Index]);
     }
@@ -1655,11 +1696,11 @@ void StyleDlgWX::GetValueDialog_Color()
         {
           strcpy (&Buffer[Index], "background-position: ");
           if (value.Len() > 0)
-            strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+            CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
           if (value.Len() > 0 && svalue.Len() > 0)
             strcat (&Buffer[Index], " ");
           if (svalue.Len() > 0)
-            strcat (&Buffer[Index], (const char*)svalue.mb_str(wxConvUTF8));
+            CopyValueOrZero (&Buffer[Index], svalue.mb_str(wxConvUTF8));
            strcat (&Buffer[Index], End_rule);
           Index += strlen (&Buffer[Index]);
         }
@@ -1668,7 +1709,7 @@ void StyleDlgWX::GetValueDialog_Color()
           if (value.Len() > 0)
             {
               strcpy (&Buffer[Index], "background-position: ");
-              strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+              CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
               strcat (&Buffer[Index], End_rule);
               Index += strlen (&Buffer[Index]);
             }
@@ -1690,7 +1731,7 @@ void StyleDlgWX::GetValueDialog_Color()
       if (value.Len() > 0)
         {
           strcat (&Buffer[Index], " ");
-          strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+          CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
         }
       if (cvalue.Len() > 0)
         {
@@ -1716,7 +1757,7 @@ void StyleDlgWX::GetValueDialog_Color()
       if (value.Len() > 0)
         {
           strcat (&Buffer[Index], " ");
-          strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+          CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
         }
       if (cvalue.Len() > 0)
         {
@@ -1742,7 +1783,7 @@ void StyleDlgWX::GetValueDialog_Color()
       if (value.Len() > 0)
         {
           strcat (&Buffer[Index], " ");
-          strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+          CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
         }
       if (cvalue.Len() > 0)
         {
@@ -1769,7 +1810,7 @@ void StyleDlgWX::GetValueDialog_Color()
       if (value.Len() > 0)
         {
           strcat (&Buffer[Index], " ");
-          strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+          CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
         }
       if (cvalue.Len() > 0)
         {
@@ -1795,7 +1836,7 @@ void StyleDlgWX::GetValueDialog_Color()
       if (value.Len() > 0)
         {
           strcat (&Buffer[Index], " ");
-          strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+          CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
         }
       if (cvalue.Len() > 0)
         {
@@ -1976,7 +2017,7 @@ void StyleDlgWX::GetValueDialog_Box()
   if (value.Len() > 0)
     {
       strcpy (&Buffer[Index], "margin-top: ");
-      strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+      CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
       strcat (&Buffer[Index], End_rule);
       Index += strlen (&Buffer[Index]);
     }
@@ -1986,7 +2027,7 @@ void StyleDlgWX::GetValueDialog_Box()
   if (value.Len() > 0)
     {
       strcpy (&Buffer[Index], "margin-bottom: ");
-      strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+      CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
       strcat (&Buffer[Index], End_rule);
       Index += strlen (&Buffer[Index]);
     }
@@ -1996,7 +2037,7 @@ void StyleDlgWX::GetValueDialog_Box()
   if (value.Len() > 0)
     {
       strcpy (&Buffer[Index], "margin-left: ");
-      strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+      CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
       strcat (&Buffer[Index], End_rule);
       Index += strlen (&Buffer[Index]);
     }
@@ -2006,7 +2047,7 @@ void StyleDlgWX::GetValueDialog_Box()
   if (value.Len() > 0)
     {
       strcpy (&Buffer[Index], "margin-right: ");
-      strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+      CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
       strcat (&Buffer[Index], End_rule);
       Index += strlen (&Buffer[Index]);
     }
@@ -2016,7 +2057,7 @@ void StyleDlgWX::GetValueDialog_Box()
   if (value.Len() > 0)
     {
       strcpy (&Buffer[Index], "padding-top: ");
-      strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+      CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
       strcat (&Buffer[Index], End_rule);
       Index += strlen (&Buffer[Index]);
     }
@@ -2026,7 +2067,7 @@ void StyleDlgWX::GetValueDialog_Box()
   if (value.Len() > 0)
     {
       strcpy (&Buffer[Index], "padding-bottom: ");
-      strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+      CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
       strcat (&Buffer[Index], End_rule);
       Index += strlen (&Buffer[Index]);
     }
@@ -2036,7 +2077,7 @@ void StyleDlgWX::GetValueDialog_Box()
   if (value.Len() > 0)
     {
       strcpy (&Buffer[Index], "padding-left: ");
-      strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+      CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
       strcat (&Buffer[Index], End_rule);
       Index += strlen (&Buffer[Index]);
     }
@@ -2046,7 +2087,7 @@ void StyleDlgWX::GetValueDialog_Box()
   if (value.Len() > 0)
     {
       strcpy (&Buffer[Index], "padding-right: ");
-      strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+      CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
       strcat (&Buffer[Index], End_rule);
       Index += strlen (&Buffer[Index]);
     }
@@ -2056,7 +2097,7 @@ void StyleDlgWX::GetValueDialog_Box()
   if (value.Len() > 0)
     {
       strcpy (&Buffer[Index], "margin: ");
-      strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+      CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
       strcat (&Buffer[Index], End_rule);
       Index += strlen (&Buffer[Index]);
     }
@@ -2066,7 +2107,7 @@ void StyleDlgWX::GetValueDialog_Box()
   if (value.Len() > 0)
     {
       strcpy (&Buffer[Index], "padding: ");
-      strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+      CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
       strcat (&Buffer[Index], End_rule);
       Index += strlen (&Buffer[Index]);
     }
@@ -2076,7 +2117,7 @@ void StyleDlgWX::GetValueDialog_Box()
   if (value.Len() > 0)
     {
       strcpy (&Buffer[Index], "width: ");
-      strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+      CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
       strcat (&Buffer[Index], End_rule);
       Index += strlen (&Buffer[Index]);
     }
@@ -2086,7 +2127,7 @@ void StyleDlgWX::GetValueDialog_Box()
   if (value.Len() > 0)
     {
       strcpy (&Buffer[Index], "height: ");
-      strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+      CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
       strcat (&Buffer[Index], End_rule);
       Index += strlen (&Buffer[Index]);
     }
@@ -2203,7 +2244,7 @@ void StyleDlgWX::GetValueDialog_Format()
   if (value.Len() > 0)
     {
       strcpy (&Buffer[Index], "position: ");
-      strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+      CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
       strcat (&Buffer[Index], End_rule);
       Index += strlen (&Buffer[Index]);
     }
@@ -2213,7 +2254,7 @@ void StyleDlgWX::GetValueDialog_Format()
   if (value.Len() > 0)
     {
       strcpy (&Buffer[Index], "top: ");
-      strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+      CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
       strcat (&Buffer[Index], End_rule);
       Index += strlen (&Buffer[Index]);
     }
@@ -2223,7 +2264,7 @@ void StyleDlgWX::GetValueDialog_Format()
   if (value.Len() > 0)
     {
       strcpy (&Buffer[Index], "bottom: ");
-      strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+      CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
       strcat (&Buffer[Index], End_rule);
       Index += strlen (&Buffer[Index]);
     }
@@ -2233,7 +2274,7 @@ void StyleDlgWX::GetValueDialog_Format()
   if (value.Len() > 0)
     {
       strcpy (&Buffer[Index], "left: ");
-      strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+      CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
       strcat (&Buffer[Index], End_rule);
       Index += strlen (&Buffer[Index]);
     }
@@ -2243,7 +2284,7 @@ void StyleDlgWX::GetValueDialog_Format()
   if (value.Len() > 0)
     {
       strcpy (&Buffer[Index], "right: ");
-      strcat (&Buffer[Index], (const char*)value.mb_str(wxConvUTF8));
+      CopyValueOrZero (&Buffer[Index], value.mb_str(wxConvUTF8));
       strcat (&Buffer[Index], End_rule);
       Index += strlen (&Buffer[Index]);
     }
@@ -2299,7 +2340,7 @@ void StyleDlgWX::OnOk( wxCommandEvent& event )
       while (Index > 0 && Buffer[Index - 1] != ';')
         Index--;
       Buffer[Index] = EOS;
-      if (Buffer[0] != EOS)
+      //if (Buffer[0] != EOS)
         // not an empty style
         ThotCallback (m_ref, STRING_DATA, Buffer);
       TtaFreeMemory (Buffer);

@@ -10,6 +10,11 @@ extern ThotBool WithinLastPastedCell ( Element el );
 extern Element GetSiblingRow ( Element row,
                                ThotBool before,
                                ThotBool inMath );
+extern Element GetSiblingCell ( Element cell,
+                                ThotBool before,
+                                ThotBool inMath );
+extern Element GetFirstCellOfRow ( Element row,
+                                   ThotBool inMath );
 extern int SetRowExt ( Element cell,
                        int span,
                        Document doc,
@@ -33,6 +38,7 @@ extern ThotBool RemoveColumn ( Element colhead,
                                Document doc,
                                ThotBool ifEmpty,
                                ThotBool inMath );
+extern Element NextTableRow ( Element row );
 extern void CheckAllRows ( Element table,
                            Document doc,
                            ThotBool placeholder,
@@ -48,6 +54,7 @@ extern void CellCreated ( NotifyElement * event );
 extern void CellPasted ( NotifyElement * event );
 extern ThotBool DeleteRow ( NotifyElement *event );
 extern void RowDeleted ( NotifyElement *event );
+extern void CheckDeleteParentTable ( Element el );
 extern ThotBool DeleteTable ( NotifyElement * event );
 extern void TableDeleted ( NotifyElement *event );
 extern ThotBool DeleteTBody ( NotifyElement * event );
@@ -97,6 +104,11 @@ extern ThotBool WithinLastPastedCell ( Element el );
 extern Element GetSiblingRow ( Element row,
                                  ThotBool before,
                                  ThotBool inMath );
+extern Element GetSiblingCell ( Element cell,
+                                  ThotBool before,
+                                  ThotBool inMath );
+extern Element GetFirstCellOfRow ( Element row,
+                                     ThotBool inMath );
 extern int SetRowExt ( Element cell,
                          int span,
                          Document doc,
@@ -120,6 +132,7 @@ extern ThotBool RemoveColumn ( Element colhead,
                                  Document doc,
                                  ThotBool ifEmpty,
                                  ThotBool inMath );
+extern Element NextTableRow ( Element row );
 extern void CheckAllRows ( Element table,
                              Document doc,
                              ThotBool placeholder,
@@ -135,6 +148,7 @@ extern void CellCreated ( NotifyElement * event );
 extern void CellPasted ( NotifyElement * event );
 extern ThotBool DeleteRow ( NotifyElement *event );
 extern void RowDeleted ( NotifyElement *event );
+extern void CheckDeleteParentTable ( Element el );
 extern ThotBool DeleteTable ( NotifyElement * event );
 extern void TableDeleted ( NotifyElement *event );
 extern ThotBool DeleteTBody ( NotifyElement * event );

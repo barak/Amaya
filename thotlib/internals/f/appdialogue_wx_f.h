@@ -5,7 +5,6 @@
 
 #ifndef __CEXTRACT__
 #ifdef __STDC__
-
 extern void TtaShowWindow ( int window_id,
                             ThotBool show );
 extern int TtaMakeWindow ( int x,
@@ -14,17 +13,16 @@ extern int TtaMakeWindow ( int x,
                            int h,
                            int kind,
                            int parent_window_id );
+extern void TtaMakeWindowMenuBar ( int window_id );
 extern void TtaInitMenuItemStats ( int doc_id );
 extern void TtaInitTopMenuStats ( int doc_id );
 extern void TtaRefreshTopMenuStats ( int doc_id,
                                      int menu_id );
 extern void TtaRefreshMenuItemStats ( int doc_id,
-                                      Menu_Ctl * ptrmenu,
+                                      void * context,
                                       int menu_item_id );
-extern void TtaRefreshToolbarStats ( int changed_action_id,
-                                     Document doc_id );
-extern void TtaRefreshStatusBarStats ( int changed_action_id,
-                                       Document doc_id );
+extern void TtaToggleLogError ( Document doc_id,
+                                ThotBool enable );
 extern int TtaMakeFrame ( const char * schema_name,
                           int schView,
                           Document doc_id,
@@ -37,7 +35,12 @@ extern int TtaMakeFrame ( const char * schema_name,
                           int page_id,
                           int page_position );
 extern ThotBool TtaMakePage ( int window_id,
-                              int page_id );
+                              int page_id,
+                              Document doc );
+extern int TtaGetIconIndex ( const char * filename );
+extern void TtaSetPageIcon ( Document doc,
+                             View view,
+                             char *iconpath );
 extern ThotBool TtaAttachFrame ( int frame_id,
                                  int window_id,
                                  int page_id,
@@ -51,6 +54,8 @@ extern ThotBool TtaCloseAllPageButThis ( int window_id,
                                          int page_id );
 extern int TtaGetActiveWindowId ( void );
 extern int TtaGetFreePageId ( int window_id );
+extern int TtaGetHelpWindowId ( void );
+extern int TtaGetAnnotWindowId ( void );
 extern int TtaGetFreeWindowId ( void );
 extern int TtaGetDocumentWindowId ( Document doc_id,
                                     int schView );
@@ -71,9 +76,6 @@ extern ThotBool TtaFrameIsClosed ( int frame_id );
 extern void TtaSetURLBar ( int frame_id,
                            const char * listUrl,
                            void (* procedure)() );
-extern void TtaRefreshPanelButton ( Document doc,
-                                    View view,
-                                    int panel_type );
 extern void TtaSwitchPanelButton ( Document doc,
                                    View view,
                                    int panel_type,
@@ -82,6 +84,8 @@ extern void TtaSwitchPanelButton ( Document doc,
 extern ThotBool TtaRegisterWidgetWX ( int ref,
                                       void * p_widget );
 extern void TtaToggleOnOffSidePanel ( int frame_id );
+extern void TtaToggleToolbar ( int frame_id,
+                               int toolbar_id );
 extern void TtaSplitViewHorizontally ( int frame_id );
 extern void TtaSplitViewVertically ( int frame_id );
 extern void TtaDoPostFrameCreation ( int frame_id );
@@ -91,9 +95,11 @@ extern void TtaRegisterOpenURLCallback ( void (*callback) (void *) );
 extern void TtaCheckLostFocus ( void );
 extern void TtaRedirectFocus ( void );
 extern void TtaSendStatsInfo ( void );
+extern void TtaResetEnumContextMenu ( void );
+extern void TtaSetEnumContextMenu ( int res );
+extern int TtaGetEnumContextMenu ( void );
 
 #else /* __STDC__ */
-
 extern void TtaShowWindow ( int window_id,
                               ThotBool show );
 extern int TtaMakeWindow ( int x,
@@ -102,17 +108,16 @@ extern int TtaMakeWindow ( int x,
                              int h,
                              int kind,
                              int parent_window_id );
+extern void TtaMakeWindowMenuBar ( int window_id );
 extern void TtaInitMenuItemStats ( int doc_id );
 extern void TtaInitTopMenuStats ( int doc_id );
 extern void TtaRefreshTopMenuStats ( int doc_id,
                                        int menu_id );
 extern void TtaRefreshMenuItemStats ( int doc_id,
-                                        Menu_Ctl * ptrmenu,
+                                        void * context,
                                         int menu_item_id );
-extern void TtaRefreshToolbarStats ( int changed_action_id,
-                                       Document doc_id );
-extern void TtaRefreshStatusBarStats ( int changed_action_id,
-                                         Document doc_id );
+extern void TtaToggleLogError ( Document doc_id,
+                                  ThotBool enable );
 extern int TtaMakeFrame ( const char * schema_name,
                             int schView,
                             Document doc_id,
@@ -125,7 +130,12 @@ extern int TtaMakeFrame ( const char * schema_name,
                             int page_id,
                             int page_position );
 extern ThotBool TtaMakePage ( int window_id,
-                                int page_id );
+                                int page_id,
+                                Document doc );
+extern int TtaGetIconIndex ( const char * filename );
+extern void TtaSetPageIcon ( Document doc,
+                               View view,
+                               char *iconpath );
 extern ThotBool TtaAttachFrame ( int frame_id,
                                    int window_id,
                                    int page_id,
@@ -139,6 +149,8 @@ extern ThotBool TtaCloseAllPageButThis ( int window_id,
                                            int page_id );
 extern int TtaGetActiveWindowId ( void );
 extern int TtaGetFreePageId ( int window_id );
+extern int TtaGetHelpWindowId ( void );
+extern int TtaGetAnnotWindowId ( void );
 extern int TtaGetFreeWindowId ( void );
 extern int TtaGetDocumentWindowId ( Document doc_id,
                                       int schView );
@@ -159,9 +171,6 @@ extern ThotBool TtaFrameIsClosed ( int frame_id );
 extern void TtaSetURLBar ( int frame_id,
                              const char * listUrl,
                              void (* procedure)() );
-extern void TtaRefreshPanelButton ( Document doc,
-                                      View view,
-                                      int panel_type );
 extern void TtaSwitchPanelButton ( Document doc,
                                      View view,
                                      int panel_type,
@@ -170,6 +179,8 @@ extern void TtaSwitchPanelButton ( Document doc,
 extern ThotBool TtaRegisterWidgetWX ( int ref,
                                         void * p_widget );
 extern void TtaToggleOnOffSidePanel ( int frame_id );
+extern void TtaToggleToolbar ( int frame_id,
+                                 int toolbar_id );
 extern void TtaSplitViewHorizontally ( int frame_id );
 extern void TtaSplitViewVertically ( int frame_id );
 extern void TtaDoPostFrameCreation ( int frame_id );
@@ -179,6 +190,9 @@ extern void TtaRegisterOpenURLCallback ( void (*callback) (void *) );
 extern void TtaCheckLostFocus ( void );
 extern void TtaRedirectFocus ( void );
 extern void TtaSendStatsInfo ( void );
+extern void TtaResetEnumContextMenu ( void );
+extern void TtaSetEnumContextMenu ( int res );
+extern int TtaGetEnumContextMenu ( void );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

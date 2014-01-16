@@ -77,8 +77,14 @@ const char * TtaGetAppName();
   This function returns the app date
   (it was : #define HTAppDate     __DATE__ )
   ----------------------------------------------------------------------*/
-     const char * TtaGetAppDate();
+const char * TtaGetAppDate();
 
+/*----------------------------------------------------------------------
+  This function returns the app year
+  ----------------------------------------------------------------------*/
+const char * TtaGetAppYear();
+
+     
 /*----------------------------------------------------------------------
   TtaUseDotForFloat returns TRUE if floats take the form xx.yy
  ----------------------------------------------------------------------*/
@@ -136,7 +142,7 @@ extern void TtaSetErrorMessages (int on);
    Return value:
    identifier of the current version.
   ----------------------------------------------------------------------*/
-extern char *TtaGetVersion (void);
+extern const char *TtaGetVersion (void);
 
 /*----------------------------------------------------------------------
    TtaGetErrorCode
@@ -156,7 +162,7 @@ extern int TtaGetErrorCode (void);
    No return value
    See also: TtaGetErrorCode
   ----------------------------------------------------------------------*/
-extern char *TtaGetStrError (int errorCode);
+extern const char *TtaGetStrError (int errorCode);
 
 /*----------------------------------------------------------------------
    TtaExtractName: extracts the directory and the file name.       

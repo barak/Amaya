@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -144,7 +144,7 @@ static void SimpleSearchRulepEl (PtrPRule * pRuleView1, PtrElement pEl,
   pR = *pRule;
   *pRule = NULL;
   *pRuleView1 = NULL;
-  while (pR != NULL)
+  while (pR != NULL && *pRule == NULL)
     {
       if (pR->PrType == typeRule &&
           (typeRule != PtFunction || typeFunc == FnAny ||
@@ -195,7 +195,7 @@ static void GetInheritedPRule (PtrPRule *pRule, PtrElement pEl,
   PtrAttribute      pA;
   PtrAttributePres  attrBlock;
   PtrPRule          pR;
-  int               l, valNum;
+  int               l, valNum, match;
 
   for (l = 1; l <= pEl->ElStructSchema->SsNAttributes; l++)
     if ((*inheritTable)[l - 1])
@@ -218,12 +218,12 @@ static void GetInheritedPRule (PtrPRule *pRule, PtrElement pEl,
                 pFirstAncest = pElAttr->ElParent;
                 /* process all values of the attribute, in case of a text
                    attribute with multiple values */
-                valNum = 1;
+                valNum = 1; match = 1;
                 do
                   {
                     /* first rule for this value of the attr */
                     pR = AttrPresRule (pA, pEl, TRUE, NULL, pSP, &valNum,
-                                       &attrBlock);
+                                       &match, &attrBlock);
                     /* check all rules for this value */
                     while (pR)
                       {
@@ -298,7 +298,7 @@ PtrPRule GlobalSearchRulepEl (PtrElement pEl, PtrDocument pDoc,
   InheritAttrTable   *inheritTable;
   PtrPSchema          pSP, pSPattr;
   PtrHandlePSchema    pHd;
-  int                 valNum;
+  int                 valNum, match;
   PtrAttributePres    prevAttrBlock, attrBlock;
 
   pRule = NULL;
@@ -350,8 +350,7 @@ PtrPRule GlobalSearchRulepEl (PtrElement pEl, PtrDocument pDoc,
          hidden element */
       if (view == 1 &&                   /* main view */
           !presBox &&                    /* not a presentation box */
-          index >= pSchS->SsRootElem &&  /* not a basic element */
-          !TypeHasException (ExcHidden, index, pSchS)) /*not a hidden element*/
+          CanApplyCSSToElement (pEl)) /*not a hidden element*/
         {
           /* get the first P schema extension */
           pHd = FirstPSchemaExtension (pDoc->DocSSchema, pDoc, NULL);
@@ -494,11 +493,11 @@ PtrPRule GlobalSearchRulepEl (PtrElement pEl, PtrDocument pDoc,
                         pSSattr = pDoc->DocSSchema;
                       /* process all values of the attribute, in case of a
                          text attribute with multiple values */
-                      valNum = 1;
+                      valNum = 1; match = 1;
                       do
                         {
                           pR = AttrPresRule (pA, pEl, FALSE, NULL, pSPattr,
-                                             &valNum, &attrBlock);
+                                             &valNum, &match, &attrBlock);
                           /* look at all rules for this value */
                           while (pR)
                             {
@@ -537,7 +536,7 @@ PtrPRule GlobalSearchRulepEl (PtrElement pEl, PtrDocument pDoc,
           /* next style sheet (P schema extension) */
           if (pHd)
             pHd = pHd->HdNextPSchema;
-          else
+          else if (CanApplyCSSToElement (pEl))
             /* it was the main P schema, get the first schema extension */
             pHd = FirstPSchemaExtension (pEl->ElStructSchema, pDoc, pEl);
           if (pHd)
@@ -1506,7 +1505,7 @@ static void ApplInheritedCreationRules (PtrElement pEl, PtrDocument pDoc,
   PtrPSchema        pSchP;
   PtrPRule          pRPres;
   PtrAttributePres  attrBlock;
-  int               l, valNum;
+  int               l, valNum, match;
 
   for (l = 1; l <= pEl->ElStructSchema->SsNAttributes; l++)
     if ((*inheritTable)[l - 1])
@@ -1523,11 +1522,11 @@ static void ApplInheritedCreationRules (PtrElement pEl, PtrDocument pDoc,
             pSchP = PresentationSchema (pAttr->AeAttrSSchema, pDoc);
             /* process all values of the attribute, in case of a text attribute
                with multiple values */
-            valNum = 1;
+            valNum = 1; match = 1;
             do
               {
                 pRPres = AttrPresRule (pAttr, pEl, TRUE, NULL, pSchP, &valNum,
-                                       &attrBlock);
+                                       &match, &attrBlock);
                 /* traite les regles de creation associees a l'attribut */
                 ApplFunctionPresRules (pRPres, pSchP, pAttr, pDoc, pEl,
                                        change, first);
@@ -1554,7 +1553,7 @@ void ChangeFirstLast (PtrElement pEl, PtrDocument pDoc, ThotBool first,
   PtrPSchema          pSP;
   PtrHandlePSchema    pHd;
   PtrAttribute        pAttr;
-  int                 valNum;
+  int                 valNum, match;
   InheritAttrTable   *inheritTable;
   PtrAttributePres    attrBlock;
 
@@ -1612,13 +1611,13 @@ void ChangeFirstLast (PtrElement pEl, PtrDocument pDoc, ThotBool first,
               ApplInheritedCreationRules (pEl, pDoc, inheritTable,
                                           first, change);
             }
-          if (pHd == NULL)
+          if (pHd)
+            /* get the next extension schema */
+            pHd = pHd->HdNextPSchema;
+          else if (CanApplyCSSToElement (pEl))
             /* extension schemas have not been checked yet */
             /* get the first extension schema */
             pHd = FirstPSchemaExtension (pEl->ElStructSchema, pDoc, pEl);
-          else
-            /* get the next extension schema */
-            pHd = pHd->HdNextPSchema;
           if (pHd == NULL)
             /* no more extension schemas. Stop */
             pSP = NULL;
@@ -1630,7 +1629,7 @@ void ChangeFirstLast (PtrElement pEl, PtrDocument pDoc, ThotBool first,
       /* presentation ? */
       pAttr = pEl->ElFirstAttr;	/* 1er attribut de l'element */
       /* boucle sur les attributs de l'element */
-      while (pAttr != NULL)
+      while (pAttr)
         {
           pSP = PresentationSchema (pAttr->AeAttrSSchema, pDoc);
           pHd = NULL;
@@ -1640,23 +1639,24 @@ void ChangeFirstLast (PtrElement pEl, PtrDocument pDoc, ThotBool first,
               /* l'attribut */
               /* process all values of the attribute, in case of a text
                  attribute with multiple values */
-              valNum = 1;
+              valNum = 1; match = 1;
               do
                 {
                   pRPres = AttrPresRule (pAttr, pEl, FALSE, NULL, pSP,
-                                         &valNum, &attrBlock);
+                                         &valNum, &match, &attrBlock);
                   /* traite les regles de creation associees a l'attribut */
                   ApplFunctionPresRules (pRPres, pSP, pAttr, pDoc, pEl,
                                          change, first);
                 }
               while (valNum > 0);
-              if (pHd == NULL)
+              if (pHd)
+                /* get the next extension schema */
+                pHd = pHd->HdNextPSchema;
+              else if (CanApplyCSSToElement (pEl))
                 /* extension schemas have not been checked yet */
                 /* get the first extension schema */
                 pHd = FirstPSchemaExtension (pAttr->AeAttrSSchema, pDoc, pEl);
-              else
-                /* get the next extension schema */
-                pHd = pHd->HdNextPSchema;
+
               if (pHd == NULL)
                 /* no more extension schemas. Stop */
                 pSP = NULL;
@@ -3087,8 +3087,8 @@ static void UpdateListItemNumber (PtrElement pElBegin, PtrElement pElModif,
 
   for (view = 1; view <= MAX_VIEW_DOC; view++)
     if (pDoc->DocView[view - 1].DvPSchemaView > 0)
-      if (pElModif->ElAbstractBox[view - 1] &&
-          pElModif->ElAbstractBox[view - 1]->AbDisplay == 'L')
+      if (pElBegin->ElAbstractBox[view - 1] &&
+          pElBegin->ElAbstractBox[view - 1]->AbDisplay == 'L')
         /* this box is displayed as a list item */
         {
           FindFirstAbsBox (pElBegin, view);
@@ -3748,7 +3748,7 @@ void UpdatePresAttr (PtrElement pEl, PtrAttribute pAttr,
   PtrAttribute        pAttrib;
   PtrHandlePSchema    pHd;
   TypeUnit            unit;
-  int                 view, viewSch, val = 0, valNum, index, vol;
+  int                 view, viewSch, val = 0, valNum, match, index, vol;
   PtrAttributePres    attrBlock;
   ThotBool            appl, stop, sameType, found;
   ThotBool            existingView;
@@ -3766,12 +3766,12 @@ void UpdatePresAttr (PtrElement pEl, PtrAttribute pAttr,
     {
       /* process all values of the attribute, in case of a text attribute
          with multiple values */
-      valNum = 1;
+      valNum = 1; match = 1;
       do
         {
           /* pR: premiere regle correspondant a cette valeur de l'attribut */
           pR = AttrPresRule (pAttr, pEl, inherit, pAttrComp, pSchP, &valNum,
-                             &attrBlock);
+                             &match, &attrBlock);
           firstOfType = pR;
           /* traite toutes les regles associees a cette valeur d'attribut dans */
           /* ce schema de presentation */

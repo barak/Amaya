@@ -5,15 +5,11 @@
 
 #ifndef __CEXTRACT__
 #ifdef __STDC__
-
 extern int GetFrameNumber ( ThotWindow win );
 extern void FrameKilled ( int *w,
                           int frame,
                           int *info );
 extern ThotBool KillFrameCallback ( int frame );
-extern void FrameToRedisplay ( ThotWindow w,
-                               int frame,
-                               void *ev );
 extern void FrameRedraw ( int frame,
                           unsigned int width,
                           unsigned int height );
@@ -83,11 +79,6 @@ extern ThotBool FrameMouseWheelCallback ( int frame,
                                           int delta,
                                           int x,
                                           int y );
-extern void ThotGrab ( ThotWindow win,
-                       ThotCursor cursor,
-                       long events,
-                       int disp );
-extern void ThotUngrab ( void );
 extern ThotWindow TtaGetThotWindow ( int frame );
 extern void SetCursorWatch ( int thotThotWindowid );
 extern void ResetCursorWatch ( int thotThotWindowid );
@@ -119,17 +110,14 @@ extern void UpdateScrollbars ( int frame );
 extern const char * TtaGetAppVersion ( void );
 extern const char * TtaGetAppName ( void );
 extern const char * TtaGetAppDate ( void );
+extern const char * TtaGetAppYear ( void );
 
 #else /* __STDC__ */
-
 extern int GetFrameNumber ( ThotWindow win );
 extern void FrameKilled ( int *w,
                             int frame,
                             int *info );
 extern ThotBool KillFrameCallback ( int frame );
-extern void FrameToRedisplay ( ThotWindow w,
-                                 int frame,
-                                 void *ev );
 extern void FrameRedraw ( int frame,
                             unsigned int width,
                             unsigned int height );
@@ -199,11 +187,6 @@ extern ThotBool FrameMouseWheelCallback ( int frame,
                                             int delta,
                                             int x,
                                             int y );
-extern void ThotGrab ( ThotWindow win,
-                         ThotCursor cursor,
-                         long events,
-                         int disp );
-extern void ThotUngrab ( void );
 extern ThotWindow TtaGetThotWindow ( int frame );
 extern void SetCursorWatch ( int thotThotWindowid );
 extern void ResetCursorWatch ( int thotThotWindowid );
@@ -235,6 +218,7 @@ extern void UpdateScrollbars ( int frame );
 extern const char * TtaGetAppVersion ( void );
 extern const char * TtaGetAppName ( void );
 extern const char * TtaGetAppDate ( void );
+extern const char * TtaGetAppYear ( void );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

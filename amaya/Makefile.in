@@ -8,7 +8,6 @@
 THOTDIR = @top_srcdir@
 WWWDAV = @WWWDAV@
 LIBWWW_RDF_PARSER = @LIBWWW_RDF_PARSER@
-LIBZ = @LIBZ@
 
 OBJDIRS = wxdialog
 
@@ -168,7 +167,7 @@ AMAYA_INCLUDES= -I. -I.. -I@top_srcdir@/thotlib/include -I@srcdir@ \
 
 AMAYA_LIBS= ../thotlib/libThotEditor.a \
             libCSS.a $(AMAYA_OPTION_LIBS) \
-             $(LIBZ) $(WX_LINKDEPS)
+             $(WX_LINKDEPS)
 
 HTML2THOT_LIBS= -L../thotlib/ -lThotKernel -L.. -lz
 
@@ -213,15 +212,14 @@ AMAYA_OBJ = \
 	wxdialog/CheckedListDlgWX.o \
 	wxdialog/CreateTableDlgWX.o \
 	wxdialog/DocInfoDlgWX.o \
-	wxdialog/EnumListDlgWX.o \
+  wxdialog/FontDlgWX.o \
 	wxdialog/HRefDlgWX.o \
 	wxdialog/ImageDlgWX.o \
 	wxdialog/InitConfirmDlgWX.o \
+	wxdialog/ListBoxBook.o \
 	wxdialog/ListDlgWX.o \
 	wxdialog/ListEditDlgWX.o \
-	wxdialog/NewTemplateDocDlgWX.o \
 	wxdialog/MakeIdDlgWX.o \
-	wxdialog/NumDlgWX.o \
 	wxdialog/ObjectDlgWX.o \
 	wxdialog/OpenDocDlgWX.o \
 	wxdialog/PreferenceDlgWX.o \
@@ -234,7 +232,7 @@ AMAYA_OBJ = \
 	wxdialog/SpellCheckDlgWX.o \
 	wxdialog/SendByMailDlgWX.o \
 	wxdialog/StyleDlgWX.o \
-	wxdialog/TextDlgWX.o \
+  wxdialog/StyleListToolPanel.o \
 	wxdialog/TitleDlgWX.o \
 	wxdialogapi.o \
 	EDITORAPP.o \

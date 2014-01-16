@@ -14,6 +14,7 @@ extern Element GetNoTemplateSibling ( Element el,
                                       ThotBool before );
 extern Element GetNoTemplateChild ( Element el,
                                     ThotBool first );
+extern Element GetNoTemplateParent ( Element el );
 extern Element GetNextNode ( Element curr );
 extern void SetTargetContent ( Document doc,
                                Attribute attrNAME );
@@ -27,9 +28,10 @@ extern ThotBool DeleteLink ( NotifyElement *event );
 extern ThotBool CheckMandatory ( NotifyAttribute *event );
 extern void AttributeChange ( int aType,
                               char * data );
-extern void GenerateInlineElement ( int eType,
-                                    int aType,
-                                    char * data );
+extern ThotBool GenerateInlineElement ( int eType,
+                                        int aType,
+                                        char * data,
+                                        ThotBool replace );
 extern void SetREFattribute ( Element element,
                               Document doc,
                               char *targetURL,
@@ -62,6 +64,7 @@ extern void CreateRemoveIDAttribute ( char *elName,
 extern void CheckPseudoParagraph ( Element el,
                                    Document doc );
 extern void ElementCreated ( NotifyElement *event );
+extern void TextPasted ( NotifyElement *event );
 extern ThotBool ElementWillBeDeleted ( NotifyElement *event );
 extern void ElementDeleted ( NotifyElement *event );
 extern void RegisterURLSavedElements ( Document doc );
@@ -160,6 +163,7 @@ extern Element GetNoTemplateSibling ( Element el,
                                         ThotBool before );
 extern Element GetNoTemplateChild ( Element el,
                                       ThotBool first );
+extern Element GetNoTemplateParent ( Element el );
 extern Element GetNextNode ( Element curr );
 extern void SetTargetContent ( Document doc,
                                  Attribute attrNAME );
@@ -173,9 +177,10 @@ extern ThotBool DeleteLink ( NotifyElement *event );
 extern ThotBool CheckMandatory ( NotifyAttribute *event );
 extern void AttributeChange ( int aType,
                                 char * data );
-extern void GenerateInlineElement ( int eType,
-                                      int aType,
-                                      char * data );
+extern ThotBool GenerateInlineElement ( int eType,
+                                          int aType,
+                                          char * data,
+                                          ThotBool replace );
 extern void SetREFattribute ( Element element,
                                 Document doc,
                                 char *targetURL,
@@ -208,6 +213,7 @@ extern void CreateRemoveIDAttribute ( char *elName,
 extern void CheckPseudoParagraph ( Element el,
                                      Document doc );
 extern void ElementCreated ( NotifyElement *event );
+extern void TextPasted ( NotifyElement *event );
 extern ThotBool ElementWillBeDeleted ( NotifyElement *event );
 extern void ElementDeleted ( NotifyElement *event );
 extern void RegisterURLSavedElements ( Document doc );

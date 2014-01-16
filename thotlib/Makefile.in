@@ -203,14 +203,17 @@ EDITOR_OBJ = \
 	dialogue/AmayaWindowIterator.o \
 	dialogue/AmayaSimpleWindow.o \
 	dialogue/AmayaNormalWindow.o \
+	dialogue/AmayaClassicWindow.o \
+  dialogue/AmayaClassicNotebook.o \
+	dialogue/AmayaAdvancedWindow.o \
+  dialogue/AmayaAdvancedNotebook.o \
+  dialogue/AmayaHelpWindow.o \
 	dialogue/AmayaQuickSplitButton.o \
 	dialogue/AmayaPanel.o \
 	dialogue/AmayaPopupList.o \
-	dialogue/AmayaSubPanel.o \
-	dialogue/AmayaSubPanelManager.o \
-	dialogue/AmayaFloatingPanel.o \
 	dialogue/AmayaApplyClassPanel.o \
 	dialogue/AmayaXHTMLPanel.o \
+	dialogue/AmayaStylePanel.o \
 	dialogue/AmayaExplorerPanel.o \
 	dialogue/AmayaAttributePanel.o \
 	dialogue/AmayaMathMLPanel.o \
@@ -218,23 +221,24 @@ EDITOR_OBJ = \
 	dialogue/AmayaPage.o \
 	dialogue/AmayaFrame.o \
 	dialogue/AmayaCanvas.o \
-	dialogue/AmayaNotebook.o \
+	dialogue/AmayaColorButton.o \
 	dialogue/AmayaToolBar.o \
 	dialogue/AmayaScrollBar.o \
 	dialogue/AmayaFileDropTarget.o \
 	dialogue/AmayaSpeCharPanel.o \
 	dialogue/AmayaStatsThread.o \
 	dialogue/AmayaPathControl.o \
+  dialogue/AmayaTipOfTheDay.o \
 	dialogue/appdialogue_wx.o \
 	dialogue/callback.o\
 	dialogue/callbackinit.o \
 	dialogue/appdialogue.o \
 	dialogue/appli.o \
+	dialogue/archives.o \
 	dialogue/attrmenu.o \
 	dialogue/base64.o \
 	dialogue/browser.o \
 	dialogue/closedoc.o \
-	dialogue/colors.o \
 	dialogue/context.o \
 	dialogue/creationmenu.o \
 	dialogue/dialogapi.o \

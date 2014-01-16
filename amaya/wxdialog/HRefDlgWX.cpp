@@ -13,7 +13,6 @@
 #include "appdialogue_wx.h"
 #include "message_wx.h"
 static int Waiting = 0;
-static int Clicked = 0;
 static int m_doc = 0;
 static int MyRef = 0;
 
@@ -24,6 +23,7 @@ BEGIN_EVENT_TABLE(HRefDlgWX, AmayaDialog)
   EVT_BUTTON(     XRCID("wxID_OK"),           HRefDlgWX::OnOk )
   EVT_BUTTON(     XRCID("wxID_BROWSE"),       HRefDlgWX::OnBrowse )
   EVT_BUTTON(     XRCID("wxID_CLICK"),        HRefDlgWX::OnClick )
+  EVT_BUTTON(     XRCID("wxID_DELETE"),       HRefDlgWX::OnDelete )
   EVT_BUTTON(     XRCID("wxID_CLEAR"),        HRefDlgWX::OnClear )
   EVT_BUTTON(     XRCID("wxID_CANCEL"),       HRefDlgWX::OnCancel )
   EVT_TEXT_ENTER( XRCID("wxID_COMBOBOX"),     HRefDlgWX::OnOk )
@@ -59,22 +59,27 @@ HRefDlgWX::HRefDlgWX( int ref, wxWindow* parent, const wxString & title,
   XRCCTRL(*this, "wxID_OK", wxButton)->SetLabel( TtaConvMessageToWX( TtaGetMessage(LIB,TMSG_LIB_CONFIRM) ));
   XRCCTRL(*this, "wxID_BROWSE", wxBitmapButton)->SetToolTip( TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_BROWSE) ));
   XRCCTRL(*this, "wxID_CLICK", wxButton)->SetLabel( TtaConvMessageToWX( TtaGetMessage(AMAYA,AM_CLICK) ));
-  XRCCTRL(*this, "wxID_CLEAR", wxButton)->SetLabel( TtaConvMessageToWX( TtaGetMessage(AMAYA,AM_CLEAR) ));
+  XRCCTRL(*this, "wxID_CLICK", wxButton)->SetToolTip( TtaConvMessageToWX( TtaGetMessage(AMAYA,AM_CREATE_BY_CLICK) ));
+  XRCCTRL(*this, "wxID_CLEAR", wxButton)->SetToolTip( TtaConvMessageToWX( TtaGetMessage(AMAYA,AM_CLEAR) ));
+  XRCCTRL(*this, "wxID_DELETE", wxButton)->SetLabel( TtaConvMessageToWX( TtaGetMessage(AMAYA,AM_DELETE_LINK) ));
   XRCCTRL(*this, "wxID_CANCEL", wxButton)->SetLabel( TtaConvMessageToWX( TtaGetMessage(LIB,TMSG_CANCEL) ));
 
   // fill the combobox with url list
+  XRCCTRL(*this, "wxID_COMBOBOX", wxComboBox)->Append(wx_init_value);
   XRCCTRL(*this, "wxID_COMBOBOX", wxComboBox)->Append(url_list);
   // initialize it
   XRCCTRL(*this, "wxID_COMBOBOX", wxComboBox)->SetValue(wx_init_value);
-  // set te cursor to the end
-  //XRCCTRL(*this, "wxID_COMBOBOX", wxComboBox)->SetInsertionPointEnd();
-  XRCCTRL(*this, "wxID_COMBOBOX", wxComboBox)->SetSelection (0, -1);
 
+  SetAutoLayout( TRUE );
+
+  XRCCTRL(*this, "wxID_DELETE", wxButton)->Show(!LinkAsCSS);
+  
+  // set te cursor to the end
+  XRCCTRL(*this, "wxID_COMBOBOX", wxComboBox)->SetSelection (0, -1);
 #ifndef _MACOS
   // give focus to ...
   XRCCTRL(*this, "wxID_COMBOBOX", wxComboBox)->SetFocus();
 #endif /* _MACOS */
-  SetAutoLayout( TRUE );
 }
 
 /*----------------------------------------------------------------------
@@ -83,16 +88,12 @@ HRefDlgWX::HRefDlgWX( int ref, wxWindow* parent, const wxString & title,
 HRefDlgWX::~HRefDlgWX()
 {
   /* do not call this one because it cancel the link creation */
-  Clicked = 0;
-  if (Waiting)
+  if (Waiting == 1)
     {
       Waiting = 0;
       ThotCallback (MyRef, INTEGER_DATA, (char*) 0);
       m_doc = 0;
     }
-  else
-    // clean up the dialog context
-    TtaDestroyDialogue( MyRef );
 }
 
 /*----------------------------------------------------------------------
@@ -112,6 +113,7 @@ void HRefDlgWX::OnOk( wxCommandEvent& event )
 {
   // get the combobox current url
   wxString url = XRCCTRL(*this, "wxID_COMBOBOX", wxComboBox)->GetValue( );
+  url = url.Trim(TRUE).Trim(FALSE);
   Waiting = 0;
   // allocate a temporary buffer to copy the 'const char *' url buffer 
   char buffer[MAX_LENGTH];
@@ -167,6 +169,17 @@ void HRefDlgWX::OnBrowse( wxCommandEvent& event )
 }
 
 /*----------------------------------------------------------------------
+  OnDelete called when the user clicks on delete button
+  params:
+  returns:
+  ----------------------------------------------------------------------*/
+void HRefDlgWX::OnDelete( wxCommandEvent& event )
+{
+  ThotCallback (MyRef, INTEGER_DATA, (char*) 4);
+  ThotCallback (MyRef, INTEGER_DATA, (char*)1);
+}
+
+/*----------------------------------------------------------------------
   OnCancel called when the user clicks on cancel button
   params:
   returns:
@@ -187,13 +200,11 @@ void HRefDlgWX::OnCancel( wxCommandEvent& event )
   ----------------------------------------------------------------------*/
 void HRefDlgWX::OnClick( wxCommandEvent& event )
 {
-  if (Waiting && Clicked == 0)
-    {
-      Clicked = 1;
-      Waiting = 0;
-      ThotCallback (MyRef, INTEGER_DATA, (char*) 3);
-      //TtaDestroyDialogue( MyRef );
-    }
+  Waiting = 2;
+  // no cancel  must be generated
+  ThotCallback (MyRef, INTEGER_DATA, (char*) 3);
+  // the dialog could be redisplayed
+  Waiting = 1;
 }
 
 /*----------------------------------------------------------------------

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-       "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
   <meta name="GENERATOR" content="amaya 9.52, see http://www.w3.org/Amaya/" />
-  <title>Annotations in Amaya</title>
+  <title>Annotating documents</title>
   <style type="text/css">
   </style>
   <link href="style.css" rel="stylesheet" type="text/css" />
@@ -13,133 +13,86 @@
 
 <body xml:lang="en" lang="en">
 
-<div>
-<img alt="Amaya" src="../../resources/icons/22x22/logo.png" class="logo" />
-
+<div class="PageHead">
+Amaya<img alt="logo" src="../../resources/icons/22x22/logo.png" class="logo"
+/> 
 
 <p class="nav"><a href="MakeBook.html" accesskey="p"><img alt="previous"
-src="../../resources/icons/misc/left.png" />
-</a> <a href="Manual.html" accesskey="t"><img alt="top"
-src="../../resources/icons/misc/up.png" />
-</a> <a href="Configure.html" accesskey="n"><img alt="next"
-src="../../resources/icons/misc/right.png" />
-</a></p>
+src="../../resources/icons/misc/left.png" /> </a><a href="Manual.html"
+accesskey="t"><img alt="top" src="../../resources/icons/misc/up.png" /></a>
+<a href="Configure.html" accesskey="n"><img alt="next"
+src="../../resources/icons/misc/right.png" /></a></p>
 </div>
 
 <div id="page_body">
-<h2>Annotations in Amaya</h2>
-
-<div class="toc">
-<ul>
-  <li><a href="#What">What is an annotation?</a></li>
-  <li><a href="#About">About Local Annotations</a></li>
-  <li><a href="#About1">About Remote Annotations</a></li>
-  <li><a href="#Annotation">Annotations Menu</a></li>
-  <li><a href="#Creating">Creating an Annotation</a></li>
-  <li><a href="#Annotation1">Annotation Metadata</a></li>
-  <li><a href="#Saving">Saving an Annotation</a></li>
-  <li><a href="#Deleting">Deleting an Annotation</a></li>
-  <li><a href="#Loading">Loading and Presenting Annotations</a></li>
-  <li><a href="#Annotation2">The Annotation Local Filter Menu</a></li>
-  <li><a href="#Navigating">Navigating Annotations</a></li>
-  <li><a href="#Annotation3">Annotations in the Link window</a></li>
-  <li><a href="#Moving">Moving Annotations</a></li>
-  <li><a href="#Moving1">Moving Annotations to a Previously Memorized
-    Location</a></li>
-  <li><a href="#Replying">Replying to Annotations / Discussion
-  Threads</a></li>
-  <li><a href="#user">The user interface</a></li>
-  <li><a href="#Known">Known issues: Incomplete threads</a></li>
-  <li><a href="#Configurin">Configuring Annotation Icons</a>
-    <ul>
-      <li><a href="#User-defin">User-definable icons by Annotation type (aka
-        "dynamic icons")</a></li>
-    </ul>
-  </li>
-  <li><a href="#Known1">Known Issues with Annotations and Modified
-    Documents</a>
-    <ul>
-      <li><a href="#Orphan">Orphan Annotations</a></li>
-      <li><a href="#Misleading">Misleading Annotations</a></li>
-      <li><a href="#What1">What can you do to avoid this?</a></li>
-    </ul>
-  </li>
-</ul>
-</div>
+<h2 id="Annotation">Annotating documents</h2>
 
 <h3 id="What">What is an annotation?</h3>
 
 <p>Annotations are comments, notes, explanations, or other types of external
-remarks that can be attached to a Web document or a selected part of the
+remarks that can be attached to a Web document or to a selected part of a
 document. As they are external, it is possible to annotate any Web document
-independently, without needing to edit that document. From the technical
+independently, without needing to edit the document itself. From a technical
 point of view, annotations are usually seen as <strong>metadata,</strong> as
-they give additional information about an existing piece of data. In this
-project, we use a special <strong><a
-href="http://www.w3.org/RDF/">RDF</a></strong> <a
+they give additional information about an existing piece of data. Amaya uses
+a special <strong><a href="http://www.w3.org/RDF/">RDF</a></strong> <a
 href="http://www.w3.org/2000/10/annotation-ns">annotation schema</a> for
 describing annotations.</p>
 
-<p>Annotations can be stored locally or in one or more <strong>annotation
-servers</strong>. When a document is browsed, Amaya queries each of these
-servers, requesting the annotations related to that document. Currently Amaya
-presents annotations with pencil annotation icons ( <img
-src="../images/annot.png" alt="Annotation pencil icon" />
- )that are visually embedded in the document, as shown in the figure below.
-If the user single-clicks on an annotation icon, the text that was annotated
-is highlighted. If the user double-clicks on this icon, the annotation text
-and other metadata are presented in a separate window.</p>
+<p>Annotations can be stored locally or in one or more <em>annotation
+servers</em>. When a document is browsed, Amaya queries each of these
+servers, requesting the annotations related to that document. Amaya presents
+an annotation with an icon <img src="../images/annot.png"
+alt="Pencil representing an annotation" /> that is visually embedded in the
+document. If you single-click this icon, the text that was annotated is
+highlighted. If you double-clicks the icon, the annotation text and other
+metadata are presented in a separate window.</p>
 
-<p style="text-align: center"><img src="../images/annotationicon.png"
-alt="annotation icon (= pencil)" />
-</p>
+<p style="text-align: center"></p>
 
 <p>An annotation has many properties including:</p>
 <ul>
-  <li>Physical location: is the annotation stored in a local file system or
+  <li>Physical location: is the annotation stored in the local file system or
     in an annotation server</li>
   <li>Scope: is the annotation associated to a whole document or just to a
-    fragment of this document</li>
+    fragment.</li>
   <li>Annotation type: 'Annotation', 'Comment', 'Query', ...</li>
 </ul>
 
-<h3 id="About">About Local Annotations</h3>
+<h3 id="About">Local and remote annotations</h3>
 
-<p>Amaya can store annotation data in a local file system (often called
-"local annotations") or it can store annotations <span style="color:blue"><a
-href="#About1">remotely</a></span>, accessed through the World Wide Web
-(called "remote annotations").</p>
+<p>Amaya can store annotation data in a <span>local file system</span>
+(<em>local annotations</em>) or it can store annotations remotely, on
+annotations servers accessed through the Web (<em>remote
+annotations</em>).</p>
 
 <p>You do not need a server to create local annotations. Local annotations
-are stored under the user preferences directory, in a special directory
-called <strong>annotations</strong>, and can be seen only by their owner
-(according to the system access right setup). This directory contains three
-kinds of files:</p>
+are stored under your <a href="Configure.html#AmayaHome">AmayaHome</a>
+directory, in a special directory called <code>annotations</code>, and they
+can be seen only by their owner (according to the system access right
+setup).</p>
+
+<p>This directory contains three kinds of files:</p>
 <ul>
-  <li><strong>annot.index:</strong> Associates URLs with the files containing
-    the metadata of the annotations.</li>
-  <li><strong>index + random suffix:</strong> Stores the metadata of the
-    annotations related to a given URL. The metadata is specified with RDF.
-    <br />
+  <li><code>annot.index:</code> Associates URLs with the files containing the
+    metadata of the annotations.</li>
+  <li><code>index + random suffix:</code> Stores the metadata of the
+    annotations related to a given URL. The metadata is specified in RDF. <br
+    />
   </li>
-  <li><strong>annot + random suffix.html:</strong> Contains the body of an
+  <li><code>annot + random suffix.html:</code> Contains the body of an
     annotation, stored as XHTML.</li>
 </ul>
 
-<p>At any time, you can convert a local annotation to a shared one by
-choosing <strong>Post annotation</strong> from the
-<strong>Annotations</strong> menu. Once this is completed, the local
+<p>At any time, you can convert a <em>local annotation</em> to a shared one
+by choosing <strong>Post to server</strong> from the
+<strong>Tools/Annotations</strong> submenu. Once this is completed, the local
 annotation is deleted because it has been moved to an annotation server.</p>
 
-<h3 id="About1">About Remote Annotations</h3>
+<h4 id="Remote">Remote annotations</h4>
 
-<p>Amaya can store annotation data in a <span style="color: blue"><a
-href="#About">local file system</a></span> (often called "local annotations")
-or it can store annotations remotely, in Annotations Servers accessed through
-the World Wide Web (called "remote annotations").</p>
-
-<p>You can store remote annotations in annotation servers so that the
-annotations can be downloaded by anyone having the correct access rights,
+<p>You can store <em>remote annotations</em> in annotation servers so that
+the annotations can be downloaded by anyone having the correct access rights,
 such as is the case of other HTML documents.</p>
 
 <p>Remote annotations are referred to as shared or public annotations,
@@ -147,75 +100,49 @@ because they can be seen by other people. If you wish to install your own
 annotation server, please refer to <span style="color:blue"><a
 href="http://www.w3.org/1999/02/26-modules/User/Annotations-HOWTO.html">Annotation-Server-HOWTO</a></span>.</p>
 
-<h3 id="Annotation">Annotations Menu</h3>
+<h3 id="Creating">Creating an annotation</h3>
 
-<p>Most of the commands needed for handling annotations can be found from the
-Annotations menu shown below. The commands are explained later in this
-document in the context of users' goals when handling annotations.</p>
+<p>Before creating an annotation, it is recommended to set some parameters in
+the Preferences (see section <a href="Configure.html#Configurin1">Configuring
+annotations</a>).</p>
 
-<h3 id="Creating">Creating an Annotation</h3>
-
-<p>This version of Amaya supports two kinds of annotations: annotations that
-apply to a whole document and annotations that apply to a specific point or
-selection in a document.</p>
+<p>Amaya supports two kinds of annotations: annotations that apply to a whole
+document and annotations that apply to a specific position or a selection in
+a document.</p>
 <ul>
   <li>To annotate an entire document, choose <strong>Annotate
-    document</strong> from the <strong>Annotations</strong> menu.
-    <p></p>
-  </li>
-  <li>To annotate a point, put the insertion point at any place in the
+    document</strong> from the <strong>Tools/Annotations</strong> menu. </li>
+  <li>To annotate a position, put the insertion point at that position in the
     document and choose <strong>Annotate selection</strong> from the
-    <strong>Annotations</strong> menu.
-    <p></p>
-  </li>
+    <strong>Tools/Annotations</strong> menu. </li>
   <li>To annotate a selection, make a selection in the document and choose
-    <strong>Annotate selection</strong> from the <strong>Annotations</strong>
-    menu.</li>
+    <strong>Annotate selection</strong> from the
+    <strong>Tools/Annotations</strong> menu.</li>
 </ul>
 
-<p>After any of these options are performed, an annotation dialog displays
-the annotation metadata and the body of the annotation.</p>
+<p>After these operations, an annotation document  is displayed, with some
+inital metadata and an empty body.</p>
 
-<p><img src="../images/annotationwindow.png" alt="annotation window" />
-</p>
+<p>The metadata consists of the <strong>title of the annotation</strong>, the
+<strong>author's name</strong>, the <strong>title</strong> of the annotated
+document, the <strong>annotation type</strong>, the <strong>creation
+date</strong>, and the <strong>last modification date</strong>.</p>
 
-<h3 id="Annotation1">Annotation Metadata</h3>
-
-<p>Currently, the metadata consists of the author's name, title of the
-annotated document, annotation type, creation date, and last modification
-date. Some of the metadata fields have special properties:</p>
+<p>Some of the metadata fields have special properties:</p>
 <ul>
-  <li>The <strong>Source Document</strong> field is also a link that points
-    back to the annotated text. If the user double-clicks it, as when
-    following any other link with Amaya, the annotated document will be
-    displayed with the annotated text highlighted.</li>
-  <li>The <strong>Annotation Types</strong>field lets you classify the
-    annotation and change its type. Double-click on the text "annotation
-    type" to see the list of types available.</li>
-  <li>The <strong>Last Modified</strong>field is updated automatically each
+  <li>The <strong>Source document</strong> field is a link that points back
+    to the annotated text. If the user double-clicks it, as when following
+    any other link with Amaya, the annotated document will be displayed with
+    the annotated text highlighted.</li>
+  <li>The <strong>Annotation types</strong> field lets you classify the
+    annotation and change its type. Double-click on the text
+    <strong>Annotation type</strong> to see the list of types available.</li>
+  <li>The <strong>Last modified</strong> field is updated automatically each
     time that an annotation is saved.</li>
 </ul>
 
 <p>Below the header area is the annotation body area. It shows the current
 content and can be edited like any other HTML document.</p>
-
-<h3 id="Saving">Saving an Annotation</h3>
-
-<p>Saving an annotation is the same as saving any other document with Amaya:
-choose <span class="Link"><strong>Save</strong></span>from the
-<strong>File</strong> menu (or use its equivalent shortcut or button).</p>
-
-<p>Local annotations are saved to the annotations directory and remote
-annotations are saved to the annotation post server, where they are stored if
-the user has write access.</p>
-
-<p>To convert a local annotation into a shared one, choose <strong>Post
-Annotation</strong> from the <strong>Annotations</strong> menu to save the
-annotation to the Post server as defined in the <span
-class="Link"><strong>Configuration for Annotations</strong> dialog</span>. If
-this operation is successful, the local annotation will be removed and future
-<strong>Save</strong> operations will go directly to that annotation
-server.</p>
 
 <p>Some commands that can be applied to a document in the Amaya document
 window also can be applied to an annotation document in the Annotation
@@ -224,218 +151,143 @@ window. For example, the body of an annotation can be printed by choosing
 choosing <strong>Reload document</strong> from the <strong>File</strong>
 menu.</p>
 
-<h3 id="Deleting">Deleting an Annotation</h3>
+<h3 id="Saving">Saving an annotation</h3>
 
-<p>The <strong>Delete</strong> command on the <strong>Annotation</strong>
-menu enables you to delete an annotation. You can invoke this command from an
-open annotation window.</p>
+<p>Saving an annotation is the same as saving any other document with Amaya:
+choose <span class="Link"><strong>Save</strong></span> from the
+<strong>File</strong> menu (or use its equivalent shortcut or button) or
+press the <strong>Save</strong> button.</p>
 
-<p class="ProcedureCaption">To delete an annotation from a document:</p>
-<ol>
-  <li>Select the annotation by clicking the annotation icon.</li>
-  <li>Choose <strong>Delete</strong> from the <strong>Annotations</strong>
-    menu.</li>
-</ol>
+<p>Local annotations are saved to the annotations directory and remote
+annotations are saved to the annotation post server, if the user has write
+access.</p>
 
-<h3 id="Loading">Loading and Presenting Annotations</h3>
+<p>To convert a local annotation into a shared one, choose <strong>Post to
+server</strong> from the <strong>Tools/Annotations</strong> menu to save the
+annotation to the Post server as defined in the <span
+class="Link"><strong>Configuration for Annotations</strong> dialog</span>. If
+this operation is successful, the local annotation will be removed and future
+<strong>Save</strong> operations will go directly to that annotation
+server.</p>
 
-<p>The <strong>Load Annotations</strong> command tells Amaya to load the
-annotations that are associated with the URL of the current document. Amaya
-will query the annotation servers, using the settings from the
-<strong>Configuration for annotations</strong> dialog, and ask for any
-relevant annotation.</p>
+<h3 id="Deleting">Deleting an annotation</h3>
 
-<p>Annotations can also be loaded automatically whenever a new page is viewed
-by selecting the <strong>Autoload Annotations</strong> check box in the
-<strong>Configuration for annotations</strong> dialog.</p>
+<p>The <strong>Delete</strong> command on the
+<strong>Tools/Annotations</strong> submenu enables you to delete the current
+annotation. You can invoke this command from an annotation window.</p>
 
-<p>In this version of Amaya, querying an annotation server will return all
-the annotations that are associated with a document. In a future version, it
-may be possible to use a customized query menu to refine the query string
-that is sent to the servers.</p>
+<p>You can also delete an annotation from the annotated document. Select the
+icon of the annotation and call the same command from the
+<strong>Tools</strong> menu in the annotated document window.</p>
 
-<h3 id="Annotation2">The Annotation Local Filter Menu</h3>
+<h3 id="Loading">Loading and presenting annotations</h3>
 
-<p>Choose <strong>Local filter</strong> from the <strong>Annotations</strong>
-menu to show or hide the annotation icons in the document window. You can
-show or hide annotations by three types of metadata: the name of the
-annotation's author, the type of annotation, and the annotation server
-name.</p>
+<p>The <strong>Tools/Annotations/Load</strong> command tells Amaya to load
+the annotations that are associated with the URL of the current document.
+Amaya will query the annotation servers, using the settings from
+<strong>Preferences/Annotations</strong>, and ask for any relevant
+annotation.</p>
 
-<p class="ProcedureCaption">To apply any of these filters:</p>
-<ol>
-  <li>Click the text box to select an annotation type.</li>
-  <li>Click the corresponding action button. The <strong>Show all</strong>
-    and <strong>Hide all</strong> buttons apply to all the annotations.</li>
-  <li>A small prefix character indicates the status of a given entry. This
-    character can be a space (' '), a star ('*'), or a signet ('-') to
-    indicate that the annotations belonging to this given entry are all
-    visible, all hidden, or partially visible, respectively.</li>
-</ol>
+<p>Annotations may also be loaded automatically whenever a new page is viewed
+by selecting the <strong>Autoload remote annotations</strong> check box in
+<strong>Preferences/Annotations</strong>.</p>
 
-<p class="Note"><strong>Note:</strong><br />
-The <strong>Annotation Local Filter Menu</strong> dialog only shows you the
-annotations it knows about at the moment it is opened. If new annotations are
-added, you will need to reload the menu again.</p>
+<p>Querying an annotation server returns all the annotations that are
+associated with a document.</p>
 
-<p>The annotation author shows the author's name added to the name of the
-annotation server where the annotation is stored.</p>
+<h3 id="Annotation3">Annotations in the Links window</h3>
 
-<h3 id="Navigating">Navigating Annotations</h3>
+<p>The link view of the annotated document shows all the annotations.</p>
 
-<p>Annotations can be navigated by choosing <strong>Show Links</strong> from
-the <span class="Link"><strong>Views</strong> menu</span>. The Link window
-opens and displays a list of annotations. Annotations in the Link and
-Document windows are marked with a pencil annotation icon.</p>
+<p>As with the document window, annotations are identified by a pencil icon.
+A single-click on the icon selects the annotated text in the document window
+and a double-click opens the annotation.</p>
 
-<h3 id="Annotation3">Annotations in the Link window</h3>
+<h3 id="Replying">Replying to annotations / discussion thread</h3>
 
-<p>The Link window shows all the annotations, without taking into account
-whether they have been hidden with <strong>Local filter</strong> on the
-<strong>Annotations</strong> menu. As with the document window, a
-single-click on the annotation selects the annotated text in the document
-window and a double-click opens the annotation. This is an example of how to
-navigate from one annotation link to another, even if the annotation cannot
-be seen by the user because of disabilities or because of the characteristics
-of the used device.</p>
+<p>Annotations can be seen as comments to web pages. The
+<strong>Tools/Annotations/Reply to annotation</strong> command enhances the
+collaborative workspace by allowing users to reply to annotations or to other
+replies.</p>
 
-<h3 id="Moving">Moving Annotations</h3>
+<p>The <strong>Reply to annotation</strong> command of the
+<strong>Tools/Annotations</strong> submenu lets you create a reply to an
+existing annotation or to a reply. You can invoke this command from an open
+annotation or a reply window.</p>
 
-<p>You can move an annotation to any other part of the same document. This
-can be used, for example, to handle <a href="#Known">orphan and misleading
-annotations</a>. You can move an annotation to either the current selection
-or to the value of a stored <span class="Link">XPointer</span>. It is only
-possible to move annotations in the same document where they were created.</p>
+<p>As a result a new annotation document opens. The fields in a reply
+annotation can be edited just like in any other annotation as explained under
+<a href="#Creating">Creating an annotation</a>.</p>
 
-<p>To move an annotation to a current selection:</p>
-<ol>
-  <li>Open the <strong>Annotations</strong> menu and select <strong>Annotate
-    document</strong>. The <strong>annotation</strong> window opens.</li>
-  <li>Click the annotated document and select something on it.</li>
-  <li>In the <strong>annotation</strong> window, choose <strong>Move to
-    selection</strong> from the <strong>Annotations</strong> menu.</li>
-  <li>Amaya moves the annotation icon to the text you selected and will mark
-    the annotation document as modified.</li>
-</ol>
-
-<p>To make this change effective, must save the annotation or you will loose
-the change. You can also move an annotation to the current position of the
-cursor, without having to make a selection.</p>
-
-<h3 id="Moving1">Moving Annotations to a Previously Memorized Location</h3>
-
-<p>You can store the position where you want to move an annotation to, and
-then move it there. This feature is useful for moving multiple annotations to
-the same position or for scrolling elsewhere in the document before doing the
-move.</p>
-
-<p>To move multiple annotations:</p>
-<ol>
-  <li>Make a selection (or just place the cursor) in the location where you
-    want to move the annotation.</li>
-  <li>Choose <strong>Store selection as XPointer</strong> from the
-    <strong>Annotations</strong> menu to store an XPointer representing that
-    selection.</li>
-  <li>In the <strong>Annotations</strong> window, choose <strong>Move to
-    stored XPointer</strong> from the <strong>Annotations</strong> menu to
-    move the annotation to its new location.</li>
-  <li>Save the annotation to make this change effective.</li>
-</ol>
-
-<h3 id="Replying">Replying to Annotations / Discussion Threads</h3>
-
-<p>Annotations can be seen as comments to pages. The <strong>Annotation /
-Replies</strong> feature enhances the collaborative workspace by allowing
-users to reply to annotations or to other replies.</p>
-
-<p>The <strong>Annotations / Reply to annotation</strong> menu command lets
-you to create a reply to an existing annotation or to a reply. You can invoke
-this command from an open annotation or a reply window. As a result a new
-reply window opens. The fields in a reply window can be edited just like in
-an annotation window as explained under <strong>Creating an
-annotation</strong>.</p>
-
-<p>When the reply is ready, you can post it to a server with
-<strong>Annotations / Post to Server</strong> menu command or save it locally
-using the <strong>File / Save</strong> menu command. To delete a reply, you
-can use the <strong>Annotations / Delete</strong> menu command.</p>
+<p>When the reply is ready, you can post it to a server with the
+<strong>Tools/Annotations/Post to server</strong> command or you can save it
+locally using the <strong>File/Save</strong> command. To delete a reply, you
+can use the <strong>Tools/Annotations/Delete</strong> command.</p>
 
 <p>Replies can also be annotated like any other document, as explained in <a
 href="#Creating">Creating an annotation</a>.</p>
 
-<h3 id="user">The user interface</h3>
+<p>All replies related to an annotation are shown at the bottom of this
+annotation, in a thread section. Each item in the thread gives the date of
+the reply, the author, and the title of the reply. </p>
 
-<p><img alt="An annotation with a discussion thread"
-src="../images/threads.png" />
-</p>
+<p>The content of any of these replies can be retrieved by double clicking
+the replies in the thread. The selected reply is highlighted and presented in
+a reply tab. When another selection is made the same reply tab is used.</p>
 
-<p>In the current user interface, all replies related to an annotation are
-shown at the bottom of this annotation, in a thread section. Each item in the
-thread gives the date of the reply, the author, and the title of the reply.
-The content of any of these replies can be retrieved by double clicking the
-replies in the thread. The selected reply will be highlighted and presented
-in a reply window. When another selection is made the same reply window is
-used.</p>
+<h4 id="Known">Known issues: incomplete thread</h4>
 
-<h3 id="Known">Known issues: Incomplete threads</h3>
+<p>There is no way to control which replies should be posted. In an ideal
+world, it should not be possible to save a reply to a reply if the previous
+reply was not saved in the same server. Likewise, if you delete a reply, you
+should delete all replies to this annotation. Not doing that leads to having
+fragments of threads that cannot be correctly attached in the thread.</p>
 
-<p>There is no control yet for controlling which replies should be posted. In
-an ideal world, it should not be possible to save a reply to a reply if the
-previous reply was not saved in the same server. Likewise, if you delete a
-reply, you should delete all replies to this annotation. Not doing leads to
-having fragments of threads that cannot be correctly attached in the thread.
-For example, let R1 be the reply to annotation A1 and R2 a reply to R1. If
+<p>For example, let R1 be the reply to annotation A1 and R2 a reply to R1. If
 you post R1, and let R2 be stored locally, then when you browse A1 and only
-download its local annotations, you will only see R2. At this point, Amaya
-does not know that R1 exists, so it assumes that R2 has lost its parent. We
-identify these "orphan" threads by putting a question mark symbol
-<strong>?</strong> in front of them. If later one, Amaya finds new thread
-items, for example, if you download R1, Amaya will then sort the thread view,
-inserting the threads as appropriately. In our example, R2 will become a
-child of R1, as expected.</p>
+download its local annotations, you will only see R2.</p>
 
-<h3 id="Configurin">Configuring Annotation Icons</h3>
+<p>At this point, Amaya does not know that R1 exists, so it assumes that R2
+has lost its parent. We identify these "orphan" threads by putting a question
+mark symbol <strong>?</strong> in front of them. If later one, Amaya finds
+new thread items, for example, if you download R1, Amaya will then sort the
+thread view, inserting the threads as appropriately. In our example, R2 will
+become a child of R1, as expected.</p>
+
+<h3 id="Configurin">Configuring annotation icons</h3>
 
 <h4 id="User-defin">User-definable icons by Annotation type (aka "dynamic
 icons")</h4>
 
-<p>As of Release 6.2, the icon used to mark the location of an annotation
-within an annotated document may be changed by the user.</p>
+<p>The icon used to mark the location of an annotation within an annotated
+document may be changed by the user. The icon that denotes an annotation is
+chosen as a property of the annotation type. By including an RDF property of
+each annotation type you wish to use, you select the icon associated with
+annotations of that type.</p>
 
-<p>In release 6.2 the icon that denotes an annotation is chosen as a property
-of the annotation type. By including an RDF property of each annotation type
-you wish to use, you select the icon associated with annotations of that
-type.</p>
-
-<p>The sample configuration that is shipped with release 6.2 associates the
-following icons:</p>
+<p>The sample configuration associates the following icons:</p>
 
 <table>
   <tbody>
     <tr>
-      <td width="35"><img src="../../amaya/advice.png" alt="Advice" />
-      </td>
+      <td width="35"><img src="../../amaya/advice.png" alt="Advice" /> </td>
       <td>Advice</td>
     </tr>
     <tr>
-      <td width="35"><img src="../../amaya/change.png" alt="Change" />
-      </td>
+      <td width="35"><img src="../../amaya/change.png" alt="Change" /> </td>
       <td>Change</td>
     </tr>
     <tr>
-      <td width="35"><img src="../../amaya/annot.png" alt="Comment" />
-      </td>
+      <td width="35"><img src="../../amaya/annot.png" alt="Comment" /> </td>
       <td>Comment</td>
     </tr>
     <tr>
-      <td width="35"><img src="../../amaya/example.png" alt="Example" />
-      </td>
+      <td width="35"><img src="../../amaya/example.png" alt="Example" /> </td>
       <td>Example</td>
     </tr>
     <tr>
       <td width="35"><img src="../../amaya/explanation.png" alt="Explanation"
-        />
-      </td>
+        /> </td>
       <td>Explanation</td>
     </tr>
     <tr>
@@ -444,8 +296,7 @@ following icons:</p>
       <td>Question</td>
     </tr>
     <tr>
-      <td width="35"><img src="../../amaya/seealso.png" alt="SeeAlso" />
-      </td>
+      <td width="35"><img src="../../amaya/seealso.png" alt="SeeAlso" /> </td>
       <td>SeeAlso</td>
     </tr>
   </tbody>
@@ -467,38 +318,31 @@ is:</p>
 &lt;/rdf:RDF&gt;</pre>
 
 <p>The simplest way to get such RDF loaded into Amaya at startup is to
-include the file in the config/annot.schemas file in the Amaya program
-directory. In order to preserve this file so that it will not be overwritten
-when you install a new version of Amaya, you should copy the
-config/annot.schemas file into your personal Amaya home directory;
-~/.amaya/annot.schemas (on Unix systems) or
-/winnt/profiles/&lt;username&gt;/amaya/annot.schemas (on Microsoft Windows
-systems). You may list as many RDF files as you want in annot.schemas. See
-the comments in the file included in the Amaya kit for more details.</p>
+include the file in the <code>config/annot.schemas</code> file in the Amaya
+program directory. In order to preserve this file so that it will not be
+overwritten when you install a new version of Amaya, you should copy the
+<code>config/annot.schemas</code> file into your personal <code><a
+href="Configure.html#AmayaHome">AmayaHome</a></code> directory.</p>
 
-<p>Release 6.2 includes a sample file named "typeIcon.rdf" that declares
-unique icons for each annotation type declared in the <a
+<p>You may list as many RDF files as you want in <code>annot.schemas</code>.
+See the comments in the file included in the Amaya kit for more details.</p>
+
+<p>A sample file named <code>typeIcon.rdf</code> declares unique icons for
+each annotation type declared in the <a
 href="http://www.w3.org/2000/10/annotationType#">http://www.w3.org/2000/10/annotationType#</a>
 namespace. To experiment with user-defined icons, it may be easiest to copy
-this typeIcon.rdf into another directory and modify it. Copy annot.schemas to
-your Amaya home directory and change the line near the end to point to your
-revised icon definition file.</p>
-
-<p>To revert to the previous behavior prior to release 6.2, edit the
-config/annot.schemas in the Amaya installation directory and add a comment
-character ("#") at the beginning of the line near the end that refers to
-typeIcon.rdf:</p>
-<pre>#user-defined icons
-#http://www.w3.org/2001/10/typeIcon# $THOTDIR/config/typeIcon.rdf</pre>
+this <code>typeIcon.rdf</code> into another directory and modify it. Copy
+<code>annot.schemas</code> to your AmayaHome directory and change the line
+near the end to point to your revised icon definition file.</p>
 
 <p>Amaya supports JPEG, PNG, and GIF bitmap graphics formats for icon images.
-In release 6.2 the icon URI may only be a file: URI; that is, the icon must
-appear in a local or mounted directory to Amaya. Two special forms of
-non-file: URIs are supported. If the file path name starts with "$THOTDIR" or
-"$APP_HOME" then the corresponding Amaya installation directory or personal
-Amaya home directory is substituted into the pathname.</p>
+The icon URI may only be a file: URI; that is, the icon must appear in a
+local or mounted directory to Amaya. Two special forms of non-file: URIs are
+supported. If the file path name starts with <code>$THOTDIR</code> or
+<code>$APP_HOME</code> then the corresponding Amaya installation directory or
+personal Amaya home directory is substituted into the pathname.</p>
 
-<h3 id="Known1">Known Issues with Annotations and Modified Documents</h3>
+<h3 id="Known1">Known issues with annotations and modified documents</h3>
 
 <p>When you use annotations with live documents (documents whose contents can
 be modified), you may encounter two kinds of problems: <strong>orphan
@@ -512,13 +356,14 @@ an annotation should be attached to a document. XPointers are based in the
 structure of the document. To build an XPointer for a selection, for example,
 Amaya starts from the first point of the selection and walk backwards through
 the document's structure, until it finds the root of the document. If an
-element has an ID attribute, Amaya stops building the XPointer and considers
-the element with the ID attribute value to be the beginning of that
-XPointer.</p>
+element has an <code>id</code> attribute, Amaya stops building the XPointer
+and considers the element with the <code>id</code> attribute value to be the
+beginning of that XPointer.</p>
 
 <p>For example, if you look at the HTML source for this document, you'll
-notice that this section is enclosed within a DIV element that has an ID
-attribute with the value "Issues" Here's an extract of the source code:</p>
+notice that this section is enclosed within a <code>div</code> element that
+has an <code>id</code> attribute with the value "Issues" Here's an extract of
+the source code:</p>
 <pre>  &lt;div id="Issues"&gt;
   &lt;h1&gt;Issues with ....&lt;/h1&gt;
   &lt;p&gt;If you are using...&lt;/p&gt;
@@ -530,14 +375,14 @@ attribute with the value "Issues" Here's an extract of the source code:</p>
 <code>xpointer(id("Issues")/p[2])</code></p>
 
 <p>The above XPointer points to the second <code>p</code> element, from the
-element parent having an ID attribute with value "Issues".</p>
+element parent having an <code>id</code> attribute with value "Issues".</p>
 
-<p>Note that the use of the ID attribute enables the document author to move
-the entire reference by the XPointer to another location within the document,
-without needing to update the XPointer. The XPointer does not depend on the
-elements that precede it.</p>
+<p>Note that the use of the <code>id</code> attribute enables the document
+author to move the entire reference by the XPointer to another location
+within the document, without needing to update the XPointer. The XPointer
+does not depend on the elements that precede it.</p>
 
-<h4 id="Orphan">Orphan Annotations</h4>
+<h4 id="Orphan">Orphan annotations</h4>
 
 <p>An annotation becomes an "orphan" when it can no longer be attached to a
 document, that is, when the XPointer does not resolve to any element in the
@@ -546,10 +391,9 @@ displays a warning if it detects any orphan annotations while downloading a
 set of annotations from an annotation server. All orphan annotations are
 visible from the Links view and are associated with an icon that shows a
 question mark superimposed on the annotation pencil <img
-src="../images/annotorp.png" alt="Orphan annotation icon" />
-.</p>
+src="../images/annotorp.png" alt="Orphan annotation icon" /> .</p>
 
-<h4 id="Misleading">Misleading Annotations</h4>
+<h4 id="Misleading">Misleading annotations</h4>
 
 <p>An annotation becomes "misleading" when it points to a wrong piece of
 information. This problem is common when you annotate a portion of text that
@@ -572,7 +416,7 @@ position in the document's structure.</p>
 
 <p>Amaya enables you to automatically associate with or remove an
 <code>ID</code> attribute to/from a set of elements by choosing
-<strong>Add/Remove ID</strong> from the <strong>Links</strong> menu.</p>
+<strong>Add/Remove IDs</strong> from the <strong>Links</strong> menu.</p>
 
 <p></p>
 </div>

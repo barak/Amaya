@@ -38,6 +38,7 @@
 #include "wxAmayaSocketEvent.h"
 #include "AmayaAppInstance.h"
 #include "AmayaWindow.h"
+#include "AmayaNormalWindow.h"
 
 IMPLEMENT_APP(AmayaApp)
 
@@ -169,6 +170,8 @@ bool AmayaApp::OnInit()
   // Required for images
   wxImage::AddHandler(new wxGIFHandler);
   wxImage::AddHandler(new wxPNGHandler);
+  wxImage::AddHandler(new wxJPEGHandler);
+  wxImage::AddHandler(new wxICOHandler);
 
 #ifdef _MACOS
         myDocHandler = NewAEEventHandlerUPP(MyHandleODoc);
@@ -210,7 +213,7 @@ bool AmayaApp::OnInit()
           wxPrintf(_T("FATAL ERROR : Your OpenGL implementation does not support needed features!\n"));
           wxExit();
         }
-    }
+  }
   TTALOGDEBUG_0( TTA_LOG_INIT, _T("AmayaApp - A valide opengl configuration has been found."));
 #endif /* _GL */
   
@@ -246,23 +249,22 @@ bool AmayaApp::OnInit()
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "ConfirmCloseTab.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "CreateTableDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "DocInfoDlgWX.xrc") );
-  wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "EnumListDlgWX.xrc") );
+  wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "FontDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "HRefDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "ImageDlgWX.xrc") ); 
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "InitConfirmDlgWX.xrc" ) );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "ListDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "ListEditDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "MakeIdDlgWX.xrc") );
-  wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "NewTemplateDocDlgWX.xrc" ) );
-  wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "NumDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "ObjectDlgWX.xrc") ); 
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "OpenDocDlgWX.xrc" ) );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "Panel.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "Panel_ApplyClass.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "Panel_Attribute.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "Panel_MathML.xrc") );
-  wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "Panel_SpeChar.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "Panel_XHTML.xrc") );
+  wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "Panel_Style.xrc") );
+  wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "Panel_StyleList.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "Panel_Explorer.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "Panel_XML.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "PreferenceDlgWX.xrc") );
@@ -274,9 +276,8 @@ bool AmayaApp::OnInit()
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "SendByMailDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "SpellCheckDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "StyleDlgWX.xrc") ); 
-  wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "TextDlgWX.xrc") ); 
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "TitleDlgWX.xrc") );
-#ifdef _MACOS
+#ifdef _MACOS_26
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "Toolbar_mac.xrc") );
 #else /* _MACOS */
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "Toolbar.xrc") );
@@ -299,8 +300,19 @@ bool AmayaApp::OnInit()
 
   // fill the icons list
   SetupDocumentIconList();
+  
+  // All wx id between 1000 and 2000 are reserved to contextual menu.
+  wxRegisterId(2000);
+  
+  /* Register all default thot tool panels. */
+  AmayaNormalWindow::RegisterThotToolPanels();
+  
 #endif /* _GLPRINT */
   m_AmayaIsInit = true;
+
+  // Log window.
+//  new wxLogWindow(NULL, wxT("Amaya traces"));
+
   return true;
 }
 
@@ -452,17 +464,14 @@ void AmayaApp::OnIdle( wxIdleEvent& event )
       s_windowFocus = focus;
       
       wxString msg;
-      msg.Printf(
 #ifdef __WXMSW__
-                _T("Focus: %s, HWND = %08x"),
+      msg.Printf(_T("Focus: %s, HWND = %08x"),
+                 s_windowFocus->GetClassInfo()->GetClassName(),
+                 (unsigned int) s_windowFocus->GetHWND());
 #else
-                _T("Focus: %s"),
+      msg.Printf(_T("Focus: %s"),
+                 s_windowFocus->GetClassInfo()->GetClassName());
 #endif
-                s_windowFocus->GetClassInfo()->GetClassName()
-#ifdef __WXMSW__
-                , (unsigned int) s_windowFocus->GetHWND()
-#endif
-		);
       TTALOGDEBUG_0( TTA_LOG_FOCUS, msg );
     }
 #endif /* DEBUG_FOCUS */
@@ -489,8 +498,8 @@ int * AmayaApp::GetGL_AttrList()
   TtaGetEnvBoolean("GL_ACCELERATED", &gl_accelerated);
   if (gl_accelerated)
     AttrList[12] = 0; /* ok enable opengl hardware acceleration */
-  else
-    AttrList[12] = WX_GL_NOT_ACCELERATED; /* disable opengl hardware acceleration */
+  //else
+  //  AttrList[12] = 0;//WX_GL_NOT_ACCELERATED; /* disable opengl hardware acceleration */
 #endif /* _WINDOWS */
   return AttrList;
 }

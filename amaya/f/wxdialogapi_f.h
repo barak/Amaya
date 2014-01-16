@@ -8,7 +8,7 @@
 
 extern void ParseStyleDlgValues ( void *style_widget,
                                   char *cssRule );
-extern void DisplayStyleValue ( char *property,
+extern void DisplayStyleValue ( const char *property,
                                 char *start_value,
                                 char *end_value );
 extern ThotBool CreateSelectOperatorDlgWX ( int ref,
@@ -30,15 +30,9 @@ extern ThotBool CreateOpenDocDlgWX ( int ref,
                                      const char *title,
                                      const char *urlList,
                                      const char *urlToOpen,
-                                     const char *docName,
-                                     int doc_select,
-                                     int dir_select,
                                      DocumentType doc_type,
+                                     int doc,
                                      ThotBool newfile );
-extern ThotBool CreateNewTemplateDocDlgWX ( int ref,
-                                            ThotWindow parent,
-                                            Document doc,
-                                            const char *title );
 extern ThotBool CreateImageDlgWX ( int ref,
                                    ThotWindow parent,
                                    const char *title,
@@ -78,7 +72,8 @@ extern ThotBool CreateSaveAsDlgWX ( int ref,
                                     ThotWindow parent,
                                     char* pathname,
                                     int doc,
-                                    ThotBool saveImgs );
+                                    ThotBool saveImgs,
+                                    ThotBool checkTemplate );
 extern ThotBool CreateSaveObject ( int ref,
                                    ThotWindow parent,
                                    char* objectname );
@@ -94,6 +89,11 @@ extern ThotBool CreateCSSDlgWX ( int ref,
                                  char *title,
                                  int nb_item,
                                  char *items );
+extern void ShowNonSelListDlgWX ( ThotWindow parent,
+                                  char *title,
+                                  char* label,
+                                  char *button,
+                                  void* strings );
 extern ThotBool CreateListDlgWX ( int ref,
                                   int subref,
                                   ThotWindow parent,
@@ -129,12 +129,6 @@ extern ThotBool CreateCreateTableDlgWX ( int ref,
 extern ThotBool CreatePreferenceDlgWX ( int ref,
                                         ThotWindow parent,
                                         const char *url_list );
-extern ThotBool CreateSendByMailDlgWX ( int ref,
-                                        ThotWindow parent,
-                                        const char* rcptList,
-                                        const char* subject,
-                                        const char* message,
-                                        ThotBool sendAttach );
 extern ThotBool CreateSpellCheckDlgWX ( int ref,
                                         int base,
                                         ThotWindow parent,
@@ -162,12 +156,16 @@ extern ThotBool CreateNumDlgWX ( int ref,
                                  const char *title,
                                  const char *label,
                                  int value );
+extern ThotBool CreateFontDlgWX ( ThotWindow parent,
+                                  const char *title,
+                                  int* family,
+                                  int* size );
 
 #else /* __STDC__ */
 
 extern void ParseStyleDlgValues ( void *style_widget,
                                     char *cssRule );
-extern void DisplayStyleValue ( char *property,
+extern void DisplayStyleValue ( const char *property,
                                   char *start_value,
                                   char *end_value );
 extern ThotBool CreateSelectOperatorDlgWX ( int ref,
@@ -189,15 +187,9 @@ extern ThotBool CreateOpenDocDlgWX ( int ref,
                                        const char *title,
                                        const char *urlList,
                                        const char *urlToOpen,
-                                       const char *docName,
-                                       int doc_select,
-                                       int dir_select,
                                        DocumentType doc_type,
+                                       int doc,
                                        ThotBool newfile );
-extern ThotBool CreateNewTemplateDocDlgWX ( int ref,
-                                              ThotWindow parent,
-                                              Document doc,
-                                              const char *title );
 extern ThotBool CreateImageDlgWX ( int ref,
                                      ThotWindow parent,
                                      const char *title,
@@ -237,7 +229,8 @@ extern ThotBool CreateSaveAsDlgWX ( int ref,
                                       ThotWindow parent,
                                       char* pathname,
                                       int doc,
-                                      ThotBool saveImgs );
+                                      ThotBool saveImgs,
+                                      ThotBool checkTemplate );
 extern ThotBool CreateSaveObject ( int ref,
                                      ThotWindow parent,
                                      char* objectname );
@@ -253,6 +246,11 @@ extern ThotBool CreateCSSDlgWX ( int ref,
                                    char *title,
                                    int nb_item,
                                    char *items );
+extern void ShowNonSelListDlgWX ( ThotWindow parent,
+                                    char *title,
+                                    char* label,
+                                    char *button,
+                                    void* strings );
 extern ThotBool CreateListDlgWX ( int ref,
                                     int subref,
                                     ThotWindow parent,
@@ -288,12 +286,6 @@ extern ThotBool CreateCreateTableDlgWX ( int ref,
 extern ThotBool CreatePreferenceDlgWX ( int ref,
                                           ThotWindow parent,
                                           const char *url_list );
-extern ThotBool CreateSendByMailDlgWX ( int ref,
-                                          ThotWindow parent,
-                                          const char* rcptList,
-                                          const char* subject,
-                                          const char* message,
-                                          ThotBool sendAttach );
 extern ThotBool CreateSpellCheckDlgWX ( int ref,
                                           int base,
                                           ThotWindow parent,
@@ -321,6 +313,10 @@ extern ThotBool CreateNumDlgWX ( int ref,
                                    const char *title,
                                    const char *label,
                                    int value );
+extern ThotBool CreateFontDlgWX ( ThotWindow parent,
+                                    const char *title,
+                                    int* family,
+                                    int* size );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

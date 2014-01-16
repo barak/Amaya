@@ -48,23 +48,23 @@ extern void TtaExtractName ( char *text,
                              char *aDirectory,
                              char *aName );
 extern void MakeCompleteName ( char *fname,
-                               char *fext,
+                               const char *fext,
                                char *directory_list,
                                char *completeName,
                                int *length );
 extern void GetPictureFileName ( char *name,
                                  char *fileName );
 extern void FindCompleteName ( char *fileName,
-                               char *extension,
+                               const char *extension,
                                PathBuffer directory,
                                PathBuffer completeName,
                                int *length );
 extern int FileWriteAccess ( char *fileName );
-extern ThotBool TtaMakeDirectory ( char *directory );
-extern ThotBool TtaCheckDirectory ( char *directory );
-extern ThotBool TtaCheckMakeDirectory ( char *name,
+extern ThotBool TtaMakeDirectory ( const char *directory );
+extern ThotBool TtaCheckDirectory ( const char *directory );
+extern ThotBool TtaCheckMakeDirectory ( const char *name,
                                         ThotBool recursive );
-extern ThotBool TtaIsW3Path ( char *path );
+extern ThotBool TtaIsW3Path ( const char *path );
 
 #else /* __STDC__ */
 
@@ -110,23 +110,23 @@ extern void TtaExtractName ( char *text,
                                char *aDirectory,
                                char *aName );
 extern void MakeCompleteName ( char *fname,
-                                 char *fext,
+                                 const char *fext,
                                  char *directory_list,
                                  char *completeName,
                                  int *length );
 extern void GetPictureFileName ( char *name,
                                    char *fileName );
 extern void FindCompleteName ( char *fileName,
-                                 char *extension,
+                                 const char *extension,
                                  PathBuffer directory,
                                  PathBuffer completeName,
                                  int *length );
 extern int FileWriteAccess ( char *fileName );
-extern ThotBool TtaMakeDirectory ( char *directory );
-extern ThotBool TtaCheckDirectory ( char *directory );
-extern ThotBool TtaCheckMakeDirectory ( char *name,
+extern ThotBool TtaMakeDirectory ( const char *directory );
+extern ThotBool TtaCheckDirectory ( const char *directory );
+extern ThotBool TtaCheckMakeDirectory ( const char *name,
                                           ThotBool recursive );
-extern ThotBool TtaIsW3Path ( char *path );
+extern ThotBool TtaIsW3Path ( const char *path );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

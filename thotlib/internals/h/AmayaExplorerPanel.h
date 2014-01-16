@@ -4,7 +4,7 @@
 #define __AMAYAEXPLORERPANEL_H__
 
 #include "wx/wx.h"
-#include "AmayaSubPanel.h"
+#include "AmayaToolPanel.h"
 
 class AmayaNormalWindow;
 class wxTreeEvent;
@@ -17,26 +17,29 @@ class wxGenericDirCtrl;
  *      Created:  07/11/2006
  *     Revision:  none
 */
-
-class AmayaExplorerPanel : public AmayaSubPanel
+class AmayaExplorerToolPanel : public AmayaToolPanel
 {
+  DECLARE_DYNAMIC_CLASS(AmayaExplorerToolPanel)
 public:
-  DECLARE_DYNAMIC_CLASS(AmayaExplorerPanel)
+  AmayaExplorerToolPanel();
+  virtual ~AmayaExplorerToolPanel();
+  
+  virtual bool Create(wxWindow* parent, wxWindowID id, const wxPoint& pos = wxDefaultPosition, 
+            const wxSize& size = wxDefaultSize, long style = 0,
+            const wxString& name = wxT("AmayaExplorerToolPanel"), wxObject* extra=NULL);
+  
+  virtual wxString GetToolPanelName()const;
+  virtual int      GetToolPanelType()const{return WXAMAYA_PANEL_EXPLORER;}
+  virtual wxString GetToolPanelConfigKeyName()const{return wxT("PANEL_EXPLORER");}
 
-  AmayaExplorerPanel( wxWindow * p_parent_window = NULL
-           ,AmayaNormalWindow * p_parent_nwindow = NULL );
-  virtual ~AmayaExplorerPanel();
+  /** Return a default AUI config for the panel.*/
+  virtual wxString GetDefaultAUIConfig();
 
-  virtual bool IsActive();
-  virtual int GetPanelType();
-
- protected:
-  virtual void SendDataToPanel( AmayaParams& params );
-  virtual void DoUpdate();
-
- protected:
-  void OnDirTreeItemActivate(wxTreeEvent& event);
+protected:
   DECLARE_EVENT_TABLE()
+  void OnDirTreeItemActivate(wxTreeEvent& event);
+  void OnClose(wxCloseEvent& event);
+  
 };
 
 #endif // __AMAYAEXPLORERPANEL_H__

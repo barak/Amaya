@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2007
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -23,6 +23,7 @@
 
 #include "AHTURLTools_f.h"
 #include "css_f.h"
+#include "EDITstyle_f.h"
 #include "fetchHTMLname_f.h"
 #include "fetchXMLname_f.h"
 #include "html2thot_f.h"
@@ -312,7 +313,7 @@ static int          CharLevelElement[] =
     HTML_EL_Button_Input, HTML_EL_BUTTON_,
     HTML_EL_LABEL,
     HTML_EL_BR,
-    HTML_EL_Object,
+    HTML_EL_Object, HTML_EL_Basic_Elem,
     0};
 
 /* block level elements, i.e. elements having a Line rule in the presentation
@@ -794,7 +795,7 @@ static PtrClosedElement copyCEstring (PtrClosedElement first)
   InitMapping     intialise the list of the elements closed by
   each start tag.
   ----------------------------------------------------------------------*/
-void                   InitMapping (void)
+void InitMapping (void)
 {
   int                 line;
   int                 entry;
@@ -1679,6 +1680,41 @@ static Element LastLeafInElement (Element el)
 }
 
 /*----------------------------------------------------------------------
+  CheckIconLink
+  The element is a HTML link.
+  Check element attributes and load the style sheet if needed.
+  ----------------------------------------------------------------------*/
+void CheckIconLink (Element el, Document doc, SSchema schema)
+{
+  Attribute           attr;
+  AttributeType       attrType;
+  char               *buff, *ptr;
+  int                 length;
+
+  /* A LINK element is complete.
+     If it is a link to an icon, add the icon to the page
+  */
+  attrType.AttrSSchema = schema;
+  attrType.AttrTypeNum = HTML_ATTR_REL;
+  attr = TtaGetAttribute (el, attrType);
+  if (attr)
+    {
+      /* get a buffer for the attribute value */
+      length = TtaGetTextAttributeLength (attr);
+      buff = (char*)TtaGetMemory (length + 1);
+      TtaGiveTextAttributeValue (attr, buff, &length);
+      ptr = strstr (buff, "icon");
+      if (ptr == NULL)
+        ptr = strstr (buff, "ICON");
+      if (ptr &&
+          DocumentMeta[doc] && DocumentMeta[doc]->method != CE_MAKEBOOK &&
+          DocumentMeta[doc]->link_icon == NULL)
+        DocumentMeta[doc]->link_icon = el;
+      TtaFreeMemory (buff);
+    }
+}
+
+/*----------------------------------------------------------------------
   CheckCSSLink
   The element is a HTML link.
   Check element attributes and load the style sheet if needed.
@@ -1694,11 +1730,11 @@ void CheckCSSLink (Element el, Document doc, SSchema schema)
   /* A LINK element is complete.
      If it is a link to a style sheet, load that style sheet.
   */
-  attrType.AttrSSchema = schema;
   if (IsCSSLink (el, doc))
     {
       /* it's a link to a style sheet */
       /* get the media specification */
+      attrType.AttrSSchema = schema;
       attrType.AttrTypeNum = HTML_ATTR_media;
       attr = TtaGetAttribute (el, attrType);
       if (attr)
@@ -1716,7 +1752,9 @@ void CheckCSSLink (Element el, Document doc, SSchema schema)
       attrType.AttrTypeNum = HTML_ATTR_HREF_;
       attr = TtaGetAttribute (el, attrType);
       if (attr &&
-          DocumentMeta[doc] && DocumentMeta[doc]->method != CE_MAKEBOOK)
+          DocumentMeta[doc] && 
+          DocumentMeta[doc]->method != CE_MAKEBOOK &&
+          DocumentMeta[doc]->method != CE_TEMPLATE)
         {
           length = TtaGetTextAttributeLength (attr);
           utf8path = (char*)TtaGetMemory (length + 1);
@@ -1728,6 +1766,7 @@ void CheckCSSLink (Element el, Document doc, SSchema schema)
             {
               LoadStyleSheet (buff, doc, el, NULL, NULL, media, FALSE);
               TtaFreeMemory (buff);
+              UpdateStyleList (doc, 1);
             }
           TtaFreeMemory (utf8path);
         }
@@ -5199,6 +5238,9 @@ static void ReadTextFile (FILE *infile, char *textbuf, Document doc,
       inputBuffer[LgBuffer] = EOS;
       TtaAppendTextContent (el, (unsigned char *)inputBuffer, doc);
     }
+  if (DocumentTypes[doc] != docSource)
+    // clean up the list of css files
+    UpdateStyleList (doc, 1);
 }
 
 /*----------------------------------------------------------------------
@@ -5336,6 +5378,7 @@ void CheckDocHeader (char *fileName, ThotBool *xmlDec, ThotBool *docType,
                       if (ptr && ptr < end)
                         {
                           *thotType = docHTML;
+                          *docProfile = L_Transitional;
                           ptr = strstr (&buffer[i], "XHTML");
                           if (!ptr || (ptr && ptr > end))
                             ptr = strstr (&buffer[i], "xhtml");
@@ -5384,10 +5427,24 @@ void CheckDocHeader (char *fileName, ThotBool *xmlDec, ThotBool *docType,
                                             {
                                               ptr = strstr (&buffer[i], "1.1");
                                               if (ptr && ptr < end)
-                                                *docProfile = L_Xhtml11;
-                                              ptr = strstr (&buffer[i], "plus MathML");
-                                              if (ptr && ptr < end)
-                                                *useMath = TRUE;
+						{
+						  ptr = strstr (&buffer[i], "svg:svg");
+						  if (ptr && ptr < end)
+						    {
+						      *thotType = docSVG;
+						      *isXML = TRUE;
+						      *isknown = TRUE;
+						      *docProfile = L_SVG;
+						      *useMath = TRUE;
+						    }
+						  else
+						    {
+						      *docProfile = L_Xhtml11;
+						      ptr = strstr (&buffer[i], "plus MathML");
+						      if (ptr && ptr < end)
+							*useMath = TRUE;
+						    }
+						}
                                             }
                                         }
                                     }
@@ -5433,6 +5490,7 @@ void CheckDocHeader (char *fileName, ThotBool *xmlDec, ThotBool *docType,
                               *thotType = docSVG;
                               *isXML = TRUE;
                               *isknown = TRUE;
+                              *docProfile = L_SVG;
                             }
                           else
                             {
@@ -5513,6 +5571,7 @@ void CheckDocHeader (char *fileName, ThotBool *xmlDec, ThotBool *docType,
                                   *thotType = docHTML;
                                   *isXML = TRUE;
                                   *isknown = TRUE;
+                                  *docProfile = L_Transitional;
                                 }
                             }
                           else
@@ -5528,7 +5587,7 @@ void CheckDocHeader (char *fileName, ThotBool *xmlDec, ThotBool *docType,
                           endOfSniffedFile = TRUE;
                           /* We consider the document as a svg one */
                           *thotType = docSVG;
-                          *docProfile = L_Other;
+                          *docProfile = L_SVG;
                           end = strstr (&buffer[i], ">");
                           ptrns = strstr (&buffer[i], "xmlns");
                           if (ptrns && ptrns < end)
@@ -6808,6 +6867,7 @@ void CheckAbstractTree (Document doc, ThotBool isXTiger)
             while (ok);
         }
 
+#ifdef IV
       /* checks all MAP elements. If they are within a Block element, */
       /* move them up in the structure */
       el = elRoot;
@@ -6839,6 +6899,7 @@ void CheckAbstractTree (Document doc, ThotBool isXTiger)
                 }
             }
         }
+#endif /* IV */
 
       /* If element BODY is empty, create an empty element as a placeholder*/
       if (elBody)
@@ -7369,7 +7430,10 @@ void StartParser (Document doc, char *fileName,
           CheckAbstractTree (HTMLcontext.doc, IsXTiger (documentName));
           // now load the user style sheet
           if (!external_doc)
+            {
             LoadUserStyleSheet (doc);
+            UpdateStyleList (doc, 1);
+            }
         }
 
       TtaGZClose (stream);

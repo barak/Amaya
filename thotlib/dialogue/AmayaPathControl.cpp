@@ -32,6 +32,9 @@
 WX_DEFINE_LIST(AmayaPathControlItemList);
 
 
+static wxString s_sep = wxT(">");
+static wxString s_dots = wxT("...");
+
 /*------------------------------------------------------------------------------
   ----------------------------------------------------------------------------*/
 AmayaPathControl::AmayaPathControl(wxWindow* parent, wxWindowID id,
@@ -40,6 +43,7 @@ wxControl(parent, id, pos, size, style),
 m_focused(NULL),
 m_height(0)
 {
+  SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_CLIC_ELEM_TO_SELECT_IT)));
 }
 
 /*----------------------------------------------------------------------
@@ -58,14 +62,20 @@ void AmayaPathControl::SetSelection(Element elem)
   ElementType         elType;
   wxString            name;
   wxRect              rect;
-  int                 length;
-  char               *buffer = NULL;
+  int                 length, kind, i;
+  char               *buffer = NULL, buff[MAX_LENGTH];
   bool                xtiger, file = false;
+  Document            doc = TtaGetDocument(elem);
+  SSchema             htmlSSchema = TtaGetSSchema ("HTML", doc);
+  AttributeType       attrType;
+  Attribute           attr;
+  
   
   m_items.DeleteContents(true);
   m_items.clear();
   m_focused = NULL;
   m_height = 0;
+  
   while (pEl)
     {  
       /** @see BuildSelectionMessage () */
@@ -111,6 +121,32 @@ void AmayaPathControl::SetSelection(Element elem)
             {
               elType = TtaGetElementType(Element(pEl));
               name = TtaConvMessageToWX(TtaGetElementTypeName(elType));
+              
+              if(elType.ElSSchema==htmlSSchema)
+                {
+                  TtaGiveAttributeTypeFromName("class", Element(pEl), &attrType, &kind);
+                  attr = TtaGetAttribute(Element(pEl), attrType);
+                  if(attr)
+                    {
+                      length = MAX_LENGTH;
+                      TtaGiveTextAttributeValue(attr, buff, &length);
+                      name.Alloc(name.Length()+length+1);
+                      for(i=0; i<length; i++)
+                        {
+                          if(buff[i]!=' ')
+                            {
+                              name += wxT('.');
+                              while(buff[i]!=0 && buff[i]!=' ')
+                                {
+                                  name += wxChar(buff[i]);
+                                  i++;
+                                }
+                            }
+                        }
+                    }
+                }
+              
+              
             }
           dc.GetTextExtent(name, &rect.width, &rect.height);
           AmayaPathControlItem* item = new AmayaPathControlItem;
@@ -140,13 +176,11 @@ void AmayaPathControl::OnDraw(wxPaintEvent& event)
   wxPaintDC dc(this);
   wxSize sz = GetClientSize();
   
-  static wxString sep = wxT("/"); 
   wxSize szSep;
-  dc.GetTextExtent(sep, &szSep.x, &szSep.y);
+  dc.GetTextExtent(s_sep, &szSep.x, &szSep.y);
   szSep.x += 4;
-  static wxString dots = wxT("..."); 
   wxSize szDots;
-  dc.GetTextExtent(dots, &szDots.x, &szDots.y);
+  dc.GetTextExtent(s_dots, &szDots.x, &szDots.y);
   szDots.x += 4;
   
   int x = 0;
@@ -159,7 +193,7 @@ void AmayaPathControl::OnDraw(wxPaintEvent& event)
         {
           if (!bIsFirst)
             {
-              dc.DrawText(sep, x+2, y);
+              dc.DrawText(s_sep, x+2, y);
               x += szSep.x;
             }
           else
@@ -170,7 +204,7 @@ void AmayaPathControl::OnDraw(wxPaintEvent& event)
       else if (bIsFirst)
         {
           // display "..."
-          dc.DrawText(dots, x+2, y);
+          dc.DrawText(s_dots, x+2, y);
           x = szDots.x;
           bIsFirst = false;
         }
@@ -187,13 +221,11 @@ void AmayaPathControl::PreCalcPositions()
   wxSize sz = GetClientSize();
   int y = (sz.y-m_height)/2, x, dx;
 
-  static wxString sep = wxT("/"); 
   wxSize szSep;
-  dc.GetTextExtent(sep, &szSep.x, &szSep.y);
+  dc.GetTextExtent(s_sep, &szSep.x, &szSep.y);
   szSep.x += 4;
-  static wxString dots = wxT("..."); 
   wxSize szDots;
-  dc.GetTextExtent(dots, &szDots.x, &szDots.y);
+  dc.GetTextExtent(s_dots, &szDots.x, &szDots.y);
   szDots.x += 4;
 
   int cx = 0;

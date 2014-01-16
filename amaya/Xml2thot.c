@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2007
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -25,6 +25,7 @@
 #include "document.h"
 
 #include "AHTURLTools_f.h"
+#include "EDITstyle_f.h"
 #include "HTMLactions_f.h"
 #include "HTMLedit_f.h"
 #include "HTMLimage_f.h"
@@ -559,11 +560,11 @@ void  XmlParseError (ErrorType type, unsigned char *msg, int line)
   else
     {
       if (CSSErrorsFound && docURL2)
-	{
-	  fprintf (ErrFile, "\n*** Errors/warnings in %s\n", docURL2);
-	  TtaFreeMemory (docURL2);
-	  docURL2 = NULL;
-	}
+      	{
+      	  fprintf (ErrFile, "\n*** Errors/warnings in %s\n", docURL2);
+      	  TtaFreeMemory (docURL2);
+      	  docURL2 = NULL;
+      	}
     }
   
   switch (type)
@@ -1022,11 +1023,15 @@ static void  XhtmlCheckInsert (Element *el, Element  parent,
 {
   ElementType   parentType, newElType, elType, prevType, ancestorType;
   Element       newEl, ancestor, prev, prevprev;
+  int           profile;
+  char          msgBuffer[MaxMsgLength];
+  char         *typeName;
 
   if (parent == NULL)
     return;
    
   elType = TtaGetElementType (*el);
+  typeName = TtaGetElementTypeName (elType);
 
   if (elType.ElTypeNum == HTML_EL_TEXT_UNIT || 
       elType.ElTypeNum == HTML_EL_BR ||
@@ -1063,10 +1068,23 @@ static void  XhtmlCheckInsert (Element *el, Element  parent,
           if (XhtmlCannotContainText (elType) &&
               !XmlWithinStack (HTML_EL_Option_Menu, XhtmlParserCtxt->XMLSSchema))
             {
+              profile = TtaGetDocumentProfile (XMLcontext.doc);
+              if ((profile == L_Basic || profile == L_Strict) &&
+                  !strcmp (TtaGetSSchemaName (elType.ElSSchema), "HTML") &&
+                  elType.ElTypeNum == HTML_EL_BODY)
+                {
+                  sprintf ((char *)msgBuffer, 
+                           "Element <%s> not allowed outside a block Element - <p> forced", typeName);
+                  XmlParseError (errorParsing, (unsigned char *)msgBuffer, 0);
+                  newElType.ElTypeNum = HTML_EL_Paragraph;
+                }
+              else
+                {
+                  newElType.ElTypeNum = HTML_EL_Pseudo_paragraph;
+                }
               /* Element ancestor cannot contain text directly. Create a */
               /* Pseudo_paragraph element as the parent of the text element */
               newElType.ElSSchema = XhtmlParserCtxt->XMLSSchema;
-              newElType.ElTypeNum = HTML_EL_Pseudo_paragraph;
               newEl = TtaNewElement (doc, newElType);
               XmlSetElemLineNumber (newEl);
               /* insert the new Pseudo_paragraph element */
@@ -2662,6 +2680,7 @@ static unsigned char *HandleXMLstring (unsigned char *data, int *length,
   int            k, l, m;
   int            entityValue;	
   ThotBool       found, end;
+  char           msgBuffer[MaxMsgLength];
 
   max = *length;
   buffer = (unsigned char *)TtaGetMemory (4 * max + 1);
@@ -2743,6 +2762,13 @@ static unsigned char *HandleXMLstring (unsigned char *data, int *length,
                       for (m = 0; entityName[m] != EOS; m++)
                         buffer[j++] = entityName[m];
                       buffer[j++] = ';';
+                      if (!found)
+                        {
+                         sprintf ((char *)msgBuffer, "Unknown entity \"%s;\"",
+                                  entityName);
+                         XmlParseError (errorParsing,
+                                        (unsigned char *)msgBuffer, 0);
+                        }
                     }
                 }
               else
@@ -3026,12 +3052,16 @@ static void EndOfXmlAttributeName (char *attrName, char *uriName,
     {
       /* This attribute is not in the corresponding mapping table */
       strcpy ((char *)schemaName, (char *)currentParserCtxt->SSchemaName);
-      sprintf (msgBuffer, "Invalid or unsupported %s attribute \"%s\"",
-               schemaName, attrName);
-      XmlParseError (errorParsing, (unsigned char *)msgBuffer, 0);
-      /* Attach an Invalid_attribute to the current element */
-      /* It may be a valid attribute that is not yet defined in Amaya tables */
-      UnknownXmlAttribute (attrName, NULL);
+      // skip possible old template attributes
+      if (strcmp (schemaName, "Template"))
+        {
+          sprintf (msgBuffer, "Invalid or unsupported %s attribute \"%s\"",
+                   schemaName, attrName);
+          XmlParseError (errorParsing, (unsigned char *)msgBuffer, 0);
+          /* Attach an Invalid_attribute to the current element */
+          /* It may be a valid attribute that is not yet defined in Amaya tables */
+          UnknownXmlAttribute (attrName, NULL);
+        }
       UnknownAttr = TRUE;
     }
   else
@@ -5446,12 +5476,17 @@ ThotBool ParseXmlBuffer (char *xmlBuffer, Element el, ThotBool isclosed,
   /* general initialization */
   RootElement = NULL;
   if (isclosed)
-    {
-      parent = TtaGetParent (el);
-      elType = TtaGetElementType (parent);
-    }
+    parent = TtaGetParent (el);
   else
-    elType = TtaGetElementType (el);
+    parent = el;
+
+  // skip Template elements
+  do
+    {
+      elType = TtaGetElementType (parent);
+      parent = TtaGetParent (parent);
+    }
+  while (!strcmp (TtaGetSSchemaName(elType.ElSSchema), "Template"));
   schemaName = TtaGetSSchemaName(elType.ElSSchema);
   InitializeXmlParsingContext (doc, el, isclosed, TRUE);
   ChangeXmlParserContextByDTD (schemaName);
@@ -6033,6 +6068,7 @@ void StartXmlParser (Document doc, char *fileName,
              selector in the User style sheet */
           LoadUserStyleSheet (doc);
           TtaSetDisplayMode (doc, DisplayImmediately);
+          UpdateStyleList (doc, 1);
         }
 
       /* Check the Thot abstract tree against the structure schema. */

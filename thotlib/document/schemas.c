@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2007
+ *  (c) COPYRIGHT INRIA, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -2726,7 +2726,7 @@ static void AddANewNamespacePrefix (PtrDocument pDoc, PtrElement element,
   AddANewNamespaceUri
   ----------------------------------------------------------------------*/
 static void AddANewNamespaceUri (PtrDocument pDoc, PtrElement element,
-                                 char *nsPrefix, char *NsUri)
+                                 char *nsPrefix, const char *NsUri)
 {
   PtrNsUriDescr  newUriDecl, uriDecl, prevUriDecl;
 
@@ -2763,7 +2763,7 @@ static void AddANewNamespaceUri (PtrDocument pDoc, PtrElement element,
   Add a namespace declaration to the document
   ----------------------------------------------------------------------*/
 void SetNamespaceDeclaration (PtrDocument pDoc, PtrElement element,
-                              char *nsPrefix, char *NsUri)
+                              char *nsPrefix, const char *NsUri)
 {
   PtrNsUriDescr   uriDecl;
   ThotBool        found;
@@ -2855,6 +2855,7 @@ void RemoveNamespaceDeclaration (PtrDocument pDoc, PtrElement element)
                             prevUri->NsNextUriDecl = uriDecl->NsNextUriDecl;
                           else
                             pDoc->DocNsUriDecl = uriDecl->NsNextUriDecl;
+                          TtaFreeMemory (uriDecl->NsUriName);
                           TtaFreeMemory (uriDecl);
                         }
                     }

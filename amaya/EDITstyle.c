@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2007
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -25,13 +25,17 @@
 #include "SVG.h"
 #endif
 #include "fetchHTMLname.h"
+#include "MENUconf.h"
 
 #include "AHTURLTools_f.h"
 #include "EDITimage_f.h"
+#include "EDITORactions_f.h"
 #include "HTMLactions_f.h"
 #include "HTMLedit_f.h"
+#include "HTMLhistory_f.h"
 #include "HTMLimage_f.h"
 #include "HTMLpresentation_f.h"
+#include "HTMLsave_f.h"
 #include "UIcss_f.h"
 #include "css_f.h"
 #include "fetchHTMLname_f.h"
@@ -52,13 +56,26 @@
 
 
 static char         ListBuffer[MAX_CSS_LENGTH];
-static char        *OldBuffer;
 static int          NbClass = 0;
 static char         CurrentClass[80];
 static Element      ClassReference;
 static Document     DocReference;
 static Document	    ApplyClassDoc;
+static ThotBool     OldBuffer = FALSE;
 
+
+/*----------------------------------------------------------------------
+  UpdateStyleList
+  ----------------------------------------------------------------------*/
+void UpdateStyleList (Document doc, View view)
+{
+#ifdef _WX
+  AmayaParams p;
+
+  p.param1 = doc;
+  TtaSendDataToPanel( WXAMAYA_PANEL_STYLE_LIST, p );
+#endif /* _WX */
+}
 
 /*----------------------------------------------------------------------
   RemoveElementStyle cleans all the presentation rules of a given element.
@@ -111,6 +128,7 @@ static void RemoveElementStyle (Element el, Document doc, ThotBool removeSpan)
 
   /* remove all the specific presentation rules applied to the element */
   TtaCleanElementPresentation (el, doc);
+  UpdateStyleList (doc, 1);
 }
 
 
@@ -124,7 +142,7 @@ static void RemoveElementStyle (Element el, Document doc, ThotBool removeSpan)
   ----------------------------------------------------------------------*/
 static char *UpdateCSSImport (char *oldpath, char *newpath, char **styleString)
 {
-  char               *b, *e, *newString, *oldptr, *sString;
+  char               *b, *e = NULL, *newString, *oldptr, *sString;
   char                old_url[MAX_LENGTH];
   char                tempname[MAX_LENGTH];
   char                cssname[MAX_LENGTH];
@@ -514,16 +532,6 @@ ThotBool UpdateStyleDelete (NotifyAttribute * event)
   return FALSE;  /* let Thot perform normal operation */
 }
 
-/*----------------------------------------------------------------------
-  ChangeStyle
-  the STYLE element will be changed in the document HEAD.
-  ----------------------------------------------------------------------*/
-ThotBool ChangeStyle (NotifyOnTarget * event)
-{
-  OldBuffer = GetStyleContents (event->element);
-  return FALSE;  /* let Thot perform normal operation */
-}
-
 
 /*----------------------------------------------------------------------
   DeleteStyle
@@ -536,20 +544,18 @@ ThotBool DeleteStyle (NotifyElement *event)
 }
 
 /*----------------------------------------------------------------------
-  GetCurrentStyle
-  Get the current set of CSS properties applied to the current selection.
-The returned buffer must be freed by the calling function.
+  GetCurrentStyleAttribute
+  Return the current style attribute
   -----------------------------------------------------------------------*/
-char *GetCurrentStyle ()
+Attribute GetCurrentStyleAttribute ()
 {
   Document        doc;
-  Element         el, parent;
+  Element         el;
   ElementType	    elType;
   AttributeType   attrType;
-  Attribute       attr;
+  Attribute       attr = NULL;
   char           *name;
-  char           *buffer = NULL;
-  int             first, last, len;
+  int             first, last;
 
   doc = TtaGetSelectedDocument();
   if (doc)
@@ -558,55 +564,43 @@ char *GetCurrentStyle ()
       elType = TtaGetElementType (el);
       attrType.AttrSSchema = elType.ElSSchema;
       attrType.AttrTypeNum = 0;
-      parent = NULL;
       name = TtaGetSSchemaName (elType.ElSSchema);
+      //if (elType.ElTypeNum == HTML_EL_TEXT_UNIT)
+      //  el = TtaGetParent (el);
       if (!strcmp(name, "MathML"))
-        {
-          if (elType.ElTypeNum == HTML_EL_TEXT_UNIT)
-            el = TtaGetParent (el);
-          attrType.AttrTypeNum = MathML_ATTR_style_;
-        }
+        attrType.AttrTypeNum = MathML_ATTR_style_;
 #ifdef _SVG
       else if (!strcmp(name, "SVG"))
-        {
-          if (elType.ElTypeNum == HTML_EL_TEXT_UNIT)
-            {
-              elType.ElTypeNum = HTML_EL_STYLE_;
-              parent = TtaGetTypedAncestor (el, elType);
-            }
-          else
-            attrType.AttrTypeNum = SVG_ATTR_style_;
-        }
+        attrType.AttrTypeNum = SVG_ATTR_style_;
 #endif /* _SVG */
       else if (!strcmp(name, "HTML"))
-        {
-          if (elType.ElTypeNum == HTML_EL_TEXT_UNIT)
-            {
-              elType.ElTypeNum = SVG_EL_style__;
-              parent = TtaGetTypedAncestor (el, elType);
-            }
-          else
-            attrType.AttrTypeNum = HTML_ATTR_Style_;
-        }
-      else if (DocumentTypes[doc] == docCSS ||
-               DocumentTypes[doc] == docSource)
-        parent = el;
+        attrType.AttrTypeNum = HTML_ATTR_Style_;
 
-      if (parent)
-        {
-          // get the selected string
-        }
-      else if (attrType.AttrTypeNum)
-        {
-          // look for the style attribute
-          attr = TtaGetAttribute (el, attrType);
-          if (attr)
-            {
-              len = TtaGetTextAttributeLength (attr) + 1;
-              buffer = (char *)TtaGetMemory (len);
-              TtaGiveTextAttributeValue (attr, buffer, &len);
-            }
-        }
+      if (attrType.AttrTypeNum)
+        // look for the style attribute
+        attr = TtaGetAttribute (el, attrType);
+    }
+  return attr;
+}
+
+/*----------------------------------------------------------------------
+  GetCurrentStyle
+  Get the current set of CSS properties applied to the current selection.
+  The returned buffer must be freed by the calling function.
+  -----------------------------------------------------------------------*/
+char *GetCurrentStyle ()
+{
+  Attribute       attr;
+  char           *buffer = NULL;
+  int             len;
+
+  // look for the style attribute
+  attr = GetCurrentStyleAttribute ();
+  if (attr)
+    {
+      len = TtaGetTextAttributeLength (attr) + 1;
+      buffer = (char *)TtaGetMemory (len);
+      TtaGiveTextAttributeValue (attr, buffer, &len);
     }
   return buffer;
 }
@@ -644,18 +638,21 @@ void EnableStyleElement (Document doc, Element el)
         {
           /* get the style element in the document head */
           buffer = GetStyleContents (el);
-          css = SearchCSS (doc, NULL, el, &pInfo);
-          if (pInfo)
-            pInfo->PiEnabled = TRUE;
-          dispMode = TtaGetDisplayMode (doc);
-          if (dispMode != NoComputedDisplay)
-            TtaSetDisplayMode (doc, NoComputedDisplay);
-          ReadCSSRules (doc, NULL, buffer, NULL, TtaGetElementLineNumber (el),
-                        FALSE, el);
-          /* Restore the display mode */
-          if (dispMode != NoComputedDisplay)
-            TtaSetDisplayMode (doc, dispMode);
-          TtaFreeMemory (buffer);
+          if (buffer)
+            {
+              css = SearchCSS (doc, NULL, el, &pInfo);
+              if (pInfo)
+                pInfo->PiEnabled = TRUE;
+              dispMode = TtaGetDisplayMode (doc);
+              if (dispMode != NoComputedDisplay)
+                TtaSetDisplayMode (doc, NoComputedDisplay);
+              ReadCSSRules (doc, NULL, buffer, NULL, TtaGetElementLineNumber (el),
+                            FALSE, el);
+              /* Restore the display mode */
+              if (dispMode != NoComputedDisplay)
+                TtaSetDisplayMode (doc, dispMode);
+              TtaFreeMemory (buffer);
+            }
         }
     }
 }
@@ -669,7 +666,7 @@ void DeleteStyleElement (Document doc, Element el)
   ElementType		elType;
   char                 *name;
 
-  if (el)
+  if (el && !TtaIsReadOnly (el))
     {
       /* get the style element in the document head */
       elType = TtaGetElementType (el);
@@ -692,157 +689,259 @@ void DeleteStyleElement (Document doc, Element el)
 
 
 /*----------------------------------------------------------------------
+  ApplyStyleChange
+  A STYLE element has been changed in the HEAD
+  OldBuffer says if there is a previous contents
+  buffer give the new contents
+  ----------------------------------------------------------------------*/
+static void ApplyStyleChange (Element el, Document doc)
+{
+  DisplayMode         dispMode;
+
+  dispMode = TtaGetDisplayMode (doc);
+  TtaSetDisplayMode (doc, NoComputedDisplay);
+  RemoveParsingErrors (doc);
+  // close attached log documents
+  CloseLogs (doc);
+
+  if (OldBuffer)
+    {
+      // remove previous style rules
+      RemoveStyle (NULL, doc, TRUE, FALSE, el, CSS_DOCUMENT_STYLE);
+      OldBuffer = FALSE;
+    }
+  /* Apply new style rules */
+  EnableStyleElement (doc, el);
+  TtaSetDisplayMode (doc, dispMode);
+  TtaSetDocumentModified (doc);
+  UpdateStyleList (doc, 1);
+}
+
+/*----------------------------------------------------------------------
+  ChangeStyle
+  the STYLE element will be changed in the document HEAD.
+  ----------------------------------------------------------------------*/
+ThotBool ChangeStyle (NotifyOnTarget * event)
+{
+  ThotBool            loadcss;
+
+  TtaGetEnvBoolean ("LOAD_CSS", &loadcss);
+  if (loadcss && event->element)
+    OldBuffer = TRUE;
+  return FALSE;  /* let Thot perform normal operation */
+}
+
+/*----------------------------------------------------------------------
   StyleChanged
   A STYLE element has been changed in the HEAD
   ----------------------------------------------------------------------*/
 void StyleChanged (NotifyOnTarget *event)
 {
-  DisplayMode         dispMode;
-  char               *buffer, *ptr1, *ptr2;
-  char               *pEnd, *nEnd;
-  char                c;
-  int                 i, j;
-  int                 previousEnd, nextEnd;
-  int                 braces;
+  ThotBool            loadcss;
 
-  /* get the new content of the style element */
-  buffer = GetStyleContents (event->element);
-  /* compare both strings */
-  i = 0;
-  ptr1 = buffer;
-  previousEnd = i;
-  pEnd = ptr1;
-  braces = 0;
-  dispMode = TtaGetDisplayMode (event->document);
-  RemoveParsingErrors (event->document);
-  // close attached log documents
-  CloseLogs (event->document);
-  if (OldBuffer == NULL)
-    {
-      if (buffer)
-        {
-          TtaSetDisplayMode (event->document, DeferredDisplay);
-          /* This is a brand new style element */
-          ApplyCSSRules (event->element, buffer, event->document, FALSE);
-          TtaSetDisplayMode (event->document, dispMode);
-        }
-    }
-  else
-    {
-      if (buffer == NULL)
-        {
-          TtaSetDisplayMode (event->document, DeferredDisplay);
-          /* the style element has been cleared. Remove the style made by the
-             previous content */
-          ApplyCSSRules (event->element, OldBuffer, event->document, TRUE);
-          TtaSetDisplayMode (event->document, dispMode);
-        }
-      else
-        {
-          if (strstr (OldBuffer, "float") || strstr (buffer, "float"))
-            TtaSetDisplayMode (event->document, NoComputedDisplay);
-          else
-            TtaSetDisplayMode (event->document, DeferredDisplay);
-          /* handle only differences */
-          while (OldBuffer[i] == *ptr1 && *ptr1 != EOS)
-            {
-              if (i > 0 && OldBuffer[i-1] == '{')
-                braces++;
-              if (i > 0 &&
-                  (OldBuffer[i-1] == '}' ||
-                   ((OldBuffer[i-1] == ';' || OldBuffer[i-1] == '>') &&
-                    braces == 0)))
-                {
-                  if (OldBuffer[i-1] == '}')
-                    braces--;
-                  previousEnd = i;
-                  pEnd = ptr1;
-                }
-              i++;
-              ptr1++;
-            }
-
-          /* now ptr1 and OldBuffer[i] point to different strings */
-          if (*ptr1 != EOS)
-            {
-              ptr2 = ptr1 + strlen (ptr1);
-              j = i + strlen (&OldBuffer[i]);
-              nextEnd = j;
-              nEnd = ptr2;
-              braces = 0;
-              while (OldBuffer[j] == *ptr2 && ptr2 != ptr1)
-                {
-                  if (j > i && OldBuffer[j-1] == '{')
-                    braces++;
-                  if (j > i &&
-                      (OldBuffer[j-1] == '}' ||
-                       ((OldBuffer[j-1] == '@' || OldBuffer[j-1] == '<') &&
-                        braces == 0)))
-                    {
-                      if (OldBuffer[j-1] == '}')
-                        braces--;
-                      nextEnd = j;
-                      nEnd = ptr2;
-                    }
-                  j--;
-                  ptr2--;
-                }
-              if (ptr1 != ptr2)
-                {
-                  /* take complete CSS rules */
-                  OldBuffer[nextEnd] = EOS;
-                  *nEnd = EOS;
-
-                  /* remove previous rules */
-                  ptr1 = &OldBuffer[previousEnd];
-                  ptr2 = ptr1;
-                  do
-                    {
-                      while (*ptr2 != '}' && *ptr2 != EOS)
-                        ptr2++;
-                      if (*ptr2 != EOS)
-                        ptr2++;
-                      /* cut here */
-                      c = *ptr2;
-                      *ptr2 = EOS;
-                      ApplyCSSRules (event->element, ptr1, event->document,
-                                     TRUE);
-                      *ptr2 = c;
-                      ptr1 = ptr2;
-                    }
-                  while (*ptr2 != EOS);
-
-                  /* add new rules */
-                  ptr1 = pEnd;
-                  ptr2 = ptr1;
-                  do
-                    {
-                      while (*ptr2 != '}' && *ptr2 != EOS)
-                        ptr2++;
-                      if (*ptr2 != EOS)
-                        ptr2++;
-                      /* cut here */
-                      c = *ptr2;
-                      *ptr2 = EOS;
-                      ApplyCSSRules (event->element, ptr1, event->document,
-                                     FALSE);
-                      *ptr2 = c;
-                      ptr1 = ptr2;
-                    }
-                  while (*ptr2 != EOS);
-                }
-            }
-          /* reset the display mode */
-          TtaSetDisplayMode (event->document, dispMode);
-        }
-      TtaFreeMemory (OldBuffer);
-      OldBuffer = NULL;
-    }
-  TtaFreeMemory (buffer);
+  TtaGetEnvBoolean ("LOAD_CSS", &loadcss);
+  if (loadcss && event->element)
+    ApplyStyleChange (event->element, event->document);
   // check if an error is found in the new string
   CheckParsingErrors (event->document);
 }
 
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void ChangeTheme (const char *theme)
+{
+  Element             root, el, head, content, next;
+  Element             el_select, el_show;
+  ElementType	        elType;
+  Attribute           attr;
+  AttributeType       attrType;
+  Document            doc;
+  Language            language = TtaGetDefaultLanguage ();
+  char               *buffer = NULL, *ptr, *filename;
+  int                 view, i, j, len;
+  int		              position, distance;
+  DisplayMode         dispMode;
+  ThotBool            isNew = FALSE, found = FALSE;
+
+  TtaGetActiveView (&doc, &view);
+  if (doc == 0 || theme == NULL)
+    return;
+  if (doc != TtaGetSelectedDocument () && DocumentTypes[doc] == docSource)
+    doc = GetDocFromSource (doc);
+  if (doc && DocumentTypes[doc] == docHTML)
+    {
+      root = TtaGetMainRoot (doc);
+
+      /* get the current position in the document */
+      TtaGiveFirstSelectedElement (doc, &el_select, &i, &j);
+      position = RelativePosition (doc, &distance);
+      el_show = ElementAtPosition (doc, position);
+      
+      elType = TtaGetElementType (root);
+      attrType.AttrSSchema = elType.ElSSchema;
+      elType.ElTypeNum = HTML_EL_HEAD;
+      head = TtaSearchTypedElement (elType, SearchForward, root);
+      elType.ElTypeNum = HTML_EL_STYLE_;
+      el = TtaSearchTypedElement (elType, SearchForward, head);
+      while (!found && el)
+        {
+          // check if it's the right style element
+          attrType.AttrTypeNum = HTML_ATTR_Title;
+          attr = TtaGetAttribute (el, attrType);
+          if (attr)
+            {
+              len = TtaGetTextAttributeLength (attr) + 1;
+              buffer = (char *)TtaGetMemory (len);
+              TtaGiveTextAttributeValue (attr, buffer, &len);
+              if (!strcmp (buffer, "Amaya theme"))
+                found = TRUE;
+              else
+                el = TtaSearchTypedElementInTree (elType, SearchForward, head, el);
+              TtaFreeMemory (buffer);
+              buffer = NULL;
+            }
+          else
+            el = TtaSearchTypedElementInTree (elType, SearchForward, head, el);
+        }
+
+      if (el == NULL)
+        {
+          if (!strcmp (theme, "Standard"))
+            // nothing to do
+            return;
+
+          TtaSetStructureChecking (FALSE, doc);
+          el = InsertWithinHead (doc, 1, HTML_EL_STYLE_);
+          TtaSetStructureChecking (TRUE, doc);
+          isNew = TRUE;
+          if (el)
+            {
+              TtaExtendUndoSequence (doc);
+              attrType.AttrTypeNum = HTML_ATTR_Notation;
+              attr = TtaNewAttribute (attrType);
+              TtaAttachAttribute (el, attr, doc);
+              TtaSetAttributeText (attr, "text/css", el, doc);
+              attrType.AttrTypeNum = HTML_ATTR_Title;
+              attr = TtaNewAttribute (attrType);
+              TtaAttachAttribute (el, attr, doc);
+              TtaSetAttributeText (attr, "Amaya theme", el, doc);
+            }
+        }
+      else
+        TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
+
+      if (el)
+        {
+          content = GetNoTemplateChild (el, TRUE);
+          if (content && TtaIsReadOnly (content))
+            {
+              // cannot change the content type
+              TtaCloseUndoSequence (doc);
+              TtaDisplaySimpleMessage (CONFIRM, AMAYA, AM_READONLY);
+              content = NULL;
+            }
+          if (content)
+            {
+              dispMode = TtaGetDisplayMode (doc);
+              RemoveParsingErrors (doc);
+              // close attached log documents
+              CloseLogs (doc);
+              TtaSetDisplayMode (doc, NoComputedDisplay);
+              // remove the current content
+              if (!isNew && content && !TtaIsReadOnly (content))
+                RemoveStyle (NULL, doc, TRUE, FALSE, el, CSS_DOCUMENT_STYLE);
+              while (content)
+                {
+                  next = content;
+                  TtaNextSibling (&next);
+                  TtaRegisterElementDelete(content, doc);
+                  TtaDeleteTree (content, doc);
+                  content = next;
+                }
+              if (strcmp (theme, "Standard"))
+                {
+                  // look for the css file
+                  ptr = TtaGetEnvString ("APP_HOME");
+                  filename = (char *)TtaGetMemory (strlen (ptr) + strlen(theme) + 20);
+                  sprintf (filename, "%s%c%s.css", ptr, DIR_SEP, theme);
+                  if (!TtaFileExist (filename))
+                    {
+                      // the user didn't define CSS files
+                      TtaFreeMemory (filename);
+                      ptr = TtaGetEnvString ("THOTDIR");
+                      filename = (char *)TtaGetMemory (strlen (ptr) + strlen(theme) + 20);
+                      sprintf (filename, "%s%cconfig%c%s.css", ptr, DIR_SEP, DIR_SEP, theme);
+                    }
+                  buffer = LoadACSSFile (filename);
+                  if (buffer)
+                    {
+                      // insert the new content
+                      elType.ElTypeNum = HTML_EL_TEXT_UNIT;
+                      content = TtaNewElement (doc, elType);
+                      TtaSetTextContent (content, (unsigned char*)buffer, language, doc);
+                      TtaInsertFirstChild (&content, el, doc);
+                      TtaRegisterElementCreate (content, doc);
+                    }
+                  TtaFreeMemory (filename);
+                  TtaFreeMemory (buffer);
+                  EnableStyleElement (doc, el);
+                }
+              else
+                {
+                  TtaRegisterElementDelete(el, doc);
+                  TtaDeleteTree (el, doc);
+                }
+
+              // check if an error is found in the new string
+              TtaCloseUndoSequence (doc);
+              TtaSetDisplayMode (doc, dispMode);
+
+              /* restore the current position in the document */
+              TtaShowElement (doc, 1, el_show, distance);
+              if (el_select)
+                {
+                  if (j == 0 && i == 0)
+                    TtaSelectElement (doc, el_select);
+                  else
+                    TtaSelectString (doc, el_select, i, j);
+                }
+              TtaSetDocumentModified (doc);
+            }
+        }
+    }
+#ifdef _WX
+  TtaRedirectFocus();
+  UpdateStyleList (doc, 1);
+#endif /* _WX */
+}
+
+
+/*----------------------------------------------------------------------
+  DoClassicTheme
+  Apply color style
+  ----------------------------------------------------------------------*/
+void DoClassicTheme (Document doc, View view)
+{
+  ChangeTheme ("Classic");
+}
+
+/*----------------------------------------------------------------------
+  DoModernTheme
+  Apply color style
+  ----------------------------------------------------------------------*/
+void DoModernTheme (Document doc, View view)
+{
+  ChangeTheme ("Modern");
+}
+
+/*----------------------------------------------------------------------
+  DoNoTheme
+  Remove color style
+  ----------------------------------------------------------------------*/
+void DoNoTheme (Document doc, View view)
+{
+  ChangeTheme ("Standard");
+}
 
 /*----------------------------------------------------------------------
   UpdateStylePost : attribute Style has been updated or created.  
@@ -886,12 +985,12 @@ void UpdateStylePost (NotifyAttribute * event)
           /* the CSS parser detected an error */
           TtaWriteClose (ErrFile);
           ErrFile = NULL;
-          TtaSetItemOn (doc, 1, File, BShowLogFile);
+          UpdateLogFile (doc, TRUE);
           CSSErrorsFound = FALSE;
           InitInfo ("", TtaGetMessage (AMAYA, AM_CSS_ERROR));
         }
       else
-        TtaSetItemOff (doc, 1, File, BShowLogFile);
+        UpdateLogFile (doc, FALSE);
       TtaFreeMemory (style);
     }
 }
@@ -940,7 +1039,7 @@ static void DoApplyClass (Document doc)
 
   if (strcmp (CurrentClass, "(no_class)") &&
       !IsImplicitClassName (CurrentClass, doc))
-    GenerateInlineElement (HTML_EL_Span, HTML_ATTR_Class, a_class);
+    GenerateInlineElement (HTML_EL_Span, HTML_ATTR_Class, a_class, FALSE);
   else
     {
       /* remove class attributes */
@@ -1241,7 +1340,7 @@ static void UpdateClass (Document doc)
 {
   DisplayMode         dispMode;
   Attribute           attr;
-  AttributeType       attrType;
+  AttributeType       attrType, attrTypeT;
   Element             el, root, child, title, head, line, prev, styleEl;
   ElementType         elType, selType;
   char               *stylestring;
@@ -1253,6 +1352,10 @@ static void UpdateClass (Document doc)
   ThotBool            found, empty, insertNewLine, ok;
 
   elType = TtaGetElementType (ClassReference);
+  attrType.AttrSSchema = elType.ElSSchema;
+  attrType.AttrTypeNum = 0;
+  attrTypeT.AttrSSchema = elType.ElSSchema;
+  attrTypeT.AttrTypeNum = 0;
   GIType (CurrentClass, &selType, doc);
   if (selType.ElTypeNum != elType.ElTypeNum && selType.ElTypeNum != 0)
     {
@@ -1303,6 +1406,9 @@ static void UpdateClass (Document doc)
       elType.ElTypeNum = HTML_EL_STYLE_;
       attrType.AttrSSchema = elType.ElSSchema;
       attrType.AttrTypeNum = HTML_ATTR_Notation;
+      // check also if it's a theme
+      attrTypeT.AttrSSchema = elType.ElSSchema;
+      attrTypeT.AttrTypeNum = HTML_ATTR_Title;
     }
 #ifdef _SVG
   else if (!strcmp (schName, "SVG"))
@@ -1313,6 +1419,9 @@ static void UpdateClass (Document doc)
       elType.ElTypeNum = SVG_EL_style__;
       attrType.AttrSSchema = elType.ElSSchema;
       attrType.AttrTypeNum = SVG_ATTR_type;
+      // check also if it's a theme
+      attrTypeT.AttrSSchema = elType.ElSSchema;
+      attrTypeT.AttrTypeNum = SVG_ATTR_title_;
     }
 #endif /* _SVG */
   el = head;
@@ -1332,6 +1441,16 @@ static void UpdateClass (Document doc)
               TtaGiveTextAttributeValue (attr, a_class, &len);
               found = (!strcmp (a_class, "text/css"));
               TtaFreeMemory (a_class);
+              // check if it's a theme
+              attr = TtaGetAttribute (el, attrTypeT);
+              if (found && attr)
+                {
+                  len = TtaGetTextAttributeLength (attr);
+                  a_class = (char *)TtaGetMemory (len + 1);
+                  TtaGiveTextAttributeValue (attr, a_class, &len);
+                  found = (strcmp (a_class, "Amaya theme") == 0);
+                  TtaFreeMemory (a_class);
+                }
             }
         }
     }
@@ -1923,14 +2042,12 @@ void ApplyClass (Document doc, View view)
   Element             el, ancestor;
   ElementType	        elType;
 #ifdef _WX
+  AmayaParams         p;
   char                a_class_with_dot[51];
 #endif /* _WX */
   char                a_class[50], *name;
   int                 len;
   int                 firstSelectedChar, lastSelectedChar;
-#ifdef _GTK
-  char                bufMenu[MAX_TXT_LEN];
-#endif /* _GTK */
 
   TtaGiveFirstSelectedElement (doc, &el, &firstSelectedChar, &lastSelectedChar);
   if (DocumentURLs[doc] == NULL)
@@ -1963,19 +2080,7 @@ void ApplyClass (Document doc, View view)
     }
 
   /* updating the class name selector. */
-#ifdef _GTK
-  strcpy (bufMenu, TtaGetMessage (LIB, TMSG_APPLY));
-  TtaNewSheet (BaseDialog + AClassForm, TtaGetViewFrame (doc, 1), 
-               TtaGetMessage (LIB, TMSG_APPLY_CLASS), 1,
-               bufMenu, FALSE, 2, 'L', D_DONE);
-#endif /* _GTK */
   NbClass = BuildClassList (doc, ListBuffer, MAX_CSS_LENGTH, "(no_class)");
-#ifdef _GTK
-  TtaNewSelector (BaseDialog + AClassSelect, BaseDialog + AClassForm,
-                  TtaGetMessage (LIB, TMSG_SEL_CLASS),
-                  NbClass, ListBuffer, 5, NULL, FALSE, TRUE);
-#endif /* _GTK */
-
   if (el)
     {
       /* preselect the entry corresponding to the class of the first selected
@@ -2011,9 +2116,6 @@ void ApplyClass (Document doc, View view)
     {
       len = 50;
       TtaGiveTextAttributeValue (attr, a_class, &len);
-#ifdef _GTK
-      TtaSetSelector (BaseDialog + AClassSelect, -1, a_class);
-#endif /* _GTK */
 #ifdef _WX
       a_class_with_dot[0] = EOS;
       strcat(a_class_with_dot, ".");
@@ -2024,70 +2126,16 @@ void ApplyClass (Document doc, View view)
 #endif /* _WX */
     }
   else
-    {
-#ifdef _GTK
-      TtaSetSelector (BaseDialog + AClassSelect, 0, NULL);
-#endif /* _GTK */
-      strcpy (CurrentClass, "(no_class)");
-    }
+    strcpy (CurrentClass, "(no_class)");
 
   /* pop-up the dialogue box. */
-#ifdef _GTK
-  TtaShowDialogue (BaseDialog + AClassForm, TRUE);
-#endif /* _GTK */
-
-#ifdef _WINGUI
-  CreateApplyClassDlgWindow (TtaGetViewFrame (doc, 1), NbClass, ListBuffer);
-#endif /* _WINGUI */
-
 #ifdef _WX  
-  AmayaParams p;
   p.param1 = NbClass;
   p.param2 = (void*)ListBuffer;
   p.param3 = (void*)CurrentClass;
   p.param4 = (void*)(BaseDialog+AClassForm); /* the dialog reference used to call the right callback in thotlib */
   TtaSendDataToPanel( WXAMAYA_PANEL_APPLYCLASS, p );
 #endif /* _WX */
-}
-
-/*----------------------------------------------------------------------
-  DoLeftAlign
-  Apply left-align style
-  ----------------------------------------------------------------------*/
-void DoLeftAlign (Document doc, View view)
-{
-  ThotCallback (NumMenuAlignment, INTEGER_DATA, (char*) 0);
-  ThotCallback (NumFormPresFormat, INTEGER_DATA, (char*) 1); /* Apply */
-}
-
-/*----------------------------------------------------------------------
-  DoRightAlign
-  Apply right-align style
-  ----------------------------------------------------------------------*/
-void DoRightAlign (Document doc, View view)
-{
-  ThotCallback (NumMenuAlignment, INTEGER_DATA, (char*) 1);
-  ThotCallback (NumFormPresFormat, INTEGER_DATA, (char*) 1); /* Apply */
-}
-
-/*----------------------------------------------------------------------
-  DoCenter
-  Apply center style
-  ----------------------------------------------------------------------*/
-void DoCenter (Document doc, View view)
-{
-  ThotCallback (NumMenuAlignment, INTEGER_DATA, (char*) 2);
-  ThotCallback (NumFormPresFormat, INTEGER_DATA, (char*) 1); /* Apply */
-}
-
-/*----------------------------------------------------------------------
-  DoJustify
-  Apply justify style
-  ----------------------------------------------------------------------*/
-void DoJustify (Document doc, View view)
-{
-  ThotCallback (NumMenuAlignment, INTEGER_DATA, (char*) 3);
-  ThotCallback (NumFormPresFormat, INTEGER_DATA, (char*) 1); /* Apply */
 }
 
 /*----------------------------------------------------------------------

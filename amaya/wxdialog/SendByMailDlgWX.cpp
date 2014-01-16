@@ -9,6 +9,7 @@
 #include <wx/valtext.h>
 #include <wx/tokenzr.h>
 #include <wx/recguard.h>
+#include <wx/grid.h>
 
 
 #define THOT_EXPORT extern
@@ -23,16 +24,17 @@
 //-----------------------------------------------------------------------------
 BEGIN_EVENT_TABLE(SendByMailDlgWX, AmayaDialog)
   EVT_BUTTON(     XRCID("wxID_CANCEL"),       SendByMailDlgWX::OnCancelButton)
-  EVT_TEXT(       XRCID("wxID_COMBO_NEW_TO"),  SendByMailDlgWX::OnNewToTextModified)
-  EVT_TEXT_ENTER( XRCID("wxID_COMBO_NEW_TO"),  SendByMailDlgWX::OnNewToEnterPressed)
-  
-  EVT_LISTBOX(    XRCID("wxID_LIST_TO"),      SendByMailDlgWX::OnToItemSelected)
-  EVT_MENU(       wxID_DELETE,                SendByMailDlgWX::OnSupprToItem)
-  EVT_UPDATE_UI(  wxID_OK,                    SendByMailDlgWX::OnUpdateSendButton)
+//  EVT_UPDATE_UI(  wxID_OK,                    SendByMailDlgWX::OnUpdateSendButton)
   EVT_RADIOBOX(   XRCID("wxID_RADIOBOX_SEND_CLASS"), SendByMailDlgWX::OnChangeMessageClass)
   
   EVT_BUTTON(wxID_OK,     SendByMailDlgWX::OnCloseDialog)
   EVT_BUTTON(wxID_CANCEL, SendByMailDlgWX::OnCloseDialog)
+  
+  EVT_BUTTON(XRCID("wxID_BUTTON_DEL"), SendByMailDlgWX::OnDeleteRecipient)
+  EVT_COMBOBOX(XRCID("wxID_RECIPIENT_ADDRESS"), SendByMailDlgWX::OnChangeRecipientAddress)
+  EVT_TEXT(XRCID("wxID_RECIPIENT_ADDRESS"), SendByMailDlgWX::OnChangeRecipientAddress)
+  EVT_TEXT_ENTER(XRCID("wxID_RECIPIENT_ADDRESS"), SendByMailDlgWX::OnChangeRecipientAddress)
+
 END_EVENT_TABLE()
 
 
@@ -44,44 +46,39 @@ END_EVENT_TABLE()
     + ps_file : postscript file
   ----------------------------------------------------------------------*/
 SendByMailDlgWX::SendByMailDlgWX( int ref, wxWindow* parent) :
-  AmayaDialog( parent, ref ),
-  m_currTo(wxID_ANY)
+  AmayaDialog( parent, ref )
 {
   m_ref = ref;
 
   wxXmlResource::Get()->LoadDialog(this, parent, wxT("SendByMailDlgWX"));
-  wxString wx_title = TtaConvMessageToWX( TtaGetMessage (AMAYA, AM_EMAILS_SEND_BY_MAIL) );
-  SetTitle( wx_title );
 
-  XRCCTRL(*this, "wxID_LABEL_TO",   wxStaticText)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EMAILS_TO_)) );
+  SetTitle(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EMAILS_SEND_BY_MAIL)));
+
+  // TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EMAILS_TO_)));
+
+  LoadRecentList();
+  
   XRCCTRL(*this, "wxID_LABEL_SUBJECT",   wxStaticText)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EMAILS_SUBJECT_)) );
   XRCCTRL(*this, "wxID_RADIOBOX_SEND_CLASS",   wxRadioBox)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EMAILS_SEND_AS_)) );
-  XRCCTRL(*this, "wxID_RADIOBOX_SEND_CLASS",   wxRadioBox)->SetString(0, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EMAILS_SEND_AS_ATTACHMENT)) );
-  XRCCTRL(*this, "wxID_RADIOBOX_SEND_CLASS",   wxRadioBox)->SetString(1, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EMAILS_SEND_AS_MESSAGE)) );
-  XRCCTRL(*this, "wxID_RADIOBOX_SEND_CLASS",   wxRadioBox)->SetString(2, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EMAILS_DONT_SEND)) );
+  XRCCTRL(*this, "wxID_RADIOBOX_SEND_CLASS",   wxRadioBox)->SetString((int)SendByMailAsAttachment, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EMAILS_SEND_AS_ATTACHMENT)) );
+  XRCCTRL(*this, "wxID_RADIOBOX_SEND_CLASS",   wxRadioBox)->SetString((int)SendByMailAsMessage,    TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EMAILS_SEND_AS_MESSAGE)) );
+  XRCCTRL(*this, "wxID_RADIOBOX_SEND_CLASS",   wxRadioBox)->SetString((int)SendByMailAsZip,        TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EMAILS_SEND_AS_ZIP)) );
+  XRCCTRL(*this, "wxID_RADIOBOX_SEND_CLASS",   wxRadioBox)->SetString((int)DontSendByMail,         TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EMAILS_DONT_SEND)) );
 
   XRCCTRL(*this, "wxID_CANCEL", wxButton)->SetLabel(TtaConvMessageToWX( TtaGetMessage(LIB,TMSG_CANCEL) ));
   XRCCTRL(*this, "wxID_OK", wxButton)->SetLabel(TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_EMAILS_SEND) ));
 
-  m_tos   = XRCCTRL(*this, "wxID_LIST_TO",     wxListBox);
-  m_newto = XRCCTRL(*this, "wxID_COMBO_NEW_TO", wxComboBox);
-
-  wxAcceleratorEntry entries[2];
-  entries[0].Set(wxACCEL_NORMAL,  WXK_DELETE, wxID_DELETE);
-  entries[1].Set(wxACCEL_NORMAL,  WXK_BACK, wxID_DELETE);
-  wxAcceleratorTable accel(2, entries);
-  m_tos->SetAcceleratorTable(accel);
-
   UpdateMessageLabel();
 
-  LoadRecentList();
-  
-  FillRecentAddress();
-  m_newto->SetValue(wxT(""));
+  m_panel = new wxPanel(this, -1);
+  m_panel->SetSizer(new wxBoxSizer(wxVERTICAL));
+  AddRecipientLine();
+  GetSizer()->Prepend(m_panel, 0, wxEXPAND|wxALL, 4);
 
   Layout();
   SetAutoLayout( TRUE );
-  SetSize(600, 400);
+  SetSize(600, 480);
+  GetSizer()->SetSizeHints( this );
 }
 
 /*----------------------------------------------------------------------
@@ -97,11 +94,11 @@ void SendByMailDlgWX::UpdateMessageLabel()
 {
   if(XRCCTRL(*this, "wxID_RADIOBOX_SEND_CLASS", wxRadioBox)->GetSelection()==1)
   {
-    XRCCTRL(*this, "wxID_LABEL_MESSAGE",   wxStaticText)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EMAILS_MESSAGE_ALTERN)) );
+    XRCCTRL(*this, "wxID_LABEL_MESSAGE", wxStaticText)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EMAILS_MESSAGE_ALTERN)) );
   }
   else
   {
-    XRCCTRL(*this, "wxID_LABEL_MESSAGE",   wxStaticText)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EMAILS_MESSAGE_BODY)) );
+    XRCCTRL(*this, "wxID_LABEL_MESSAGE", wxStaticText)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EMAILS_MESSAGE_BODY)) );
   }
 }
 
@@ -114,99 +111,35 @@ void SendByMailDlgWX::OnCancelButton( wxCommandEvent& event )
   event.Skip();
 }
 
-void SendByMailDlgWX::OnNewToTextModified(wxCommandEvent& WXUNUSED(event))
-{
-  SetCurrentToItemText();
-  SuggestAddress();
-}
-
-void SendByMailDlgWX::OnNewToEnterPressed(wxCommandEvent& WXUNUSED(event))
-{
-  SetCurrentToItemText();
-  AddAddressToRecentList(m_newto->GetValue());
-  m_currTo = m_tos->Append(wxT(""));
-  m_tos->SetSelection(m_currTo);
-  m_newto->Clear();
-}
-
-void SendByMailDlgWX::OnToItemSelected(wxCommandEvent& event)
-{
-  m_currTo = event.GetSelection();
-  m_newto->SetValue(m_tos->GetString(m_currTo));
-}
-
-void SendByMailDlgWX::OnSupprToItem(wxCommandEvent& WXUNUSED(event))
-{
-  if(m_currTo!=wxID_ANY)
-  {
-    m_newto->Clear();
-    m_tos->Delete(m_currTo);
-    if(m_currTo>=m_tos->GetCount())
-      m_currTo = m_tos->GetCount()-1;
-    m_tos->SetSelection(m_currTo);
-  }
-}
-
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
 void SendByMailDlgWX::OnUpdateSendButton(wxUpdateUIEvent& event)
 {
-  event.Enable(m_tos->GetCount()>0);
+// TODO :
+//  if(m_grid && m_grid->GetNumberRows()>0)
+//    {
+//      int n;
+//      for(n=0; n<m_grid->GetNumberRows(); n++)
+//        {
+//          if(!(m_grid->GetCellValue(n, 0).Trim().IsEmpty()))
+//            {
+//              event.Enable(true);
+//              return;
+//            }
+//        }
+//    }
+//  event.Enable(false);
 }
 
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
 void SendByMailDlgWX::OnChangeMessageClass(wxCommandEvent& WXUNUSED(event))
 {
   UpdateMessageLabel();
 }
 
-
-/**----------------------------------------------------------------------
-  SetCurrentToItemText
-  Set the label of the current to item in the list
+/*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-void SendByMailDlgWX::SetCurrentToItemText()
-{
-  wxString str = m_newto->GetValue();
-
-  if(m_currTo==wxID_ANY)
-  {
-    if(!str.IsEmpty())
-    {
-      m_currTo = m_tos->Append(str);
-      m_tos->SetSelection(m_currTo);
-    }
-  }
-  else
-  {
-    m_tos->SetString(m_currTo, str);
-  }
-}
-
-void SendByMailDlgWX::SuggestAddress()
-{
-  long id = wxNOT_FOUND;
-  wxString str = m_newto->GetValue();
-  if(m_newto->GetInsertionPoint()==m_newto->GetLastPosition())
-  {
-    if(str.Length()>2)
-    {
-      int i;
-      for(i=0; i<(int)m_rcptArray.GetCount(); i++)
-      {
-        if(m_rcptArray[i].StartsWith((const wxChar*)str))
-        {
-          if(id!=wxNOT_FOUND)
-            return; // More than one choice, dont do anything
-          id = i;
-        }
-      }
-      if(id!=wxNOT_FOUND)
-      {
-        m_newto->SetValue(m_rcptArray[id]);
-        m_newto->SetSelection(str.Length(), -1);
-      }
-    }
-  }
-}
-
 void SendByMailDlgWX::AddAddressToRecentList(const wxString& addr)
 {
   if(!addr.IsEmpty())
@@ -219,78 +152,67 @@ void SendByMailDlgWX::AddAddressToRecentList(const wxString& addr)
     {
       m_rcptArray.RemoveAt(m_rcptArray.GetCount()-1);
     }
-    FillRecentAddress();
   }
 }
 
-void SendByMailDlgWX::FillRecentAddress()
-{
-  m_newto->Clear();
-  m_newto->Append(m_rcptArray);
-}
-
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
 wxString SendByMailDlgWX::GetSubject()const
 {
   return XRCCTRL(*this, "wxID_EDIT_SUBJECT",   wxTextCtrl)->GetValue();
 }
 
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
 void SendByMailDlgWX::SetSubject(const wxString& subject)
 {
   XRCCTRL(*this, "wxID_EDIT_SUBJECT",   wxTextCtrl)->SetValue(subject);
 }
 
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
 wxString SendByMailDlgWX::GetMessage()const
 {
   return XRCCTRL(*this, "wxID_EDIT_MESSAGE",   wxTextCtrl)->GetValue();
 }
 
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
 void SendByMailDlgWX::SetMessage(const wxString& message)
 {
   XRCCTRL(*this, "wxID_EDIT_MESSAGE",   wxTextCtrl)->SetValue(message);
 }
 
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
 bool SendByMailDlgWX::SendAsAttachment()const
 {
-  return XRCCTRL(*this, "wxID_RADIOBOX_SEND_CLASS",   wxRadioBox)->GetSelection()==0;
+  return XRCCTRL(*this, "wxID_RADIOBOX_SEND_CLASS",   wxRadioBox)->GetSelection()==SendByMailAsAttachment;
 }
 
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
 bool SendByMailDlgWX::SendAsContent()const
 {
-  return XRCCTRL(*this, "wxID_RADIOBOX_SEND_CLASS",   wxRadioBox)->GetSelection()==1;
+  return XRCCTRL(*this, "wxID_RADIOBOX_SEND_CLASS",   wxRadioBox)->GetSelection()==SendByMailAsMessage;
 }
 
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+bool SendByMailDlgWX::SendAsZip()const
+{
+  return XRCCTRL(*this, "wxID_RADIOBOX_SEND_CLASS",   wxRadioBox)->GetSelection()==SendByMailAsZip;
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
 void SendByMailDlgWX::SetSendMode(int mode)
 {
   XRCCTRL(*this, "wxID_RADIOBOX_SEND_CLASS",   wxRadioBox)->SetSelection(mode);
 }
 
-
-wxArrayString  SendByMailDlgWX::GetRecipients()const
-{
-  return m_tos->GetStrings();
-}
-
-void SendByMailDlgWX::SetRecipients(const wxArrayString & rcpt)
-{
-  m_tos->Append(rcpt);
-}
-
-wxString SendByMailDlgWX::GetRecipientList()const
-{
-  wxString str;
-  if(m_tos->GetCount()>0)
-  {
-    for(int i=0; i< m_tos->GetCount(); i++)
-    {
-      wxString s = m_tos->GetString(i);
-      if(!s.IsEmpty())
-        str << wxT("|") << s;
-    }
-  }
-  str.Remove(0,1);
-  return str;
-}
-
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
 void SendByMailDlgWX::SaveRecentList()
 {
   /* Save m_rcptArray .*/
@@ -306,28 +228,146 @@ void SendByMailDlgWX::SaveRecentList()
   }
 }
 
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
 void SendByMailDlgWX::LoadRecentList()
 {
   char* lastRcpt = TtaGetEnvString ("EMAILS_LAST_RCPT");
   if(lastRcpt)
   {
     wxString rcpts(lastRcpt, wxConvUTF8);
-    wxStringTokenizer tkz(wxString(rcpts, wxConvUTF8), wxT("|"));
-    while ( tkz.HasMoreTokens() )
-    {
-      m_rcptArray.Add(tkz.GetNextToken());
-    }
+    m_rcptArray = ::wxStringTokenize(wxString(rcpts, wxConvUTF8), wxT("|"));
   }
   if(m_rcptArray.GetCount()==0)
-  {
     m_rcptArray.Add(wxString(TtaGetEnvString ("EMAILS_FROM_ADDRESS"), wxConvUTF8));
-  }
 }
 
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
 void SendByMailDlgWX::OnCloseDialog(wxCommandEvent& event)
 {
+  if(event.GetId()==wxID_OK)
+    {
+      wxSizerItemList& list = m_panel->GetSizer()->GetChildren();
+      wxSizerItemList::compatibility_iterator iter;
+      for(iter=list.GetFirst(); iter; iter=iter->GetNext())
+        {
+          wxSizerItem* item = iter->GetData();
+          if(item)
+            {
+              RecipientPanel* panel = wxDynamicCast(item->GetWindow(), RecipientPanel);
+              if(panel)
+                {
+                  if(!panel->GetAddress().IsEmpty())
+                    {
+                      wxString str = panel->GetAddress();
+                      if(panel->GetType()==1)
+                        m_ccArray.Add(str);
+                      else
+                        m_toArray.Add(str);
+                      AddAddressToRecentList(str);
+                    }
+                }
+            }
+        }
+    }
+
   SaveRecentList();
   event.Skip();
+}
+
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void SendByMailDlgWX::OnDeleteRecipient(wxCommandEvent& event)
+{
+  wxWindow* win = wxDynamicCast(event.GetEventObject(), wxWindow);
+  if(win)
+    {
+      RecipientPanel* panel = wxDynamicCast(win->GetParent(), RecipientPanel);
+      if(panel)
+        {
+          m_panel->GetSizer()->Detach(panel);
+          delete panel;
+          
+          if(m_panel->GetSizer()->GetChildren().GetCount()==0)
+            AddRecipientLine();
+          Layout();
+        }
+    }
+}
+
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void SendByMailDlgWX::AddRecipientLine()
+{
+  RecipientPanel* recipient;
+  recipient = new RecipientPanel(m_panel);
+  recipient->AddDefaultRecipients(m_rcptArray);
+  m_panel->GetSizer()->Add(recipient, 0, wxEXPAND|wxBOTTOM, 4);
+  Layout();
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void SendByMailDlgWX::OnChangeRecipientAddress(wxCommandEvent& event)
+{
+  wxSizerItemList& list = m_panel->GetSizer()->GetChildren();
+  wxSizerItemList::compatibility_iterator iter = list.GetLast();
+  if(iter)
+    {
+      wxSizerItem* item = iter->GetData();
+      if(item)
+        {
+          RecipientPanel* panel = wxDynamicCast(item->GetWindow(), RecipientPanel);
+          if(panel)
+            {
+              if(!panel->GetAddress().IsEmpty())
+                AddRecipientLine();
+            }
+        }
+    }
+
+}
+
+
+
+//
+//
+// RecipientPanel
+//
+//
+
+IMPLEMENT_CLASS(RecipientPanel, wxPanel)
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+RecipientPanel::RecipientPanel(wxWindow* parent):
+wxPanel()
+{
+  wxXmlResource::Get()->LoadPanel(this, parent, wxT("RecipientPanel"));
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void RecipientPanel::AddDefaultRecipients(const wxArrayString& arr)
+{
+  XRCCTRL(*this, "wxID_RECIPIENT_ADDRESS", wxComboBox)->Append(arr);
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+wxString RecipientPanel::GetAddress()const
+{
+  return XRCCTRL(*this, "wxID_RECIPIENT_ADDRESS", wxComboBox)->GetValue();
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+int RecipientPanel::GetType()const
+{
+  return XRCCTRL(*this, "wxID_RECIPIENT_TYPE", wxChoice)->GetSelection();
 }
 
 #endif /* _WX */

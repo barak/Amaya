@@ -45,8 +45,8 @@
 43 Cerrar
 44 Directorios
 45 El documento %s ya existe. ¿Quiere sobreescribirlo?
-46 El botón izquierdo fija el color del texto
-47 El botón derecho o el central fijan el color del fondo
+46 Establecer el color del texto
+47 Establecer el color de fondo
 48 Familia de fuente
 49 Normal
 50 Negrita
@@ -57,33 +57,33 @@
 55 Normal
 56 Subrayado
 57 Tachado
-58 Tamaño del cuerpo (pt)
-59 Sangría (pt):
-60 Interlineado (pt):
-61 Interlineado
-62 Guardar documento
-63 Cerrar, no guardar
-64 Estilo de carácter
-65 Colores
-66 XHTML
-67 Borrar
-68 Salida
-69 Archivo PostScript
-70 Impresora
-71 Buscar:
-72 Ignorar mayúsculas/minúsculas
-73 Reemplazar por:
-74 Reemplazar
-75 No reemplazar
-76 Solicitar confirmación
-77 Reemplazar automáticamente
-78 Dónde buscar
-79 Antes de la selección
-80 En la selección
-81 Tras la selección
-82 En todo el documento
-83 No reemplazar
-84 Colores por omisión
+58 Tamaño
+59 Reducir indentado
+60 Interlineado sencillo
+61 Interlineado 1,5 líneas
+62 Interlineado doble
+63 Guardar documento
+64 Cerrar, no guardar
+65 Estilo de carácter
+66 Colores
+67 Elementos
+68 Borrar
+69 Salida
+70 Archivo PostScript
+71 Impresora
+72 Buscar:
+73 Ignorar mayúsculas/minúsculas
+74 Reemplazar por:
+75 Reemplazar
+76 No reemplazar
+77 Solicitar confirmación
+78 Reemplazar automáticamente
+79 Dónde buscar
+80 Antes de la selección
+81 En la selección
+82 Tras la selección
+83 En todo el documento
+84 No reemplazar
 85 antes de cerrarlo
 86 Cerrar un documento
 87 Símbolos matemáticos
@@ -95,7 +95,7 @@
 93 Gráfico
 94 Símbolo
 95 Imagen
-96 XML/XTiger
+96 Elementos XML
 97 después
 98 antes
 99 alrededor
@@ -136,98 +136,139 @@
 134 No puedo crear "%s"
 135 Suprarayado
 136 Formato de documento
-137 Eventos
-138 Eliminar atributo
-139 El botón izquierdo fija el color del texto de la selección
-140 El botón derecho o el central fijan el color del fondo de la selección
-141 Más ...
-142 Obtener
-143 Color
-144 Color del fondo
-145 Color del texto
-146 Intercambiar colores
-147 Seleccione una estructura genérica
-148 Comprobar
-149 Buscar/Saltar
-150 Reemplazar (+ dic)
-151 Reemplazar y siguiente
-152 Otro idioma
-153 Agregar
-154 Palabras que contengan:
-155 Revisar ortografía:
-156 Números romanos
-157 Ignorar
-158 Palabras en mayúsculas
-159 Palabras con dígitos
-160 Error en archivo de parámetro
-161 No hay archivo de teclado
-162 No puedo guardar el diccionario del documento
-163 Palabra incorrecta "%s" rechazada en este diccionario
-164 Palabra "%s" añadida al diccionario del documento
-165 Fin de la corrección ortográfica
-166 Corrección ortográfica abortada
-167 Por favor, seleccione un documento
-168 Diccionario del documento guardado: %s
-169 No disponible en esta versión
-170 Activar/Desactivar paleta
-171 Herramientas
-172 Atributo obligatorio, no puede eliminarse
-173 Actualizar
-174 Izquierda
-175 Derecha
-176 Centrado
-177 Justificado
-178 Aplicar clase
-179 Seleccionar una clase o seudo-clase
-180 Seleccionar
-181 Descartar
-182 MathML
-183 Miscelánea
-184 Relaciones binarias
-185 Relaciones de negación binarias
-186 Operadores
-187 Alfabeto griego (mayúsculas)
-188 Flechas
-189 Caracteres especiales
-190 Detener
-191 Atrás
-192 Adelante
-193 Actualizar
-194 Guardar
-195 Nuevo documento XHTML
-196 Abrir documento
-197 Imprimir
-198 Buscar
-199 Inicio
-200 Énfasis On/Off
-201 Enérgico On/Off
-202 Código On/Off
-203 Imagen
-204 Cabecera nivel 1 (h1)
-205 Cabecera nivel 2 (h2)
-206 Cabecera nivel 3 (h3)
-207 Lista no ordenada (ul)
-208 Lista ordenada (ol)
-209 Lista de definición (dl)
-210 Enlace
-211 Tabla
-212 Va a cerrar %d pestañas abiertas. ¿Seguro que desea continuar?
-213 Avisarme cuando intente cerrar múltiples pestañas
-214 Cerrar pestañas
-215 Ningún error detectado
-216 Mostrar errores sintácticos
-217 Cajas
-218 División
-219 Destino
-220 Inserción On/Off
-221 Borrado On/Off
-222 Subíndice On/Off
-223 Superíndice On/Off
-224 Término
-225 Definición
-226 Objeto
-227 Estilo CSS
-228 Archivos
-229 Dividir horizontalmente
-230 Dividir vista verticalmente
-231 Ventana de herramientas
+137 Eliminar atributo
+138 Seleccionar un color del fondo
+139 Seleccionar un color del texto
+140 Seleccione una estructura genérica
+141 Comprobar
+142 Buscar/Saltar
+143 Reemplazar (+ dic)
+144 Reemplazar y siguiente
+145 Otro idioma
+146 Agregar
+147 Palabras que contengan:
+148 Revisar ortografía:
+149 Números romanos
+150 Ignorar
+151 Palabras en mayúsculas
+152 Palabras con dígitos
+153 Error en archivo de parámetro
+154 No hay archivo de teclado
+155 No puedo guardar el diccionario del documento
+156 Palabra incorrecta "%s" rechazada en este diccionario
+157 Palabra "%s" añadida al diccionario del documento
+158 Fin de la corrección ortográfica
+159 Corrección ortográfica abortada
+160 Por favor, seleccione un documento
+161 Diccionario del documento guardado: %s
+162 No disponible en esta versión
+163 Activar/Desactivar paleta
+164 Herramientas
+165 Atributo obligatorio, no puede eliminarse
+166 Actualizar
+167 Izquierda
+168 Derecha
+169 Centrado
+170 Justificado
+171 Aplicar clase
+172 Seleccionar una clase o seudo-clase
+173 Seleccionar
+174 Descartar
+175 MathML
+176 Miscelánea
+177 Relaciones binarias
+178 Relaciones de negación binarias
+179 Operadores
+180 Alfabeto griego (mayúsculas)
+181 Flechas
+182 Caracteres especiales
+183 Detener
+184 Atrás
+185 Adelante
+186 Actualizar
+187 Guardar
+188 Guardar todo
+189 Nuevo documento XHTML
+190 Abrir documento
+191 Imprimir
+192 Buscar
+193 Inicio
+194 Énfasis On/Off
+195 Enérgico (strong) On/Off
+196 Código (code) On/Off
+197 Imagen
+198 Cabecera nivel 1
+199 Cabecera nivel 2
+200 Cabecera nivel 3
+201 Cabecera nivel 4
+202 Párrafo
+203 Lista no ordenada (ul)
+204 Lista ordenada (ol)
+205 Lista de definición (dl)
+206 Enlace
+207 Tabla
+208 Va a cerrar %d pestañas abiertas. ¿Seguro que desea continuar?
+209 Avisarme cuando intente cerrar múltiples pestañas
+210 Cerrar pestañas
+211 Ningún error detectado
+212 Mostrar errores sintácticos
+213 Cajas
+214 División
+215 Destino
+216 Inserción (ins) On/Off
+217 Borrado (del) On/Off
+218 Subíndice (sub) On/Off
+219 Superíndice (sup) On/Off
+220 Término
+221 Definición
+222 Objeto
+223 Estilo
+224 Archivos
+225 Dividir horizontalmente
+226 Dividir vista verticalmente
+227 Ventana de herramientas
+228 Deshacer
+229 Rehacer
+230 Cortar
+231 Copiar
+232 Pegar
+233 Revisar ortografía
+234 Varios
+235 Relaciones, orden y lógica
+236 Conjuntos y funciones
+237 Aritmética, operaciones, complejos y constantes
+238 Análisis, álgebra lineal y estadística
+239 Trigonometría y logaritmos
+240 &Aumentar tamaño de texto
+241 &Reducir tamaño de texto
+242 Tema
+243 XML
+244 Texto
+245 No hay documentos recientes
+246 Haga clic en un elemento para seleccionarlo
+247 Haga clic para cambiar el modo de edición
+248 Unir
+249 Reducir extensión horizontal
+250 Reducir extensión vertical
+251 Insertar fila delante
+252 Añadir fila detrás
+253 Insertar columna delante
+254 Añadir columna detrás
+255 Sugerencia del día
+256 Mostrar sugerencia al iniciar el programa
+257 Siguiente sugerencia
+258 ¿Sabía que...?
+259 **Close
+260 Amaya puede adaptarse a sus necesidades: incorpora cinco perfiles distintos con diferentes opciones de menús y paneles. Véase el menú Editar > Preferencias.
+261 Las ventanas de herramientas pueden mostrarse todas juntas a izquierda o derecha o por separado de forma personalizada. Véase el menú Editar > Preferencias.
+262 Con la tecla F2 o Escape se puede seleccionar el elemento padre del elemento seleccionado para aplicarle funciones de edición (copiar, pegar, atributos, etc).
+263 Puede mostrar dos o más documentos simultáneamente arrastrando la pestaña de un documento a uno de los bordes del documento visible.
+264 En el modo Personalizable, puede arrastrar los paneles de herramientas para cambiar su orden o mantenerlos flotantes.
+265 En el modo Personalizable, puede colocar los paneles de herramientas uno al lado del otro vertical u horizontalmente.
+266 Puede cambiar el modo de edición (Texto/XML) haciendo clic en el botón situado en la parte derecha de la barra de estado.
+267 Cuando se muestra un botón rojo en el extremo derecho de la barra de estado, puede ver los errores de la página haciendo clic en él.
+268 Puede seleccionar directamente un elemento (o en sus elementos padres) haciendo clic en su nombre que se muestra en la ruta de control situada en la parte izquierda de la barra de estado.
+269 Puede cambiar de pestaña de documento mediante el menú que se despliega haciendo clic en el botón en forma de flecha situado en el extremo derecho de las pestañas de documentos.
+270 Clásico
+271 Moderno
+272 Sin tema

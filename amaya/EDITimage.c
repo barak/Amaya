@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2007
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -25,8 +25,9 @@
 #include "SVG.h"
 
 static Document   ImgDocument;
+static ThotBool   CreateNewImage, CreateNewObject = FALSE;
 static int        RepeatValue;
-static ThotBool   CreateNewImage;
+static int        RefFormImage = 0;
 
 #include "AHTURLTools_f.h"
 #include "HTMLactions_f.h"
@@ -40,17 +41,9 @@ static ThotBool   CreateNewImage;
 #include "html2thot_f.h"
 #include "styleparser_f.h"
 #include "XHTMLbuilder_f.h"
-
-#ifdef _WX
 #include "wxdialogapi_f.h"
 #include "message_wx.h"
-#endif /* _WX */
 
-#ifdef _WINGUI
-#include "wininclude.h"
-#endif /* _WINGUI */
-
-static int RefFormImage = 0;
 
 
 /*----------------------------------------------------------------------
@@ -89,15 +82,6 @@ ThotBool DeleteMap (NotifyElement * event)
   ----------------------------------------------------------------------*/
 void CallbackImage (int ref, int typedata, char *data)
 {
-  Document           document;
-  Element            el, parent;
-  Element            first, last;
-  ElementType	       elType, parentType;
-  LoadedImageDesc    *desc;
-  char               tempfile[MAX_LENGTH];
-  char               tempname[MAX_LENGTH];
-  char              *name;
-  int                i, c1, cN;
   long int           val;
   ThotBool           change, isHTML;
 
@@ -105,192 +89,17 @@ void CallbackImage (int ref, int typedata, char *data)
   val = (long int) data;
   switch (ref - BaseImage)
     {
-    case FormAlt:
-      if (val == 1 && ImgAlt[0] == EOS)
-        strcpy (ImgAlt, "Alt");
-      TtaDestroyDialogue (ref);
-      break;
     case FormImage:
     case FormObject:
-    case FormBackground:
-      if (val == 2)
-        { 
-          /* Clear button */
-          LastURLImage[0] = EOS;
-#ifdef _GTK
-          TtaSetTextForm (BaseImage + ImageURL, LastURLImage);
-#endif /* _GTK */
-        }
-      else if (val == 3)
-        {
-          /* Filter button */
-          /* reinitialize directories and document lists */
-          TtaListDirectory (DirectoryImage, ref,
-                            TtaGetMessage (LIB, TMSG_DOC_DIR),
-                            BaseImage + ImageDir,
-                            ImgFilter,
-                            TtaGetMessage (AMAYA, AM_FILES),
-                            BaseImage + ImageSel);
-        }
-      else if (val == 0)
+      if (val == 0)
         /* Cancel button */ 
         { 
           LastURLImage[0] = EOS;
           TtaDestroyDialogue (ref);
           ImgDocument = 0;
         }
-#ifdef _GTK
-      else if (ref == BaseImage + FormImage && ImgAlt[0] == EOS)
-        {
-          /* IMG element without ALT attribute: error message */
-          TtaNewLabel (BaseImage + ImageLabel4, RefFormImage,
-                       TtaGetMessage (AMAYA, AM_ALT_MISSING));
-        }
-#endif /* _GTK */
       else
-        {
           TtaDestroyDialogue (ref);
-          /* inclusion of an image is managed by ComputeSRCattribute */
-          if (ref == BaseImage + FormBackground && ImgDocument != 0)
-            {
-              /* save ImgDocument because operation can be too long */
-              document = ImgDocument;
-              /* get the first and last selected element */
-              TtaGiveFirstSelectedElement (document, &first, &c1, &i);
-              TtaGiveLastSelectedElement (document, &last, &i, &cN);
-              TtaOpenUndoSequence (document, first, last, c1, cN);
-              el = NULL;
-              if (first)
-                {
-                  el = first;
-                  elType = TtaGetElementType (el);
-                  name = TtaGetSSchemaName (elType.ElSSchema);
-                  isHTML = !strcmp (name, "HTML");
-                  if (isHTML && elType.ElTypeNum == HTML_EL_HTML)
-                    {
-                      elType.ElTypeNum = HTML_EL_BODY;
-                      el = TtaSearchTypedElement (elType, SearchInTree, el);
-                    }
-                  /* style is not allowed in Head section */
-                  last = el;
-                  if (isHTML)
-                    {
-                      if (elType.ElTypeNum == HTML_EL_HEAD)
-                        parent = el;
-                      else
-                        {
-                          parentType.ElSSchema = elType.ElSSchema;
-                          parentType.ElTypeNum = HTML_EL_HEAD;
-                          parent = TtaGetTypedAncestor (el, parentType);
-                        } 
-                      if (parent == NULL)
-                        { 
-                          /* style is not allowed in MAP */
-                          if (elType.ElTypeNum == HTML_EL_MAP)
-                            parent = el;
-                          else
-                            {
-                              parentType.ElTypeNum = HTML_EL_MAP;
-                              parent = TtaGetTypedAncestor (el, parentType);
-                            }
-                        }
-                      if (parent == NULL)
-                        {
-                          elType = TtaGetElementType (last);
-                          if (elType.ElTypeNum == HTML_EL_MAP)
-                            parent = el;
-                          else
-                            {
-                              parentType.ElTypeNum = HTML_EL_MAP;
-                              parent = TtaGetTypedAncestor (el, parentType);
-                            }
-                        }  
-                      if (parent)
-                        el = NULL;
-                    }
-                }
-              if (el == NULL)
-                TtaSetStatus (document, 1,
-                              TtaGetMessage(AMAYA, AM_BG_IMAGE_NOT_ALLOWED),
-                              NULL);
-              else
-                {
-                  if (RepeatValue == 0)
-                    i = REPEAT;
-                  else if (RepeatValue == 1)
-                    i = XREPEAT;
-                  else if (RepeatValue == 2)
-                    i = YREPEAT;
-                  else
-                    i = SCALE;
-
-                  if (IsHTTPPath (DocumentURLs[document]) &&
-                      !IsHTTPPath (LastURLImage) &&
-                      TtaFileExist (LastURLImage))
-                    {
-                      /* load a local image into a remote document copy image
-                         file into the temporary directory of the document */
-                      TtaExtractName (LastURLImage, tempfile, tempname);
-                      NormalizeURL (tempname, document, tempfile, tempname,NULL);
-                      AddLoadedImage (tempname, tempfile, document, &desc);
-                      if (desc)
-                        {
-                          desc->status = IMAGE_MODIFIED;
-                          TtaFileCopy (LastURLImage, desc->localName);
-                          desc->tempfile = TtaStrdup (desc->localName);
-                        }
-                    }
-
-                  do
-                    {
-                      elType = TtaGetElementType (el);
-                      /* if the PRule is on a text string or picture, move it to
-                         the enclosing element */
-                      if (elType.ElTypeNum == HTML_EL_TEXT_UNIT ||
-                          elType.ElTypeNum == HTML_EL_PICTURE_UNIT)
-                        {
-                          el = TtaGetParent (el);
-                          if (TtaIsAncestor (last, el))
-                            last = el;
-                          elType = TtaGetElementType (el);
-                        } 
-                      /* if the PRule is on a Pseudo-Paragraph, move it to the
-                         enclosing element */
-                      if (isHTML && elType.ElTypeNum == HTML_EL_Pseudo_paragraph)
-                        {
-                          el = TtaGetParent (el);
-                          if (TtaIsAncestor (last, el))
-                            last = el;
-                        } 
-                      if (LastURLImage[0] == EOS)
-                        HTMLResetBackgroundImage (document, el);
-                      else if (IsHTTPPath (DocumentURLs[document]) &&
-                               !IsHTTPPath (LastURLImage))
-                        HTMLSetBackgroundImage (document, el, i, 200, tempname, TRUE);
-                      else
-                        HTMLSetBackgroundImage (document, el, i, 200, LastURLImage,
-                                                TRUE);
-                      if (last == NULL || el == last)
-                        el = NULL;
-                      else
-                        TtaGiveNextSelectedElement (document, &el, &c1, &cN);
-                    } while (el);
-                } 
-              TtaCloseUndoSequence (document);
-              TtaSetDocumentModified (document);
-            }
-        }
-      break;
-    case RepeatImage:
-      RepeatValue = val;
-      break;
-    case ImageFilter: /* Filter value */
-      if (strlen(data) <= NAME_LENGTH)
-        strcpy (ImgFilter, data);
-#ifdef _GTK
-      else
-        TtaSetTextForm (BaseImage + ImageFilter, ImgFilter);
-#endif /* _GTK */
       break;
     case ImageURL:
       if (data == NULL)
@@ -314,45 +123,6 @@ void CallbackImage (int ref, int typedata, char *data)
             TtaExtractName (LastURLImage, DirectoryImage, ImageName);
         }
       break;
-    case ImageAlt:
-      strncpy (ImgAlt, data, MAX_LENGTH - 1);
-      ImgAlt[MAX_LENGTH - 1] = EOS;
-      break;
-    case ImageDir:
-      if (!strcmp (data, ".."))
-        {
-          /* suppress last directory */
-          strcpy (tempname, DirectoryImage);
-          TtaExtractName (tempname, DirectoryImage, tempfile);
-        }
-      else
-        {
-          strcat (DirectoryImage, DIR_STR);
-          strcat (DirectoryImage, data);
-        }
-#ifdef _GTK
-      TtaSetTextForm (BaseImage + ImageURL, DirectoryImage);
-#endif /* _GTK */
-      TtaListDirectory (DirectoryImage, RefFormImage,
-                        TtaGetMessage (LIB, TMSG_DOC_DIR), 
-                        BaseImage + ImageDir, ImgFilter,
-                        TtaGetMessage (AMAYA, AM_FILES), BaseImage + ImageSel);
-      ImageName[0] = EOS;
-      break;
-    case ImageSel:
-      if (DirectoryImage[0] == EOS)
-        /* set path on current directory */
-        getcwd (DirectoryImage, MAX_LENGTH);
-      /* construct the image full name */
-      strcpy (LastURLImage, DirectoryImage);
-      val = strlen (LastURLImage) - 1;
-      if (LastURLImage[val] != DIR_SEP)
-        strcat (LastURLImage, DIR_STR);
-      strcat (LastURLImage, data);
-#ifdef _GTK
-      TtaSetTextForm (BaseImage + ImageURL, LastURLImage);
-#endif /* _GTK */
-      break;
     default:
       break;
     } 
@@ -370,39 +140,6 @@ void InitImage (void)
   strcpy (DirectoryImage, DirectoryName);
 }
 
-/*----------------------------------------------------------------------
-  GetAlt gets the Alt value for an Area                            
-  ----------------------------------------------------------------------*/
-static void GetAlt (Document document, View view)
-{
-  ImgAlt[0] = EOS;
-#ifdef _GTK
-  TtaNewForm (BaseImage + FormAlt, TtaGetViewFrame (document, view),
-              TtaGetMessage (AMAYA, AM_ALT),
-              TRUE, 1, 'L', D_DONE);
-  TtaNewTextForm (BaseImage + ImageAlt, BaseImage + FormAlt,
-                  TtaGetMessage (AMAYA, AM_ALT), 50, 1, TRUE);
-  TtaNewLabel (BaseImage + ImageLabel4, BaseImage + FormAlt,
-               TtaGetMessage (AMAYA, AM_ALT_MISSING));
-  TtaSetDialoguePosition ();
-  TtaShowDialogue (BaseImage + FormAlt, FALSE);
-  TtaWaitShowDialogue ();
-  TtaDestroyDialogue (BaseImage + FormAlt);   
-#endif /* _GTK */
-#ifdef _WX
-  CreateTextDlgWX ( BaseImage + FormAlt, BaseImage + ImageAlt,
-                    TtaGetViewFrame (document, view),
-                    TtaGetMessage (AMAYA, AM_ALT),
-                    TtaGetMessage (AMAYA, AM_ALT_MISSING),
-                    "");
-  TtaShowDialogue (BaseImage + FormAlt, FALSE);
-  TtaWaitShowDialogue ();
-  TtaDestroyDialogue (BaseImage + FormAlt);   
-#endif  /* _WX */
-#ifdef _WINGUI
-  CreateAltDlgWindow ();
-#endif /* _WINGUI */
-}
  
 /*----------------------------------------------------------------------
   CreateAreaMap
@@ -420,9 +157,6 @@ static void CreateAreaMap (Document doc, View view, char *shape)
   AttributeType       attrType;
   Attribute           attr, attrRef, attrShape, attrRefimg, newuseMap;
   char                *url;
-#ifndef _WX
-  char                *utf8value;
-#endif /* _WX */
   int                 length, w, h;
   int                 firstchar, lastchar;
   int                 docModified, profile;
@@ -440,6 +174,7 @@ static void CreateAreaMap (Document doc, View view, char *shape)
     }
   div = NULL;
   elType = TtaGetElementType (el);
+  attrType.AttrSSchema = elType.ElSSchema;
   if (strcmp(TtaGetSSchemaName (elType.ElSSchema), "HTML"))
     /* not within an HTML element. Nothing to do */
     return;
@@ -691,7 +426,6 @@ static void CreateAreaMap (Document doc, View view, char *shape)
           attrType.AttrTypeNum = HTML_ATTR_ALT;
           attr = TtaNewAttribute (attrType);
           TtaAttachAttribute (el, attr, doc);
-          GetAlt (doc, view);
           if (ImgAlt[0] == EOS)
             {
               /* abandon the creation of the area */
@@ -705,14 +439,7 @@ static void CreateAreaMap (Document doc, View view, char *shape)
               TtaSelectElement (doc, image);
               return;
             }
-#ifdef _WX
           TtaSetAttributeText (attr, ImgAlt, el, doc);
-#else /* _WX */
-          utf8value = (char *)TtaConvertByteToMbs ((unsigned char *)ImgAlt,
-                                                   TtaGetDefaultCharset ());
-          TtaSetAttributeText (attr, utf8value, el, doc);
-          TtaFreeMemory (utf8value);
-#endif /* _WX */
         }
       ImgAlt[0] = EOS;
       /* The link element is a new created one */
@@ -762,20 +489,16 @@ void CreateAreaPoly (Document doc, View view)
 static char *GetImageURL (Document document, View view,
                           ThotBool isObject, ThotBool isInput)
 {
-#if defined(_GTK) || defined(_WX)
+#ifdef _WX
   LoadedImageDesc   *desc;
   char               tempfile[MAX_LENGTH];
   char               s[MAX_LENGTH];
-#endif /* _GTK || _WX */
-#ifdef _GTK
-  int                i;
-#endif /* _GTK */
 
   if (isObject)
     RefFormImage = BaseImage + FormObject;
   else
     RefFormImage = BaseImage + FormImage;
-#ifdef _WX
+
   if (LastURLImage[0] == EOS)
     {
       TtaExtractName (DocumentURLs[document], LastURLImage, s);
@@ -785,52 +508,7 @@ static char *GetImageURL (Document document, View view,
       else
         strcat (LastURLImage, "img.png");
     }
-#else /* _WX */
-  if (LastURLImage[0] == EOS)
-    {
-      strcpy (LastURLImage, DirectoryImage);
-      strcat (LastURLImage, DIR_STR);
-      strcat (LastURLImage, ImageName);
-    }
-#endif /* _WX */
 
-#ifdef _GTK
-  /* Dialogue form for open URL or local */
-  i = 0;
-  strcpy (&s[i], TtaGetMessage (LIB, TMSG_LIB_CONFIRM));
-  i += strlen (&s[i]) + 1;
-  strcpy (&s[i], TtaGetMessage (AMAYA, AM_CLEAR));
-  i += strlen (&s[i]) + 1;
-  strcpy (&s[i], TtaGetMessage (AMAYA, AM_PARSE));
-  TtaNewSheet (RefFormImage, TtaGetViewFrame (document, view),
-               TtaGetMessage (LIB, TMSG_BUTTON_IMG),
-               3, s, TRUE, 2, 'L', D_CANCEL);
-  TtaNewTextForm (BaseImage + ImageURL, RefFormImage,
-                  TtaGetMessage (LIB, TMSG_BUTTON_IMG), 50, 1, FALSE);
-  TtaNewLabel (BaseImage + ImageLabel, RefFormImage, " ");
-  if (isObject)
-    /* not ALT attribute for objects */
-    TtaNewLabel (BaseImage + ImageAlt, RefFormImage, " ");
-  else
-    {
-      TtaNewTextForm (BaseImage + ImageAlt, RefFormImage,
-                      TtaGetMessage (AMAYA, AM_ALT), 50, 1, TRUE);
-    }
-  TtaNewLabel (BaseImage + ImageLabel2, RefFormImage, " ");
-  TtaListDirectory (DirectoryImage, RefFormImage,
-                    TtaGetMessage (AMAYA, AM_IMAGES_LOCATION),
-                    BaseImage + ImageDir, ImgFilter,
-                    TtaGetMessage (AMAYA, AM_FILES), BaseImage + ImageSel);
-  TtaSetTextForm (BaseImage + ImageURL, LastURLImage);
-  TtaSetTextForm (BaseImage + ImageAlt, ImgAlt);
-  TtaNewTextForm (BaseImage + ImageFilter, RefFormImage,
-                  TtaGetMessage (AMAYA, AM_PARSE), 10, 1, TRUE);
-  TtaSetTextForm (BaseImage + ImageFilter, ImgFilter);
-  TtaNewLabel (BaseImage + ImageLabel3, RefFormImage, " ");
-  TtaNewLabel (BaseImage + ImageLabel4, RefFormImage, " ");
-#endif /* _GTK */
-
-#ifdef _WX
   if (isObject)
     CreateObjectDlgWX (RefFormImage, TtaGetViewFrame (document, view),
                        TtaGetMessage (AMAYA, AM_NEWOBJECT),
@@ -843,9 +521,6 @@ static char *GetImageURL (Document document, View view,
     CreateImageDlgWX (RefFormImage, TtaGetViewFrame (document, view),
                       TtaGetMessage (LIB, TMSG_BUTTON_IMG),
                       LastURLImage, ImgAlt);
-#endif /* _WX */
-
-#if defined(_GTK) || defined(_WX)
   TtaSetDialoguePosition ();
   TtaShowDialogue (RefFormImage, FALSE);
   TtaWaitShowDialogue ();
@@ -867,91 +542,10 @@ static char *GetImageURL (Document document, View view,
           return (ImageName);
         }
     }
-#endif /* _GTK || _WX */
-
-#ifdef _WINGUI
-  CreateOpenImgDlgWindow (TtaGetViewFrame (document, view), LastURLImage, -1,
-                          -1, docImage, !isObject);
-#endif /* _WINGUI */
-
+#endif /* _WX */
   return (LastURLImage);
 }
 
-
-/*----------------------------------------------------------------------
-  ChangeBackgroundImage
-  display a form to set or change the background image
-  -----------------------------------------------------------------------*/
-void ChangeBackgroundImage (Document document, View view)
-{
-#ifndef _WX
-  char           *s = (char *)TtaGetMemory (MAX_LENGTH);
-#ifdef _GTK
-  int             i;
-
-  /* there is a selection */
-  i = 0;
-  strcpy (&s[i], TtaGetMessage (LIB, TMSG_LIB_CONFIRM));
-  i += strlen (&s[i]) + 1;
-  strcpy (&s[i], TtaGetMessage (AMAYA, AM_CLEAR));
-  i += strlen (&s[i]) + 1;
-  strcpy (&s[i], TtaGetMessage (AMAYA, AM_PARSE));
-  RefFormImage = BaseImage + FormBackground;
-  TtaNewSheet (RefFormImage, TtaGetViewFrame(document, view),
-               TtaGetMessage (AMAYA, AM_BACKGROUND_IMAGE), 3, s, TRUE, 2,
-               'L', D_CANCEL);
-  TtaNewTextForm (BaseImage + ImageURL, RefFormImage,
-                  TtaGetMessage (AMAYA, AM_BACKGROUND_IMAGE), 50, 1, TRUE);
-  TtaNewLabel (BaseImage + ImageLabel, RefFormImage, " ");
-  TtaListDirectory (DirectoryImage, RefFormImage,
-                    TtaGetMessage (LIB, TMSG_DOC_DIR),
-                    BaseImage + ImageDir, ImgFilter,
-                    TtaGetMessage (AMAYA, AM_FILES), BaseImage + ImageSel);
-  if (LastURLImage[0] != EOS)
-    TtaSetTextForm (BaseImage + ImageURL, LastURLImage);
-  else
-    {
-      strcpy (s, DirectoryImage);
-      strcat (s, DIR_STR);
-      strcat (s, ImageName);
-      TtaSetTextForm (BaseImage + ImageURL, s);
-    }
-
-  TtaNewTextForm (BaseImage + ImageFilter, RefFormImage,
-                  TtaGetMessage (AMAYA, AM_PARSE), 10, 1, TRUE);
-  TtaSetTextForm (BaseImage + ImageFilter, ImgFilter);
-  /* selector for repeat mode */
-  i = 0;
-  sprintf (&s[i], "%s%s", "B", TtaGetMessage (AMAYA, AM_REPEAT));
-  i += strlen (&s[i]) + 1;
-  sprintf (&s[i], "%s%s", "B", TtaGetMessage (AMAYA, AM_REPEAT_X));
-  i += strlen (&s[i]) + 1;
-  sprintf (&s[i], "%s%s", "B", TtaGetMessage (AMAYA, AM_REPEAT_Y));
-  i += strlen (&s[i]) + 1;
-  sprintf (&s[i], "%s%s", "B", TtaGetMessage (AMAYA, AM_NO_REPEAT));
-  TtaNewSubmenu (BaseImage + RepeatImage, RefFormImage, 0,
-                 TtaGetMessage (AMAYA, AM_REPEAT_MODE), 4, s, NULL, 0, FALSE);
-  TtaSetMenuForm (BaseImage + RepeatImage, RepeatValue);
-  /* save the document concerned */
-  ImgDocument = document;
-  TtaSetDialoguePosition ();
-  TtaShowDialogue (RefFormImage, TRUE);
-#endif /* _GTK */
-
-#ifdef _WINGUI
-  if (LastURLImage[0] != EOS)
-    strcpy (s, LastURLImage);
-  else {
-    strcpy (s, DirectoryImage);
-    strcat (s, DIR_STR);
-    strcat (s, ImageName);
-  }
-  ImgDocument = document;
-  CreateBackgroundImageDlgWindow (TtaGetViewFrame (document, view), s);
-#endif /* _WINGUI */
-  TtaFreeMemory (s);
-#endif /* _WX */
-}
 
 
 /*----------------------------------------------------------------------
@@ -1068,6 +662,12 @@ void ComputeSRCattribute (Element el, Document doc, Document sourceDocument,
             TtaSetAttributeText (srcattr, value, pict, doc);
           /* set and display the element content */
           DisplayImage (doc, pict, NULL, pathimage, NULL);
+          // check if the pict element is still there
+          elType = TtaGetElementType (el);
+          if (elType.ElTypeNum == HTML_EL_PICTURE_UNIT)
+            srcattr = TtaGetAttribute (pict, attrType);
+          else
+            srcattr = NULL;
           TtaFreeMemory (base);
           TtaFreeMemory (value);
           /*TtaSetTextContent (pict, (unsigned char *)pathimage, SPACE, doc);*/
@@ -1085,12 +685,111 @@ void ComputeSRCattribute (Element el, Document doc, Document sourceDocument,
           ResetStop (doc);
         }
     }
-  if (newPict)
+  if (newPict || srcattr == NULL)
     ;
   else if (newAttr)
     TtaRegisterAttributeCreate (srcattr, pict, doc);
   else
     TtaRegisterAttributeReplace (srcattr, pict, doc);
+}
+
+/*----------------------------------------------------------------------
+  UpdatePosition
+  ----------------------------------------------------------------------*/
+static void UpdatePosition (Document doc, Element el)
+{
+  ElementType        elType;
+  Attribute          attr;
+  AttributeType      attrType;
+  char              *value, *start, *stop;
+  int                len;
+  ThotBool           newAttr = FALSE;
+
+  if (el == NULL)
+    return;
+  // check the requested position
+  TtaExtendUndoSequence (doc);
+  elType = TtaGetElementType (el);
+  attrType.AttrSSchema = elType.ElSSchema;
+  attrType.AttrTypeNum = HTML_ATTR_Style_;
+  attr = TtaGetAttribute (el, attrType);
+  value = NULL;
+  if (attr == NULL)
+    {
+      if (ImgPosition)
+        {
+          newAttr = TRUE;
+          attr = TtaNewAttribute (attrType);
+          TtaAttachAttribute (el, attr, doc);
+          value = (char *)TtaGetMemory (80);
+          value[0] = EOS;
+        }
+    }
+  else
+    {
+      newAttr = FALSE;
+      len = TtaGetTextAttributeLength (attr) + 80;
+      value = (char *)TtaGetMemory (len);
+      TtaGiveTextAttributeValue (attr, value, &len);
+      // remove style rules
+      ParseHTMLSpecificStyle (el, value, doc, 1000, TRUE);
+      stop = NULL;
+      start = strstr (value, "float");
+      if (start)
+        stop = start + 5;
+      else
+        {
+          start = strstr (value, "display: block; text-align: center; margin-left: auto; margin-right: auto");
+          stop = start + 66;
+        }
+      if (start)
+        {
+          while (*stop != EOS && *stop != ';')
+            stop++;
+          if (*stop != EOS)
+            stop++;
+          while (*stop != EOS)
+            {
+              *start = *stop;
+              start++;
+              stop++;
+            }
+          *start = EOS;
+        }
+      if (value[0] != EOS)
+        strcat (value, "; ");
+    }
+  if (ImgPosition == 1)
+    strcat (value, "float: left");
+  else if (ImgPosition == 2)
+    strcat (value, "display: block; text-align: center; margin-left: auto; margin-right: auto");
+  else if (ImgPosition == 3)
+    strcat (value, "float: right");
+
+  if (ImgPosition)
+    {
+      if (!newAttr)
+        TtaRegisterAttributeReplace (attr, el, doc);
+      TtaSetAttributeText (attr, value, el, doc);
+      if (newAttr)
+        TtaRegisterAttributeCreate (attr, el, doc);
+      ParseHTMLSpecificStyle (el, value, doc, 1000, FALSE);
+    }
+  else if (attr)
+    {
+      if (value[0] != EOS)
+        {
+          TtaRegisterAttributeReplace (attr, el, doc);
+          TtaSetAttributeText (attr, value, el, doc);
+        }
+      else
+        {
+          TtaRegisterAttributeDelete (attr, el, doc);
+          TtaRemoveAttribute (el, attr, doc);
+        }
+    }
+  TtaFreeMemory (value);
+  TtaCloseUndoSequence(doc);
 }
 
 
@@ -1234,6 +933,8 @@ void UpdateSRCattribute (NotifyOnTarget *event)
       /* copy image name in ALT attribute */
       if (ImgAlt[0] != EOS)
         {
+          if (!CreateNewImage && !newAttr)
+            TtaRegisterAttributeReplace (attr, elSRC, doc);
 #ifdef _WX
           TtaSetAttributeText (attr, ImgAlt, elSRC, doc);
 #else /* _WX */
@@ -1243,13 +944,8 @@ void UpdateSRCattribute (NotifyOnTarget *event)
           TtaFreeMemory (utf8value);
 #endif /* _WX */
         }
-      if (!CreateNewImage)
-        {
-          if (newAttr)
+      if (!CreateNewImage && newAttr)
             TtaRegisterAttributeCreate (attr, elSRC, doc);
-          else
-            TtaRegisterAttributeReplace (attr, elSRC, doc);
-        }
     }
 
   /* search the SRC attribute */
@@ -1265,7 +961,10 @@ void UpdateSRCattribute (NotifyOnTarget *event)
       TtaAttachAttribute (el, attr, doc);
     }
   else
-    newAttr = FALSE;
+    {
+      newAttr = FALSE;
+      TtaRegisterAttributeReplace (attr, elSRC, doc);
+    }
 #ifdef _WX
   ComputeSRCattribute (el, doc, 0, attr, text);
 #else /* _WX */
@@ -1367,6 +1066,10 @@ void UpdateSRCattribute (NotifyOnTarget *event)
             }
 #endif /* _SVG */
         }
+
+      // check the position
+      UpdatePosition (doc, elSRC);
+      // generate alternate text
       if (ImgAlt[0] != EOS && el)
         {
           // generate the Alternate text
@@ -1425,6 +1128,9 @@ void SvgImageCreated (NotifyElement *event)
   char              *pathimage;
   char              *imagename;
 
+  if (CreateNewObject)
+    // nothing to do
+    return;
   el = event->element;
   doc = event->document;
   /* display the Image form and get the user feedback */
@@ -1568,6 +1274,7 @@ void  CreateObject (Document doc, View view)
 
   if (HTMLelementAllowed (doc))
     {
+      CreateNewObject = TRUE;
       /* Don't check mandatory attributes */
       TtaSetStructureChecking (FALSE, doc);
       ImgAlt[0] = EOS;
@@ -1580,8 +1287,10 @@ void  CreateObject (Document doc, View view)
       /* Check the Thot abstract tree against the structure schema. */
       TtaSetStructureChecking (TRUE, doc);
       CreateNewImage = FALSE;
+      CreateNewObject = FALSE;
     }
 }
+
 
 /*----------------------------------------------------------------------
   AddNewImage
@@ -1594,8 +1303,8 @@ void AddNewImage (Document doc, View view, ThotBool isInput)
   AttributeType      attrType;
   NotifyOnTarget     event;
   char              *name, *value;
-  int                c1, i, j, cN, length, width, height, w, h;
-  ThotBool           oldStructureChecking, newAttr;
+  int                c1, i, j, cN, length, width, height, w, h, profile;
+  ThotBool           oldStructureChecking, newAttr, checkoptions = FALSE;
 
   TtaGiveFirstSelectedElement (doc, &firstSelEl, &c1, &i); 
   if (firstSelEl == NULL)
@@ -1617,6 +1326,7 @@ void AddNewImage (Document doc, View view, ThotBool isInput)
            and only this element is selected */
         /* The user wants to replace an existing <img> */
         {
+          checkoptions = TRUE;
           /* get the value of the current src attribute for this image
              to initialize the image dialogue box */
           attrType.AttrSSchema = elType.ElSSchema;
@@ -1660,21 +1370,7 @@ void AddNewImage (Document doc, View view, ThotBool isInput)
             {
               length = TtaGetTextAttributeLength (attr) + 1;
               if (length <= MAX_LENGTH)
-                {
-#ifdef _WX
-                  TtaGiveTextAttributeValue (attr, ImgAlt, &length);
-#else /* _WX */
-                  /* get a buffer for the attribute value */
-                  value = (char *)TtaGetMemory (length);
-		              /* copy the ALT attribute into the buffer */
-                  TtaGiveTextAttributeValue (attr, value, &length);
-                  name = (char *)TtaConvertMbsToByte ((unsigned char *)value,
-                                                      TtaGetDefaultCharset ());
-                  strncpy (ImgAlt, name, MAX_LENGTH-1);
-                  TtaFreeMemory (value);
-                  TtaFreeMemory (name);
-#endif /* _WX */
-                }
+                TtaGiveTextAttributeValue (attr, ImgAlt, &length);
             }
           /* display the image dialogue box */
           event.element = firstSelEl;
@@ -1682,8 +1378,9 @@ void AddNewImage (Document doc, View view, ThotBool isInput)
           CreateNewImage = FALSE;
           TtaOpenUndoSequence (doc, firstSelEl, lastSelEl, c1, cN);
           UpdateSRCattribute (&event);
-          TtaCloseUndoSequence(doc);
           TtaSetDocumentModified (doc);
+          if (!checkoptions)
+            TtaCloseUndoSequence(doc);
         }
       else
         /* the user want to insert a new image */
@@ -1706,10 +1403,15 @@ void AddNewImage (Document doc, View view, ThotBool isInput)
                   (elType.ElTypeNum == HTML_EL_Element ||
                    XhtmlCannotContainText (elType)))
                 {
+		  profile = TtaGetDocumentProfile (doc);
+		  if ((profile == L_Strict || profile == L_Basic) &&(!IsBlockElementType (elType)))
+		    /* For a Strict or Basic profile, create a Paragraph that contain the image (instead of a pseudo-paragraph) */
+		    elType.ElTypeNum = HTML_EL_Paragraph;
+		  else
+		    elType.ElTypeNum = HTML_EL_Pseudo_paragraph;
                   TtaOpenUndoSequence (doc, firstSelEl, lastSelEl, c1, cN);
                   if (elType.ElTypeNum == HTML_EL_Element)
                     TtaRegisterElementDelete (firstSelEl, doc);
-                  elType.ElTypeNum = HTML_EL_Pseudo_paragraph;
                   parent = TtaNewTree (doc, elType, "");
                   TtaInsertFirstChild (&parent, firstSelEl, doc);
                   TtaRegisterElementCreate (parent, doc);
@@ -1723,71 +1425,90 @@ void AddNewImage (Document doc, View view, ThotBool isInput)
               /* do not check mandatory attributes */
               oldStructureChecking = TtaGetStructureChecking (doc);
               TtaSetStructureChecking (FALSE, doc);
-              TtaCreateElement (elType, doc);
-
-              // check if the width, height attributes must be generated
-              TtaGiveFirstSelectedElement (doc, &el, &c1, &i); 
-              elType = TtaGetElementType (el);
-              if (elType.ElTypeNum == HTML_EL_PICTURE_UNIT)
-                el = TtaGetParent (el);
-              attrType.AttrSSchema = elType.ElSSchema;
-              /* search informations about height and width */
-              width = 0; height = 0;
-              TtaGivePictureSize (el, &width, &height);
-              if (width > 0 && height > 0)
-                {
-                  /* attach height and width attributes to the image */
-                  TtaExtendUndoSequence (doc);
-                  value = (char *)TtaGetMemory (50);
-                  attrType.AttrTypeNum = HTML_ATTR_Width__;
-                  attr = TtaGetAttribute (el, attrType);
-                  if (attr == NULL)
-                    {
-                      newAttr = TRUE;
-                      attr = TtaNewAttribute (attrType);
-                      TtaAttachAttribute (el, attr, doc);
-                    }
-                  else
-                    newAttr = FALSE;
-                  // check if the image is larger than the window
-                  TtaGiveWindowSize (doc, 1, UnPixel, &w, &h);
-                  if (width < w)
-                    sprintf (value, "%d", width);
-                 else
-                    strcpy (value, "100%");
-                  TtaSetAttributeText (attr, value, el, doc);
-                  if (newAttr)
-                    TtaRegisterAttributeCreate (attr, el, doc);
-                  else
-                    TtaRegisterAttributeReplace (attr, el, doc);
-                  if (width < w)
-                    {
-                      attrType.AttrTypeNum = HTML_ATTR_Height_;
-                      attr = TtaGetAttribute (el, attrType);
-                      if (attr == NULL)
-                        {
-                          newAttr = TRUE;
-                          attr = TtaNewAttribute (attrType);
-                          TtaAttachAttribute (el, attr, doc);
-                        }
-                      else
-                        newAttr = FALSE;
-                      sprintf (value, "%d", height);
-                      TtaSetAttributeText (attr, value, el, doc);
-                      if (newAttr)
-                        TtaRegisterAttributeCreate (attr, el, doc);
-                      else
-                        TtaRegisterAttributeReplace (attr, el, doc);
-                    }
-                  else
-                    // generate the internal attribute to apply %
-                    CreateAttrWidthPercentPxl (value, el, doc, width);
-                  TtaFreeMemory (value);
-                  TtaCloseUndoSequence(doc);
-                  TtaUpdateAttrMenu (doc);
-                }
+              checkoptions = TtaCreateElement (elType, doc);
               TtaSetStructureChecking (oldStructureChecking, doc);
+              if (!checkoptions)
+                // the image was not created
+                TtaCloseUndoSequence(doc);
             }
+        }
+    }
+
+  if (checkoptions)
+    {
+      // check if the width, height attributes must be generated
+      TtaGiveFirstSelectedElement (doc, &el, &c1, &i); 
+      elType = TtaGetElementType (el);
+      if (elType.ElTypeNum == HTML_EL_PICTURE_UNIT)
+        el = TtaGetParent (el);
+
+      UpdatePosition (doc, el);
+      attrType.AttrSSchema = elType.ElSSchema;
+      /* search informations about height and width */
+      width = 0; height = 0;
+      if (el)
+        TtaGivePictureSize (el, &width, &height);
+      if (width > 0 && height > 0)
+        {
+          /* attach height and width attributes to the image */
+          TtaExtendUndoSequence (doc);
+          value = (char *)TtaGetMemory (50);
+          attrType.AttrTypeNum = HTML_ATTR_Width__;
+          attr = TtaGetAttribute (el, attrType);
+          if (attr == NULL)
+            {
+              newAttr = TRUE;
+              attr = TtaNewAttribute (attrType);
+              TtaAttachAttribute (el, attr, doc);
+            }
+          else
+            newAttr = FALSE;
+          // check if the image is larger than the window
+          TtaGiveWindowSize (doc, 1, UnPixel, &w, &h);
+          if (width < w)
+            sprintf (value, "%d", width);
+          else
+            strcpy (value, "100%");
+          if (!newAttr)
+            TtaRegisterAttributeReplace (attr, el, doc);
+          TtaSetAttributeText (attr, value, el, doc);
+          if (newAttr)
+            TtaRegisterAttributeCreate (attr, el, doc);
+	  
+          if (width < w)
+            {
+              attrType.AttrTypeNum = HTML_ATTR_Height_;
+              attr = TtaGetAttribute (el, attrType);
+              if (attr == NULL)
+                {
+                  newAttr = TRUE;
+                  attr = TtaNewAttribute (attrType);
+                  TtaAttachAttribute (el, attr, doc);
+                }
+              else
+                newAttr = FALSE;
+              sprintf (value, "%d", height);
+              if (!newAttr)
+                TtaRegisterAttributeReplace (attr, el, doc);
+              TtaSetAttributeText (attr, value, el, doc);
+              if (newAttr)
+                TtaRegisterAttributeCreate (attr, el, doc);
+            }
+          else
+            {
+              attrType.AttrTypeNum = HTML_ATTR_Height_;
+              attr = TtaGetAttribute (el, attrType);
+              if (attr)
+                {
+                  TtaRegisterAttributeDelete (attr, el, doc);
+                  TtaRemoveAttribute (el, attr ,doc);
+                }
+              // generate the internal attribute to apply %
+              CreateAttrWidthPercentPxl (value, el, doc, width);
+            }
+          TtaFreeMemory (value);
+          TtaCloseUndoSequence(doc);
+          TtaUpdateAttrMenu (doc);
         }
       ImgDocument = 0;
     }
@@ -1800,6 +1521,20 @@ void CreateImage (Document doc, View view)
 {
   ImgAlt[0] = EOS;
   AddNewImage (doc, view, FALSE);
+}
+
+/*----------------------------------------------------------------------
+  InsertImageOrObject
+  ----------------------------------------------------------------------*/
+void InsertImageOrObject (Element el, Document doc)
+{
+  NotifyOnTarget   event;
+
+  event.element = el;
+  event.document = doc;
+  ImgAlt[0] = EOS;
+  CreateNewImage = FALSE;
+  UpdateSRCattribute (&event);
 }
 
 /*----------------------------------------------------------------------

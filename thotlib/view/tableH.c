@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA 1997-2007
+ *  (c) COPYRIGHT INRIA 1997-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -922,6 +922,18 @@ static void CheckTableWidths (PtrAbstractBox table, int frame, ThotBool freely)
         {
           /* extend the maximum of each stretchable column */
           useMax = TRUE;
+          // check if a column is too narrow
+          var = (delta - max) / n;
+          i = 0;
+          for (cRef = 0; cRef < cNumber; cRef++)
+            {
+              if (colBox[cRef]->AbBox->BxMaxWidth > var)
+                i++;
+            }
+          if (i == 0)
+            // all cells have the same width
+            max = 0;
+
           delta = delta - max;
           /* get extra pixels */
           pixels = delta;
@@ -993,10 +1005,10 @@ static void CheckTableWidths (PtrAbstractBox table, int frame, ThotBool freely)
           else if (useMax)
             {
               if (max)
-                var = delta * box->BxMaxWidth / max;
+                i = delta * box->BxMaxWidth / max + box->BxMaxWidth;
               else
-                var = delta / n;
-              i = box->BxMaxWidth + var;
+                i = delta / n;
+              // i = box->BxMaxWidth + var;
               addPixels = TRUE;
             }
           else
@@ -1741,6 +1753,8 @@ static ThotBool SetCellWidths (PtrAbstractBox cell, PtrAbstractBox table,
   int                 width, percent;
   ThotBool            reformat;
 
+  if (FrameTable[frame].FrView != 1)
+    return FALSE;
   box = cell->AbBox;
   GiveCellWidths (cell, frame, &min, &max, &width, &percent);
   if (width && width < min)

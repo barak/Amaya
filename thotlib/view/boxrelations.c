@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2007
+ *  (c) COPYRIGHT INRIA, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -752,11 +752,15 @@ void ComputeMBP (PtrAbstractBox pAb, int frame, ThotBool horizRef,
         dim = pBox->BxW;
 
       /* left margin */
-      if (pAb->AbLeftMarginUnit != UnAuto)
+      if (pBox->BxType == BoCell || pBox->BxType == BoRow)
+        pBox->BxLMargin = 0;
+      else if (pAb->AbLeftMarginUnit != UnAuto)
         pBox->BxLMargin = GetPixelValue (pAb->AbLeftMargin, pAb->AbLeftMarginUnit, dim,
                                          pAb, ViewFrameTable[frame - 1].FrMagnification);
       /* right margin */
-      if (pAb->AbRightMarginUnit != UnAuto)
+      if (pBox->BxType == BoCell || pBox->BxType == BoRow)
+        pBox->BxRMargin = 0;
+      else if (pAb->AbRightMarginUnit != UnAuto)
         pBox->BxRMargin = GetPixelValue (pAb->AbRightMargin, pAb->AbRightMarginUnit, dim,
                                          pAb, ViewFrameTable[frame - 1].FrMagnification);
 
@@ -879,7 +883,9 @@ void ComputeMBP (PtrAbstractBox pAb, int frame, ThotBool horizRef,
       else
         {
           /* top margin */
-          if (pAb->AbTopMarginUnit != UnAuto)
+          if (pBox->BxType == BoCell || pBox->BxType == BoRow)
+            pBox->BxTMargin = 0;
+          else if (pAb->AbTopMarginUnit != UnAuto)
             pBox->BxTMargin = GetPixelValue (pAb->AbTopMargin, pAb->AbTopMarginUnit, dim,
                                              pAb, ViewFrameTable[frame - 1].FrMagnification);
           /* top padding */
@@ -899,7 +905,9 @@ void ComputeMBP (PtrAbstractBox pAb, int frame, ThotBool horizRef,
       else
         {
           /* bottom margin */
-          if (pAb->AbBottomMarginUnit != UnAuto)
+          if (pBox->BxType == BoCell || pBox->BxType == BoRow)
+            pBox->BxBMargin = 0;
+          else if (pAb->AbBottomMarginUnit != UnAuto)
             pBox->BxBMargin = GetPixelValue (pAb->AbBottomMargin, pAb->AbBottomMarginUnit, dim,
                                              pAb, ViewFrameTable[frame - 1].FrMagnification);
           /* bottom padding */
@@ -2127,6 +2135,12 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
         {
           if (horizRef)
             {
+              if (HorizExtraAbFlow (pAb, frame))
+                {
+                  pParentAb = GetEnclosingViewport (pAb);
+                  if (pParentAb == NULL)
+                    pParentAb = ViewFrameTable[frame -1].FrAbstractBox;
+                }
               if (pAb->AbWidth.DimUnit != UnAuto &&
                    !pAb->AbWidth.DimIsPosition &&
                   (pAb->AbWidth.DimAbRef || pAb->AbWidth.DimValue != -1))
@@ -2147,12 +2161,9 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
                   return FALSE;
                 }
               else if (!pAb->AbWidth.DimIsPosition &&
-                       (pAb->AbWidth.DimAbRef == pParentAb ||
+                       (pAb->AbWidth.DimAbRef == pAb->AbEnclosing ||
                         pAb->AbWidth.DimUnit == UnAuto))
                 {
-                  pParentAb = GetEnclosingViewport (pAb);
-                  if (pParentAb == NULL)
-                    pParentAb = ViewFrameTable[frame -1].FrAbstractBox;
                   pAb->AbWidth.DimAbRef = pParentAb;
                   pAb->AbWidth.DimIsPosition = FALSE;
                   pAb->AbWidth.DimValue = 0;
@@ -2165,10 +2176,16 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
             }
           if (!horizRef)
             {
+              if (VertExtraAbFlow (pAb, frame))
+                {
+                  pParentAb = GetEnclosingViewport (pAb);
+                  if (pParentAb == NULL)
+                    pParentAb = ViewFrameTable[frame -1].FrAbstractBox;
+                }
               if (pos->PnTopUnit != UnAuto &&
-                       pos->PnTopUnit != UnUndefined &&
-                       pos->PnBottomUnit != UnAuto &&
-                       pos->PnBottomUnit != UnUndefined)
+                  pos->PnTopUnit != UnUndefined &&
+                  pos->PnBottomUnit != UnAuto &&
+                  pos->PnBottomUnit != UnUndefined)
                 {
                   /* inherit from an enclosing box */
                   pAb->AbHeight.DimIsPosition = FALSE;
@@ -2179,11 +2196,8 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
                   return FALSE;
                 }
               else if (!pAb->AbHeight.DimIsPosition &&
-                       pAb->AbHeight.DimAbRef == pParentAb)
+                       pAb->AbHeight.DimAbRef == pAb->AbEnclosing)
                 {
-                  pParentAb = GetEnclosingViewport (pAb);
-                  if (pParentAb == NULL)
-                    pParentAb = ViewFrameTable[frame -1].FrAbstractBox;
                   pAb->AbHeight.DimAbRef = pParentAb;
                   pAb->AbHeight.DimIsPosition = FALSE;
                 }

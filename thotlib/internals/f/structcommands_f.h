@@ -20,6 +20,8 @@ extern ThotBool SendEventSubTree ( APPevent AppEvent,
                                    ThotBool inTable,
                                    ThotBool inRow );
 extern void FreeSavedElements ( void );
+extern ThotBool TtaIsColumnSaved ( Document document );
+extern ThotBool TtaIsRowSaved ( Document document );
 extern void CopyCommand ( void );
 extern PtrElement NextNotPage ( PtrElement pEl,
                                 ThotBool sibling );
@@ -35,14 +37,14 @@ extern void TtaSetCopyCellFunction ( Proc3 procedure );
 extern void TtaSetCopyRowFunction ( Proc3 procedure );
 extern void TtaSetNextCellInColumnFunction ( Proc5 procedure );
 extern ThotBool EmptyElement ( PtrElement pEl );
-extern void CreateNewElement ( int typeNum,
-                               PtrSSchema pSS,
-                               PtrDocument pDoc,
-                               ThotBool Before );
-extern void TtaCreateElement ( ElementType elementType,
-                               Document document );
-extern void TtaInsertElement ( ElementType elementType,
-                               Document document );
+extern ThotBool CreateNewElement ( int typeNum,
+                                   PtrSSchema pSS,
+                                   PtrDocument pDoc,
+                                   ThotBool Before );
+extern ThotBool TtaCreateElement ( ElementType elementType,
+                                   Document document );
+extern ThotBool TtaInsertElement ( ElementType elementType,
+                                   Document document );
 extern void TtaInsertAnyElement ( Document document,
                                   ThotBool before );
 extern void TtaSetTransformCallback ( Func2 callbackFunc );
@@ -63,6 +65,8 @@ extern ThotBool SendEventSubTree ( APPevent AppEvent,
                                      ThotBool inTable,
                                      ThotBool inRow );
 extern void FreeSavedElements ( void );
+extern ThotBool TtaIsColumnSaved ( Document document );
+extern ThotBool TtaIsRowSaved ( Document document );
 extern void CopyCommand ( void );
 extern PtrElement NextNotPage ( PtrElement pEl,
                                   ThotBool sibling );
@@ -78,14 +82,14 @@ extern void TtaSetCopyCellFunction ( Proc3 procedure );
 extern void TtaSetCopyRowFunction ( Proc3 procedure );
 extern void TtaSetNextCellInColumnFunction ( Proc5 procedure );
 extern ThotBool EmptyElement ( PtrElement pEl );
-extern void CreateNewElement ( int typeNum,
-                                 PtrSSchema pSS,
-                                 PtrDocument pDoc,
-                                 ThotBool Before );
-extern void TtaCreateElement ( ElementType elementType,
-                                 Document document );
-extern void TtaInsertElement ( ElementType elementType,
-                                 Document document );
+extern ThotBool CreateNewElement ( int typeNum,
+                                     PtrSSchema pSS,
+                                     PtrDocument pDoc,
+                                     ThotBool Before );
+extern ThotBool TtaCreateElement ( ElementType elementType,
+                                     Document document );
+extern ThotBool TtaInsertElement ( ElementType elementType,
+                                     Document document );
 extern void TtaInsertAnyElement ( Document document,
                                     ThotBool before );
 extern void TtaSetTransformCallback ( Func2 callbackFunc );

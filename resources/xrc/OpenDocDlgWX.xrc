@@ -3,7 +3,7 @@
   <object class="wxDialog" name="OpenDocDlgWX">
     <title>*Open/New document*</title>
     <centered>1</centered>
-    <style>wxDEFAULT_DIALOG_STYLE|wxWANTS_CHARS|wxRESIZE_BORDER</style>
+    <style>wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER|wxTAB_TRAVERSAL|wxWANTS_CHARS</style>
     <object class="wxBoxSizer">
       <orient>wxVERTICAL</orient>
       <object class="sizeritem">
@@ -12,6 +12,15 @@
           <object class="sizeritem">
             <object class="wxBoxSizer">
               <orient>wxHORIZONTAL</orient>
+              <object class="sizeritem">
+                <object class="wxBitmapButton" name="wxID_CLEAR">
+                  <bitmap stock_id="wxART_CROSS_MARK"></bitmap>
+                </object>
+                <flag>wxALIGN_CENTRE_VERTICAL</flag>
+              </object>
+              <object class="spacer">
+                <size>2,0</size>
+              </object>
               <object class="sizeritem">
                 <object class="wxComboBox" name="wxID_COMBOBOX">
                   <content/>
@@ -23,17 +32,19 @@
                 <flag>wxEXPAND</flag>
               </object>
               <object class="spacer">
-                <size>5,10</size>
+                <size>2,0</size>
               </object>
               <object class="sizeritem">
                 <object class="wxBitmapButton" name="wxID_BUTTON_FILENAME">
                   <bitmap stock_id="wxART_FILE_OPEN"></bitmap>
                 </object>
+                <flag>wxALIGN_CENTRE_VERTICAL</flag>
               </object>
               <object class="sizeritem">
                 <object class="wxBitmapButton" name="wxID_BUTTON_DIR">
                   <bitmap stock_id="wxART_FOLDER"></bitmap>
                 </object>
+                <flag>wxALIGN_CENTRE_VERTICAL</flag>
               </object>
             </object>
             <flag>wxBOTTOM|wxEXPAND</flag>
@@ -78,6 +89,33 @@
                     <option>1</option>
                     <flag>wxEXPAND</flag>
                   </object>
+                  <object class="spacer">
+                    <size>0,5</size>
+                  </object>
+                  <object class="sizeritem">
+                    <object class="wxBoxSizer">
+                      <orient>wxHORIZONTAL</orient>
+                      <object class="sizeritem">
+                        <object class="wxStaticText" name="wxID_CHARSET">
+                          <label>*Character coding:*</label>
+                          <size>120,-1</size>
+                        </object>
+                        <option>0</option>
+                        <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                        <border>5</border>
+                      </object>
+                      <object class="sizeritem">
+                        <object class="wxChoice" name="wxID_CHOICE_CHARSET">
+                          <content>
+                            <item>us-ascii</item>
+                            <item>iso-8859-1</item>
+                            <item>utf-8</item>
+                          </content>
+                        </object>
+                      </object>
+                    </object>
+                    <flag>wxEXPAND</flag>
+                  </object>
                   <object class="sizeritem">
                     <object class="wxStaticText" name="wxID_PROFILE_LABEL">
                       <label>*profile*</label>
@@ -106,29 +144,6 @@
                   <object class="spacer">
                     <size>0,5</size>
                   </object>
-                  <object class="sizeritem">
-                    <object class="wxBoxSizer">
-                      <orient>wxHORIZONTAL</orient>
-                      <object class="sizeritem">
-                        <object class="wxStaticText" name="wxID_CHARSET">
-                          <label>*Character coding:*</label>
-                          <size>100,-1</size>
-                        </object>
-                        <option>0</option>
-                        <flag>wxALIGN_CENTRE_VERTICAL</flag>
-                        <border>5</border>
-                      </object>
-                      <object class="sizeritem">
-                        <object class="wxChoice" name="wxID_CHOICE_CHARSET">
-                          <content>
-                            <item>us-ascii</item>
-                            <item>iso-8859-1</item>
-                            <item>utf-8</item>
-                          </content>
-                        </object>
-                      </object>
-                    </object>
-                  </object>
                 </object>
                 <option>1</option>
                 <flag>wxEXPAND|wxALIGN_CENTRE_VERTICAL</flag>
@@ -136,6 +151,44 @@
             </object>
             <flag>wxBOTTOM|wxEXPAND</flag>
             <border>4</border>
+          </object>
+          <object class="sizeritem">
+            <object class="wxStaticBoxSizer">
+              <orient>wxVERTICAL</orient>
+              <object class="sizeritem">
+                <object class="wxCheckBox" name="wxID_USE_TEMPLATE">
+                  <label>Use a template</label>
+                </object>
+              </object>
+              <object class="sizeritem">
+                <object class="wxBoxSizer">
+                  <orient>wxHORIZONTAL</orient>
+                  <object class="sizeritem">
+                    <object class="wxComboBox" name="wxID_TEMPLATEFILENAME">
+                      <content/>
+                      <size>420,-1</size>
+                      <style>wxCB_DROPDOWN</style>
+                      <focused>1</focused>
+                    </object>
+                    <option>1</option>
+                    <flag>wxEXPAND</flag>
+                  </object>
+                  <object class="spacer">
+                    <size>2,0</size>
+                  </object>
+                  <object class="sizeritem">
+                    <object class="wxBitmapButton" name="wxID_BUTTON_TEMPLATE">
+                      <bitmap stock_id="wxART_FILE_OPEN"></bitmap>
+                    </object>
+                    <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                  </object>
+                </object>
+                <flag>wxBOTTOM|wxEXPAND</flag>
+                <border>4</border>
+              </object>
+              <label></label>
+            </object>
+            <flag>wxEXPAND</flag>
           </object>
         </object>
         <flag>wxALL|wxEXPAND</flag>
@@ -165,13 +218,6 @@
             <object class="wxButton" name="wxID_OK">
               <label>*Open*</label>
               <default>1</default>
-            </object>
-          </object>
-          <object class="sizeritem">
-            <flag>wxALL</flag>
-            <border>5</border>
-            <object class="wxButton" name="wxID_CLEAR">
-              <label>*Clear*</label>
             </object>
           </object>
           <object class="sizeritem">

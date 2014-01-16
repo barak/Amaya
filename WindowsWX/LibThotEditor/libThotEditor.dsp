@@ -107,6 +107,14 @@ SOURCE=..\..\thotlib\dialogue\AmayaAddPointEvtHandler.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\thotlib\dialogue\AmayaAdvancedNotebook.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\thotlib\dialogue\AmayaAdvancedWindow.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\thotlib\base\AmayaApp.cpp
 # End Source File
 # Begin Source File
@@ -127,6 +135,18 @@ SOURCE=..\..\thotlib\dialogue\AmayaCanvas.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\thotlib\dialogue\AmayaClassicNotebook.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\thotlib\dialogue\AmayaClassicWindow.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\thotlib\dialogue\AmayaColorButton.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\thotlib\dialogue\AmayaConfirmCloseTab.cpp
 # End Source File
 # Begin Source File
@@ -143,11 +163,11 @@ SOURCE=..\..\thotlib\dialogue\AmayaFileDropTarget.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\thotlib\dialogue\AmayaFloatingPanel.cpp
+SOURCE=..\..\thotlib\dialogue\AmayaFrame.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\thotlib\dialogue\AmayaFrame.cpp
+SOURCE=..\..\thotlib\dialogue\AmayaHelpWindow.cpp
 # End Source File
 # Begin Source File
 
@@ -168,10 +188,6 @@ SOURCE=..\..\thotlib\dialogue\AmayaMovingBoxEvtHandler.cpp
 # Begin Source File
 
 SOURCE=..\..\thotlib\dialogue\AmayaNormalWindow.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\thotlib\dialogue\AmayaNotebook.cpp
 # End Source File
 # Begin Source File
 
@@ -223,11 +239,11 @@ SOURCE=..\..\thotlib\dialogue\AmayaStatusBar.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\thotlib\dialogue\AmayaSubPanel.cpp
+SOURCE=..\..\thotlib\dialogue\AmayaStylePanel.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\thotlib\dialogue\AmayaSubPanelManager.cpp
+SOURCE=..\..\thotlib\dialogue\AmayaTipOfTheDay.cpp
 # End Source File
 # Begin Source File
 
@@ -268,6 +284,10 @@ SOURCE=..\..\thotlib\dialogue\appli.c
 # Begin Source File
 
 SOURCE=..\..\thotlib\editing\applicationapi.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\thotlib\dialogue\archives.c
 # End Source File
 # Begin Source File
 

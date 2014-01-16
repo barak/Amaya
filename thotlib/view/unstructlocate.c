@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -42,6 +42,7 @@
 #include "font_f.h"
 #include "geom_f.h"
 #include "structcreation_f.h"
+#include "tree_f.h"
 #include "views_f.h"
 
 
@@ -67,13 +68,17 @@ int GetDistance (int value, int delta)
   horizontal proximity.
   ----------------------------------------------------------------------*/
 int GetBoxDistance (PtrBox pBox, PtrFlow pFlow, int xRef, int yRef,
-                    int ratio, int frame)
+                    int ratio, int frame, PtrElement *matchCell)
 {
-  PtrAbstractBox      pCell;
+  PtrAbstractBox      pCell, row;
+  PtrBox              sibling;
   PtrDocument         pDoc;
   int                 value, x, y, width, height;
   int                 xcell, ycell, wcell, hcell, view;
+  int                 s, l, r, t, b;
 
+  *matchCell = NULL;
+  b = t = r = l = 0;
   if (pBox == NULL || pBox->BxAbstractBox == NULL ||
       FrameTable[frame].FrDoc == 0)
     return MAX_DISTANCE;
@@ -85,23 +90,53 @@ int GetBoxDistance (PtrBox pBox, PtrFlow pFlow, int xRef, int yRef,
   else
     pCell = NULL;
 
-  if (pCell && pCell->AbPrevious && pCell->AbPrevious->AbPresentationBox)
-    /* use the pesentation box limits */
-    pCell = pCell->AbPrevious;
   xcell = ycell = 0;
   wcell = hcell = MAX_DISTANCE;
 #ifdef _GL
-  x = pBox->BxClipX;
-  y = pBox->BxClipY;
-  width = pBox->BxClipW;
-  height = pBox->BxClipH;
+  if (pBox->BxBoundinBoxComputed)
+    {
+      x = pBox->BxClipX;
+      y = pBox->BxClipY;
+      width = pBox->BxClipW;
+      height = pBox->BxClipH;
+    }
+  else
+    {
+      x = pBox->BxXOrg - ViewFrameTable[frame-1].FrXOrg;
+      y = pBox->BxYOrg - ViewFrameTable[frame-1].FrYOrg;
+      width = pBox->BxW;
+      height = pBox->BxH;
+    }
   if (pCell && pCell->AbBox)
     {
-      /* get cell limits */
-      xcell = pCell->AbBox->BxClipX;
-      ycell = pCell->AbBox->BxClipY;
-      wcell = pCell->AbBox->BxClipW;
-      hcell = pCell->AbBox->BxClipH;
+      // get the current cell spacing
+      s = 0;
+      row = SearchEnclosingType (pCell, BoRow, BoRow, BoRow);
+      if (row)
+        {
+          l = row->AbBox->BxLMargin + row->AbBox->BxLBorder + row->AbBox->BxLPadding;
+          r = row->AbBox->BxRMargin + row->AbBox->BxRBorder + row->AbBox->BxRPadding;
+          t = row->AbBox->BxTMargin + row->AbBox->BxTBorder + row->AbBox->BxTPadding;
+          b = row->AbBox->BxBMargin + row->AbBox->BxBBorder + row->AbBox->BxBPadding;
+          if (row  && row->AbPrevious)
+            {
+              sibling = row->AbPrevious->AbBox;
+              s = row->AbBox->BxYOrg - sibling->BxYOrg - sibling->BxHeight;
+            }
+          else if (row  && row->AbNext)
+            {
+              sibling = row->AbNext->AbBox;
+              s = sibling->BxYOrg - row->AbBox->BxYOrg - row->AbBox->BxHeight;
+            }
+        }
+      /* use the frame limits */
+      if (pCell && pCell->AbPrevious && pCell->AbPrevious->AbPresentationBox)
+        pCell = pCell->AbPrevious;
+       /* compute cell limits */
+      xcell = pCell->AbBox->BxClipX - l - s / 2;
+      ycell = pCell->AbBox->BxClipY - t - s / 2;
+      wcell = pCell->AbBox->BxClipW + l + r + s;
+      hcell = pCell->AbBox->BxClipH + t + b + s;
     }
 #else /*_GL */
   x = pBox->BxXOrg;
@@ -138,12 +173,13 @@ int GetBoxDistance (PtrBox pBox, PtrFlow pFlow, int xRef, int yRef,
   x += width;
   height /= 2;
   y += height;
-  if (xRef < xcell || xRef > xcell + wcell ||
-      yRef < ycell || yRef > ycell + hcell)
-    //return MAX_DISTANCE;
-    return value = GetDistance (xRef - x, width) + ratio * GetDistance (yRef - y, height);
-  else if (pCell)
-    value = GetDistance (xRef - x, width) + 10 * GetDistance (yRef - y, height);
+  if (pCell)
+    {
+      if (xRef >= xcell && xRef <= xcell + wcell &&
+          yRef >= ycell && yRef <= ycell + hcell)
+        *matchCell = pCell->AbElement;
+      value = GetDistance (xRef - x, width) + 10 * GetDistance (yRef - y, height);
+    }
   else
     value = GetDistance (xRef - x, width) + ratio * GetDistance (yRef - y, height);
   return (value);
@@ -180,6 +216,7 @@ void GetClickedBox (PtrBox *result, PtrFlow *pFlow, PtrAbstractBox pRootAb,
   PtrAbstractBox      pAb, active, sel_active;
   PtrBox              pSelBox, pBox;
   PtrBox              graphicBox;
+  PtrElement          matchCell = NULL, prevMatch = NULL;
   ViewFrame          *pFrame;
   int                 dist;
   int                 pointIndex;
@@ -203,6 +240,9 @@ void GetClickedBox (PtrBox *result, PtrFlow *pFlow, PtrAbstractBox pRootAb,
       while (pBox)
         {
           pAb = pBox->BxAbstractBox;
+          if (matchCell)
+            // keep in memory the previous found cell
+            prevMatch = matchCell;
 #ifdef _GL
           if (pBox->BxBoundinBoxComputed ||
               pBox->BxType == BoBlock || pBox->BxNChars == 0)
@@ -222,7 +262,12 @@ void GetClickedBox (PtrBox *result, PtrFlow *pFlow, PtrAbstractBox pRootAb,
                   bx += (*pFlow)->FlXStart;
                   by += (*pFlow)->FlYStart;
                 }
-              if (pAb->AbVisibility >= pFrame->FrVisibility)
+
+
+              if (matchCell && !ElemIsAnAncestor (matchCell, pAb->AbElement))
+                // the element is not within that cell
+                ;
+              else if (pAb->AbVisibility >= pFrame->FrVisibility)
                 {
                   pointIndex = 0;
                   graphicBox = NULL;
@@ -269,7 +314,7 @@ void GetClickedBox (PtrBox *result, PtrFlow *pFlow, PtrAbstractBox pRootAb,
                           if (x > d)
                             pointIndex = 1;
                         }
-                      d = GetBoxDistance (pBox, *pFlow, x, y, ratio, frame);
+                      d = GetBoxDistance (pBox, *pFlow, x, y, ratio, frame, &matchCell);
                       if (d > dist && dist == MAX_DISTANCE)
                         /* it's the first box selected */
                         dist = d;
@@ -281,16 +326,21 @@ void GetClickedBox (PtrBox *result, PtrFlow *pFlow, PtrAbstractBox pRootAb,
                   active = GetParentWithException (ExcClickableSurface, pAb);
                   if (active &&
                       (active->AbBox == NULL ||
-                       GetBoxDistance (active->AbBox, *pFlow, x, y, ratio, frame) != 0))
+                       GetBoxDistance (active->AbBox, *pFlow, x, y, ratio, frame, &matchCell) != 0))
                     active = NULL;
                   if (active && sel_active == NULL)
                     dist = d + 1;
                   else if (active == NULL && sel_active)
                     d = dist + 1;
+
+                  if (prevMatch != matchCell && matchCell)
+                    // ignore previous boxes out of the current cell
+                    dist = MAX_DISTANCE;
+
                   if (d < dist ||
                       (d == dist &&
                        (pSelBox == NULL ||
-                        pSelBox->BxAbstractBox->AbDepth >= pBox->BxAbstractBox->AbDepth)))
+                        pSelBox->BxAbstractBox->AbDepth >= pAb->AbDepth)))
                     {
                       dist = d;
                       pSelBox = pBox;

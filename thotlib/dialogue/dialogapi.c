@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -591,89 +591,6 @@ void TtaInitDialogue (char *server, ThotAppContext *app_context)
   PopShell = 0;
   /* Pas encore de reference attribuee */
   FirstFreeRef = 0;
-#ifdef _GTK
-  /* initialize everything needed to operate the toolkit and parses some standard command line options */
-   
-  /* initialize local before gtk_init_* , order is important */
-  gtk_set_locale ();
-   
-  /* init gtk */
-  if (!gtk_init_check (&appArgc, &appArgv))
-    {
-      printf ("cannot open display\n");
-      gtk_exit (0);
-    }
-   
-  /* load specific gtkrc file */
-  char                fname[MAX_TXT_LEN], name[MAX_TXT_LEN];
-  char               *appHome;
-  appHome = TtaGetEnvString ("APP_HOME");
-  strcpy (fname, appHome);
-  strcat (fname, DIR_STR);
-  strcat (fname, "gtkrc");
-  if (SearchFile (fname, 0, name))
-    gtk_rc_parse (name);
-  else if (SearchFile ("gtkrc", 2, name))
-    gtk_rc_parse (name);
-   
-  TtDisplay = GDK_DISPLAY ();
-  DefaultFont = gdk_font_load ("fixed");
-#ifndef _GL
-  gdk_imlib_init ();
-#endif /* _GL */
-#endif /* _GTK */
-#ifdef _WINGUI
-  FrMainRef[0] = 0;
-  iconID = "IDI_APPICON";
-  /*Window main class */
-  RootShell.style = 0;
-  RootShell.lpfnWndProc = WndProc;
-  RootShell.cbClsExtra = 0;
-  RootShell.cbWndExtra = 0;
-  RootShell.hInstance = hInstance;
-  RootShell.hIcon = LoadIcon (hInstance, iconID);
-  RootShell.hCursor = LoadCursor (NULL, IDC_ARROW);
-  RootShell.hbrBackground = (HBRUSH) GetStockObject (LTGRAY_BRUSH);
-  RootShell.lpszMenuName = "AmayaMain";
-  RootShell.lpszClassName = "Amaya";
-  RootShell.cbSize = sizeof(WNDCLASSEX);
-  RootShell.hIconSm = LoadIcon (hInstance, iconID);
-  RegisterClassEx (&RootShell);
-  /*Window canvas  class */
-  RootShell.style = /* Handle dblclks*/ CS_DBLCLKS |
-    /* Faster handling of device context*/ CS_OWNDC;
-  RootShell.lpfnWndProc = ClientWndProc;
-  RootShell.cbClsExtra = 0;
-  RootShell.cbWndExtra = 0;
-  RootShell.hInstance = hInstance;
-  RootShell.hIcon = LoadIcon (hInstance, iconID);
-  RootShell.hCursor = LoadCursor (NULL, IDC_ARROW);
-#ifndef _GL
-  RootShell.hbrBackground = NULL;/*(HBRUSH) GetStockObject (LTGRAY_BRUSH);*/
-#else /*_GL*/
-  RootShell.hbrBackground = 0;
-#endif /*_GL*/
-  RootShell.lpszClassName = "ClientWndProc";
-  RootShell.lpszMenuName = NULL;
-  RootShell.cbSize = sizeof(WNDCLASSEX);
-  RootShell.hIconSm = LoadIcon (hInstance, iconID);
-  RegisterClassEx (&RootShell);
-
-  /* New windows class : dialog*/
-  RootShell.style = 0;
-  RootShell.lpfnWndProc = ThotDlgProc;
-  RootShell.cbClsExtra = 0;
-  RootShell.cbWndExtra = 0;
-  RootShell.hInstance = hInstance;
-  RootShell.hIcon = LoadIcon (hInstance, iconID);
-  RootShell.hCursor = LoadCursor (NULL, IDC_ARROW);
-  RootShell.lpszClassName = "WNDIALOGBOX";
-  RootShell.lpszMenuName = NULL;
-  RootShell.hbrBackground = (HBRUSH) GetStockObject (LTGRAY_BRUSH);
-  RootShell.cbSize = sizeof(WNDCLASSEX);
-  RootShell.hIconSm = LoadIcon (hInstance, iconID);
-  RegisterClassEx (&RootShell);
-#endif /* _WINGUI */
 }
 
 /*----------------------------------------------------------------------
@@ -704,56 +621,23 @@ int TtaGetReferencesBase (int number)
 /*----------------------------------------------------------------------
   DisplayConfirmMessage displays the given message (text).
   ----------------------------------------------------------------------*/
-void DisplayConfirmMessage (char *text)
+void DisplayConfirmMessage (const char *text)
 {
-#ifdef _GTK
-  ThotWidget          row, w;
-  ThotWidget          msgbox;
+  int                 display_width_px, display_height_px;
+  int                 width = 200, height = 100;
 
-  /* get current position */
-  TtaSetDialoguePosition ();
-  /* Create the window message */
-  msgbox = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-  gtk_widget_realize (GTK_WIDGET(msgbox));
-  if (msgbox->style->font == NULL ||
-      msgbox->style->font->type != GDK_FONT_FONTSET)
-    msgbox->style->font = DefaultFont;
-  gtk_window_set_title (GTK_WINDOW (msgbox), TtaGetMessage (LIB, TMSG_LIB_CONFIRM));
-  gtk_window_set_policy (GTK_WINDOW (msgbox), TRUE, TRUE, FALSE);
-  gtk_widget_set_uposition(GTK_WIDGET(msgbox), ShowX, ShowY);
-  gtk_container_set_border_width (GTK_CONTAINER(msgbox), 2);
-  /*** Create a Row-Column to add the label and OK button ***/
-  row = gtk_vbox_new (FALSE,0);
-  gtk_widget_show (GTK_WIDGET(row));
-  gtk_container_add (GTK_CONTAINER (msgbox), row);
-  /* the label */
-  w = gtk_label_new (text);
-  gtk_misc_set_alignment (GTK_MISC (w), 0., 0.5);
-  gtk_misc_set_padding (GTK_MISC (w), 10, 0);
-  gtk_widget_show (GTK_WIDGET(w));
-  gtk_label_set_justify (GTK_LABEL (w), GTK_JUSTIFY_CENTER);
-  gtk_box_pack_start (GTK_BOX (row), w, FALSE, FALSE, 0);
-  /*** Create the Row-Column that includes OK button ***/
-  w = gtk_hbox_new (FALSE,0);
-  gtk_widget_show (GTK_WIDGET(w));
-  gtk_box_pack_start (GTK_BOX (row), w, FALSE, FALSE, 0);
-  row=w;
-  /*** Create the OK button ***/
-  w = gtk_button_new_with_label (TtaGetMessage (LIB, TMSG_LIB_CONFIRM));
-  gtk_widget_show (GTK_WIDGET(w));
-  gtk_box_pack_start (GTK_BOX (row), w, FALSE, FALSE, 100);
-  ConnectSignalGTK (GTK_OBJECT(w), "clicked",
-                    GTK_SIGNAL_FUNC(ConfirmMessageGTK), (gpointer)msgbox);
-  gtk_widget_show_all (msgbox);
-  gdk_window_raise (msgbox->window);
-#endif /* _GTK */
-#ifdef _WX
   wxMessageDialog messagedialog( NULL,
                                  TtaConvMessageToWX(text), 
                                  TtaConvMessageToWX(TtaGetMessage(LIB, TMSG_LIB_CONFIRM)),
                                  (long) wxOK | wxICON_EXCLAMATION | wxSTAY_ON_TOP);
+  wxPoint pos = wxGetMousePosition();
+  wxDisplaySize(&display_width_px, &display_height_px);
+  if (pos.x + width > display_width_px)
+    pos.x = display_width_px - width;
+  if (pos.y + height > display_height_px)
+    pos.x = display_height_px - height;
+  messagedialog.Move(pos);
   messagedialog.ShowModal();
-#endif /* _WX */
 }
 
 /*----------------------------------------------------------------------
@@ -764,67 +648,12 @@ void DisplayConfirmMessage (char *text)
   ----------------------------------------------------------------------*/
 void DisplayMessage (char *text, int msgType)
 {
-#ifdef _GTK
-  int                 lg;
-  int                 n;
-  char                buff[500 + 1];
-  char               *pointer;
-
-  /* Is the initialisation done ? */
-  lg = strlen (text);
-  if (MainShell && WithMessages && lg > 0)
-    {
-      /* take current messages */
-      strncpy (buff, gtk_entry_get_text (GTK_ENTRY(FrameTable[0].WdStatus)), 500);
-      n = strlen (buff);
-      /* is it necessary to suppress one or more messages ? */
-      if (n + lg + 1 >= 500)
-        {
-          /* suppress messages */
-          /* kill until we have 50 free characters */
-          while (n + lg + 1 >= 450)
-            {
-              /* search next New Line */
-              pointer = strchr (buff, '\n');
-              if (pointer == NULL)
-                n = 0;
-              else
-                {
-                  strcpy (buff, &pointer[1]);
-                  n = strlen (buff);
-                }
-            }
-          /* add message */
-          if (n > 0)
-            strcpy (&buff[n++], "\n");
-          strncpy (&buff[n], text, 500 - n);
-          lg += n;
-          /* copy text */
-          if (gtk_text_get_length (GTK_TEXT (FrameTable[0].WdStatus))>0)
-            gtk_editable_delete_text( GTK_EDITABLE (FrameTable[0].WdStatus), 0, -1);
-          gtk_text_insert (GTK_TEXT (FrameTable[0].WdStatus), NULL, NULL, NULL, buff, -1);
-        }
-      else
-        {
-          /* enough space, just add new message at the end */
-          strcpy (buff, "\n");
-          strcat (buff, text);
-          gtk_text_insert (GTK_TEXT (FrameTable[0].WdStatus), NULL, NULL, NULL, buff, -1);
-          lg += n;
-        }
-      /* select the message end to force scroll down */
-      gtk_editable_select_region(GTK_EDITABLE(FrameTable[0].WdStatus), 0, -1);
-    }
-#endif /* _GTK */
-
-#ifdef _WX
   wxMessageDialog messagedialog( NULL,
                                  TtaConvMessageToWX(text), 
                                  _T("Info"),
                                  (long) wxOK | wxICON_INFORMATION | wxSTAY_ON_TOP);
   messagedialog.CenterOnScreen();
   messagedialog.ShowModal();
-#endif /* _WX */
 }
 
 /*----------------------------------------------------------------------
@@ -1034,7 +863,7 @@ void TtaNewPulldown (int ref, ThotMenu parent, char *title, int number,
 #ifdef _GTK
           menu = gtk_menu_new ();
           /* 
-             peut -être rajouter une bouton pour détacher le menu ?
+             peut -ï¿½tre rajouter une bouton pour dï¿½tacher le menu ?
              se fait avec gtk_menu_set_tearoff_state;
           */
 #endif /* _GTK */
@@ -5737,12 +5566,6 @@ void TtaAbortShowDialogue ()
   ----------------------------------------------------------------------*/
 void TtaSetDialoguePosition ()
 {
-#ifdef _GTK
-  GdkModifierType     flag_tmp;
-
-  gdk_window_get_pointer ((GdkWindow *)(gdk_window_get_toplevels()->data),
-                          &ShowX,  &ShowY, &flag_tmp);
-#endif /* _GTK */
 #ifdef _WX
   wxPoint p = wxGetMousePosition();
   ShowX = p.x;
@@ -5758,12 +5581,10 @@ void TtaShowDialogue (int ref, ThotBool remanent)
 #ifdef _WINGUI
   POINT               curPoint;
 #endif  /* _WINGUI */
-#if defined(_GTK)
-  int                 n;  
-  ThotBool            usedoubleclick;  
-#endif /* _GTK */
   ThotWidget          w;
   struct Cat_Context *catalogue;
+  int                 display_width_px, display_height_px;
+  int                 width, height;
 
   if (ref == 0)
     {
@@ -5802,6 +5623,14 @@ void TtaShowDialogue (int ref, ThotBool remanent)
               ShowCat = catalogue;
             }
 	  
+          wxPoint pos = wxGetMousePosition();
+          wxDisplaySize(&display_width_px, &display_height_px);
+          catalogue->Cat_Widget->GetSize (&width, &height);
+          if (pos.x + width > display_width_px)
+            pos.x = display_width_px - width;
+          if (pos.y + height > display_height_px)
+            pos.x = display_height_px - height;
+          catalogue->Cat_Widget->Move(pos);
           catalogue->Cat_Widget->Show();
           catalogue->Cat_Widget->Raise();
         }
@@ -5848,82 +5677,6 @@ void TtaShowDialogue (int ref, ThotBool remanent)
       UpdateWindow (w);
     }
 #endif  /* _WINGUI */
-#ifdef _GTK
-  if (GTK_WIDGET_VISIBLE (w))
-    {
-      gtk_widget_show_all (GTK_WIDGET (w));
-      gdk_window_raise (GTK_WIDGET (w)->window);
-    }
-  /*===========> Active un pop-up menu */
-  else if (catalogue->Cat_Type == CAT_POPUP || catalogue->Cat_Type == CAT_PULL
-           || catalogue->Cat_Type == CAT_SCRPOPUP)
-    {
-      /* Faut-il invalider un TtaShowDialogue precedent */
-      TtaAbortShowDialogue ();
-      /* Memorise qu'un retour sur le catalogue est attendu et */
-      /* qu'il peut etre aborte' si et seulement s'il n'est pas remanent */
-      if (!remanent)
-        {
-          ShowReturn = 1;
-          ShowCat = catalogue;
-        }
-      TtaGetEnvBoolean ("ENABLE_DOUBLECLICK", &usedoubleclick);
-      if (catalogue->Cat_Button == 'L')
-        {
-          if (usedoubleclick)
-            /* prevent to close immediately the popup menu */
-            n = 3;
-          else
-            n = 1;
-        }
-      else
-        n = 3;
-      if (catalogue->Cat_Type == CAT_SCRPOPUP)
-        {
-          gtk_widget_show_all ((GtkWidget *) w);
-          gtk_widget_grab_focus ((GtkWidget *) w);
-          gdk_keyboard_grab (((GtkWidget *)w)->window, TRUE, GDK_CURRENT_TIME);
-        }
-      else
-        {
-          gtk_menu_popup ((GtkMenu *) w, NULL, NULL, NULL, 0, n, (guint32) 0);
-          /* force grab focus ... with ?old? gtk version the focus not seems to be set by default ... */
-          gtk_widget_grab_focus ((GtkWidget *) w);
-          gtk_widget_show_all ((GtkWidget *) w);
-          gdk_keyboard_grab (((GtkWidget *)w)->window, TRUE, GDK_CURRENT_TIME);
-        }
-    } 
-  /*===========> Active un formulaire */
-  else if ((catalogue->Cat_Type == CAT_FORM ||
-            catalogue->Cat_Type == CAT_SHEET || 
-            catalogue->Cat_Type == CAT_DIALOG) &&
-           catalogue->Cat_PtParent == NULL)
-    {
-      /* Faut-il invalider un TtaShowDialogue precedent */
-      TtaAbortShowDialogue ();
-      /* Memorise qu'un retour sur le catalogue est attendu et */
-      /* qu'il peut etre aborter si et seulement s'il n'est pas remanent */
-      if (!remanent)
-        {
-          ShowReturn = 1;
-          ShowCat = catalogue;
-        }
-      /* Pour les feuilles de dialogue force le bouton par defaut */
-      if ((catalogue->Cat_Type == CAT_SHEET  || 
-           catalogue->Cat_Type == CAT_DIALOG || 
-           catalogue->Cat_Type == CAT_FORM) &&
-          catalogue->Cat_Entries)
-        {
-          if (catalogue->Cat_Entries->E_ThotWidget[1])
-            gtk_widget_grab_default (GTK_WIDGET(catalogue->Cat_Entries->E_ThotWidget[1]));
-          else if (catalogue->Cat_Entries->E_ThotWidget[0])
-            gtk_widget_grab_default (GTK_WIDGET(catalogue->Cat_Entries->E_ThotWidget[0]));
-        }
-      INITform (w, catalogue, NULL);
-    }
-  else
-    TtaError (ERR_invalid_reference);
-#endif /* _GTK */
 }
 
 /*----------------------------------------------------------------------

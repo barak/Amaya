@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -42,7 +42,7 @@ typedef enum _SearchDomain
 SearchDomain;
 
 /* element construct */
-typedef enum _Construct
+typedef enum _ConstructType
   {
      ConstructIdentity,
      ConstructList,
@@ -59,7 +59,7 @@ typedef enum _Construct
      ConstructEmpty,
      ConstructError
   }
-Construct;
+ConstructType;
 
 #ifndef __CEXTRACT__
 
@@ -285,8 +285,9 @@ extern void TtaInsertFirstChild (/*INOUT*/ Element *newElement, Element parent,
    Parameters:
    elementType: type of the element to be created.
    document: the document for which the element is created.
+   Return TRUE if the action is done
    ---------------------------------------------------------------------- */
-extern void TtaCreateElement (ElementType elementType, Document document);
+extern ThotBool TtaCreateElement (ElementType elementType, Document document);
 
 /* ----------------------------------------------------------------------
    TtaInsertElement
@@ -300,8 +301,9 @@ extern void TtaCreateElement (ElementType elementType, Document document);
    Parameters:
    elementType: type of the element to be created.
    document: the document for which the element is created.
+   Return TRUE if the action is done
    ---------------------------------------------------------------------- */
-extern void TtaInsertElement (ElementType elementType, Document document);
+extern ThotBool TtaInsertElement (ElementType elementType, Document document);
 
 /* ----------------------------------------------------------------------
    TtaInsertAnyElement
@@ -774,7 +776,7 @@ extern ThotBool          TtaIsLeaf (ElementType elementType);
    Return value:
    the construct that defines the structure of that element type.
    ---------------------------------------------------------------------- */
-extern Construct TtaGetConstructOfType (ElementType elementType);
+extern ConstructType TtaGetConstructOfType (ElementType elementType);
 
 /* ----------------------------------------------------------------------
    TtaGetCardinalOfType
@@ -841,7 +843,7 @@ extern ThotBool TtaIsOptionalInAggregate(int rank, ElementType elementType);
    Return value:
    the construct that defines the structure of that element.
    ---------------------------------------------------------------------- */
-extern Construct TtaGetConstruct (Element element);
+extern ConstructType TtaGetConstruct (Element element);
 
 /* ----------------------------------------------------------------------
    TtaGetAccessRight
@@ -1303,6 +1305,17 @@ extern void TtaGetXmlElementType (char *XMLElementName, ElementType *elType,
 extern void TtaChangeGenericSchemaNames (char *sSchemauri, char *sSchemaName,
 					 Document doc);
 
+
+/*----------------------------------------------------------------------
+  TtaBreakElement
+  Split the pSplitEl element and complete to replicate the pElReplicate
+  element.
+  block is TRUE if the split element is a block
+  Return TRUE if okay
+  select: select the new element
+  ----------------------------------------------------------------------*/
+extern ThotBool TtaBreakElement (Element replicate, Element split,
+                                 int splitIndex, ThotBool block, ThotBool select);
 #endif /* __CEXTRACT__ */
 
 #endif

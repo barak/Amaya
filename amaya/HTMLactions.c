@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2007
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -45,6 +45,7 @@
 #include "init_f.h"
 #include "AHTURLTools_f.h"
 #include "EDITimage_f.h"
+#include "EDITstyle_f.h"
 #include "fetchXMLname_f.h"
 #include "HTMLactions_f.h"
 #include "HTMLedit_f.h"
@@ -81,17 +82,17 @@
 
 
 /* Some prototypes */
-static ThotBool     FollowTheLink (Element anchor, Element elSource,
+static ThotBool     Do_follow_link (Element anchor, Element elSource,
                                    Attribute HrefAttr, Document doc);
 
 /* the structure used for the Forward and Backward buttons history callbacks */
-typedef struct _FollowTheLink_context {
+typedef struct _Do_follow_link_context {
   Document             doc;
   Element              anchor;
   Element              elSource;
   char                *sourceDocUrl;
   char                *utf8path;
-} FollowTheLink_context;
+} Do_follow_link_context;
 
 
 /* info about the last element highlighted when synchronizing with the
@@ -102,6 +103,7 @@ static Attribute    HighLightAttribute = NULL;
 static ThotBool     Follow_exclusive = FALSE;
 static ThotBool     Refresh_exclusive = FALSE;
 static ThotBool     SelectionChanging = FALSE;
+static ThotBool     GoToSection = FALSE;
 
 /*----------------------------------------------------------------------
   CharNum_IN_Line
@@ -1280,7 +1282,7 @@ void CheckUniqueName (Element el, Document doc, Attribute attr,
               length = TtaGetTextAttributeLength (attr) + 1;
               name = (char *)TtaGetMemory (length);
               TtaGiveTextAttributeValue (attr, name, &length);
-              sprintf (msgBuffer, "Invalid ID value %s", name);
+              sprintf (msgBuffer, "Invalid ID value \"%s\"", name);
               lineNum = TtaGetElementLineNumber(el);
               if (DocumentMeta[doc] && DocumentMeta[doc]->xmlformat)
                 XmlParseError (errorParsing, (unsigned char *)msgBuffer, lineNum);
@@ -1288,18 +1290,21 @@ void CheckUniqueName (Element el, Document doc, Attribute attr,
                 HTMLParseError (doc, msgBuffer, lineNum);
               TtaFreeMemory (name);
             }
-        }
-      else
-        {
-          // this function is optional because it increases the loading time
-          if (Check_read_ids && MakeUniqueName (el, doc, FALSE, FALSE))
+          else
             {
-              sprintf (msgBuffer, "Duplicate attribute value %s", name);
-              lineNum = TtaGetElementLineNumber(el);
-              if (DocumentMeta[doc] && DocumentMeta[doc]->xmlformat)
-                XmlParseError (errorParsing, (unsigned char *)msgBuffer, lineNum);
-              else
-                HTMLParseError (doc, msgBuffer, lineNum);
+             // this function is optional because it increases the loading time
+              if (Check_read_ids && MakeUniqueName (el, doc, FALSE, FALSE))
+                {
+                  length = TtaGetTextAttributeLength (attr) + 1;
+                  name = (char *)TtaGetMemory (length);
+                  TtaGiveTextAttributeValue (attr, name, &length);
+                  sprintf (msgBuffer, "Duplicate ID value \"%s\"", name);
+                  lineNum = TtaGetElementLineNumber(el);
+                  if (DocumentMeta[doc] && DocumentMeta[doc]->xmlformat)
+                    XmlParseError (errorParsing, (unsigned char *)msgBuffer, lineNum);
+                  else
+                    HTMLParseError (doc, msgBuffer, lineNum);
+                }
             }
         }
     }
@@ -1307,10 +1312,10 @@ void CheckUniqueName (Element el, Document doc, Attribute attr,
 
 
 /*----------------------------------------------------------------------
-  FollowTheLink_callback
+  Do_follow_link_callback
   This function is called when the document is loaded
   ----------------------------------------------------------------------*/
-void FollowTheLink_callback (int targetDocument, int status, char *urlName,
+void Do_follow_link_callback (int targetDocument, int status, char *urlName,
                              char *outputfile, char *proxyname,
                              AHTHeaders *http_headers, void *context)
 {
@@ -1323,8 +1328,9 @@ void FollowTheLink_callback (int targetDocument, int status, char *urlName,
   Attribute           PseudoAttr, HrefAttr;
   SSchema             docSchema; 
   View                view;
-  FollowTheLink_context  *ctx = (FollowTheLink_context *) context;
+  Do_follow_link_context  *ctx = (Do_follow_link_context *) context;
   char               *sourceDocUrl, *utf8path;
+  char                newurl[MAX_LENGTH], newname[MAX_LENGTH];
 
   /* retrieve the context */
   if (ctx == NULL)
@@ -1376,38 +1382,41 @@ void FollowTheLink_callback (int targetDocument, int status, char *urlName,
         }
     }
 
-  if (utf8path[0] == '#' && targetDocument != 0)
+  NormalizeURL (utf8path, doc, newurl, newname, NULL);
+  
+  if ((utf8path[0] == '#' || !strcmp(newurl, DocumentURLs[doc]))
+          && targetDocument != 0)
     {
-      if (elFound)
+      if (!elFound)
+        elFound = TtaGetMainRoot(doc);
+        
+      elType = TtaGetElementType (elFound);
+      if (elType.ElTypeNum == HTML_EL_LINK &&
+          !strcmp (TtaGetSSchemaName (elType.ElSSchema), "HTML"))
         {
-          elType = TtaGetElementType (elFound);
-          if (elType.ElTypeNum == HTML_EL_LINK &&
-              !strcmp (TtaGetSSchemaName (elType.ElSSchema), "HTML"))
+          /* the target is a HTML link element, follow this link */
+          attrType.AttrSSchema = elType.ElSSchema;
+          attrType.AttrTypeNum = HTML_ATTR_HREF_;
+          HrefAttr = TtaGetAttribute (elFound, attrType);
+          if (HrefAttr)
+            Do_follow_link (elFound, elSource, HrefAttr, doc);
+          return;
+        }
+      else
+        {
+          if (targetDocument == doc && utf8path[0] == '#')
             {
-              /* the target is a HTML link element, follow this link */
-              attrType.AttrSSchema = elType.ElSSchema;
-              attrType.AttrTypeNum = HTML_ATTR_HREF_;
-              HrefAttr = TtaGetAttribute (elFound, attrType);
-              if (HrefAttr)
-                FollowTheLink (elFound, elSource, HrefAttr, doc);
-              return;
+              /* jump in the same document */
+              /* record current position in the history */
+              AddDocHistory (doc, DocumentURLs[doc], 
+                             DocumentMeta[doc]->initial_url, 
+                             DocumentMeta[doc]->form_data,
+                             DocumentMeta[doc]->method);
             }
-          else
-            {
-              if (targetDocument == doc)
-                {
-                  /* jump in the same document */
-                  /* record current position in the history */
-                  AddDocHistory (doc, DocumentURLs[doc], 
-                                 DocumentMeta[doc]->initial_url, 
-                                 DocumentMeta[doc]->form_data,
-                                 DocumentMeta[doc]->method);
-                }
-              /* show the target element in all views */
-              for (view = 1; view < 6; view++)
-                if (TtaIsViewOpen (targetDocument, view))
-                  TtaShowElement (targetDocument, view, elFound, 0);
-            }
+          /* show the target element in all views */
+          for (view = 1; view < 6; view++)
+            if (TtaIsViewOpen (targetDocument, view))
+              TtaShowElement (targetDocument, view, elFound, 0);
         }
     }
   TtaFreeMemory (utf8path);
@@ -1473,11 +1482,11 @@ ThotBool IsCSSLink (Element el, Document doc)
 }
 
 /*----------------------------------------------------------------------
-  FollowTheLink follows the link starting from the anchor element for a
+  Do_follow_link follows the link starting from the anchor element for a
   double click on the elSource element.
   The parameter doc is the document that contains the origin element.
   ----------------------------------------------------------------------*/
-static ThotBool FollowTheLink (Element anchor, Element elSource,
+static ThotBool Do_follow_link (Element anchor, Element elSource,
                                Attribute HrefAttr, Document doc)
 {
   AttributeType          attrType;
@@ -1491,8 +1500,9 @@ static ThotBool FollowTheLink (Element anchor, Element elSource,
   char                  *utf8path, *info, *s;
   int                    length;
   int                    method;
-  FollowTheLink_context *ctx;
-  ThotBool		            isHTML, history, readonly = FALSE;
+  Do_follow_link_context *ctx;
+  ThotBool		           isHTML, history, readonly = FALSE;
+  char                   newurl[MAX_LENGTH], newname[MAX_LENGTH];
 
   if (Follow_exclusive || Synchronizing)
     // there is already a current follow the link or a synchronizing
@@ -1501,7 +1511,7 @@ static ThotBool FollowTheLink (Element anchor, Element elSource,
     Follow_exclusive = TRUE;
   if (anchor == NULL || HrefAttr == NULL)
     return FALSE;
-   
+  
   info = pathname = NULL;
   elType = TtaGetElementType (anchor);
   attrType.AttrTypeNum = 0;
@@ -1537,7 +1547,7 @@ static ThotBool FollowTheLink (Element anchor, Element elSource,
         utf8path[length--] = EOS;
        
       /* save the context */
-      ctx = (FollowTheLink_context*)TtaGetMemory (sizeof (FollowTheLink_context));
+      ctx = (Do_follow_link_context*)TtaGetMemory (sizeof (Do_follow_link_context));
       ctx->anchor = anchor;
       ctx->doc = doc;
       ctx->utf8path = utf8path;
@@ -1545,12 +1555,15 @@ static ThotBool FollowTheLink (Element anchor, Element elSource,
       /* save the complete URL of the source document */
       ctx->sourceDocUrl = TtaStrdup (DocumentURLs[doc]);
       TtaSetSelectionMode (TRUE);
-      if (utf8path[0] == '#')
+      
+      NormalizeURL (utf8path, doc, newurl, newname, NULL);
+                         
+      if (utf8path[0] == '#' || !strcmp(newurl, DocumentURLs[doc]))
         {
           /* the target element is part of the same document */
           targetDocument = doc;
           /* manually invoke the callback */
-          FollowTheLink_callback (targetDocument, 0, NULL, NULL, NULL, NULL, 
+          Do_follow_link_callback (targetDocument, 0, NULL, NULL, NULL, NULL, 
                                   (void *) ctx);
         }
       else
@@ -1631,7 +1644,7 @@ static ThotBool FollowTheLink (Element anchor, Element elSource,
                   TtaFreeMemory (s);
                 }
             }
-           
+
           if (method != CE_RELATIVE || DontReplaceOldDoc ||
               CanReplaceCurrentDocument (doc, 1))
             {
@@ -1646,7 +1659,7 @@ static ThotBool FollowTheLink (Element anchor, Element elSource,
               targetDocument = GetAmayaDoc (pathname, NULL, reldoc, doc, 
                                             method, history, 
                                             (void (*)(int, int, char*, char*, char*,
-                                                      const AHTHeaders*, void*)) FollowTheLink_callback,
+                                                      const AHTHeaders*, void*)) Do_follow_link_callback,
                                             (void *) ctx);
               if (readonly)
                 {
@@ -1777,6 +1790,18 @@ static void DblClickOnButton (Element element, Document document)
 }
 
 /*----------------------------------------------------------------------
+  WithinLinkElement returns TRUE if the selection is within a link
+  ----------------------------------------------------------------------*/
+ThotBool WithinLinkElement (Element element, Document document)
+{
+  Element   ancestor;
+  Attribute attr;
+
+  ancestor = SearchAnchor (document, element, &attr, FALSE);
+  return (ancestor != NULL);
+}
+
+/*----------------------------------------------------------------------
   ActivateElement    The user has activated an element.         
   ----------------------------------------------------------------------*/
 static ThotBool ActivateElement (Element element, Document document)
@@ -1785,10 +1810,11 @@ static ThotBool ActivateElement (Element element, Document document)
   Element             anchor, elFound;
   ElementType         elType, elType1;
   char               *name;
-  ThotBool	       ok, isHTML, isXLink, isSVG;
+  ThotBool	          ok, isHTML, isXLink, isSVG;
 
   elType = TtaGetElementType (element);
   name = TtaGetSSchemaName(elType.ElSSchema);
+  anchor = NULL;
   isSVG = FALSE;
   isXLink = FALSE;
   isHTML = FALSE;
@@ -1807,28 +1833,29 @@ static ThotBool ActivateElement (Element element, Document document)
       elType.ElTypeNum == HTML_EL_SYMBOL_UNIT)
     /* it's a basic element. It is interested whatever its namespace */
     ok = TRUE;
-  else if (isHTML &&
-           (elType.ElTypeNum == HTML_EL_LINK ||
-            elType.ElTypeNum == HTML_EL_Anchor ||
-            elType.ElTypeNum == HTML_EL_AREA ||
-            elType.ElTypeNum == HTML_EL_FRAME ||
-            elType.ElTypeNum == HTML_EL_Block_Quote ||
-            elType.ElTypeNum == HTML_EL_Quotation ||
-            elType.ElTypeNum == HTML_EL_ins ||
-            elType.ElTypeNum == HTML_EL_del ||
-            elType.ElTypeNum == HTML_EL_C_Empty ||
-            elType.ElTypeNum == HTML_EL_Radio_Input ||
-            elType.ElTypeNum == HTML_EL_Checkbox_Input ||
-            elType.ElTypeNum == HTML_EL_Option_Menu ||
-            elType.ElTypeNum == HTML_EL_Submit_Input ||
-            elType.ElTypeNum == HTML_EL_Reset_Input ||
-            elType.ElTypeNum == HTML_EL_BUTTON_ ||
-            elType.ElTypeNum == HTML_EL_File_Input))
-    ok = TRUE;
+  else if (isHTML)
+    ok = (elType.ElTypeNum == HTML_EL_LINK ||
+          elType.ElTypeNum == HTML_EL_Anchor ||
+          elType.ElTypeNum == HTML_EL_AREA ||
+          elType.ElTypeNum == HTML_EL_FRAME ||
+          elType.ElTypeNum == HTML_EL_Block_Quote ||
+          elType.ElTypeNum == HTML_EL_Quotation ||
+          elType.ElTypeNum == HTML_EL_ins ||
+          elType.ElTypeNum == HTML_EL_del ||
+          elType.ElTypeNum == HTML_EL_C_Empty ||
+          elType.ElTypeNum == HTML_EL_Radio_Input ||
+          elType.ElTypeNum == HTML_EL_Checkbox_Input ||
+          elType.ElTypeNum == HTML_EL_Option_Menu ||
+          elType.ElTypeNum == HTML_EL_Submit_Input ||
+          elType.ElTypeNum == HTML_EL_Reset_Input ||
+          elType.ElTypeNum == HTML_EL_BUTTON_ ||
+          elType.ElTypeNum == HTML_EL_File_Input);
   else if (isXLink)
     ok = TRUE;
   else if (isSVG)
     ok = TRUE;
+  else
+    ok = WithinLinkElement (element, document);
 
   if (!ok)
     /* DoubleClick is disabled for this element type */
@@ -1922,9 +1949,66 @@ static ThotBool ActivateElement (Element element, Document document)
   anchor = SearchAnchor (document, element, &HrefAttr, FALSE);
 
   if (anchor && HrefAttr)
-    return (FollowTheLink (anchor, element, HrefAttr, document));
+    {
+      // open in new tab if the back function is available
+      if ((DocumentMeta[document] &&
+          DocumentMeta[document]->method == CE_HELP) ||
+          !TtaIsActionAvailable ("GotoPreviousHTML"))
+        {
+          DontReplaceOldDoc = TRUE;
+          InNewWindow       = FALSE;
+        }
+      return (Do_follow_link (anchor, element, HrefAttr, document));
+    }
   else
     return FALSE;
+}
+
+/*----------------------------------------------------------------------
+  CanFollowTheLink returns TRUE if the currently right-clic selected element
+  is a link element.
+  ----------------------------------------------------------------------*/
+ThotBool CanFollowTheLink (Document document)
+{
+  if (Right_ClikedElement && TtaGetDocument(Right_ClikedElement) == document)
+    {
+      if (WithinLinkElement (Right_ClikedElement, document))
+        return TRUE;
+    }
+  return FALSE;
+}
+
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void FollowTheLink (Document document, View view)
+{
+  DontReplaceOldDoc = FALSE;
+  if (Right_ClikedElement)
+    ActivateElement (Right_ClikedElement, document);
+  Right_ClikedElement = NULL;
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void FollowTheLinkNewWin (Document document, View view)
+{
+  DontReplaceOldDoc = TRUE;
+  InNewWindow       = TRUE;
+  if (Right_ClikedElement)
+    ActivateElement (Right_ClikedElement, document);
+  Right_ClikedElement = NULL;
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void FollowTheLinkNewTab (Document document, View view)
+{
+  DontReplaceOldDoc = TRUE;
+  InNewWindow       = FALSE;
+  if (Right_ClikedElement)
+    ActivateElement (Right_ClikedElement, document);
+  Right_ClikedElement = NULL;
 }
 
 /*----------------------------------------------------------------------
@@ -2428,24 +2512,50 @@ ThotBool SimpleLClick (NotifyElement *event)
   return FALSE;
 }
 
-
 /*----------------------------------------------------------------------
   SimpleRClick     The user has clicked an element.         
   ----------------------------------------------------------------------*/
 ThotBool SimpleRClick (NotifyElement *event)
 {
-  ThotBool done;
-  
 #ifdef _WX
-  LoadDefaultOpeningLocation (TRUE); // in new frame
-  done = ActivateElement (event->element, event->document);
-#else /* _WX */
-  DontReplaceOldDoc = TRUE;
-  done = ActivateElement (event->element, event->document);
-  DontReplaceOldDoc = FALSE;
+  ElementType         elType;
+  Element             el;
+
+  Right_ClikedElement = event->element;
+#ifdef TEMPLATES
+  elType = TtaGetElementType (Right_ClikedElement);
+  if (!strcmp (TtaGetSSchemaName (elType.ElSSchema), "Template"))
+    {
+      if (elType.ElTypeNum == Template_EL_repeat ||
+          elType.ElTypeNum == Template_EL_bag)
+        {
+          el = TtaGetFirstChild (Right_ClikedElement);
+          if (el)
+            Right_ClikedElement = el;
+        }
+      else
+        {
+          /* select the following use element in the repeat */
+           el = TtaGetParent (Right_ClikedElement);
+           if (el)
+             {
+               elType = TtaGetElementType (el);
+               if (!strcmp (TtaGetSSchemaName (elType.ElSSchema), "Template") &&
+                   elType.ElTypeNum == Template_EL_repeat)
+                 {
+                   el = Right_ClikedElement;
+                   TtaNextSibling (&el);
+                   if (el)
+                     Right_ClikedElement = el;
+                 }
+             }
+        }
+      TtaSelectElement (event->document, Right_ClikedElement);
+    }
+#endif /* _TEMPLATES */
+  /* let Thot perform normal operation */
+  return FALSE;
 #endif /* _WX*/
-  /* don't let Thot perform normal operation if there is an activation */
-  return done;
 }
 
 /*----------------------------------------------------------------------
@@ -2469,16 +2579,7 @@ ThotBool AnnotSimpleClick (NotifyElement *event)
 void UpdateXmlElementListTool (Element el, Document doc)
 {
 #ifdef TEMPLATES
-  if (IsTemplateInstanceDocument(doc))
-    {
-      if (!IsTemplateElement(el))
-        el = GetFirstTemplateParentElement(el);
-    
-      DLList list = InsertableElement_Update(doc, el); 
-      AmayaParams    p = {-1, list, (void*)InsertableElement_DoInsertElement, NULL};    
-      TtaSendDataToPanel( WXAMAYA_PANEL_XML, p );    
-    }
-  else
+  if (!IsTemplateInstanceDocument(doc))
 #endif /* TEMPLATE */
     TtaRefreshElementMenu(doc, 1);
 }
@@ -2612,12 +2713,9 @@ void CloseLogs (Document doc)
             TtaCloseDocument (i);
             TtaFreeMemory (DocumentURLs[i]);
             DocumentURLs[i] = NULL;
-            RemoveParsingErrors (i);
             if (DocumentTypes[i] != docLog)
               /* switch off the button Show Log file */
-              TtaSetItemOff (doc, 1, File, BShowLogFile);
-            if (DocumentSource[doc])
-              TtaSetItemOff (DocumentSource[doc], 1, File, BShowLogFile);
+              UpdateLogFile (doc, FALSE);
             DocumentSource[i] = 0;
             /* restore the default document type */
             DocumentTypes[i] = docFree;
@@ -2639,6 +2737,9 @@ void FocusChanged (Document doc)
         // Amaya is creating the source view of the current document
         return;
     }
+  if (GoToSection)
+    return;
+  UpdateStyleList (doc, 1);
   for (i = 1; i < DocumentTableLength; i++)
     if (DocumentURLs[i] && DocumentSource[i] != doc &&
         DocumentTypes[i] == docLog)
@@ -2671,7 +2772,7 @@ void FreeDocumentResource (Document doc)
   if (doc == 0)
     return;
 
-  TtaSetItemOff (doc, 1, File, BShowLogFile);
+  UpdateLogFile (doc, FALSE);
   /* unmap the Save as form */
   TtaDestroyDialogue (BaseDialog + SaveForm);
   if (doc == ParsedDoc)
@@ -2717,8 +2818,8 @@ void FreeDocumentResource (Document doc)
       else
         {
           /* switch off the button Show Log file */
-          TtaSetItemOff (doc, 1, File, BShowLogFile);
-          RemoveDocCSSs (doc);
+          UpdateLogFile (doc, FALSE);
+          RemoveDocCSSs (doc, TRUE);
           /* free access keys table */
           TtaRemoveDocAccessKeys (doc);
           if (!Synchronizing && DocumentSource[doc])
@@ -2795,7 +2896,31 @@ void DocumentClosed (NotifyDialog * event)
       SetTableMenuOff (doc, 1);
     }
   FreeDocumentResource (event->document);
-  CleanUpParsingErrors ();  
+  CleanUpParsingErrors ();
+}
+
+/*----------------------------------------------------------------------
+  IsSelInElement
+  Return TRUE if a typed element includes the current selection
+  ----------------------------------------------------------------------*/
+static ThotBool IsSelInElement (Element firstSel, Element lastSel, ElementType elType,
+                                ElementType elTypeFirst, ElementType elTypeLast)
+{
+  ThotBool            newSelInElem;
+
+  if (firstSel == NULL)
+    newSelInElem = FALSE;
+  else
+    {
+      newSelInElem = ((elTypeFirst.ElTypeNum == elType.ElTypeNum &&
+                       elTypeFirst.ElSSchema == elType.ElSSchema) ||
+                      TtaGetExactTypedAncestor (firstSel, elType) != NULL);
+      if (newSelInElem)
+        newSelInElem = ((elTypeLast.ElTypeNum == elType.ElTypeNum &&
+                         elTypeLast.ElSSchema == elType.ElSSchema) ||
+                        TtaGetExactTypedAncestor (lastSel, elType) != NULL);
+    }
+  return newSelInElem;
 }
 
 /*----------------------------------------------------------------------
@@ -2803,30 +2928,35 @@ void DocumentClosed (NotifyDialog * event)
   ----------------------------------------------------------------------*/
 void UpdateContextSensitiveMenus (Document doc, View view)
 {
-  ElementType         elType, elTypeSel;
-  Element             firstSel;
+  ElementType         elType, elTypeFirst, elTypeLast;
+  Element             firstSel, lastSel, table;
   SSchema             sch;
   int                 firstChar, lastChar;
   ThotBool            newSelInElem, withHTML, withinTable, inMath;
 
   if (doc == 0)
     return;
+  /* check if there are HTML elements in the document */
+  sch = TtaGetSSchema ("HTML", doc);
   withHTML = (DocumentTypes[doc] == docHTML && DocumentURLs[doc]);
+  if (!withHTML)
+    /* this is not a HTML document */
+    /* check if there are HTML elements in the document */
+    withHTML = (sch != NULL);
   withinTable = FALSE;
   inMath = FALSE;
   TtaGiveFirstSelectedElement (doc, &firstSel, &firstChar, &lastChar);
+  TtaGiveLastSelectedElement (doc, &lastSel, &firstChar, &lastChar);
   if (firstSel)
     {
-      /* check if there is HTML elements */
-      sch = TtaGetSSchema ("HTML", doc);
-      withHTML = (sch != NULL);
-
       /* look for an enclosing cell */
       elType = TtaGetElementType (firstSel);
       if (!strcmp (TtaGetSSchemaName (elType.ElSSchema), "MathML"))
+        /* the current selection starts with a MathML element */
         {
           elType.ElTypeNum = MathML_EL_MTABLE;
-          withinTable = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
+          table = TtaGetExactTypedAncestor (firstSel, elType);
+          withinTable = (table != NULL && !TtaIsReadOnly (table));
           if (withinTable)
             {
               elType.ElTypeNum = MathML_EL_RowLabel;
@@ -2839,7 +2969,8 @@ void UpdateContextSensitiveMenus (Document doc, View view)
       if (sch && !withinTable)
         {
           elType.ElTypeNum = HTML_EL_Table_;
-          withinTable = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
+          table = TtaGetExactTypedAncestor (firstSel, elType);
+          withinTable = (table != NULL && !TtaIsReadOnly (table));
         }
     }
 
@@ -2853,37 +2984,12 @@ void UpdateContextSensitiveMenus (Document doc, View view)
       TtaSetItemOff (doc, 1, Types, BTHead);
       TtaSetItemOff (doc, 1, Types, BTBody);
       TtaSetItemOff (doc, 1, Types, BTFoot);
-      TtaSetItemOff (doc, 1, Types, BDataCell);
-      TtaSetItemOff (doc, 1, Types, BHeadingCell);
-      TtaSetItemOff (doc, 1, Types, BCellHExtend);
-      TtaSetItemOff (doc, 1, Types, BCellVExtend);
-      TtaSetItemOff (doc, 1, Types, BCellHShrink);
-      TtaSetItemOff (doc, 1, Types, BCellVShrink);
-      TtaSetItemOff (doc, 1, Types, BSelectRow);
-      TtaSetItemOff (doc, 1, Types, BCreateRowB);
-      TtaSetItemOff (doc, 1, Types, BCreateRowA);
-      TtaSetItemOff (doc, 1, Types, BSelectColumn);
-      TtaSetItemOff (doc, 1, Types, BCreateColumnB);
-      TtaSetItemOff (doc, 1, Types, BCreateColumnA);
-      TtaSetItemOff (doc, 1, Types, BPasteBefore);
-      TtaSetItemOff (doc, 1, Types, BPasteAfter);
+      TtaSetItemOff (doc, 1, Tools, BDataCell);
+      TtaSetItemOff (doc, 1, Tools, BHeadingCell);
     }
   if ((!withinTable || !inMath) && MTableMenuActive)
-    {
-      MTableMenuActive = FALSE;
-      TtaSetItemOff (doc, 1, XMLTypes, BMCellHExtend);
-      TtaSetItemOff (doc, 1, XMLTypes, BMCellVExtend);
-      TtaSetItemOff (doc, 1, XMLTypes, BMCellHShrink);
-      TtaSetItemOff (doc, 1, XMLTypes, BMCellVShrink);
-      TtaSetItemOff (doc, 1, XMLTypes, BMSelectRow);
-      TtaSetItemOff (doc, 1, XMLTypes, BMCreateRowB);
-      TtaSetItemOff (doc, 1, XMLTypes, BMCreateRowA);
-      TtaSetItemOff (doc, 1, XMLTypes, BMSelectColumn);
-      TtaSetItemOff (doc, 1, XMLTypes, BMCreateColumnB);
-      TtaSetItemOff (doc, 1, XMLTypes, BMCreateColumnA);
-      TtaSetItemOff (doc, 1, XMLTypes, BMPasteBefore);
-      TtaSetItemOff (doc, 1, XMLTypes, BMPasteAfter);
-    }
+    MTableMenuActive = FALSE;
+
   if (withinTable && !inMath && !TableMenuActive)
     {
       TableMenuActive = TRUE;
@@ -2893,44 +2999,74 @@ void UpdateContextSensitiveMenus (Document doc, View view)
       TtaSetItemOn (doc, 1, Types, BTHead);
       TtaSetItemOn (doc, 1, Types, BTBody);
       TtaSetItemOn (doc, 1, Types, BTFoot);
-      TtaSetItemOn (doc, 1, Types, BDataCell);
-      TtaSetItemOn (doc, 1, Types, BHeadingCell);
-      TtaSetItemOn (doc, 1, Types, BCellHExtend);
-      TtaSetItemOn (doc, 1, Types, BCellVExtend);
-      TtaSetItemOn (doc, 1, Types, BCellHShrink);
-      TtaSetItemOn (doc, 1, Types, BCellVShrink);
-      TtaSetItemOn (doc, 1, Types, BSelectRow);
-      TtaSetItemOn (doc, 1, Types, BCreateRowB);
-      TtaSetItemOn (doc, 1, Types, BCreateRowA);
-      TtaSetItemOn (doc, 1, Types, BSelectColumn);
-      TtaSetItemOn (doc, 1, Types, BCreateColumnB);
-      TtaSetItemOn (doc, 1, Types, BCreateColumnA);
+      TtaSetItemOn (doc, 1, Tools, BDataCell);
+      TtaSetItemOn (doc, 1, Tools, BHeadingCell);
     }
   if (withinTable && inMath && !MTableMenuActive)
-    {
       MTableMenuActive = TRUE;
-      TtaSetItemOn (doc, 1, XMLTypes, BMCellHExtend);
-      TtaSetItemOn (doc, 1, XMLTypes, BMCellVExtend);
-      TtaSetItemOn (doc, 1, XMLTypes, BMCellHShrink);
-      TtaSetItemOn (doc, 1, XMLTypes, BMCellVShrink);
-      TtaSetItemOn (doc, 1, XMLTypes, BMSelectRow);
-      TtaSetItemOn (doc, 1, XMLTypes, BMCreateRowB);
-      TtaSetItemOn (doc, 1, XMLTypes, BMCreateRowA);
-      TtaSetItemOn (doc, 1, XMLTypes, BMSelectColumn);
-      TtaSetItemOn (doc, 1, XMLTypes, BMCreateColumnB);
-      TtaSetItemOn (doc, 1, XMLTypes, BMCreateColumnA);
-    }
-  if (withinTable && TtaIsColumnRowSelected (doc))
+
+  if (TableMenuActive || MTableMenuActive)
     {
-      if (inMath)
+      TtaSetItemOn (doc, 1, Tools, BCellHExtend);
+      TtaSetItemOn (doc, 1, Tools, BCellVExtend);
+      TtaSetItemOn (doc, 1, Tools, BCellHShrink);
+      TtaSetItemOn (doc, 1, Tools, BCellVShrink);
+      TtaSetItemOn (doc, 1, Tools, BSelectRow);
+      TtaSetItemOn (doc, 1, Tools, BCreateRowB);
+      TtaSetItemOn (doc, 1, Tools, BCreateRowA);
+      TtaSetItemOn (doc, 1, Tools, BSelectColumn);
+      TtaSetItemOn (doc, 1, Tools, BCreateColumnB);
+      TtaSetItemOn (doc, 1, Tools, BCreateColumnA);
+      TtaSetItemOn (doc, 1, Tools, BPasteBefore);
+      TtaSetItemOn (doc, 1, Tools, BPasteAfter);
+    }
+  else
+    {
+      TtaSetItemOff (doc, 1, Tools, BCellMerge);
+      TtaSetItemOff (doc, 1, Tools, BCellHExtend);
+      TtaSetItemOff (doc, 1, Tools, BCellVExtend);
+      TtaSetItemOff (doc, 1, Tools, BCellHShrink);
+      TtaSetItemOff (doc, 1, Tools, BCellVShrink);
+      TtaSetItemOff (doc, 1, Tools, BSelectRow);
+      TtaSetItemOff (doc, 1, Tools, BCreateRowB);
+      TtaSetItemOff (doc, 1, Tools, BCreateRowA);
+      TtaSetItemOff (doc, 1, Tools, BSelectColumn);
+      TtaSetItemOff (doc, 1, Tools, BCreateColumnB);
+      TtaSetItemOff (doc, 1, Tools, BCreateColumnA);
+      TtaSetItemOff (doc, 1, Tools, BPasteBefore);
+      TtaSetItemOff (doc, 1, Tools, BPasteAfter);
+    }
+  if (withinTable && (TtaIsColumnSaved (doc) || TtaIsRowSaved (doc)))
+    {
+      TtaSetItemOn (doc, 1, Tools, BPasteBefore);
+      TtaSetItemOn (doc, 1, Tools, BPasteAfter);
+    }
+  else
+    {
+      TtaSetItemOff (doc, 1, Tools, BPasteBefore);
+      TtaSetItemOff (doc, 1, Tools, BPasteAfter);
+    }
+  if (withinTable)
+    {
+      if (CanHShrinkCell (doc))
+        TtaSetItemOn (doc, 1, Tools, BCellHShrink);
+      else
+        TtaSetItemOff (doc, 1, Tools, BCellHShrink);
+      if (CanVShrinkCell (doc))
+        TtaSetItemOn (doc, 1, Tools, BCellVShrink);
+      else
+        TtaSetItemOff (doc, 1, Tools, BCellVShrink);
+      if (CanMergeSelectedCells (doc))
         {
-          TtaSetItemOn (doc, 1, XMLTypes, BMPasteBefore);
-          TtaSetItemOn (doc, 1, XMLTypes, BMPasteAfter);
+          TtaSetItemOn (doc, 1, Tools, BCellMerge);
+          TtaSetItemOff (doc, 1, Tools, BCellHExtend);
+          TtaSetItemOff (doc, 1, Tools, BCellVExtend);
         }
       else
         {
-          TtaSetItemOn (doc, 1, Types, BPasteBefore);
-          TtaSetItemOn (doc, 1, Types, BPasteAfter);
+          TtaSetItemOff (doc, 1, Tools, BCellMerge);
+          TtaSetItemOn (doc, 1, Tools, BCellHExtend);
+          TtaSetItemOn (doc, 1, Tools, BCellVExtend);
         }
     }
 
@@ -2986,129 +3122,69 @@ void UpdateContextSensitiveMenus (Document doc, View view)
     {
       SelectionInComment = newSelInElem;
       if (newSelInElem)
-        TtaSetItemOff (doc, 2, StructTypes, BComment);
+        TtaSetItemOff (doc, 2, Types, BComment);
       else
-        TtaSetItemOn (doc, 2, StructTypes, BComment);
+        TtaSetItemOn (doc, 2, Types, BComment);
     }
   /* update toggle buttons in menus "Information Type" and */
   /* "Character Element" */
-  if (firstSel == NULL)
-    newSelInElem = FALSE;
-  else
-    {
-      elType.ElTypeNum = HTML_EL_Emphasis;
-      elTypeSel = TtaGetElementType (firstSel);
-      if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
-          elTypeSel.ElSSchema == elType.ElSSchema)
-        newSelInElem = TRUE;
-      else
-        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
-    }
+  elTypeFirst = TtaGetElementType (firstSel);
+  elTypeLast = TtaGetElementType (lastSel);
+  elType.ElTypeNum = HTML_EL_Emphasis;
+  newSelInElem = IsSelInElement (firstSel, lastSel, elType, elTypeFirst, elTypeLast);
   if (SelectionInEM != newSelInElem)
     {
       SelectionInEM = newSelInElem;
       TtaSetToggleItem (doc, 1, Types, TEmphasis, newSelInElem);
-#ifndef _WX
-      TtaSwitchButton (doc, 1, iI);
-#else /* _WX */
+#ifdef _WX
       TtaSwitchPanelButton( doc, 1, WXAMAYA_PANEL_XHTML, WXAMAYA_PANEL_XHTML_EMPH, newSelInElem );
 #endif /* _WX */	
     }
 
-  if (firstSel == NULL)
-    newSelInElem = FALSE;
-  else
-    {
-      elType.ElTypeNum = HTML_EL_Strong;
-      if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
-          elTypeSel.ElSSchema == elType.ElSSchema)
-        newSelInElem = TRUE;
-      else
-        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
-    }
+  elType.ElTypeNum = HTML_EL_Strong;
+  newSelInElem = IsSelInElement (firstSel, lastSel, elType, elTypeFirst, elTypeLast);
   if (SelectionInSTRONG != newSelInElem)
     {
       SelectionInSTRONG = newSelInElem;
       TtaSetToggleItem (doc, 1, Types, TStrong, newSelInElem);
-#ifndef _WX
-      TtaSwitchButton (doc, 1, iB);
-#else /* _WX */
+#ifdef _WX
       TtaSwitchPanelButton( doc, 1, WXAMAYA_PANEL_XHTML, WXAMAYA_PANEL_XHTML_STRONG, newSelInElem );
 #endif /* _WX */
     }
 
-  if (firstSel == NULL)
-    newSelInElem = FALSE;
-  else
-    {
-      elType.ElTypeNum = HTML_EL_Cite;
-      if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
-          elTypeSel.ElSSchema == elType.ElSSchema)
-        newSelInElem = TRUE;
-      else
-        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
-    }
+  elType.ElTypeNum = HTML_EL_Cite;
+  newSelInElem = IsSelInElement (firstSel, lastSel, elType, elTypeFirst, elTypeLast);
   if (SelectionInCITE != newSelInElem)
     {
       SelectionInCITE = newSelInElem;
       TtaSetToggleItem (doc, 1, Types, TCite, newSelInElem);
     }
 
-  if (firstSel == NULL)
-    newSelInElem = FALSE;
-  else
-    {
-      elType.ElTypeNum = HTML_EL_ABBR;
-      if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
-          elTypeSel.ElSSchema == elType.ElSSchema)
-        newSelInElem = TRUE;
-      else
-        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
-    }
+  elType.ElTypeNum = HTML_EL_ABBR;
+  newSelInElem = IsSelInElement (firstSel, lastSel, elType, elTypeFirst, elTypeLast);
   if (SelectionInABBR != newSelInElem)
     {
       SelectionInABBR = newSelInElem;
       TtaSetToggleItem (doc, 1, Types, TAbbreviation, newSelInElem);
     }
 
-  if (firstSel == NULL)
-    newSelInElem = FALSE;
-  else
-    {
-      elType.ElTypeNum = HTML_EL_ACRONYM;
-      if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
-          elTypeSel.ElSSchema == elType.ElSSchema)
-        newSelInElem = TRUE;
-      else
-        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
-    }
+  elType.ElTypeNum = HTML_EL_ACRONYM;
+  newSelInElem = IsSelInElement (firstSel, lastSel, elType, elTypeFirst, elTypeLast);
   if (SelectionInACRONYM != newSelInElem)
     {
       SelectionInACRONYM = newSelInElem;
       TtaSetToggleItem (doc, 1, Types, TAcronym, newSelInElem);
     }
 
-  if (firstSel == NULL)
-    newSelInElem = FALSE;
-  else
+  elType.ElTypeNum = HTML_EL_ins;
+  newSelInElem = IsSelInElement (firstSel, lastSel, elType, elTypeFirst, elTypeLast);
+  if (!newSelInElem)
     {
-      elType.ElTypeNum = HTML_EL_ins;
-      if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
-          elTypeSel.ElSSchema == elType.ElSSchema)
-        newSelInElem = TRUE;
-      else
-        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
-      if (!newSelInElem)
-        {
-          // check also the block element
-          elType.ElTypeNum = HTML_EL_INS;
-          if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
-              elTypeSel.ElSSchema == elType.ElSSchema)
-            newSelInElem = TRUE;
-          else
-            newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
-        }
+      // check also the block element
+      elType.ElTypeNum = HTML_EL_INS;
+      newSelInElem = IsSelInElement (firstSel, lastSel, elType, elTypeFirst, elTypeLast);
     }
+
   if (SelectionInINS != newSelInElem)
     {
       SelectionInINS = newSelInElem;
@@ -3118,26 +3194,13 @@ void UpdateContextSensitiveMenus (Document doc, View view)
 #endif /* _WX */	
     }
 
-  if (firstSel == NULL)
-    newSelInElem = FALSE;
-  else
+  elType.ElTypeNum = HTML_EL_del;
+  newSelInElem = IsSelInElement (firstSel, lastSel, elType, elTypeFirst, elTypeLast);
+  if (!newSelInElem)
     {
-      elType.ElTypeNum = HTML_EL_del;
-      if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
-          elTypeSel.ElSSchema == elType.ElSSchema)
-        newSelInElem = TRUE;
-      else
-        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
-      if (!newSelInElem)
-        {
-          // check also the block element
-          elType.ElTypeNum = HTML_EL_DEL;
-          if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
-              elTypeSel.ElSSchema == elType.ElSSchema)
-            newSelInElem = TRUE;
-          else
-            newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
-        }
+      // check also the block element
+      elType.ElTypeNum = HTML_EL_DEL;
+      newSelInElem = IsSelInElement (firstSel, lastSel, elType, elTypeFirst, elTypeLast);
     }
   if (SelectionInDEL != newSelInElem)
     {
@@ -3148,192 +3211,91 @@ void UpdateContextSensitiveMenus (Document doc, View view)
 #endif /* _WX */	
     }
 
-  if (firstSel == NULL)
-    newSelInElem = FALSE;
-  else
-    {
-      elType.ElTypeNum = HTML_EL_Def;
-      if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
-          elTypeSel.ElSSchema == elType.ElSSchema)
-        newSelInElem = TRUE;
-      else
-        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
-    }
+  elType.ElTypeNum = HTML_EL_Def;
+  newSelInElem = IsSelInElement (firstSel, lastSel, elType, elTypeFirst, elTypeLast);
   if (SelectionInDFN != newSelInElem)
     {
       SelectionInDFN = newSelInElem;
       TtaSetToggleItem (doc, 1, Types, TDefinition, newSelInElem);
     }
 
-  if (firstSel == NULL)
-    newSelInElem = FALSE;
-  else
-    {
-      elType.ElTypeNum = HTML_EL_Code;
-      if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
-          elTypeSel.ElSSchema == elType.ElSSchema)
-        newSelInElem = TRUE;
-      else
-        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
-    }
+  elType.ElTypeNum = HTML_EL_Code;
+  newSelInElem = IsSelInElement (firstSel, lastSel, elType, elTypeFirst, elTypeLast);
   if (SelectionInCODE != newSelInElem)
     {
       SelectionInCODE = newSelInElem;
       TtaSetToggleItem (doc, 1, Types, TCode, newSelInElem);
-#ifndef _WX
-      TtaSwitchButton (doc, 1, iT);
-#else /* _WX */
+#ifdef _WX
       TtaSwitchPanelButton( doc, 1, WXAMAYA_PANEL_XHTML, WXAMAYA_PANEL_XHTML_CODE, newSelInElem );
 #endif /* _WX */
     }
 
-  if (firstSel == NULL)
-    newSelInElem = FALSE;
-  else
-    {
-      elType.ElTypeNum = HTML_EL_Variable_;
-      if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
-          elTypeSel.ElSSchema == elType.ElSSchema)
-        newSelInElem = TRUE;
-      else
-        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
-    }
+  elType.ElTypeNum = HTML_EL_Variable_;
+  newSelInElem = IsSelInElement (firstSel, lastSel, elType, elTypeFirst, elTypeLast);
   if (SelectionInVAR != newSelInElem)
     {
       SelectionInVAR = newSelInElem;
       TtaSetToggleItem (doc, 1, Types, TVariable, newSelInElem);
     }
 
-  if (firstSel == NULL)
-    newSelInElem = FALSE;
-  else
-    {
-      elType.ElTypeNum = HTML_EL_Sample;
-      if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
-          elTypeSel.ElSSchema == elType.ElSSchema)
-        newSelInElem = TRUE;
-      else
-        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
-    }
+  elType.ElTypeNum = HTML_EL_Sample;
+  newSelInElem = IsSelInElement (firstSel, lastSel, elType, elTypeFirst, elTypeLast);
   if (SelectionInSAMP != newSelInElem)
     {
       SelectionInSAMP = newSelInElem;
       TtaSetToggleItem (doc, 1, Types, TSample, newSelInElem);
     }
 
-  if (firstSel == NULL)
-    newSelInElem = FALSE;
-  else
-    {
-      elType.ElTypeNum = HTML_EL_Keyboard;
-      if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
-          elTypeSel.ElSSchema == elType.ElSSchema)
-        newSelInElem = TRUE;
-      else
-        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
-    }
+  elType.ElTypeNum = HTML_EL_Keyboard;
+  newSelInElem = IsSelInElement (firstSel, lastSel, elType, elTypeFirst, elTypeLast);
   if (SelectionInKBD != newSelInElem)
     {
       SelectionInKBD = newSelInElem;
       TtaSetToggleItem (doc, 1, Types, TKeyboard, newSelInElem);
     }
 
-  if (firstSel == NULL)
-    newSelInElem = FALSE;
-  else
-    {
-      elType.ElTypeNum = HTML_EL_Italic_text;
-      if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
-          elTypeSel.ElSSchema == elType.ElSSchema)
-        newSelInElem = TRUE;
-      else
-        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
-    }
+  elType.ElTypeNum = HTML_EL_Italic_text;
+  newSelInElem = IsSelInElement (firstSel, lastSel, elType, elTypeFirst, elTypeLast);
   if (SelectionInI != newSelInElem)
     {
       SelectionInI = newSelInElem;
       TtaSetToggleItem (doc, 1, Types, TItalic, newSelInElem);
     }
 
-  if (firstSel == NULL)
-    newSelInElem = FALSE;
-  else
-    {
-      elType.ElTypeNum = HTML_EL_Bold_text;
-      if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
-          elTypeSel.ElSSchema == elType.ElSSchema)
-        newSelInElem = TRUE;
-      else
-        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
-    }
+  elType.ElTypeNum = HTML_EL_Bold_text;
+  newSelInElem = IsSelInElement (firstSel, lastSel, elType, elTypeFirst, elTypeLast);
   if (SelectionInB != newSelInElem)
     {
       SelectionInB = newSelInElem;
       TtaSetToggleItem (doc, 1, Types, TBold, newSelInElem);
     }
 
-  if (firstSel == NULL)
-    newSelInElem = FALSE;
-  else
-    {
-      elType.ElTypeNum = HTML_EL_Teletype_text;
-      if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
-          elTypeSel.ElSSchema == elType.ElSSchema)
-        newSelInElem = TRUE;
-      else
-        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
-    }
+  elType.ElTypeNum = HTML_EL_Teletype_text;
+  newSelInElem = IsSelInElement (firstSel, lastSel, elType, elTypeFirst, elTypeLast);
   if (SelectionInTT != newSelInElem)
     {
       SelectionInTT = newSelInElem;
       TtaSetToggleItem (doc, 1, Types, TTeletype, newSelInElem);
     }
 
-  if (firstSel == NULL)
-    newSelInElem = FALSE;
-  else
-    {
-      elType.ElTypeNum = HTML_EL_Big_text;
-      if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
-          elTypeSel.ElSSchema == elType.ElSSchema)
-        newSelInElem = TRUE;
-      else
-        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
-    }
+  elType.ElTypeNum = HTML_EL_Big_text;
+  newSelInElem = IsSelInElement (firstSel, lastSel, elType, elTypeFirst, elTypeLast);
   if (SelectionInBIG != newSelInElem)
     {
       SelectionInBIG = newSelInElem;
       TtaSetToggleItem (doc, 1, Types, TBig, newSelInElem);
     }
 
-  if (firstSel == NULL)
-    newSelInElem = FALSE;
-  else
-    {
-      elType.ElTypeNum = HTML_EL_Small_text;
-      if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
-          elTypeSel.ElSSchema == elType.ElSSchema)
-        newSelInElem = TRUE;
-      else
-        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
-    }
+  elType.ElTypeNum = HTML_EL_Small_text;
+  newSelInElem = IsSelInElement (firstSel, lastSel, elType, elTypeFirst, elTypeLast);
   if (SelectionInSMALL != newSelInElem)
     {
       SelectionInSMALL = newSelInElem;
       TtaSetToggleItem (doc, 1, Types, TSmall, newSelInElem);
     }
 
-  if (firstSel == NULL)
-    newSelInElem = FALSE;
-  else
-    {
-      elType.ElTypeNum = HTML_EL_Subscript;
-      if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
-          elTypeSel.ElSSchema == elType.ElSSchema)
-        newSelInElem = TRUE;
-      else
-        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
-    }
+  elType.ElTypeNum = HTML_EL_Subscript;
+  newSelInElem = IsSelInElement (firstSel, lastSel, elType, elTypeFirst, elTypeLast);
   if (SelectionInSub != newSelInElem)
     {
       SelectionInSub = newSelInElem;
@@ -3343,17 +3305,8 @@ void UpdateContextSensitiveMenus (Document doc, View view)
 #endif /* _WX */	
     }
 
-  if (firstSel == NULL)
-    newSelInElem = FALSE;
-  else
-    {
-      elType.ElTypeNum = HTML_EL_Superscript;
-      if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
-          elTypeSel.ElSSchema == elType.ElSSchema)
-        newSelInElem = TRUE;
-      else
-        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
-    }
+  elType.ElTypeNum = HTML_EL_Superscript;
+  newSelInElem = IsSelInElement (firstSel, lastSel, elType, elTypeFirst, elTypeLast);
   if (SelectionInSup != newSelInElem)
     {
       SelectionInSup = newSelInElem;
@@ -3363,34 +3316,16 @@ void UpdateContextSensitiveMenus (Document doc, View view)
 #endif /* _WX */	
     }
 
-  if (firstSel == NULL)
-    newSelInElem = FALSE;
-  else
-    {
-      elType.ElTypeNum = HTML_EL_Quotation;
-      if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
-          elTypeSel.ElSSchema == elType.ElSSchema)
-        newSelInElem = TRUE;
-      else
-        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
-    }
+  elType.ElTypeNum = HTML_EL_Quotation;
+  newSelInElem = IsSelInElement (firstSel, lastSel, elType, elTypeFirst, elTypeLast);
   if (SelectionInQuote != newSelInElem)
     {
       SelectionInQuote = newSelInElem;
       TtaSetToggleItem (doc, 1, Types, TQuotation, newSelInElem);
     }
 
-  if (firstSel == NULL)
-    newSelInElem = FALSE;
-  else
-    {
-      elType.ElTypeNum = HTML_EL_BDO;
-      if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
-          elTypeSel.ElSSchema == elType.ElSSchema)
-        newSelInElem = TRUE;
-      else
-        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
-    }
+  elType.ElTypeNum = HTML_EL_BDO;
+  newSelInElem = IsSelInElement (firstSel, lastSel, elType, elTypeFirst, elTypeLast);
   if (SelectionInBDO != newSelInElem)
     {
       SelectionInBDO = newSelInElem;
@@ -3774,16 +3709,20 @@ void GotoLine (Document doc, int line, int index, ThotBool selpos)
   char                message[50];
   int                 i, len;
 
+  GoToSection = TRUE; // protect against a document close
   if (line)
     {
       /* open the source file */
-      if (DocumentTypes[doc] != docCSS && DocumentTypes[doc] != docSource)
+      if (DocumentTypes[doc] == docFree)
+        return;
+      if (DocumentTypes[doc] != docCSS && DocumentTypes[doc] != docSource &&
+          DocumentTypes[doc] != docText)
         {
           if (DocumentSource[doc] == 0)
             ShowSource (doc, 1);
           doc = DocumentSource[doc];
         }
-      TtaRaiseView (doc, 1);
+      //TtaRaiseView (doc, 1);
       /* look for an element with the same line number in the other doc */
       /* line numbers are increasing in document order */
       el = TtaGetMainRoot (doc);
@@ -3825,11 +3764,16 @@ void GotoLine (Document doc, int line, int index, ThotBool selpos)
               // display the char index
               sprintf (message, "Character: %d", index);
               TtaSetStatus (doc, 1, message, NULL);
+              //#ifndef _MACOS
+              TtaHandlePendingEvents ();
+              TtaRaiseView (doc, 1);
+              //#endif /* _MACOS */
             }
         }
       else
         TtaSetStatus (doc, 1, "   ", NULL);
     }
+  GoToSection = FALSE;
 }
 
 /*----------------------------------------------------------------------
@@ -3854,7 +3798,8 @@ static ThotBool ShowTextLine (Element el, Document doc)
           len = TtaGetTextLength (el);
           if (len > 0)
             {
-              utf8value = (char *)TtaGetMemory (len + 1);
+              len++; /* make room for the final null byte */
+              utf8value = (char *)TtaGetMemory (len);
               TtaGiveTextContent (el, (unsigned char *)utf8value, &len, &lang);
               /* extract the line number and the index within the line */
               ptr = strstr (utf8value, "line ");
@@ -4079,7 +4024,8 @@ void SelectionChanged (NotifyElement *event)
             TtaSetStatus (doc, 1, "  ", NULL);
         }
 #endif /* _WX */
-      TtaSetStatusSelectedElement(doc, 1, el);
+      if (event->event != TteElemExtendSelect)
+        TtaSetStatusSelectedElement(doc, 1, el);
     }
   SelectionChanging = FALSE;
 }
@@ -4128,35 +4074,155 @@ static void ResetFontOrPhrase (Document doc, Element elem)
     }
 }
 
+/*----------------------------------------------------------------------
+  SplitFontOrPhrase
+  Split the element elem
+  ----------------------------------------------------------------------*/
+static void SplitFontOrPhrase (Document doc, Element elem, Element first,
+                               Element last, int firstChar, int lastChar)
+{
+  Element             next, child, new_ = NULL, el, top = NULL, start = NULL;
+  ElementType         elType;
+  Language            lang = TtaGetDefaultLanguage ();
+  unsigned char      *buffer;
+  int                 i, j, k, lg;
+  ThotBool            oldStructureChecking;
+
+  if (elem)
+    {
+      /* split */
+      elType = TtaGetElementType (first);
+      next = first;
+      TtaGiveNextSelectedElement (doc, &next, &j, &k);
+      if (first == last)
+        {
+          if (lastChar < firstChar)
+            i = 0;
+          else
+            i = lastChar - firstChar; // some characters have to be moved
+        }
+      else
+        i =  TtaGetElementVolume (last) + 1 - firstChar;
+      if (TtaBreakElement (elem, first, firstChar, TRUE, FALSE))
+        {
+          // insert after
+          oldStructureChecking = TtaGetStructureChecking (doc);
+          TtaSetStructureChecking (FALSE, doc);
+          TtaNextSibling (&elem);
+          // generate the tree of the new structure
+          child = TtaGetFirstChild (elem);
+          while (child)
+            {
+              elType = TtaGetElementType (child);
+              el = TtaNewElement (doc, elType);
+              TtaCopyAttributes (child, el, doc, doc);
+              if (new_ == NULL)
+                {
+                  // top of the new tree
+                  TtaInsertSibling (el, elem, TRUE, doc);
+                  top = new_ = el;
+                }
+              else
+                {
+                  TtaInsertFirstChild  (&el, new_, doc);
+                  new_ = el;
+                }
+              elem = child;
+              child = TtaGetFirstChild (child);
+            }
+          if (i > 0)
+            {
+              /* there is some text to be copied */
+              child = elem;
+              lg = TtaGetTextLength (child);
+              buffer = (unsigned char*)TtaGetMemory ((lg+1));
+              memset (buffer, 0, lg);
+              TtaGiveSubString (child, buffer, 1, i);
+              TtaSetTextContent (el, buffer, lang, doc);
+              TtaFreeMemory (buffer);
+              if (i >= lg)
+                {
+                  // remove the element
+                  TtaRegisterElementDelete (child, doc);
+                  TtaRemoveTree (child, doc);                      
+                }
+              else
+                {
+                  TtaRegisterElementReplace (child, doc);
+                  TtaDeleteTextContent (child, 1, i, doc);
+                }
+            }
+          TtaRegisterElementCreate (top, doc);
+          start = el; // new start selection
+          while (next)
+            {
+              el = next;
+              if ((j == 0 && k == 0) || k >  TtaGetTextLength (next))
+                {
+                  // move the complete element
+                  TtaGiveNextSelectedElement (doc, &next, &j, &k);
+                  TtaRegisterElementDelete (el, doc);
+                  TtaRemoveTree (el, doc);
+                  TtaInsertSibling (el, top, FALSE, doc);
+                  top = el;
+                  TtaRegisterElementCreate (top, doc);
+                }
+              else
+                {
+                  /* there is some text to be copied */
+                  elType.ElTypeNum = HTML_EL_TEXT_UNIT;
+                  el = TtaNewElement (doc, elType);
+                  lg = TtaGetTextLength (next);
+                  buffer = (unsigned char*)TtaGetMemory ((lg+1));
+                  memset (buffer, 0, lg);
+                  k--;
+                  TtaGiveSubString (next, buffer, 1, k);
+                  TtaSetTextContent (el, buffer, lang, doc);
+                  TtaFreeMemory (buffer);
+                  TtaRegisterElementReplace (next, doc);
+                  TtaDeleteTextContent (next, 1, k, doc);
+                  TtaInsertSibling (el, top, FALSE, doc);
+                  top = el;
+                  next = NULL;
+                }
+            }
+          TtaSelectElement (doc, start);
+          TtaExtendSelection (doc, top, TtaGetElementVolume (top) + 1);
+          TtaSetStructureChecking (oldStructureChecking, doc);
+          /* mark the document as modified */
+          TtaSetDocumentModified (doc);
+          elType.ElTypeNum = HTML_EL_TEXT_UNIT;
+        }
+    }
+}
 
 /*----------------------------------------------------------------------
   SetCharFontOrPhrase
   ----------------------------------------------------------------------*/
 void SetCharFontOrPhrase (int doc, int elemtype)
 {
-  Element             firstSel, lastSel, el, parent;
+  Element             first, last, el, parent;
   ElementType         elType, parentType;
-  DisplayMode         dispMode;
-  int                 firstSelectedChar, lastSelectedChar, i;
+  Attribute           attr;
+  int                 firstChar, lastChar, i;
   int                 blocktype;
-  ThotBool            remove;
+  ThotBool            remove, charlevel;
   ThotBool            oldStructureChecking;
 
   if (!TtaGetDocumentAccessMode (doc))
     /* document is ReadOnly */
     return;
 
-  TtaGiveFirstSelectedElement (doc, &firstSel, &firstSelectedChar,
-                               &lastSelectedChar);
-  if (firstSel == NULL)
+  TtaGiveFirstSelectedElement (doc, &first, &firstChar, &lastChar);
+  if (first == NULL)
     {
       /* no selection available */
       TtaDisplaySimpleMessage (CONFIRM, AMAYA, AM_NO_INSERT_POINT);
       return;
     }
 
-  TtaGiveLastSelectedElement (doc, &lastSel, &i, &lastSelectedChar);
-  elType = TtaGetElementType (firstSel);
+  TtaGiveLastSelectedElement (doc, &last, &i, &lastChar);
+  elType = TtaGetElementType (first);
   parent = NULL;
   remove = FALSE;
   // there are block and inline elements for ins and del
@@ -4170,8 +4236,10 @@ void SetCharFontOrPhrase (int doc, int elemtype)
     {
       // check if a typed element is selected
       if (elType.ElTypeNum == elemtype || elType.ElTypeNum == blocktype)
-        parent = firstSel;
-      remove = (firstSel == lastSel);
+        parent = first;
+      remove = (first == last &&
+                ((firstChar == 0 && lastChar == 0) ||
+                (firstChar == 1 && lastChar >= i)));
     }
   else
     elType.ElSSchema = TtaGetSSchema ("HTML", doc);
@@ -4181,81 +4249,101 @@ void SetCharFontOrPhrase (int doc, int elemtype)
       if ( TtaIsSelectionEmpty ())
         {
           // check if the user wants to close the current element
-          parent = TtaGetParent (firstSel);
+          parent = TtaGetParent (first);
           parentType = TtaGetElementType (parent);
-          i =  TtaGetElementVolume (firstSel);
+          i =  TtaGetElementVolume (first);
           if (parentType.ElSSchema == elType.ElSSchema &&
               parentType.ElTypeNum == elemtype &&
-              elType.ElTypeNum == HTML_EL_TEXT_UNIT && lastSelectedChar >= i &&
-              firstSel == TtaGetLastChild (parent))
+              elType.ElTypeNum == HTML_EL_TEXT_UNIT &&
+              ((firstChar == 1 && lastChar == 0 && first == TtaGetFirstChild (parent)) ||
+               (lastChar >= i && first == TtaGetLastChild (parent))))
             {
+              // insert before or after
+              TtaOpenUndoSequence (doc, first, last, firstChar, lastChar);
               oldStructureChecking = TtaGetStructureChecking (doc);
               TtaSetStructureChecking (FALSE, doc);
-              TtcCreateElement (doc, 1);
+              el = TtaNewElement (doc, elType);
+              if (firstChar == 1 && lastChar == 0)
+                TtaInsertSibling (el, parent, TRUE, doc);
+              else
+                TtaInsertSibling (el, parent, FALSE, doc);
+              TtaRegisterElementCreate (el, doc);
+              TtaSelectElement (doc, el);
               TtaSetStructureChecking (oldStructureChecking, doc);
+              TtaCloseUndoSequence (doc);
+              /* mark the document as modified */
+              TtaSetDocumentModified (doc);
+              UpdateContextSensitiveMenus (doc, 1);
               return;
             }
         }
       elType.ElTypeNum = elemtype;
-      parent = TtaGetExactTypedAncestor (firstSel, elType);
+      parent = TtaGetExactTypedAncestor (first, elType);
       // check if the whole selection is included by the same parent
-      el = lastSel;
+      el = last;
       while (parent && el && el != parent)
         el = TtaGetParent (el);
       if (el == parent)
         remove = TRUE;
     }
 
-  if (parent && !remove)
+  if (parent && remove)
     {
-      /* the selected element is read-only */
-      TtaDisplaySimpleMessage (CONFIRM, AMAYA, AM_INVALID_INLINE);
-      return;
-    }
-
-  /* don't display immediately every change made to the document structure */
-  dispMode = TtaGetDisplayMode (doc);
-  if (parent)
-    {
-      if (dispMode == DisplayImmediately)
-        TtaSetDisplayMode (doc, DeferredDisplay);
       TtaClearViewSelections ();
-      TtaOpenUndoSequence (doc, firstSel, lastSel, firstSelectedChar, lastSelectedChar);
-      ResetFontOrPhrase (doc, parent);
+      TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
+
+      i =  TtaGetElementVolume (last) + 1;
+      if (firstChar != 0 && (firstChar > 1 || lastChar < i))
+        /* split */
+        SplitFontOrPhrase (doc, parent, first, last, firstChar, lastChar);
+      else
+        {
+          attr = NULL;
+          TtaNextAttribute (parent, &attr);
+          if (attr)
+            {
+              // don't remove an element with attributes
+              TtaChangeTypeOfElement (parent, doc, HTML_EL_Span);
+              TtaRegisterElementTypeChange (parent, elemtype, doc);
+              TtaSelectElement (doc, parent);
+            }
+          else
+            ResetFontOrPhrase (doc, parent);
+        }
       TtaCloseUndoSequence (doc);
-      /* retore the display mode */
-      if (dispMode == DisplayImmediately)
-        TtaSetDisplayMode (doc, dispMode);
     }
   else
     {
-      TtaOpenUndoSequence (doc, firstSel, lastSel, firstSelectedChar, lastSelectedChar);
+      TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
       if (elemtype == HTML_EL_ins || elemtype == HTML_EL_del)
         {
           oldStructureChecking = TtaGetStructureChecking (doc);
           TtaSetStructureChecking (FALSE, doc);
+          elType = TtaGetElementType (first);
+          charlevel = (IsCharacterLevelElement (first) ||
+                       elType.ElTypeNum == HTML_EL_Basic_Elem);
           // they could be block or inline elements
-          if (!IsCharacterLevelElement (firstSel) ||
-              (firstSel != lastSel && !IsCharacterLevelElement (lastSel)))
+          if (!charlevel ||
+              (first != last && !IsCharacterLevelElement (last)))
             // create a block element
             CreateHTMLelement (blocktype, doc);
-          else if (firstSel != lastSel)
+          else if (first != last)
             {
-              TtaNextSibling (&firstSel);
-              if (firstSel != lastSel && !IsCharacterLevelElement (firstSel))
+              TtaNextSibling (&first);
+              if (first != last && !IsCharacterLevelElement (first))
                 // create a block element
                 CreateHTMLelement (blocktype, doc);
               else
                 // create a inline element
-                GenerateInlineElement (elemtype, 0, "");
+                GenerateInlineElement (elemtype, 0, "", TRUE);
             }
           else
             // create a inline element
-            GenerateInlineElement (elemtype, 0, "");
+            GenerateInlineElement (elemtype, 0, "", TRUE);
           TtaSetStructureChecking (oldStructureChecking, doc);
         }
       else
-        GenerateInlineElement (elemtype, 0, "");
+        GenerateInlineElement (elemtype, 0, "", TRUE);
       TtaCloseUndoSequence (doc);      
     }
 
@@ -4359,4 +4447,3 @@ void CopyLocation (Document doc, View view)
 void PasteLocation (Document doc, View view)
 {
 }
-

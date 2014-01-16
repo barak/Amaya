@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT MIT and INRIA, 1999-2007
+ *  (c) COPYRIGHT MIT and INRIA, 1999-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  * 
  */
@@ -27,6 +27,9 @@
 #include "AHTrdf2annot_f.h"
 
 /* Amaya includes */
+#ifdef _WX
+#include "appdialogue_wx.h"
+#endif /* _WX */
 #include "init_f.h"
 #include "HTMLactions_f.h"
 #include "AHTURLTools_f.h"
@@ -564,6 +567,7 @@ void RemoteLoad_callback (int doc, int status, char *urlName, char *outputfile,
            Annot_isSameURL (AnnotMetaData[source_doc].annot_url, source_doc_url))))
     {
       LINK_LoadAnnotationIndex (doc, ctx->remoteAnnotIndex, TRUE);
+      ctx->remoteAnnotIndex = NULL; // the string is already freed
       /* clear the status line if there was no error*/
       TtaSetStatus (doc, 1,  "Done!", NULL);
     }
@@ -666,6 +670,7 @@ static void ANNOT_Load2 (Document doc, View view, AnnotLoadMode mode)
         tmp_url = body_url;
       annotIndex = LINK_GetAnnotationIndexFile (tmp_url);
       LINK_LoadAnnotationIndex (doc, annotIndex, TRUE);
+      annotIndex = NULL;
       AnnotMetaData[doc].local_annot_loaded = TRUE;
     }
   
@@ -686,8 +691,10 @@ static void ANNOT_Load2 (Document doc, View view, AnnotLoadMode mode)
             continue;
           /* create the context for the callback */
           ctx = (REMOTELOAD_context*)TtaGetMemory (sizeof (REMOTELOAD_context));
+          memset (ctx,  0, sizeof (REMOTELOAD_context));
           /* make some space to store the remote file name */
           ctx->remoteAnnotIndex = (char *)TtaGetMemory (MAX_LENGTH);
+          ctx->remoteAnnotIndex[0]  = EOS;
           /* store the source document infos */
           ctx->source_doc = doc;
           ctx->source_doc_url = TtaStrdup (tmp_doc_url);
@@ -731,10 +738,7 @@ static void ANNOT_Load2 (Document doc, View view, AnnotLoadMode mode)
             }
           else
             UpdateTransfer (doc);
-          res = GetObjectWWW (doc,
-                              0,
-                              server,
-                              annotURL,
+          res = GetObjectWWW (doc, 0, server, annotURL,
                               ctx->remoteAnnotIndex,
                               AMAYA_ASYNC | AMAYA_FLUSH_REQUEST,
                               NULL, NULL, 
@@ -890,6 +894,10 @@ void ANNOT_Create (Document doc, View view, AnnotMode mode)
   /* initialize everything */
   mode = (AnnotMode)(mode | ANNOT_initATitle | ANNOT_initBody);
   ANNOT_InitDocumentStructure (doc, doc_annot, annot, mode);
+#ifdef _WX
+  // set the default icon
+  TtaSetPageIcon (doc_annot, 1, NULL);
+#endif /* _WX */
 
   /* turn on/off entries in the menu bar */
   UpdateContextSensitiveMenus (doc, 1);
@@ -1245,6 +1253,7 @@ void ANNOT_Post (Document doc, View view)
     return;
   /* create the context for the callback */
   ctx = (REMOTELOAD_context*)TtaGetMemory (sizeof (REMOTELOAD_context));
+  memset (ctx,  0, sizeof (REMOTELOAD_context));
   /* make some space to store the remote file name */
   ctx->remoteAnnotIndex = (char *)TtaGetMemory (MAX_LENGTH);
   ctx->remoteAnnotIndex[0]  = EOS;
@@ -1295,18 +1304,12 @@ void ANNOT_Post (Document doc, View view)
       url = annotPostServer;
       free_url = FALSE;
 
-      res = GetObjectWWW (doc,
-                          0,
-                          url,
-                          rdf_file,
+      res = GetObjectWWW (doc, 0, url, rdf_file,
                           ctx->remoteAnnotIndex,
                           AMAYA_FILE_POST | AMAYA_ASYNC | AMAYA_FLUSH_REQUEST,
-                          NULL,
-                          NULL, 
+                          NULL, NULL, 
                           (void (*)(int, int, char*, char*, char*, const AHTHeaders*, void*))ANNOT_Post_callback,
-                          (void *) ctx,
-                          NO,
-                          NULL);
+                          (void *) ctx, NO, NULL);
     } 
   else
     {

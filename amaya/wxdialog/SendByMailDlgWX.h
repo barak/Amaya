@@ -9,13 +9,25 @@
 #include "wx/spinctrl.h"
 #include "AmayaDialog.h"
 
+class wxGrid;
+class wxGridEvent;
+
+typedef enum
+{
+  SendByMailAsAttachment = 0,
+  SendByMailAsMessage    = 1,
+  SendByMailAsZip        = 2,
+  DontSendByMail         = 3
+}SendByMailMode;
+
+
 //-----------------------------------------------------------------------------
 // Class definition: SendByMailDlgWX
 //-----------------------------------------------------------------------------
 
 class SendByMailDlgWX : public AmayaDialog
 {
-public: 
+public:
     
   // Constructor.
   SendByMailDlgWX( int ref, wxWindow* parent);
@@ -31,42 +43,38 @@ public:
   
   bool SendAsAttachment()const;
   bool SendAsContent()const;
+  bool SendAsZip()const;
 
   void SetSendMode(int mode);
     
-  wxArrayString  GetRecipients()const;
-  void SetRecipients(const wxArrayString & rcpt);
-  
-  wxString GetRecipientList()const;
+  wxArrayString GetToRecipients()const{return m_toArray;}
+  wxArrayString GetCcRecipients()const{return m_ccArray;}
   
   void AddAddressToRecentList(const wxString& addr);
 
+  
+protected:
+  void AddRecipientLine();
 private:
   void UpdateMessageLabel();
 
     // Override base class functions of a wxDialog.
   void OnCancelButton( wxCommandEvent& event );
 
-  void OnNewToTextModified(wxCommandEvent& event);
-  void OnNewToEnterPressed(wxCommandEvent& event);
-  
-  
-  void OnToItemSelected(wxCommandEvent& event);
-
-  void OnSupprToItem(wxCommandEvent& event);
-
   void OnUpdateSendButton(wxUpdateUIEvent& event);
-  
+
   void OnChangeMessageClass(wxCommandEvent& event);
 
-  void SetCurrentToItemText();
-  void SuggestAddress();
-  void FillRecentAddress();
   void SaveRecentList();
   void LoadRecentList();
   
   void OnCloseDialog(wxCommandEvent& event);
 
+  
+  
+  void OnDeleteRecipient(wxCommandEvent& event);
+  void OnChangeRecipientAddress(wxCommandEvent& event);
+  
  // Any class wishing to process wxWindows events must use this macro
   DECLARE_EVENT_TABLE()
 
@@ -75,9 +83,28 @@ private:
   
   wxArrayString m_rcptArray;
   
-  wxListBox*  m_tos;
-  wxComboBox* m_newto;
+  wxArrayString m_toArray, m_ccArray;
+  
+  
+  wxPanel* m_panel;
 };
+
+
+
+//-----------------------------------------------------------------------------
+// Class definition: RecipientPanel
+//-----------------------------------------------------------------------------
+class RecipientPanel : public wxPanel
+{
+  DECLARE_CLASS()
+public:
+  RecipientPanel(wxWindow* parent);
+  void AddDefaultRecipients(const wxArrayString& arr);
+  
+  wxString GetAddress()const;
+  int      GetType()const;
+};
+
 
 #endif  //__SENDBYMAILDLGWX_H__
 

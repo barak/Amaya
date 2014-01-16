@@ -11,6 +11,9 @@
  */
 
 #include <stdio.h>
+#ifndef _WINDOWS
+#include <langinfo.h>
+#endif /* _WINDOWS */
 #include <stdlib.h>
 #include "thot_sys.h"
 #include "fileaccess.h"
@@ -31,11 +34,11 @@ unsigned long offset[6] = {
 };
 
 typedef struct {
-  char       *ISOCode;
+  const char *ISOCode;
   CHARSET     Charset;
 } CharsetCode;
 
-static CharsetCode CharsetCodeTable[] =
+static const CharsetCode CharsetCodeTable[] =
 {
     {"us-ascii",         US_ASCII},
     {"ascii",            US_ASCII},
@@ -429,41 +432,14 @@ CHARSET TtaGetLocaleCharset ()
 	  LocaleSystemCharset = WINDOWS_1252;
 	}
    }
-#endif /* _WINDOWS */
-#ifdef _UNIX
+#else /* _WINDOWS */
 #ifndef _MACOS
   if (LocaleSystemCharset == UNSUPPORTED_CHARSET)
     {
-      char * lang = getenv("LANG");
-#ifdef _WX
-      if (lang && TtaDirExists ("/tmp"))
-#else /* _WX */
-      if (lang && ThotDirExists ("/tmp"))
-#endif /* _WX */
-        {
-          int  fd;
-          char buffer[256], cmd[256], filename[30];
-          memset ( buffer, 0, 256);
-          strcpy (cmd, "locale -ck LC_MESSAGES | grep messages-codeset | sed 's/.*=\"//' | sed 's/\"//'");
-          strcat (cmd," > ");
-          strcpy (filename, "/tmp/");
-          strcat (filename,"amaya_locale");
-          strcat (cmd, filename);
-          /* ask the system using locale command */
-          system (cmd);
-          fd = open (filename, O_RDONLY);
-          if (fd)
-            {
-              read (fd, buffer, 255);
-              close (fd);
-              strcpy (cmd, "rm -f ");
-              strcat (cmd, filename);
-              system (cmd);
-              buffer[255] = EOS;
-              /* convert the string into thotlib index */
-              LocaleSystemCharset = TtaGetCharset(buffer); 
-            }
-        }
+      char *buffer;
+      buffer = nl_langinfo(_NL_MESSAGES_CODESET);
+      if (buffer != NULL)
+        LocaleSystemCharset = TtaGetCharset(buffer);
     }
 #endif /* _MACOS */
   if ((LocaleSystemCharset == UNSUPPORTED_CHARSET) ||
@@ -475,7 +451,7 @@ CHARSET TtaGetLocaleCharset ()
     /* default unix charset is iso-latin-1 */
     LocaleSystemCharset = ISO_8859_1;
 #endif /* _MACOSX */
-#endif /* _UNIX */
+#endif /* _WINDOWS */
   return LocaleSystemCharset;
 }
 
@@ -500,7 +476,7 @@ CHARSET TtaGetDefaultCharset ()
 /*----------------------------------------------------------------------
   TtaGetCharsetName gives the constant string of the charset ISO name.
   ----------------------------------------------------------------------*/
-char *TtaGetCharsetName (CHARSET charset)
+const char *TtaGetCharsetName (CHARSET charset)
 {
   int index = 0;
 

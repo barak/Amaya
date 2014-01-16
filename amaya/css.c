@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2007
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -31,7 +31,6 @@
 #include "AHTURLTools_f.h"
 #include "UIcss_f.h"
 #include "styleparser_f.h"
-
 
 
 /*----------------------------------------------------------------------
@@ -190,7 +189,7 @@ void AttrMediaChanged (NotifyAttribute *event)
             {
               if (dispMode != NoComputedDisplay)
                 TtaSetDisplayMode (doc, NoComputedDisplay);
-              UnlinkCSS (css, doc, el, TRUE, FALSE);
+              UnlinkCSS (css, doc, el, TRUE, FALSE, TRUE);
               /* restore the display mode */
               if (dispMode != NoComputedDisplay)
                 TtaSetDisplayMode (doc, dispMode);
@@ -674,12 +673,12 @@ CSSInfoPtr SearchCSS (Document doc, char *url, Element link, PInfoPtr *info)
   UnlinkCSS the CSS is no longer applied to this document and if the
   parameter removed is TRUE, the link is cut.
   If this CSS is no longer used the context and attached information
-  are freed.
+  are freed except if clearCSS is FALSE.
   The parameter link specifies the link.
   Return FALSE when the css context is freed.
   ----------------------------------------------------------------------*/
 ThotBool UnlinkCSS (CSSInfoPtr css, Document doc, Element link,
-                    ThotBool disabled, ThotBool removed)
+                    ThotBool disabled, ThotBool removed, ThotBool clearCSS)
 {
   CSSInfoPtr          prev;
   PInfoPtr            pInfo, prevInfo;
@@ -768,7 +767,8 @@ ThotBool UnlinkCSS (CSSInfoPtr css, Document doc, Element link,
           used = (css->infos[i] != NULL);
           i++;
         }
-      if (!used)
+      /* If css->import, unlink it if not used */
+      if ((!used) && (clearCSS || css->import))
         {
           /* remove the local copy of the CSS file */
           if (!TtaIsPrinting ())
@@ -796,23 +796,28 @@ ThotBool UnlinkCSS (CSSInfoPtr css, Document doc, Element link,
 
 /*----------------------------------------------------------------------
   RemoveDocCSSs removes all CSS information linked with the document.
+  The parameter removed is false when the document will be reloaded 
   ----------------------------------------------------------------------*/
-void RemoveDocCSSs (Document doc)
+void RemoveDocCSSs (Document doc, ThotBool removed)
 {
-  CSSInfoPtr          css, next;
+  CSSInfoPtr      css, next;
+  PInfoPtr        pInfo, pNext;
  
   css = CSSList;
   while (css)
     {
       next = css->NextCSS;
-      while (css && css->infos[doc])
+      pInfo = css->infos[doc];
+      while (css && pInfo)
         {
-          if (!UnlinkCSS (css, doc, css->infos[doc]->PiLink, TRUE, TRUE))
+          pNext = pInfo->PiNext;
+          if (!UnlinkCSS (css, doc, css->infos[doc]->PiLink, TRUE, removed, TRUE))
             css = NULL;
+          pInfo = pNext;
         }
       if (css && css->doc == doc)
         /* the document displays the CSS file itself */
-        UnlinkCSS (css, doc, NULL, TRUE, TRUE);
+        UnlinkCSS (css, doc, NULL, TRUE, removed, TRUE);
       /* look at the next CSS context */
       css = next;
     }
@@ -886,7 +891,7 @@ void RemoveStyle (char *url, Document doc, ThotBool disabled,
         TtaSetDisplayMode (doc, NoComputedDisplay);
       if (pInfo)
         link = pInfo->PiLink;
-      UnlinkCSS (css, doc, link, disabled, removed);
+      UnlinkCSS (css, doc, link, disabled, removed, TRUE);
       /* Restore the display mode */
       if (dispMode != NoComputedDisplay)
         TtaSetDisplayMode (doc, dispMode);
@@ -965,6 +970,58 @@ char *GetStyleContents (Element el)
 }
 
 /*----------------------------------------------------------------------
+  LoadACSSFile 
+  Allocate and return a buffer that gives the local CSS file contents
+  ----------------------------------------------------------------------*/
+char *LoadACSSFile (char *cssfile)
+{
+  gzFile              res;
+  int                 lenBuff = 0;
+  int                 len, i, j;
+  char               *tmpBuff = NULL;
+#define	              COPY_BUFFER_SIZE	1024
+  char                bufferRead[COPY_BUFFER_SIZE + 1];
+  ThotBool            endOfFile = FALSE;
+
+  res = TtaGZOpen (cssfile);
+  if (res == NULL)
+    return tmpBuff;
+  while (!endOfFile)
+    {
+      len = gzread (res, bufferRead, COPY_BUFFER_SIZE);
+      if (len < COPY_BUFFER_SIZE)
+        endOfFile = TRUE;
+      lenBuff += len;
+    }
+  len = 0;
+  TtaGZClose (res);
+  tmpBuff = (char *)TtaGetMemory (lenBuff + 1);
+  if (tmpBuff == NULL)
+    return tmpBuff;
+  res = TtaGZOpen (cssfile);
+  if (res == NULL)
+    {
+      TtaFreeMemory (tmpBuff);
+      return NULL;
+    }
+  len = gzread (res, tmpBuff, lenBuff);
+  tmpBuff[lenBuff] = 0;
+  // Remove CR characters
+  j = i = 0;
+  while (j <= len)
+    {
+      if (tmpBuff[j] == __CR__)
+        j++;
+      if (i != j)
+        tmpBuff[i] = tmpBuff[j];
+      i++;
+      j++;
+    }
+  TtaGZClose (res);
+  return tmpBuff;     
+}
+
+/*----------------------------------------------------------------------
   LoadStyleSheet loads the external Style Sheet found at the given url
   (in dialog charset).
   The parameter link gives the element which links the CSS or NULL.
@@ -979,18 +1036,12 @@ void LoadStyleSheet (char *url, Document doc, Element link, CSSInfoPtr css,
 {
   CSSInfoPtr          refcss = NULL;
   PInfoPtr            pInfo;
-  gzFile              res;
   char                tempfile[MAX_LENGTH];
   char                tempURL[MAX_LENGTH];
   char               *tmpBuff;
-  int                 lenBuff = 0;
   CSSCategory         category;
-  int                 len;
   ThotBool            import, printing;
   ThotBool            loadcss;
-#define	              COPY_BUFFER_SIZE	1024
-  char                bufferRead[COPY_BUFFER_SIZE + 1];
-  ThotBool            endOfFile = FALSE;
 
   /* check if we have to load CSS */
   TtaGetEnvBoolean ("LOAD_CSS", &loadcss);
@@ -1061,45 +1112,12 @@ void LoadStyleSheet (char *url, Document doc, Element link, CSSInfoPtr css,
   if ( pInfo->PiSchemas == NULL || import)
     {
       /* load the resulting file in memory */
-      res = TtaGZOpen (tempfile);
-      if (res == NULL)
-        {
-          TtaSetStatus (doc, 1, TtaGetMessage (AMAYA, AM_CANNOT_LOAD), tempURL);
-          return;
-        }
-      while (!endOfFile)
-        {
-          len = gzread (res, bufferRead, COPY_BUFFER_SIZE);
-          if (len < COPY_BUFFER_SIZE)
-            endOfFile = TRUE;
-          lenBuff += len;
-        }
-      len = 0;
-      TtaGZClose (res);
-      tmpBuff = (char *)TtaGetMemory (lenBuff + 1);
+      tmpBuff = LoadACSSFile (tempfile);
       if (tmpBuff == NULL)
         {
           TtaSetStatus (doc, 1, TtaGetMessage (AMAYA, AM_CANNOT_LOAD), tempURL);
           return;
         }
-      res = TtaGZOpen (tempfile);
-      if (res == NULL)
-        {
-          TtaSetStatus (doc, 1, TtaGetMessage (AMAYA, AM_CANNOT_LOAD), tempURL);
-          TtaFreeMemory (tmpBuff);
-          return;
-        }
-      len = gzread (res, tmpBuff, lenBuff);
-      if (len < 0)
-        {
-          TtaSetStatus (doc, 1, TtaGetMessage (AMAYA, AM_CANNOT_LOAD), tempURL);
-          TtaGZClose (res);
-          ReadCSSRules (doc, refcss, tmpBuff, tempURL, 0, FALSE, NULL);
-          TtaFreeMemory (tmpBuff);
-          return;
-        }
-      tmpBuff[lenBuff] = 0;
-      TtaGZClose (res);
       if (css)
         urlRef = css->url;
       ReadCSSRules (doc, refcss, tmpBuff, urlRef, 0, FALSE, link);

@@ -654,14 +654,17 @@ int SpecialCharBoxWidth (CHAR_T c)
 /*----------------------------------------------------------------------
   BoxCharacterWidth returns the width of a char in a given font
   ----------------------------------------------------------------------*/
-int BoxCharacterWidth (CHAR_T c, SpecFont specfont)
+int BoxCharacterWidth (CHAR_T c, int variant, SpecFont specfont)
 {
   ThotFont        font;
-  int             car;
+  int             car = 6;
 
   if (SpecialCharBoxWidth (c))
     return 1;
-  car = GetFontAndIndexFromSpec (c, specfont, &font);
+  if (specfont)
+    car = GetFontAndIndexFromSpec (c, specfont, variant, &font);
+  else
+    font = NULL;
   if (font == NULL)
     return 6;
   else
@@ -796,26 +799,30 @@ int BoxFontHeight (SpecFont specfont, char code)
 {
   ThotFont        font;
   int             car, h = 0;
-  if (code == 'A' && specfont->Font_6) /* Arabic */
-    h = FontHeight (specfont->Font_6);
-  else if (code == 'G' && specfont->Font_7) /* Graphic */
-    h = FontHeight (specfont->Font_7);
-  else if (code == 'H' && specfont->Font_8) /* Hebrew */
-    h = FontHeight (specfont->Font_8);
-  else if (code == 'Z' && specfont->Font_17) /* Unicode */
-    h = FontHeight (specfont->Font_17);
-  else if (specfont->Font_1)
-    h = FontHeight (specfont->Font_1);
-  if (h == 0)
+
+  if (specfont)
     {
-      car = GetFontAndIndexFromSpec (120, specfont, &font);
+      if (code == 'A' && specfont->Font_6) /* Arabic */
+        h = FontHeight (specfont->Font_6);
+      else if (code == 'G' && specfont->Font_7) /* Graphic */
+        h = FontHeight (specfont->Font_7);
+      else if (code == 'H' && specfont->Font_8) /* Hebrew */
+        h = FontHeight (specfont->Font_8);
+      else if (code == 'Z' && specfont->Font_17) /* Unicode */
+        h = FontHeight (specfont->Font_17);
+      else if (specfont->Font_1)
+        h = FontHeight (specfont->Font_1);
+    }
+  if (h == 0 && specfont)
+    {
+      car = GetFontAndIndexFromSpec (120, specfont, 1, &font);
       h = FontHeight (font);
     }
   return h;
 }
 
 /*----------------------------------------------------------------------
-  PixelValue computes the pixel size for a given logical unit.
+  PixelValue converts a logical value into a pixel value.
   pAb is the current abstract box except for UnPercent unit
   where it holds the comparison value.
   ----------------------------------------------------------------------*/
@@ -839,7 +846,7 @@ int PixelValue (int val, TypeUnit unit, PtrAbstractBox pAb, int zoom)
         dist = 0;
       else
         {
-          dist = BoxCharacterWidth ('m', pAb->AbBox->BxFont);
+          dist = BoxCharacterWidth ('m', 1, pAb->AbBox->BxFont);
           // XFontAscent (pAb->AbBox->BxFont);
           if (dist > 0)
             dist = dist * val / 10;
@@ -894,7 +901,7 @@ int PixelValue (int val, TypeUnit unit, PtrAbstractBox pAb, int zoom)
 }
 
 /*----------------------------------------------------------------------
-  LogicalValue computes the logical value for a given pixel size.
+  LogicalValue converts a pixel value into a logical value.
   pAb is the current abstract box except for UnPercent unit
   where it holds the comparison value.
   ----------------------------------------------------------------------*/
@@ -918,7 +925,7 @@ int LogicalValue (int val, TypeUnit unit, PtrAbstractBox pAb, int zoom)
         dist = 0;
       else
         {
-          dist =  BoxCharacterWidth ('m', pAb->AbBox->BxFont);
+          dist =  BoxCharacterWidth ('m', 1, pAb->AbBox->BxFont);
           // XFontAscent (pAb->AbBox->BxFont);
           if (dist > 0)
             dist = dist * 10 / dist;
@@ -997,7 +1004,7 @@ int BoxFontBase (SpecFont specfont)
   ThotFont        font;
   unsigned char   car;
 
-  car = GetFontAndIndexFromSpec (120, specfont, &font);
+  car = GetFontAndIndexFromSpec (120, specfont, 1, &font);
   return FontBase (font);
 }
 
@@ -1066,7 +1073,8 @@ static void GeneratePostscriptFont (char r_name[10], char script, int family,
 static void FontIdentifier (char script, int family, int highlight, int size,
                             TypeUnit unit, char r_name[10], char r_nameX[100])
 {
-  char        *wght, *slant, *ffamily;
+  char        *ffamily;
+  const char  *wght, *slant;
   char        encoding[3];
 
   /* apply the current font zoom */
@@ -1670,22 +1678,42 @@ void ChangeFontsetSize (int size, PtrBox box, int frame)
 }
 
 /*----------------------------------------------------------------------
-  GetFontAndIndexFromSpec returns the glyph index and the font
-  used to display the wide character c
+  GetCapital converts lower case into upper case characters
   ----------------------------------------------------------------------*/
-int GetFontAndIndexFromSpec (CHAR_T c, SpecFont fontset, ThotFont *font)
+static CHAR_T GetCapital (CHAR_T c)
+{
+  if ((c >= 0x61 /* a */ && c <= 0x7A /* z */) ||
+      (c >= 0xE0 /* a` */ && c <= 0xFD /* y' */ && c != 0xF7))
+    return c - 32;
+  else
+    return c;
+}
+
+/*----------------------------------------------------------------------
+  GetFontAndIndexFromSpec returns the glyph index and the font
+  used to display the wide character c.
+  Generate smallcaps if variant is 2
+  ----------------------------------------------------------------------*/
+int GetFontAndIndexFromSpec (CHAR_T c, SpecFont fontset, int variant,
+                             ThotFont *font)
 {
   ThotFont           lfont, *pfont;
   CHARSET            encoding;
+  CHAR_T             ref_c = c;
   char               code = ' ';
   int                car;
-  int                frame;
+  int                frame, size;
   unsigned int       mask, fontmask;
   
   *font = NULL;
+  if (variant == 2)
+    c = GetCapital (c);
+  if (c == EOS)
+    c = ref_c;
   car = EOS;
   if (fontset)
     {
+      size = fontset->FontSize;
       if (c == EOL || c == BREAK_LINE ||
           c == SPACE || c == TAB ||
           c == NEW_LINE || c == UNBREAKABLE_SPACE ||
@@ -1700,7 +1728,7 @@ int GetFontAndIndexFromSpec (CHAR_T c, SpecFont fontset, ThotFont *font)
           *font = fontset->Font_1;
           car = (int) c;
         }
-      else if (c <= 0xFF)
+      else if (c <= 0xFF && c == ref_c)
         {
           /* 0 -> FF */
           *font = fontset->Font_1;
@@ -1720,6 +1748,18 @@ int GetFontAndIndexFromSpec (CHAR_T c, SpecFont fontset, ThotFont *font)
         }
       else
         {
+#ifdef _WX
+          if (c != ref_c)
+            {
+              // generate small-caps
+              car = (int)c;
+              pfont = &(fontset->Font_19);
+              encoding = UNICODE_1_1;
+              code = '1';
+              size = (int) (size * .8);
+            }
+          else
+#endif /* _WX */
           if (c >= 0x370 && c < 0x3FF)
             {
               /* Greek characters */
@@ -1801,7 +1841,7 @@ int GetFontAndIndexFromSpec (CHAR_T c, SpecFont fontset, ThotFont *font)
                     c = 100;
                   else if (c == 0x210E /* planckh */)
                     c = 104;
-                  else /* ExponentialE */
+                  else  if (c == 0x2147 /* ExponentialE */)
                     c = 101;
                 }
             }
@@ -2085,7 +2125,7 @@ int GetFontAndIndexFromSpec (CHAR_T c, SpecFont fontset, ThotFont *font)
                         {
                           lfont = LoadNearestFont (code, fontset->FontFamily,
                                                    fontset->FontHighlight,
-                                                   fontset->FontSize, fontset->FontSize,
+                                                   size, size,
                                                    frame, TRUE, TRUE);
                           if (code == '7' && GreekFontScript == 'G')
                             /* use the font Symbol instead of a greek font */
@@ -2214,7 +2254,7 @@ static SpecFont LoadFontSet (char script, int family, int highlight,
 
 /*----------------------------------------------------------------------
   ThotLoadFont try to load a font given a set of attributes like script,
-  family, the size and for a given frame.
+  family, the size and variant for a given frame.
   ----------------------------------------------------------------------*/
 SpecFont ThotLoadFont (char script, int family, int highlight, int size,
                        TypeUnit unit, int frame)
@@ -2285,7 +2325,7 @@ void TtaSetFontZoom (int zoom)
 /*----------------------------------------------------------------------
   InitDialogueFonts initialize the standard fonts used by the Thot Toolkit.
   ----------------------------------------------------------------------*/
-void InitDialogueFonts (char *name)
+void InitDialogueFonts (const char *name)
 {
 #ifdef _GTK
   int              ndir, ncurrent;
@@ -2629,6 +2669,8 @@ void ThotFreeFont (int frame)
                     fontset->SFont_16 = NULL;
                   else if (fontset->SFont_17 == TtFonts[i])
                     fontset->SFont_17 = NULL;
+                  else if (fontset->Font_19 == TtFonts[i])
+                    fontset->Font_19 = NULL;
                   fontset = fontset->NextFontSet;
                 }
 #endif /* _GL */

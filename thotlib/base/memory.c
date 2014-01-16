@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -854,8 +854,14 @@ void GetReferredDescr (PtrReferredDescr * pDR)
   ----------------------------------------------------------------------*/
 void FreeReferredDescr (PtrReferredDescr pDR)
 {
-  if (pDR != NULL)
+  if (pDR)
     {
+      if (pDR->RePrevious)
+        pDR->RePrevious->ReNext = pDR->ReNext;
+      if (pDR->ReNext)
+        pDR->ReNext->RePrevious = pDR->RePrevious;
+      pDR->RePrevious = NULL;
+      pDR->ReNext = NULL;
       TtaFreeMemory (pDR);
       NbUsed_DescRef--;
     }
@@ -966,6 +972,9 @@ void GetAbstractBox (PtrAbstractBox *pAb)
   ----------------------------------------------------------------------*/
 void FreeAbstractBox (PtrAbstractBox pAb)
 {
+#ifdef AMAYA_DEBUG
+  PtrAbstractBox nextAb;
+#endif
   ThotPictInfo *image;
 
   if (pAb->AbLeafType == LtCompound)
@@ -997,6 +1006,20 @@ void FreeAbstractBox (PtrAbstractBox pAb)
 #ifdef DEBUG_MEMORY
   TtaFreeMemory (pAb);
 #else
+#ifdef AMAYA_DEBUG
+      // check double free
+      nextAb = PtFree_AbsBox;
+      while (nextAb)
+        {
+        if (nextAb == pAb)
+          {
+            // double free detected
+            printf ("Double free of an abstract box");
+            nextAb = NULL; // force a crash
+          }
+        nextAb = nextAb->AbNext;
+        }
+#endif
   pAb->AbElement = NULL;
   pAb->AbEnclosing = NULL;
   if (pAb->AbPrevious)
@@ -1966,6 +1989,9 @@ PtrBox FreeBox (PtrBox pBox)
   PtrDimRelations     pDimRel;
   PtrDimRelations     nedim;
   PtrBox              nextBox;
+#ifdef AMAYA_DEBUG
+  PtrBox              nBox;
+#endif
 
   /* get next child */
   if (pBox->BxType == BoSplit ||
@@ -2008,6 +2034,20 @@ PtrBox FreeBox (PtrBox pBox)
 #else
   if (pBox)
     {
+#ifdef AMAYA_DEBUG
+      // check double free
+      nBox = PtFree_Box;
+      while (nBox)
+        {
+        if (nBox == pBox)
+          {
+            // double free detected
+            printf ("Double free of a box");
+            nBox = NULL; // force a crash
+          }
+        nBox = nBox->BxNexChild;
+        }
+#endif
       /* Don't use BxNext field because it's used when removing break lines */
       pBox->BxNexChild = PtFree_Box;
       pBox->BxType = BoComplete;

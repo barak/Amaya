@@ -1,12 +1,12 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2007
+ *  (c) COPYRIGHT INRIA, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
 
 /*
- * Ce module effectue la creation des images abstraites
+ * This module generates abstract boxes
  *
  * Authors: V. Quint (INRIA)
  *          C. Roisin (INRIA) - Columns and pages
@@ -154,6 +154,17 @@ static void UpdateCSSVisibility (PtrAbstractBox pAb)
       !TypeHasException (ExcIsRow, pAb->AbElement->ElTypeNumber,
                          pAb->AbElement->ElStructSchema))
     pAb->AbVis = 'V';
+}
+
+/*----------------------------------------------------------------------
+  CanApplyCSSToElement returns TRUE when CSS rules apply to this element
+  ----------------------------------------------------------------------*/
+ThotBool CanApplyCSSToElement (PtrElement pEl)
+{
+  return (pEl &&
+          pEl->ElTypeNumber >= pEl->ElStructSchema->SsRootElem &&
+          strcmp (pEl->ElStructSchema->SsName, "Template") && // not template element
+          !TypeHasException (ExcHidden, pEl->ElTypeNumber, pEl->ElStructSchema));
 }
 
 /*----------------------------------------------------------------------
@@ -1583,6 +1594,105 @@ ThotBool CondPresentation (PtrCondition pCond, PtrElement pEl,
 }
 
 /*----------------------------------------------------------------------
+  GetPreviousSibling
+  returns the sibling element before element el, ignoring Tamplate
+  elements.
+  ----------------------------------------------------------------------*/
+static PtrElement GetPreviousSibling (PtrElement el)
+{
+  PtrSSchema           elSS;
+  PtrElement           sibling, child, ancestor, prev;
+
+  sibling = el;
+  if (sibling)
+    {
+      elSS = el->ElStructSchema;
+      do
+        {
+          sibling = sibling->ElPrevious;
+          if (sibling)
+            {
+              if (!strcmp (sibling->ElStructSchema->SsName, "Template"))
+                /* it's a Template element. Look for its first descendant that
+                   is not a Template element */
+                {
+                  child = sibling;
+                  do
+                    {
+                      if (child->ElTerminal)
+                        child = NULL;
+                      else
+                        child = child->ElFirstChild;
+                    }
+                  while (child &&
+                         !strcmp (child->ElStructSchema->SsName, "Template"));
+                  if (child)
+                    return child;
+                  else
+                    // ignore empty template elements
+                    return GetPreviousSibling (sibling);
+                }
+              else
+                return sibling;
+            }
+          else
+            /* no sibling. If the ancestor is a Template element, find the last
+               ancestor that is a Template element and take its next sibling */
+            {
+              ancestor = el->ElParent;
+              prev = NULL;
+              while (ancestor)
+                {
+                  if (strcmp (ancestor->ElStructSchema->SsName,"Template"))
+                    /* this ancestor is not a Template element */
+                    {
+                      /* take the sibling of the previous ancestor */
+                      if (prev)
+                        sibling = prev->ElPrevious;
+                      else
+                        sibling = NULL;
+                      ancestor = NULL;
+                    }
+                  else
+                    {
+                      /* this ancestor is a Template element. Remember it and
+                         get the next ancestor */
+                      prev = ancestor;
+                      sibling = ancestor->ElPrevious;
+                      if (!sibling)
+                        ancestor = ancestor->ElParent;
+                      else
+                        {
+                          if (strcmp (sibling->ElStructSchema->SsName, "Template"))
+                            /* not a template element */
+                            ancestor = NULL;
+                          else
+                            /* it's a Template element. Look for its first
+                               descendant that is not a Template element */
+                            {
+                              child = sibling;
+                              do
+                                {
+                                  if (child->ElTerminal)
+                                    child = NULL;
+                                  else
+                                    child = child->ElFirstChild;
+                                }
+                              while (child &&
+                                     !strcmp (child->ElStructSchema->SsName, "Template"));
+                              return child;
+                            } 
+                        }
+                    }
+                }
+            }
+        } 
+      while (sibling);
+    }
+  return sibling;
+}
+
+/*----------------------------------------------------------------------
   ComputeListItemNumber
   Compute the value of the presentation box representing a list item counter.
   Return TRUE if the value has changed.
@@ -1592,7 +1702,7 @@ ThotBool ComputeListItemNumber (PtrAbstractBox pAb)
   char             number[20];
   int              count, length;
   CounterStyle     countStyle;
-  PtrElement       pPrev;
+  PtrElement       pPrev, pAsc;
   PtrAttribute     pAttr;
   ThotBool         change, set;
 
@@ -1615,13 +1725,18 @@ ThotBool ComputeListItemNumber (PtrAbstractBox pAb)
           else
             count++;
         }
-      pPrev = pPrev->ElPrevious;
+      pPrev = GetPreviousSibling (pPrev);
     }
   if (!set && pAb->AbElement && pAb->AbElement->ElParent)
     {
-      pAttr = GetAttrElementWithException (ExcStartCounter,
-                                           pAb->AbElement->ElParent);
+      /* get the parent element */
+      pAsc = pAb->AbElement->ElParent;
+      /* skip enclosing Template elements to find the real parent */
+      while (!strcmp (pAsc->ElStructSchema->SsName, "Template"))
+        pAsc = pAsc->ElParent;
+      pAttr = GetAttrElementWithException (ExcStartCounter, pAsc);
       if (pAttr && pAttr->AeAttrType == AtNumAttr)
+        /* the parent element sets an initial value to the counter */
         {
           count += pAttr->AeAttrValue;
           count--;
@@ -2960,12 +3075,15 @@ static ThotBool SameChar (CHAR_T c1, CHAR_T c2, int attrNum)
   as a list of space separated values. Should be 1 for the first call.
   valueNum is updated to indicate the rank of the next value to be
   processed. 0 indicates that there is no more values.
+  match = 1 indicates that we have not yet done any string value match yet
+    and it is changed to 0 to indicate that a different string match must
+    be done for the next call.
   When returning, attrBlock contains a pointer to the block of presentation
   rules to which the returned rule belongs.
   ----------------------------------------------------------------------*/
 PtrPRule AttrPresRule (PtrAttribute pAttr, PtrElement pEl,
                        ThotBool inheritRule, PtrAttribute pAttrComp,
-                       PtrPSchema pSchP, int *valueNum,
+                       PtrPSchema pSchP, int *valueNum, int *match,
                        PtrAttributePres *attrBlock)
 {
   PtrPRule            pRule;
@@ -2979,7 +3097,7 @@ PtrPRule AttrPresRule (PtrAttribute pAttr, PtrElement pEl,
   unsigned int        len;
   int                 i, j, k, attrNum;
   CHAR_T             *refVal;
-  ThotBool            found, ok;
+  ThotBool            found, ok, firstVal;
 
   pRule = NULL;
   *attrBlock = NULL;
@@ -2997,6 +3115,7 @@ PtrPRule AttrPresRule (PtrAttribute pAttr, PtrElement pEl,
       return (NULL);
     }
 
+  firstVal = (*valueNum == 1);
   pPRdef = pPRinherit = NULL;
   len = 0;
   attrValue = NULL;
@@ -3138,6 +3257,17 @@ PtrPRule AttrPresRule (PtrAttribute pAttr, PtrElement pEl,
                                           attrValue[j - 1] == SPACE) &&
                                       (attrValue[k] == EOS ||
                                        attrValue[k] == SPACE);
+                                    if (ok && firstVal && *valueNum == 0 && *match)
+                                      /* we are testing the first value and
+                                         there is no other value and that's
+                                         the first match we try. Stop
+                                         here. Next time we will test exact
+                                         match */
+                                      {
+                                        i = 0; /* stop */
+                                        *match = 0;
+                                        *valueNum = 1;
+                                      }
                                   }
                                 else if (pAPRule->ApMatch == CoMatch)
                                   /* the whole attribute value must be equal */
@@ -3459,7 +3589,7 @@ PtrAbstractBox TruncateOrCompleteAbsBox (PtrAbstractBox pAb, ThotBool truncate,
   PtrAbstractBox      pAbbCreated, pAbbReturn;
   PtrAttribute        pAttr;
   PtrElement          pEl, pElAttr, pFirstAncest;
-  int                 l, valNum, lqueue;
+  int                 l, valNum, match, lqueue;
   InheritAttrTable   *inheritTable;
   PtrHandlePSchema    pHd;
   PtrAttributePres    attrBlock;
@@ -3554,9 +3684,7 @@ PtrAbstractBox TruncateOrCompleteAbsBox (PtrAbstractBox pAb, ThotBool truncate,
                  all schema extensions */
               /* We need to do that only if the element is not a basic or
                  hidden element */
-              if (pEl->ElTypeNumber >= pEl->ElStructSchema->SsRootElem &&
-                  !TypeHasException (ExcHidden, pEl->ElTypeNumber,
-                                     pEl->ElStructSchema))
+              if (CanApplyCSSToElement (pEl))
                 {
                   pHd = FirstPSchemaExtension (pSchS, pDoc, pEl);
                   while (pHd)
@@ -3610,11 +3738,11 @@ PtrAbstractBox TruncateOrCompleteAbsBox (PtrAbstractBox pAb, ThotBool truncate,
                               {
                                 /* process all values of the attribute, in case of
                                    a text attribute with multiple values */
-                                valNum = 1;
+                                valNum = 1; match = 1;
                                 do
                                   {
                                     pRule = AttrPresRule (pAttr, pEl, TRUE, NULL,
-                                                          pSchP, &valNum, &attrBlock);
+                                                          pSchP, &valNum, &match, &attrBlock);
                                     if (pRule && !pRule->PrDuplicate)
                                       ApplCrPresRule (pAttr->AeAttrSSchema, pSchP,
                                                       &pAbbCreated, pAttr, pDoc,
@@ -3651,11 +3779,11 @@ PtrAbstractBox TruncateOrCompleteAbsBox (PtrAbstractBox pAb, ThotBool truncate,
                               {
                                 /* process all values of the attribute, in case of
                                    a text attribute with multiple values */
-                                valNum = 1;
+                                valNum = 1; match = 1;
                                 do
                                   {
                                     pRule = AttrPresRule (pAttr, pEl, TRUE, NULL,
-                                                          pSchP, &valNum, &attrBlock);
+                                                          pSchP, &valNum, &match, &attrBlock);
                                     if (pRule && !pRule->PrDuplicate)
                                       ApplCrPresRule (pAttr->AeAttrSSchema, pSchP,
                                                       &pAbbCreated, pAttr, pDoc,
@@ -3693,12 +3821,12 @@ PtrAbstractBox TruncateOrCompleteAbsBox (PtrAbstractBox pAb, ThotBool truncate,
                         pSSattr = pDoc->DocSSchema;
                       /* process all values of the attribute, in case of a text
                          attribute with multiple values */
-                      valNum = 1;
+                      valNum = 1; match = 1;
                       do
                         {
                           /* first rule for this value of the attribute */
                           pRule = AttrPresRule (pAttr, pEl, FALSE, NULL,
-                                                pSchPattr, &valNum, &attrBlock);
+                                                pSchPattr, &valNum, &match, &attrBlock);
                           ApplCrPresRule (pAttr->AeAttrSSchema, pSchP,
                                           &pAbbCreated, pAttr, pDoc, pAb, head,
                                           pRule, &pseudoElem);
@@ -3708,16 +3836,14 @@ PtrAbstractBox TruncateOrCompleteAbsBox (PtrAbstractBox pAb, ThotBool truncate,
                       pAttr = pAttr->AeNext;
                     }
 
-                  if (pHd == NULL)
-                    /* it was the main P schema, get the first schema extension */
-                    {
-                      if (pDoc->DocView[pAb->AbDocView - 1].DvPSchemaView == 1)
-                        pHd = FirstPSchemaExtension (pEl->ElStructSchema, pDoc,
-                                                     pEl);
-                    }
-                  else
-                    /* next style sheet (P schema extension) */
+                  if (pHd)
+                     /* next style sheet (P schema extension) */
                     pHd = pHd->HdNextPSchema;
+                  else if (pDoc->DocView[pAb->AbDocView - 1].DvPSchemaView == 1 &&
+                           CanApplyCSSToElement (pEl))
+                    /* it was the main P schema, get the first schema extension */
+                    pHd = FirstPSchemaExtension (pEl->ElStructSchema, pDoc, pEl);
+
                   if (pHd == NULL)
                     /* no schema any more. stop */
                     pSchP = NULL;
@@ -4053,7 +4179,7 @@ static ThotBool ApplyVisibRuleAttr (PtrElement pEl, PtrAttribute pAttr,
   PtrHandlePSchema    pHd;
   PtrAttributePres    attrBlock;
   TypeUnit            unit;
-  int                 view, valNum;
+  int                 view, valNum, match;
   ThotBool            stop, useView1, cssUndisplay = FALSE;
 
   /* on cherchera d'abord dans le schema de presentation principal de */
@@ -4068,13 +4194,13 @@ static ThotBool ApplyVisibRuleAttr (PtrElement pEl, PtrAttribute pAttr,
     {
       /* process all values of the attribute, in case of a text attribute
          with multiple values */
-      valNum = 1;
+      valNum = 1; match = 1;
       do
         {
           /* cherche la premiere regle de presentation pour cette valeur */
           /* de l'attribut, dans ce schema de presentation */
           pR = AttrPresRule (pAttr, pEl, inheritRule, NULL, pSchP, &valNum,
-                             &attrBlock);
+                             &match, &attrBlock);
           while (pR != NULL)
             {
               if (pR->PrType == PtVisibility)
@@ -4152,17 +4278,16 @@ static ThotBool ApplyVisibRuleAttr (PtrElement pEl, PtrAttribute pAttr,
         }
       while (valNum > 0);
 
-      if (pHd == NULL)
-        {
-          /* on n'a pas encore traite' les schemas de presentation additionnels
-             On prend le premier schema additionnel si on travaille pour la vue
-             principale, sinon on ignore les schemas additionnels. */
-          if (pDoc->DocView[viewNb - 1].DvPSchemaView == 1)
-            pHd = FirstPSchemaExtension (pAttr->AeAttrSSchema, pDoc, pEl);
-        }
-      else
+      if (pHd)
         /* passe au schema additionnel suivant */
         pHd = pHd->HdNextPSchema;
+      else if (pDoc->DocView[viewNb - 1].DvPSchemaView == 1 &&     /* main view */
+               CanApplyCSSToElement (pEl))
+        /* on n'a pas encore traite' les schemas de presentation additionnels
+           On prend le premier schema additionnel si on travaille pour la vue
+           principale, sinon on ignore les schemas additionnels. */
+        pHd = FirstPSchemaExtension (pAttr->AeAttrSSchema, pDoc, pEl);
+
       if (pHd == NULL)
         /* il n'y a pas (ou plus) de schemas additionnels a prendre en compte*/
         pSchP = NULL;
@@ -4361,13 +4486,14 @@ static ThotBool ComputeVisib (PtrElement pEl, PtrDocument pDoc,
         }
 
       /* next P schema */
-      if (pHd == NULL)
+      if (pHd)
+        /* get the next extension schema */
+        pHd = pHd->HdNextPSchema;
+      else if (viewSch == 1 &&     /* main view */
+               CanApplyCSSToElement (pEl))
         /* extension schemas have not been checked yet */
         /* get the first extension schema */
         pHd = FirstPSchemaExtension (pEl->ElStructSchema, pDoc, pEl);
-      else
-        /* get the next extension schema */
-        pHd = pHd->HdNextPSchema;
       if (pHd == NULL)
         /* no more extension schemas. Stop */
         pSP = NULL;
@@ -4688,7 +4814,7 @@ static void GetRulesFromInheritedAttributes (PtrElement pEl,
   PtrSSchema	     pSSattr;
   PtrAttributePres   attrBlock;
   PtrPRule           pRule, pR;
-  int                view, valNum;
+  int                view, valNum, match;
 
   do
     {
@@ -4711,12 +4837,12 @@ static void GetRulesFromInheritedAttributes (PtrElement pEl,
             pSSattr = pDoc->DocSSchema;
           /* process all values of the attribute, in case of a
              text attribute with a list of values */
-          valNum = 1;
+          valNum = 1; match = 1;
           do
             {
               /* first rule for this value of the attribute */
               pR = AttrPresRule (pAttr, pEl, TRUE, NULL, pSchPres, &valNum,
-                                 &attrBlock);
+                                 &match, &attrBlock);
               /* look at all rules associated with this value */
               while (pR != NULL)
                 {
@@ -4780,7 +4906,7 @@ void ApplyPresRules (PtrElement pEl, PtrDocument pDoc,
                      PtrAbstractBox pNewAbbox, void* CSScasc,
                      FILE *fileDescriptor, ThotBool pseudoElOnly)
 {
-  int                 i, view, l, valNum;
+  int                 i, view, l, valNum, match;
   PtrPRule            pRuleView, pRule, pR;
   PtrHandlePSchema    pHd;
   PtrPSchema          pSchPres, pSchPattr;
@@ -4850,8 +4976,7 @@ void ApplyPresRules (PtrElement pEl, PtrDocument pDoc,
   /* We need to do that only if we are working for the main view and if
      the element is not a basic or hidden element */
   if (viewSch == 1 &&     /* main view */
-      pEl->ElTypeNumber >= pEl->ElStructSchema->SsRootElem &&   /* not basic */
-      !TypeHasException (ExcHidden, pEl->ElTypeNumber, pEl->ElStructSchema))
+      CanApplyCSSToElement (pEl))
     {
       /* get the first P schema extension */
       pHd = FirstPSchemaExtension (pDoc->DocSSchema, pDoc, pEl);
@@ -5019,12 +5144,12 @@ void ApplyPresRules (PtrElement pEl, PtrDocument pDoc,
                 pSSattr = pDoc->DocSSchema;
               /* process all values of the attribute, in case of a text
                  attribute with multiple values */
-              valNum = 1;
+              valNum = 1; match = 1;
               do
                 {
                   /* first rule for this value of the attribute */
                   pR = AttrPresRule (pAttr, pEl, FALSE, NULL, pSchPattr,
-                                     &valNum, &attrBlock);
+                                     &valNum, &match, &attrBlock);
                   /* look for all rules associated with this value */
                   while (pR)
                     {
@@ -5065,7 +5190,8 @@ void ApplyPresRules (PtrElement pEl, PtrDocument pDoc,
       if (pHd)
         /* next style sheet (P schema extension) */
         pHd = pHd->HdNextPSchema;
-      else
+      else if (viewSch == 1 &&     /* main view */
+               CanApplyCSSToElement (pEl))
         /* it was the main P schema, get the first schema extension */
         pHd = FirstPSchemaExtension (pEl->ElStructSchema, pDoc, pEl);
       if (pHd)
@@ -5084,7 +5210,9 @@ void ApplyPresRules (PtrElement pEl, PtrDocument pDoc,
         if ((pRule->PrViewNum == viewSch || pRule->PrType == PtPictInfo) &&
             DoesViewExist (pEl, pDoc, viewNb))
           {
-            if (viewSch != 1 || pRule->PrType == PtFunction)
+            if (viewSch != 1 ||
+                (pRule->PrType == PtFunction &&
+                 pRule->PrPresFunction != FnBackgroundPicture))
               {
                 if (fileDescriptor)
                   DisplayPRule (pRule, fileDescriptor, pEl, pSchP, 0);
@@ -5487,7 +5615,7 @@ PtrAbstractBox AbsBoxesCreate (PtrElement pEl, PtrDocument pDoc,
   PtrAttribute        pAttr;
   RuleQueue           queue;
   Cascade             casc;
-  AllRules*           rulesPseudo;
+  AllRules*           rulesPseudo = NULL;
   int                 vis, typePres = 0;
   int                 viewSch;
   int                 index;
@@ -5952,7 +6080,7 @@ PtrAbstractBox AbsBoxesCreate (PtrElement pEl, PtrDocument pDoc,
                           pLast = FALSE;
                       }
                     pAsc = pElChild->ElParent;
-                    while (pAsc != pEl)
+                    while (pAsc && pAsc != pEl)
                       {
                         if (pFirst)
                           pFirst = (pAsc->ElPrevious == NULL);

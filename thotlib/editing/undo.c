@@ -826,6 +826,7 @@ void OpenHistorySequence (PtrDocument pDoc, PtrElement firstSel, PtrElement last
 {
   PtrEditOperation	editOp;
 
+  //printf ("OpenHistorySequence\n");
   /* can not open a sequence if a sequence is already open */
   if (pDoc->DocEditSequence)
     {
@@ -876,6 +877,7 @@ ThotBool CloseHistorySequence (PtrDocument pDoc)
 {
   ThotBool	result;
 
+  //printf ("CloseHistorySequence\n");
   result = FALSE;
   if (pDoc)
     {
@@ -1091,7 +1093,7 @@ static void UndoOperation (ThotBool undo, Document doc, ThotBool reverse)
               notifyEl.position = 0;
               CallEventType ((NotifyEvent *) & notifyEl, FALSE);
             }
-          if (editOp->EoColumnSelected && SelectedColumn)
+          if (editOp->EoColumnSelected && FirstSelectedColumn)
             /* select the whole column */
             TtaSelectEnclosingColumn ((Element)(editOp->EoFirstSelectedEl));
         }
@@ -1457,7 +1459,7 @@ void TtcUndo (Document doc, View view)
 
   lock = TRUE;
   pDoc = LoadedDocument [doc - 1];
-  if (!pDoc->DocLastEdit)
+  if (pDoc == NULL || !pDoc->DocLastEdit)
     /* history is empty */
     return;
   if (pDoc->DocEditSequence)

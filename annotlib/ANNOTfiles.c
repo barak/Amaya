@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT MIT and INRIA, 1999-2005
+ *  (c) COPYRIGHT MIT and INRIA, 1999-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  * 
  */
@@ -26,6 +26,7 @@
 /* Amaya includes */
 #include "init_f.h"
 #include "AHTURLTools_f.h"
+#include "HTMLactions_f.h"
 #include "HTMLsave_f.h"
 #include "uconvert.h"
 
@@ -966,6 +967,24 @@ void ANNOT_UpdateThreadItem (Document doc, AnnotMeta *annot, char *body_url)
 }
 
 /*-----------------------------------------------------------------------
+  DisplayAnnotTitle
+  Displays the ATitle element as the title of the document window.
+  doc must be a Annot document.
+  -----------------------------------------------------------------------*/
+static void DisplayAnnotTitle (Document doc)
+{
+  Element       root, el;
+  ElementType   elType;
+
+  root = TtaGetRootElement (doc);
+  elType = TtaGetElementType (root);
+  elType.ElTypeNum = Annot_EL_ATitle;
+  el = TtaSearchTypedElement (elType, SearchForward, root);
+  if (el)
+    UpdateTitle (el, doc);
+}
+
+/*-----------------------------------------------------------------------
    ANNOT_InitDocumentStructure
    Initializes an annotation document by adding a BODY part
    and adding META elements for title, author, date, and type
@@ -982,16 +1001,14 @@ void ANNOT_InitDocumentStructure (Document doc, Document docAnnot,
 
   /* avoid refreshing the document while we're constructing it */
   TtaSetDisplayMode (docAnnot, NoComputedDisplay);
-  
    /* prepare the title of the annotation */
   source_doc_title = ANNOT_GetHTMLTitle (doc);
-
   if (mode & ANNOT_initATitle)
     {
       if (mode & ANNOT_isReplyTo)
-	text = "Reply to ";
+        text = "Reply to ";
       else
-	text = "Annotation of ";
+        text = "Annotation of ";
       annot->title = (char *)TtaGetMemory (strlen (text)
 				   + strlen (source_doc_title) + 1);
       sprintf (annot->title, "%s%s", text, source_doc_title);
@@ -1005,6 +1022,8 @@ void ANNOT_InitDocumentStructure (Document doc, Document docAnnot,
     ANNOT_InitDocumentBody (docAnnot, source_doc_title);
 
   TtaFreeMemory (source_doc_title);
+  // Displaythe document title
+  DisplayAnnotTitle (docAnnot);
 
 #ifdef ANNOT_ON_ANNOT
   /* erase the thread */
@@ -1034,7 +1053,7 @@ void ANNOT_PrepareAnnotView (Document document)
   view = TtaGetViewFromName (document, "Formatted_view");
   if (view == 0)
   {
-    fprintf (stderr, "(ANNOT_OpenMainView) ERREUR : échec ouverture vue principale fichier d'annotation\n");
+    fprintf (stderr, "(ANNOT_OpenMainView) ERREUR : ï¿½chec ouverture vue principale fichier d'annotation\n");
     TtaCloseDocument (document);
   }
   else
@@ -1045,19 +1064,11 @@ void ANNOT_PrepareAnnotView (Document document)
     /*    TtaSetMenuOff (document, view, Help_); */
     TtaSetItemOff (document, view, File, BBack);
     TtaSetItemOff (document, view, File, BForward);
-    TtaSetItemOff (document, view, File, BHtmlBasic);
-    TtaSetItemOff (document, view, File, BHtmlStrict);
-    TtaSetItemOff (document, view, File, BHtml11);
-    TtaSetItemOff (document, view, File, BHtmlTransitional);
-    TtaSetItemOff (document, view, File, BTemplate);
     TtaSetItemOff (document, view, File, BCss);
     TtaSetItemOff (document, view, File, BOpenDoc);
     TtaSetItemOff (document, view, File, BOpenInNewWindow);
     TtaSetItemOff (document, view, File, BSaveAs);
 
-    /* views */
-    TtaSetItemOff (document, view, Views, TShowTextZone);
-    /* TtaSetItemOff (document, view, Views, BShowStructure); */
     TtaSetItemOff (document, view, Views, BShowAlternate);
     TtaSetItemOff (document, view, Views, BShowSource);
     TtaSetItemOff (document, view, Views, BShowLinks);
@@ -1117,7 +1128,7 @@ ThotBool ANNOT_LocalSave (Document doc_annot, char *html_filename)
   /* set up the charset and namespaces */
   SetNamespacesAndDTD (doc_annot);
   result = TtaExportDocumentWithNewLineNumbers (doc_annot, html_filename, 
-					       "AnnotT");
+					       "AnnotT", FALSE);
 
   /* update the annotation icon to the new type */
   if (result && !Annot_IsReplyTo (doc_annot))

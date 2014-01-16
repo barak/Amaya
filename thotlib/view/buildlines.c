@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2007
+ *  (c) COPYRIGHT INRIA, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -16,11 +16,13 @@
 #include "thot_sys.h"
 #include "constmedia.h"
 #include "typemedia.h"
+#include "frame.h"
 
 #define THOT_EXPORT extern
 #include "boxes_tv.h"
 #include "select_tv.h"
 #include "units_tv.h"
+#include "frame_tv.h"
 
 #include "boxmoves_f.h"
 #include "boxlocate_f.h"
@@ -264,7 +266,7 @@ static void Adjust (PtrBox pParentBox, PtrLine pLine, int frame,
                 if (pBox->BxAbstractBox->AbLeafType == LtText)
                   {
                     pBox->BxSpaceWidth = 0;
-                    delta = pBox->BxNSpaces * BoxCharacterWidth (SPACE, pBox->BxFont);
+                    delta = pBox->BxNSpaces * BoxCharacterWidth (SPACE, 1, pBox->BxFont);
                     pBox->BxW -= delta;
                     pBox->BxWidth -= delta;
                     nSpaces += pBox->BxNSpaces;
@@ -500,7 +502,9 @@ static void Align (PtrBox pParentBox, PtrLine pLine, int frame,
               (pBox->BxAbstractBox->AbDisplay == 'B' ||
                pBox->BxType == BoTable))
             {
-              if (pBox->BxAbstractBox->AbHorizPos.PosEdge == VertMiddle)
+              if (pBox->BxAbstractBox->AbHorizPos.PosEdge == VertMiddle ||
+                  (pBox->BxAbstractBox->AbLeftMarginUnit == UnAuto &&
+                   pBox->BxAbstractBox->AbRightMarginUnit == UnAuto))
                 delta = (pLine->LiXMax - pLine->LiRealLength) / 2;
               else if (pBox->BxAbstractBox->AbHorizPos.PosEdge == Left)
                 delta = pLine->LiXMax - pLine->LiRealLength;
@@ -521,7 +525,9 @@ static void Align (PtrBox pParentBox, PtrLine pLine, int frame,
           (pBox->BxAbstractBox->AbDisplay == 'B' ||
            pBox->BxType == BoTable))
         {
-          if (pBox->BxAbstractBox->AbHorizPos.PosEdge == VertMiddle)
+          if (pBox->BxAbstractBox->AbHorizPos.PosEdge == VertMiddle ||
+              (pBox->BxAbstractBox->AbLeftMarginUnit == UnAuto &&
+               pBox->BxAbstractBox->AbRightMarginUnit == UnAuto))
             delta = (pLine->LiXMax - pLine->LiRealLength) / 2;
           else if (pBox->BxAbstractBox->AbHorizPos.PosEdge == Right)
             delta = pLine->LiXMax - pLine->LiRealLength;
@@ -892,7 +898,7 @@ static ThotBool FindBreakLine (PtrBox pBox, int *boxWidth, int *breakWidth,
   CHAR_T              character;
   int                 i, j, l;
   int                 nChars;
-  int                 wWidth;
+  int                 wWidth, variant;
   ThotBool            found;
 
   found = FALSE;
@@ -908,7 +914,10 @@ static ThotBool FindBreakLine (PtrBox pBox, int *boxWidth, int *breakWidth,
   i = pBox->BxIndChar;
   *pNewBuff = pBuffer;
   *newIndex = 0;
-
+  if (pBox->BxAbstractBox)
+    variant = pBox->BxAbstractBox->AbFontVariant;
+  else
+    variant = 1;
   if (pBuffer && i >= pBuffer->BuLength)
     {
       /* start at the end of a buffer, get the next one */
@@ -923,7 +932,7 @@ static ThotBool FindBreakLine (PtrBox pBox, int *boxWidth, int *breakWidth,
         {
           /* It's a break element */
           found = TRUE;
-          *breakWidth = BoxCharacterWidth (BREAK_LINE, font);
+          *breakWidth = BoxCharacterWidth (BREAK_LINE, 1, font);
           *boxLength = j;
           i++;
           if (i >= pBuffer->BuLength)
@@ -948,7 +957,7 @@ static ThotBool FindBreakLine (PtrBox pBox, int *boxWidth, int *breakWidth,
           if (character == SPACE)
             {
               (*nSpaces)++;
-              *boxWidth += BoxCharacterWidth (SPACE, font);
+              *boxWidth += BoxCharacterWidth (SPACE, 1, font);
               /* compare word widths */
               if (*wordWidth < wWidth)
                 *wordWidth = wWidth;
@@ -959,7 +968,7 @@ static ThotBool FindBreakLine (PtrBox pBox, int *boxWidth, int *breakWidth,
               if (character >= 0x060C && character <= 0x06B0) /* arabic char */
                 l = BoxArabicCharacterWidth (character, &pBuffer, &i, font);
               else
-                l = BoxCharacterWidth (character, font);
+                l = BoxCharacterWidth (character, variant, font);
               *boxWidth += l;
               wWidth += l;
             }
@@ -1018,7 +1027,7 @@ static int SearchBreak (PtrLine pLine, PtrBox pBox, int max, SpecFont font,
   CHAR_T              character;
   int                 i, count;
   int                 carWidth, newWidth;
-  int                 width;
+  int                 width, variant;
   int                 wordLength, charIndex;
   int                 dummySpaces, spaceWidth;
   int                 spaceAdjust;
@@ -1047,8 +1056,12 @@ static int SearchBreak (PtrLine pLine, PtrBox pBox, int max, SpecFont font,
   wordLength = 0;
   spaceCount = 0;
   still = TRUE;
-  spaceWidth = BoxCharacterWidth (SPACE, font);
+  spaceWidth = BoxCharacterWidth (SPACE, 1, font);
   spaceAdjust = spaceWidth;
+  if (pBox->BxAbstractBox)
+    variant = pBox->BxAbstractBox->AbFontVariant;
+  else
+    variant = 1;
   if (pBox->BxScript == 'L')
     language = pBox->BxAbstractBox->AbLang;
   else
@@ -1080,7 +1093,7 @@ static int SearchBreak (PtrLine pLine, PtrBox pBox, int max, SpecFont font,
         if (character >= 0x060C && character <= 0x06B0) /* arabic char */
           carWidth = BoxArabicCharacterWidth (character, &pBuffer, &charIndex, font);
         else
-          carWidth = BoxCharacterWidth (character, font);
+          carWidth = BoxCharacterWidth (character, variant, font);
 
       if ((newWidth + carWidth > max || i >= count) && i != 0 &&
           // don't split a word
@@ -1301,7 +1314,7 @@ static int SearchBreak (PtrLine pLine, PtrBox pBox, int max, SpecFont font,
               width = max;
               pBuffer = pBox->BxBuffer;
               charIndex = pBox->BxIndChar;
-              wordLength = HyphenLastWord (font, language, &pBuffer,
+              wordLength = HyphenLastWord (font, variant, language, &pBuffer,
                                            &charIndex, &width, &still);
               if (wordLength > 0)
                 {
@@ -1316,7 +1329,7 @@ static int SearchBreak (PtrLine pLine, PtrBox pBox, int max, SpecFont font,
             {
               /* try to hyphen the last word */
               width = max - *boxWidth - dummySpaces * spaceAdjust;
-              wordLength = HyphenLastWord (font, language, pNewBuff,
+              wordLength = HyphenLastWord (font, variant, language, pNewBuff,
                                            newIndex, &width, &still);
             }
 	  
@@ -1345,7 +1358,7 @@ static int SearchBreak (PtrLine pLine, PtrBox pBox, int max, SpecFont font,
         {
           /* generate an hyphen */
           dummySpaces = -1;
-          *boxWidth += BoxCharacterWidth (173, font);
+          *boxWidth += BoxCharacterWidth (173, 1, font);
           /* remove one or more characters corresponding to the hyphen width */
           while (*boxWidth > max && *boxLength > 1)
             {
@@ -1363,7 +1376,7 @@ static int SearchBreak (PtrLine pLine, PtrBox pBox, int max, SpecFont font,
               if (character >= 0x060C && character <= 0x06B0) /* arabic char */
                 *boxWidth -= BoxArabicCharacterWidth (character, &pBuffer, &charIndex, font);
               else      
-                *boxWidth -= BoxCharacterWidth (character, font);
+                *boxWidth -= BoxCharacterWidth (character, variant, font);
               (*boxLength)--;
             }
         }
@@ -1444,7 +1457,7 @@ static ThotBool BreakPieceOfBox (PtrLine pLine, PtrBox pBox, int max,
     spaceWidth = 0;
   else
     /* break on a space */
-    spaceWidth = BoxCharacterWidth (SPACE, font);
+    spaceWidth = BoxCharacterWidth (SPACE, 1, font);
 
   /*
    * Generate a new piece:
@@ -1484,7 +1497,7 @@ static ThotBool BreakPieceOfBox (PtrLine pLine, PtrBox pBox, int max,
         {
           /* add the hyphen at the end */
           pBox->BxType = BoDotted;
-          width -= BoxCharacterWidth (173, font);
+          width -= BoxCharacterWidth (173, 1, font);
           lostPixels = 0;
         }
       else if (pBox->BxType != BoScript)
@@ -1588,7 +1601,7 @@ static ThotBool BreakMainBox (PtrLine pLine, PtrBox pBox, int max, int l,
     spaceWidth = 0;
   else
     /* breakmak on a space */
-    spaceWidth = BoxCharacterWidth (SPACE, font);
+    spaceWidth = BoxCharacterWidth (SPACE, 1, font);
 
   /*
    * Generate two pieces:
@@ -1657,7 +1670,7 @@ static ThotBool BreakMainBox (PtrLine pLine, PtrBox pBox, int max, int l,
         {
           /* add the hyphen at the end */
           ibox1->BxType = BoDotted;
-          width -= BoxCharacterWidth (173, font);
+          width -= BoxCharacterWidth (173, 1, font);
           lostPixels = 0;
         }
       else
@@ -1883,7 +1896,7 @@ static void InitLine (PtrLine pLine, PtrBox pBlock, int frame, int indent,
   PtrAbstractBox      pAb, pAbRef = NULL;
   PtrBox              box;
   int                 bottomL = 0, bottomR = 0, y;
-  int                 orgX, orgY, width;
+  int                 orgX, orgY, width, by = 0, bh = 0;
   int                 t, b, l, r, lbmp, rbmp;
   ThotBool            clearL, clearR;
   ThotBool            clearl, clearr;
@@ -1967,9 +1980,8 @@ static void InitLine (PtrLine pLine, PtrBox pBlock, int frame, int indent,
               (pAb->AbLeafType == LtText ||
                (pAb->AbLeafType == LtCompound &&
                 (pAb->AbWidth.DimUnit == UnPercent ||
-                 (pAbRef &&
-                  (pAbRef == pBlock->BxAbstractBox ||
-                   pAbRef->AbBox->BxType == BoGhost))))));
+                 (pAbRef && (pAbRef == pBlock->BxAbstractBox ||
+                             pAbRef->AbBox->BxType == BoGhost))))));
   if (!variable && pBox && pAb &&
       (pBlock->BxType == BoFloatBlock || pBlock->BxType == BoCellBlock) &&
       pBox->BxType == BoBlock &&
@@ -1987,15 +1999,19 @@ static void InitLine (PtrLine pLine, PtrBox pBlock, int frame, int indent,
     {
       width = pBox->BxMinWidth;
       if (width == 0)
+        {
         if (pBox->BxW > MIN_SPACE)
           width = MIN_SPACE + lbmp + rbmp;
         else
           width = pBox->BxW + lbmp + rbmp;
+        }
     }
   else if (pBox->BxType == BoTable)
-    width = pBox->BxMinWidth;
+    width = pBox->BxMinWidth + lbmp + rbmp;
   else if (!variable || pBox->BxW < MIN_SPACE)
-    width = pBox->BxW + lbmp + rbmp;
+    width = pBox->BxW /*+ lbmp + rbmp*/;
+  else if (pBox->BxMinWidth)
+    width = pBox->BxMinWidth /*+ lbmp + rbmp*/;
   else
     width = lbmp + rbmp + MIN_SPACE;
 
@@ -2015,19 +2031,29 @@ static void InitLine (PtrLine pLine, PtrBox pBlock, int frame, int indent,
   do
     {
       /* compute the line position and width */
+      if (floatL)
+        {
+          by = floatL->BxYOrg;
+          bh = 0;
+          if (floatL->BxTMargin < 0)
+            by += floatL->BxTMargin;
+          else
+            bh += floatL->BxTMargin;
+          bh += floatL->BxTBorder + floatL->BxTPadding + floatL->BxH + floatL->BxBBorder + floatL->BxBPadding;
+        }
       if (floatL &&
-          ((pLine->LiYOrg + orgY >= floatL->BxYOrg &&
-            pLine->LiYOrg + orgY < floatL->BxYOrg + floatL->BxHeight) ||
-           (pLine->LiYOrg + pLine->LiHeight + orgY > floatL->BxYOrg &&
-            pLine->LiYOrg + pLine->LiHeight + orgY <= floatL->BxYOrg + floatL->BxHeight)))
+          ((pLine->LiYOrg + orgY >= by &&
+            pLine->LiYOrg + orgY < by + bh) ||
+           (pLine->LiYOrg + pLine->LiHeight + orgY > by &&
+            pLine->LiYOrg + pLine->LiHeight + orgY <= by + bh)))
         {
           /* line at the right of the current left float */
           pLine->LiXOrg = floatL->BxXOrg + floatL->BxWidth + indent - orgX;
           if (floatL->BxLMargin < 0)
             pLine->LiXOrg += floatL->BxLMargin;
-          if (pLine->LiYOrg + orgY < floatL->BxYOrg)
-            pLine->LiYOrg = floatL->BxYOrg - orgY;
-          bottomL = floatL->BxYOrg + floatL->BxHeight - orgY;
+          if (pLine->LiYOrg + orgY < by)
+            pLine->LiYOrg = by - orgY;
+          bottomL = by + bh - orgY;
         }
       else if (floatL)
         {
@@ -2036,10 +2062,7 @@ static void InitLine (PtrLine pLine, PtrBox pBlock, int frame, int indent,
           if (pfloatL)
             floatL = pfloatL->FlBox;
           while (pfloatL && floatL &&
-                 ((pLine->LiYOrg + orgY < floatL->BxYOrg ||
-                   pLine->LiYOrg + orgY >= floatL->BxYOrg + floatL->BxHeight) &&
-                  (pLine->LiYOrg + pLine->LiHeight + orgY <= floatL->BxYOrg ||
-                   pLine->LiYOrg + pLine->LiHeight + orgY > floatL->BxYOrg + floatL->BxHeight)))
+                 pLine->LiYOrg + orgY >= floatL->BxYOrg + floatL->BxHeight)
             {
               pfloatL = pfloatL->FlPrevious;
               if (pfloatL)
@@ -2072,17 +2095,27 @@ static void InitLine (PtrLine pLine, PtrBox pBlock, int frame, int indent,
             pLine->LiXOrg = left;
         }
 
+      if (floatR)
+        {
+          by = floatR->BxYOrg;
+          bh = 0;
+          if (floatR->BxTMargin < 0)
+            by += floatR->BxTMargin;
+          else
+            bh += floatR->BxTMargin;
+          bh += floatR->BxTBorder + floatR->BxTPadding + floatR->BxH + floatR->BxBBorder + floatR->BxBPadding;
+        }
       if (floatR &&
-          ((pLine->LiYOrg + orgY >= floatR->BxYOrg &&
-            pLine->LiYOrg + orgY < floatR->BxYOrg + floatR->BxHeight) ||
-           (pLine->LiYOrg + pLine->LiHeight + orgY > floatR->BxYOrg &&
-            pLine->LiYOrg + pLine->LiHeight + orgY <= floatR->BxYOrg + floatR->BxHeight)))
+          ((pLine->LiYOrg + orgY >= by &&
+            pLine->LiYOrg + orgY < by + bh) ||
+           (pLine->LiYOrg + pLine->LiHeight + orgY > by &&
+            pLine->LiYOrg + pLine->LiHeight + orgY <= by + bh)))
         {
           /* line extended to the left edge of the current right float */
           pLine->LiXMax = floatR->BxXOrg - pLine->LiXOrg - orgX;
           if (floatR->BxRMargin < 0)
             pLine->LiXMax -= floatR->BxRMargin;
-          bottomR = floatR->BxYOrg + floatR->BxHeight - orgY;
+          bottomR = by + bh - orgY;
         }
       else if (floatR)
         {
@@ -2091,10 +2124,7 @@ static void InitLine (PtrLine pLine, PtrBox pBlock, int frame, int indent,
           if (pfloatR)
             floatR = pfloatR->FlBox;
           while (pfloatR && floatR &&
-                 ((pLine->LiYOrg + orgY < floatR->BxYOrg ||
-                   pLine->LiYOrg + orgY >= floatR->BxYOrg + floatR->BxHeight) &&
-                  (pLine->LiYOrg + pLine->LiHeight + orgY <= floatR->BxYOrg ||
-                   pLine->LiYOrg + pLine->LiHeight + orgY > floatR->BxYOrg + floatR->BxHeight)))
+                 pLine->LiYOrg + orgY >= floatR->BxYOrg + floatR->BxHeight)
             {
               pfloatR = pfloatR->FlPrevious;
               if (pfloatR && floatR)
@@ -2141,11 +2171,11 @@ static void InitLine (PtrLine pLine, PtrBox pBlock, int frame, int indent,
            (floatR && floatR != pBox && clearR)))
         {
           /* update line information */
+          int delta = pLine->LiXOrg - left - indent;
           if (clearL || clearR)
             {
               if (clearL && pLine->LiYOrg < bottomL)
                 {
-                  int delta = pLine->LiXOrg - left - indent;
                   pLine->LiYOrg = bottomL;
                   pLine->LiXOrg = left + indent;
                   pLine->LiXMax += delta;
@@ -2159,18 +2189,16 @@ static void InitLine (PtrLine pLine, PtrBox pBlock, int frame, int indent,
           else if (!newFloat)
             {
               /* not enough space: move to the first bottom */
-              //printf ("Not enough space\n");
-              if (floatR == NULL)
-                pLine->LiYOrg = bottomL;
-              else if (floatL == NULL)
-                pLine->LiYOrg = bottomR;
-              else
+              if (pLine->LiYOrg < bottomL)
                 {
-                  floatL = floatR = NULL;
-                  if (bottomL < bottomR)
-                    pLine->LiYOrg = bottomL;
-                  else
-                    pLine->LiYOrg = bottomR;
+                  pLine->LiYOrg = bottomL;
+                  pLine->LiXOrg = left + indent;
+                  pLine->LiXMax += delta;
+                }
+              if (pLine->LiYOrg < bottomR)
+                {
+                  pLine->LiYOrg = bottomR;
+                  pLine->LiXMax = pBlock->BxW - pLine->LiXOrg;
                 }
             }
 
@@ -2258,6 +2286,7 @@ static ThotBool IsFloatSet (PtrBox box, PtrBox floatBox, PtrBox pBlock)
   Work with absolute positions when xAbs and yAbs are TRUE.
   When the parameter extensibleBlock is TRUE, it doesn't take into account
   the current max with.
+  The parameter onlySpace is TRUE when the cut is possible only on a space.
   Returns:
   - the minimum width of the line (the larger word).
   - full = TRUE if the line is full.
@@ -2268,21 +2297,19 @@ static ThotBool IsFloatSet (PtrBox box, PtrBox floatBox, PtrBox pBlock)
 static int FillLine (PtrLine pLine, PtrBox first, PtrBox pBlock,
                      PtrAbstractBox pRootAb, int maxWidth,
                      ThotBool extensibleBlock, ThotBool xAbs, ThotBool yAbs,
-                     ThotBool notComplete, ThotBool *full, ThotBool *adjust,
-                     ThotBool *breakLine, int frame, int indent,
+                     ThotBool notComplete, ThotBool onlySpace, ThotBool *full,
+                     ThotBool *adjust, ThotBool *breakLine, int frame, int indent,
                      int top, int bottom, int left, int right,
                      PtrBox *floatL, PtrBox *floatR)
 {
   PtrTextBuffer       pNewBuff;
   PtrAbstractBox      pAbRef;
-  PtrBox              pBox;
-  PtrBox              pNextBox;
-  PtrBox              lastbox;
+  PtrBox              pBox, pNextBox, lastbox;
   int                 ascent, descent, line_spaces;
   int                 width, breakWidth, w;
   int                 boxLength, nSpaces;
   int                 newIndex, wordWidth;
-  int                 xi, val;
+  int                 xi, val, cutwidth;
   int                 maxLength, minWidth;
   int                 t, b, l, r;
   ThotBool            still, toCut, found, hyphenate;
@@ -2526,7 +2553,7 @@ static int FillLine (PtrLine pLine, PtrBox first, PtrBox pBlock,
                   /* handle a new floating box and rebuild the line */
                   return SetFloat (lastbox, pBlock, pLine, pRootAb,
                                    maxWidth, extensibleBlock, xAbs, yAbs,
-                                   notComplete, full, adjust, breakLine,
+                                   notComplete, onlySpace, full, adjust, breakLine,
                                    frame, indent, top, bottom, left, right,
                                    floatL, floatR);
                 }
@@ -2593,9 +2620,12 @@ static int FillLine (PtrLine pLine, PtrBox first, PtrBox pBlock,
                     pBox = pNextBox;
                 }
             }
-          else if (pNextBox->BxWidth + xi <= pLine->LiXMax)
-            {
-              /* the whole box can be inserted in the line */
+          else if (pNextBox->BxWidth + xi <= pLine->LiXMax ||
+                   (onlySpace && line_spaces == 0 &&
+                   (pNextBox->BxAbstractBox->AbLeafType != LtText ||
+                    pNextBox->BxNSpaces == 0)))
+             {
+               /* the whole box can or must be inserted in the line */
               if (pNextBox->BxType == BoBlock ||
                   pNextBox->BxType == BoFloatBlock ||
                   pNextBox->BxType == BoCellBlock||
@@ -2622,6 +2652,13 @@ static int FillLine (PtrLine pLine, PtrBox first, PtrBox pBlock,
                   xi += pNextBox->BxWidth;
                   line_spaces += pNextBox->BxNSpaces;
                 }
+              // check minwidth and maxwidth values
+               if (onlySpace && line_spaces == 0)
+                 {
+                   if (pLine->LiXMax < xi)
+                     pLine->LiXMax = xi;
+                   minWidth = xi;
+                 }
 
               if (pNextBox->BxAbstractBox->AbLeafType == LtText &&
                   pNextBox->BxNexChild)
@@ -2671,7 +2708,7 @@ static int FillLine (PtrLine pLine, PtrBox first, PtrBox pBlock,
 #endif
                 }
             }
-          else
+         else
             {
               /* We need to split that box or a previous one */
               toCut = TRUE;
@@ -2686,7 +2723,8 @@ static int FillLine (PtrLine pLine, PtrBox first, PtrBox pBlock,
       /* compare different word widths */
       if (minWidth < wordWidth)
         minWidth = wordWidth;
-      wordWidth = 0;
+      if (!toCut)
+        wordWidth = 0;
     }
 
   if (toCut)
@@ -2758,7 +2796,7 @@ static int FillLine (PtrLine pLine, PtrBox first, PtrBox pBlock,
         {
           /* There is a previous box in the line */
           if (!pNextBox->BxAbstractBox->AbElement->ElTerminal &&
-              pNextBox->BxWidth == pLine->LiXMax)
+              pNextBox->BxWidth == pLine->LiXMax && !onlySpace)
             {
               /* cut before that box */
               toCut = FALSE;
@@ -2772,7 +2810,7 @@ static int FillLine (PtrLine pLine, PtrBox first, PtrBox pBlock,
               GetExtraMargins (pNextBox, NULL, frame, &t, &b, &l, &r);
               pBox = pNextBox;
               if (BreakMainBox (pLine, pNextBox, maxLength, l, r, line_spaces,
-                                hyphenate,  pRootAb, FALSE))
+                                hyphenate, pRootAb, FALSE))
                 {
                   if (pNextBox->BxAbstractBox->AbLeafType == LtText &&
                       pNextBox->BxNexChild)
@@ -2784,14 +2822,18 @@ static int FillLine (PtrLine pLine, PtrBox first, PtrBox pBlock,
                       else
                         pBox = pNextBox;
                     }
+                  toCut = FALSE;
                 }
-              else if (pBox->BxType == BoScript &&
-                       pBox != pBox->BxAbstractBox->AbBox->BxNexChild &&
-                       pBox->BxPrevious)
-                pBox = pBox->BxPrevious;
               else
-                pBox = GetPreviousBox (pNextBox->BxAbstractBox, frame);
-              toCut = FALSE;
+                {
+                  if (pBox->BxType == BoScript &&
+                      pBox != pBox->BxAbstractBox->AbBox->BxNexChild &&
+                      pBox->BxPrevious)
+                    pBox = pBox->BxPrevious;
+                  else
+                    pBox = GetPreviousBox (pNextBox->BxAbstractBox, frame);
+                  toCut = TRUE;
+                }
             }
 
           lastbox = pNextBox;
@@ -2826,20 +2868,24 @@ static int FillLine (PtrLine pLine, PtrBox first, PtrBox pBlock,
                   pNextBox->BxAbstractBox->AbAcceptLineBreak &&
                   pNextBox->BxNSpaces != 0)
                 {
+                  if (onlySpace)
+                    cutwidth = pNextBox->BxW - 3;
+                  else
+                    cutwidth = pNextBox->BxW - 1;
                   /* break on the last space of the box*/
                   GetExtraMargins (pNextBox, NULL, frame, &t, &b, &l, &r);
                   if (pNextBox->BxType == BoPiece ||
                       pNextBox->BxType == BoDotted ||
                       pNextBox->BxType == BoScript)
                     {
-                      BreakPieceOfBox (pLine, pNextBox, pNextBox->BxW - 1, l, r, line_spaces,
+                      BreakPieceOfBox (pLine, pNextBox, cutwidth, l, r, line_spaces,
                                        hyphenate, pRootAb);
                       pBox = pNextBox;
                       toCut = FALSE;
                     }
                   else
                     {
-                      BreakMainBox (pLine, pNextBox, pNextBox->BxW - 1, l, r, line_spaces,
+                      BreakMainBox (pLine, pNextBox, cutwidth, l, r, line_spaces,
                                     hyphenate, pRootAb, FALSE);
                       /* take the first child of a main box */
                       pBox = pNextBox->BxNexChild;
@@ -3070,6 +3116,8 @@ static void UpdateBlockWithFloat (int frame, PtrBox pBlock,
                                   ThotBool updateWidth, int *height)
 {
   PtrFloat            pfloat;
+  PtrBox              box;
+  PtrAbstractBox      pAb;
   int                 y, x, x1, x2, w;
   int                 t = 0, b = 0, l = 0, r = 0;
   ThotBool            extensibleblock;
@@ -3095,34 +3143,38 @@ static void UpdateBlockWithFloat (int frame, PtrBox pBlock,
   pfloat = pBlock->BxLeftFloat;
   while (pfloat && pfloat->FlBox)
     {
-      if (pfloat->FlBox->BxType == BoFloatBlock && pfloat->FlBox->BxContentWidth)
-        w = pfloat->FlBox->BxMaxWidth;
+      box = pfloat->FlBox;
+      if (box->BxType == BoFloatBlock && box->BxContentWidth)
+        w = box->BxMaxWidth + box->BxLMargin + box->BxLBorder + box->BxLPadding + box->BxRBorder + box->BxRPadding;
       else
-        w = pfloat->FlBox->BxWidth;
-      if (pfloat->FlBox->BxXOrg + w - x > x1)
+        w = box->BxWidth - box->BxRMargin;
+      if (box->BxRMargin < 0)
+        w += box->BxRMargin;
+      if (box->BxXOrg + w - x > x1)
         /* float change the minimum width of the block */
-        x1 = pfloat->FlBox->BxXOrg + w - x;
-      if (pfloat->FlBox->BxYOrg + pfloat->FlBox->BxHeight - y > *height)
+        x1 = box->BxXOrg + w - x;
+      if (box->BxYOrg + box->BxHeight - y > *height)
         /* float change the height of the block */
-        *height = pfloat->FlBox->BxYOrg + pfloat->FlBox->BxHeight - y;
+        *height = box->BxYOrg + box->BxHeight - y;
       pfloat = pfloat->FlNext;
     }
 
   pfloat = pBlock->BxRightFloat;
   while (pfloat && pfloat->FlBox)
     {
-      if (pfloat->FlBox->BxType == BoFloatBlock && pfloat->FlBox->BxContentWidth)
-        w = pfloat->FlBox->BxMaxWidth;
+      box = pfloat->FlBox;
+      if (box->BxType == BoFloatBlock && box->BxContentWidth)
+        w = box->BxMaxWidth + box->BxLBorder + box->BxLPadding + box->BxRMargin + box->BxRBorder + box->BxRPadding;
       else
-        w = pfloat->FlBox->BxWidth;
-      //if (pBlock->BxW - pfloat->FlBox->BxXOrg - x > x2)
-      //  x2 = pBlock->BxW - pfloat->FlBox->BxXOrg - x;
-      if (pfloat->FlBox->BxXOrg + w > x + pBlock->BxW + x2)
+        w = box->BxWidth - box->BxLMargin;
+      if (box->BxLMargin < 0)
+        w += box->BxLMargin;
+      if (box->BxXOrg + w > x + pBlock->BxMaxWidth + x2)
         /* float change the minimum width of the block */
-        x2 = pfloat->FlBox->BxXOrg + w - x - pBlock->BxW;
-      if (pfloat->FlBox->BxYOrg + pfloat->FlBox->BxHeight - y > *height)
+        x2 = box->BxXOrg + w - x - pBlock->BxMaxWidth;
+      if (box->BxYOrg + box->BxHeight - y > *height)
         /* float change the height of the block */
-        *height = pfloat->FlBox->BxYOrg + pfloat->FlBox->BxHeight - y;
+        *height = box->BxYOrg + box->BxHeight - y;
       pfloat = pfloat->FlNext;
     }
   if (extensibleblock)
@@ -3145,6 +3197,27 @@ static void UpdateBlockWithFloat (int frame, PtrBox pBlock,
       if (pBlock->BxMinWidth < x1)
         pBlock->BxMinWidth = x1;
       pBlock->BxMaxWidth += x1;
+
+      // transmit min and max to enclosing not block of line boxes
+      pAb = pBlock->BxAbstractBox;
+      while (pAb && pAb->AbEnclosing && pAb->AbEnclosing->AbBox)
+        {
+          pAb = pAb->AbEnclosing;
+          box = pAb->AbBox;
+          if (box->BxType == BoFloatGhost || box->BxType == BoBlock ||
+              box->BxType == BoFloatBlock || box->BxType == BoCellBlock ||
+              box->BxType == BoTable ||
+              (pAb->AbWidth.DimAbRef == NULL && pAb->AbWidth.DimUnit != UnPercent))
+            // don't change the min and max width of that box
+            pAb = NULL;
+          else
+            {
+              if (box->BxMinWidth < pBlock->BxMinWidth)
+                box->BxMinWidth = pBlock->BxMinWidth;
+              if (box->BxMaxWidth < pBlock->BxMaxWidth)
+                box->BxMaxWidth = pBlock->BxMaxWidth;
+            }
+        }
     }
 }
 
@@ -3219,7 +3292,7 @@ static void MoveFloatingBoxes (PtrBox pBlock, int y, int delta, int frame)
   ----------------------------------------------------------------------*/
 int SetFloat (PtrBox box, PtrBox pBlock, PtrLine pLine, PtrAbstractBox pRootAb,
               int maxWidth, ThotBool extensibleBlock, ThotBool xAbs, ThotBool yAbs,
-              ThotBool notComplete, ThotBool *full, ThotBool *adjust,
+              ThotBool notComplete, ThotBool onlySpace, ThotBool *full, ThotBool *adjust,
               ThotBool *breakLine, int frame, int indent,
               int top, int bottom, int left, int right,
               PtrBox *floatL, PtrBox *floatR)
@@ -3270,8 +3343,8 @@ int SetFloat (PtrBox box, PtrBox pBlock, PtrLine pLine, PtrAbstractBox pRootAb,
         }
       y = orgY;
       y += pLine->LiYOrg;
-      //if (pLine->LiRealLength > 0)
-        /* it must be displayed under the current line */
+      //if (pLine->LiRealLength > 0 && box->BxAbstractBox->AbFloat == 'L')
+      /* it must be displayed under the current line */
       //  y += pLine->LiHeight;
       w = pBlock->BxW;
     }
@@ -3284,7 +3357,7 @@ int SetFloat (PtrBox box, PtrBox pBlock, PtrLine pLine, PtrAbstractBox pRootAb,
   if  (boxPrevR && y < boxPrevR->BxYOrg + boxPrevR->BxHeight &&
        y + box->BxHeight >= boxPrevR->BxYOrg)
     /* can be inserted next to this previous float ? */
-    w = boxPrevR->BxXOrg - x;
+    w = boxPrevR->BxXOrg;
   if  (boxPrevL && y < boxPrevL->BxYOrg + boxPrevL->BxHeight &&
        y + box->BxHeight > boxPrevL->BxYOrg)
     /* can be inserted next to this previous float ? */
@@ -3385,7 +3458,7 @@ int SetFloat (PtrBox box, PtrBox pBlock, PtrLine pLine, PtrAbstractBox pRootAb,
   pNextBox = GetNextBox (box->BxAbstractBox, frame);
   ret=  FillLine (pLine, pNextBox, pBlock, pRootAb, maxWidth,
                   extensibleBlock, xAbs, yAbs,
-                  notComplete, full, adjust, breakLine, frame, indent,
+                  notComplete, onlySpace, full, adjust, breakLine, frame, indent,
                   top, bottom, left, right, floatL, floatR);
   /* integrate information about previous inserted boxes */
   if (h > pLine->LiHeight)
@@ -3425,12 +3498,14 @@ static void RemoveBreaks (PtrBox pBox, int frame, ThotBool removed,
   if (pBox && pBox->BxAbstractBox)
     {
       pAb = pBox->BxAbstractBox;
+      if (pAb && pAb->AbNew)
+        return;
       /* check if the abstract box will be deleted */
       if (!removed)
         removed = pAb->AbDead;
       if (pAb && pAb->AbLeafType == LtText)
         {
-          x = BoxCharacterWidth (SPACE, pBox->BxFont);
+          x = BoxCharacterWidth (SPACE, 1, pBox->BxFont);
           if (pViewSel->VsBox == pBox)
             {
               /* need to update the current selection */
@@ -3499,7 +3574,7 @@ static void RemoveBreaks (PtrBox pBox, int frame, ThotBool removed,
                   if (pBox->BxType == BoDotted && !removed)
                     {
                       /* remove the hyphen width */
-                      width -= BoxCharacterWidth (173, pBox->BxFont);
+                      width -= BoxCharacterWidth (173, 1, pBox->BxFont);
                       /* check if it's a script */
                       if (pBox->BxAbstractBox->AbBox &&
                           pBox->BxAbstractBox->AbBox->BxType == BoMulScript &&
@@ -3538,14 +3613,14 @@ static void RemoveBreaks (PtrBox pBox, int frame, ThotBool removed,
                               if (c == 0xA /* LINEFEED */)
                                 {
                                   diff -= 1;
-                                  width += BoxCharacterWidth ((CHAR_T)c, ibox1->BxFont);
+                                  width += BoxCharacterWidth ((CHAR_T)c, 1, ibox1->BxFont);
                                 }
                               width = width + (diff * x);
                               nspace += diff;
                             }
                           else if (ibox1->BxType == BoDotted)
                             /* remove the hyphen width */
-                            width -= BoxCharacterWidth (173, ibox1->BxFont);
+                            width -= BoxCharacterWidth (173, 1, ibox1->BxFont);
                           if (pNextBox && pNextBox->BxScript == ibox1->BxScript)
                             /* add skipped spaces at the end of the box */
                             lost = ibox1->BxFirstChar + ibox1->BxNChars;
@@ -3650,7 +3725,7 @@ void ComputeLines (PtrBox pBox, int frame, int *height)
   PtrAbstractBox      pChildAb, pCell;
   PtrAbstractBox      pAb, pRootAb, pParent;
   PtrBox              pBoxToBreak, pNextBox;
-  PtrBox              floatL, floatR;
+  PtrBox              floatL, floatR, box;
   AbPosition         *pPosAb;
   int                 x, lineSpacing, indent, maxWidth;
   int                 org, width, noWrappedWidth;
@@ -3658,7 +3733,7 @@ void ComputeLines (PtrBox pBox, int frame, int *height)
   int                 top, left, right, bottom, spacing;
   int                 l, r;
   ThotBool            toAdjust, breakLine, isExtraFlow;
-  ThotBool            xAbs, yAbs, extensibleBox;
+  ThotBool            xAbs, yAbs, extensibleBox, onlySpace = TRUE;
   ThotBool            full, still, standard, isFloat;
 
   /* avoid any cycle */
@@ -3721,7 +3796,11 @@ void ComputeLines (PtrBox pBox, int frame, int *height)
             r += pParent->AbBox->BxRMargin + pParent->AbBox->BxRBorder + pParent->AbBox->BxRPadding;
           }
         }
-      pCell = GetParentCell (pBox);
+      // the specific management of cells concerns only formatted views
+      if (FrameTable[frame].FrView == 1)
+        pCell = GetParentCell (pBox);
+      else
+        pCell = NULL;
       if (pAb->AbWidth.DimUnit == UnAuto && (isFloat || isExtraFlow))
         {
           if (pParent && pParent->AbBox &&
@@ -3740,14 +3819,20 @@ void ComputeLines (PtrBox pBox, int frame, int *height)
              /* manage this box as an extensible box but it's not */
              maxWidth = 30 * DOT_PER_INCH;
           else
+            {
             /* keep the box width */
             maxWidth = pParent->AbBox->BxW - left - right - l - r;
+            onlySpace = (pCell != NULL);
+            }
         }
       else
         {
           if (pCell && pCell->AbBox)
-            /* keep the box width */
-            maxWidth = pCell->AbBox->BxW - left - right;
+            {
+              /* keep the box width */
+              maxWidth = pCell->AbBox->BxW - left - right;
+              onlySpace = TRUE;
+            }
           else
             /* manage this box as an extensible box but it's not*/
             maxWidth = 30 * DOT_PER_INCH;
@@ -3791,7 +3876,9 @@ void ComputeLines (PtrBox pBox, int frame, int *height)
     {
       /* Build all the block of lines */
       /* reset the value of the width without wrapping */
-      pBox->BxMaxWidth = 0;
+      if (extensibleBox || pBox->BxShrink ||
+          (pAb->AbWidth.DimAbRef == NULL && pAb->AbWidth.DimUnit != UnPercent))
+        pBox->BxMaxWidth = 0;
       pBox->BxMinWidth = 0;
       /* look for the first included box */
       pChildAb = pAb->AbFirstEnclosed;
@@ -3951,7 +4038,7 @@ void ComputeLines (PtrBox pBox, int frame, int *height)
           /* Fill the line */
           minWidth = FillLine (pLine, pNextBox, pBox, pRootAb, maxWidth,
                                extensibleBox,
-                               xAbs, yAbs, pAb->AbTruncatedTail,
+                               xAbs, yAbs, pAb->AbTruncatedTail, onlySpace,
                                &full, &toAdjust, &breakLine, frame,
                                indent, top, bottom, left, right,
                                &floatL, &floatR);
@@ -3989,12 +4076,12 @@ void ComputeLines (PtrBox pBox, int frame, int *height)
               lostPixels = pBoxToBreak->BxFirstChar - pLine->LiLastPiece->BxNChars - pLine->LiLastPiece->BxFirstChar;
               if (lostPixels != 0)
                 {
-                  lostPixels = lostPixels * BoxCharacterWidth (SPACE, pBoxToBreak->BxFont);
+                  lostPixels = lostPixels * BoxCharacterWidth (SPACE, 1, pBoxToBreak->BxFont);
                   noWrappedWidth += lostPixels;
                 }
               if (pLine->LiLastPiece->BxType == BoDotted)
                 /* remove the dash width */
-                noWrappedWidth -= BoxCharacterWidth (173, pBoxToBreak->BxFont);
+                noWrappedWidth -= BoxCharacterWidth (173, 1, pBoxToBreak->BxFont);
             }
           if (breakLine || !full)
             {
@@ -4007,7 +4094,19 @@ void ComputeLines (PtrBox pBox, int frame, int *height)
           if (toAdjust &&
               (full || pAb->AbTruncatedTail || pLine->LiRealLength > pLine->LiXMax) &&
               pAb->AbAdjust == AlignJustify)
-            Adjust (pBox, pLine, frame, xAbs, yAbs);
+            {
+              box = pLine->LiFirstBox;
+              if (box && box == pLine->LiLastBox &&
+                  box->BxAbstractBox &&
+                  box->BxAbstractBox->AbLeafType == LtCompound &&
+                  box->BxAbstractBox->AbFloat == 'N' &&
+                  !ExtraFlow (box, frame) &&
+                  (box->BxAbstractBox->AbDisplay == 'B' ||
+                   box->BxType == BoTable))
+                Align (pBox, pLine, frame, xAbs, yAbs);
+              else
+                Adjust (pBox, pLine, frame, xAbs, yAbs);
+            }
           else
             {
               if (!pAb->AbWidth.DimIsPosition && pAb->AbWidth.DimMinimum &&
@@ -4108,6 +4207,15 @@ void ComputeLines (PtrBox pBox, int frame, int *height)
     left -= pBox->BxLMargin;
   if (pBox->BxRMargin < 0)
     right -= pBox->BxRMargin;
+  
+  // first compute min and max width
+  if (extensibleBox || pBox->BxShrink)
+    pBox->BxW = pBox->BxMaxWidth;
+  pBox->BxMinWidth += left + right;
+  pBox->BxMaxWidth += left + right;
+  UpdateBlockWithFloat (frame, pBox, xAbs, yAbs, TRUE, height);
+
+  // if needed restore the previous width to apply right update
   if (extensibleBox)
     {
       // Restore the previous width
@@ -4122,15 +4230,12 @@ void ComputeLines (PtrBox pBox, int frame, int *height)
         }
     }
   else if (pBox->BxShrink)
+    {
       // Restore the previous width
       pBox->BxW = width;
-    
-  pBox->BxMinWidth += left + right;
-  pBox->BxMaxWidth += left + right;
-  UpdateBlockWithFloat (frame, pBox, xAbs, yAbs, TRUE, height);
+    }
   // return the full height
   *height = *height + top + spacing + bottom;
- 
   /* restore the value */
   pBox->BxCycles--;
 }
@@ -4479,7 +4584,7 @@ ThotBool RecomputeLines (PtrAbstractBox pAb, PtrLine pFirstLine, PtrBox ibox,
   ViewFrame          *pFrame;
   ViewSelection      *pSelBegin;
   ViewSelection      *pSelEnd;
-  int                 w, h, height, width, l;
+  int                 w, h, height, width, l, variant;
   ThotBool            changeSelectBegin, changeSelectEnd;
   ThotBool            status, extensibleBox, shrunk = FALSE;
 
@@ -4487,7 +4592,7 @@ ThotBool RecomputeLines (PtrAbstractBox pAb, PtrLine pFirstLine, PtrBox ibox,
   /* Si la boite est eclatee, on remonte jusqu'a la boite bloc de lignes */
   while (pAb->AbBox->BxType == BoGhost || pAb->AbBox->BxType == BoFloatGhost)
     pAb = pAb->AbEnclosing;
-
+  variant = pAb->AbFontVariant;
   pBox = pAb->AbBox;
   if (pBox)
     {
@@ -4549,7 +4654,7 @@ ThotBool RecomputeLines (PtrAbstractBox pAb, PtrLine pFirstLine, PtrBox ibox,
       if (extensibleBox)
         /* it's an extensible block of lines */
         width = pBox->BxMaxWidth;
-      else if (pBox->BxMinWidth > pBox->BxWidth)
+      else if (pBox->BxMinWidth > pBox->BxW)
         {
           width = pBox->BxMinWidth;
           if (pAb->AbEnclosing && pAb->AbEnclosing->AbBox &&
@@ -4627,7 +4732,7 @@ ThotBool RecomputeLines (PtrAbstractBox pAb, PtrLine pFirstLine, PtrBox ibox,
                         if (c >= 0x060C && c <= 0x06B0) /* arabic char */
                           pSelEnd->VsXPos += BoxArabicCharacterWidth (c, &(pSelEnd->VsBuffer), &(pSelEnd->VsIndBuf), pSelBox->BxFont);
                         else
-                          pSelEnd->VsXPos += BoxCharacterWidth (c, pSelBox->BxFont);
+                          pSelEnd->VsXPos += BoxCharacterWidth (c, variant, pSelBox->BxFont);
                     }
                 }
             }
@@ -4754,7 +4859,7 @@ void UpdateLineBlock (PtrAbstractBox pAb, PtrLine pLine, PtrBox pBox,
           if (pLine->LiSpaceWidth > 0)
             {
               /* this line is already justified */
-              lostPixels = BoxCharacterWidth (SPACE, pBox->BxFont);
+              lostPixels = BoxCharacterWidth (SPACE, 1, pBox->BxFont);
               realLength = pLine->LiRealLength + xDelta - spaceDelta * (pLine->LiSpaceWidth - lostPixels);
               lostPixels = pLine->LiXMax - pLine->LiMinLength;
             }

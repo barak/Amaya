@@ -323,7 +323,7 @@ static void DisplaySymbol (PtrBox pBox, int frame, ThotBool selected,
              the SYMBOL element, but the regular font of its parent) */
           if (pBox->BxAbstractBox->AbEnclosing &&
               pBox->BxAbstractBox->AbEnclosing->AbBox)
-            GetFontAndIndexFromSpec (32, pBox->BxAbstractBox->AbEnclosing->AbBox->BxFont, &font);
+            GetFontAndIndexFromSpec (32, pBox->BxAbstractBox->AbEnclosing->AbBox->BxFont, 1, &font);
           if (font && pBox->BxH <= (int) (1.3 * FontHeight (font)))
             /* this character is almost the height of an ordinary character;
                use the regular font to display it */
@@ -361,7 +361,7 @@ static void DisplaySymbol (PtrBox pBox, int frame, ThotBool selected,
               useStix = TRUE;
           }
       if (font == NULL)
-        GetFontAndIndexFromSpec (32, pBox->BxFont, &font);
+        GetFontAndIndexFromSpec (32, pBox->BxFont, 1, &font);
 
       if (font != NULL)
         {
@@ -421,19 +421,19 @@ static void DisplaySymbol (PtrBox pBox, int frame, ThotBool selected,
               break;
             case 3: /* LeftFloor ; U0230A */
               if (useStix)
-                DrawStixBracket (frame, xd, yd, width, height, 0, 2, size, fg);
+                DrawStixBracket (frame, xd, yd, width, height, 0, 3, size, fg);
               break;
             case 4: /* RightFloor ; U0230B */
               if (useStix)
-                DrawStixBracket (frame, xd, yd, width, height, 1, 2, size, fg);
+                DrawStixBracket (frame, xd, yd, width, height, 1, 3, size, fg);
               break;
             case 5: /* LeftCeiling ; U02308 */
               if (useStix)
-                DrawStixBracket (frame, xd, yd, width, height, 0, 3, size, fg);
+                DrawStixBracket (frame, xd, yd, width, height, 0, 2, size, fg);
               break;
             case 6: /* RightCeiling ; U02309 */
               if (useStix)
-                DrawStixBracket (frame, xd, yd, width, height, 1, 3, size, fg);
+                DrawStixBracket (frame, xd, yd, width, height, 1, 2, size, fg);
               break;
             case '(': /* c = 40 */
               if (useStix)
@@ -1586,8 +1586,8 @@ static void DisplayJustifiedText (PtrBox pBox, PtrBox mbox, int frame,
   int                 nbcar, x, y, y1;
   int                 lgspace, whitespace;
   int                 fg, bg, fgbox, bgbox;
-  int                 width, xpos;
-  int                 left, right;
+  int                 width, xpos, underline_width;
+  int                 left, right, variant;
   ThotBool            shadow;
   ThotBool            blockbegin, withinSel = FALSE;
   ThotBool            hyphen, rtl, showSpecial = FALSE;
@@ -1618,7 +1618,7 @@ static void DisplayJustifiedText (PtrBox pBox, PtrBox mbox, int frame,
       !strcmp (pAb->AbElement->ElStructSchema->SsName, "TextFile"))
     /* only for TextFile documents */
     TtaGetEnvBoolean ("SHOW_SPECIAL_CHARS", &showSpecial);
-
+  variant = pAb->AbFontVariant;
   script = pBox->BxScript;
   /* is it a box with a right-to-left writing? */
   if (pAb->AbUnicodeBidi == 'O')
@@ -1684,7 +1684,8 @@ static void DisplayJustifiedText (PtrBox pBox, PtrBox mbox, int frame,
       width = pBox->BxW;
       if (width < 0)
         width = 0;
-      whitespace = BoxCharacterWidth (SPACE, font);
+      underline_width = width;
+      whitespace = BoxCharacterWidth (SPACE, 1, font);
       lgspace = pBox->BxSpaceWidth;
       if (lgspace == 0)
         lgspace = whitespace;
@@ -1807,7 +1808,7 @@ static void DisplayJustifiedText (PtrBox pBox, PtrBox mbox, int frame,
                   val = GetArabFontAndIndex (c, prevChar, nextChar, font, &nextfont);
                 }
               else
-                val = GetFontAndIndexFromSpec (c, font, &nextfont);
+                val = GetFontAndIndexFromSpec (c, font, variant, &nextfont);
               if (val == SPACE)
                 {
                   lg = lgspace;
@@ -1916,7 +1917,7 @@ static void DisplayJustifiedText (PtrBox pBox, PtrBox mbox, int frame,
                   val = GetArabFontAndIndex (transc, prevChar, nextChar, font, &nextfont);
                 }
               else
-                val = GetFontAndIndexFromSpec (transc, font, &nextfont);
+                val = GetFontAndIndexFromSpec (transc, font, variant, &nextfont);
 
               if (val == INVISIBLE_CHAR || c == ZERO_SPACE ||
                   c == EOL || c == BREAK_LINE)
@@ -2201,9 +2202,11 @@ static void DisplayJustifiedText (PtrBox pBox, PtrBox mbox, int frame,
                   if (underline_id)
                     StopTextureScale (underline_id);
                   underline_id = SetTextureScale (IsBoxDeformed(pBox));
-                  DisplayUnderline (frame, x, y+t, pBox->BxH, pBox->BxUnderline, width, fg);
+                  DisplayUnderline (frame, x, y+t, pBox->BxH, pBox->BxUnderline,
+                                    underline_width, fg);
 #else /* _GL */
-                  DisplayUnderline (frame, x, y+t, pBox->BxH, pBox->BxUnderline, width, fg);
+                  DisplayUnderline (frame, x, y+t, pBox->BxH, pBox->BxUnderline,
+                                    underline_width, fg);
 #endif /* _GL */
                 }
               nbcar = 0;
