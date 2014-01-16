@@ -32,9 +32,6 @@ extern void CloseAllViewsDoc ( PtrDocument pDoc );
 extern void CleanImageView ( int View,
                              PtrDocument pDoc,
                              ThotBool complete );
-extern void ChangeAbsBoxModif ( PtrElement pEl,
-                                Document document,
-                                ThotBool newAbsModif );
 extern void RedisplayDefaultPresentation ( Document document,
                                            PtrElement pEl,
                                            PRuleType typeRuleP,
@@ -67,6 +64,8 @@ extern ThotBool IsSelectionRegistered ( Document doc,
 extern void TtaSetDisplayMode ( Document doc,
                                 DisplayMode newDisplayMode );
 extern DisplayMode TtaGetDisplayMode ( Document document );
+extern void TtaUpdateAccessRightInViews ( Document document,
+                                          Element element );
 
 #else /* __STDC__ */
 
@@ -96,9 +95,6 @@ extern void CloseAllViewsDoc ( PtrDocument pDoc );
 extern void CleanImageView ( int View,
                                PtrDocument pDoc,
                                ThotBool complete );
-extern void ChangeAbsBoxModif ( PtrElement pEl,
-                                  Document document,
-                                  ThotBool newAbsModif );
 extern void RedisplayDefaultPresentation ( Document document,
                                              PtrElement pEl,
                                              PRuleType typeRuleP,
@@ -131,6 +127,8 @@ extern ThotBool IsSelectionRegistered ( Document doc,
 extern void TtaSetDisplayMode ( Document doc,
                                   DisplayMode newDisplayMode );
 extern DisplayMode TtaGetDisplayMode ( Document document );
+extern void TtaUpdateAccessRightInViews ( Document document,
+                                            Element element );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

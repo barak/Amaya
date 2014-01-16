@@ -24,6 +24,15 @@ typedef int        *SSchema;
 
 #ifndef __CEXTRACT__
 
+
+/*----------------------------------------------------------------------
+  TtaGetNextDocumentIndex
+
+  Return value:
+  the document that will be created or 0 by the next TtaInitDocument.
+  ----------------------------------------------------------------------*/
+extern Document TtaGetNextDocumentIndex ();
+
 /*----------------------------------------------------------------------
    TtaInitDocument
 
@@ -752,6 +761,12 @@ extern void TtaSetDocumentProfile (Document document, int profile);
  ----------------------------------------------------------------------*/
 void TtaSetANamespaceDeclaration (Document document, Element element,
                                   char *Ns_Prefix, char *Ns_Uri);
+
+/*----------------------------------------------------------------------
+  TtaGiveNamespaceURI
+  Returns the pointer to the current registerd namesapce URI or NULL
+  ----------------------------------------------------------------------*/
+char *TtaGiveNamespaceDeclaration (Document document, Element element);
 
 /*----------------------------------------------------------------------
   TtaFreeElemNamespaceDeclarations

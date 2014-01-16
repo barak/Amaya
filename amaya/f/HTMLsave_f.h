@@ -11,8 +11,21 @@ extern ThotBool CheckGenerator ( NotifyElement *event );
 extern ThotBool CheckUSEMAP ( NotifyAttribute *event );
 extern ThotBool CheckValidEntity ( NotifyAttribute *event );
 extern ThotBool CheckValidID ( NotifyAttribute *event );
+extern char *UpdateDocResource ( Document doc,
+                                 char *oldpath,
+                                 char *newpath,
+                                 char *relpath,
+                                 char *sString,
+                                 Element el,
+                                 ThotBool saveResources,
+                                 ThotBool isLink,
+                                 ThotBool fullCopy );
 extern void SetRelativeURLs ( Document doc,
-                              char *newpath );
+                              char *newpath,
+                              char *cssbase,
+                              ThotBool savedImages,
+                              ThotBool savedResources,
+                              ThotBool fullCopy );
 extern void InitSaveObjectForm ( Document document,
                                  View view,
                                  char *object,
@@ -56,7 +69,11 @@ extern void RemoveAutoSavedDoc ( Document doc );
 extern void GenerateAutoSavedDoc ( Document doc );
 extern ThotBool DocumentToSave ( NotifyDialog *event );
 extern void DoSaveAs ( char *user_charset,
-                       char *user_mimetype );
+                       char *user_mimetype,
+                       ThotBool fullCopy );
+extern ThotBool SaveTempCopy ( Document doc,
+                               const char* dstdir,
+                               char** filename );
 
 #else /* __STDC__ */
 
@@ -65,8 +82,21 @@ extern ThotBool CheckGenerator ( NotifyElement *event );
 extern ThotBool CheckUSEMAP ( NotifyAttribute *event );
 extern ThotBool CheckValidEntity ( NotifyAttribute *event );
 extern ThotBool CheckValidID ( NotifyAttribute *event );
+extern char *UpdateDocResource ( Document doc,
+                                   char *oldpath,
+                                   char *newpath,
+                                   char *relpath,
+                                   char *sString,
+                                   Element el,
+                                   ThotBool saveResources,
+                                   ThotBool isLink,
+                                   ThotBool fullCopy );
 extern void SetRelativeURLs ( Document doc,
-                                char *newpath );
+                                char *newpath,
+                                char *cssbase,
+                                ThotBool savedImages,
+                                ThotBool savedResources,
+                                ThotBool fullCopy );
 extern void InitSaveObjectForm ( Document document,
                                    View view,
                                    char *object,
@@ -110,7 +140,11 @@ extern void RemoveAutoSavedDoc ( Document doc );
 extern void GenerateAutoSavedDoc ( Document doc );
 extern ThotBool DocumentToSave ( NotifyDialog *event );
 extern void DoSaveAs ( char *user_charset,
-                         char *user_mimetype );
+                         char *user_mimetype,
+                         ThotBool fullCopy );
+extern ThotBool SaveTempCopy ( Document doc,
+                                 const char* dstdir,
+                                 char** filename );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

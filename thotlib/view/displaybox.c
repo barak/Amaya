@@ -353,10 +353,10 @@ static void DisplaySymbol (PtrBox pBox, int frame, ThotBool selected,
 #endif
         if (StixExist && font == NULL && pBox->BxH > 0)
           {
+            size = pBox->BxH;
             GetMathFontFromChar (pBox->BxAbstractBox->AbShape,
                                  pBox->BxFont,
-                                 (void **) &font,
-                                 FontRelSize (pBox->BxH-5));
+                                 (void **) &font, size);
             if (font)
               useStix = TRUE;
           }
@@ -408,43 +408,196 @@ static void DisplaySymbol (PtrBox pBox, int frame, ThotBool selected,
 
           switch (pBox->BxAbstractBox->AbShape)
             {
-            case 'c':
+            case 0:
+              break;
+            /* Fences */
+            case 1: /* LeftDoubleBracket ; U0301A */
+              if (useStix)
+                DrawStixBracket (frame, xd, yd, width, height, 0, 1, size, fg);
+              break;
+            case 2: /* RightDoubleBracket ; U0301B */
+              if (useStix)
+                DrawStixBracket (frame, xd, yd, width, height, 1, 1, size, fg);
+              break;
+            case 3: /* LeftFloor ; U0230A */
+              if (useStix)
+                DrawStixBracket (frame, xd, yd, width, height, 0, 2, size, fg);
+              break;
+            case 4: /* RightFloor ; U0230B */
+              if (useStix)
+                DrawStixBracket (frame, xd, yd, width, height, 1, 2, size, fg);
+              break;
+            case 5: /* LeftCeiling ; U02308 */
+              if (useStix)
+                DrawStixBracket (frame, xd, yd, width, height, 0, 3, size, fg);
+              break;
+            case 6: /* RightCeiling ; U02309 */
+              if (useStix)
+                DrawStixBracket (frame, xd, yd, width, height, 1, 3, size, fg);
+              break;
+            case '(': /* c = 40 */
+              if (useStix)
+                DrawStixParenthesis (frame, xd, yd, width, height, 0, size,fg);
+              else
+                DrawParenthesis (frame, i, xd, yd, width, height, 0, font, fg,
+                                 baseline);
+              break;
+            case ')': /* c = 41 */
+              if (useStix)
+                DrawStixParenthesis (frame, xd, yd, width, height, 1, size,fg);
+              else
+                DrawParenthesis (frame, i, xd, yd, width, height, 1, font, fg,
+                                 baseline);
+              break;
+            case '{': /* c = 123 */
+              if (useStix)
+                DrawStixBrace (frame, xd, yd, width, height, 0, size, fg);
+              else
+                DrawBrace (frame, i, xd, yd, width, height, 0, font, fg,
+                           baseline);
+              break;
+            case '}': /* c = 125 */
+              if (useStix)
+                DrawStixBrace (frame, xd, yd, width, height, 1, size, fg);
+              else
+                DrawBrace (frame, i, xd, yd, width, height, 1, font, fg,
+                           baseline);
+              break;
+            case '[': /* c = 91 */
+              if (useStix)
+                DrawStixBracket (frame, xd, yd, width, height, 0, 0, size, fg);
+              else
+                DrawBracket (frame, i, xd, yd, width, height, 0, font, fg,
+                             baseline);
+              break;
+            case ']': /* c = 93 */
+              if (useStix)
+                DrawStixBracket (frame, xd, yd, width, height, 1, 0, size, fg);
+              else
+                DrawBracket (frame, i, xd, yd, width, height, 1, font, fg,
+                             baseline);
+              break;
+            case '<': /* c = 60 */
+              if (useStix)
+                DrawStixPointyBracket (frame, xd, yd, width, height, 0, size,
+                                       fg);
+              else
+                DrawPointyBracket (frame, i, xd, yd, width, height, 0, font,
+                                   fg);
+              break;
+            case '>': /* c = 62 */
+              if (useStix)
+                DrawStixPointyBracket (frame, xd, yd, width, height, 1, size,
+                                       fg);
+              else
+                DrawPointyBracket (frame, i, xd, yd, width, height, 1, font,
+                                   fg);
+              break;
+
+           /* Lines and bars */
+            case '|': /* c= 124 verticalLine */
+            case 7 : /* VerticalSeparator */
+            case 11 : /* VerticalBar */
+              DrawVerticalLine (frame, i, 5, xd, yd, width, height, 1, fg, pBox,
+                                0, 0);
+              break;
+            case 12 : /* DoubleVerticalBar */
+              DrawVerticalLine (frame, i, 6, xd, yd, width, height, 1, fg, pBox,
+                                0, 0);
+              break;
+            case 8 : /* HorizontalLine ; U02500 */
+            case 9 : /* UnderBar ; U00332 */
+            case 10 : /* OverBar ; U000AF */
+            case '-': /* c = 45 */
+            case '_': /* c = 95 */
+            case 'h': /* c = 104 */
+              DrawHorizontalLine (frame, i, 5, xd, yd, width, height, 1, fg, pBox,
+                                  0, 0);
+              break;
+            case '/':
+            case '\\':
+                /* TODO */
+              break;
+
+           /* START_ENTITY : c = 26 */
+
+            case '1':/* Clockwise Integral */
+              if (useStix)
+                DrawStixIntegral (frame, xd, yd, width, height, 6, size, fg);
+              else
+                DrawIntegral (frame, i, xd, yd, width, height, 6, font, fg);
+              break;
+            case '2':/* Clockwise Contour Integral */
+              if (useStix)
+                DrawStixIntegral (frame, xd, yd, width, height, 7, size, fg);
+              else
+                DrawIntegral (frame, i, xd, yd, width, height, 7, font, fg);
+              break;
+            case '3':/* Counter Clockwise Contour Integral */
+              if (useStix)
+                DrawStixIntegral (frame, xd, yd, width, height, 8, size, fg);
+              else
+                DrawIntegral (frame, i, xd, yd, width, height, 8, font, fg);
+              break;
+            case 'b':/* horizontal bracket */
+                DrawHorizontalBracket (frame, i, 5, xd, yd, width, height, 0,fg);
+              break;
+            case 'B':/* horizontal bracket */
+                DrawHorizontalBracket (frame, i, 5, xd, yd, width, height, 1,fg);
+              break;
+            case 'c':/* contour integral */
               if (useStix)
                 DrawStixIntegral (frame, xd, yd, width, height, 1, size, fg);
               else
                 DrawIntegral (frame, i, xd, yd, width, height, 1, font, fg);
               break;
-            case 'd':
+            case 'd':/* double integral */
               if (useStix)
                 DrawStixIntegral (frame, xd, yd, width, height, 2, size, fg);
               else
                 DrawIntegral (frame, i, xd, yd, width, height, 2, font, fg);
               break;
-            case 'h':
-              DrawHorizontalLine (frame, i, 5, xd, yd, width, height, 1, fg, pBox);
+            case 'e':/* double contour integral */
+              if (useStix)
+                DrawStixIntegral (frame, xd, yd, width, height, 4, size, fg);
+              else
+                DrawIntegral (frame, i, xd, yd, width, height, 4, font, fg);
               break;
-#ifdef _GL
-            case 'H':
-              DrawHat (frame, i, 5, xd, yd, width, height, 1,fg);
+            case 'f':/* triple contour integral */
+              if (useStix)
+                DrawStixIntegral (frame, xd, yd, width, height, 5, size, fg);
+              else
+                DrawIntegral (frame, i, xd, yd, width, height, 5, font, fg);
               break;
-#endif /* _GL */
-            case 'i':
+            case 'H':/* Hat */
+              DrawHat (frame, i, 5, xd, yd, width, height, fg, 1);
+              break;
+            case 'i':/* integral */ 
               if (useStix)
                 DrawStixIntegral (frame, xd, yd, width, height, 0, size, fg);
               else
                 DrawIntegral (frame, i, xd, yd, width, height, 0, font, fg);
               break;
-            case 'o':
+            case 'k':/* Hacek */
+              DrawHat (frame, i, 5, xd, yd, width, height, fg,-1);
+              break;
+            case 'o':/* horizontal brace */
               if (useStix)
                 DrawStixHorizontalBrace (frame, xd, yd, width, height, 0, size,
                                          fg);
               else
                 DrawHorizontalBrace (frame, i, 5, xd, yd, width, height, 0,fg);
               break;
-            case 'r':
+            case 'p':
+              DrawHorizontalParenthesis (frame, i, 5, xd, yd, width, height, 0, fg);
+              break;
+            case 'q':
+              DrawHorizontalParenthesis (frame, i, 5, xd, yd, width, height, 1, fg);
+              break;
+            case 'r':/* radical */
               DrawRadical (frame, i, xd, yd, width, height, font, fg);
               break;
-            case 't': // triple
+            case 't': /* triple integral */
               if (useStix)
                 DrawStixIntegral (frame, xd, yd, width, height, 3, size, fg);
               else
@@ -458,22 +611,18 @@ static void DisplaySymbol (PtrBox pBox, int frame, ThotBool selected,
                 DrawHorizontalBrace (frame, i, 5, xd, yd, width, height, 1,fg);
               break;
             case 'v':
-              DrawVerticalLine (frame, i, 5, xd, yd, width, height, 1, fg, pBox);
+              DrawVerticalLine (frame, i, 5, xd, yd, width, height, 1, fg, pBox,
+                                0, 0);
               break;
             case 'D':
-              DrawVerticalLine (frame, i, 6, xd, yd, width, height, 1, fg, pBox);
+              DrawVerticalLine (frame, i, 6, xd, yd, width, height, 1, fg, pBox,
+                                0, 0);
               break;
             case 'I':
               DrawIntersection (frame, xd, yd, width, height, font, fg);
               break;
-            case 'L':
-              DrawArrow (frame, i, 5, xd, yd, width, height, 180, fg);
-              break;
             case 'P':
               DrawPi (frame, xd, yd, width, height, font, fg);
-              break;
-            case 'R':
-              DrawArrow (frame, i, 5, xd, yd, width, height, 0, fg);
               break;
             case 'S':
               if (useStix)
@@ -481,78 +630,216 @@ static void DisplaySymbol (PtrBox pBox, int frame, ThotBool selected,
               else
                 DrawSigma (frame, xd, yd, width, height, font, fg);
               break;
+            case 'T':/* Diacritical Tilde */
+              DrawTilde (frame, i, 5, xd, yd, width, height,fg);
+              break;
             case 'U':
               DrawUnion (frame, xd, yd, width, height, font, fg);
               break;
-            case 'V':
-              DrawArrow (frame, i, 5, xd, yd, width, height, 270, fg);
+
+         /* c = 150 to 213 : Display one of the 64 strechable arrows from
+            the MathML 2.0 Operator dictionary (appendix F.5)  */
+            case 'L': /* (c = 76 [change to 150 ?]) ; LeftArrow ; U02190  */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 180, 0, fg);
               break;
-            case '^':
-              DrawArrow (frame, i, 5, xd, yd, width, height, 90, fg);
+            case '^': /* (c = 94 [change to 151 ?]) ; UpArrow ; U02191 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 90, 0, fg);
               break;
-            case '(':
-              if (useStix)
-                DrawStixParenthesis (frame, xd, yd, width, height, 0, size,fg);
-              else
-                DrawParenthesis (frame, i, xd, yd, width, height, 0, font, fg,
-                                 baseline);
+            case 'R': /* (c = 82 [change to 152 ?]) ; RightArrow ; U02192 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 0, 0, fg);
               break;
-            case ')':
-              if (useStix)
-                DrawStixParenthesis (frame, xd, yd, width, height, 1, size,fg);
-              else
-                DrawParenthesis (frame, i, xd, yd, width, height, 1, font, fg,
-                                 baseline);
+            case 'V': /* (c = 86 [change to 153 ?]) ; DownArrow ; U02193 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 270, 0, fg);
               break;
-            case '{':
-              if (useStix)
-                DrawStixBrace (frame, xd, yd, width, height, 0, size, fg);
-              else
-                DrawBrace (frame, i, xd, yd, width, height, 0, font, fg,
-                           baseline);
+            case 'A': /* (c = 87 [change to 154 ?]) LeftRightArrow ; U02194 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 0, 1, fg);
               break;
-            case '}':
-              if (useStix)
-                DrawStixBrace (frame, xd, yd, width, height, 1, size, fg);
-              else
-                DrawBrace (frame, i, xd, yd, width, height, 1, font, fg,
-                           baseline);
+            case 155: /* UpDownArrow ; U02195 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 90, 1, fg);
               break;
-            case '[':
-              if (useStix)
-                DrawStixBracket (frame, xd, yd, width, height, 0, size, fg);
-              else
-                DrawBracket (frame, i, xd, yd, width, height, 0, font, fg,
-                             baseline);
+            case 156: /* UpperLeftArrow ; U02196 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 135, 0, fg);
               break;
-            case ']':
-              if (useStix)
-                DrawStixBracket (frame, xd, yd, width, height, 1, size, fg);
-              else
-                DrawBracket (frame, i, xd, yd, width, height, 1, font, fg,
-                             baseline);
+            case 157: /* UpperRightArrow ; U02197 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 45, 0, fg);
               break;
-            case '<':
-              if (useStix)
-                DrawStixPointyBracket (frame, xd, yd, width, height, 0, size,
-                                       fg);
-              else
-                DrawPointyBracket (frame, i, xd, yd, width, height, 0, font,
-                                   fg);
+            case 158: /* LowerRightArrow ; U02198 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 315, 0, fg);
               break;
-            case '>':
-              if (useStix)
-                DrawStixPointyBracket (frame, xd, yd, width, height, 1, size,
-                                       fg);
-              else
-                DrawPointyBracket (frame, i, xd, yd, width, height, 1, font,
-                                   fg);
+            case 159: /* LowerLeftArrow ; U02199 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 225, 0, fg);
               break;
-            case '|':
-              DrawVerticalLine (frame, i, 5, xd, yd, width, height, 1, fg, pBox);
+            case 160: /* LeftTeeArrow ; U021A4 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 180, 5, fg);
               break;
-            case '?':
-            case UNDISPLAYED_UNICODE:
+            case 161: /* UpTeeArrow ; U021A5 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 90, 5, fg);
+              break;
+            case 162: /* RightTeeArrow ; U021A6 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 0, 5, fg);
+              break;
+            case 163: /* DownTeeArrow ; U021A7 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 270, 5, fg);
+              break;
+            case 164: /* LeftVector ; U021BC */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 180, 7, fg);
+              break;
+            case 165: /* DownLeftVector ; U021BD */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 180, 12, fg);
+              break;
+            case 166: /* RightUpVector ;  U021BE */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 90, 12, fg);
+              break;
+            case 167: /* LeftUpVector ;  U021BF  */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 90, 7, fg);
+              break;
+            case 168: /* RightVector ;  U021C0  */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 0, 7, fg);
+              break;
+            case 169: /* DownRightVector ; U021C1 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 0, 12, fg);
+              break;
+            case 170: /* RightDownVector ; U021C2 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 270, 12, fg);
+              break;
+            case 171: /* LeftDownVector ; U021C3 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 270, 7, fg);
+              break;
+            case 172: /* RightArrowLeftArrow ; U021C4 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 0, 4, fg);
+              break;
+            case 173: /* UpArrowDownArrow ; U021C5 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 90, 4, fg);
+              break;
+            case 174: /* LeftArrowRightArrow ; U021C6 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 180, 4, fg);
+              break;
+            case 175: /* DoubleLeftArrow ; U021D0 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 180, 2, fg);
+              break;
+            case 176: /* DoubleUpArrow ; U021D1 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 90, 2, fg);
+              break;
+            case 177: /* DoubleRightArrow ; U021D2 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 0, 2, fg);
+              break;
+            case 178: /* DoubleDownArrow ; U021D3 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 270, 2, fg);
+              break;
+            case 179: /* DoubleLeftRightArrow ; U021D4 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 0, 3, fg);
+              break;
+            case 180: /* DoubleUpDownArrow ; U021D5 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 90, 3, fg);
+              break;
+            case 181: /* LeftArrowBar ; U021E4 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 180, 6, fg);
+              break;
+            case 182: /* RightArrowBar ; U021E5 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 0, 6, fg);
+              break;
+            case 183: /* DownArrowUpArrow ; U021F5 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 270, 4, fg);
+              break;
+            case 184: /* LongLeftArrow ; U027F5 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 180, 0, fg);
+              break;
+            case 185: /* LongRightArrow ; U027F6 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 0, 0, fg);
+              break;
+            case 186: /* LongLeftRightArrow ; U027F7 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 0, 1, fg);
+              break;
+            case 187: /* DoubleLongLeftArrow ; U027F8 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 180, 2, fg);
+              break;
+            case 188: /* DoubleLongRightArrow ; U027F9 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 0, 2, fg);
+              break;
+            case 189: /* DoubleLongLeftRightArrow ; U027FA */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 0, 3, fg);
+              break;
+            case 190: /* UpArrowBar ; U02912 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 90, 6, fg);
+              break;
+            case 191: /* DownArrowBar ; U02913 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 270, 6, fg);
+              break;
+            case 192: /* LeftRightVector ; U0294E */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 0, 8, fg);
+              break;
+            case 193: /* RightUpDownVector ; U0294F */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 90, 13, fg);
+              break;
+            case 194: /* DownLeftRightVector ; U02950 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 0, 13, fg);
+              break;
+            case 195: /* LeftUpDownVector ; U02951 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 90, 8, fg);
+              break;
+            case 196: /* LeftVectorBar ; U02952 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 180, 10, fg);
+              break;
+            case 197: /* RightVectorBar ; U02953 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 0, 10, fg);
+              break;
+            case 198: /* RightUpVectorBar ; U02954 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 90, 15, fg);
+              break;
+            case 199: /* RightDownVectorBar ; U02955 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 270, 15, fg);
+              break;
+            case 200: /* DownLeftVectorBar ; U02956 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 180, 15, fg);
+              break;
+            case 201: /* DownRightVectorBar ; U02957 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 0, 15, fg);
+              break;
+            case 202: /* LeftUpVectorBar ; U02958 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 90, 10, fg);
+              break;
+            case 203: /* LeftDownVectorBar ; U02959 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 270, 10, fg);
+              break;
+            case 204: /* LeftTeeVector ; U0295A */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 180, 9, fg);
+              break;
+            case 205: /* RightTeeVector ; U0295B */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 90, 9, fg);
+              break;
+            case 206: /* RightUpTeeVector ; U0295C */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 90, 14, fg);
+              break;
+            case 207: /* RightDownTeeVector ; U0295D */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 270, 14, fg);
+              break;
+            case 208: /* DownLeftTeeVector ; U0295E */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 180, 14, fg);
+              break;
+            case 209: /* DownRightTeeVector ; U0295F */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 0, 14, fg);
+              break;
+            case 210: /* LeftUpTeeVector ; U02960 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 90, 9, fg);
+              break;
+            case 211: /* LeftDownTeeVector ; U02961 */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 270, 9, fg);
+              break;
+            case 212: /* UpEquilibrium ; U0296E */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 90, 11, fg);
+              break;
+            case 213: /* ReverseUpEquilibrium ; U0296F */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 270, 11, fg);
+              break;
+            case 214: /* Equilibrium ; U021CC */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 0, 11, fg);
+              break;
+            case 215: /* ReverseEquilibrium ; U021CB */
+              DrawArrow (frame, i, 5, xd, yd, width, height, 180, 11, fg);
+              break;
+
+            case '?': /* c = 63 */
+            case UNDISPLAYED_UNICODE: /* c = 27 */
               /* Thot does not know how to display that symbol or character */
               /* Draw a box instead and leave some space (1 pixel) to the
                  right and the bottom to avoid collision with the next char */
@@ -719,10 +1006,8 @@ void  DisplayGraph (PtrBox pBox, int frame, ThotBool selected,
             height = pFrame->FrClipYEnd - pFrame->FrYOrg - yd;
         }
       /* box sizes have to be positive */
-      if (width < 0)
-        width = 0;
-      if (height < 0)
-        height = 0;
+      if ((width <= 0 || height <= 0) && pAb->AbRealShape != 'g')
+        return;
 
       /* Style and thickness of drawing */
       i = GetLineWeight (pAb, frame);
@@ -786,22 +1071,28 @@ void  DisplayGraph (PtrBox pBox, int frame, ThotBool selected,
           DrawEllips (frame, i, style, xd, yd, width, height, fg, bg, pat);
           break;
         case 'h':
-          DrawHorizontalLine (frame, i, style, xd, yd, width, height, 1, fg, pBox);
+          DrawHorizontalLine (frame, i, style, xd, yd, width, height, 1, fg, pBox,
+                              0, 0);
           break;
         case 't':
-          DrawHorizontalLine (frame, i, style, xd, yd, width, height, 0, fg, pBox);
+          DrawHorizontalLine (frame, i, style, xd, yd, width, height, 0, fg, pBox,
+                              0, 0);
           break;
         case 'b':
-          DrawHorizontalLine (frame, i, style, xd, yd, width, height, 2, fg, pBox);
+          DrawHorizontalLine (frame, i, style, xd, yd, width, height, 2, fg, pBox,
+                              0, 0);
           break;
         case 'v':
-          DrawVerticalLine (frame, i, style, xd, yd, width, height, 1, fg, pBox);
+          DrawVerticalLine (frame, i, style, xd, yd, width, height, 1, fg, pBox,
+                            0, 0);
           break;
         case 'l':
-          DrawVerticalLine (frame, i, style, xd, yd, width, height, 0, fg, pBox);
+          DrawVerticalLine (frame, i, style, xd, yd, width, height, 0, fg, pBox,
+                            0, 0);
           break;
         case 'r':
-          DrawVerticalLine (frame, i, style, xd, yd, width, height, 2, fg, pBox);
+          DrawVerticalLine (frame, i, style, xd, yd, width, height, 2, fg, pBox,
+                            0, 0);
           break;
         case '/':
           DrawSlash (frame, i, style, xd, yd, width, height, 0, fg);
@@ -810,28 +1101,28 @@ void  DisplayGraph (PtrBox pBox, int frame, ThotBool selected,
           DrawSlash (frame, i, style, xd, yd, width, height, 1, fg);
           break;
         case '>':
-          DrawArrow (frame, i, style, xd, yd, width, height, 0, fg);
+          DrawArrow (frame, i, style, xd, yd, width, height, 0, 0, fg);
           break;
         case 'E':
-          DrawArrow (frame, i, style, xd, yd, width, height, 45, fg);
+          DrawArrow (frame, i, style, xd, yd, width, height, 45, 0, fg);
           break;
         case '^':
-          DrawArrow (frame, i, style, xd, yd, width, height, 90, fg);
+          DrawArrow (frame, i, style, xd, yd, width, height, 90, 0, fg);
           break;
         case 'O':
-          DrawArrow (frame, i, style, xd, yd, width, height, 135, fg);
+          DrawArrow (frame, i, style, xd, yd, width, height, 135, 0, fg);
           break;
         case '<':
-          DrawArrow (frame, i, style, xd, yd, width, height, 180, fg);
+          DrawArrow (frame, i, style, xd, yd, width, height, 180, 0, fg);
           break;
         case 'o':
-          DrawArrow (frame, i, style, xd, yd, width, height, 225, fg);
+          DrawArrow (frame, i, style, xd, yd, width, height, 225, 0, fg);
           break;
         case 'V':
-          DrawArrow (frame, i, style, xd, yd, width, height, 270, fg);
+          DrawArrow (frame, i, style, xd, yd, width, height, 270, 0, fg);
           break;
         case 'e':
-          DrawArrow (frame, i, style, xd, yd, width, height, 315, fg);
+          DrawArrow (frame, i, style, xd, yd, width, height, 315, 0, fg);
           break;
 	    
         case 'P':
@@ -1156,7 +1447,7 @@ void DisplayPath (PtrBox pBox, int frame, ThotBool selected,
           if (pFrame->FrSelectOnePosition)
             DisplayPointSelection (frame, pBox,
                                    pFrame->FrSelectionBegin.VsIndBox);
-          else if (pBox->BxNChars > 1)
+          else
             DisplayPointSelection (frame, pBox, 0);
         }
     }
@@ -1758,7 +2049,7 @@ static void DisplayJustifiedText (PtrBox pBox, PtrBox mbox, int frame,
                             StopTextureScale (showtab_id);
                           showtab_id = SetTextureScale (IsBoxDeformed(pBox));
                           DrawHorizontalLine (frame, 1, 5, x+2, y, lg-2, pBox->BxH,
-                                              2, BgSelColor, pBox);
+                                              2, BgSelColor, pBox, 0, 0);
 #else /* _WX */
                         DrawChar ((char)val, frame, x, y1, nextfont, BgSelColor);
 #endif /* _WX */
@@ -2008,7 +2299,7 @@ void DisplayBorders (PtrBox box, PtrAbstractBox pFrom, int frame,
           if (child->AbVertPos.PosEdge == Bottom)
             {
               // displayed on the top of the table
-              pos = child->AbBox->BxYOrg + child->AbBox->BxHeight - from->BxYOrg;               
+              pos = child->AbBox->BxYOrg + child->AbBox->BxHeight - from->BxYOrg;
               yFrame += pos;
               y += pos;
               h -= pos;
@@ -2045,7 +2336,8 @@ void DisplayBorders (PtrBox box, PtrAbstractBox pFrom, int frame,
       else
         color = pFrom->AbTopBColor;
       DrawHorizontalLine (frame, t, pFrom->AbTopStyle, x, y,
-                          w, t, 0, color, box);
+                          w, t, 0, color, box,
+                          l, r);
     }
   if (from->BxLBorder && pFrom->AbLeftStyle > 2 &&
       pFrom->AbLeftBColor != -2 && l > 0)
@@ -2056,7 +2348,8 @@ void DisplayBorders (PtrBox box, PtrAbstractBox pFrom, int frame,
       else
         color = pFrom->AbLeftBColor;
       DrawVerticalLine (frame, l, pFrom->AbLeftStyle, x, y,
-                        l, h, 0, color, box);
+                        l, h, 0, color, box,
+                        t , b);
     }
   if (from->BxBBorder && pFrom->AbBottomStyle > 2 &&
       pFrom->AbBottomBColor != -2 && b > 0)
@@ -2068,7 +2361,8 @@ void DisplayBorders (PtrBox box, PtrAbstractBox pFrom, int frame,
         color = pFrom->AbBottomBColor;
       DrawHorizontalLine (frame, b, pFrom->AbBottomStyle,
                           x, yFrame + height - eb - from->BxBBorder,
-                          w, b, 2, color, box);
+                          w, b, 2, color, box,
+                          l, r);
     }
   if (from->BxRBorder && pFrom->AbRightStyle > 2 &&
       pFrom->AbRightBColor != -2 && r > 0)
@@ -2080,7 +2374,8 @@ void DisplayBorders (PtrBox box, PtrAbstractBox pFrom, int frame,
         color = pFrom->AbRightBColor;
       DrawVerticalLine (frame, r, pFrom->AbRightStyle,
                         xFrame + width - er - from->BxRBorder, y,
-                        r, h, 2, color, box);
+                        r, h, 2, color, box,
+                        t, b);
     }
 }
 

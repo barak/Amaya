@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -1560,6 +1560,23 @@ void TtaSetANamespaceDeclaration (Document document, Element element,
       pDoc = LoadedDocument[document - 1];
       SetNamespaceDeclaration (pDoc, (PtrElement) element, NsPrefix, NsUri);
     }
+}
+
+/*----------------------------------------------------------------------
+  TtaGiveNamespaceURI
+  Returns the pointer to the current registerd namesapce URI or NULL
+  ----------------------------------------------------------------------*/
+char *TtaGiveNamespaceDeclaration (Document document, Element element)
+{
+  UserErrorCode = 0;
+  /* verifies the parameter document */
+  if (document < 1 || document > MAX_DOCUMENTS)
+    TtaError (ERR_invalid_document_parameter);
+  else if (LoadedDocument[document - 1] == NULL)
+    TtaError (ERR_invalid_document_parameter);
+  else
+    return GiveCurrentNsUri (LoadedDocument[document - 1], (PtrElement)element);
+  return NULL;
 }
 
 /*----------------------------------------------------------------------

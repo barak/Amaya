@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2005
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -139,14 +139,14 @@ void CallbackImage (int ref, int typedata, char *data)
           TtaDestroyDialogue (ref);
           ImgDocument = 0;
         }
+#ifdef _GTK
       else if (ref == BaseImage + FormImage && ImgAlt[0] == EOS)
         {
           /* IMG element without ALT attribute: error message */
-#ifdef _GTK
           TtaNewLabel (BaseImage + ImageLabel4, RefFormImage,
                        TtaGetMessage (AMAYA, AM_ALT_MISSING));
-#endif /* _GTK */
         }
+#endif /* _GTK */
       else
         {
           TtaDestroyDialogue (ref);
@@ -776,12 +776,15 @@ static char *GetImageURL (Document document, View view,
   else
     RefFormImage = BaseImage + FormImage;
 #ifdef _WX
-  TtaExtractName (DocumentURLs[document], LastURLImage, s);
-  strcat (LastURLImage, DIR_STR);
-  if (isObject)
-    strcat (LastURLImage, "object");
-  else
-    strcat (LastURLImage, "img");
+  if (LastURLImage[0] == EOS)
+    {
+      TtaExtractName (DocumentURLs[document], LastURLImage, s);
+      strcat (LastURLImage, DIR_STR);
+      if (isObject)
+        strcat (LastURLImage, "object.svg");
+      else
+        strcat (LastURLImage, "img.png");
+    }
 #else /* _WX */
   if (LastURLImage[0] == EOS)
     {
@@ -1090,6 +1093,7 @@ void ComputeSRCattribute (Element el, Document doc, Document sourceDocument,
     TtaRegisterAttributeReplace (srcattr, pict, doc);
 }
 
+
 /*----------------------------------------------------------------------
   UpdateSRCattribute  creates or updates the SRC attribute value	
   when the contents of element IMG is set.		
@@ -1128,7 +1132,6 @@ void UpdateSRCattribute (NotifyOnTarget *event)
   else
     elSRC = el;
 
-  ImgAlt[0] = EOS;
   /* ask Thot to stop displaying changes made in the document */
   dispMode = TtaGetDisplayMode (doc);
   if (isObject)
@@ -1136,7 +1139,6 @@ void UpdateSRCattribute (NotifyOnTarget *event)
       /* get the current mime-type */
       attrType.AttrTypeNum = HTML_ATTR_Object_type;
       attr = TtaGetAttribute (elSRC, attrType);
-      UserMimeType[0] = EOS;
       if (attr)
         {
           length = TtaGetTextAttributeLength (attr);
@@ -1249,7 +1251,6 @@ void UpdateSRCattribute (NotifyOnTarget *event)
             TtaRegisterAttributeReplace (attr, elSRC, doc);
         }
     }
-
 
   /* search the SRC attribute */
   if (elType.ElTypeNum == HTML_EL_Object)
@@ -1570,6 +1571,7 @@ void  CreateObject (Document doc, View view)
       /* Don't check mandatory attributes */
       TtaSetStructureChecking (FALSE, doc);
       ImgAlt[0] = EOS;
+      UserMimeType[0] = EOS;
       ImgDocument = doc;
       CreateNewImage = TRUE;
       elType.ElSSchema = TtaGetSSchema ("HTML", doc);
@@ -1586,14 +1588,14 @@ void  CreateObject (Document doc, View view)
   ----------------------------------------------------------------------*/
 void AddNewImage (Document doc, View view, ThotBool isInput)
 {
-  Element            firstSelEl, lastSelEl, parent, leaf;
+  Element            firstSelEl, lastSelEl, parent, leaf, el;
   ElementType        elType;
   Attribute          attr;
   AttributeType      attrType;
   NotifyOnTarget     event;
   char              *name, *value;
-  int                c1, i, j, cN, length;
-  ThotBool           oldStructureChecking;
+  int                c1, i, j, cN, length, width, height, w, h;
+  ThotBool           oldStructureChecking, newAttr;
 
   TtaGiveFirstSelectedElement (doc, &firstSelEl, &c1, &i); 
   if (firstSelEl == NULL)
@@ -1602,7 +1604,6 @@ void AddNewImage (Document doc, View view, ThotBool isInput)
   else
     /* some element is selected */
     {
-      ImgAlt[0] = EOS;
       ImgDocument = doc;
       TtaGiveLastSelectedElement (doc, &lastSelEl, &j, &cN);
       /* Get the type of the first selected element */
@@ -1640,12 +1641,14 @@ void AddNewImage (Document doc, View view, ThotBool isInput)
                   NormalizeURL (value, doc, LastURLImage, name, NULL);
                   TtaFreeMemory (value);
                   TtaFreeMemory (name);
+#ifdef IV
                   if (!IsHTTPPath (LastURLImage))
                     {
                       /* extract directory and file names */
                       TtaExtractName (LastURLImage, DirectoryImage, ImageName);
                       LastURLImage[0] = EOS;
                     }
+#endif
                 }
             }
 
@@ -1658,16 +1661,17 @@ void AddNewImage (Document doc, View view, ThotBool isInput)
               length = TtaGetTextAttributeLength (attr) + 1;
               if (length <= MAX_LENGTH)
                 {
-                  /* get a buffer for the attribute value */
-                  value = (char *)TtaGetMemory (length);
 #ifdef _WX
                   TtaGiveTextAttributeValue (attr, ImgAlt, &length);
 #else /* _WX */
-		  /* copy the ALT attribute into the buffer */
+                  /* get a buffer for the attribute value */
+                  value = (char *)TtaGetMemory (length);
+		              /* copy the ALT attribute into the buffer */
                   TtaGiveTextAttributeValue (attr, value, &length);
                   name = (char *)TtaConvertMbsToByte ((unsigned char *)value,
                                                       TtaGetDefaultCharset ());
                   strncpy (ImgAlt, name, MAX_LENGTH-1);
+                  TtaFreeMemory (value);
                   TtaFreeMemory (name);
 #endif /* _WX */
                 }
@@ -1720,6 +1724,68 @@ void AddNewImage (Document doc, View view, ThotBool isInput)
               oldStructureChecking = TtaGetStructureChecking (doc);
               TtaSetStructureChecking (FALSE, doc);
               TtaCreateElement (elType, doc);
+
+              // check if the width, height attributes must be generated
+              TtaGiveFirstSelectedElement (doc, &el, &c1, &i); 
+              elType = TtaGetElementType (el);
+              if (elType.ElTypeNum == HTML_EL_PICTURE_UNIT)
+                el = TtaGetParent (el);
+              attrType.AttrSSchema = elType.ElSSchema;
+              /* search informations about height and width */
+              width = 0; height = 0;
+              TtaGivePictureSize (el, &width, &height);
+              if (width > 0 && height > 0)
+                {
+                  /* attach height and width attributes to the image */
+                  TtaExtendUndoSequence (doc);
+                  value = (char *)TtaGetMemory (50);
+                  attrType.AttrTypeNum = HTML_ATTR_Width__;
+                  attr = TtaGetAttribute (el, attrType);
+                  if (attr == NULL)
+                    {
+                      newAttr = TRUE;
+                      attr = TtaNewAttribute (attrType);
+                      TtaAttachAttribute (el, attr, doc);
+                    }
+                  else
+                    newAttr = FALSE;
+                  // check if the image is larger than the window
+                  TtaGiveWindowSize (doc, 1, UnPixel, &w, &h);
+                  if (width < w)
+                    sprintf (value, "%d", width);
+                 else
+                    strcpy (value, "100%");
+                  TtaSetAttributeText (attr, value, el, doc);
+                  if (newAttr)
+                    TtaRegisterAttributeCreate (attr, el, doc);
+                  else
+                    TtaRegisterAttributeReplace (attr, el, doc);
+                  if (width < w)
+                    {
+                      attrType.AttrTypeNum = HTML_ATTR_Height_;
+                      attr = TtaGetAttribute (el, attrType);
+                      if (attr == NULL)
+                        {
+                          newAttr = TRUE;
+                          attr = TtaNewAttribute (attrType);
+                          TtaAttachAttribute (el, attr, doc);
+                        }
+                      else
+                        newAttr = FALSE;
+                      sprintf (value, "%d", height);
+                      TtaSetAttributeText (attr, value, el, doc);
+                      if (newAttr)
+                        TtaRegisterAttributeCreate (attr, el, doc);
+                      else
+                        TtaRegisterAttributeReplace (attr, el, doc);
+                    }
+                  else
+                    // generate the internal attribute to apply %
+                    CreateAttrWidthPercentPxl (value, el, doc, width);
+                  TtaFreeMemory (value);
+                  TtaCloseUndoSequence(doc);
+                  TtaUpdateAttrMenu (doc);
+                }
               TtaSetStructureChecking (oldStructureChecking, doc);
             }
         }
@@ -1732,6 +1798,7 @@ void AddNewImage (Document doc, View view, ThotBool isInput)
   ----------------------------------------------------------------------*/
 void CreateImage (Document doc, View view)
 {
+  ImgAlt[0] = EOS;
   AddNewImage (doc, view, FALSE);
 }
 

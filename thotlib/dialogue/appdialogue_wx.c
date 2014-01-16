@@ -417,11 +417,10 @@ static void BuildPopdownWX ( int window_id, Menu_Ctl *ptrmenu, ThotMenu p_menu )
         }
       
       if ( p_menu_item &&
-           item_icon[0] != '\0' &&
-           item_action != -1 &&
-           item_type != 'T' )
+           item_icon[0] != EOS && item_action != -1 && item_type != 'T' )
         {
-          wxBitmap menu_icon(TtaGetResourcePathWX(WX_RESOURCES_ICON_16X16,item_icon), wxBITMAP_TYPE_PNG);
+          wxBitmap menu_icon(TtaGetResourcePathWX(WX_RESOURCES_ICON_16X16,item_icon),
+                             wxBITMAP_TYPE_PNG);
           if (menu_icon.Ok())
             p_menu_item->SetBitmap( menu_icon );
         }
@@ -537,15 +536,18 @@ void TtaRefreshTopMenuStats( int doc_id, int menu_id )
 #ifdef _WX
   int           window_id  = TtaGetDocumentWindowId( doc_id, -1 );
   AmayaWindow * p_window   = TtaGetWindowFromId(window_id);
-  wxASSERT(p_window);
-  wxMenuBar *   p_menu_bar = p_window->GetMenuBar();
+  wxMenuBar *   p_menu_bar;
   PtrDocument   pDoc       = LoadedDocument[doc_id-1];
   wxMenu *      p_top_menu = NULL;
   int           top_menu_pos = 0, top_menu_count;
   
   /* do nothing if there is no menubar : it's the case of
    * AmayaSimpleWindow (log, show apply style ...)*/
-  if(!p_menu_bar || doc_id<=0)
+  if (p_window == NULL)
+    return;
+  else
+    p_menu_bar = p_window->GetMenuBar();
+  if (!p_menu_bar || doc_id <= 0)
     return;
   
   /* check that the current menu correspond to the current document
@@ -563,7 +565,7 @@ void TtaRefreshTopMenuStats( int doc_id, int menu_id )
       p_top_menu = WindowTable[window_id].WdMenus[menu_id];
       if (p_top_menu)
         {
-          // find the corrsponding menu position in the Top Menubar
+          // find the corresponding menu position in the Top Menubar
           top_menu_pos = 0;
           while (top_menu_pos < top_menu_count &&
                  p_menu_bar->GetMenu(top_menu_pos) != p_top_menu)
@@ -961,7 +963,10 @@ int TtaMakeFrame( const char * schema_name,
   InitializeFrameParams (frame_id, visilibity, zoom);
 
   /* the document title will be used to name the frame's page */
-  p_AmayaFrame->SetFrameTitle( TtaConvMessageToWX( doc_name ) );
+  if (!strcmp (doc_name, "STYLE.LST"))
+    p_AmayaFrame->SetFrameTitle( TtaConvMessageToWX( TtaGetMessage (LIB, TMSG_CSSStyle) ) );
+  else
+    p_AmayaFrame->SetFrameTitle( TtaConvMessageToWX( doc_name ) );
 #ifdef _GL
   FrameTable[frame_id].Scroll_enabled   = TRUE;
 #endif /* _GL */
@@ -1154,7 +1159,8 @@ ThotBool TtaDestroyFrame( int frame_id )
   wxASSERT(p_frame);
   if (!p_frame)
     return FALSE;
-  
+
+  p_frame->Show();
   p_frame->FreeFrame();
 
   return TRUE;
@@ -2149,12 +2155,11 @@ ThotBool TtaHandleShortcutKey( wxKeyEvent& event )
   wxComboBox *     p_combo_box         = wxDynamicCast(p_win_focus, wxComboBox);
   wxSpinCtrl *     p_spinctrl          = wxDynamicCast(p_win_focus, wxSpinCtrl);
   if (( p_text_ctrl || p_combo_box || p_spinctrl ) && event.CmdDown())
-      /* &&
-          (thot_keysym == 'C' || thot_keysym == 'X' || thot_keysym == 'V' || thot_keysym == 'Z' ||
-          thot_keysym == 'c' || thot_keysym == 'x' || thot_keysym == 'v' || thot_keysym == 'z')) )*/
     {
       if (p_combo_box)
         {
+#ifndef _WINDOWS
+	  // Windows already intercepts the command
           if (thot_keysym == 67) // Ctrl C
             p_combo_box->Copy();
           else if (thot_keysym == 86) // Ctrl V
@@ -2163,6 +2168,7 @@ ThotBool TtaHandleShortcutKey( wxKeyEvent& event )
             p_combo_box->Cut();
           else if (thot_keysym == 90) // Ctrl Z
             p_combo_box->Undo();
+#endif /* _WINDOWS */
         }
       else if (p_text_ctrl)
         {
@@ -2175,7 +2181,7 @@ ThotBool TtaHandleShortcutKey( wxKeyEvent& event )
           else if (thot_keysym == 90) // Ctrl Z
             p_text_ctrl->Undo();
         }
-      return true;      
+      return true;
     }
 
 #ifdef _MACOS
@@ -2298,6 +2304,7 @@ ThotBool TtaHandleSpecialKey( wxKeyEvent& event )
                            thot_keysym == WXK_ESCAPE   ||
                            thot_keysym == WXK_BACK     ||
                            thot_keysym == WXK_RETURN   ||
+                           thot_keysym == WXK_NUMPAD_ENTER ||
                            thot_keysym == WXK_TAB );
 
 #ifdef _MACOS
@@ -2319,10 +2326,10 @@ ThotBool TtaHandleSpecialKey( wxKeyEvent& event )
         TTALOGDEBUG_0( TTA_LOG_FOCUS, _T("no focus"))
               
       /* do not allow special key outside the canvas */
-      if (!p_gl_canvas && !p_splitter && !p_notebook && !p_scrollbar && proceed_key )
+      if (!p_gl_canvas && !p_splitter && !p_notebook && !p_scrollbar && proceed_key)
 	  {
-          event.Skip();
-          return true;      
+        event.Skip();
+        return true;      
 	  }
       
       if ( proceed_key )

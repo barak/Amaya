@@ -7,10 +7,9 @@
     <object class="wxBoxSizer">
       <orient>wxVERTICAL</orient>
       <object class="sizeritem">
-        <object class="wxNotebook" name="wxID_NOTEBOOK">
-          <usenotebooksizer>1</usenotebooksizer>
-          <style platform="unix">wxNB_LEFT</style>
-          <object class="notebookpage">
+        <object class="wxListbook" name="wxID_NOTEBOOK">
+          <style>wxLB_LEFT|wxNO_BORDER</style>
+          <object class="listbookpage">
             <label>*Generale/Editeur*</label>
             <object class="wxPanel" name="wxID_PAGE_GENERAL">
               <object class="wxBoxSizer">
@@ -57,6 +56,7 @@
                         <object class="sizeritem">
                           <object class="wxChoice" name="wxID_CHOICE_LG">
                             <content>
+                              <item/>
                               <item>de (German)</item>
                               <item>en (English)</item>
                               <item>es (Spanish)</item>
@@ -69,10 +69,10 @@
                               <item>no (Norwegian)</item>
                               <item>pt (Portuguese)</item>
                               <item>ru (Russian)</item>
+                              <item>sk (Slovak)</item>
                               <item>tr (Turkish)</item>
                               <item>zh-cn (Simplified Chinese)</item>
-                              <item>zh-tw (Traditional Chinese)</item>
-                            </content>
+                              <item>zh-tw (Traditional Chinese)</item></content>
                           </object>
                           <flag>wxLEFT|wxALIGN_CENTRE_VERTICAL</flag>
                           <border>5</border>
@@ -172,21 +172,17 @@
                       <option>1</option>
                       <flag>wxALL|wxEXPAND</flag>
                     </object>
-                    <object class="spacer">
-                      <size>10,0</size>
-                    </object>
                     <object class="sizeritem">
                       <object class="wxRadioBox" name="wxID_RADIO_QUICKAXX">
-                        <label>*Acces rapides*</label>
+                        <label>*Acces liens rapides*</label>
                         <content>
                           <item>Alt</item>
                           <item>Ctrl</item>
                           <item>Ignorer</item>
                         </content>
+                        <size>110,-1</size>
                         <style>wxRA_SPECIFY_COLS</style>
                       </object>
-                      <option>1</option>
-                      <flag>wxALL</flag>
                     </object>
                   </object>
                   <option>0</option>
@@ -198,7 +194,7 @@
             </object>
             <selected>1</selected>
           </object>
-          <object class="notebookpage">
+          <object class="listbookpage">
             <label>*Navigation*</label>
             <object class="wxPanel" name="wxID_PAGE_BROWSE">
               <style>wxTAB_TRAVERSAL</style>
@@ -257,7 +253,7 @@
                               <item>*Nouvel onglet (pas encode disponible sous Mac)</item>
                               <item>*Dans une nouvelle fenetre*</item>
                             </content>
-                            <size>400,-1</size>
+                            <size>250,-1</size>
                             <style>wxRA_SPECIFY_COLS</style>
                           </object>
                           <option>1</option>
@@ -307,7 +303,7 @@
                     <object class="sizeritem">
                       <object class="wxStaticText" name="wxID_LABEL_LANNEGLISTLG">
                         <label>*Liste des langues preferees comme fr en   :*</label>
-                        <size>280,-1</size>
+                        <size>250,-1</size>
                       </object>
                       <flag>wxRIGHT</flag>
                       <border>2</border>
@@ -327,7 +323,7 @@
                     <object class="sizeritem">
                       <object class="wxStaticText" name="wxID_LABEL_MAXURL">
                         <label>*Urls number in history :*</label>
-                        <size>280,-1</size>
+                        <size>250,-1</size>
                       </object>
                       <flag>wxRIGHT|wxALIGN_CENTRE_VERTICAL</flag>
                       <border>5</border>
@@ -338,10 +334,13 @@
                       </object>
                       <flag>wxALIGN_CENTRE_VERTICAL</flag>
                     </object>
+                    <object class="spacer">
+                      <size>5,0</size>
+                    </object>
                     <object class="sizeritem">
                       <object class="wxButton" name="wxID_BUTTON_CLEARURL">
-                        <label>*Clear url history*</label>
-                        <size>120,-1</size>
+                        <label>*Clear all entries in the history of urls*</label>
+                        <size>200,-1</size>
                       </object>
                       <flag>wxLEFT|wxALIGN_CENTRE_VERTICAL</flag>
                       <border>5</border>
@@ -353,7 +352,7 @@
               </object>
             </object>
           </object>
-          <object class="notebookpage">
+          <object class="listbookpage">
             <label>*Publication*</label>
             <object class="wxPanel" name="wxID_PAGE_PUBLISH">
               <object class="wxBoxSizer">
@@ -488,7 +487,7 @@
               </object>
             </object>
           </object>
-          <object class="notebookpage">
+          <object class="listbookpage">
             <label>*Cache*</label>
             <object class="wxPanel" name="wxID_PAGE_CACHE">
               <object class="wxBoxSizer">
@@ -618,7 +617,75 @@
               <style>wxTAB_TRAVERSAL</style>
             </object>
           </object>
-          <object class="notebookpage">
+          <object class="listbookpage">
+            <label>*Passwords*</label>
+            <object class="wxPanel" name="wxID_PAGE_PASSWORDS">
+              <style>wxTAB_TRAVERSAL</style>
+              <object class="wxBoxSizer">
+                <orient>wxVERTICAL</orient>
+                <object class="sizeritem">
+                  <object class="wxStaticBoxSizer">
+                    <label>Sites</label>
+                    <orient>wxVERTICAL</orient>
+                    <object class="sizeritem">
+                      <object class="wxBoxSizer">
+                        <orient>wxHORIZONTAL</orient>
+                        <object class="sizeritem">
+                          <object class="wxListBox" name="wxID_LIST_PASSWORDS">
+                            <content/>
+                            <style>wxLB_HSCROLL</style>
+                          </object>
+                          <option>1</option>
+                          <flag>wxEXPAND</flag>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxBoxSizer">
+                            <orient>wxVERTICAL</orient>
+                            <object class="sizeritem">
+                              <object class="wxBitmapButton" name="wxID_BUTTON_DELETE_PASSWORD">
+                                <bitmap>../icons/16x16/editdelete.png</bitmap>
+                              </object>
+                              <option>1</option>
+                              <flag>wxEXPAND</flag>
+                            </object>
+                          </object>
+                        </object>
+                      </object>
+                      <option>1</option>
+                      <flag>wxALL|wxEXPAND</flag>
+                      <border>4</border>
+                    </object>
+                  </object>
+                  <option>2</option>
+                  <flag>wxALL|wxEXPAND</flag>
+                  <border>10</border>
+                </object>
+                <object class="sizeritem">
+                  <object class="wxButton" name="wxID_BUTTON_EMPTY_PASSWORDS">
+                    <label>*Flush the password file*</label>
+                  </object>
+                  <flag>wxALL</flag>
+                  <border>10</border>
+                </object>
+                <object class="sizeritem">
+                  <object class="wxBoxSizer">
+                    <orient>wxVERTICAL</orient>
+                    <object class="sizeritem">
+                      <object class="wxCheckBox" name="wxID_CHECK_DEF_PASSWORDS">
+                        <label>*Save the password by default*</label>
+                      </object>
+                      <option>1</option>
+                      <flag>wxALL|wxEXPAND</flag>
+                    </object>
+                  </object>
+                  <option>1</option>
+                  <flag>wxALL|wxEXPAND</flag>
+                  <border>10</border>
+                </object>
+              </object>
+            </object>
+          </object>
+          <object class="listbookpage">
             <label>*Proxy*</label>
             <object class="wxPanel" name="wxID_PAGE_PROXY">
               <object class="wxBoxSizer">
@@ -689,7 +756,7 @@
               <style>wxTAB_TRAVERSAL</style>
             </object>
           </object>
-          <object class="notebookpage">
+          <object class="listbookpage">
             <label>*Couleurs*</label>
             <object class="wxPanel" name="wxID_PAGE_COLOR">
               <object class="wxBoxSizer">
@@ -815,7 +882,7 @@
               <style>wxTAB_TRAVERSAL</style>
             </object>
           </object>
-          <object class="notebookpage">
+          <object class="listbookpage">
             <label>*Geometrie*</label>
             <object class="wxPanel" name="wxID_PAGE_GEOMETRY">
               <object class="wxBoxSizer">
@@ -870,7 +937,7 @@
               <style>wxTAB_TRAVERSAL</style>
             </object>
           </object>
-          <object class="notebookpage">
+          <object class="listbookpage">
             <label>*Annotations*</label>
             <object class="wxPanel" name="wxID_PAGE_ANNOT">
               <object class="wxBoxSizer">
@@ -968,7 +1035,7 @@
               <style>wxTAB_TRAVERSAL</style>
             </object>
           </object>
-          <object class="notebookpage">
+          <object class="listbookpage">
             <label>*WebDAV*</label>
             <object class="wxPanel" name="wxID_PAGE_DAV">
               <object class="wxBoxSizer">
@@ -1105,7 +1172,7 @@
               <style>wxTAB_TRAVERSAL</style>
             </object>
           </object>
-          <object class="notebookpage">
+          <object class="listbookpage">
             <label>*Templates*</label>
             <object class="wxPanel" name="wxID_PAGE_TEMPLATES">
               <style>wxTAB_TRAVERSAL</style>
@@ -1189,20 +1256,112 @@
                   <flag>wxALL|wxEXPAND</flag>
                   <border>10</border>
                 </object>
+              </object>
+            </object>
+          </object>
+          <object class="listbookpage">
+            <label>*Emails*</label>
+            <object class="wxPanel" name="wxID_PAGE_EMAILS">
+              <style>wxTAB_TRAVERSAL</style>
+              <object class="wxBoxSizer">
+                <orient>wxVERTICAL</orient>
+                <object class="spacer">
+                  <size>0,10</size>
+                </object>
                 <object class="sizeritem">
-                  <object class="wxBoxSizer">
-                    <orient>wxVERTICAL</orient>
+                  <object class="wxStaticText" name="wxID_LABEL_EMAIL">
+                    <label>*Parametres pour l'envoi de courriels :*</label>
+                    <size>250,-1</size>
+                  </object>
+                  <flag>wxEXPAND</flag>
+                  <border>4</border>
+                </object>
+                <object class="spacer">
+                  <size>0,10</size>
+                </object>
+                <object class="sizeritem">
+                  <object class="wxFlexGridSizer">
+                    <cols>2</cols>
+                    <rows>2</rows>
                     <object class="sizeritem">
-                      <object class="wxCheckBox" name="wxID_CHECK_SHOWTEMPLATES">
-                        <label>*Show template's presentation*</label>
+                      <object class="wxStaticText" name="wxID_LABEL_EMAIL_SERVER_ADDRESS">
+                        <label>*Adresse du serveur :*</label>
+                        <size>220,-1</size>
+                        <style>wxALIGN_RIGHT</style>
+                      </object>
+                      <option>1</option>
+                      <flag>wxALL|wxEXPAND|wxALIGN_CENTRE_VERTICAL</flag>
+                      <border>4</border>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxTextCtrl" name="wxID_VALUE_EMAIL_SERVER_ADDRESS">
+                        <size>200,-1</size>
+                        <style></style>
+                      </object>
+                      <option>1</option>
+                      <flag>wxALL</flag>
+                      <border>4</border>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxStaticText" name="wxID_LABEL_EMAIL_SERVER_PORT">
+                        <label>*Port d'envoi :*</label>
+                        <size>200,-1</size>
+                        <style>wxALIGN_RIGHT</style>
+                      </object>
+                      <option>1</option>
+                      <flag>wxALL|wxEXPAND|wxALIGN_CENTRE_VERTICAL</flag>
+                      <border>4</border>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxBoxSizer" name="wxID_SPIN_EMAIL_SERVER_PORT">
+                        <orient>wxHORIZONTAL</orient>
+                        <object class="sizeritem">
+                          <object class="wxSpinCtrl" name="wxID_SPIN_EMAIL_SERVER_PORT">
+                            <value>25</value>
+                            <min>1</min>
+                            <max>65535</max>
+                            <size>50,-1</size>
+                          </object>
+                        </object>
+                        <object class="sizeritem">
+                          <object class="wxStaticText" name="wxID_LABEL_EMAIL_DEFAULT_SERVER_PORT">
+                            <label>*(25 par defaut)*</label>
+                            <size>150,-1</size>
+                          </object>
+                          <option>0</option>
+                          <flag>wxALL|wxALIGN_CENTRE_VERTICAL</flag>
+                          <border>4</border>
+                        </object>
                       </object>
                       <option>1</option>
                       <flag>wxALL|wxEXPAND</flag>
+                      <border>4</border>
+                    </object>
+                    <growablecols>1</growablecols>
+                    <growablecols>2</growablecols>
+                    <object class="sizeritem">
+                      <object class="wxStaticText" name="wxID_LABEL_EMAIL_FROM_ADDRESS">
+                        <label>*Adresse d'envoi :*</label>
+                        <size>220,-1</size>
+                        <style>wxALIGN_RIGHT</style>
+                      </object>
+                      <option>1</option>
+                      <flag>wxALL|wxEXPAND|wxALIGN_CENTRE_VERTICAL</flag>
+                      <border>4</border>
+                    </object>
+                    <object class="sizeritem">
+                      <object class="wxTextCtrl" name="wxID_VALUE_EMAIL_FROM_ADDRESS">
+                        <size>200,-1</size>
+                        <style></style>
+                      </object>
+                      <option>1</option>
+                      <flag>wxALL</flag>
+                      <border>4</border>
                     </object>
                   </object>
-                  <option>1</option>
+                  <option>0</option>
                   <flag>wxALL|wxEXPAND</flag>
-                  <border>10</border>
+                  <border>4</border>
                 </object>
               </object>
             </object>
@@ -1216,7 +1375,7 @@
         <object class="wxBoxSizer">
           <orient>wxHORIZONTAL</orient>
           <object class="spacer">
-            <size>450,0</size>
+            <size>200,0</size>
             <option>1</option>
           </object>
           <object class="sizeritem">

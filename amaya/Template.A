@@ -8,6 +8,7 @@ DEFAULT
 	  ElemLClick.Pre -> SimpleLClick;
 	  ElemNew.Pre -> TemplateElementWillBeCreated;
 	  ElemDelete.Pre -> TemplateElementWillBeDeleted;
+    ElemSelect.Post -> SelectionChanged;
     AttrMenu.Pre ->    TemplateAttrInMenu;
    END;
    
@@ -28,6 +29,10 @@ ELEMENTS
    repeat :
       BEGIN
          ElemLClick.Pre -> RepeatButtonClicked;
+      END;
+   bag :
+      BEGIN
+         ElemLClick.Pre -> BagButtonClicked;
       END;
    option :
       BEGIN

@@ -2721,8 +2721,8 @@ RULES
         END;
 
  Object_Content: BEGIN
-        Width: Enclosing . Width;
-        Height: Enclosing . Height;
+        Width: auto {Enclosed . Width};
+        Height: Enclosed . Height;
         VertPos: Top = Enclosing . Top;
         HorizPos: Left = Enclosing . Left;
         Visibility: 0;
@@ -2762,7 +2762,7 @@ RULES
                 END;
         END;
 
- INS:        BEGIN
+ ins:        BEGIN
         CreateBefore(ElementName);
         CreateWith(VerticalLine);
         HorizPos: Left = Previous . Right;
@@ -2785,7 +2785,7 @@ RULES
                 END;
         END;
 
- DEL:        BEGIN
+ del:        BEGIN
         CreateBefore(ElementName);
         CreateWith(VerticalLine);
         HorizPos: Left = Previous . Right;
@@ -3013,7 +3013,8 @@ RULES
         Width: auto{Enclosing . Width};
         Display: Block;
         VertPos: Top = Previous not MAP . Bottom;
-        MarginTop: 0.5;
+        if not within Paragraph and not within Pseudo_paragraph and not within List_Item
+          MarginTop: 0.5;
         HorizPos: Left = Enclosing . Left;
         IN Structure_view BEGIN
                 MarginTop: 0;
@@ -4571,7 +4572,7 @@ RULES
         CreateWith(VerticalLine);
         if not RowExt and  immediately within Table_row
           CreateBefore(CellFrame);
-        VertPos : Top = Enclosing . Top;
+        VertPos : Top = Enclosing Table_row. Top;
         HorizPos: Left = Previous Table_cell . Right;
         Width: Enclosed . Width {20 px};
         Adjust: Enclosing =;
@@ -4671,6 +4672,50 @@ RULES
                 END;
         IN Links_view
                 Visibility: 0;
+        IN Alternate_view
+                VertPos: Top = Previous . Bottom;
+        END;
+
+ INS:        BEGIN
+        CreateBefore(ElementName);
+        CreateWith(VerticalLine);
+        Width: auto{Enclosing . Width};
+        Display: Block;
+        VertPos: Top = Previous not MAP . Bottom;
+        MarginTop: 0;
+        Background: LightYellow2;
+        FillPattern: backgroundcolor;
+        ShowBox;
+        IN Structure_view BEGIN
+                Background: Enclosing =;
+                Foreground: Enclosing =;
+                Width: Enclosing . Width - STRUCT_INDENT;
+                HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
+                VertPos: Top = Previous . Bottom;
+                Style: Enclosing =;
+                END;
+        IN Alternate_view BEGIN
+                Background: Enclosing =;
+                Foreground: Enclosing =;
+                Style: Italics;
+                VertPos: Top = Previous . Bottom;
+                END;
+        END;
+
+ DEL:        BEGIN
+        CreateBefore(ElementName);
+        CreateWith(VerticalLine);
+        Width: auto{Enclosing . Width};
+        Display: Block;
+        VertPos: Top = Previous not MAP . Bottom;
+        MarginTop: 0;
+        Underline: CrossedOut;
+        IN Structure_view BEGIN
+                Width: Enclosing . Width - STRUCT_INDENT;
+                HorizPos: Left = Enclosing . Left + STRUCT_INDENT;
+                VertPos: Top = Previous . Bottom;
+                Underline: Enclosing =;
+                END;
         IN Alternate_view
                 VertPos: Top = Previous . Bottom;
         END;
@@ -4859,6 +4904,8 @@ RULES
         Visibility: Enclosing =;
         LineBreak: no;
         MarginBottom: 0.4;
+        CreateFirst(CDATA_S);
+        CreateLast(CDATA_E);
         IN Structure_view BEGIN
                 Width: Enclosing . Width;
                 MarginBottom: 0;
@@ -4869,8 +4916,8 @@ RULES
         BEGIN
         Visibility: Enclosing =;
         HorizPos: Left = Enclosing . Left;
-        IF First CreateFirst(CDATA_S);
-        IF Last CreateLast(CDATA_E);
+        {IF First CreateFirst(CDATA_S);
+        IF Last CreateLast(CDATA_E);}
         IN Structure_view BEGIN
                 Width: Enclosed . Width;
                 END;
@@ -5284,8 +5331,14 @@ ATTRIBUTES
         END;
  NoObjects(Object_Content):
         BEGIN
-         if not within HEAD
-            Visibility: Enclosing =;
+        if not within HEAD BEGIN
+           Visibility: Enclosing =;
+           
+           END;
+        END;
+ NoObjects(External_Object):
+        BEGIN
+        Visibility: 0;
         END;
  NoObjects(Iframe_Src_Content):
         BEGIN

@@ -67,7 +67,7 @@ static ThotBool	InitMaths;
 
 #else /* _WX */
 /* Global variables for dialogues */
-static int Math_occurences = 1;
+static int Math_occurences = 0;
 static int Math_OperatorType = 0;
 #endif /* _WX */
 
@@ -101,7 +101,7 @@ static Document DocMathElementSelected = 0;
 #include "XLinkedit_f.h"
 
 #ifdef _GTK
-/* used for teh close palette callback*/
+/* used for the close palette callback*/
 ThotWidget CatWidget(int ref);
 #endif/*  _GTK */
 
@@ -706,14 +706,12 @@ void InsertNumber (Element *el, int value, Document doc)
   unsigned short i;
   ElementType newType;
   Element     child, child2;
-  /* convert number to string ... maybe would have to be improve */
-  char str[4];
-  CHAR_T text[5];
-  value = value % 10000;
+  char str[50];
+  CHAR_T text[50];
+
   sprintf(str,"%d",value);
   for(i = 0; i < strlen(str); i++)text[i] = str[i];
   text[i] = EOS;
-  /**********/
 
   newType = TtaGetElementType (*el);
   newType.ElTypeNum = MathML_EL_MN;
@@ -724,7 +722,7 @@ void InsertNumber (Element *el, int value, Document doc)
   newType.ElTypeNum = MathML_EL_TEXT_UNIT;
   child2 = TtaNewElement (doc, newType);
   TtaInsertFirstChild (&child2, child, doc);
-  TtaSetBufferContent (child2, text, TtaGetLanguageIdFromScript('L'), doc);
+  TtaSetBufferContent (child2, (CHAR_T *)text, TtaGetLanguageIdFromScript('L'), doc);
 
   *el = child;
 }
@@ -1038,7 +1036,7 @@ static void InitializeNewConstruct (Element el, int NumberRows, int NumberCols,
 
   /* If the new element is a mtable, create this table */
   if (newType.ElTypeNum == MathML_EL_MTABLE)
-    CreateNewMtable (el, NumberRows, NumberCols, doc);
+    CreateNewMtable (el, NumberCols, NumberRows, doc);
 
   /* if the new element is a mspace, create a width attribute  with a default value */
   if (newType.ElTypeNum == MathML_EL_MSPACE)
@@ -1223,8 +1221,8 @@ void MathSelectionChanged (NotifyElement *event)
             }
         }
     }
-    UpdateXmlElementListTool(event->element,event->document);
-    TtaSetStatusSelectedElement(event->document, 1, event->element);
+    UpdateXmlElementListTool (event->element,event->document);
+    TtaSetStatusSelectedElement (event->document, 1, event->element);
 }
 
 /*----------------------------------------------------------------------
@@ -1235,8 +1233,8 @@ static void GetIntegralType(Document doc)
 #ifdef _WX
   ThotBool  created;
   
-  created = CreateSelectIntegralDlgWX(MathsDialogue + FormMathIntegral,
-                                      TtaGetViewFrame (doc, 1));
+  created = CreateSelectIntegralDlgWX (MathsDialogue + FormMathIntegral,
+                                       TtaGetViewFrame (doc, 1));
   if (created)
     {
       TtaSetDialoguePosition ();
@@ -1273,7 +1271,7 @@ static void GetFenceAttributes(Document doc)
 static int GetOccurrences(Document doc, char *label, int val, int mini)
 {
 #ifdef _WX
-  ThotBool  created;
+  ThotBool created;
   char *title = TtaGetMessage (AMAYA, AM_NUMBER_OCCUR);
 
   Math_occurences = val;
@@ -1288,11 +1286,13 @@ static int GetOccurrences(Document doc, char *label, int val, int mini)
       TtaWaitShowDialogue ();
       val = Math_occurences;
     }
+  else val = 0;
 #endif  /* _WX */
 
 /* check if val is more than mini */
-if (val < mini)val = mini;
-  return val;
+if (val < mini && val > 0)val = mini;
+
+return val;
 }
 
 /*----------------------------------------------------------------------
@@ -1327,24 +1327,24 @@ static int GetOperatorType(Document doc)
 static void CreateMathConstruct (int construct, ...)
 {
   Document           doc;
-  Element            sibling, el, row, child, leaf, new_, next, foreignObj;
+  Element            sibling, el, row, child, child2, leaf, leaf2, new_, next, foreignObj;
   Element            altText, selected, op, previous;
   ElementType        newType, elType, parentType;
   Attribute          attr;
   AttributeType      attrType;
   NotifyElement      event;
   SSchema            docSchema, mathSchema;
-  char              *name;
-  unsigned char     *symbol_name;
+  char              *name, *tmptext;
+  unsigned char     *symbol_name = NULL;
   Language           lang;
   DisplayMode        dispMode;
   int                c1, i, len, profile, selectedchild, lx, ly;
   int                symbol, symbol2, symboltype;
-  int                number, type, degree, degreevar, nabla, ibefore, par, symboldiff;
+  int                number, type, degree, degreevar, ibefore, par;
   va_list            varpos;
   ThotBool           oldStructureChecking;
   ThotBool	         before, emptySel, ok, insertSibling;
-  ThotBool           displayTableForm, registered;
+  ThotBool           displayTableForm, registered, insertedMath = FALSE;
   
   doc = TtaGetSelectedDocument ();
   if (doc == 0 || !TtaGetDocumentAccessMode (doc))
@@ -1737,6 +1737,8 @@ static void CreateMathConstruct (int construct, ...)
               else
                 /* insert the new Math element as a child element */
                 TtaInsertFirstChild (&el, sibling, doc);
+              // a new Math element is now inserted
+              insertedMath = TRUE;
               leaf = NULL;
               if (elType.ElTypeNum == MathML_EL_MathML)
                 {
@@ -1860,6 +1862,9 @@ static void CreateMathConstruct (int construct, ...)
             {
               TtaSetDisplayMode (doc, dispMode);
               TtaCloseUndoSequence (doc);
+              // remove the inserted math element
+              if (insertedMath)
+                TtaUndoNoRedo (doc);
               va_end(varpos);
               return;
             }
@@ -1988,12 +1993,12 @@ static void CreateMathConstruct (int construct, ...)
       selectedchild = -1;
       break;
 
-    case 40: /* abs/card/floor/ceiling */
+    case 40: /* vertical fence */
       newType.ElTypeNum = MathML_EL_MROW;
       selectedchild = 1;
       break;
 
-    case 41: /* operator with a sub element and an empty square after */
+    case 41: /* operator with a sub element and an empty square after (inf, max, min, sup, complementsub) */
       newType.ElTypeNum = MathML_EL_MROW;
       selectedchild = -1;
       break;
@@ -2089,14 +2094,18 @@ static void CreateMathConstruct (int construct, ...)
       break;
 
     default:
+      TtaSetDisplayMode (doc, dispMode);
       TtaCloseUndoSequence (doc);
+      // remove the inserted math element
+      if (insertedMath)
+        TtaUndoNoRedo (doc);
       va_end(varpos);
       return;
     }
   
   if (!emptySel)
     /* selection is not empty.
-       Try to transform it into the requested type*/
+       Try to transform it into the requested type */
     {
       if (!(construct < 20 || construct == 26 || construct == 30 || construct == 36 || construct == 59))
         emptySel = TRUE; /* constructions with no "natural" insert point for the selection */
@@ -2121,7 +2130,7 @@ static void CreateMathConstruct (int construct, ...)
                   TtaSelectElement (doc, selected);
                 }
               else if (construct == 59 || construct == 60)
-                {/* accents with a horizontal strech */
+                {/* accents with a horizontal stretch */
                 symbol = va_arg(varpos, int);
                 child = TtaGetParent (child);
                 AttachIntHorizStretch(child,doc);
@@ -2144,12 +2153,8 @@ static void CreateMathConstruct (int construct, ...)
 
       if (construct == 18)
         {
-        int notation = va_arg(varpos, int);
-        if (notation == 1)
+        if (va_arg(varpos, int) == 1)
           {/* actuarial */
-          Attribute          attr;
-          AttributeType      attrType;
-
           attrType.AttrSSchema = elType.ElSSchema;
           attrType.AttrTypeNum = MathML_ATTR_notation;
           attr = TtaNewAttribute (attrType);
@@ -2165,6 +2170,17 @@ static void CreateMathConstruct (int construct, ...)
             {
             /* ask the type of integral */
             GetIntegralType(doc);
+            if(Math_integral_number == 0)
+              /* the user decided to abort the command */
+              {
+              TtaSetDisplayMode (doc, dispMode);
+              TtaCloseUndoSequence (doc);
+              // remove the inserted math element
+              if (insertedMath)
+                TtaUndoNoRedo (doc);
+              va_end(varpos);
+              return;
+              }
 
             if (!Math_integral_contour)
               {
@@ -2191,7 +2207,7 @@ static void CreateMathConstruct (int construct, ...)
           leaf = TtaGetFirstChild (el);
           child = leaf;
           new_ = leaf;
-          InsertEmptyConstruct(&new_, Math_integral_type ? MathML_EL_MSUBSUP : MathML_EL_MSUB, doc);
+          InsertEmptyConstruct (&new_, Math_integral_type ? MathML_EL_MSUBSUP : MathML_EL_MSUB, doc);
           TtaDeleteTree (leaf, doc);
           child = TtaGetFirstChild (new_);
    
@@ -2216,18 +2232,27 @@ static void CreateMathConstruct (int construct, ...)
             symbol_name = va_arg(varpos, unsigned char*);
 
           if (type == -1)
-            {/* ask the user about the way the symbol have to be displayed */
+            {
+            /* ask the user about the way the symbol has to be displayed */
             type = GetOperatorType(doc);
+            if(type == 0)
+              /* the user decided to abort the command */
+              {
+              TtaSetDisplayMode (doc, dispMode);
+              TtaCloseUndoSequence (doc);
+              // remove the inserted math element
+              if (insertedMath)
+                TtaUndoNoRedo (doc);
+              va_end(varpos);
+              return;
+              }
+            else type--;
+
+            /* replace the large operator by a small symbol if necessary */
+            symbol2 = va_arg(varpos, int);
+            if(type == 0)symbol = symbol2;
             }
        
-          if (type >= 1)
-            {/* change the plus and times symbols by sum and prod */
-            if (symbol == '+')
-              symbol = 8721;
-            else if (symbol == 215)
-              symbol = 8719;
-            }
-
           switch (type)
             {
             case 0:
@@ -2235,9 +2260,20 @@ static void CreateMathConstruct (int construct, ...)
               child = leaf;
               InsertEmptyConstruct (&child, MathML_EL_MROW, doc);
               TtaDeleteTree (leaf, doc);
-              selected = child;
+              selected = TtaGetFirstChild (child);
               /* ask how many the user wants */
               number = GetOccurrences (doc, TtaGetMessage (AMAYA, AM_NUMBER_OPERATORS), 5, 1);
+              if(number == 0) 
+                { /* the user decided to abort the command */
+                TtaSetDisplayMode (doc, dispMode);
+                TtaCloseUndoSequence (doc);
+                // remove the inserted math element
+                if (insertedMath)
+                  TtaUndoNoRedo (doc);
+                va_end(varpos);
+                return;
+                }
+
               for (i = 0 ; i < number; i++)
                 {
                   if (symbol == 0)
@@ -2308,6 +2344,9 @@ static void CreateMathConstruct (int construct, ...)
                 InsertText (&child, MathML_EL_MO, va_arg(varpos, unsigned char*), doc);
               else 
                 InsertSymbol (&child, MathML_EL_MO, symbol, doc);
+
+              /* Union unary */
+              if(symbol == 0x22C3)op = child;
             }
 
           par = va_arg(varpos, int);
@@ -2350,6 +2389,16 @@ static void CreateMathConstruct (int construct, ...)
 
           /* ask how many the user wants */
           number = GetOccurrences (doc, TtaGetMessage (AMAYA, AM_ROWS), 3, 2);
+          if(number == 0)
+            {/* the user decided to abort the command */
+            TtaSetDisplayMode (doc, dispMode);
+            TtaCloseUndoSequence (doc);
+            // remove the inserted math element
+            if (insertedMath)
+              TtaUndoNoRedo (doc);
+            va_end(varpos);
+            return;
+            }
           leaf = TtaGetFirstChild (el);
           child = leaf;
 
@@ -2399,7 +2448,6 @@ static void CreateMathConstruct (int construct, ...)
           symbol = va_arg(varpos, int);
           leaf = TtaGetFirstChild (el);
           child = leaf;
-
           InsertEmptyConstruct(&child, MathML_EL_MROW, doc);
 
           if (symbol == 0)
@@ -2408,7 +2456,6 @@ static void CreateMathConstruct (int construct, ...)
             InsertSymbol (&child, MathML_EL_MO, symbol, doc);
         
           InsertEmptyConstruct(&child, MathML_EL_MROW, doc);
-
           TtaDeleteTree (leaf, doc);
         }
       else if (construct == 28)
@@ -2440,17 +2487,25 @@ static void CreateMathConstruct (int construct, ...)
           TtaDeleteTree (leaf, doc);
         }
       else if (construct == 32)
-        {/* combination */
+      {/* combination */
           child = SetMFencedAttributes(el, '(', ')', ',', doc);
 
-          leaf = TtaGetFirstChild (child);
-          CreateNewMtable (child, 1, 2, doc);
-          selected = SelectMtableCell(child, 0, 1);
+          leaf = TtaGetFirstChild (child); 
+          child = leaf;
+          InsertEmptyConstruct (&child, MathML_EL_MFRAC, doc);
+          attrType.AttrSSchema = elType.ElSSchema;
+          attrType.AttrTypeNum = MathML_ATTR_linethickness;
+          attr = TtaNewAttribute (attrType);
+          TtaAttachAttribute (child, attr, doc);
+          TtaSetAttributeText (attr, "0", child, doc);
+          MathMLlinethickness (doc, child, "0");
+        
+          selected = TtaGetFirstChild (TtaGetFirstChild (child));
           TtaDeleteTree (leaf, doc);
         }
       else if (construct == 34 || construct == 41)
         {
-          /* operator with an under element and an empty square after */
+          /* operator with an under element and an empty square after (inf, max, min, sup, complementsub) */
           leaf = TtaGetFirstChild (el);
           child = leaf;
           InsertEmptyConstruct (&child, (construct == 34 ? MathML_EL_MUNDER : MathML_EL_MSUB), doc);
@@ -2461,11 +2516,11 @@ static void CreateMathConstruct (int construct, ...)
           selected = TtaGetFirstChild (TtaGetLastChild(child));
 
           leaf = TtaGetFirstChild (new_);
-          op = leaf;
+          child2 = leaf;
           if (construct == 34)
-            InsertText (&op, MathML_EL_MO, va_arg(varpos, unsigned char*), doc);
+            InsertText (&child2, MathML_EL_MO, va_arg(varpos, unsigned char*), doc);
           else
-            InsertSymbol (&op, MathML_EL_MO, va_arg(varpos, int), doc);
+            InsertSymbol (&child2, MathML_EL_MO, va_arg(varpos, int), doc);
           TtaDeleteTree (leaf, doc);
 
           InsertEmptyConstruct(&child, MathML_EL_MROW, doc);
@@ -2475,6 +2530,16 @@ static void CreateMathConstruct (int construct, ...)
 
           /* ask number of coordonnates */
           number = GetOccurrences (doc, TtaGetMessage (AMAYA, AM_NUMBER_COORDONNATES), 2, 1);
+          if(number == 0)
+            { /* the user decided to abort the command */
+            TtaSetDisplayMode (doc, dispMode);
+            TtaCloseUndoSequence (doc);
+            // remove the inserted math element
+            if (insertedMath)
+              TtaUndoNoRedo (doc);
+            va_end(varpos);
+            return;
+            }
 
           child = TtaGetLastChild (el);
           leaf = TtaGetFirstChild (child);
@@ -2487,7 +2552,7 @@ static void CreateMathConstruct (int construct, ...)
           for (i = 0 ; i < number; i++)
             {
               if (i)
-                InsertSymbol (&child, MathML_EL_MO, 8203, doc); // invisible comma          
+                InsertSymbol (&child, MathML_EL_MO, 8291, doc); // invisible comma          
               InsertEmptyConstruct(&child, MathML_EL_MROW, doc);
             }
           TtaDeleteTree (leaf, doc);
@@ -2498,6 +2563,16 @@ static void CreateMathConstruct (int construct, ...)
           if (number != 2)
             {/* ask how many the user wants */
               number = GetOccurrences (doc,  TtaGetMessage (AMAYA, AM_NUMBER_NUPLE), 3, 2);
+              if(number == 0)
+                {  /* the user decided to abort the command */
+                TtaSetDisplayMode (doc, dispMode);
+                TtaCloseUndoSequence (doc);
+                // remove the inserted math element
+                if (insertedMath)
+                  TtaUndoNoRedo (doc);
+                va_end(varpos);
+                return;
+                }
             }
 
           new_ = SetMFencedAttributes(el, '(', ')', ',', doc);
@@ -2505,7 +2580,7 @@ static void CreateMathConstruct (int construct, ...)
           child = leaf;
           InsertEmptyConstruct(&child, MathML_EL_MROW, doc);
           TtaDeleteTree (leaf, doc);
-          selected = child;
+          selected = TtaGetFirstChild(child);
           for (i = 1 ; i < number; i++)
             InsertEmptyConstruct(&child, MathML_EL_MROW, doc);
 
@@ -2538,11 +2613,33 @@ static void CreateMathConstruct (int construct, ...)
             Math_close = ')';
             Math_sep = ',';
             GetFenceAttributes (doc);
+            if (Math_open == 0)
+              {  /* the user decided to abort the command */
+              TtaSetDisplayMode (doc, dispMode);
+              TtaCloseUndoSequence (doc);
+              // remove the inserted math element
+              if (insertedMath)
+                TtaUndoNoRedo (doc);
+              va_end(varpos);
+              return;
+              }
             }
+
+
           if (number == -1)
             {
             /* ask how many the user wants */
             number = GetOccurrences (doc,  TtaGetMessage (AMAYA, AM_NUMBER_ELEMENTS), 5, 1);
+            if(number == 0)
+              {  /* the user decided to abort the command */
+              TtaSetDisplayMode (doc, dispMode);
+              TtaCloseUndoSequence (doc);
+              // remove the inserted math element
+              if (insertedMath)
+                TtaUndoNoRedo (doc);
+              va_end(varpos);
+              return;
+              }
             }
 
           leaf = TtaGetFirstChild (el);
@@ -2561,15 +2658,27 @@ static void CreateMathConstruct (int construct, ...)
           InsertSymbolUnit (&child, MathML_EL_MF, Math_close, doc);
         }
       else if (construct == 40)
-        {/* card/abs/floor/ceiling */
+        {/* vertical fence */
           Math_open = va_arg(varpos, int);
           Math_close = va_arg(varpos, int);
           leaf = TtaGetFirstChild (el);
           child = leaf;
-          InsertSymbol (&child, MathML_EL_MO, Math_open, doc);
-          TtaDeleteTree (leaf, doc);
-          InsertEmptyConstruct(&child, MathML_EL_MROW, doc);
-          InsertSymbol (&child, MathML_EL_MO, Math_close, doc);
+          if(va_arg(varpos, int))
+            {/* stretchy = true */
+            InsertSymbolUnit (&child, MathML_EL_MO, Math_open, doc);
+            //AttachIntVertStretch(child, doc);
+            InsertEmptyConstruct(&child, MathML_EL_MROW, doc);
+            InsertSymbolUnit (&child, MathML_EL_MO, Math_close, doc);
+            //AttachIntVertStretch(child, doc);
+            TtaDeleteTree (leaf, doc);
+            }
+          else
+            {/* stretchy = false */
+            InsertSymbol (&child, MathML_EL_MO, Math_open, doc);
+            TtaDeleteTree (leaf, doc);
+            InsertEmptyConstruct(&child, MathML_EL_MROW, doc);
+            InsertSymbol (&child, MathML_EL_MO, Math_close, doc);
+            }
         }
       else if (construct == 43)
         {
@@ -2613,10 +2722,9 @@ static void CreateMathConstruct (int construct, ...)
         }
       else if (construct == 44)
         { /* elementary classical functions */
-          unsigned char *function_name = va_arg(varpos, unsigned char*);
           leaf = TtaGetFirstChild (el);
           child = leaf;
-          InsertText (&child, MathML_EL_MI, function_name, doc);
+          InsertText (&child, MathML_EL_MI, va_arg(varpos, unsigned char*), doc);
           InsertSymbol (&child, MathML_EL_MO, 8289, doc); // apply function 
           InsertEmptyConstruct(&child, MathML_EL_MROW, doc);
           TtaDeleteTree (leaf, doc);
@@ -2626,6 +2734,16 @@ static void CreateMathConstruct (int construct, ...)
 
           /* ask the number of variables */
           number = GetOccurrences (doc, TtaGetMessage (AMAYA, AM_NUMBER_VARIABLES), 2, 1);
+          if(number == 0)
+            {  /* the user decided to abort the command */
+            TtaSetDisplayMode (doc, dispMode);
+            TtaCloseUndoSequence (doc);
+            // remove the inserted math element
+            if (insertedMath)
+              TtaUndoNoRedo (doc);
+            va_end(varpos);
+            return;
+            }
           leaf = TtaGetFirstChild (el);
           child = leaf;
           InsertSymbol(&child, MathML_EL_MI, 955, doc);// lambda
@@ -2761,11 +2879,21 @@ static void CreateMathConstruct (int construct, ...)
         }
       else if (construct== 51)
         { /* partialdiff2 */
-          symboldiff = 8706;
+          symbol2 = 8706;
           degree = 0;
           /* ask the user about the number of variables that have to be differentiated */
           number = GetOccurrences (doc, TtaGetMessage (AMAYA, AM_NUMBER_VARIABLES), 2, 1);
-  
+          if(number == 0)
+            {  /* the user decided to abort the command */
+            TtaSetDisplayMode (doc, dispMode);
+            TtaCloseUndoSequence (doc);
+            // remove the inserted math element
+            if (insertedMath)
+              TtaUndoNoRedo (doc);
+            va_end(varpos);
+            return;
+            }
+
           /* Denominator */
           leaf = TtaGetFirstChild (TtaGetLastChild (el));
           child = leaf;
@@ -2775,25 +2903,38 @@ static void CreateMathConstruct (int construct, ...)
           leaf = TtaGetFirstChild(child);
           child = leaf;
 
+          tmptext = (char *)TtaGetMemory (50);
+
           for(i = 0; i < number; i++)
              {
              /* ask the user about the degree of derivation of each variable */
-             char buffer[50];
-             sprintf (buffer, TtaGetMessage (AMAYA, AM_DEGREE_VARIABLE), i + 1);
-             degreevar = GetOccurrences (doc, buffer, 1, 1);
+             sprintf (tmptext, TtaGetMessage (AMAYA, AM_DEGREE_VARIABLE), i + 1);
+             degreevar = GetOccurrences (doc, tmptext, 1, 1);
+
+             if(degreevar == 0)
+               {  /* the user decided to abort the command */
+               TtaFreeMemory (tmptext);
+               TtaSetDisplayMode (doc, dispMode);
+               TtaCloseUndoSequence (doc);
+               // remove the inserted math element
+               if (insertedMath)
+                 TtaUndoNoRedo (doc);
+               va_end(varpos);
+               return;
+               }
+
              degree += degreevar;
              if (degreevar == 1)
                {
-               InsertSymbol (&child, MathML_EL_MO, symboldiff, doc);
+               InsertSymbol (&child, MathML_EL_MO, symbol2, doc);
                }
              else
                {
-               Element leaf2, child2;
                InsertEmptyConstruct(&child, MathML_EL_MSUP, doc);
 
                leaf2 = TtaGetFirstChild (TtaGetFirstChild (child));
                child2 = leaf2;
-               InsertSymbol (&child2, MathML_EL_MO, symboldiff, doc);
+               InsertSymbol (&child2, MathML_EL_MO, symbol2, doc);
                TtaDeleteTree (leaf2, doc);
 
                leaf2 = TtaGetFirstChild (TtaGetLastChild (child));
@@ -2803,6 +2944,8 @@ static void CreateMathConstruct (int construct, ...)
                }
              InsertEmptyConstruct(&child, MathML_EL_MROW, doc);
              }
+
+          TtaFreeMemory (tmptext);
           TtaDeleteTree (leaf, doc);
 
           /* Numerator */
@@ -2816,16 +2959,15 @@ static void CreateMathConstruct (int construct, ...)
 
           if (degree == 1)
             {          
-            InsertSymbol (&child, MathML_EL_MO, symboldiff, doc);
+            InsertSymbol (&child, MathML_EL_MO, symbol2, doc);
             }
           else
             {
-            Element leaf2, child2;
             InsertEmptyConstruct(&child, MathML_EL_MSUP, doc);
 
             leaf2 = TtaGetFirstChild (TtaGetFirstChild (child));
             child2 = leaf2;
-            InsertSymbol (&child2, MathML_EL_MO, symboldiff, doc);
+            InsertSymbol (&child2, MathML_EL_MO, symbol2, doc);
             TtaDeleteTree (leaf2, doc);
 
             leaf2 = TtaGetFirstChild (TtaGetLastChild (child));
@@ -2850,14 +2992,49 @@ static void CreateMathConstruct (int construct, ...)
           if(lx == -1 || ly == -1)
             {/* lx = ly */
             lx = GetOccurrences (doc, TtaGetMessage (AMAYA, AM_COLS), 3, 1);
+            if(lx == 0)
+              {  /* the user decided to abort the command */
+              TtaSetDisplayMode (doc, dispMode);
+              TtaCloseUndoSequence (doc);
+              // remove the inserted math element
+              if (insertedMath)
+                TtaUndoNoRedo (doc);
+              va_end(varpos);
+              return;
+              }
             ly = lx;
             }
           else
             {
             if (lx == 0)
+              {
               lx = GetOccurrences (doc, TtaGetMessage (AMAYA, AM_COLS), 3, 1);
+              if(lx == 0)
+                {  /* the user decided to abort the command */
+                TtaSetDisplayMode (doc, dispMode);
+                TtaCloseUndoSequence (doc);
+                // remove the inserted math element
+                if (insertedMath)
+                  TtaUndoNoRedo (doc);
+                va_end(varpos);
+               return;
+                }
+              }
+  
             if (ly == 0)
+              {
               ly = GetOccurrences (doc, TtaGetMessage (AMAYA, AM_ROWS), 3, 1);
+              if(ly == 0)
+                {  /* the user decided to abort the command */
+                TtaSetDisplayMode (doc, dispMode);
+                TtaCloseUndoSequence (doc);
+                // remove the inserted math element
+                if (insertedMath)
+                  TtaUndoNoRedo (doc);
+                va_end(varpos);
+               return;
+                }
+              }
             }
 
           /* mtable */
@@ -2867,18 +3044,17 @@ static void CreateMathConstruct (int construct, ...)
         }
       else if (construct == 54)
         {/* curl ; div ; grad ; laplacian */
-          nabla = 8711;
+          symbol2 = 8711;
           symbol = va_arg(varpos, int);
           leaf = TtaGetFirstChild (el);
           child = leaf;
           if (symbol == 1)
             {/* Laplacian */
-              Element leaf2, child2;
               InsertEmptyConstruct(&child, MathML_EL_MSUP, doc);
 
               leaf2 = TtaGetFirstChild (TtaGetFirstChild (child));
               child2 = leaf2;
-              InsertSymbol (&child2, MathML_EL_MO, nabla, doc);
+              InsertSymbol (&child2, MathML_EL_MO, symbol2, doc);
               TtaDeleteTree (leaf2, doc);
           
               leaf2 = TtaGetFirstChild(TtaGetLastChild (child));
@@ -2888,7 +3064,7 @@ static void CreateMathConstruct (int construct, ...)
             }
           else
             {/* curl ; div ; grad */
-              InsertSymbol (&child, MathML_EL_MO, nabla, doc);
+              InsertSymbol (&child, MathML_EL_MO, symbol2, doc);
               if (symbol != 0)
                 InsertSymbol (&child, MathML_EL_MO, symbol, doc);
             }
@@ -2906,8 +3082,6 @@ static void CreateMathConstruct (int construct, ...)
           TtaDeleteTree (leaf, doc);
 
           {
-            Element child2;
-
             leaf = TtaGetFirstChild (TtaGetFirstChild (child));
             child2 = leaf;
             InsertEmptyConstruct(&child2, MathML_EL_MROW, doc);
@@ -2959,8 +3133,18 @@ static void CreateMathConstruct (int construct, ...)
       else if (construct == 58)
         {/* diffential */
           /* ask the user about the degree of diffentiation */
-          symboldiff = 8518;
+          symbol2 = 8518;
           degree = GetOccurrences (doc, TtaGetMessage (AMAYA, AM_DEGREE), 2, 0);
+          if(degree == 0)
+            {  /* the user decided to abort the command */
+            TtaSetDisplayMode (doc, dispMode);
+            TtaCloseUndoSequence (doc);
+            // remove the inserted math element
+            if (insertedMath)
+              TtaUndoNoRedo (doc);
+            va_end(varpos);
+            return;
+            }
 
           /* Numerator */
           leaf = TtaGetFirstChild (TtaGetFirstChild (el));
@@ -2972,17 +3156,14 @@ static void CreateMathConstruct (int construct, ...)
           child = leaf;
 
           if (degree == 1)
-            {          
-            InsertSymbol (&child, MathML_EL_MO, symboldiff, doc);
-            }
+            InsertSymbol (&child, MathML_EL_MO, symbol2, doc);
           else
             {
-            Element leaf2, child2;
             InsertEmptyConstruct(&child, MathML_EL_MSUP, doc);
 
             leaf2 = TtaGetFirstChild (TtaGetFirstChild (child));
             child2 = leaf2;
-            InsertSymbol (&child2, MathML_EL_MO, symboldiff, doc);
+            InsertSymbol (&child2, MathML_EL_MO, symbol2, doc);
             TtaDeleteTree (leaf2, doc);
 
             leaf2 = TtaGetFirstChild (TtaGetLastChild (child));
@@ -3004,7 +3185,7 @@ static void CreateMathConstruct (int construct, ...)
           leaf = TtaGetFirstChild(child);
           child = leaf;
 
-          InsertSymbol (&child, MathML_EL_MO, symboldiff, doc);
+          InsertSymbol (&child, MathML_EL_MO, symbol2, doc);
           InsertEmptyConstruct(&child, MathML_EL_MROW, doc);
           TtaDeleteTree (leaf, doc);
         }
@@ -3021,7 +3202,6 @@ static void CreateMathConstruct (int construct, ...)
         TtaDeleteTree (leaf, doc);
         selected = TtaGetFirstChild (TtaGetFirstChild (el));
         }
-         
 
       /* do not check the Thot abstract tree against the structure */
       /* schema while changing the structure */
@@ -3142,10 +3322,7 @@ static void CreateMathConstruct (int construct, ...)
         {
           /* move the limits of the MSUBSUP element if it's appropriate */
           SetIntMovelimitsAttr (el, doc);
-          //if (op)
-          //CheckLargeOp (op, doc);
         }
-
       InitializeNewConstruct (el, NumberRows, NumberCols, !registered, doc);
       TtaSetDisplayMode (doc, dispMode);
       /* check the Thot abstract tree against the structure schema. */
@@ -3272,6 +3449,13 @@ static void CallbackMaths (int ref, int typedata, char *data)
     case MathIntegralType:
       Math_integral_type = val;
       break;
+
+    case FormMathIntegral:
+      if(val == 0)Math_integral_number = 0;
+      break;
+
+    case FormMathFenceAttributes:
+      if(val == 0)Math_open = 0;
 #endif /* _WX */
 
     case MenuMaths:
@@ -3508,9 +3692,9 @@ void CreateMOVERBREVE (Document doc, View view)
 {
   CreateMathConstruct (26, 728);
 }
-void CreateMOVERCHECK (Document doc, View view)
+void CreateMOVERCHECK (Document doc, View view) // hacek
 {
-  CreateMathConstruct (26, 711);
+  CreateMathConstruct (59, 'k');
 }
 void CreateMOVERDOT (Document doc, View view)
 {
@@ -3522,11 +3706,11 @@ void CreateMOVERHAT (Document doc, View view)
 }
 void CreateMOVERTILDE (Document doc, View view)
 {
-  CreateMathConstruct (26, 8764);
+  CreateMathConstruct (59, 'T');
 }
-void CreateMOVERFROWN (Document doc, View view)
+void CreateMOVERFROWN (Document doc, View view) // overparenthesis
 {
-  CreateMathConstruct (26, 8994);
+  CreateMathConstruct (59, 'p');
 }
 
 
@@ -3594,7 +3778,7 @@ void CreateMIntegral (Document doc, View view)
   ----------------------------------------------------------------------*/
 void CreateMSum (Document doc, View view)
 {
-  CreateMathConstruct (21, 1, 8721);
+  CreateMathConstruct (21, 1, 0x2211);
 }
 
 /*----------------------------------------------------------------------
@@ -3610,13 +3794,13 @@ void CreateMMATRIX (Document doc, View view)
   ----------------------------------------------------------------------*/
 void CreateMABS (Document document, View view)
 {
-  CreateMathConstruct (40,'|','|');}
+  CreateMathConstruct (40,'|','|', TRUE);}
 /*----------------------------------------------------------------------
   CreateMNORM
   ----------------------------------------------------------------------*/
 void CreateMNORM (Document document, View view)
 {
-  CreateMathConstruct (40,8741,8741);}
+  CreateMathConstruct (40,8741,8741, FALSE);}
 /*----------------------------------------------------------------------
   CreateMALEPHSUB
   ----------------------------------------------------------------------*/
@@ -3628,13 +3812,13 @@ void CreateMALEPHSUB (Document document, View view)
   ----------------------------------------------------------------------*/
 void CreateMAND (Document document, View view)
 {
-  CreateMathConstruct (22, -1, 8743);}
+  CreateMathConstruct (22, -1, 0x22c0, 0x2227);}
 /*----------------------------------------------------------------------
   CreateMANDBINARY
   ----------------------------------------------------------------------*/
 void CreateMANDBINARY (Document document, View view)
 {
-  CreateMathConstruct (27, 8743);}
+  CreateMathConstruct (27, 0x2227);}
 /*----------------------------------------------------------------------
   CreateMAPPROX
   ----------------------------------------------------------------------*/
@@ -3664,7 +3848,7 @@ void CreateMARROW2 (Document document, View view)
   ----------------------------------------------------------------------*/
 void CreateMCARD (Document document, View view)
 {
-  CreateMathConstruct (40,'|','|');}
+  CreateMathConstruct (40,'|','|', TRUE);}
 /*----------------------------------------------------------------------
   CreateMCARD2
   ----------------------------------------------------------------------*/
@@ -3676,7 +3860,7 @@ void CreateMCARD2 (Document document, View view)
   ----------------------------------------------------------------------*/
 void CreateMCARTESIANPRODUCT (Document document, View view)
 {
-  CreateMathConstruct (22, -1, 215);}
+  CreateMathConstruct (22, -1, 0x220F, 215);}
 /*----------------------------------------------------------------------
   CreateMCARTESIANPRODUCTBINARY
   ----------------------------------------------------------------------*/
@@ -3688,7 +3872,7 @@ void CreateMCARTESIANPRODUCTBINARY (Document document, View view)
   ----------------------------------------------------------------------*/
 void CreateMCEILING (Document document, View view)
 {
-  CreateMathConstruct (40, 8968, 8969);}
+  CreateMathConstruct (40, 5, 6, TRUE);}
 /*----------------------------------------------------------------------
   CreateMCODOMAIN
   ----------------------------------------------------------------------*/
@@ -3713,7 +3897,7 @@ void CreateMCOMPLEMENT (Document document, View view)
   ----------------------------------------------------------------------*/
 void CreateMCOMPLEMENTSUB (Document document, View view)
 {
-  CreateMathConstruct (41, 8705);}
+  CreateMathConstruct (41, 8705);} 
 /*----------------------------------------------------------------------
   CreateMCOMPLEXCARTESIAN
   ----------------------------------------------------------------------*/
@@ -3927,7 +4111,7 @@ void CreateMFALSE (Document document, View view)
   ----------------------------------------------------------------------*/
 void CreateMFLOOR (Document document, View view)
 {
-  CreateMathConstruct (40, 8970, 8971);}
+  CreateMathConstruct (40, 3, 4, TRUE);}
 /*----------------------------------------------------------------------
   CreateMFORALL
   ----------------------------------------------------------------------*/
@@ -4017,7 +4201,7 @@ void CreateMINFINITY (Document document, View view)
   ----------------------------------------------------------------------*/
 void CreateMINFUNDER (Document document, View view)
 {
-  CreateMathConstruct (34, "inf");}
+  CreateMathConstruct (34, "inf");} 
 /*----------------------------------------------------------------------
   CreateMINT2
   ----------------------------------------------------------------------*/
@@ -4035,19 +4219,19 @@ void CreateMINTEGERS (Document document, View view)
   ----------------------------------------------------------------------*/
 void CreateMINTERSECT (Document document, View view)
 {
-  CreateMathConstruct (22, -1, 8898);}
+  CreateMathConstruct (22, -1, 0x22C2, 0x2229);}
 /*----------------------------------------------------------------------
   CreateMINTERSECTBINARY
   ----------------------------------------------------------------------*/
 void CreateMINTERSECTBINARY (Document document, View view)
 {
-  CreateMathConstruct (27, 8898);}
+  CreateMathConstruct (27, 0x2229);}
 /*----------------------------------------------------------------------
   CreateMINTERSECTUNDER
   ----------------------------------------------------------------------*/
 void CreateMINTERSECTUNDER (Document document, View view)
 {
-  CreateMathConstruct (21, 2, 8898);}
+  CreateMathConstruct (21, 2, 0x22C2);}
 /*----------------------------------------------------------------------
   CreateMINTUNDER
   ----------------------------------------------------------------------*/
@@ -4160,13 +4344,13 @@ void CreateMMAX (Document document, View view)
   ----------------------------------------------------------------------*/
 void CreateMMAXUNDER (Document document, View view)
 {
-  CreateMathConstruct (34, "max");}
+  CreateMathConstruct (34, "max");} 
 /*----------------------------------------------------------------------
   CreateMMEAN
   ----------------------------------------------------------------------*/
 void CreateMMEAN (Document document, View view)
 {
-  CreateMathConstruct (40, 9001, 9002);}
+  CreateMathConstruct (40, '<', '>', TRUE);}
 /*----------------------------------------------------------------------
   CreateMMEDIAN
   ----------------------------------------------------------------------*/
@@ -4184,7 +4368,7 @@ void CreateMMIN (Document document, View view)
   ----------------------------------------------------------------------*/
 void CreateMMINUNDER (Document document, View view)
 {
-  CreateMathConstruct (34, "min");}
+  CreateMathConstruct (34, "min");} 
 /*----------------------------------------------------------------------
   CreateMMINUSBINARY
   ----------------------------------------------------------------------*/
@@ -4280,13 +4464,13 @@ void CreateMOMEGASUB (Document document, View view)
   ----------------------------------------------------------------------*/
 void CreateMOR (Document document, View view)
 {
-  CreateMathConstruct (22, -1, 8744);}
+  CreateMathConstruct (22, -1, 0x22c1, 0x2228);}
 /*----------------------------------------------------------------------
   CreateMORBINARY
   ----------------------------------------------------------------------*/
 void CreateMORBINARY (Document document, View view)
 {
-  CreateMathConstruct (27, 8744);}
+  CreateMathConstruct (27, 0x2228);}
 /*----------------------------------------------------------------------
   CreateMORTHOGONAL
   ----------------------------------------------------------------------*/
@@ -4348,7 +4532,7 @@ void CreateMVERTICALBRACE (Document document, View view)
   ----------------------------------------------------------------------*/
 void CreateMPLUS (Document document, View view)
 {
-  CreateMathConstruct (22, -1, '+');}
+  CreateMathConstruct (22, -1, 0x2211, '+');}
 /*----------------------------------------------------------------------
   CreateMPOWER
   ----------------------------------------------------------------------*/
@@ -4372,13 +4556,13 @@ void CreateMPRIMES (Document document, View view)
   ----------------------------------------------------------------------*/
 void CreateMPRODUNDER (Document document, View view)
 {
-  CreateMathConstruct (21, 2, 8719);}
+  CreateMathConstruct (21, 2, 0x220F);}
 /*----------------------------------------------------------------------
   CreateMPRODUNDEROVER
   ----------------------------------------------------------------------*/
 void CreateMPRODUNDEROVER (Document document, View view)
 {
-  CreateMathConstruct (21, 1, 8719);}
+  CreateMathConstruct (21, 1, 0x220F);}
 /*----------------------------------------------------------------------
   CreateMPRSUBSET
   ----------------------------------------------------------------------*/
@@ -4486,7 +4670,7 @@ void CreateMSUBSETBINARY (Document document, View view)
   ----------------------------------------------------------------------*/
 void CreateMSUMUNDER (Document document, View view)
 {
-  CreateMathConstruct (21, 2, 8721);}
+  CreateMathConstruct (21, 2, 0x2211);}
 /*----------------------------------------------------------------------
   CreateMSUP2
   ----------------------------------------------------------------------*/
@@ -4528,7 +4712,7 @@ void CreateMTENDSTOTENDSTO (Document document, View view)
   ----------------------------------------------------------------------*/
 void CreateMTIMES (Document document, View view)
 {
-  CreateMathConstruct (22, -1, 215);}
+  CreateMathConstruct (22, -1, 0x220F, 215);}
 /*----------------------------------------------------------------------
   CreateMTIMESBINARY
   ----------------------------------------------------------------------*/
@@ -4552,25 +4736,25 @@ void CreateMTRUE (Document document, View view)
   ----------------------------------------------------------------------*/
 void CreateMUNION (Document document, View view)
 {
-  CreateMathConstruct (22, -1, 8899);}
+  CreateMathConstruct (22, -1, 0x22C3, 0x222A);}
 /*----------------------------------------------------------------------
   CreateMUNIONUNARY
   ----------------------------------------------------------------------*/
 void CreateMUNIONUNARY (Document document, View view)
 {
-  CreateMathConstruct (23, 8899, FALSE);}
+  CreateMathConstruct (23, 0x22C3, FALSE);}
 /*----------------------------------------------------------------------
   CreateMUNIONUNDER
   ----------------------------------------------------------------------*/
 void CreateMUNIONUNDER (Document document, View view)
 {
-  CreateMathConstruct (21, 2, 8899);}
+  CreateMathConstruct (21, 2, 0x22C3);}
 /*----------------------------------------------------------------------
   CreateMUNIONBINARY
   ----------------------------------------------------------------------*/
 void CreateMUNIONBINARY (Document document, View view)
 {
-  CreateMathConstruct (27, 8899);}
+  CreateMathConstruct (27, 0x222A);}
 /*----------------------------------------------------------------------
   CreateMVARIANCE
   ----------------------------------------------------------------------*/
@@ -4599,7 +4783,7 @@ void CreateMVECTORCOLUMN (Document document, View view)
   CreateMXOR
   ----------------------------------------------------------------------*/
 void CreateMXOR (Document document, View view)
-{CreateMathConstruct (22, -1, 0, "xor");}
+{CreateMathConstruct (22, -1, 0, "xor", 0);}
 
 /*----------------------------------------------------------------------
   CreateMXORBINARY
@@ -5264,7 +5448,8 @@ static ThotBool MathMoveForward ()
   Document      doc;
   Element       el, nextEl, leaf, ancestor, sibling, selected;
   ElementType   elType, successorType;
-  int           firstChar, lastChar, len;
+  AttributeType attrType;
+  int           firstChar, lastChar, len, i;
   NotifyElement event;
   ThotBool      done, found, ok;
 
@@ -5294,9 +5479,36 @@ static ThotBool MathMoveForward ()
         }
     }
   if (!done)
+    /* get the following element in the tree structure */
     {
-      /* get the following element in the tree structure */
-      nextEl = TtaGetSuccessor (el);
+      /* if there is an empty Construct leaf among the next few elements,
+         choose it  */
+      sibling = el;
+      nextEl = NULL;
+      for (i = 1; i < 4 && sibling && !nextEl; i++)
+        {
+          sibling = TtaGetFirstLeaf(TtaGetSuccessor (sibling));
+          if (sibling)
+            {
+              successorType = TtaGetElementType (sibling);
+              if (strcmp (TtaGetSSchemaName(successorType.ElSSchema),"MathML"))
+                /* we are no longer in the math expression. Do not go further*/
+                sibling = NULL;
+              else
+                if (successorType.ElTypeNum == MathML_EL_Construct ||
+                    successorType.ElTypeNum == MathML_EL_Construct1)
+                  /* this an empy construct */
+                  {
+                    attrType.AttrSSchema = successorType.ElSSchema;
+                    attrType.AttrTypeNum = MathML_ATTR_IntPlaceholder;
+                    if (!TtaGetAttribute (sibling, attrType))
+                      /* and it is not a placeholder. Take it. */
+                      nextEl = sibling;
+                  }
+            }
+        }
+      if (!nextEl)
+        nextEl = TtaGetSuccessor (el);
       /* skip comments */
       if (nextEl)
         {
@@ -7922,7 +8134,7 @@ void MathAttrColorCreated (NotifyAttribute *event)
         length = BUFLEN - 1;
       if (length > 0)
         TtaGiveTextAttributeValue (event->attribute, value, &length);  
-      HTMLSetForegroundColor (event->document, event->element, 0, value);
+      HTMLSetForegroundColor (event->document, event->element, 2000, value);
       TtaFreeMemory (value);
     }
 }
@@ -7993,7 +8205,7 @@ void MathAttrBackgroundCreated (NotifyAttribute *event)
         length = BUFLEN - 1;
       if (length > 0)
         TtaGiveTextAttributeValue (event->attribute, value, &length);  
-      HTMLSetBackgroundColor (event->document, event->element, 0, value);
+      HTMLSetBackgroundColor (event->document, event->element, 2000, value);
       TtaFreeMemory (value);
     }
 }
@@ -8803,4 +9015,3 @@ void HandleColAndRowAlignAttributes (Element row, Document doc)
        applies that attribute again to the whole table */
     HandleColumnlinesAttribute (attr, table, doc, FALSE);
 }
-

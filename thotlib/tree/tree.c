@@ -2084,22 +2084,22 @@ void                InsertFirstChild (PtrElement pOld, PtrElement pNew)
 void InsertElemInChoice (PtrElement pEl, PtrElement *pNew, PtrDocument pDoc,
                          ThotBool del)
 {
-  ThotBool            replace;
   PtrAttribute        pAttr, pA, pPrevA;
   PtrSSchema          pSS;
-  int                 T;
-  PtrElement          pE;
+  PtrElement          pE, pParent;
   PtrSRule            pSRule;
   PtrTextBuffer       buf, nextbuf;
+  int                 typenum;
+  ThotBool            replace;
   
   /* the new element will replace the CHOICE element */
   replace = TRUE;
-  if (!TypeHasException (ExcIsPlaceholder, pEl->ElTypeNumber,
-                         pEl->ElStructSchema) &&
-      pEl->ElParent != NULL)
+  pParent = pEl->ElParent;
+  if (!TypeHasException (ExcIsPlaceholder, pEl->ElTypeNumber, pEl->ElStructSchema) &&
+      pParent != NULL)
     /* ...except if the choice is a composite element */
-    if (pEl->ElParent->ElStructSchema->SsRule->SrElem[pEl->ElParent->ElTypeNumber - 1]->SrConstruct == CsAggregate ||
-        pEl->ElParent->ElStructSchema->SsRule->SrElem[pEl->ElParent->ElTypeNumber - 1]->SrConstruct == CsUnorderedAggregate)
+    if (pParent->ElStructSchema->SsRule->SrElem[pParent->ElTypeNumber - 1]->SrConstruct == CsAggregate ||
+        pParent->ElStructSchema->SsRule->SrElem[pParent->ElTypeNumber - 1]->SrConstruct == CsUnorderedAggregate)
       replace = FALSE;
   /* except if the choice has exceptions */
   pSRule = pEl->ElStructSchema->SsRule->SrElem[pEl->ElTypeNumber - 1];
@@ -2121,13 +2121,17 @@ void InsertElemInChoice (PtrElement pEl, PtrElement *pNew, PtrDocument pDoc,
   else
     /* replaces element CsChoice with the new element */
     {
+      // replace the refred element in the namespaces list
+      ReplaceNamespaceDeclaration (pDoc, *pNew, pEl);
+
       /* exchanges the types of the two elements */
       pSS = pEl->ElStructSchema;
-      T = pEl->ElTypeNumber;
+      typenum = pEl->ElTypeNumber;
       pEl->ElStructSchema = (*pNew)->ElStructSchema;
       pEl->ElTypeNumber = (*pNew)->ElTypeNumber;
       (*pNew)->ElStructSchema = pSS;
-      (*pNew)->ElTypeNumber = T;
+      (*pNew)->ElTypeNumber = typenum;
+      
       if ((*pNew)->ElReferredDescr != NULL)
         /* suppreses all references to the CHOICE element and to the */
         /* descriptor of the reference element  of the CHOIX element */
@@ -2225,11 +2229,10 @@ void InsertElemInChoice (PtrElement pEl, PtrElement *pNew, PtrDocument pDoc,
                   pEl->ElLanguage = (*pNew)->ElLanguage;
                 }
               /* adds the volume of the element to that of its ancestors */
-	      
               if (pEl->ElVolume != 0)
                 {
                   pE = pEl->ElParent;
-                  while (pE != NULL)
+                  while (pE)
                     {
                       pE->ElVolume = pE->ElVolume + pEl->ElVolume;
                       pE = pE->ElParent;
@@ -2296,7 +2299,6 @@ void InsertElemInChoice (PtrElement pEl, PtrElement *pNew, PtrDocument pDoc,
                 pEl->ElOtherPairedEl->ElOtherPairedEl = pEl;
               break;
             }
-	  
         }
       else if ((*pNew)->ElFirstChild != NULL)
         {
@@ -2423,7 +2425,7 @@ PtrElement NewSubtree (int typeNum, PtrSSchema pSS, PtrDocument pDoc,
   PtrTextBuffer       pBu1;
   PtrSSchema          pExtSSch;
 
-  if (typeNum == 0)
+  if (typeNum == 0 || typeNum > pSS->SsNRules)
     return NULL;
   pEl = NULL;			/* no element has been (yet) created */
   if (Root)
@@ -3089,12 +3091,23 @@ void DeleteElement (PtrElement *pEl, PtrDocument pDoc)
       /* remove extension schemas */
       UnlinkAllSchemasExtens (pEl1);
 
+      if (pDoc && !pEl1->ElTerminal)
+        // remove the namespace entry
+        RemoveNamespaceDeclaration (pDoc, pEl1);
       /* removes the element from the tree */
       RemoveElement (*pEl);
       /* frees all the Abstract boxes */
       if (pDoc)
         FreeAbEl (*pEl, pDoc);
       /* frees the memory */
+      if (FirstSelectedElement == *pEl)
+        {
+          SelectedDocument = NULL;
+          FirstSelectedElement = NULL;
+          LastSelectedElement = NULL;
+        }
+      else if (LastSelectedElement == *pEl)
+        LastSelectedElement = FirstSelectedElement;
       FreeElement (*pEl);
       *pEl = NULL;
     }

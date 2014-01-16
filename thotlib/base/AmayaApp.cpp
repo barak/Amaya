@@ -5,9 +5,9 @@
 #include "wx/image.h"
 #include "wx/imaglist.h"
 #include "wx/snglinst.h"
-#ifndef _GLPRINT
-  #include "wx/xrc/xmlres.h"          // XRC XML resouces
-#endif /* _GLPRINT */
+//#ifndef _GLPRINT
+#include "wx/xrc/xmlres.h"          // XRC XML resouces
+//#endif /* _GLPRINT */
 
 #include "thot_gui.h"
 #include "thot_sys.h"
@@ -41,12 +41,12 @@
 
 IMPLEMENT_APP(AmayaApp)
 
-#ifndef _GLPRINT
+//#ifndef _GLPRINT
 // defined into EDITORAPP.c or print.c
 extern int amaya_main (int argc, char** argv);
-#else /* _GLPRINT */
+//#else /* _GLPRINT */
 /* TODO */
-#endif /* #ifndef _GLPRINT */
+//#endif /* #ifndef _GLPRINT */
 
 #ifdef _GL
 /*
@@ -89,6 +89,57 @@ wxIcon AmayaApp::m_AppIcon = wxIcon();
 AmayaLogDebug * AmayaApp::m_pAmayaLogDebug = NULL;
 #endif /* #ifdef __WXDEBUG__ */
 
+#ifdef _MACOS
+#include "wx/mac/uma.h"
+#include "wx/mac/macnotfy.h"
+
+static int               fCount = 0;
+static wxString          fName[10];
+AEEventHandlerUPP        myDocHandler = NULL;
+extern void OpenNewDocFromArgv (char * url);
+
+pascal OSErr  MyHandleODoc (const AppleEvent *event , AppleEvent *reply , long WXUNUSED(refcon))
+{
+  return wxTheApp->MacHandleAEODoc ((AppleEvent*) event , reply);
+}
+
+/*----------------------------------------------------------------------
+ *       Class:  AmayaApp
+ *      Method:  OnInit
+ * Description:  this is the entry point
+  -----------------------------------------------------------------------*/
+short AmayaApp::MacHandleAEODoc(const WXEVENTREF event, WXEVENTREF WXUNUSED(reply))
+{
+  AEDescList docList;
+  AEKeyword  keywd;
+  DescType   returnedType;
+  Size       actualSize;
+  long       itemsInList;
+  OSErr      err;
+  wxString   url;
+  FSRef      theRef;
+  int        i;
+
+  err = AEGetParamDesc((AppleEvent *)event, keyDirectObject, typeAEList, &docList);
+  if (err != noErr)
+    return err;
+
+  err = AECountItems(&docList, &itemsInList);
+  if (err != noErr)
+    return err;
+  // store requested file names
+  fCount = (int)itemsInList;
+  for (i = 1; i <= itemsInList && i < 10; i++)
+    {
+      AEGetNthPtr (&docList, 1, typeFSRef, &keywd, &returnedType,
+		   (Ptr) & theRef, sizeof(theRef), &actualSize);
+      
+      fName[i-1] = wxMacFSRefToPath ( &theRef );
+    }
+  return err;
+}
+#endif /* _MACOS */
+
 /*----------------------------------------------------------------------
  *       Class:  AmayaApp
  *      Method:  OnInit
@@ -118,24 +169,33 @@ bool AmayaApp::OnInit()
   // Required for images
   wxImage::AddHandler(new wxGIFHandler);
   wxImage::AddHandler(new wxPNGHandler);
+
+#ifdef _MACOS
+        myDocHandler = NewAEEventHandlerUPP(MyHandleODoc);
+        AEInstallEventHandler( kCoreEventClass , kAEOpenDocuments ,
+                               myDocHandler , 0 , FALSE );
+#endif
+
   //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
   // check there is no other Amaya instance
   m_pAmayaInstance = new AmayaAppInstance( this );
   if (m_pAmayaInstance->IsAnotherAmayaRunning())
     {
-      wxLogError(_T("Another instance is running"));
-      
       wxString url;
+      wxLogError(_T("Another instance is running"));      
       if (wxApp::argc % 2 == 0)
-        /* The last argument in the command line is the document to be opened */
-        url = wxApp::argv[wxApp::argc-1];
-      m_pAmayaInstance->SendURLToOtherAmayaInstance( url );
-      return false;
+      /* The last argument in the command line is the document to be opened */
+      url = wxApp::argv[wxApp::argc-1];
+      if (m_pAmayaInstance->SendURLToOtherAmayaInstance( url ))
+	//printf("yes, it have been sent\n");
+	return false;
+      else
+	// start a new instance anyway
+	m_pAmayaInstance->StartURLGrabberServer();
     }
   else
-    {
-      m_pAmayaInstance->StartURLGrabberServer();
-    }  
+    m_pAmayaInstance->StartURLGrabberServer();
+
   //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 #ifdef _GL
   // try to find a good configuration for opengl
@@ -158,7 +218,7 @@ bool AmayaApp::OnInit()
   InitAmayaArgs();
   /* initialize the Registry */
   TtaInitializeAppRegistry(amaya_argv[0]);
-#ifndef _GLPRINT
+
   // Initialize all the XRC handlers. Always required (unless you feel like
   // going through and initializing a handler of each control type you will
   // be using (ie initialize the spinctrl handler, initialize the textctrl
@@ -173,8 +233,14 @@ bool AmayaApp::OnInit()
 
   // Now it's possible to load all the dialogs (need to be called after amaya_main or
   // TtaGetEnvString will return bad strings)
+#ifdef _WINDOWS
+  wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "WinPrintDlgWX.xrc") );
+#else /* _WINDOWS */
+  wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "PrintDlgWX.xrc") );
+#endif /* _WINDOWS */
 
-  // Attention: rajouter ici toutes les autres ressources a charger  
+#ifndef _GLPRINT
+  // You must add loaded resources there  
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "AuthentDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "CheckedListDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "ConfirmCloseTab.xrc") );
@@ -200,21 +266,21 @@ bool AmayaApp::OnInit()
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "Panel_Explorer.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "Panel_XML.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "PreferenceDlgWX.xrc") );
-#ifdef _WINDOWS
-  wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "WinPrintDlgWX.xrc") );
-#else /* _WINDOWS */
-  wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "PrintDlgWX.xrc") );
-#endif /* _WINDOWS */
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "SaveAsDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "SelectIntegralDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "SelectOperatorDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "SelectFenceAttributesDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "SearchDlgWX.xrc") );
+  wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "SendByMailDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "SpellCheckDlgWX.xrc") );
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "StyleDlgWX.xrc") ); 
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "TextDlgWX.xrc") ); 
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "TitleDlgWX.xrc") );
+#ifdef _MACOS
+  wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "Toolbar_mac.xrc") );
+#else /* _MACOS */
   wxXmlResource::Get()->Load( TtaGetResourcePathWX( WX_RESOURCES_XRC, "Toolbar.xrc") );
+#endif /* _MACOS */
   // TODO: rajouter ici toutes les autres ressources a charger (pour les dialogues)
 
   /* setup the socket event loop */
@@ -234,27 +300,7 @@ bool AmayaApp::OnInit()
   // fill the icons list
   SetupDocumentIconList();
 #endif /* _GLPRINT */
-#ifdef IV
-  // check there is no other Amaya instance
-  m_pAmayaInstance = new AmayaAppInstance( this );
-  if (m_pAmayaInstance->IsAnotherAmayaRunning())
-    {
-      wxLogError(_T("Another instance is running"));
-      
-      wxString url;
-      if (wxApp::argc % 2 == 0)
-        /* The last argument in the command line is the document to be opened */
-        url = wxApp::argv[wxApp::argc-1];
-      m_pAmayaInstance->SendURLToOtherAmayaInstance( url );
-      return false;
-    }
-  else
-    {
-      m_pAmayaInstance->StartURLGrabberServer();
-    }
-#endif /* IV */
   m_AmayaIsInit = true;
-  
   return true;
 }
 
@@ -271,7 +317,10 @@ int AmayaApp::OnExit()
   m_pAmayaInstance = NULL;
   // flush the clipboard in order to keep current text for further use in other applications
   wxTheClipboard->Flush();
+  // flush all pending events
+  //  Yield();
 
+#ifndef _GLPRINT
   // stop network loop
   m_SocketEventLoop->Stop();
   delete m_SocketEventLoop;
@@ -280,6 +329,7 @@ int AmayaApp::OnExit()
   // free documents icons
   delete m_pDocImageList;
   m_pDocImageList = NULL;
+#endif /* _GLPRINT */
 
   // free arguments
   ClearAmayaArgs();
@@ -293,16 +343,17 @@ int AmayaApp::OnExit()
 /*----------------------------------------------------------------------
  *       Class:  AmayaApp
  *      Method:  InitAmayaArgs
- * Description:  this methode convert wxApp::argc and wxApp::argv to amaya format
+ * Description:  this method converts wxApp::argc and wxApp::argv to amaya format
  *               amaya_argv must be free when closing application
   -----------------------------------------------------------------------*/
 void AmayaApp::InitAmayaArgs()
 {
+  int     i;
   // convert argc and argv in order to be compatible with amaya
   amaya_argc = wxApp::argc;
   amaya_argv = new char*[amaya_argc];
   
-  for ( int i = 0; i < amaya_argc; i++ )
+  for (i = 0; i < amaya_argc; i++)
     {
       // unicode to ascii convertion of every arguments
       wxString amaya_arg( wxApp::argv[i] );
@@ -313,15 +364,56 @@ void AmayaApp::InitAmayaArgs()
 
 /*----------------------------------------------------------------------
  *       Class:  AmayaApp
+ *      Method:  OpenQueryDocs
+ * Description:  
+  -----------------------------------------------------------------------*/
+void AmayaApp::OpenQueryDocs()
+{
+#if defined(_MACOS) && !defined(_GLPRINT)
+  int     i;
+
+  if (fCount)
+    {
+      if (m_AmayaIsLaunched)
+	{
+	  // the application is already running
+	  for (i = 0; i < fCount; i++)
+	    {
+	      char *buffer;
+	      
+	      buffer = (char *)TtaGetMemory (MAX_LENGTH);
+	      buffer[0] = EOS;
+	      strcpy(buffer, (const char*)fName[i].mb_str(wxConvUTF8) );
+	      OpenNewDocFromArgv (buffer);
+	      TtaFreeMemory (buffer);
+	    }
+	}
+      else
+	{
+	  for (i = 0; i < fCount; i++)
+	    {
+	      // unicode to ascii convertion of every arguments
+	      if (i+1 < amaya_argc)
+		TtaFreeMemory (amaya_argv[i+1]);
+	      amaya_argv[i+1] = (char *)TtaGetMemory (strlen((const char *)fName[i].mb_str(wxConvUTF8))+1);
+	      strcpy(amaya_argv[i+1], (const char*)fName[i].mb_str(wxConvUTF8));
+	    }
+	  amaya_argc = fCount + 1;
+	}
+    }
+  fCount = 0;
+#endif /* _MACOS && _GLPRINT */
+}
+
+/*----------------------------------------------------------------------
+ *       Class:  AmayaApp
  *      Method:  ClearAmayaArgs
  * Description:  free arguments -> must be called when appli exit
   -----------------------------------------------------------------------*/
 void AmayaApp::ClearAmayaArgs()
 {
   for ( int i = 0; i < amaya_argc; i++ )
-  {
     delete [] amaya_argv[i];
-  }  
   delete [] amaya_argv;
 }
 
@@ -337,19 +429,17 @@ void AmayaApp::OnIdle( wxIdleEvent& event )
   // launch user dialogs (ex: Confirm dialogs).
   // The dialogues can't be shown into OnInit because 
   // wxEventLoop is not ready at this place !
+  OpenQueryDocs();
   if (!m_AmayaIsLaunched && m_AmayaIsInit)
     {
       m_AmayaIsLaunched = TRUE;
-#ifndef _GLPRINT
+//#ifndef _GLPRINT
       // just call amaya main from EDITORAPP.c or print.c
       amaya_main( amaya_argc, amaya_argv );
-#else /* _GLPRINT */
-	  /* TODO */
-#endif /* _GLPRINT */
+//#endif /* _GLPRINT */
 
       // now let wxWidgets exit Amaya when there is no opened windows
       SetExitOnFrameDelete(TRUE);
-
       TtaSendStatsInfo();
     }
 
@@ -384,7 +474,7 @@ void AmayaApp::OnIdle( wxIdleEvent& event )
 /*----------------------------------------------------------------------
  *       Class:  AmayaApp
  *      Method:  GetGL_AttrList
- * Description:  static methode which returns the opengl best display attributes
+ * Description:  static method which returns the opengl best display attributes
   -----------------------------------------------------------------------*/
 int * AmayaApp::GetGL_AttrList()
 {
@@ -508,6 +598,7 @@ void AmayaApp::RegisterOpenURLCallback( void (*callback) (void *) )
 {
   m_pAmayaInstance->RegisterOpenURLCallback( callback );  
 }
+
 
 /*----------------------------------------------------------------------
  *       Class:  AmayaApp

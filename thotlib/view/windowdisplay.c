@@ -92,6 +92,10 @@ static int             NbWhiteSp;
 #define P2(N) (N*N)
 #define ALLOC_POINTS    300
 
+static ThotColor Draw_color = 0;
+static int       Draw_style = 1;
+static int       Draw_thick = 1;
+
 #ifndef _WIN_PRINT
 /*----------------------------------------------------------------------
   SetMainWindowBackgroundColor :                          
@@ -166,30 +170,42 @@ static void DrawArrowHead (int frame, int x1, int y1, int x2, int y2,
   DeleteObject (hPen);
 }
 
+
 /*----------------------------------------------------------------------
-  DrawOneLine draw one line starting from (x1, y1) to (x2, y2) in frame.
+  InitDrawing update the Graphic Context accordingly to parameters.
+  The parameter fg indicates the drawing color
   ----------------------------------------------------------------------*/
-static void  DrawOneLine (int frame, int thick, int style, int x1, int y1,
-                          int x2, int y2, int fg)
+static void InitDrawing (int style, int thick, int fg)
+{
+  Draw_color = ColorPixel (fg);
+  Draw_style = style;
+  Draw_thick = thick;
+}
+
+
+/*----------------------------------------------------------------------
+  DoDrawOneLine draw one line starting from (x1, y1) to (x2, y2) in frame.
+  ----------------------------------------------------------------------*/
+static void  DoDrawOneLine (int frame, int x1, int y1, int x2, int y2)
 {
   HPEN     hPen;
   HPEN     hOldPen;
   HDC      display;
 
-  if (thick == 0)
-    hPen = CreatePen (PS_NULL, thick, ColorPixel (fg));
+  if (Draw_thick == 0)
+    hPen = CreatePen (PS_NULL, Draw_thick, Draw_color);
   else
     {
-      switch (style)
+      switch (Draw_style)
         {
         case 3:
-          hPen = CreatePen (PS_DOT, thick, ColorPixel (fg));
+          hPen = CreatePen (PS_DOT, Draw_thick, Draw_color);
           break;
         case 4:
-          hPen = CreatePen (PS_DASH, thick, ColorPixel (fg)); 
+          hPen = CreatePen (PS_DASH, Draw_thick, Draw_color); 
           break;
         default:
-          hPen = CreatePen (PS_SOLID, thick, ColorPixel (fg));   
+          hPen = CreatePen (PS_SOLID, Draw_thick, Draw_color);   
           break;
         }
     }
@@ -403,6 +419,7 @@ void DisplayUnderline (int frame, int x, int y, int h, int type,
       thickness = (h / 20) + 1;
       bottom = h - thickness;
       middle = h / 2;
+      InitDrawing (5, thickness, fg);
       /*
        * for an underline independant of the font add
        * the following lines here :
@@ -414,21 +431,21 @@ void DisplayUnderline (int frame, int x, int y, int h, int type,
         {
         case 1: /* underlined */
           bottom += y;
-          DrawOneLine (frame, thickness, 5, x - lg, bottom, x, bottom, fg);
+          DoDrawOneLine (frame, x - lg, bottom, x, bottom);
           break;
 	  
         case 2: /* overlined */
-          DrawOneLine (frame, thickness, 5, x - lg, y, x, y, fg);
+          DoDrawOneLine (frame, x - lg, y, x, y);
           break;
 	  
         case 3: /* cross-over */
           middle += y;
-          DrawOneLine (frame, thickness, 5, x - lg, middle, x, middle, fg);
+          DoDrawOneLine (frame, x - lg, middle, x, middle);
           break;
 	  
         default: /* not underlined */
           break;
-        } 
+        }
     } 
 }
 
@@ -492,12 +509,13 @@ void DrawRadical (int frame, int thick, int x, int y, int l, int h,
   fh = FontHeight (font);
   xm = x + (fh / 2);
   xp = x + (fh / 4);
+  InitDrawing (5, thick, fg);
   /* vertical part */
-  DrawOneLine (frame, thick, 5, x, y + (2 * (h / 3)), xp - (thick / 2), y + h, fg);
+  DoDrawOneLine (frame, x, y + (2 * (h / 3)), xp - (thick / 2), y + h);
   /* Acending part */
-  DrawOneLine (frame, thick, 5, xp, y + h, xm, y, fg);
+  DoDrawOneLine (frame, xp, y + h, xm, y);
   /* Upper part */
-  DrawOneLine (frame, thick, 5, xm, y, x + l, y, fg);
+  DoDrawOneLine (frame, xm, y, x + l, y);
 }
 
 /*----------------------------------------------------------------------
@@ -597,13 +615,14 @@ void DrawSigma (int frame, int x, int y, int l, int h, ThotFont font, int fg)
     {
       xm = x + (l / 3);
       ym = y + (h / 2) - 1;
+      InitDrawing (5, 1, fg);
       /* Center */
-      DrawOneLine (frame, 1, 5, x, y + 1, xm, ym, fg);
-      DrawOneLine (frame, 1, 5, x, y + h - 2, xm, ym, fg);
+      DoDrawOneLine (frame, x, y + 1, xm, ym);
+      DoDrawOneLine (frame, x, y + h - 2, xm, ym);
        
       /* Borders */
-      DrawOneLine (frame, 1, 5, x, y, x + l, y, fg);
-      DrawOneLine (frame, 1, 5, x, y + h - 2, x + l, y + h - 2, fg);
+      DoDrawOneLine (frame, x, y, x + l, y);
+      DoDrawOneLine (frame, x, y + h - 2, x + l, y + h - 2);
     }
 }
 
@@ -632,10 +651,12 @@ void DrawPi (int frame, int x, int y, int l, int h, ThotFont font, int fg)
   else
     {
       /* Vertical part */
-      DrawOneLine (frame, 1, 5, x + 2, y + 1, x + 2, y + h, fg);
-      DrawOneLine (frame, 1, 5, x + l - 3, y + 1, x + l - 3, y + h, fg);
+      InitDrawing (5, 1, fg);
+      DoDrawOneLine (frame, x + 2, y + 1, x + 2, y + h);
+      DoDrawOneLine (frame, x + l - 3, y + 1, x + l - 3, y + h);
       /* Upper part */
-      DrawOneLine (frame, 2, 5, x + 1, y + 1, x + l, y, fg);
+      InitDrawing (5, 2, fg);
+      DoDrawOneLine (frame, x + 1, y + 1, x + l, y);
     }
 }
 
@@ -668,8 +689,9 @@ void DrawIntersection (int frame, int x, int y, int l, int h,
       /* radius of arcs is 6mm */
       arc = h / 4;
       /* vertical part */
-      DrawOneLine (frame, 2, 5, x + 1, y + arc, x + 1, y + h, fg);
-      DrawOneLine (frame, 2, 5, x + l - 2, y + arc, x + l - 2, y + h, fg);
+      InitDrawing (5, 2, fg);
+      DoDrawOneLine (frame, x + 1, y + arc, x + 1, y + h);
+      DoDrawOneLine (frame, x + l - 2, y + arc, x + l - 2, y + h);
 
       /* Upper part */
       hPen = CreatePen (PS_SOLID, 1, ColorPixel (fg));
@@ -681,7 +703,8 @@ void DrawIntersection (int frame, int x, int y, int l, int h,
       SelectClipRgn (display, clipRgn);
 #endif /* _WIN_PRINT */
       hOldPen = SelectObject (display, hPen);
-      Arc (display, x + 1, y + arc , x + l - 2, y, x + 1, y + arc, x + l - 2, y - arc);
+      // box + start and end points
+      Arc (display, x, y, x + l, y + arc, x + 1, y + arc, x + l - 2, y + arc);
       SelectObject (display, hOldPen);
       DeleteObject (hPen);
     }
@@ -715,8 +738,9 @@ void DrawUnion (int frame, int x, int y, int l, int h, ThotFont font, int fg)
       /* radius of arcs is 3mm */
       arc = h / 4;
       /* two vertical lines */
-      DrawOneLine (frame, 2, 5, x + 1, y, x + 1, y + h - arc, fg);
-      DrawOneLine (frame, 2, 5, x + l - 2, y, x + l - 2, y + h - arc, fg);
+      InitDrawing (5, 2, fg);
+      DoDrawOneLine (frame, x + 1, y, x + 1, y + h - arc);
+      DoDrawOneLine (frame, x + l - 2, y, x + l - 2, y + h - arc);
       /* Lower part */
       hPen = CreatePen (PS_SOLID, 1, ColorPixel (fg));
       y += h;
@@ -728,80 +752,328 @@ void DrawUnion (int frame, int x, int y, int l, int h, ThotFont font, int fg)
       SelectClipRgn (display, clipRgn);
 #endif /* _WIN_PRINT */
       hOldPen = SelectObject (display, hPen);
-      Arc (display, x + 1, y - arc , x + l - 2, y, x + 1, y - arc, x + l - 2, y - arc);
+      // box + start and end points
+      Arc (display, x, y - arc , x + l, y, x + 1, y - arc, x + l - 2, y - arc);
       SelectObject (display, hOldPen);
       DeleteObject (hPen);
     }
 }
 
 /*----------------------------------------------------------------------
-  DrawArrow draw an arrow following the indicated direction in degrees :
-  0 (right arrow), 45, 90, 135, 180,
-  225, 270 ou 315.
-  parameter fg indicates the drawing color
+  DrawArrow draw an arrow.
+  orientation in degrees : 0 (right arrow), 45, 90, 135, 180, 225, 270 ou 315.
+  type : 0 = Arrow, 1 = Arrow with opposite directions, 2 = DoubleArrow,
+         3 = DoubleArrow with opposite directions
+         4 = two arrows with opposite directions, 5 = TeeArrow, 6 = ArrowBar
+         7 = Vector,  8 = Vector with opposite directions, 9 = TeeVector,
+         10 = VectorBar, 
+         11 = two vectors with opposite directions = Equilibrium
+         12 = ReverseVector, 13 = ReverseVector with opposite directions,
+         14 = TeeReverseVector, 15 = ReverseVectorBar
+         
+  fg : drawing color
   ----------------------------------------------------------------------*/
-void DrawArrow (int frame, int thick, int style, int x, int y, int l,
-                int h, int orientation, int fg)
+void DrawArrow (int frame, int thick, int style, int x, int y, int l, int h,
+                int orientation, int type, int fg)
 {
-  int         xm, ym, xf, yf;
+  int                 xm, ym, xf, yf, D1, D2;
 
-  if (thick == 0 || fg < 0)
-    return;
-
+  if (fg < 0 || thick <= 0)return;
 #ifdef _WIN_PRINT
   if (y < 0)
     return;
 #endif /* _WIN_PRINT */
 
+  InitDrawing (style, thick, fg);
   y += FrameTable[frame].FrTopMargin;
   xm = x + ((l - thick) / 2);
   xf = x + l - 1;
   ym = y + ((h - thick) / 2);
   yf = y + h - 1;
 
-  if (orientation == 0)
+  D1 = thick + 5;
+
+  /* Vector or ReverseVector */
+  if(type >= 12 && type <= 15)D2 = -D1; else D2 = D1;
+
+  /* Draw a Tee (type = 5, 9, 14) or a Bar (type = 6, 10, 15)  */
+  if(type == 5 || type == 6 || type == 9 || type == 10 || type == 14 || type == 15)
     {
-      /* draw a right arrow */
-      DrawOneLine (frame, thick, style, x, ym, xf, ym, fg);
-      DrawArrowHead (frame, x, ym, xf, ym, thick, fg);
+    switch(orientation)
+      {
+      case 0:
+        if(type == 5 || type == 9 || type == 14)
+          DoDrawOneLine (frame, x, ym - D1, x, ym + D1);
+        else
+          DoDrawOneLine (frame, xf, ym - D1, xf, ym + D1);
+      break;
+      case 90:
+        if(type == 5 || type == 9 || type == 14)
+          DoDrawOneLine (frame, xm - D1, yf, xm + D1, yf);
+        else
+          DoDrawOneLine (frame, xm - D1, y, xm + D1, y);
+      break;
+      case 180:
+        if(type == 5 || type == 9 || type == 14)
+          DoDrawOneLine (frame, xf, ym - D1, xf, ym + D1);
+        else
+          DoDrawOneLine (frame, x, ym - D1, x, ym + D1);
+      break;
+      case 270:
+        if(type == 5 || type == 9 || type == 14)
+          DoDrawOneLine (frame, xm - D1, y, xm + D1, y);
+        else
+          DoDrawOneLine (frame, xm - D1, yf, xm + D1, yf);
+      break;
+      default:
+      break;
+      }
     }
-  else if (orientation == 45)
+
+  switch(type)
     {
-      DrawOneLine (frame, thick, style, x, yf, xf - thick + 1, y, fg);
-      DrawArrowHead (frame, x, yf, xf - thick + 1, y, thick, fg);
-    }
-  else if (orientation == 90)
-    {
-      /* draw a bottom-up arrow */
-      DrawOneLine (frame, thick, style, xm, y, xm, yf, fg);
-      DrawArrowHead (frame, xm, yf, xm, y, thick, fg);
-    }
-  else if (orientation == 135)
-    {
-      DrawOneLine (frame, thick, style, x, y, xf - thick + 1, yf, fg);
-      DrawArrowHead (frame, xf - thick + 1, yf, x, y, thick, fg);
-    }
-  else if (orientation == 180)
-    {
-      /* draw a left arrow */
-      DrawOneLine (frame, thick, style, x, ym, xf, ym, fg);
-      DrawArrowHead (frame, xf, ym, x, ym, thick, fg);
-    }
-  else if (orientation == 225)
-    {
-      DrawOneLine (frame, thick, style, x, yf, xf - thick + 1, y, fg);
-      DrawArrowHead (frame, xf - thick + 1, y, x, yf, thick, fg);
-    }
-  else if (orientation == 270)
-    {
-      /* draw a top-down arrow */
-      DrawOneLine (frame, thick, style, xm, y, xm, yf, fg);
-      DrawArrowHead (frame, xm, y, xm, yf, thick, fg);
-    }
-  else if (orientation == 315)
-    {
-      DrawOneLine (frame, thick, style, x, y, xf - thick + 1, yf, fg);
-      DrawArrowHead (frame, x, y, xf - thick + 1, yf, thick, fg);
+    case 0: /* Arrow */
+    case 5: /* TeeArrow */
+    case 6: /* ArrowBar */
+      switch(orientation)
+        {
+        case 0:
+          /* draw a right arrow */
+          DoDrawOneLine (frame, x, ym, xf, ym);
+          DrawArrowHead (frame, x, ym, xf, ym, thick, fg);
+        break;
+        case 45:
+          DoDrawOneLine (frame, x, yf, xf - thick + 1, y);
+          DrawArrowHead (frame, x, yf, xf - thick + 1, y, thick, fg);
+        break;
+        case 90:
+          /* draw a bottom-up arrow */
+          DoDrawOneLine (frame, xm, y, xm, yf);
+          DrawArrowHead (frame, xm, yf, xm, y, thick, fg);
+        break;
+        case  135:
+          DoDrawOneLine (frame, x, y, xf - thick + 1, yf);
+          DrawArrowHead (frame, xf - thick + 1, yf, x, y, thick, fg);
+        break;
+        case 180:
+          /* draw a left arrow */
+          DoDrawOneLine (frame, x, ym, xf, ym);
+          DrawArrowHead (frame, xf, ym, x, ym, thick, fg);
+        break;
+        case 225:
+          DoDrawOneLine (frame, x, yf, xf - thick + 1, y);
+          DrawArrowHead (frame, xf - thick + 1, y, x, yf, thick, fg);
+        break;
+        case 270:
+          /* draw a top-down arrow */
+          DoDrawOneLine (frame, xm, y, xm, yf);
+          DrawArrowHead (frame, xm, y, xm, yf, thick, fg);
+        break;
+        case 315:
+          DoDrawOneLine (frame, x, y, xf - thick + 1, yf);
+          DrawArrowHead (frame, x, y, xf - thick + 1, yf, thick, fg);
+        break;
+        default:
+        break;
+        }
+    break;
+
+    case 1: /* Arrow with opposite directions */
+      switch(orientation)
+        {
+        case 0:
+          DoDrawOneLine (frame, x, ym, xf, ym);
+          DrawArrowHead (frame, x, ym, xf, ym, thick, fg);
+          DrawArrowHead (frame, xf, ym, x, ym, thick, fg);
+        break;
+
+        case 90:
+          DoDrawOneLine (frame, xm, y, xm, yf);
+          DrawArrowHead (frame, xm, yf, xm, y, thick, fg);
+          DrawArrowHead (frame, xm, y, xm, yf, thick, fg);
+        break;
+
+        default:
+        break;
+        }
+    break;
+
+    case 2: /* DoubleArrow */
+      switch(orientation)
+        {
+        case 0:
+          DoDrawOneLine (frame, x, ym - D1/2, xf - D1/2, ym - D1/2);
+          DoDrawOneLine (frame, x, ym + D1/2, xf - D1/2, ym + D1/2);
+          DoDrawOneLine (frame, xf - D1, ym - D1, xf, ym);
+          DoDrawOneLine (frame, xf - D1, ym + D1, xf, ym);
+        break;
+        case 90:
+          DoDrawOneLine (frame, xm + D1/2, y + D1/2, xm + D1/2, yf);
+          DoDrawOneLine (frame, xm - D1/2, y + D1/2, xm - D1/2, yf);
+          DoDrawOneLine (frame, xm, y, xm - D1, y + D1);
+          DoDrawOneLine (frame, xm, y, xm + D1, y + D1);
+        break;
+        case 180:
+          DoDrawOneLine (frame, x + D1/2, ym + D1/2, xf, ym + D1/2);
+          DoDrawOneLine (frame, x + D1/2, ym - D1/2, xf, ym - D1/2);
+          DoDrawOneLine (frame, x, ym, x + D1, ym - D1);
+          DoDrawOneLine (frame, x, ym, x + D1, ym + D1);
+        break;
+        case 270:
+          DoDrawOneLine (frame, xm + D1/2, y, xm + D1/2, yf - D1/2);
+          DoDrawOneLine (frame, xm - D1/2, y, xm - D1/2, yf - D1/2);
+          DoDrawOneLine (frame, xm, yf, xm - D1, yf - D1);
+          DoDrawOneLine (frame, xm, yf, xm + D1, yf - D1);
+        break;
+
+        default:
+        break;
+        }
+    break;
+
+    case 3: /* DoubleArrow with opposite directions */
+      switch(orientation)
+        {
+        case 0:
+          DoDrawOneLine (frame, x + D1/2, ym - D1/2, xf - D1/2, ym - D1/2);
+          DoDrawOneLine (frame, x + D1/2, ym + D1/2, xf - D1/2, ym + D1/2);
+          DoDrawOneLine (frame, xf - D1, ym - D1, xf, ym);
+          DoDrawOneLine (frame, xf - D1, ym + D1, xf, ym);
+          DoDrawOneLine (frame, x, ym, x + D1, ym - D1);
+          DoDrawOneLine (frame, x, ym, x + D1, ym + D1);
+        break;
+        case 90:
+          DoDrawOneLine (frame, xm + D1/2, y + D1/2, xm + D1/2, yf - D1/2);
+          DoDrawOneLine (frame, xm - D1/2, y + D1/2, xm - D1/2, yf - D1/2);
+          DoDrawOneLine (frame, xm, y, xm - D1, y + D1);
+          DoDrawOneLine (frame, xm, y, xm + D1, y + D1);
+          DoDrawOneLine (frame, xm, yf, xm - D1, yf - D1);
+          DoDrawOneLine (frame, xm, yf, xm + D1, yf - D1);
+        break;
+
+        default:
+        break;
+        }
+    break;
+
+    case 4: /* two arrows with opposite directions */
+      switch(orientation)
+        {
+        case 0:
+          DoDrawOneLine (frame, x, ym - D1/2, xf, ym - D1/2);
+          DrawArrowHead (frame, x, ym - D1/2, xf, ym - D1/2, thick, fg);
+          DoDrawOneLine (frame, x, ym + D1/2, xf, ym + D1/2);
+          DrawArrowHead (frame, xf, ym + D1/2, x, ym + D1/2, thick, fg);
+        break;
+        case 90:
+          DoDrawOneLine (frame, xm - D1/2, y, xm - D1/2, yf);
+          DrawArrowHead (frame, xm - D1/2, yf, xm - D1/2, y, thick, fg);
+          DoDrawOneLine (frame, xm + D1/2, y, xm + D1/2, yf);
+          DrawArrowHead (frame, xm + D1/2, y, xm + D1/2, yf, thick, fg);
+        break;
+        case 180:
+          DoDrawOneLine (frame, x, ym + D1/2, xf, ym + D1/2);
+          DrawArrowHead (frame, x, ym + D1/2, xf, ym + D1/2, thick, fg);
+          DoDrawOneLine (frame, x, ym - D1/2, xf, ym - D1/2);
+          DrawArrowHead (frame, xf, ym - D1/2, x, ym - D1/2, thick, fg);
+        break;
+        case 270:
+          DoDrawOneLine (frame, xm + D1/2, y, xm + D1/2, yf);
+          DrawArrowHead (frame, xm + D1/2, yf, xm + D1/2, y, thick, fg);
+          DoDrawOneLine (frame, xm - D1/2, y, xm - D1/2, yf);
+          DrawArrowHead (frame, xm - D1/2, y, xm - D1/2, yf, thick, fg);
+        break;
+        default:
+        break;
+        }
+    break;
+
+
+    case 7: /* Vector */
+    case 9: /* TeeVector */
+    case 10: /* VectorBar */
+    case 12: /* ReverseVector */
+    case 14: /* TeeReverseVector*/ 
+    case 15: /* ReverseVectorBar */
+      switch(orientation)
+        {
+        case 0:
+          DoDrawOneLine (frame, x, ym, xf, ym);
+          DoDrawOneLine (frame, xf - D1, ym - D2, xf, ym);
+        break;
+        case 90:
+          DoDrawOneLine (frame, xm, y, xm, yf);
+          DoDrawOneLine (frame, xm, y, xm - D2, y + D1);
+        break;
+        case 180:
+          DoDrawOneLine (frame, x, ym, xf, ym);
+          DoDrawOneLine (frame, x, ym, x + D1, ym - D2);
+        break;
+        case 270:
+          DoDrawOneLine (frame, xm, y, xm, yf);
+          DoDrawOneLine (frame, xm, yf, xm - D2, yf - D1);
+        break;
+        default:
+        break;
+        }
+    break;
+
+    case 8: /* Vector with opposite directions */
+    case 13: /* ReverseVector with opposite directions */
+      switch(orientation)
+        {
+        case 0:
+          DoDrawOneLine (frame, x, ym, xf, ym);
+          DoDrawOneLine (frame, x, ym, xf, ym);
+          DoDrawOneLine (frame, x + D1, ym - D2, x, ym);
+          DoDrawOneLine (frame, xf - D1, ym - D2, xf, ym);
+        break;
+        case 90:
+          DoDrawOneLine (frame, xm, y, xm, yf);
+          DoDrawOneLine (frame, xm, y, xm, yf);
+          DoDrawOneLine (frame, xm, y, xm - D2, y + D1);
+          DoDrawOneLine (frame, xm, yf, xm - D2, yf - D1);
+        break;
+
+        default:
+        break;
+        }
+    break;
+
+    case 11: /* two vectors with opposite directions */
+      switch(orientation)
+        {
+       case 0:
+          DoDrawOneLine (frame, x, ym - D1/2, xf, ym - D1/2);
+          DoDrawOneLine (frame, xf, ym - D1/2, xf - D1/2 - D1, ym - D1/2 - D1);
+          DoDrawOneLine (frame, x, ym + D1/2, xf, ym + D1/2);
+          DoDrawOneLine (frame, x, ym + D1/2, x + D1/2 + D1, ym + D1/2 + D1);
+        break;
+         case 90:
+          DoDrawOneLine (frame, xm - D1/2, y, xm - D1/2, yf);
+          DoDrawOneLine (frame, xm - D1/2, y, xm - D1/2 - D2, y + D1);
+          DoDrawOneLine (frame, xm + D1/2, y, xm + D1/2, yf);
+          DoDrawOneLine (frame, xm + D1/2, yf, xm + D1/2 + D1, yf - D1);
+        break;
+       case 180:
+          DoDrawOneLine (frame, x, ym + D1/2, xf, ym + D1/2);
+          DoDrawOneLine (frame, xf, ym + D1/2, xf - D1/2 - D1, ym + D1/2 + D1);
+          DoDrawOneLine (frame, x, ym - D1/2, xf, ym - D1/2);
+          DoDrawOneLine (frame, x, ym - D1/2, x + D1/2 + D1, ym - D1/2 - D1);
+        break;
+        case 270:
+          DoDrawOneLine (frame, xm + D1/2, y, xm + D1/2, yf);
+          DoDrawOneLine (frame, xm + D1/2, y, xm + D1/2 + D1, y + D1);
+          DoDrawOneLine (frame, xm - D1/2, y, xm - D1/2, yf);
+          DoDrawOneLine (frame, xm - D1/2, yf, xm - D1/2 - D1, yf - D1);
+        break;
+        default:
+        break;
+        }
+    break;
+
+    default:
+    break;
     }
 }
 
@@ -908,17 +1180,18 @@ void DrawPointyBracket (int frame, int thick, int x, int y, int l, int h,
   else
     {
       /* Need more than one glyph */
+      InitDrawing (5, thick, fg);
       if (direction == 0)
         {
           /* Draw a opening bracket */
-          DrawOneLine (frame, thick, 5, x + l, y, x, y + (h / 2), fg);
-          DrawOneLine (frame, thick, 5, x, y + (h / 2), x + l, y + h, fg);
+          DoDrawOneLine (frame, x + l, y, x, y + (h / 2));
+          DoDrawOneLine (frame, x, y + (h / 2), x + l, y + h);
         }
       else
         {
           /* Draw a closing bracket */
-          DrawOneLine (frame, thick, 5, x, y, x + l, y + (h / 2), fg);
-          DrawOneLine (frame, thick, 5, x + l, y + (h / 2), x, y + h, fg);
+          DoDrawOneLine (frame, x, y, x + l, y + (h / 2));
+          DoDrawOneLine (frame, x + l, y + (h / 2), x, y + h);
         }
     }
 }
@@ -2269,11 +2542,22 @@ void DrawEllips (int frame, int thick, int style, int x, int y, int width,
   DrawHorizontalLine draw a vertical line aligned top center or bottom
   depending on align value.
   parameter fg indicates the drawing color
+  leftslice and rightslice say if the left and right borders are sliced.
   ----------------------------------------------------------------------*/
 void DrawHorizontalLine (int frame, int thick, int style, int x, int y,
-                         int l, int h, int align, int fg, PtrBox box)
+                         int l, int h, int align, int fg, PtrBox box,
+                         int leftslice, int rightslice)
 {
-  int        Y;
+  ThotPoint           point[4];
+  int                 Y, left, right;
+  int                 light = fg, dark = fg;
+  unsigned short      red, green, blue, sl = 50, sd = 100;
+  HPEN                hPen;
+  HPEN                hOldPen;
+  HDC                 display;
+  LOGBRUSH            logBrush;
+  HBRUSH              hBrush = NULL;
+  HBRUSH              hOldBrush;
 
   if (thick <= 0 || fg < 0)
     return;
@@ -2281,36 +2565,193 @@ void DrawHorizontalLine (int frame, int thick, int style, int x, int y,
   if (y < 0)
     return;
 #endif /* _WIN_PRINT */
+
+  if (style > 6 && align != 1)
+    {
+      /*  */
+      TtaGiveThotRGB (fg, &red, &green, &blue);
+      if (red < sd) sd = red;
+      if (green < sd) sd = green;
+      if (blue < sd) sd = blue;
+      dark = TtaGetThotColor ((unsigned short)(red - sd),
+		                      (unsigned short)(green - sd),
+							  (unsigned short)(blue - sd));
+      if (red + sl > 254) red = 255 - sl;
+      if (green + sl > 254) green = 255 - sl;
+      if (blue + sl > 254) blue = 255 - sl;
+      light = TtaGetThotColor ((unsigned short)(red + sl),
+                               (unsigned short)(green + sl),
+                               (unsigned short)(blue + sl));
+    }
+
   y += FrameTable[frame].FrTopMargin;
-  if (thick > 1 && style > 5)
+  if (style < 5 || thick < 2)
     {
       if (align == 1)
-        DrawRectangle (frame, 1, style, x, y + (h - thick) / 2, l, thick, fg, fg, 2);
+        Y = y + (h - thick) / 2;// middle
       else if (align == 2)
-        DrawRectangle (frame, 1, style, x, y + h - thick, l, thick, fg, fg, 2);
+        Y = y + h - (thick + 1) / 2;// bottom
       else
-        DrawRectangle (frame, 1, style, x, y, l, thick, fg, fg, 2);
+        Y = y + thick / 2;// top
+          
+      InitDrawing (style, thick, fg);
+      DoDrawOneLine (frame, x, Y, x + l, Y);
     }
   else
     {
-      if (align == 1)
-        Y = y + h / 2;
-      else if (align == 2)
-        Y = y + h - (thick + 1) / 2;
+      // check if the top of the box is displayed
+      left = leftslice;
+      right = rightslice;
+      if (style == 7 || style == 8)
+        {
+          thick = thick / 2; // groove, ridge
+          left = left / 2;
+          right = right / 2;
+        }
       else
-        Y = y + thick / 2;
-      DrawOneLine (frame, thick, style, x + thick / 2, Y, x + l - (thick + 1) / 2, Y, fg);
+        {
+          thick--; // solid, outset inset, double
+          if (left)
+            left--;
+          if (right)
+            right--;
+        }
+      if (align == 1)
+        {
+          // middle
+          point[0].x = x;
+          point[0].y = y + (h - thick) / 2;
+          point[1].x = x + l;
+          point[1].y = y + (h - thick) / 2;
+          point[2].x = x + l;
+          point[2].y = y + (h + thick) / 2;
+          point[3].x = x;
+          point[3].y = y + (h + thick) / 2;
+        }
+      else if (align == 2)
+        {
+          // bottom
+          if (style == 7 || style == 9)
+            // groove or inset
+            fg = light;
+          else if (style == 8 || style == 10)
+            // ridge or outset
+            fg = dark;
+          point[0].x = x + left;
+          point[0].y = y + h - thick;
+          point[1].x = x + l - right;
+          point[1].y = y + h - thick;
+          point[2].x = x + l;
+          point[2].y = y + h;
+          point[3].x = x;
+          point[3].y = y + h;
+        }
+      else
+        {
+          // top
+          if (style == 7 || style == 9)
+            // groove or inset
+            fg = dark;
+          else if (style == 8 || style == 10)
+            fg = light;
+          point[0].x = x;
+          point[0].y = y;
+          point[1].x = x + l;
+          point[1].y = y;
+          point[2].x = x + l - right;
+          point[2].y = y + thick;
+          point[3].x = x + left;
+          point[3].y = y + thick;
+        }
+
+      if (style == 6)
+        {
+          // double style
+          InitDrawing (5, 1, fg);
+          DoDrawOneLine (frame, (int)point[0].x, (int)point[0].y,
+                         (int)point[1].x, (int)point[1].y);
+          DoDrawOneLine (frame, (int)point[3].x, (int)point[3].y,
+                         (int)point[2].x, (int)point[2].y);
+        }
+      else
+        {
+#ifdef _WIN_PRINT
+          display = TtPrinterDC;
+#else  /* _WIN_PRINT */
+          display = TtDisplay;
+          SelectClipRgn (display, clipRgn);
+#endif /* _WIN_PRINT */
+          logBrush.lbColor = ColorPixel (fg);
+          logBrush.lbStyle = BS_SOLID;
+          hBrush = CreateBrushIndirect (&logBrush); 
+          /* fill the polygon */
+          hPen = CreatePen (PS_NULL, thick, ColorPixel (fg));
+          hOldPen = SelectObject (display, hPen);
+          hOldBrush = SelectObject (display, hBrush);
+          Polygon (display, point, 4);
+          SelectObject (display, hOldPen);
+          DeleteObject (hPen);
+          SelectObject (display, hOldBrush);
+          DeleteObject (hBrush);
+          if (align != 1 && (style == 7 || style == 8))
+            {
+              // invert light and dark
+              if (fg == dark)
+                fg = light;
+              else
+                fg = dark;
+              if (align == 0)
+                {
+                  // top
+                  point[0].x = point[3].x + left;
+                  point[0].y = point[3].y + thick;
+                  point[1].x = point[2].x - right;
+                  point[1].y = point[2].y + thick;
+                }
+              else
+                {
+                  // bottom
+                  point[2].x = point[1].x + left;
+                  point[2].y = point[1].y - thick;
+                  point[3].x = point[0].x - right;
+                  point[3].y = point[0].y - thick;
+                }
+              logBrush.lbColor = ColorPixel (fg);
+              logBrush.lbStyle = BS_SOLID;
+              hBrush = CreateBrushIndirect (&logBrush); 
+              /* fill the polygon */
+              hPen = CreatePen (PS_NULL, thick, ColorPixel (fg));
+              hOldPen = SelectObject (display, hPen);
+              hOldBrush = SelectObject (display, hBrush);
+              Polygon (display, point, 4);
+              SelectObject (display, hOldPen);
+              DeleteObject (hPen);
+              SelectObject (display, hOldBrush);
+              DeleteObject (hBrush);
+            }
+        }
     }
 }
 /*----------------------------------------------------------------------
   DrawVerticalLine draw a vertical line aligned left center or right
   depending on align value.
   parameter fg indicates the drawing color
+  topslice and bottomslice say if the top and bottom borders are sliced.
   ----------------------------------------------------------------------*/
 void DrawVerticalLine (int frame, int thick, int style, int x, int y, int l,
-                       int h, int align, int fg, PtrBox box)
+                       int h, int align, int fg, PtrBox box,
+                       int topslice, int bottomslice)
 {
-  int        X;
+  ThotPoint           point[4];
+  int                 X, top = y, bottom = y + h;
+  int                 light = fg, dark = fg;
+  unsigned short      red, green, blue , sl = 50, sd = 100;
+  HPEN                hPen;
+  HPEN                hOldPen;
+  HDC                 display;
+  LOGBRUSH            logBrush;
+  HBRUSH              hBrush = NULL;
+  HBRUSH              hOldBrush;
 
   if (thick <= 0 || fg < 0)
     return;
@@ -2319,25 +2760,170 @@ void DrawVerticalLine (int frame, int thick, int style, int x, int y, int l,
     return;
 #endif /* _WIN_PRINT */
 
+  if (style > 6 && align != 1)
+    {
+      /*  */
+      TtaGiveThotRGB (fg, &red, &green, &blue);
+      if (red < sd) sd = red;
+      if (green < sd) sd = green;
+      if (blue < sd) sd = blue;
+      dark = TtaGetThotColor ((unsigned short)(red - sd),
+		                      (unsigned short)(green - sd),
+							  (unsigned short)(blue - sd));
+      if (red + sl > 254) red = 255 - sl;
+      if (green + sl > 254) green = 255 - sl;
+      if (blue + sl > 254) blue = 255 - sl;
+      light = TtaGetThotColor ((unsigned short)(red + sl),
+                               (unsigned short)(green + sl),
+                               (unsigned short)(blue + sl));
+    }
+
   y += FrameTable[frame].FrTopMargin;
-  if (thick > 1 && style > 5)
+  if (style < 5 || thick < 2)
     {
       if (align == 1)
-        DrawRectangle (frame, 1, style, x + (l - thick) / 2, y, thick, h, fg, fg, 2);
+        X = x + (l - thick) / 2;// midle
       else if (align == 2)
-        DrawRectangle (frame, 1, style, x + l - thick, y, thick, h, fg, fg, 2);
+        X = x + l - (thick + 1) / 2;// right
       else
-        DrawRectangle (frame, 1, style, x, y, thick, h, fg, fg, 2);
+        X = x + thick / 2;// left
+            
+      InitDrawing (style, thick, fg);
+      DoDrawOneLine (frame, X, y, X, y + h);
     }
   else
     {
-      if (align == 1)
-        X = x + thick / 2;
-      else if (align == 2)
-        X = x + l - (thick + 1) / 2;
+      // check if the top of the box is displayed
+      top = topslice;
+      bottom = bottomslice;
+      if (style == 7 || style == 8)
+        {
+          thick = thick / 2; // groove, ridge
+          top = top / 2;
+          bottom = bottom / 2;
+        }
       else
-        X = x + thick / 2;
-      DrawOneLine (frame, thick, style, X, y + thick / 2, X, y + h - (thick + 1) / 2, fg);
+        {
+          thick--; // solid, outset, inset style
+          if (top)
+            top--;
+          if (bottom)
+            bottom--;
+        }
+      if (align == 1)
+        {
+          // midle
+          point[0].x = x + (l - thick) / 2;
+          point[0].y = y;
+          point[1].x = x + (l + thick) / 2;
+          point[1].y = y;
+          point[2].x = x + (l + thick) / 2;
+          point[2].y = y + h;
+          point[3].x = x + (l - thick) / 2;
+          point[3].y = y + h;
+        }
+      else if (align == 2)
+        {
+          // right
+          if (style == 7 || style == 9)
+            // groove or inset
+            fg = light;
+          else if (style == 8 || style == 10)
+            // ridge or outset
+            fg = dark;
+          point[0].x = x + l - thick;
+          point[0].y = y + top;
+          point[1].x = x + l;
+          point[1].y = y;
+          point[2].x = x + l;
+          point[2].y = y + h;
+          point[3].x = x + l - thick;
+          point[3].y = y + h - bottom;
+        }
+      else
+        {
+          // left
+          if (style == 7 || style == 9)
+            // groove or inset
+            fg = dark;
+          else if (style == 8 || style == 10)
+            // ridge or outset
+            fg = light;
+          point[0].x = x;
+          point[0].y = y;
+          point[1].x = x + thick;
+          point[1].y = y + top;
+          point[2].x = x + thick;
+          point[2].y = y + h - bottom;
+          point[3].x = x;
+          point[3].y = y + h;
+        }
+      if (style == 6)
+        {
+          // double style
+          InitDrawing (5, 1, fg);
+          DoDrawOneLine (frame, (int)point[0].x, (int)point[0].y,
+                         (int)point[3].x, (int)point[3].y);
+          DoDrawOneLine (frame, (int)point[1].x, (int)point[1].y,
+                         (int)point[2].x, (int)point[2].y);
+        }
+      else
+        {
+#ifdef _WIN_PRINT
+          display = TtPrinterDC;
+#else  /* _WIN_PRINT */
+          display = TtDisplay;
+          SelectClipRgn (display, clipRgn);
+#endif /* _WIN_PRINT */
+          logBrush.lbColor = ColorPixel (fg);
+          logBrush.lbStyle = BS_SOLID;
+          hBrush = CreateBrushIndirect (&logBrush); 
+          /* fill the polygon */
+          hPen = CreatePen (PS_NULL, thick, ColorPixel (fg));
+          hOldPen = SelectObject (display, hPen);
+          hOldBrush = SelectObject (display, hBrush);
+          Polygon (display, point, 4);
+          SelectObject (display, hOldPen);
+          DeleteObject (hPen);
+          SelectObject (display, hOldBrush);
+          DeleteObject (hBrush);
+          if (align != 1 && (style == 7 || style == 8))
+            {
+              // invert light and dark
+              if (fg == dark)
+                fg = light;
+              else
+                fg = dark;
+              if (align == 0)
+                {
+                  // left
+                  point[0].x = point[1].x + thick;
+                  point[0].y = point[1].y + top;
+                  point[3].x = point[2].x + thick;
+                  point[3].y = point[2].y - bottom;
+                }
+              else
+                {
+                  // right
+                  point[1].x = point[0].x - thick;
+                  point[1].y = point[0].y + top;
+                  point[2].x = point[3].x - thick;
+                  point[2].y = point[3].y - bottom;
+                }
+              logBrush.lbColor = ColorPixel (fg);
+              logBrush.lbStyle = BS_SOLID;
+              hBrush = CreateBrushIndirect (&logBrush); 
+              /* fill the polygon */
+              hPen = CreatePen (PS_NULL, thick, ColorPixel (fg));
+              hOldPen = SelectObject (display, hPen);
+              hOldBrush = SelectObject (display, hBrush);
+              Polygon (display, point, 4);
+              SelectObject (display, hOldPen);
+              DeleteObject (hPen);
+              SelectObject (display, hOldBrush);
+              DeleteObject (hBrush);
+            }
+        }
     }
 }
 
@@ -2345,18 +2931,89 @@ void DrawVerticalLine (int frame, int thick, int style, int x, int y, int l,
   DrawHat draw a hat aligned top
   The parameter fg indicates the drawing color.
   ----------------------------------------------------------------------*/
-void DrawHat (int frame, int thick, int style, int x, int y,
-              int l, int h, int align, int fg)
+void DrawHat (int frame, int thick, int style, int x, int y, int l, int h,
+              int fg, int direction)
 {
-  int        Y;
+  int Y;
 
+  h -= thick;
+  l -= thick;
   if (thick > 0 && fg >= 0)
     {
-      y += FrameTable[frame].FrTopMargin;
-      y += (h - thick) / 2;
-      Y = y + (h - thick) / 2;
-      DrawOneLine (frame, thick, style, x, Y, x + (l / 2), y, fg);
-      DrawOneLine (frame, thick, style, x + (l / 2), y, x + l - thick, Y, fg);
+      y += FrameTable[frame].FrTopMargin + h / 2;
+      Y = y + direction * h / 2;
+      InitDrawing (style, thick, fg);
+      DoDrawOneLine (frame, x, Y, x + l/2, y);
+      DoDrawOneLine (frame, x + l/2, y, x + l, Y);
+    }
+}
+
+/*----------------------------------------------------------------------
+  DrawTilde draw a hat aligned top
+  The parameter fg indicates the drawing color.
+  ----------------------------------------------------------------------*/
+void DrawTilde (int frame, int thick, int style, int x, int y, int l, int h, int fg)
+{
+  int X, Y1, Y2, Xmax, Ymax;
+
+  h -= thick;
+  l -= thick;
+  if (thick > 0 && fg >= 0)
+    {
+      Xmax = 10;
+      Ymax = h / 3;
+      y += FrameTable[frame].FrTopMargin + h / 2;
+      InitDrawing (style, thick, fg);
+
+      for(X = 1, Y1 = 0; X <= Xmax; X++)
+        {     
+        Y2 = (int)(((float) Ymax) * DSIN (X*M_PI_DOUBLE/Xmax));
+        InitDrawing (style, thick, fg);
+        DoDrawOneLine (frame, x + (X-1)*l/Xmax, y + Y1, x + X*l/Xmax, y + Y2);
+        Y1 = Y2;
+        }
+    }
+}
+
+/*----------------------------------------------------------------------
+  DrawHorizontalBrace draw a horizontal brace aligned top or bottom
+  depending on align value.
+  The parameter fg indicates the drawing color.
+  ----------------------------------------------------------------------*/
+void DrawHorizontalParenthesis (int frame, int thick, int style, int x, int y,
+                          int l, int h, int align, int fg)
+{
+  int         xf, yf;
+  HPEN        hPen;
+  HPEN        hOldPen;
+  HDC         display;
+
+  h -= thick;
+  l -= thick;
+  xf = x + l - thick / 2;
+  yf = y + h - thick / 2;
+  x += thick / 2;
+  y +=  FrameTable[frame].FrTopMargin;
+  y += thick / 2;
+  if (thick > 0 && fg >= 0)
+    {
+#ifdef _WIN_PRINT
+      display = TtPrinterDC;
+#else /* _WIN_PRINT */
+      display = TtDisplay;
+      SelectClipRgn (display, clipRgn);
+#endif /* _WIN_PRINT */
+      hPen = CreatePen (PS_DOT, thick, ColorPixel (fg));
+      hOldPen = SelectObject (display, hPen);
+      InitDrawing (style, thick, fg);
+      if (align)
+        // box + start and end points
+        Arc (display, x, y, xf, yf, x, yf, xf, yf);
+      else
+        // box + start and end points
+        Arc (display, x, y, xf, yf, x, y, xf, y);
+      SelectObject (display, hOldPen);
+      DeleteObject (hPen);
     }
 }
 
@@ -2378,24 +3035,54 @@ void DrawHorizontalBrace (int frame, int thick, int style, int x, int y,
 #endif /* _WIN_PRINT */
   y += FrameTable[frame].FrTopMargin;
   Y = y + (h - thick) / 2;
-  DrawOneLine (frame, thick, style, x, Y, x + l, Y, fg);
+  InitDrawing (style, thick, fg);
+  DoDrawOneLine (frame, x, Y, x + l, Y);
   if (align == 0)
     /* Over brace */
     {
-      DrawOneLine (frame, thick, style, x, Y, x, y + h, fg);
-      DrawOneLine (frame, thick, style, x + (l / 2), Y, x + (l / 2), y, fg);
-      DrawOneLine (frame, thick, style, x + l - thick, Y, x + l - thick, y + h, fg);
+      DoDrawOneLine (frame, x, Y, x, y + h);
+      DoDrawOneLine (frame, x + (l / 2), Y, x + (l / 2), y);
+      DoDrawOneLine (frame, x + l - thick, Y, x + l - thick, y + h);
     }
   else
     /* Underbrace */
     {
-      DrawOneLine (frame, thick, style, x, Y, x, y, fg);
-      DrawOneLine (frame, thick, style, x + (l / 2), Y, x + (l / 2), y + h, fg);
-      DrawOneLine (frame, thick, style, x + l - thick, Y, x + l - thick, y, fg);
+      DoDrawOneLine (frame, x, Y, x, y);
+      DoDrawOneLine (frame, x + (l / 2), Y, x + (l / 2), y + h);
+      DoDrawOneLine (frame, x + l - thick, Y, x + l - thick, y);
     }
 }
 
+/*----------------------------------------------------------------------
+  DrawHorizontalBracket draw a horizontal brace aligned top or bottom
+  depending on align value.
+  The parameter fg indicates the drawing color.
+  ----------------------------------------------------------------------*/
+void DrawHorizontalBracket (int frame, int thick, int style, int x, int y,
+                          int l, int h, int align, int fg)
+{
+  int        Y;
 
+  if (thick > 0 && fg >= 0)
+    {
+      y += FrameTable[frame].FrTopMargin;
+      Y = y + (h - thick) / 2;
+      InitDrawing (style, thick, fg);
+      DoDrawOneLine (frame, x, Y, x + l, Y);
+      if (align == 0)
+        /* Over bracket */
+        {
+          DoDrawOneLine (frame, x, Y, x, y + h);
+          DoDrawOneLine (frame, x + l - thick, Y, x + l - thick, y + h);
+        }
+      else
+        /* Under bracket */
+        {
+          DoDrawOneLine (frame, x, Y, x, y);
+          DoDrawOneLine (frame, x + l - thick, Y, x + l - thick, y);
+        }
+    }
+}
 
 /*----------------------------------------------------------------------
   DrawSlash draw a slash or backslash depending on direction.
@@ -2417,10 +3104,11 @@ void DrawSlash (int frame, int thick, int style, int x, int y, int l, int h,
   y += FrameTable[frame].FrTopMargin;
   xf = x + l;
   yf = y + h;
+  InitDrawing (style, thick, fg);
   if (direction == 0)
-    DrawOneLine (frame, thick, style, x, yf, xf, y, fg);
+    DoDrawOneLine (frame, x, yf, xf, y);
   else
-    DrawOneLine (frame, thick, style, x, y, xf, yf, fg);
+    DoDrawOneLine (frame, x, y, xf, yf);
 }
 
 /*----------------------------------------------------------------------

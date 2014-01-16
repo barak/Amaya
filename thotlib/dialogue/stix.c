@@ -65,8 +65,8 @@ typedef struct _MapEntry {
 /* Mapping of Unicode symbols (0x3D0-0x3FF) to esstix fonts */
 int Stix_Greek_Start = 0x3D0;
 MapEntry     Stix_Greek [] = {
-  /* 3Dx */ {0, 0x00}, {11, 0x77}, {11, 0x59}, {0, 0x00},
-  {0, 0x00}, {0, 0x00}, {11, 0x36}, {9, 0x38},
+  /* 3Dx */ {11, 0x30}, {11, 0x77}, {11, 0x59}, {0, 0x00},
+  {0, 0x00}, {9, 0x66}, {11, 0x36}, {0, 0x00},
   {0, 0x00}, {0, 0x00}, {0, 0x00}, {0, 0x00},
   {0, 0x00}, {0, 0x00}, {0, 0x00}, {0, 0x00},
   /* 3Ex */ {0, 0x00}, {0, 0x00}, {0, 0x00}, {0, 0x00},
@@ -74,7 +74,7 @@ MapEntry     Stix_Greek [] = {
   {0, 0x00}, {0, 0x00}, {0, 0x00}, {0, 0x00},
   {0, 0x00}, {0, 0x00}, {0, 0x00}, {0, 0x00},
   /* 3Fx */ {11, 0x38}, {11, 0x39}, {0, 0x00}, {0, 0x00},
-  {0, 0x00}, {0, 0x00}, {0, 0x00}, {0, 0x00},
+  {0, 0x00}, {9, 0x65}, {0, 0x00}, {0, 0x00},
   {0, 0x00}, {0, 0x00}, {0, 0x00}, {0, 0x00},
   {0, 0x00}, {0, 0x00}, {0, 0x00}, {0, 0x00}
 };
@@ -95,12 +95,12 @@ MapEntry     Stix_Symbs [] = {
   {14, 0x5a}, {16, 0x42}, {11, 0x55}, {11, 0x5b},
   {16, 0x69}, {12, 0x31}, {0, 0x00}, {0, 0x00},
   {15, 0x42}, {15, 0x43}, {13, 0x65}, {13, 0x65},
-  /* 213x */ {13, 0x45}, {15, 0x46}, {0, 0x00}, {15, 0x4D},
+  /* 213x */ {13, 0x45}, {13, 0x46}, {0, 0x00}, {15, 0x4D},
   {13, 0x6f}, {14, 0x61}, {14, 0x62}, {14, 0x64},
   {14, 0x63}, {0, 0x00}, {0, 0x00}, {0, 0x00},
   {0, 0x00}, {0, 0x00}, {0, 0x00}, {0, 0x00},
   /* 214x */ {12, 0x76}, {0, 0x00}, {0, 0x00}, {0, 0x00},
-  {0, 0x00}, {12, 0x76}, {0, 0x00}, {13, 0x65},
+  {0, 0x00}, {0, 0x00}, {0, 0x00}, {13, 0x65},
   {13, 0x69}, {0, 0x00}, {0, 0x00}, {0, 0x00}
 };
 #define Stix_Symbs_length sizeof(Stix_Symbs) / sizeof(MapEntry)
@@ -194,7 +194,7 @@ MapEntry     Stix_MathOp2 [] = {
   {4, 0x39}, {5, 0x49}, {0, 0x00}, {2, 0x76},
   {2, 0x77}, {0, 0x00}, {3, 0x3c}, {3, 0x3d},
   /* 22cx */ {2, 0x6f}, {2, 0x6e}, {2, 0x68}, {2, 0x67},
-  {0, 0x00}, {4, 0x2c}, {4, 0x2d}, {5, 0x4a},
+  {2, 0x3e}, {4, 0x2c}, {4, 0x2d}, {5, 0x4a},
   {5, 0x29}, {5, 0x26}, {5, 0x28}, {5, 0x2b},
   {5, 0x2a}, {4, 0xa3}, {2, 0x75}, {2, 0x74},
   /* 22dx */ {4, 0x36}, {4, 0x4c}, {2, 0x6a}, {2, 0x69},
@@ -252,6 +252,17 @@ MapEntry     Stix_GeomShapes [] = {
 };
 #define Stix_GeomShapes_length sizeof(Stix_GeomShapes) / sizeof(MapEntry)
 
+/* Mapping of Unicode symbols (0xFE30-0xFE3F) to esstix fonts */
+int Stix_OverBrace_Start = 0xFE30;
+MapEntry     Stix_OverBrace [] = {
+  /* FE3x */ {0, 0x00}, {0, 0x00}, {0, 0x00}, {0, 0x00},
+  {0, 0x00}, {17, 0x54}, {17, 0x54}, {7, 0x55},
+  {7, 0x55}, {0, 0x00}, {0, 0x00}, {0, 0x00},
+  {0, 0x00}, {0, 0x00}, {0, 0x00}, {0, 0x00}
+};
+#define Stix_OverBrace_length sizeof(Stix_OverBrace) / sizeof(MapEntry)
+
+#ifndef _GL
 /*----------------------------------------------------------------------
   DrawCompoundBraceStix
   Draw a big brace with several characters from the Esstix-eight font.
@@ -344,6 +355,7 @@ static void DrawCompoundBraceStix (int frame, int x, int y, int l, int h,
         }
     }
 }
+#endif
 
 /*----------------------------------------------------------------------
   DrawCompoundExtendedStix
@@ -540,7 +552,40 @@ void DrawStixIntegral (int frame, int x, int y, int l, int h,
           else if (h < MID_CHAR)
             symb = 0x26;
           else
-            symb = 0x39;
+            symb = 0x38;
+          DrawStixChar (font, symb, x, y, h, fg, frame);
+        }
+      if (type == 6)	
+        /* Clockwise Integral */
+        {
+          if (h < LOW_CHAR)
+            symb = 0x2B;
+          else if (h < MID_CHAR)
+            symb = 0x3C;
+          else
+            symb = 0x4D;
+          DrawStixChar (font, symb, x, y, h, fg, frame);
+        }
+      if (type == 7)	
+        /* Clockwise Contour Integral */
+        {
+          if (h < LOW_CHAR)
+            symb = 0x2A;
+          else if (h < MID_CHAR)
+            symb = 0x3B;
+          else
+            symb = 0x4C;
+          DrawStixChar (font, symb, x, y, h, fg, frame);
+        }
+      if (type == 8)	
+        /* Counter Clockwise Contour integral */
+        {
+          if (h < LOW_CHAR)
+            symb = 0x29;
+          else if (h < MID_CHAR)
+            symb = 0x3A;
+          else
+            symb = 0x4B;
           DrawStixChar (font, symb, x, y, h, fg, frame);
         }
     }
@@ -582,21 +627,33 @@ static int StixIntegralWidth (int height, int type)
           if (type == 3)
             i += i/2; /* triple integral, drawn as 3 single integrals */
         }
-      else if (type == 1)
-        i = CharacterWidth (0x46, font);
+      else
+        {
+          i = CharacterWidth (0x46, font);
+          if (type == 4)
+            i *= 2;
+          if (type == 5)
+            i *= 3;
+        }
     }
   else if (height < MID_CHAR)
     {
       if (type == 0 || type == 2 || type == 3)
         {
           i = CharacterWidth (0x21, font);
-          if (type == 2)
-            i += i/4;
-          if (type == 3)
-            i += i/2;
+          if (type == 4)
+            i *= 2;
+          if (type == 5)
+            i *= 3;
         }
-      else if (type == 1)
-        i = CharacterWidth (0x23, font);
+      else
+        {
+          i = CharacterWidth (0x23, font);
+          if (type == 4)
+            i += i/2;
+          if (type == 5)
+            i += i;
+        }
     }
   else 
     {
@@ -608,8 +665,14 @@ static int StixIntegralWidth (int height, int type)
           if (type == 3)
             i += i/2;
         }
-      else if (type == 1)
-        i = CharacterWidth (0x35, font);
+      else
+        {
+          i = CharacterWidth (0x35, font);
+          if (type == 4)
+            i += i/4;
+          if (type == 5)
+            i += i/2;
+        }
     }
   return i;
 }
@@ -617,9 +680,10 @@ static int StixIntegralWidth (int height, int type)
 /*----------------------------------------------------------------------
   DrawStixBracket draw an opening or closing bracket (depending on direction)
   parameter fg indicates the drawing color
+  type : 0 = Bracket ; 1 = DoubleBracket ; 2 = Ceiling ; 3 = Floor
   ----------------------------------------------------------------------*/
 void DrawStixBracket (int frame, int x, int y, int l, int h,
-                      int direction, int size, int fg)
+                      int direction, int type, int size, int fg)
 {
   unsigned char   symb;
   ThotFont        font;
@@ -628,41 +692,100 @@ void DrawStixBracket (int frame, int x, int y, int l, int h,
   font = (ThotFont)LoadStixFont (7, size);
   if (CharacterHeight (33, font) > (3 * h) / 4)
     {
-      /*  write a single Esstix 7 character: 
-          63 normal
-          36 2 line
-          50 3 line  */
+      /*  write a single Esstix 7 character : normal, 2 line or 3 lines */
       if (h < LOW_CHAR )
         {
           if (direction == 0)
-            symb = 63;
+            {
+            switch(type)
+              {
+              case 0 :symb = 63;break;
+              case 1 :symb = 69;break;
+              case 2 :symb = 81;break;
+              default:symb = 80;break;
+              }
+            }
           else
-            symb = 64;
+            {
+            switch(type)
+              {
+              case 0 :symb = 64;break;
+              case 1 :symb = 70;break;
+              case 2 :symb = 83;break;
+              default:symb = 82;break;
+              }
+            }
         }
       else if (h < MID_CHAR)
         {
           if (direction == 0)
-            symb = 36;
+            {
+            switch(type)
+              {
+              case 0 :symb = 36;break;
+              case 1 :symb = 43;break;
+              case 2 :symb = 81;break;
+              default:symb = 80;break;
+              }
+            }
           else
-            symb = 37;
+            {
+            switch(type)
+              {
+              case 0 :symb = 37;break;
+              case 1 :symb = 44;break;
+              case 2 :symb = 83;break;
+              default:symb = 82;break;
+              }
+            }
         }
       else
         {
           if (direction == 0)
-            symb = 50;
+            {
+            switch(type)
+              {
+              case 0 :symb = 50;break;
+              case 1 :symb = 56;break;
+              case 2 :symb = 81;break;
+              default:symb = 80;break;
+              }
+            }
           else
-            symb = 51;
+            {
+            switch(type)
+              {
+              case 0 :symb = 51;break;
+              case 1 :symb = 57;break;
+              case 2 :symb = 83;break;
+              default:symb = 82;break;
+              }
+            }
         }
       DrawCenteredStixChar (font, symb, x, y, l, h, fg, frame);
     }
   else
     /* very high character. Display it with several components */
     if (direction == 0)
-      /* draw an opening bracket */
-      DrawCompoundExtendedStix (frame, x, y, l, h, size, fg, 0x49, 0x4a, 0x4b);
+      { /* draw an opening bracket */
+      switch(type)
+        {
+        case 0 :DrawCompoundExtendedStix (frame, x, y, l, h, size, fg, 0x49, 0x4a, 0x4b);break;
+        case 1 :DrawCompoundExtendedStix (frame, x, y, l, h, size, fg, 0x49, 0x4a, 0x4b);break;
+        case 2 :DrawCompoundExtendedStix (frame, x, y, l, h, size, fg, 0x49, 0x4a, 0x4b);break;
+        default :DrawCompoundExtendedStix (frame, x, y, l, h, size, fg, 0x49, 0x4a, 0x4b);break;
+        }
+      }
     else
-      /* draw a closing bracket */
-      DrawCompoundExtendedStix (frame, x, y, l, h, size, fg, 0x4c, 0x4d, 0x4e);
+      { /* draw a closing bracket */
+      switch(type)
+        {
+        case 0 :DrawCompoundExtendedStix (frame, x, y, l, h, size, fg, 0x4c, 0x4d, 0x4e);break;
+        case 1 :DrawCompoundExtendedStix (frame, x, y, l, h, size, fg, 0x49, 0x4a, 0x4b);break;
+        case 2 :DrawCompoundExtendedStix (frame, x, y, l, h, size, fg, 0x49, 0x4a, 0x4a);break;
+        default :DrawCompoundExtendedStix (frame, x, y, l, h, size, fg, 0x4a, 0x4a, 0x4b);break;
+        }
+      }
 }
 
 /* ----------------------------------------------------------------------
@@ -1000,6 +1123,8 @@ void DrawStixHorizontalBrace (int frame, int x, int y, int l, int h,
   ThotFont        font;
 
   size = size + (size * ViewFrameTable[frame-1].FrMagnification / 10);
+  if (size <= 0)
+    size = 1;
   font = (ThotFont)LoadStixFont (7, size);
   if (l < 2 * CharacterWidth (0x54, font))
     /*  write a single Esstix 7 character */
@@ -1033,8 +1158,23 @@ int GetMathFontWidth (char shape, SpecFont font, int height)
     {
       switch (shape)
         {
+        case '1':	/* Clockwise Integral */
+          i = StixIntegralWidth (height, 6);
+          break;
+        case '2':	/* Clockwise Contour Integral */
+          i = StixIntegralWidth (height, 7);
+          break;
+        case '3':	/* Counter Clockwise Contour Integral */
+          i = StixIntegralWidth (height, 8);
+          break;
         case 'd':	/* double integral */
           i = StixIntegralWidth (height, 2);
+          break;
+        case 'e':	/* double contour integral */
+          i = StixIntegralWidth (height, 4);
+          break;
+        case 'f':	/* triple contour integral */
+          i = StixIntegralWidth (height, 5);
           break;
         case 'i':	/* integral */
           i = StixIntegralWidth (height, 0);
@@ -1055,6 +1195,14 @@ int GetMathFontWidth (char shape, SpecFont font, int height)
           break;
         case '[':
         case ']':
+        case 'o':       /* overbrace */
+        case 'u':       /* underbrace */
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
           i = StixBracketWidth (height, font);	
           break;
         case '<':
@@ -1081,8 +1229,23 @@ void GiveStixSize (ThotFont pfont, PtrAbstractBox pAb, int *width,
   *height = hfont;
   switch (pAb->AbShape)
     {
+    case '1':	/* Clockwise Integral */
+      *width = StixIntegralWidth (*height, 6);
+      break;
+    case '2':	/* Clockwise Contour Integral */
+      *width = StixIntegralWidth (*height, 7);
+      break;
+    case '3':	/* Counter Clockwise Contour Integral */
+      *width = StixIntegralWidth (*height, 8);
+      break;
     case 'd':	/* double integral */
       *width = StixIntegralWidth (*height, 2);
+      break;
+    case 'e':	/* double contour integral */
+      *width = StixIntegralWidth (*height, 4);
+      break;
+    case 'f':	/* triple contour integral */
+      *width = StixIntegralWidth (*height, 5);
       break;
     case 'i':	/* integral */
       *width = StixIntegralWidth (*height, 0);
@@ -1103,6 +1266,12 @@ void GiveStixSize (ThotFont pfont, PtrAbstractBox pAb, int *width,
       break;
     case '[':
     case ']':
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
       *width = StixBracketWidth (*height, pAb->AbBox->BxFont);	
       break;
     case '<':
@@ -1141,9 +1310,14 @@ void GetMathFontFromChar (char typesymb, SpecFont fontset, void **font,
   switch (typesymb)
     {
       /*integral, union...*/
+    case '1':
+    case '2':
+    case '3':
     case 'i':
     case 'c':
     case 'd':	  
+    case 'e':	  
+    case 'f':	  
     case 't':	  
     case 'I':
     case 'U':
@@ -1155,6 +1329,12 @@ void GetMathFontFromChar (char typesymb, SpecFont fontset, void **font,
     case '}':
     case '[':
     case ']':
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
       if (size > 2)
         *font = LoadStixFont (7, size);
       break;
@@ -1191,7 +1371,17 @@ int GetStixFontAndIndex (int c, SpecFont fontset, ThotFont **font)
   int                frame;
   unsigned int       mask;
 #endif /* _GL */
-  if (c >= Stix_Greek_Start && c < (int) (Stix_Greek_Start + Stix_Greek_length))
+  if (c == 0x2970) /* roundimplies */
+    {
+     index = (int) 0x49;
+     face = (int) 4;
+    }
+  else if (c == 0x20DB || c == 0x20DC) /* dots */
+    {
+     index = (int) (c - 0x20DB + 0x61);
+     face = (int) 17;
+    }
+  else if (c >= Stix_Greek_Start && c < (int) (Stix_Greek_Start + Stix_Greek_length))
     {
       entry = Stix_Greek[c - Stix_Greek_Start];
       index = (int) (entry.MapIndex);
@@ -1227,7 +1417,12 @@ int GetStixFontAndIndex (int c, SpecFont fontset, ThotFont **font)
       index = (int) (entry.MapIndex);
       face = (int) (entry.MapFont);
     }
-
+  else if (c >= Stix_OverBrace_Start && c < (int) (Stix_OverBrace_Start + Stix_OverBrace_length))
+    {
+      entry = Stix_OverBrace[c - Stix_OverBrace_Start];
+      index = (int) (entry.MapIndex);
+      face = (int) (entry.MapFont);
+    }
   if (face == 1)
     *font = &(fontset->SFont_1);
   else if (face == 2)

@@ -6,6 +6,20 @@
 #ifndef __CEXTRACT__
 #ifdef __STDC__
 
+extern int CharNum_IN_Line ( Document doc,
+                             int CharNum );
+extern Element GetElemWithChar ( Document doc,
+                                 char *nameVal );
+extern Element GetElemWithLine ( Document doc,
+                                 char *nameVal );
+extern Element GetElemWithLineRange ( Document doc,
+                                      char *nameVal );
+extern Element GetElemWithCharRange ( Document doc,
+                                      char *nameVal );
+extern Element GetElemWithMatch ( Document doc,
+                                  char *nameVal );
+extern Element SearchTextattribute ( Document doc,
+                                     char *nameVal );
 extern Element GetElemWithAttr ( Document doc,
                                  AttributeType attrType,
                                  char *nameVal,
@@ -52,7 +66,8 @@ extern void CloseLogs ( Document doc );
 extern void FocusChanged ( Document doc );
 extern void FreeDocumentResource ( Document doc );
 extern void DocumentClosed ( NotifyDialog * event );
-extern void UpdateContextSensitiveMenus ( Document doc );
+extern void UpdateContextSensitiveMenus ( Document doc,
+                                          View view );
 extern void ResetHighlightedElement ( void );
 extern void SynchronizeSourceView ( NotifyElement *event );
 extern void GetCurrentLine ( Document doc,
@@ -77,6 +92,20 @@ extern void PasteLocation ( Document doc,
 
 #else /* __STDC__ */
 
+extern int CharNum_IN_Line ( Document doc,
+                               int CharNum );
+extern Element GetElemWithChar ( Document doc,
+                                   char *nameVal );
+extern Element GetElemWithLine ( Document doc,
+                                   char *nameVal );
+extern Element GetElemWithLineRange ( Document doc,
+                                        char *nameVal );
+extern Element GetElemWithCharRange ( Document doc,
+                                        char *nameVal );
+extern Element GetElemWithMatch ( Document doc,
+                                    char *nameVal );
+extern Element SearchTextattribute ( Document doc,
+                                       char *nameVal );
 extern Element GetElemWithAttr ( Document doc,
                                    AttributeType attrType,
                                    char *nameVal,
@@ -123,7 +152,8 @@ extern void CloseLogs ( Document doc );
 extern void FocusChanged ( Document doc );
 extern void FreeDocumentResource ( Document doc );
 extern void DocumentClosed ( NotifyDialog * event );
-extern void UpdateContextSensitiveMenus ( Document doc );
+extern void UpdateContextSensitiveMenus ( Document doc,
+                                            View view );
 extern void ResetHighlightedElement ( void );
 extern void SynchronizeSourceView ( NotifyElement *event );
 extern void GetCurrentLine ( Document doc,

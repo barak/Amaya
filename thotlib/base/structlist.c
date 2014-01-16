@@ -214,6 +214,9 @@ static void WrPRuleType (PtrPRule pRule, FILE * fileDescriptor)
     case PtWeight:
       fprintf (fileDescriptor, "Weight");
       break;
+    case PtVariant:
+      fprintf (fileDescriptor, "Variant");
+      break;
     case PtFont:
       fprintf (fileDescriptor, "Font");
       break;
@@ -1170,6 +1173,7 @@ void ListAbsBoxes (PtrAbstractBox pAb, int Indent, FILE *fileDescriptor)
       fprintf (fileDescriptor, "Font:%d", pAb->AbFont);
       fprintf (fileDescriptor, " Style:%d", pAb->AbFontStyle);
       fprintf (fileDescriptor, " Weight:%d", pAb->AbFontWeight);
+      fprintf (fileDescriptor, " Variant:%d", pAb->AbFontVariant);
       fprintf (fileDescriptor, " Size:%d", pAb->AbSize);
       wrTypeUnit (pAb->AbSizeUnit, fileDescriptor);
       fprintf (fileDescriptor, " Underline:");
@@ -2616,6 +2620,28 @@ static void wrfontstyle (PtrPRule pR, FILE *fileDescriptor)
             fprintf (fileDescriptor, "%c", pR->PrChrValue);
             break;
           }
+      else if (pR->PrType == PtVariant)
+        switch (pR->PrChrValue)
+          {
+          case 'C':
+            fprintf (fileDescriptor, "SmallCaps");
+            break;
+          case 'D':
+            fprintf (fileDescriptor, "DoubleStruck");
+            break;
+          case 'F':
+            fprintf (fileDescriptor, "Fraktur");
+            break;
+          case 'N':
+            fprintf (fileDescriptor, "Normal");
+            break;
+          case 'S':
+            fprintf (fileDescriptor, "Script");
+            break;
+          default:
+            fprintf (fileDescriptor, "%c", pR->PrChrValue);
+            break;
+          }
       else if (pR->PrType == PtUnderline)
         switch (pR->PrChrValue)
           {
@@ -3590,6 +3616,10 @@ static void wrprules (PtrPRule RP, FILE *fileDescriptor, PtrPSchema pPSch)
           fprintf (fileDescriptor, "Weight: ");
           wrfontstyle (RP, fileDescriptor);
           break;
+        case PtVariant:
+          fprintf (fileDescriptor, "Variant: ");
+          wrfontstyle (RP, fileDescriptor);
+          break;
         case PtFont:
           fprintf (fileDescriptor, "Font: ");
           wrfontstyle (RP, fileDescriptor);
@@ -4178,7 +4208,12 @@ void DisplayPRule (PtrPRule rule, FILE *fileDescriptor,
 
   if (rule == NULL)
     return;
-  if (rule->PrSpecificity != 200 && rule->PrCSSLine == 0)
+  if (rule->PrSpecificity == 2000)
+    /* this is not really a CSS style rule, but the equivalent of an
+       HTML, SVG or MathML attribute */
+    return;
+  /* if there is no number for the source line, don't do anything */
+  if (rule->PrCSSLine == 0)
     return;
 
   PRuleToPresentationSetting (rule, &setting, pSchP);
@@ -4260,7 +4295,7 @@ void DisplayPRule (PtrPRule rule, FILE *fileDescriptor,
       fprintf (fileDescriptor, " ");
       l++;
     }
-  if (rule->PrSpecificity == 200)
+  if (rule->PrSpecificity == 1000)
     fprintf (fileDescriptor, "line %d, style attribute\n", rule->PrCSSLine);
   else if (rule->PrCSSURL)
     fprintf (fileDescriptor, "line %d, file %s\n", rule->PrCSSLine,

@@ -7,6 +7,8 @@
 // Headers
 //-----------------------------------------------------------------------------
 #include "wx/notebook.h"
+#include "wx/listbook.h"
+
 #include "AmayaDialog.h"
 #include "MENUconf.h"
 
@@ -75,18 +77,16 @@ private:
   void SetupDialog_Annot( const Prop_Annot & prop );
   Prop_Annot GetValueDialog_Annot();
 
-
-
   // "DAV" tab
   void SetupLabelDialog_DAV();
   void SetupDialog_DAV( const Prop_DAV & prop );
   Prop_DAV GetValueDialog_DAV();
 
-
   // "Templates" tab
   void SetupLabelDialog_Templates();
   void SetupDialog_Templates( const Prop_Templates & prop );
-  Prop_Templates GetValueDialog_Templates();
+  void UpdateTemplateList();
+  void GetValueDialog_Templates();
   void OnTemplateChoose(wxCommandEvent& event);
   void OnTemplateAdd(wxCommandEvent& event);
   void OnTemplateDel(wxCommandEvent& event);
@@ -98,14 +98,24 @@ private:
   void OnUpdateTemplateMoveDown(wxUpdateUIEvent& event);
   void OnTemplateSelected(wxCommandEvent& event);
 
-
+  // "Emails" tab
+  void SetupLabelDialog_Emails();
+  void SetupDialog_Emails( const Prop_Emails & prop );
+  Prop_Emails GetValueDialog_Emails();
   int GetPagePosFromXMLID( const wxString & xml_id );
-
   void OnOk( wxCommandEvent& event );
   void OnCancel( wxCommandEvent& event );
   void OnDefault( wxCommandEvent& event );
-  void OnPageChanged( wxNotebookEvent& event );
+  void OnPageChanged( wxListbookEvent& event );
   void OnClose(wxCloseEvent& event);
+
+  // "Passwords" tab
+  void SetupLabelDialog_Passwords();
+  void SetupDialog_Passwords( const Prop_Passwords & prop );
+  Prop_Passwords GetValueDialog_Passwords();
+  void OnEmptyPasswords( wxCommandEvent& event );
+  void OnPasswordDeleted(wxCommandEvent& event);
+  void OnPasswordSelected(wxCommandEvent& event);
 
   // Any class wishing to process wxWindows events must use this macro
   DECLARE_EVENT_TABLE()

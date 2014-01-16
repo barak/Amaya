@@ -39,6 +39,7 @@
   #include "wxdialog/SelectOperatorDlgWX.h"
   #include "wxdialog/SelectIntegralDlgWX.h"
   #include "wxdialog/SearchDlgWX.h"
+  #include "wxdialog/SendByMailDlgWX.h"
   #include "wxdialog/SpellCheckDlgWX.h"
   #include "wxdialog/StyleDlgWX.h"
   #include "wxdialog/TextDlgWX.h"
@@ -403,7 +404,7 @@ ThotBool CreateOpenDocDlgWX ( int ref, ThotWindow parent, const char *title,
   returns:
   ----------------------------------------------------------------------*/
 ThotBool CreateNewTemplateDocDlgWX (int ref,  ThotWindow parent, Document doc,
-                                    const char *title, const char *templateDir)
+                                    const char *title)
 {
 #if defined(TEMPLATES) && defined(_WX)
   /* check if the dialog is alredy open */
@@ -412,13 +413,11 @@ ThotBool CreateNewTemplateDocDlgWX (int ref,  ThotWindow parent, Document doc,
   
   wxString wx_title = TtaConvMessageToWX( title );
   wxString wx_filter = TtaConvMessageToWX("All files (*.*)\0*.*\0");
-  wxString wx_templateDir = TtaConvMessageToWX( templateDir );
   
   NewTemplateDocDlgWX * p_dlg = new NewTemplateDocDlgWX( ref,
                                                          parent,
                                                          doc,
                                                          wx_title,
-                                                         wx_templateDir,
                                                          wx_filter,
                                                          &g_Last_used_filter
                                                          );
@@ -775,7 +774,8 @@ ThotBool CreateSaveObject (int ref, ThotWindow parent, char* objectname)
   returns:
   ----------------------------------------------------------------------*/
 ThotBool CreateAuthentDlgWX (int ref, ThotWindow parent,
-                             char *auth_realm, char *server)
+                             char *auth_realm, char *server,
+			     char *name, char *pwd)
 {
 #ifdef _WX
   /* check if the dialog is alredy open */
@@ -784,7 +784,8 @@ ThotBool CreateAuthentDlgWX (int ref, ThotWindow parent,
 
   AuthentDlgWX * p_dlg = new AuthentDlgWX( ref,
 					   parent,
-					   auth_realm, server);
+					   auth_realm, server,
+					   name, pwd);
   if ( TtaRegisterWidgetWX( ref, p_dlg ) )
       /* the dialog has been sucesfully registred */
       return TRUE;
@@ -996,7 +997,7 @@ ThotBool CreateHRefDlgWX (int ref, ThotWindow parent,
                           Document doc, int doc_type)
 {
 #ifdef _WX
-  wxString wx_title      = TtaConvMessageToWX( TtaGetMessage (AMAYA, AM_ATTRIBUTE) );
+  wxString wx_title      = TtaConvMessageToWX( TtaGetMessage (AMAYA, AM_LINK) );
   wxString wx_init_value = TtaConvMessageToWX( HRefValue );
   wxString wx_filter;
   if (doc_type == docCSS)
@@ -1139,6 +1140,43 @@ ThotBool CreatePreferenceDlgWX (int ref, ThotWindow parent,
   return FALSE;
 #endif /* _WX */
 }
+
+/*-----------------------------------------------------------------------
+ CreateSendByMailDlgWX
+ Used to :
+  - Create the Send by mail Amaya dialog
+ ------------------------------------------------------------------------*/
+ThotBool CreateSendByMailDlgWX (int ref, ThotWindow parent,
+                        const char* rcptList, const char* subject,
+                        const char* message, ThotBool sendAttach)
+{
+#ifdef _WX
+  /* check if the dialog is alredy open */
+  if (TtaRaiseDialogue (ref))
+    return FALSE;
+
+  SendByMailDlgWX * p_dlg = new SendByMailDlgWX( ref, parent);
+  if ( TtaRegisterWidgetWX( ref, p_dlg ) )
+    {
+      /* the dialog has been sucesfully registred */
+      
+      p_dlg->SetSubject(TtaConvMessageToWX(subject));
+      p_dlg->SetMessage(TtaConvMessageToWX(message));
+//      p_dlg->SetRecipients(TtaConvMessageToWX(rcptList));
+      
+      return TRUE;
+    }
+  else
+    {
+      /* an error occured durring registration */
+      p_dlg->Destroy();
+      return FALSE;
+    }
+#else /* _WX */
+  return FALSE;
+#endif /* _WX */
+}
+
 
 /*-----------------------------------------------------------------------
  CreateSpellCheckDlgWX
@@ -1342,3 +1380,4 @@ ThotBool CreateNumDlgWX (int ref, int subref, ThotWindow parent,
   return FALSE;
 #endif /* _WX */
 }
+

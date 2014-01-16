@@ -46,6 +46,7 @@
 
 #include "applicationapi_f.h"
 #include "fileaccess_f.h"
+#include "language_f.h"
 #include "memory_f.h"
 #include "platform_f.h"
 #include "uconvert_f.h"
@@ -97,6 +98,7 @@ static char         *AppRegistryEntryAppli = (char*) 0;
 static char         *AppNameW;
 static char          CurrentDir[MAX_PATH];
 static char         *Thot_Dir;
+static char          StandardLANG[3] = {EOS,EOS,EOS};
 
 #ifdef COMPILED_IN_THOTDIR
 char  UCOMPILED_IN_THOTDIR[MAX_TXT_LEN];
@@ -579,6 +581,12 @@ char *TtaGetEnvString (char *name)
   if (!strcasecmp (name, "cwd") || !strcasecmp (name, "pwd"))
     return (getcwd (&CurrentDir[0], sizeof(CurrentDir)));
 
+  // shortcut to get the current language
+  if (!strcmp (name, "LANG") && StandardLANG[0] != EOS)
+    {
+      return (StandardLANG);
+    }
+
   /* first lookup in the System defaults */
   cour = AppRegistryEntry;
   while (cour != NULL)
@@ -598,23 +606,38 @@ char *TtaGetEnvString (char *name)
   cour = AppRegistryEntry;
   while (cour != NULL)
     {
-      if (!strcasecmp (cour->appli, AppRegistryEntryAppli)      && 
+      if (!strcasecmp (cour->appli, AppRegistryEntryAppli) && 
           !strcmp (cour->name, name) && cour->value[0] != EOS && 
           cour->level == REGISTRY_USER)
         {
 #ifdef DEBUG_REGISTRY
           fprintf (stderr, "TtaGetEnvString(\"%s\") = %s\n", name, cour->value);
 #endif
+          if (!strcmp (name, "LANG"))
+            {
+              strncpy (StandardLANG, (char *)cour->value, 2);
+              StandardLANG[2] = EOS;
+            }
           return (cour->value);
         }
       cour = cour->next;
     }
 
   /* then lookup in the application defaults */
+#ifdef _WX
+  if (!strcmp (name, "LANG"))
+    {
+      int lang = TtaGetSystemLanguage();
+      // get the platform language
+      strncpy (StandardLANG, TtaGetISO639Code(lang), 2);
+      StandardLANG[2] = EOS;
+      return (StandardLANG);
+    }
+#endif /* _WX */
   cour = AppRegistryEntry;
   while (cour != NULL)
     {
-      if (!strcasecmp (cour->appli, AppRegistryEntryAppli)      && 
+      if (!strcasecmp (cour->appli, AppRegistryEntryAppli) && 
           !strcmp (cour->name, name) && cour->value[0] != EOS && 
           cour->level == REGISTRY_SYSTEM)
         {
@@ -630,7 +653,8 @@ char *TtaGetEnvString (char *name)
   cour = AppRegistryEntry;
   while (cour != NULL)
     {
-      if (!strcasecmp (cour->appli, THOT_LIB_DEFAULTNAME) && !strcmp (cour->name, name) && cour->value[0] != EOS)
+      if (!strcasecmp (cour->appli, THOT_LIB_DEFAULTNAME) &&
+          !strcmp (cour->name, name) && cour->value[0] != EOS)
         {
 #ifdef DEBUG_REGISTRY
           fprintf (stderr, "TtaGetEnvString(\"%s\") = %s\n", name, cour->value);
@@ -645,9 +669,13 @@ char *TtaGetEnvString (char *name)
    * Hopefully this will be stored to the user registry
    * next time it will be saved.
    */
+  if (!strcmp (name, "LANG"))
+    {
+     strcpy (StandardLANG, "en");
+     return (StandardLANG);
+    }
 
   value = getenv (name);
-
   if (value == NULL)
     TtaSetEnvString (name, "", FALSE); 
   else
@@ -709,7 +737,11 @@ void TtaSetEnvString (char *name, char *value, int overwrite)
   /* make sure that value isn't NULL */
   if (!tmp)
     tmp = "";
-   
+  if (!strcmp (name, "LANG") && value && overwrite)
+  {
+    strncpy (StandardLANG, value, 2);
+    StandardLANG[2] = EOS;
+  }
   AddRegisterEntry (AppRegistryEntryAppli, name, tmp, REGISTRY_USER, overwrite);
 }
 
@@ -806,12 +838,23 @@ char *TtaGetDefEnvString (char *name)
   if (!strcasecmp (name, "cwd") || !strcasecmp (name, "pwd"))
     return (getcwd (&CurrentDir[0], sizeof(CurrentDir)));
 
+#ifdef _WX
+  if (!strcmp (name, "LANG"))
+    {
+      int lang = TtaGetSystemLanguage();
+      // get the platform language
+      strncpy (StandardLANG, TtaGetISO639Code(lang), 2);
+      StandardLANG[2] = EOS;
+      return (StandardLANG);
+    }
+#endif /* _WX */
+
   /* First lookup in the System defaults */
   cour = AppRegistryEntry;
   while (cour != NULL)
     {
-      if (!strcasecmp (cour->appli, "System") && !strcmp (cour->name, name) 
-          && cour->level == REGISTRY_SYSTEM && cour->value[0] != EOS)
+      if (!strcasecmp (cour->appli, "System") && !strcmp (cour->name, name) &&
+          cour->level == REGISTRY_SYSTEM && cour->value[0] != EOS)
         {
 #ifdef DEBUG_REGISTRY
           fprintf (stderr, "TtaGetDefEnvString(\"%s\") = %s\n", name, cour->value);
@@ -825,9 +868,9 @@ char *TtaGetDefEnvString (char *name)
   cour = AppRegistryEntry;
   while (cour != NULL)
     {
-      if (!strcasecmp (cour->appli, AppRegistryEntryAppli) 
-          && !strcmp (cour->name, name) 
-          && cour->level == REGISTRY_SYSTEM && cour->value[0] != EOS)
+      if (!strcasecmp (cour->appli, AppRegistryEntryAppli) &&
+          !strcmp (cour->name, name) &&
+          cour->level == REGISTRY_SYSTEM && cour->value[0] != EOS)
         {
 #ifdef DEBUG_REGISTRY
           fprintf (stderr, "TtaGetDefEnvString(\"%s\") = %s\n", name, cour->value);
@@ -841,9 +884,9 @@ char *TtaGetDefEnvString (char *name)
   cour = AppRegistryEntry;
   while (cour != NULL)
     {
-      if (!strcasecmp (cour->appli, THOT_LIB_DEFAULTNAME) 
-          && !strcmp (cour->name, name) 
-          && cour->level == REGISTRY_SYSTEM && cour->value[0] != EOS)
+      if (!strcasecmp (cour->appli, THOT_LIB_DEFAULTNAME) &&
+          !strcmp (cour->name, name) &&
+          cour->level == REGISTRY_SYSTEM && cour->value[0] != EOS)
         {
 #ifdef DEBUG_REGISTRY
           fprintf (stderr, "TtaGetDefEnvString(\"%s\") = %s\n", name, cour->value);
@@ -1185,7 +1228,7 @@ void TtaInitializeAppRegistry (char *appArgv0)
   char        filename[MAX_PATH];
   char       *my_path;
   char       *dir_end = NULL;
-  char       *appName;
+  char       *appName; 
   char       *ptr;
 #ifdef _WINGUI
   /* name in Windows NT 4 is 20 chars */
@@ -1202,7 +1245,12 @@ void TtaInitializeAppRegistry (char *appArgv0)
   char       *c_end;
 #endif /* _UNIX */
 #ifdef _MACOS
+#define       MACOSX_LIBRARY      "Library"
+#define       MACOSX_PREFERENCES  "Application Support"
   char        realexecname[MAX_LENGTH];
+  char        app_home_mac[MAX_PATH];
+  char        app_home_orig[MAX_PATH];
+  char        filename_orig[MAX_PATH];
 #endif /* _MACOS */
   int         execname_len;
   int         len, round;
@@ -1247,7 +1295,7 @@ void TtaInitializeAppRegistry (char *appArgv0)
   strcat (execname, DIR_STR);
   strcpy (realexecname, execname);
   strcat (realexecname, appArgv0);
-  printf ("realexecname '%s' \n", realexecname);
+  my_path = getenv("PATH");
 #endif /* _MACOS & _WX */
 #ifdef _WINDOWS
   if (appArgv0[0] == DIR_SEP || (appArgv0[1] == ':' && appArgv0[2] == DIR_SEP))
@@ -1351,9 +1399,12 @@ void TtaInitializeAppRegistry (char *appArgv0)
 #endif /* HAVE_LSTAT */
 #ifdef _UNIX
   /* amaya_exe is FALSE when running a compiler */
-  amaya_exe = (strlen (execname) > 4 &&
-               (!strcasecmp (&execname[strlen (execname)-5], "amaya") ||
-                !strcasecmp (&execname[strlen (execname)-5], "print")));
+  dir_end = &execname[strlen (execname)-1];
+  while (dir_end > execname && dir_end[-1] != DIR_SEP)
+    dir_end--;
+  amaya_exe = (strlen (dir_end) > 4 &&
+               (!strstr (dir_end, "amaya") ||
+               !strstr (dir_end, "print")));
 #endif /* _UNIX */
    
 #ifdef DEBUG_REGISTRY
@@ -1362,7 +1413,7 @@ void TtaInitializeAppRegistry (char *appArgv0)
    
   /* get the THOTDIR for this application. It's under a bin dir */
   dir_end = execname;
-  while (*dir_end) /* go to the ending NUL */
+  while (*dir_end) /* go to the ending NULL */
     dir_end++;
    
   /* remove the application name */
@@ -1591,7 +1642,20 @@ void TtaInitializeAppRegistry (char *appArgv0)
 #else /* _WINGUI */
 #ifdef _UNIX
       ptr = getenv ("HOME");
+#ifdef _MACOS
+      sprintf (app_home_mac, "%s%c%s%c%s%c",
+	 ptr, DIR_SEP, MACOSX_LIBRARY, DIR_SEP, MACOSX_PREFERENCES, DIR_SEP);
+      if (!TtaDirExists (app_home_mac))
+	  sprintf (app_home, "%s%c.%s", ptr, DIR_SEP, AppNameW); 
+      else	
+          {
+             sprintf (app_home, "%s%c%s%c%s%c%s",
+	     ptr, DIR_SEP, MACOSX_LIBRARY, DIR_SEP, MACOSX_PREFERENCES, DIR_SEP, AppNameW); 
+       	     sprintf (app_home_orig, "%s%c.%s", ptr, DIR_SEP, AppNameW); 
+          }
+#else /* _MACOS */
       sprintf (app_home, "%s%c.%s", ptr, DIR_SEP, AppNameW); 
+#endif /* _MACOS */
 #else /* _UNIX */
 
 #if defined(_WX) && defined(_WINDOWS)
@@ -1621,7 +1685,22 @@ void TtaInitializeAppRegistry (char *appArgv0)
   /* read the user's preferences (if they exist) */
   if (app_home && *app_home != EOS)
     {
+#ifdef _MACOS
+      if (!TtaDirExists (app_home_mac))
+          sprintf (filename, "%s%c%s", app_home, DIR_SEP, THOT_RC_FILENAME);
+      else
+      {	
+         sprintf (filename, "%s%c%s", app_home, DIR_SEP, THOT_RC_FILENAME);
+         if (!TtaFileExist (&filename[0]))
+            {
+	      /* The first time, the thot.rc file is copied from the previous location */
+              sprintf (filename_orig, "%s%c%s", app_home_orig, DIR_SEP, THOT_RC_FILENAME);
+              TtaFileCopy (filename_orig, filename);
+            }
+      }
+#else /* _MACOS */
       sprintf (filename, "%s%c%s", app_home, DIR_SEP, THOT_RC_FILENAME);
+#endif /* _MACOS */
       if (TtaFileExist (&filename[0]))
         {
 #ifdef DEBUG_REGISTRY

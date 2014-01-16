@@ -47,6 +47,7 @@
 #include "MENUconf_f.h"
 #include "print.h"
 #include "fileaccess.h"
+#include "HTMLhistory_f.h"
 #ifdef _WX
 #include "wxdialogapi_f.h"
 #endif /* _WX */
@@ -300,13 +301,19 @@ int       DAVBase;
 Prop_DAV  GProp_DAV;
 #endif /* DAV */
 
-
 /* ============> Templates menu option */
 #ifdef TEMPLATES
 int            TemplatesBase;
 Prop_Templates GProp_Templates;
 #endif /* TEMPLATES */
 
+/* ============> Emails menu option */
+int            EmailsBase;
+Prop_Emails GProp_Emails;
+
+/* ============> Passwords menu option */
+int            PasswordsBase;
+Prop_Passwords GProp_Passwords;
 
 
 #include "HTMLsave_f.h"
@@ -438,6 +445,23 @@ void InitAmayaDefEnv (void)
   TtaSetDefEnvString ("PROXYDOMAIN_IS_ONLYPROXY", "no", FALSE);
   TtaSetDefEnvString ("MAX_CACHE_ENTRY_SIZE", "3", FALSE);
   TtaSetDefEnvString ("CACHE_SIZE", "10", FALSE);
+#ifdef _MACOS
+  ptr = TtaGetEnvString ("HOME");
+  if (ptr)
+  {
+    sprintf (s, "%s%cLibrary%cCaches", ptr, DIR_SEP, DIR_SEP);
+    if (TtaDirExists (s)) 
+    {
+      sprintf (s, "%s%cLibrary%cCaches%clibwww-cache", ptr, DIR_SEP, DIR_SEP, DIR_SEP);
+      TtaSetDefEnvString ("CACHE_DIR", s, FALSE);
+    }
+    else
+      TtaSetDefEnvString ("CACHE_DIR", "", FALSE);
+  }
+  else
+    TtaSetDefEnvString ("CACHE_DIR", "", FALSE);
+  TtaSetDefEnvString ("ENABLE_CACHE", "yes", FALSE);
+#else /* _MACOS */
   if (TempFileDirectory)
     {
       sprintf (s, "%s%clibwww-cache", TempFileDirectory, DIR_SEP);
@@ -449,6 +473,7 @@ void InitAmayaDefEnv (void)
       TtaSetDefEnvString ("CACHE_DIR", "", FALSE);
       TtaSetDefEnvString ("ENABLE_CACHE", "yes", FALSE);
     }
+#endif /* _MACOS */
   TtaSetDefEnvString ("CACHE_PROTECTED_DOCS", "yes", FALSE);
   TtaSetDefEnvString ("CACHE_DISCONNECTED_MODE", "no", FALSE);
   TtaSetDefEnvString ("CACHE_EXPIRE_IGNORE", "no", FALSE);
@@ -473,6 +498,15 @@ void InitAmayaDefEnv (void)
   if (annot_rautoload_rst && annot_rautoload)
     TtaSetEnvBoolean ("ANNOT_RAUTOLOAD", FALSE, TRUE);
 #endif /* ANNOTATIONS */
+
+  /* Emails */
+  TtaSetDefEnvString ("EMAILS_SMTP_SERVER", "", FALSE);
+  TtaSetDefEnvString ("EMAILS_SMTP_PORT", "25", FALSE);
+  TtaSetDefEnvString ("EMAILS_FROM_ADDRESS", "", FALSE);
+  TtaSetDefEnvString ("EMAILS_LAST_RCPT", "", FALSE);
+
+  /* Passwords */
+  TtaSetEnvBoolean ("SAVE_PASSWORDS", TRUE, FALSE);
 
   /* appearance */
 }
@@ -2380,6 +2414,8 @@ static void GetDefaultPublishConf ()
                    PublishBase + mTogglePublish, 3);
   GProp_Publish.GenerateMathPI = FALSE;
   TtaSetEnvBoolean ("GENERATE_MATHPI", GProp_Publish.GenerateMathPI, TRUE);
+  GProp_Publish.LostUpdateCheck = FALSE;
+  TtaSetEnvBoolean ("ENABLE_LOST_UPDATE_CHECK", GProp_Publish.LostUpdateCheck, TRUE);
   TtaGetDefEnvInt ("EXPORT_LENGTH", &(GProp_Publish.ExportLength));
   GetDefEnvString ("DEFAULTNAME", GProp_Publish.DefaultName);
   GetDefEnvString ("SAFE_PUT_REDIRECT", GProp_Publish.SafePutRedirect);
@@ -2766,6 +2802,86 @@ void PublishConfMenu (Document document, View view)
 #endif /* !_WINGUI */
 }
 
+/**********************
+ ** Emails Menu
+ **********************/
+
+/*----------------------------------------------------------------------
+  GetEmailsConf
+  Makes a copy of the current registry emails values
+  ----------------------------------------------------------------------*/
+void GetEmailsConf (void)
+{
+    GetEnvString ("EMAILS_SMTP_SERVER", GProp_Emails.serverAddress);
+    TtaGetEnvInt ("EMAILS_SMTP_PORT", &(GProp_Emails.serverPort));
+    GetEnvString ("EMAILS_FROM_ADDRESS", GProp_Emails.fromAddress);
+}
+
+/*----------------------------------------------------------------------
+  SetEmailsConf
+  Updates the registry Emails values and calls the General functions
+  to take into account the changes
+  ----------------------------------------------------------------------*/
+void SetEmailsConf (void)
+{
+  TtaSetEnvInt ("EMAILS_SMTP_PORT", GProp_Emails.serverPort, TRUE);
+  TtaSetEnvString ("EMAILS_SMTP_SERVER", GProp_Emails.serverAddress, TRUE);
+  TtaSetEnvString ("EMAILS_FROM_ADDRESS", GProp_Emails.fromAddress, TRUE);
+  TtaSaveAppRegistry ();
+}
+
+#ifdef _WX
+
+/*----------------------------------------------------------------------
+  GetDefaultEmailsConf
+  Gets the registry default emails values.
+  ----------------------------------------------------------------------*/
+void GetDefaultEmailsConf ()
+{
+  TtaGetDefEnvInt ("EMAILS_SMTP_PORT", &(GProp_Emails.serverPort));
+  GetDefEnvString ("EMAILS_SMTP_SERVER", GProp_Emails.serverAddress);
+  GetDefEnvString ("EMAILS_FROM_ADDRESS", GProp_Emails.fromAddress);
+}
+
+/*----------------------------------------------------------------------
+  EmailsCallbackDialog
+  callback of the emails configuration menu
+  ----------------------------------------------------------------------*/
+static void EmailsCallbackDialog (int ref, int typedata, char *data)
+{
+  intptr_t  val;
+  if (ref==-1)
+    {
+    }
+  else
+    {
+      val = (intptr_t) data;
+      switch (ref - EmailsBase)
+        {
+        case EmailsMenu:
+          switch (val)
+            {
+            case 0: /* CANCEL */
+              TtaDestroyDialogue (ref);
+              break;
+            case 1: /* OK */
+              SetEmailsConf();
+              //TtaDestroyDialogue (ref);
+              break;
+            case 2: /* DEFAULT */
+              //GetDefaultEmailsConf();
+              break;
+            default:
+              break;
+            }
+          break;
+        default:
+          break;
+        }
+    }
+}
+#endif /* _WX */
+
 
 /**********************
  ** Browse menu
@@ -2776,8 +2892,6 @@ void PublishConfMenu (Document document, View view)
   ----------------------------------------------------------------------*/
 void GetBrowseConf (void)
 {
-  ThotBool val;
-
   TtaGetEnvInt ("NEW_LOCATION", &(GProp_Browse.OpeningLocation));
   TtaGetEnvBoolean ("LOAD_IMAGES", &(GProp_Browse.LoadImages));
   TtaGetEnvBoolean ("LOAD_OBJECTS", &(GProp_Browse.LoadObjects));
@@ -2785,8 +2899,8 @@ void GetBrowseConf (void)
   TtaGetEnvBoolean ("LOAD_CSS", &(GProp_Browse.LoadCss));
   TtaGetEnvBoolean ("ENABLE_DOUBLECLICK", &(GProp_Browse.DoubleClick));
   TtaGetEnvBoolean ("CHECK_READ_IDS", &(GProp_Browse.WarnIDs));
-  TtaGetEnvBoolean ("ENABLE_FTP", &val);
-  AHTFTPURL_flag_set (val);
+  //TtaGetEnvBoolean ("ENABLE_FTP", &val);
+  AHTFTPURL_flag_set (TRUE);
   GetEnvString ("SCREEN_TYPE", GProp_Browse.ScreenType);
   if (GProp_Browse.ScreenType[0] == EOS)
     // no current selection
@@ -4343,8 +4457,7 @@ void SetTemplatesConf (void)
   if (old != GProp_Templates.S_Templates)
     UpdateShowTemplates ();
   TtaSaveAppRegistry ();
-  
-  SetTemplateRepositoryList((const Prop_Templates_Path**)&(GProp_Templates.FirstPath));
+  //SetTemplateRepositoryList((const Prop_Templates_Path**)&(GProp_Templates.FirstPath));
 #endif /* TEMPLATES */
 }
 
@@ -4364,7 +4477,7 @@ void GetDefaultTemplatesConf ()
 
 /*----------------------------------------------------------------------
   TemplatesCallbackDialog
-  callback of the annotation configuration menu
+  callback of the templates configuration menu
   ----------------------------------------------------------------------*/
 static void TemplatesCallbackDialog (int ref, int typedata, char *data)
 {
@@ -4389,7 +4502,7 @@ static void TemplatesCallbackDialog (int ref, int typedata, char *data)
               break;
             case 1: /* OK */
               SetTemplatesConf();
-              TtaDestroyDialogue (ref);
+              //TtaDestroyDialogue (ref);
               break;
             case 2: /* DEFAULT */
               GetDefaultTemplatesConf();
@@ -4407,6 +4520,98 @@ static void TemplatesCallbackDialog (int ref, int typedata, char *data)
 #endif /* TEMPLATES */
 
 
+/**********************
+ ** Passwords Menu
+ **********************/
+/*----------------------------------------------------------------------
+  UpdateShowPasswords
+  ----------------------------------------------------------------------*/
+static void UpdateShowPasswords ()
+{
+}
+
+/*----------------------------------------------------------------------
+  GetPasswordsConf
+  Makes a copy of the current registry passwords values
+  ----------------------------------------------------------------------*/
+void GetPasswordsConf (void)
+{
+  TtaGetEnvBoolean ("SAVE_PASSWORDS", &(GProp_Passwords.S_Passwords));  
+}
+
+/*----------------------------------------------------------------------
+  SetPasswordsConf
+  Updates the registry Passwords values and calls the General functions
+  to take into account the changes
+  ----------------------------------------------------------------------*/
+void SetPasswordsConf (void)
+{
+  ThotBool    old;
+  TtaGetEnvBoolean ("SAVE_PASSWORDS", &old);
+  TtaSetEnvBoolean ("SAVE_PASSWORDS", GProp_Passwords.S_Passwords, TRUE);
+  if (old != GProp_Passwords.S_Passwords)
+    UpdateShowPasswords ();
+  TtaSaveAppRegistry ();
+}
+
+#ifdef _WX
+/*----------------------------------------------------------------------
+  GetDefaultPasswordsConf
+  Gets the registry default passwords values.
+  ----------------------------------------------------------------------*/
+void GetDefaultPasswordsConf ()
+{
+  /* read the default values */
+  GProp_Passwords.S_Passwords = TRUE;
+  TtaSetEnvBoolean ("SAVE_PASSWORDS", GProp_Passwords.S_Passwords, TRUE);
+}
+
+/*----------------------------------------------------------------------
+  PasswordsCallbackDialog
+  callback of the passwords configuration menu
+  ----------------------------------------------------------------------*/
+static void PasswordsCallbackDialog (int ref, int typedata, char *data)
+{
+  intptr_t  val;
+#ifdef AMAYA_DEBUG
+  printf("PasswordsCallbackDialog : %d %d (%d)\n", ref, ref-PasswordsBase,
+         (intptr_t)data);
+#endif /* AMAYA_DEBUG */
+  if (ref==-1)
+    {
+    }
+  else
+    {
+      val = (intptr_t) data;
+      switch (ref - PasswordsBase)
+        {
+        case PasswordsMenu:
+          switch (val)
+            {
+            case 0: /* CANCEL */
+              TtaDestroyDialogue (ref);
+              break;
+            case 1: /* OK */
+              SetPasswordsConf();
+              //TtaDestroyDialogue (ref);
+              break;
+            case 2: /* DEFAULT */
+              GetDefaultPasswordsConf();
+              break;
+            case 3:
+              /* flush the password table */
+	      CleanPasswordTable();
+              break;
+            default:
+              break;
+            }
+          break;
+        default:
+          break;
+        }
+    }
+}
+#endif /* _WX */
 
 /*----------------------------------------------------------------------
   Returns a tab dialog reference (used into PreferenceDlgWX callbacks)
@@ -4499,6 +4704,23 @@ int GetPrefTemplatesBase()
   return 0;
 #endif /* TEMPLATES */
 }
+
+/*----------------------------------------------------------------------
+  Returns a tab dialog reference (used into PreferenceDlgWX callbacks)
+  ----------------------------------------------------------------------*/
+int GetPrefEmailsBase()
+{
+  return EmailsBase;
+}
+
+/*----------------------------------------------------------------------
+  Returns a tab dialog reference (used into PreferenceDlgWX callbacks)
+  ----------------------------------------------------------------------*/
+int GetPrefPasswordsBase()
+{
+  return PasswordsBase;
+}
+
 
 /*----------------------------------------------------------------------
   Use to set the Amaya global variables (General preferences)
@@ -4752,6 +4974,56 @@ Prop_Templates GetProp_Templates()
 
 
 /*----------------------------------------------------------------------
+  Use to set the Amaya global variables (Emails preferences)
+  ----------------------------------------------------------------------*/
+void SetProp_Emails( const Prop_Emails * prop )
+{
+#ifdef _WX
+  GProp_Emails = *prop;
+#endif /* _WX */
+}
+
+/*----------------------------------------------------------------------
+  Use to get the Amaya global variables (Emails preferences)
+  ----------------------------------------------------------------------*/
+Prop_Emails GetProp_Emails()
+{
+#ifdef _WX
+  return GProp_Emails;
+#else /* _WX */
+  Prop_Emails prop;
+  memset(&prop, 0, sizeof(Prop_Emails) );
+  return prop;
+#endif /* _WX */
+}
+
+
+/*----------------------------------------------------------------------
+  Use to set the Amaya global variables (Passwords preferences)
+  ----------------------------------------------------------------------*/
+void SetProp_Passwords( const Prop_Passwords * prop )
+{
+#ifdef _WX 
+  GProp_Passwords = *prop;
+#endif /* _WX */
+}
+
+/*----------------------------------------------------------------------
+  Use to get the Amaya global variables (Passwords preferences)
+  ----------------------------------------------------------------------*/
+Prop_Passwords GetProp_Passwords()
+{
+#ifdef _WX
+  return GProp_Passwords;
+#else /* _WX  */
+  Prop_Passwords prop;
+  memset(&prop, 0, sizeof(Prop_Passwords) );
+  return prop;
+#endif /* _WX  */
+}
+
+
+/*----------------------------------------------------------------------
   PreferenceMenu
   Build and display the preference dialog
   ----------------------------------------------------------------------*/
@@ -4767,9 +5039,10 @@ void PreferenceMenu (Document document, View view)
   /* keep initial values to detect an change */
   InitOpeningLocation = GProp_Browse.OpeningLocation;
   InitLoadImages = GProp_Browse.LoadImages;
-  InitLoadObjects =GProp_Browse. LoadObjects;
+  InitLoadObjects = GProp_Browse. LoadObjects;
   InitBgImages = GProp_Browse.BgImages;
   InitLoadCss = GProp_Browse.LoadCss;
+  strcpy (InitScreen, GProp_Browse.ScreenType);
 
   /* ---> Publish Tab */
   GetPublishConf ();
@@ -4802,6 +5075,10 @@ void PreferenceMenu (Document document, View view)
   GetTemplatesConf ();
 #endif /* TEMPLATES */
 
+  GetEmailsConf();
+
+  /* ---> Passwords Tab */
+  GetPasswordsConf ();
 
   ThotBool created = CreatePreferenceDlgWX ( PreferenceBase,
                                              TtaGetViewFrame (document, view),
@@ -4859,9 +5136,11 @@ void InitConfMenu (void)
 #ifdef _WX
   /* create a new dialog reference for Preferences */
   PreferenceBase = TtaSetCallback( (Proc)PreferenceCallbackDialog, 1 );
+  
 #ifdef TEMPLATES  
   TemplatesBase = TtaSetCallback( (Proc)TemplatesCallbackDialog, MAX_TEMPLATEMENU_DLG );
 #endif /* TEMPLATES */  
+  PasswordsBase = TtaSetCallback( (Proc)PasswordsCallbackDialog, MAX_PASSWORDMENU_DLG );
 #endif /* _WX */
 
 #ifndef _WINGUI
@@ -4882,4 +5161,9 @@ void InitConfMenu (void)
   InitDAVPreferences ();
 #endif /* DAV */
 #endif /* _WINGUI */
+
+
+#ifdef _WX
+  EmailsBase = TtaSetCallback( (Proc)EmailsCallbackDialog, MAX_EMAILSMENU_DLG );
+#endif /* _WX */
 }

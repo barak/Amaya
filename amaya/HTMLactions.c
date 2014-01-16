@@ -38,8 +38,10 @@
 #endif /* TEMPLATES */
 
 #include "XML.h"
+#include "MENUconf.h"
 #include "anim_f.h"
 #include "css_f.h"
+#include "EDITORactions_f.h"
 #include "init_f.h"
 #include "AHTURLTools_f.h"
 #include "EDITimage_f.h"
@@ -100,6 +102,979 @@ static Attribute    HighLightAttribute = NULL;
 static ThotBool     Follow_exclusive = FALSE;
 static ThotBool     Refresh_exclusive = FALSE;
 static ThotBool     SelectionChanging = FALSE;
+
+/*----------------------------------------------------------------------
+  CharNum_IN_Line
+  calculate the firstchar of the line based on Char Scheme Value
+  ----------------------------------------------------------------------*/
+int CharNum_IN_Line (Document doc, int CharNum)
+{
+  Element             el;
+  Element             child, prev;
+  ElementType         elType;
+  int                 i = 0, len, time = 0 ;
+  int                 Char;
+  int                 *len_of_child, *memory_of_child;
+  int                 len_of_line, count_child,length_child;
+  int                 k;
+
+  el = TtaGetMainRoot (doc);
+  elType = TtaGetElementType(el);
+  elType.ElTypeNum = TextFile_EL_Line_;
+  el = TtaSearchTypedElement (elType, SearchForward, el);
+  Char = CharNum;
+  child = TtaGetFirstChild(el);
+
+  if (el)
+    {
+      i = Char;
+      len = TtaGetElementVolume(el);
+      len_of_line = TtaGetElementVolume(child);
+      count_child = 1;
+
+      /* Consider "Annotation Icon" if Annotation Icon is on the line */
+      if (len != len_of_line)
+        {
+          //analysis the structure of target line including "Annotation Icon"
+          while (len != len_of_line)
+            {
+              TtaNextSibling(&child);
+              length_child = TtaGetElementVolume(child);
+              len_of_line += length_child;
+              count_child++; // count the number of child element in the line
+            }
+
+          len_of_child = (int *)TtaGetMemory( (sizeof(int)) * (count_child + 1) );
+          memory_of_child = len_of_child;
+
+          child = TtaGetFirstChild(el);
+
+          // input the length of child one by one 
+          for (k=0; k < count_child; k++)
+            {
+              length_child = TtaGetElementVolume(child);
+              len_of_child[k] = length_child;
+              TtaNextSibling(&child);
+            }
+
+          // adjust the length of line (subtract Annotation Icon's length)
+          for (k=1; k < count_child; k+=3)
+            len -= len_of_child[k];
+
+          child = TtaGetFirstChild(el);
+          if ( (len + time) < i )
+						TtaFreeMemory(memory_of_child);
+        }
+      // interpret Char Scheme value and calculate the firstchar of the line
+      while (child && ((len < i && time ==0 ) || ((len+time) < i && time >=1 )))
+        {
+          i -= len;
+          prev = child;
+          TtaNextSibling(&el);
+          child = TtaGetFirstChild(el);
+
+          if (child == NULL)
+            {
+              len = i;
+              child = prev;			
+            }
+          else if (child !=NULL)
+            {
+              len = TtaGetElementVolume(el);
+              len_of_line = TtaGetElementVolume(child);
+              time++;
+              count_child = 1;
+		
+              /* Consider "Annotation Icon" if Annotation Icon is on the line */
+              if (len != len_of_line)
+                {
+                  //analysis the structure of target line including "Annotation Icon"
+                  while (len != len_of_line)
+                    {
+                      TtaNextSibling(&child);
+                      length_child = TtaGetElementVolume(child);
+                      len_of_line += length_child;
+                      count_child++; // count the number of child element in the line
+                    }
+
+                  len_of_child = (int *)TtaGetMemory( (sizeof(int)) * (count_child + 1) );
+                  memory_of_child = len_of_child;
+                  child = TtaGetFirstChild(el);
+
+                  // input the length of child one by one 
+                  for (k=0; k < count_child; k++)
+                    {
+                      length_child = TtaGetElementVolume(child);
+                      len_of_child[k] = length_child;
+                      TtaNextSibling(&child);
+                    }
+
+                  // adjust the length of line (subtract Annotation Icon's length)
+                  for (k=1; k < count_child; k+=3)
+                    len -= len_of_child[k];
+
+                  child = TtaGetFirstChild(el);
+                  if ((len + time) < i)
+                    TtaFreeMemory(memory_of_child);
+                }
+            }
+        }
+    }
+	return (i+1-time);
+}
+
+/*----------------------------------------------------------------------
+  GetElemWithChar
+  access the position identified between characters by Char Scheme
+  ----------------------------------------------------------------------*/
+Element GetElemWithChar ( Document doc, char *nameVal)
+{
+  Element             el;
+  char               *CharNum;  
+  Element             child, prev;
+  ElementType         elType;
+  int                 i,line, len,len1,len_of_line,count_child=1;
+  int                 Char,time = 0;
+  int                 *len_of_child = NULL,*memory_of_child = NULL;
+  int                 sum_length_child;
+  ThotBool            selpos=FALSE;
+  int                 length_child,j,k;
+
+  if (!nameVal)
+    return NULL;
+  
+  /* Extract The Char scheme value */
+  CharNum = strstr(nameVal,"=");
+  CharNum = &CharNum[1];
+  Char = atoi(CharNum);
+  el = TtaGetMainRoot (doc);
+  elType = TtaGetElementType(el);
+  elType.ElTypeNum = TextFile_EL_Line_;
+  el = TtaSearchTypedElement (elType, SearchForward, el);
+  child = TtaGetFirstChild(el);
+  if (el)
+    {
+      i = Char;
+      len = TtaGetElementVolume(el);
+      len1 = TtaGetElementVolume(child);
+      len_of_line = len1;
+      count_child = 1;
+
+      /* Consider "Annotation Icon" if Annotation Icon is on the line */
+      if (len != len1)
+        {
+          //analysis the structure of target line including "Annotation Icon"
+          while (len != len_of_line)
+            {
+              TtaNextSibling(&child);
+              length_child = TtaGetElementVolume(child);
+              len_of_line += length_child;
+              count_child++; // count the number of child element in the line
+            }
+
+          len_of_child = (int *)TtaGetMemory( (sizeof(int)) * (count_child + 1) );
+          memory_of_child = len_of_child;
+          child = TtaGetFirstChild(el);
+
+          // input the length of child one by one 
+          for (k = 0; k < count_child; k++)
+            {
+              length_child = TtaGetElementVolume(child);
+              len_of_child[k] = length_child;
+              TtaNextSibling(&child);
+            }
+
+          // adjust the length of line (subtract Annotation Icon's length)
+          for (k = 1; k < count_child; k += 3)
+            len -= len_of_child[k];
+
+          child = TtaGetFirstChild(el);
+          if ((len + time) < i)
+            TtaFreeMemory(memory_of_child);
+        }
+
+      line=0;
+      // interpret Char Scheme value and calculate the element including the identified position
+      while (child && ((len < i && time == 0) || ((len+time) < i && time >= 1)))
+        {
+          i -= len;
+          prev = child;
+          TtaNextSibling(&el);
+          child = TtaGetFirstChild(el);
+          if (child == NULL)
+            {
+              len = i;
+              child = prev;			
+            }
+          else if (child != NULL)
+            {
+              len = TtaGetElementVolume(el);
+              len1 = TtaGetElementVolume(child);
+              time++;
+              line++;
+              len_of_line = len1;
+              count_child = 1;
+	    	
+              /* Consider "Annotation Icon" if Annotation Icon is on the line */
+              if (len != len1)
+                {
+                  //analysis the structure of target line including "Annotation Icon"
+                  while (len != len_of_line)
+                    {
+                      TtaNextSibling(&child);
+                      length_child = TtaGetElementVolume(child);
+                      len_of_line += length_child;
+                      count_child++; // count the number of child element in the line
+                    }
+
+                  len_of_child = (int *)TtaGetMemory ((sizeof(int)) * (count_child + 1));
+                  memory_of_child = len_of_child;
+                  child = TtaGetFirstChild(el);
+
+                  // input the length of child one by one 
+                  for (k=0; k < count_child; k++)
+                    {
+                      length_child = TtaGetElementVolume(child);
+                      len_of_child[k] = length_child;
+                      TtaNextSibling(&child);
+                    }
+
+                  // adjust the length of line (subtract Annotation Icon's length)
+                  for (k=1; k < count_child; k+=3)
+                    len -= len_of_child[k];
+                  child = TtaGetFirstChild(el);
+                  if (len + time < i)
+                    TtaFreeMemory(memory_of_child);
+                }
+            }
+          if (len == 0 && time == i)
+            break;
+        }
+
+      child = TtaGetFirstChild (el);
+      if (selpos)
+        TtaSelectString(doc,child,i+1,i);
+
+      else if (!selpos)
+        if (time==0) //if the identified position is on first line
+          TtaSelectString(doc,child,i+1,i);
+
+			//if the position is on other line
+			if (time >=1)
+        {
+          //if position is in the the part before Annotation Icon
+          if ( (i-time) <= len1 )
+            TtaSelectString(doc,child,(i-time)+1,(i-time));
+
+          //else if behind Icon
+				
+          else if ((i-time) > len_of_child[0])
+            {
+              sum_length_child = len_of_child[0];
+              for (k=2; k < count_child; k += 3)
+                {
+                  if (i-time <= sum_length_child + len_of_child[k])
+                    {
+                      for (j=1; j <=k; j++)
+                        TtaNextSibling(&child);
+							
+                      TtaSelectString (doc, child,(i-time+1) - sum_length_child,(i-time) - sum_length_child);
+                      TtaFreeMemory(memory_of_child);
+                      break;
+                    }
+                  else if ((i-time > sum_length_child + len_of_child[k] ) &&
+                           (i-time <= sum_length_child + len_of_child[k] + len_of_child[k+1]))
+                    {
+                      for (j=1; j<=k+1; j++)
+                        TtaNextSibling(&child);
+                      TtaSelectString(doc,child,(i-time+1) - sum_length_child - len_of_child[k],(i-time) - sum_length_child - len_of_child[k]);
+                      TtaFreeMemory(memory_of_child);
+                      break;
+                    }
+                  sum_length_child += len_of_child[k] + len_of_child[k+1];
+                }
+            }
+        }
+    }
+  return child;
+}
+
+/*----------------------------------------------------------------------
+  GetElemWithLine
+  access the position identified between lines by Line Scheme
+  ----------------------------------------------------------------------*/
+Element GetElemWithLine ( Document doc, char *nameVal)
+{
+  Element             el;
+  char               *LineNum;
+  Element             child, prev;
+  ElementType         elType;
+  int                 i, len ;
+  int                 line,index = 0;
+  ThotBool            selpos = FALSE;
+
+  if (!nameVal)
+    return NULL;
+
+  /* Extract The Line Number */
+  LineNum = strstr (nameVal, "=");
+  LineNum++;
+  line = atoi(LineNum);
+  if (line >= 0)
+    { 
+      el = TtaGetMainRoot (doc);
+      elType = TtaGetElementType (el);
+      elType.ElTypeNum = TextFile_EL_Line_;
+      el = TtaSearchTypedElement (elType, SearchForward, el);
+
+      for (i = 1; i <= line; i++)
+        TtaNextSibling (&el);
+	 
+      if (el)
+        {
+          child = TtaGetFirstChild (el);
+		
+          if (child)
+            {
+              if (index > 0)
+                {
+                  i = index;
+                  len = TtaGetElementVolume (child);
+                  while (child && len < i)
+                    {
+                      /* skip previous elements in the same line */
+                      i -= len;
+                      prev = child;
+                      TtaNextSibling (&child);
+                      if (child == NULL)
+                        {
+                          len = i;
+                          child = prev;
+                        }
+                      else
+                        len = TtaGetElementVolume (child);
+                    }
+                  if (selpos)
+                    TtaSelectString (doc, child, i, i-1);
+                  else
+                    TtaSelectString (doc, child, i, i);
+                }
+              else
+                //display the head point on indicated line
+                TtaSelectString (doc, child, 1, 0);
+            }
+        }
+      else
+        TtaSetStatus (doc, 1, "   ", NULL);
+    }
+  return el;
+}
+
+/*----------------------------------------------------------------------
+  GetElemWithLineRange
+  access the range identified between lines by Line Scheme
+  ----------------------------------------------------------------------*/
+Element GetElemWithLineRange ( Document doc, char *nameVal)
+{
+  Element             el, el2;  
+  Element             child, child2;
+  ElementType         elType, elType2;
+  char               *name, *Line_first, *memory_Line;
+  int                 i, len_value;
+  int                 line1, line2;
+
+  if (!nameVal)
+    return NULL;
+
+  i = 0;
+  // Extract The Line Number
+  name = strstr(nameVal,"=");
+  name++;
+  len_value = strlen(name);
+  Line_first = (char *)TtaGetMemory (len_value + 1);
+  memory_Line = Line_first;
+
+  while (*(name + i) != ',')
+	  i++;
+
+  strncpy (Line_first, name, i);
+  Line_first[i] = EOS;
+  line1 = atoi (Line_first);
+  name = strstr (name, ",");
+  name++;
+  line2 = atoi (name);
+  TtaFreeMemory (memory_Line);
+ 
+  //define the first Element 
+  el = TtaGetMainRoot (doc);
+  elType = TtaGetElementType (el);
+  elType.ElTypeNum = TextFile_EL_Line_;
+  el = TtaSearchTypedElement (elType, SearchForward, el);
+
+  for (i = 1; i <= line1; i++)
+    TtaNextSibling (&el);
+	
+  child = TtaGetFirstChild (el);
+  //define the second Element
+  el2 = TtaGetMainRoot (doc);
+  elType2 = TtaGetElementType (el2);
+  elType2.ElTypeNum = TextFile_EL_Line_;
+  el2 = TtaSearchTypedElement (elType2, SearchForward, el2);
+
+  for (i = 1; i < line2; i++)		 
+    TtaNextSibling (&el2);
+
+  child2 = TtaGetFirstChild(el2);
+  if (line1 != line2)
+    {
+      if (el != NULL && el2 != NULL)
+        {
+          //display the first Elememt
+          TtaSelectElement(doc,el);
+          //Extend the range to the second Element
+          TtaExtendSelection(doc,el2,0);
+        }
+	  }
+  else if (line1 == line2)
+	  TtaSelectString(doc,child,1,0);
+	  
+  return child;
+}
+
+/*----------------------------------------------------------------------
+  GetElemWithCharRange
+  access the range identified between characters by Char Scheme
+  ----------------------------------------------------------------------*/
+Element GetElemWithCharRange ( Document doc, char *nameVal)
+{
+  Element             el, el2;
+  char                *name, *val_string;
+  Element             child, prev;
+  ElementType         elType;
+  int                 len_value;
+  int                 i, len,len_of_text = 0;
+  int                 char1, char2;
+
+  if (!nameVal && DocumentTypes[doc] != docText)
+    return NULL;
+  //Extract the firstchar and lastchar numbers
+  name = strstr (nameVal, "=");
+  if (name == NULL)
+    return NULL;
+  name++;
+  len_value = strlen (name);
+  if (len_value == 0)
+    return NULL;
+
+  // define the first and second Element
+  el = TtaGetMainRoot (doc);
+  len = TtaGetElementVolume(el);
+  val_string = (char *)TtaGetMemory(len_value + 1);
+  i = 0;
+  while (name[i] != ',' && name[i] != EOS)
+    {
+      val_string[i] = name[i];
+      i++;
+    }
+  val_string[i] = EOS;
+  char1 = atoi (val_string);
+  name = strstr (name, ",");
+  if (name == NULL)
+    char2 = len;
+  else
+    {
+      name++;
+      char2 = atoi (name);
+    }
+  TtaFreeMemory (val_string);
+  if (char1 > len)
+     char1 = len;
+  if (char2 > len)
+     char2 = len;
+  elType = TtaGetElementType (el);
+  elType.ElTypeNum = TextFile_EL_Line_;
+  el = TtaSearchTypedElement (elType, SearchForward, el);
+  child = TtaGetFirstChild (el);
+  el2 = el;
+  if (el == NULL)
+    return NULL;
+
+#ifndef IV
+  /* interpret char1 and calculate the position */
+  i = char1;
+  do
+    {
+      len = TtaGetElementVolume (el);
+      child = TtaGetFirstChild (el);
+      len_of_text = TtaGetElementVolume (child);
+      // get the next line
+      TtaNextSibling (&el);
+      if (len != len_of_text)
+        {
+          /* skip annotations in the line */
+          do
+            {
+              elType = TtaGetElementType (child);
+              prev = child;
+              // get the next child
+              TtaNextSibling (&child);
+              if (elType.ElTypeNum == TextFile_EL_TEXT_UNIT)
+                // a text
+                len_of_text = TtaGetElementVolume (prev);
+              else
+                len_of_text = 0;
+              if (child == NULL)
+                len_of_text++;
+              if (i < len_of_text)
+                {
+                  // select within this line
+                  TtaSelectString (doc, prev, i+1, i);
+                  child = NULL;
+                  el = NULL;
+                }
+              else
+                i -= len_of_text;
+            }
+          while (child);
+        }
+      else if ( i < len_of_text)
+        {
+          // select within this line
+          TtaSelectString (doc, child, i+1, i);
+          el = NULL;
+        }
+      else
+        i = i - len_of_text - 1;
+    }
+  while (el);
+
+  i = char2;
+  el = el2;
+  do
+    {
+      len = TtaGetElementVolume (el);
+      child = TtaGetFirstChild (el);
+      len_of_text = TtaGetElementVolume (child);
+      // get the next line
+      TtaNextSibling (&el);
+      if (len != len_of_text)
+        {
+          /* skip annotations in the line */
+          do
+            {
+              elType = TtaGetElementType (child);
+              prev = child;
+              // get the next chil
+              TtaNextSibling (&child);
+               if (elType.ElTypeNum == TextFile_EL_TEXT_UNIT)
+                // a text
+                len_of_text = TtaGetElementVolume (prev);
+              else
+                len_of_text = 0;
+              if (child == NULL)
+                len_of_text++;
+              if (i < len_of_text)
+                {
+                  // select within this line
+                  i++;
+                  TtaExtendSelection (doc, prev, i);
+                  child = NULL;
+                  el = NULL;
+                }
+              else
+                i -= len_of_text;
+            }
+          while (child && i > 0);
+        }
+      else if ( i <= len_of_text + 1)
+        {
+          // select within this line
+          i++;
+          TtaExtendSelection (doc, child, i);
+          el = NULL;
+        }
+      else
+        i = i - len_of_text - 1;
+    }
+  while (el);
+  return child;
+#else /* IV */
+  Element             child2;
+  int                 count_child = 0, len_of_line;
+  int                 *child_string = NULL;
+  int                 *child_string2 = NULL;
+  int                 sum_length_child;
+  int                 length_child;
+  int                 j, k, time = 0;
+
+  child2 = child;
+  /* interpret char1 and calculate the position */
+  if (el)
+    {
+      i = char1;
+      len = TtaGetElementVolume (el);
+      len_of_text = TtaGetElementVolume (child);
+      len_of_line = len_of_text;
+      count_child = 1;
+      /* Consider "Annotation Icon" if Annotation Icon is on the line */
+      if (len != len_of_text)
+        {
+          //analysis the structure of the target line including "Annotation Icon"
+          while (len != len_of_line)
+            {
+              TtaNextSibling (&child);
+              length_child = TtaGetElementVolume (child);
+              len_of_line += length_child;
+              count_child++; // count the number of child in the line
+            }
+
+          child_string = (int *)TtaGetMemory( (sizeof(int)) * (count_child + 1) );
+          child = TtaGetFirstChild (el);
+
+          // input the length of child one by one
+          for (k = 0; k < count_child; k++)
+            {
+              length_child = TtaGetElementVolume(child);
+              child_string[k] = length_child;
+              TtaNextSibling(&child);
+            }
+
+          //adjust the length of line (subtract that of Annotation Icon)
+          for (k = 1; k < count_child; k+=3)
+            len -= child_string[k];
+
+          child = TtaGetFirstChild (el);
+          if ( len < i )
+            {
+              TtaFreeMemory(child_string);
+              child_string = NULL;
+            }
+        }
+
+      // interpret Char Scheme value and calculate the element including the starting position
+      while (child && ((len < i && time == 0) || (len+time < i && time >= 1)))
+        {
+          i -= len;
+          prev = child;
+          TtaNextSibling (&el);
+          child = TtaGetFirstChild (el);
+
+          if (child == NULL)
+            {
+              len = i;
+              child = prev;			
+            }
+          else
+            {
+              len = TtaGetElementVolume (el);
+              len_of_text = TtaGetElementVolume (child);
+              time++;
+              len_of_line = len_of_text;
+              count_child = 1;
+	    	
+              /* Consider "Annotation Icon" if Annotation Icon is on the line */
+              if (len != len_of_text)
+                { 
+                  // analysis the structure of the line including "Annotation Icon"
+                  while (len != len_of_line)
+                    {
+                      TtaNextSibling (&child);
+                      length_child = TtaGetElementVolume(child);
+                      len_of_line += length_child;
+                      count_child++; // count the number of child in the line
+                    }
+
+                  child_string = (int *)TtaGetMemory( (sizeof(int)) * (count_child + 1) );
+                  child = TtaGetFirstChild (el);
+
+                  // input the length of child one by one
+                  for (k = 0; k < count_child; k++)
+                    {
+                      length_child = TtaGetElementVolume(child);
+                      child_string[k] = length_child;
+                      TtaNextSibling (&child);
+                    }
+
+                  // adjust the length of line (subtract that of Annotation Icon)
+                  for (k = 1; k < count_child; k += 3)
+                    len -= child_string[k];
+
+                  child = TtaGetFirstChild(el);
+                  if (len + time < i)
+                    {
+                      TtaFreeMemory(child_string);
+                      child_string = NULL;
+                    }
+                }
+            }
+          if (len == 0 && (time) == i)
+            break;
+        }
+    }
+
+  //if position is in the part before Annotation Icon
+  if ( i-time <= len_of_text)
+    TtaSelectString (doc, child, (i-time)+1, (i-time));
+  //else if behind Icon
+  else if (child_string && i-time > child_string[0])
+    {
+      sum_length_child = child_string[0];
+      for (k=2; k < count_child; k += 3)
+        {
+          if ((i-time) <= sum_length_child + child_string[k])
+            {
+							for (j=1; j <=k; j++)
+                TtaNextSibling(&child);
+							
+							TtaSelectString (doc, child,
+                               (i-time+1) - sum_length_child,(i-time) - sum_length_child);
+              TtaFreeMemory(child_string);
+							break;
+						}
+          else if ((i-time > sum_length_child + child_string[k]) &&
+                   (i-time <= sum_length_child + child_string[k] + child_string[k+1]))
+            {
+							for (j=1; j<=k+1; j++)
+                TtaNextSibling (&child);
+
+							TtaSelectString(doc,child,(i-time+1) - sum_length_child - child_string[k],(i-time) - sum_length_child - child_string[k]);
+
+							TtaFreeMemory(child_string);
+              child_string = NULL;
+              break;
+						}
+          sum_length_child += child_string[k] + child_string[k+1];
+        }
+    }
+
+	/* interpret char2 and calculate the position */
+  time = 0;
+  if (el)
+    {
+      i = char2;
+      len = TtaGetElementVolume (el2);
+      len_of_text = TtaGetElementVolume (child2);
+      len_of_line = len_of_text;
+      count_child = 1;
+
+      /* Consider "Annotation Icon" if Annotation Icon is on the line */
+      if (len != len_of_text)
+        {
+          // analysis the structure of the line including "Annotation Icon"
+          while (len != len_of_line)
+            {
+              TtaNextSibling(&child2);
+              length_child = TtaGetElementVolume(child2);
+              len_of_line += length_child;
+              count_child++; // count the number of child in the line			
+            }
+
+          child_string2 = (int *)TtaGetMemory( (sizeof(int)) * (count_child + 1) );
+          child2 = TtaGetFirstChild (el2);
+
+          // input the length of child one by one
+          for (k = 0; k < count_child; k++)
+            {
+              length_child = TtaGetElementVolume (child2);
+              child_string2[k] = length_child;
+              TtaNextSibling (&child2);
+            }
+
+          // adjust the length of line (subtract that of Annotation Icon)
+          for (k = 1; k < count_child; k+=3)
+            len -= child_string2[k];
+          child2 = TtaGetFirstChild (el2);
+          if ((len + time) < i)
+            {
+            TtaFreeMemory (child_string2);
+            child_string2 = NULL;
+            }
+        }
+
+      // interpret Char Scheme value and calculate the element including the ending position
+      while (child2 && ((len < i && time == 0) || ((len+time) < i && time >=1 )))
+        {	
+          i -= len;
+          prev = child2;
+          TtaNextSibling (&el2);
+          child2 = TtaGetFirstChild (el2);
+          if (child2 == NULL)
+            {
+              len = i;
+              child2 = prev;
+            }
+          else
+            {
+              len = TtaGetElementVolume (el2);
+              len_of_text = TtaGetElementVolume(child2);
+              time++;
+              len_of_line = len_of_text;
+              count_child = 1;
+
+              /* Consider "Annotation Icon" if Annotation Icon is on the line */
+              if (len != len_of_text)
+                {
+                  // analysis the structure of the line including "Annotation Icon"
+                  while (len != len_of_line)
+                    {
+                      TtaNextSibling(&child2);
+                      length_child = TtaGetElementVolume (child2);
+                      len_of_line += length_child;
+                      count_child++;
+                    }
+
+                  child_string2 = (int *)TtaGetMemory ((sizeof(int)) * (count_child + 1));
+                  child2 = TtaGetFirstChild(el2);
+
+                  // input the length of child one by one
+                  for (k=0; k < count_child; k++)
+                    {
+                      length_child = TtaGetElementVolume(child2);
+                      child_string2[k] = length_child;
+                      TtaNextSibling(&child2);
+                    }
+
+                  // adjust the length of line (subtract that of Annotation Icon)
+                  for (k=1; k < count_child; k+=3)
+                    len -= child_string2[k];
+                  child2 = TtaGetFirstChild(el2);
+                  if ( (len + time) < i )
+                    {
+                      TtaFreeMemory(child_string2);
+                      child_string2 = NULL;
+                    }
+                }			
+            }
+          if (len == 0 && time == i)
+            break;
+        }
+    }
+
+  //extend the range from first position to second 
+  if (i-time <= len_of_text)
+    TtaExtendSelection(doc,child2,(i-time)+1);
+  else if (child_string2 && i-time > child_string2[0])
+    {
+      sum_length_child = child_string2[0];
+
+      for (k=2; k < count_child; k += 3)
+        {
+          if (i-time <= sum_length_child + child_string2[k])
+            {
+							for (j=1; j <=k; j++)
+                TtaNextSibling(&child2);
+							
+              TtaExtendSelection(doc,child2,(i-time+1) - sum_length_child);
+							TtaFreeMemory(child_string2);
+              child_string2 = NULL;
+							break;
+						}
+          else if ((i-time > sum_length_child + child_string2[k] ) &&
+                   (i-time <= sum_length_child + child_string2[k] + child_string2[k+1] ))
+            {
+							for (j=1; j<=k+1; j++)
+                TtaNextSibling(&child2);
+							TtaExtendSelection (doc, child2,
+                                  (i-time+1) - sum_length_child - child_string2[k]);
+							TtaFreeMemory(child_string2);
+              child_string2 = NULL;
+							break;
+						}
+
+					sum_length_child += child_string2[k] + child_string2[k+1];
+        }
+      TtaFreeMemory(child_string2);
+    }
+  return child;
+#endif
+}
+
+/*----------------------------------------------------------------------
+  GetElemWithMatch
+  access the part that the target text appeared  by Match Scheme
+  ----------------------------------------------------------------------*/
+Element GetElemWithMatch ( Document  doc, char *nameVal)
+{
+  Element             el, elFound,temp;
+  ElementType         elType;
+  CHARSET             charset;
+  int                 length;
+  char               *CharNum, *Numbersub, *memory_match;
+  int                 error_flag;
+  int                 *firstCh, *lastCh;
+  int                 Char;
+  
+  length = strlen(nameVal);
+  if (!nameVal)
+    return NULL;
+
+  charset = TtaGetDocumentCharset (doc);
+  /* Extract The Match Scheme's value */
+  CharNum = strstr(nameVal, "=");
+  CharNum = &CharNum[1];
+  Char = strlen (CharNum);
+  Numbersub = (char *)TtaGetMemory (Char + 1);
+  memory_match = Numbersub;
+  firstCh = (int *)TtaGetMemory (sizeof(int));
+  lastCh = (int *)TtaGetMemory (sizeof(int));
+  elFound = NULL;
+  el = TtaGetMainRoot (doc);
+  elType = TtaGetElementType (el);
+  elType.ElTypeNum = TextFile_EL_Line_;
+  el = TtaSearchTypedElement (elType, SearchForward, el);
+  strncpy (Numbersub, CharNum, Char);
+  Numbersub[Char] = EOS;
+  error_flag = FALSE;
+
+  while (elFound == NULL)
+    {
+      // search the target text from head on Plain Text
+      elFound = TtaSearchText (doc, el, FALSE, Numbersub, firstCh, lastCh, charset);
+      temp = el;
+      if (elFound == NULL)
+        {
+          TtaNextSibling (&el);
+          if (temp == el)
+            {
+              error_flag = TRUE;
+              break;
+            }
+        }
+    }
+
+  if (error_flag == FALSE)
+    {
+      TtaSelectString (doc, elFound, *firstCh, *lastCh);
+      TtaFreeMemory (memory_match);
+      TtaFreeMemory (firstCh);
+      TtaFreeMemory (lastCh);
+    }
+  return elFound;
+}
+
+/*----------------------------------------------------------------------
+  SearchTextattribute
+  Depending on the value, inplement which of functions to identifier
+  the position or range 
+  ----------------------------------------------------------------------*/
+Element SearchTextattribute (Document doc, char *nameVal)
+{
+  Element             elFound;
+
+  if (strncmp (nameVal,"line",4) == 0 && strstr(nameVal, ",") == NULL)
+    elFound = GetElemWithLine(doc,nameVal); 
+  else if (strncmp(nameVal,"char",4) == 0 && strstr(nameVal,",") == NULL) 
+    elFound = GetElemWithChar(doc,nameVal);
+  else if (strncmp(nameVal,"line",4) == 0 &&strstr(nameVal, ",") != NULL)
+    elFound = GetElemWithLineRange(doc,nameVal);
+  else if (strncmp(nameVal,"char",4) == 0 &&strstr(nameVal, ",") != NULL)
+    elFound = GetElemWithCharRange(doc,nameVal);
+  else if (strncmp(nameVal,"match",5) == 0 &&strstr(nameVal, ",") == NULL)
+    elFound = GetElemWithMatch(doc,nameVal);
+  else
+    return NULL;
+  return (elFound);
+}
 
 /*----------------------------------------------------------------------
   GetElemWithAttr
@@ -476,7 +1451,7 @@ ThotBool IsCSSLink (Element el, Document doc)
           return FALSE;
         }
       else if (strcasecmp (buffer, "stylesheet") == 0 ||
-          strcasecmp (buffer, "style") == 0)
+               strcasecmp (buffer, "style") == 0)
         {
           /* now check the type of the stylesheet */
           attrType.AttrTypeNum = HTML_ATTR_Link_type;
@@ -839,8 +1814,8 @@ static ThotBool ActivateElement (Element element, Document document)
             elType.ElTypeNum == HTML_EL_FRAME ||
             elType.ElTypeNum == HTML_EL_Block_Quote ||
             elType.ElTypeNum == HTML_EL_Quotation ||
-            elType.ElTypeNum == HTML_EL_INS ||
-            elType.ElTypeNum == HTML_EL_DEL ||
+            elType.ElTypeNum == HTML_EL_ins ||
+            elType.ElTypeNum == HTML_EL_del ||
             elType.ElTypeNum == HTML_EL_C_Empty ||
             elType.ElTypeNum == HTML_EL_Radio_Input ||
             elType.ElTypeNum == HTML_EL_Checkbox_Input ||
@@ -1082,99 +2057,99 @@ void NextLinkOrFormElement (Document doc, View view)
 
   schema = TtaGetSSchema ("HTML", doc);  
   attrType1.AttrTypeNum = HTML_ATTR_NAME;
-      attrType1.AttrSSchema = schema;
-      attrType2.AttrTypeNum = HTML_ATTR_HREF_;
-      attrType2.AttrSSchema = schema;
-      root = TtaGetRootElement (doc);
-      TtaGiveFirstSelectedElement (doc, &el, &firstChar, &lastChar);
+  attrType1.AttrSSchema = schema;
+  attrType2.AttrTypeNum = HTML_ATTR_HREF_;
+  attrType2.AttrSSchema = schema;
+  root = TtaGetRootElement (doc);
+  TtaGiveFirstSelectedElement (doc, &el, &firstChar, &lastChar);
+  if (el == NULL)
+    {
+      /* start from the root element */
+      el = root;
+      /* we don't accept to restart from the beginning */
+      cycle = TRUE;
+    }
+  else
+    cycle = FALSE;
+
+  /* don't manage this element */
+  startEl = el;
+  /* we're looking for a next element */
+  TtaSearchAttributes (attrType1, attrType2, SearchForward, el, &el, &attr);
+  found = FALSE;
+  while (!found)
+    {
       if (el == NULL)
         {
-          /* start from the root element */
-          el = root;
-          /* we don't accept to restart from the beginning */
-          cycle = TRUE;
-        }
-      else
-        cycle = FALSE;
-
-      /* don't manage this element */
-      startEl = el;
-      /* we're looking for a next element */
-      TtaSearchAttributes (attrType1, attrType2, SearchForward, el, &el, &attr);
-      found = FALSE;
-      while (!found)
+          /* end of the document */
+          el = NULL;
+          attr = NULL;
+          if (!cycle)
+            {
+              /* restart from the beginning of the document */
+              cycle = TRUE;
+              el = root;
+            }
+          else
+            /* stop the search */
+            found = TRUE;
+        }  
+      else if (el == startEl)
         {
-          if (el == NULL)
-            {
-              /* end of the document */
-              el = NULL;
-              attr = NULL;
-              if (!cycle)
-                {
-                  /* restart from the beginning of the document */
-                  cycle = TRUE;
-                  el = root;
-                }
-              else
-                /* stop the search */
-                found = TRUE;
-            }  
-          else if (el == startEl)
-            {
-              /* we made a complete cycle and no other element was found */
-              el = NULL;
-              attr = NULL;
-              found = TRUE;
-            }
-          else if (attr)
-            {
-              elType = TtaGetElementType (el);
-              switch (elType.ElTypeNum)
-                {
-                case HTML_EL_Option_Menu:
-                case HTML_EL_Checkbox_Input:
-                case HTML_EL_Radio_Input:
-                case HTML_EL_Submit_Input:
-                case HTML_EL_Reset_Input:
-                case HTML_EL_Button_Input:
-                case HTML_EL_BUTTON_:
-                case HTML_EL_Anchor:
-                  /* no included text: select the element itself */
-                  TtaSelectElement (doc, el);
-                  found =TRUE;
-                  break;
-	      
-                case HTML_EL_Text_Area:
-                case HTML_EL_Text_Input:
-                case HTML_EL_File_Input:
-                case HTML_EL_Password_Input:
-                  /* look for the last included text */
-                  elType.ElTypeNum = HTML_EL_TEXT_UNIT;
-                  child = TtaSearchTypedElement (elType, SearchForward, el);
-                  if (child)
-                    {
-                      next = child;
-                      do
-                        {
-                          child = next;
-                          next = TtaSearchTypedElementInTree (elType,
-                                                              SearchForward,
-                                                              el, child);
-                        }
-                      while (next);
-                      i = TtaGetTextLength (child);
-                      TtaSelectString (doc, child, i+1, i);
-                    }
-                  found =TRUE;
-                  break;
-	      
-                default:
-                  break;
-                }
-            }
-          if (!found)
-            TtaSearchAttributes (attrType1, attrType2, SearchForward, el, &el, &attr);
+          /* we made a complete cycle and no other element was found */
+          el = NULL;
+          attr = NULL;
+          found = TRUE;
         }
+      else if (attr)
+        {
+          elType = TtaGetElementType (el);
+          switch (elType.ElTypeNum)
+            {
+            case HTML_EL_Option_Menu:
+            case HTML_EL_Checkbox_Input:
+            case HTML_EL_Radio_Input:
+            case HTML_EL_Submit_Input:
+            case HTML_EL_Reset_Input:
+            case HTML_EL_Button_Input:
+            case HTML_EL_BUTTON_:
+            case HTML_EL_Anchor:
+              /* no included text: select the element itself */
+              TtaSelectElement (doc, el);
+              found =TRUE;
+              break;
+	      
+            case HTML_EL_Text_Area:
+            case HTML_EL_Text_Input:
+            case HTML_EL_File_Input:
+            case HTML_EL_Password_Input:
+              /* look for the last included text */
+              elType.ElTypeNum = HTML_EL_TEXT_UNIT;
+              child = TtaSearchTypedElement (elType, SearchForward, el);
+              if (child)
+                {
+                  next = child;
+                  do
+                    {
+                      child = next;
+                      next = TtaSearchTypedElementInTree (elType,
+                                                          SearchForward,
+                                                          el, child);
+                    }
+                  while (next);
+                  i = TtaGetTextLength (child);
+                  TtaSelectString (doc, child, i+1, i);
+                }
+              found =TRUE;
+              break;
+	      
+            default:
+              break;
+            }
+        }
+      if (!found)
+        TtaSearchAttributes (attrType1, attrType2, SearchForward, el, &el, &attr);
+    }
 #endif // TEMPLATES
 }
 
@@ -1204,124 +2179,124 @@ void PreviousLinkOrFormElement (Document doc, View view)
   attrType2.AttrTypeNum = HTML_ATTR_HREF_;
   attrType2.AttrSSchema = schema;
 
-      /* keep in mind the last element of the document */
-      root = TtaGetRootElement (doc);
-      el = TtaGetLastChild (root);
-      attr = NULL;
+  /* keep in mind the last element of the document */
+  root = TtaGetRootElement (doc);
+  el = TtaGetLastChild (root);
+  attr = NULL;
 
-      while (el)
-        {
-          root = el;
-          /* check if this element matches */
-          attr = TtaGetAttribute (el, attrType1);
-          if (attr == NULL)
-            attr = TtaGetAttribute (el, attrType2);
-          if (attr == NULL)
-            el = TtaGetLastChild (root);
-          else
-            /* a right element is found */
-            el = NULL;
-        }
-      TtaGiveLastSelectedElement (doc, &el, &firstChar, &lastChar);
+  while (el)
+    {
+      root = el;
+      /* check if this element matches */
+      attr = TtaGetAttribute (el, attrType1);
+      if (attr == NULL)
+        attr = TtaGetAttribute (el, attrType2);
+      if (attr == NULL)
+        el = TtaGetLastChild (root);
+      else
+        /* a right element is found */
+        el = NULL;
+    }
+  TtaGiveLastSelectedElement (doc, &el, &firstChar, &lastChar);
+  if (el == NULL)
+    {
+      /* start from the end of the document */
+      el = root;
+      /* we don't accept to restart from the beginning */
+      cycle = TRUE;
+      /* attr != 0 if this element matches */
+      startEl = NULL;
+    }
+  else
+    {
+      cycle = FALSE;
+      attr = NULL;
+      /* don't manage this element */
+      startEl = el;
+    }
+
+  if (attr == NULL)
+    /* we're looking for a next element */
+    TtaSearchAttributes (attrType1, attrType2, SearchBackward, el, &el, &attr);
+  found = FALSE;
+  while (!found)
+    {
       if (el == NULL)
         {
-          /* start from the end of the document */
-          el = root;
-          /* we don't accept to restart from the beginning */
-          cycle = TRUE;
-          /* attr != 0 if this element matches */
-          startEl = NULL;
-        }
-      else
-        {
-          cycle = FALSE;
+          /* begginning of the document */
+          el = NULL;
           attr = NULL;
-          /* don't manage this element */
-          startEl = el;
-        }
-
-      if (attr == NULL)
-        /* we're looking for a next element */
-        TtaSearchAttributes (attrType1, attrType2, SearchBackward, el, &el, &attr);
-      found = FALSE;
-      while (!found)
+          if (!cycle)
+            {
+              /* restart from the end of the document */
+              cycle = TRUE;
+              el = root;
+              /* check if this element matches */
+              attr = TtaGetAttribute (el, attrType1);
+              if (attr == NULL)
+                attr = TtaGetAttribute (el, attrType2);
+            }
+          else
+            /* stop the search */
+            found = TRUE;
+        }  
+      else if (el == startEl)
         {
-          if (el == NULL)
-            {
-              /* begginning of the document */
-              el = NULL;
-              attr = NULL;
-              if (!cycle)
-                {
-                  /* restart from the end of the document */
-                  cycle = TRUE;
-                  el = root;
-                  /* check if this element matches */
-                  attr = TtaGetAttribute (el, attrType1);
-                  if (attr == NULL)
-                    attr = TtaGetAttribute (el, attrType2);
-                }
-              else
-                /* stop the search */
-                found = TRUE;
-            }  
-          else if (el == startEl)
-            {
-              /* we made a complete cycle and no other element was found */
-              el = NULL;
-              attr = NULL;
-              found = TRUE;
-            }
-          else if (attr)
-            {
-              elType = TtaGetElementType (el);
-              switch (elType.ElTypeNum)
-                {
-                case HTML_EL_Option_Menu:
-                case HTML_EL_Checkbox_Input:
-                case HTML_EL_Radio_Input:
-                case HTML_EL_Submit_Input:
-                case HTML_EL_Reset_Input:
-                case HTML_EL_Button_Input:
-                case HTML_EL_BUTTON_:
-                case HTML_EL_Anchor:
-                  /* no included text: select the element itself */
-                  TtaSelectElement (doc, el);
-                  found =TRUE;
-                  break;
-	      
-                case HTML_EL_Text_Area:
-                case HTML_EL_Text_Input:
-                case HTML_EL_File_Input:
-                case HTML_EL_Password_Input:
-                  /* look for the last included text */
-                  elType.ElTypeNum = HTML_EL_TEXT_UNIT;
-                  child = TtaSearchTypedElement (elType, SearchForward, el);
-                  if (child)
-                    {
-                      next = child;
-                      do
-                        {
-                          child = next;
-                          next = TtaSearchTypedElementInTree (elType,
-                                                              SearchForward,
-                                                              el, child);
-                        }
-                      while (next);
-                      i = TtaGetTextLength (child);
-                      TtaSelectString (doc, child, i+1, i);
-                    }
-                  found =TRUE;
-                  break;
-	      
-                default:
-                  attr = NULL;
-                  break;
-                }
-            }
-          if (!found && !attr)
-            TtaSearchAttributes (attrType1, attrType2, SearchBackward, el, &el, &attr);
+          /* we made a complete cycle and no other element was found */
+          el = NULL;
+          attr = NULL;
+          found = TRUE;
         }
+      else if (attr)
+        {
+          elType = TtaGetElementType (el);
+          switch (elType.ElTypeNum)
+            {
+            case HTML_EL_Option_Menu:
+            case HTML_EL_Checkbox_Input:
+            case HTML_EL_Radio_Input:
+            case HTML_EL_Submit_Input:
+            case HTML_EL_Reset_Input:
+            case HTML_EL_Button_Input:
+            case HTML_EL_BUTTON_:
+            case HTML_EL_Anchor:
+              /* no included text: select the element itself */
+              TtaSelectElement (doc, el);
+              found =TRUE;
+              break;
+	      
+            case HTML_EL_Text_Area:
+            case HTML_EL_Text_Input:
+            case HTML_EL_File_Input:
+            case HTML_EL_Password_Input:
+              /* look for the last included text */
+              elType.ElTypeNum = HTML_EL_TEXT_UNIT;
+              child = TtaSearchTypedElement (elType, SearchForward, el);
+              if (child)
+                {
+                  next = child;
+                  do
+                    {
+                      child = next;
+                      next = TtaSearchTypedElementInTree (elType,
+                                                          SearchForward,
+                                                          el, child);
+                    }
+                  while (next);
+                  i = TtaGetTextLength (child);
+                  TtaSelectString (doc, child, i+1, i);
+                }
+              found =TRUE;
+              break;
+	      
+            default:
+              attr = NULL;
+              break;
+            }
+        }
+      if (!found && !attr)
+        TtaSearchAttributes (attrType1, attrType2, SearchBackward, el, &el, &attr);
+    }
 }
 
 /*----------------------------------------------------------------------
@@ -1449,7 +2424,7 @@ ThotBool SimpleLClick (NotifyElement *event)
         }
     }
 #endif /* _SVG */
-  /* don't let Thot perform normal operation if there is an activation */
+  /* let Thot perform normal operation */
   return FALSE;
 }
 
@@ -1494,23 +2469,18 @@ ThotBool AnnotSimpleClick (NotifyElement *event)
 void UpdateXmlElementListTool (Element el, Document doc)
 {
 #ifdef TEMPLATES
-  if(IsTemplateInstanceDocument(doc))
-  {
-    if(!IsTemplateElement(el))
-      el = GetFirstTemplateParentElement(el);
+  if (IsTemplateInstanceDocument(doc))
+    {
+      if (!IsTemplateElement(el))
+        el = GetFirstTemplateParentElement(el);
     
-    DLList list = InsertableElement_Update(doc, el);
- 
-    AmayaParams    p = {-1, list, (void*)InsertableElement_DoInsertElement, NULL};
-    
-    TtaSendDataToPanel( WXAMAYA_PANEL_XML, p );
-    
-  }
+      DLList list = InsertableElement_Update(doc, el); 
+      AmayaParams    p = {-1, list, (void*)InsertableElement_DoInsertElement, NULL};    
+      TtaSendDataToPanel( WXAMAYA_PANEL_XML, p );    
+    }
   else
 #endif /* TEMPLATE */
-  {
     TtaRefreshElementMenu(doc, 1);
-  }
 }
 
 
@@ -1569,8 +2539,8 @@ void UpdateTitle (Element el, Document doc)
             length += TtaGetTextLength (next);
 #ifdef TEMPLATES
           if ((elType.ElTypeNum == Template_EL_useEl ||
-                    elType.ElTypeNum == Template_EL_useSimple) &&
-                   !strcmp (TtaGetSSchemaName (elType.ElSSchema), "Template"))
+               elType.ElTypeNum == Template_EL_useSimple) &&
+              !strcmp (TtaGetSSchemaName (elType.ElSSchema), "Template"))
             // Ignore the template use element
             next = TtaGetFirstChild (next);
           else
@@ -1594,8 +2564,8 @@ void UpdateTitle (Element el, Document doc)
             }
 #ifdef TEMPLATES
           if ((elType.ElTypeNum == Template_EL_useEl ||
-                    elType.ElTypeNum == Template_EL_useSimple) &&
-                   !strcmp (TtaGetSSchemaName (elType.ElSSchema), "Template"))
+               elType.ElTypeNum == Template_EL_useSimple) &&
+              !strcmp (TtaGetSSchemaName (elType.ElSSchema), "Template"))
             // Ignore the template use element
             next = TtaGetFirstChild (next);
           else
@@ -1621,7 +2591,6 @@ void UpdateTitle (Element el, Document doc)
         }
       TtaFreeMemory (text);
     }
-
 }
 
 /*----------------------------------------------------------------------
@@ -1631,7 +2600,7 @@ void CloseLogs (Document doc)
 {
   int		     i;
 
-  /* is there log documents linked to this document? */
+  /* are there log documents linked to this document? */
   if (doc)
     {
       for (i = 1; i < DocumentTableLength; i++)
@@ -1643,8 +2612,10 @@ void CloseLogs (Document doc)
             TtaCloseDocument (i);
             TtaFreeMemory (DocumentURLs[i]);
             DocumentURLs[i] = NULL;
-            /* switch off the button Show Log file */
-            TtaSetItemOff (doc, 1, File, BShowLogFile);
+            RemoveParsingErrors (i);
+            if (DocumentTypes[i] != docLog)
+              /* switch off the button Show Log file */
+              TtaSetItemOff (doc, 1, File, BShowLogFile);
             if (DocumentSource[doc])
               TtaSetItemOff (DocumentSource[doc], 1, File, BShowLogFile);
             DocumentSource[i] = 0;
@@ -1659,8 +2630,6 @@ void CloseLogs (Document doc)
   -----------------------------------------------------------------------*/
 void FocusChanged (Document doc)
 {
-#ifdef LC 
-/* Temporary disabled to go round a crash on Mac OSX with the Show Applied Style window */
   int		     i;
 
   if ( DocumentTypes[doc] == docSource)
@@ -1674,7 +2643,7 @@ void FocusChanged (Document doc)
     if (DocumentURLs[i] && DocumentSource[i] != doc &&
         DocumentTypes[i] == docLog)
       {
-        /* close the window of the log file */
+        /* close this log file window */
         TtaCloseDocument (i);
         TtaFreeMemory (DocumentURLs[i]);
         DocumentURLs[i] = NULL;
@@ -1688,7 +2657,6 @@ void FocusChanged (Document doc)
         /* restore the default document type */
         DocumentTypes[i] = docFree;
       }
-#endif /* LC */
 }
 
 /*----------------------------------------------------------------------
@@ -1748,6 +2716,8 @@ void FreeDocumentResource (Document doc)
         DocumentSource[doc] = 0;
       else
         {
+          /* switch off the button Show Log file */
+          TtaSetItemOff (doc, 1, File, BShowLogFile);
           RemoveDocCSSs (doc);
           /* free access keys table */
           TtaRemoveDocAccessKeys (doc);
@@ -1772,8 +2742,6 @@ void FreeDocumentResource (Document doc)
                     TtaCloseDocument (i);
                     TtaFreeMemory (DocumentURLs[i]);
                     DocumentURLs[i] = NULL;
-                    /* switch off the button Show Log file */
-                    TtaSetItemOff (doc, 1, File, BShowLogFile);
                   }
               }
           /* avoid to free images of backup documents */
@@ -1833,7 +2801,7 @@ void DocumentClosed (NotifyDialog * event)
 /*----------------------------------------------------------------------
   A new element has been selected. Update menus accordingly.      
   ----------------------------------------------------------------------*/
-void UpdateContextSensitiveMenus (Document doc)
+void UpdateContextSensitiveMenus (Document doc, View view)
 {
   ElementType         elType, elTypeSel;
   Element             firstSel;
@@ -1858,11 +2826,11 @@ void UpdateContextSensitiveMenus (Document doc)
       if (!strcmp (TtaGetSSchemaName (elType.ElSSchema), "MathML"))
         {
           elType.ElTypeNum = MathML_EL_MTABLE;
-          withinTable = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+          withinTable = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
           if (withinTable)
             {
               elType.ElTypeNum = MathML_EL_RowLabel;
-              if (TtaGetTypedAncestor (firstSel, elType) != NULL)
+              if (TtaGetExactTypedAncestor (firstSel, elType) != NULL)
                 withinTable = FALSE;
             }
           inMath = TRUE;
@@ -1871,7 +2839,7 @@ void UpdateContextSensitiveMenus (Document doc)
       if (sch && !withinTable)
         {
           elType.ElTypeNum = HTML_EL_Table_;
-          withinTable = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+          withinTable = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
         }
     }
 
@@ -1973,7 +2941,7 @@ void UpdateContextSensitiveMenus (Document doc)
   else
     {
       elType.ElTypeNum = HTML_EL_Preformatted;
-      newSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+      newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
     }
 
   /* 
@@ -2012,7 +2980,7 @@ void UpdateContextSensitiveMenus (Document doc)
   else
     {
       elType.ElTypeNum = HTML_EL_Comment_;
-      newSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+      newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
     }
   if (newSelInElem != SelectionInComment)
     {
@@ -2034,7 +3002,7 @@ void UpdateContextSensitiveMenus (Document doc)
           elTypeSel.ElSSchema == elType.ElSSchema)
         newSelInElem = TRUE;
       else
-        newSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
     }
   if (SelectionInEM != newSelInElem)
     {
@@ -2056,7 +3024,7 @@ void UpdateContextSensitiveMenus (Document doc)
           elTypeSel.ElSSchema == elType.ElSSchema)
         newSelInElem = TRUE;
       else
-        newSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
     }
   if (SelectionInSTRONG != newSelInElem)
     {
@@ -2078,7 +3046,7 @@ void UpdateContextSensitiveMenus (Document doc)
           elTypeSel.ElSSchema == elType.ElSSchema)
         newSelInElem = TRUE;
       else
-        newSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
     }
   if (SelectionInCITE != newSelInElem)
     {
@@ -2095,7 +3063,7 @@ void UpdateContextSensitiveMenus (Document doc)
           elTypeSel.ElSSchema == elType.ElSSchema)
         newSelInElem = TRUE;
       else
-        newSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
     }
   if (SelectionInABBR != newSelInElem)
     {
@@ -2112,7 +3080,7 @@ void UpdateContextSensitiveMenus (Document doc)
           elTypeSel.ElSSchema == elType.ElSSchema)
         newSelInElem = TRUE;
       else
-        newSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
     }
   if (SelectionInACRONYM != newSelInElem)
     {
@@ -2124,12 +3092,22 @@ void UpdateContextSensitiveMenus (Document doc)
     newSelInElem = FALSE;
   else
     {
-      elType.ElTypeNum = HTML_EL_INS;
+      elType.ElTypeNum = HTML_EL_ins;
       if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
           elTypeSel.ElSSchema == elType.ElSSchema)
         newSelInElem = TRUE;
       else
-        newSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
+      if (!newSelInElem)
+        {
+          // check also the block element
+          elType.ElTypeNum = HTML_EL_INS;
+          if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
+              elTypeSel.ElSSchema == elType.ElSSchema)
+            newSelInElem = TRUE;
+          else
+            newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
+        }
     }
   if (SelectionInINS != newSelInElem)
     {
@@ -2144,12 +3122,22 @@ void UpdateContextSensitiveMenus (Document doc)
     newSelInElem = FALSE;
   else
     {
-      elType.ElTypeNum = HTML_EL_DEL;
+      elType.ElTypeNum = HTML_EL_del;
       if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
           elTypeSel.ElSSchema == elType.ElSSchema)
         newSelInElem = TRUE;
       else
-        newSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
+      if (!newSelInElem)
+        {
+          // check also the block element
+          elType.ElTypeNum = HTML_EL_DEL;
+          if (elTypeSel.ElTypeNum == elType.ElTypeNum &&
+              elTypeSel.ElSSchema == elType.ElSSchema)
+            newSelInElem = TRUE;
+          else
+            newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
+        }
     }
   if (SelectionInDEL != newSelInElem)
     {
@@ -2169,7 +3157,7 @@ void UpdateContextSensitiveMenus (Document doc)
           elTypeSel.ElSSchema == elType.ElSSchema)
         newSelInElem = TRUE;
       else
-        newSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
     }
   if (SelectionInDFN != newSelInElem)
     {
@@ -2186,7 +3174,7 @@ void UpdateContextSensitiveMenus (Document doc)
           elTypeSel.ElSSchema == elType.ElSSchema)
         newSelInElem = TRUE;
       else
-        newSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
     }
   if (SelectionInCODE != newSelInElem)
     {
@@ -2208,7 +3196,7 @@ void UpdateContextSensitiveMenus (Document doc)
           elTypeSel.ElSSchema == elType.ElSSchema)
         newSelInElem = TRUE;
       else
-        newSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
     }
   if (SelectionInVAR != newSelInElem)
     {
@@ -2225,7 +3213,7 @@ void UpdateContextSensitiveMenus (Document doc)
           elTypeSel.ElSSchema == elType.ElSSchema)
         newSelInElem = TRUE;
       else
-        newSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
     }
   if (SelectionInSAMP != newSelInElem)
     {
@@ -2242,13 +3230,13 @@ void UpdateContextSensitiveMenus (Document doc)
           elTypeSel.ElSSchema == elType.ElSSchema)
         newSelInElem = TRUE;
       else
-        newSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
     }
   if (SelectionInKBD != newSelInElem)
     {
       SelectionInKBD = newSelInElem;
       TtaSetToggleItem (doc, 1, Types, TKeyboard, newSelInElem);
-     }
+    }
 
   if (firstSel == NULL)
     newSelInElem = FALSE;
@@ -2259,7 +3247,7 @@ void UpdateContextSensitiveMenus (Document doc)
           elTypeSel.ElSSchema == elType.ElSSchema)
         newSelInElem = TRUE;
       else
-        newSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
     }
   if (SelectionInI != newSelInElem)
     {
@@ -2276,7 +3264,7 @@ void UpdateContextSensitiveMenus (Document doc)
           elTypeSel.ElSSchema == elType.ElSSchema)
         newSelInElem = TRUE;
       else
-        newSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
     }
   if (SelectionInB != newSelInElem)
     {
@@ -2293,7 +3281,7 @@ void UpdateContextSensitiveMenus (Document doc)
           elTypeSel.ElSSchema == elType.ElSSchema)
         newSelInElem = TRUE;
       else
-        newSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
     }
   if (SelectionInTT != newSelInElem)
     {
@@ -2310,7 +3298,7 @@ void UpdateContextSensitiveMenus (Document doc)
           elTypeSel.ElSSchema == elType.ElSSchema)
         newSelInElem = TRUE;
       else
-        newSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
     }
   if (SelectionInBIG != newSelInElem)
     {
@@ -2327,7 +3315,7 @@ void UpdateContextSensitiveMenus (Document doc)
           elTypeSel.ElSSchema == elType.ElSSchema)
         newSelInElem = TRUE;
       else
-        newSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
     }
   if (SelectionInSMALL != newSelInElem)
     {
@@ -2344,7 +3332,7 @@ void UpdateContextSensitiveMenus (Document doc)
           elTypeSel.ElSSchema == elType.ElSSchema)
         newSelInElem = TRUE;
       else
-        newSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
     }
   if (SelectionInSub != newSelInElem)
     {
@@ -2364,7 +3352,7 @@ void UpdateContextSensitiveMenus (Document doc)
           elTypeSel.ElSSchema == elType.ElSSchema)
         newSelInElem = TRUE;
       else
-        newSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
     }
   if (SelectionInSup != newSelInElem)
     {
@@ -2384,7 +3372,7 @@ void UpdateContextSensitiveMenus (Document doc)
           elTypeSel.ElSSchema == elType.ElSSchema)
         newSelInElem = TRUE;
       else
-        newSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
     }
   if (SelectionInQuote != newSelInElem)
     {
@@ -2401,7 +3389,7 @@ void UpdateContextSensitiveMenus (Document doc)
           elTypeSel.ElSSchema == elType.ElSSchema)
         newSelInElem = TRUE;
       else
-        newSelInElem = (TtaGetTypedAncestor (firstSel, elType) != NULL);
+        newSelInElem = (TtaGetExactTypedAncestor (firstSel, elType) != NULL);
     }
   if (SelectionInBDO != newSelInElem)
     {
@@ -2736,7 +3724,7 @@ void SynchronizeSourceView (NotifyElement *event)
               TtaNextSibling (&el);
             }
         }
-      sprintf (message, "char %d", firstChar);
+      sprintf (message, "Character: %d", firstChar);
       TtaSetStatus (doc, 1, message, NULL);
     }
 }
@@ -2834,7 +3822,8 @@ void GotoLine (Document doc, int line, int index, ThotBool selpos)
                 }
               else
                 TtaSelectElement (doc, el);
-              sprintf (message, "char %d", index);
+              // display the char index
+              sprintf (message, "Character: %d", index);
               TtaSetStatus (doc, 1, message, NULL);
             }
         }
@@ -2848,13 +3837,14 @@ void GotoLine (Document doc, int line, int index, ThotBool selpos)
   -----------------------------------------------------------------------*/
 static ThotBool ShowTextLine (Element el, Document doc)
 {
-  Document	      otherDoc = 0;
+  Document	          otherDoc = 0;
   Element             otherEl;
   Language            lang;
   CSSInfoPtr          css;
   PInfoPtr            pInfo;
   char               *utf8value = NULL, *ptr = NULL, *s = NULL;
   int                 len, line = 0, index = 0;
+  int				          firstChar = 0 ,lastChar = 0; // add new variables
 
   if (DocumentTypes[doc] == docLog)
     {
@@ -2884,7 +3874,8 @@ static ThotBool ShowTextLine (Element el, Document doc)
           otherDoc = DocumentSource[doc];
           if (ptr == NULL)
             {
-              otherEl = TtaSearchText (doc, el, FALSE, "***", ISO_8859_1);
+              otherEl = TtaSearchText (doc, el, FALSE, "***",
+                                       &firstChar, &lastChar, ISO_8859_1);
               if (otherEl)
                 {
                   TtaFreeMemory (utf8value);
@@ -2918,7 +3909,8 @@ static ThotBool ShowTextLine (Element el, Document doc)
                     {
 #ifdef _WX
                       LoadDefaultOpeningLocation (TRUE); // in new frame
-                      otherDoc = GetAmayaDoc (s, NULL, DocumentSource[doc], DocumentSource[doc], CE_CSS,
+                      otherDoc = GetAmayaDoc (s, NULL, DocumentSource[doc],
+                                              DocumentSource[doc], CE_CSS,
                                               FALSE, NULL, NULL);
 #else /* _WX */
                       otherDoc = GetAmayaDoc (s, NULL, 0, 0, CE_CSS,
@@ -2938,6 +3930,7 @@ static ThotBool ShowTextLine (Element el, Document doc)
     }
   else
     return FALSE; /* let Thot perform normal operation */
+
 }
 
 /*----------------------------------------------------------------------
@@ -2992,7 +3985,7 @@ void CheckSynchronize (NotifyElement *event)
       if (SelectionDoc && DocumentURLs[SelectionDoc])
         {
           /* Reset buttons state in previous selected document */
-          UpdateContextSensitiveMenus (SelectionDoc);
+          UpdateContextSensitiveMenus (SelectionDoc, 1);
           /* Synchronize the content of the old document */
           if (DocumentTypes[SelectionDoc] == docSource || /* source of ... */
               (DocumentSource[SelectionDoc] && /* has a source */
@@ -3016,7 +4009,6 @@ void CheckSynchronize (NotifyElement *event)
       else
         {
           /* the document didn't change. Only synchronize the selection. */
-          UpdateContextSensitiveMenus (event->document);
           SynchronizeSourceView (event);
         }
       SelectionDoc = event->document;
@@ -3024,9 +4016,10 @@ void CheckSynchronize (NotifyElement *event)
   else
     {
       /* the document didn't change. Only synchronize the selection. */
-      UpdateContextSensitiveMenus (event->document);
       SynchronizeSourceView (event);
     }
+  if (DocumentTypes[SelectionDoc] == docHTML)
+    UpdateContextSensitiveMenus (SelectionDoc, 1);
 }
 
 /*----------------------------------------------------------------------
@@ -3034,23 +4027,60 @@ void CheckSynchronize (NotifyElement *event)
   ----------------------------------------------------------------------*/
 void SelectionChanged (NotifyElement *event)
 {
+  Element             child, el = event->element;
+  ElementType         elType;
+  Document            doc = event->document;
+  char                message[50];
+  int                 i, index = 0;
+
   if (SelectionChanging)
     return;
   SelectionChanging = TRUE;
+
   CheckSynchronize (event);
   TtaSelectView (SelectionDoc, 1);
   /* update the displayed style information */
   SynchronizeAppliedStyle (event);
   UnFrameMath ();
   
-  if (DocumentTypes[event->document] != docLog)
-  {
-    UpdateXmlElementListTool(event->element,event->document);
+  if (DocumentTypes[doc] != docLog)
+    {
+      if (DocumentTypes[doc] != docSource && DocumentTypes[doc] != docCSS)
+        {
+          // update the XML list
+          UpdateXmlElementListTool (el, doc);
+          TtaSetStatus (doc, 1, "  ", NULL);
+#ifdef TEMPLATES
+          if (!TtaIsTextInserting ())
+            // no current text insertion
+            CheckPromptIndicator (el, doc);
+#endif /* TEMPLATES */
+        }
 #ifdef _WX
-    TtaSetStatus (event->document, 1, "  ", NULL);
+      else
+        {
+          // manage the selection in source or css file
+          TtaGiveFirstSelectedElement (doc, &child, &index, &i);
+          elType = TtaGetElementType (el);
+          child = el;
+          if (elType.ElTypeNum == TextFile_EL_TEXT_UNIT)
+            {
+              TtaPreviousSibling (&child);
+              while (child && child != el)
+                {
+                  index += TtaGetElementVolume (child);
+                  TtaPreviousSibling (&child);
+                }
+              // display the char index
+              sprintf (message, "Character: %d", index);
+              TtaSetStatus (doc, 1, message, NULL);
+            }
+          else
+            TtaSetStatus (doc, 1, "  ", NULL);
+        }
 #endif /* _WX */
-    TtaSetStatusSelectedElement(event->document, 1, event->element);
-  }
+      TtaSetStatusSelectedElement(doc, 1, el);
+    }
   SelectionChanging = FALSE;
 }
 
@@ -3073,7 +4103,7 @@ static void ResetFontOrPhrase (Document doc, Element elem)
   if (elem)
     {
       child = TtaGetFirstChild (elem);
-      first = NULL;
+      first = last = NULL;
       while (child)
         {
           // next element
@@ -3091,6 +4121,7 @@ static void ResetFontOrPhrase (Document doc, Element elem)
       TtaRegisterElementDelete (elem, doc);
       TtaRemoveTree (elem, doc);
       TtaSetDocumentModified (doc);
+      // update the terminal selection
       TtaSelectElement (doc, first);
       if (last != first)
         TtaExtendSelection (doc, last, TtaGetElementVolume (last) + 1);
@@ -3107,7 +4138,9 @@ void SetCharFontOrPhrase (int doc, int elemtype)
   ElementType         elType, parentType;
   DisplayMode         dispMode;
   int                 firstSelectedChar, lastSelectedChar, i;
+  int                 blocktype;
   ThotBool            remove;
+  ThotBool            oldStructureChecking;
 
   if (!TtaGetDocumentAccessMode (doc))
     /* document is ReadOnly */
@@ -3126,10 +4159,17 @@ void SetCharFontOrPhrase (int doc, int elemtype)
   elType = TtaGetElementType (firstSel);
   parent = NULL;
   remove = FALSE;
+  // there are block and inline elements for ins and del
+  if (elemtype == HTML_EL_ins)
+    blocktype = HTML_EL_INS;
+  else if (elemtype == HTML_EL_del)
+    blocktype = HTML_EL_DEL;
+  else
+    blocktype = elemtype;
   if (!strcmp (TtaGetSSchemaName (elType.ElSSchema), "HTML"))
     {
       // check if a typed element is selected
-      if (elType.ElTypeNum == elemtype)
+      if (elType.ElTypeNum == elemtype || elType.ElTypeNum == blocktype)
         parent = firstSel;
       remove = (firstSel == lastSel);
     }
@@ -3149,18 +4189,21 @@ void SetCharFontOrPhrase (int doc, int elemtype)
               elType.ElTypeNum == HTML_EL_TEXT_UNIT && lastSelectedChar >= i &&
               firstSel == TtaGetLastChild (parent))
             {
+              oldStructureChecking = TtaGetStructureChecking (doc);
+              TtaSetStructureChecking (FALSE, doc);
               TtcCreateElement (doc, 1);
+              TtaSetStructureChecking (oldStructureChecking, doc);
               return;
             }
         }
       elType.ElTypeNum = elemtype;
-      parent = TtaGetTypedAncestor (firstSel, elType);
+      parent = TtaGetExactTypedAncestor (firstSel, elType);
       // check if the whole selection is included by the same parent
       el = lastSel;
       while (parent && el && el != parent)
         el = TtaGetParent (el);
       if (el == parent)
-       remove = TRUE;
+        remove = TRUE;
     }
 
   if (parent && !remove)
@@ -3187,11 +4230,36 @@ void SetCharFontOrPhrase (int doc, int elemtype)
   else
     {
       TtaOpenUndoSequence (doc, firstSel, lastSel, firstSelectedChar, lastSelectedChar);
-      GenerateInlineElement (elemtype, 0, "");
+      if (elemtype == HTML_EL_ins || elemtype == HTML_EL_del)
+        {
+          oldStructureChecking = TtaGetStructureChecking (doc);
+          TtaSetStructureChecking (FALSE, doc);
+          // they could be block or inline elements
+          if (!IsCharacterLevelElement (firstSel) ||
+              (firstSel != lastSel && !IsCharacterLevelElement (lastSel)))
+            // create a block element
+            CreateHTMLelement (blocktype, doc);
+          else if (firstSel != lastSel)
+            {
+              TtaNextSibling (&firstSel);
+              if (firstSel != lastSel && !IsCharacterLevelElement (firstSel))
+                // create a block element
+                CreateHTMLelement (blocktype, doc);
+              else
+                // create a inline element
+                GenerateInlineElement (elemtype, 0, "");
+            }
+          else
+            // create a inline element
+            GenerateInlineElement (elemtype, 0, "");
+          TtaSetStructureChecking (oldStructureChecking, doc);
+        }
+      else
+        GenerateInlineElement (elemtype, 0, "");
       TtaCloseUndoSequence (doc);      
     }
 
-  UpdateContextSensitiveMenus (doc);
+  UpdateContextSensitiveMenus (doc, 1);
 }
 
 

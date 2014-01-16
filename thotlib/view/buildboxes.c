@@ -731,14 +731,20 @@ void GiveSymbolSize (PtrAbstractBox pAb, int *width, int *height)
         {
         case 'c':	/*integrale curviligne */
         case 'i':	/*integrale */
-          *width = BoxCharacterWidth (243, font);
+          *width = BoxCharacterWidth (0xf3, font);
           break;
         case 'd':	/*integrale double */
-          *width = BoxCharacterWidth (243, font) +
-            BoxCharacterWidth (243, font) / 2;
+        case '1':	/* Clockwise Integral */
+        case '2':	/* ClockwiseContourIntegral */
+        case '3':	/* CounterClockwiseContourIntegral */
+          *width = BoxCharacterWidth (0xf3, font) * 3 / 2;
+          break;
+        case 'e':	/* double contour integral */
+          *width = BoxCharacterWidth (0xf3, font) * 2;
           break;
         case 't':	/*integrale triple */
-          *width = BoxCharacterWidth (243, font) * 2;
+        case 'f':	/* triple contour integral */
+          *width = BoxCharacterWidth (0xf3, font) * 5 / 2;
           break;
         case 'r':	/* root */
           *width = hfont;
@@ -749,16 +755,57 @@ void GiveSymbolSize (PtrAbstractBox pAb, int *width, int *height)
         case 'U':	/*union */
           *width = BoxCharacterWidth (229, font);
           break;
-        case 'L':       /* left arrow */
-        case 'h':       /* horizontal bar */
-        case 'R':       /* right arrow */
-          *width = *height;
+        case 'b': /* Over bracket */
+        case 'B': /* Under bracket */
+        case 8 : /* HorizontalLine ; U02500 */
+        case 9 : /* UnderBar ; U00332 */
+        case 10 : /* OverBar ; U000AF */
+        case '-':
+        case '_':
+        case 'h': /* overline */
+        case 'o': /* over brace */
+        case 'p': /* over parenthesis */
+        case 'q': /* under parenthesis */
+        case 'u': /* under brace */
+        case 'L': /* LeftArrow */
+        case 'R': /* RightArrow */
+        case 'A': /* LeftRightArrow */
           *height = hfont / 2;
           break;
-        case 'o':       /* overbrace */
-        case 'u':       /* underbrace */
-          *width = *height;
-          *height = hfont / 2;
+        case 'H': /* hat */
+        case 'k': /* hacek */
+        case 'T': /* Diacritical Tilde */
+        case 160: /* LeftTeeArrow */
+        case 162: /* RightTeeArrow */
+        case 164: /* LeftVector */
+        case 165: /* DownLeftVector */
+        case 168: /* RightVector */
+        case 169: /* DownRightVector */
+        case 172: /* RightArrowLeftArrow */
+        case 174: /* LeftArrowRightArrow */
+        case 175: /* DoubleLeftArrow */
+        case 177: /* DoubleRightArrow */
+        case 179: /* DoubleLeftRightArrow */
+        case 181: /* LeftArrowBar */
+        case 182: /* RightArrowBar */
+        case 184: /* LongLeftArrow */
+        case 185: /* LongRightArrow */
+        case 186: /* LongLeftRightArrow */
+        case 187: /* DoubleLongLeftArrow */
+        case 188: /* DoubleLongRightArrow */
+        case 189: /* DoubleLongLeftRightArrow */
+        case 192: /* LeftRightVector */
+        case 194: /* DownLeftRightVector */
+        case 196: /* LeftVectorBar */
+        case 197: /* RightVectorBar */
+        case 200: /* DownLeftVectorBar */
+        case 201: /* DownRightVectorBar */
+        case 204: /* LeftTeeVector */
+        case 205: /* RightTeeVector */
+        case 208: /* DownLeftTeeVector */
+        case 209: /* DownRightTeeVector */
+        case 214: /* DownRightTeeVector */
+          *height = hfont;
           break;
         case '(':
         case ')':
@@ -766,26 +813,66 @@ void GiveSymbolSize (PtrAbstractBox pAb, int *width, int *height)
         case ']':
         case '{':
         case '}':
-          *width = BoxCharacterWidth (230, font);
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:  /* VerticalSeparator */
+        case 11: /* VerticalBar */
+        case 12: /* DoubleVerticalBar */
+          *width = BoxCharacterWidth (0xe6, font);
+          if (pAb->AbShape == 12)
+            *width *= 2;
            break;
         case '<':
         case '>':
-        case 'H':
-          *width = BoxCharacterWidth (241, font) * 2;
+          *width = BoxCharacterWidth (0xf1, font) * 2;
           break;
-        case '|':       /* vertical bar */
-          *width = BoxCharacterWidth (124, font);  /* | */
+        case '|':       /* VerticalLine */
+          *width = BoxCharacterWidth (0x7c, font);  /* | */
           break;
         case 'D':       /* double vertical bar */
-          *width = 3 * BoxCharacterWidth (124, font);  /* | */
+          *width = BoxCharacterWidth (0x7c, font) * 3;  /* | */
           break;
-        case '^':
+
         case 'v':
-        case 'V':
-          *width = BoxCharacterWidth (109, font);	/* 'm' */
+        case '^': /* UpArrow */
+        case 'V': /* DownArrow */
+        case 155: /* UpDownArrow */
+          *width = BoxCharacterWidth (0x6c, font);	/* 'm' */
+          break;
+
+        case 161: /* UpTeeArrow */
+        case 163: /* DownTeeArrow */
+        case 166: /* RightUpVector */
+        case 167: /* LeftUpVector */
+        case 170: /* RightDownVector */
+        case 171: /* LeftDownVector */
+        case 173: /* UpArrowDownArrow */
+        case 176: /* DoubleUpArrow */
+        case 178: /* DoubleDownArrow */
+        case 180: /* DoubleUpDownArrow */
+        case 183: /* DownArrowUpArrow */
+        case 190: /* UpArrowBar */
+        case 191: /* DownArrowBar */
+        case 193: /* RightUpDownVector */
+        case 195: /* LeftUpDownVector */
+        case 198: /* RightUpVectorBar */
+        case 199: /* RightDownVectorBar */
+        case 202: /* LeftUpVectorBar */
+        case 203: /* LeftDownVectorBar */
+        case 206: /* RightUpTeeVector */
+        case 207: /* RightDownTeeVector */
+        case 210: /* LeftUpTeeVector */
+        case 211: /* LeftDownTeeVector */
+        case 212: /* UpEquilibrium */
+        case 213: /* ReverseUpEquilibrium */
+          *width = BoxCharacterWidth (SPACE, font) * 4;
           break;
         case '?':
-          *width = BoxCharacterWidth (63, font);   /* ? */
+          *width = BoxCharacterWidth (0x3f, font);   /* ? */
           break;
         default:
           *width = BoxCharacterWidth (SPACE, font);
@@ -1924,6 +2011,7 @@ static ThotBool HasFloatingChild (PtrAbstractBox pAb, int frame,
               /* it's a floating child */
               found = TRUE;
               *directParent = TRUE;
+              nb ++;
             }
           else if (pChildAb->AbBox &&
                    pChildAb->AbBox->BxType == BoFloatGhost)
@@ -1950,7 +2038,7 @@ static ThotBool HasFloatingChild (PtrAbstractBox pAb, int frame,
           pChildAb = pChildAb->AbNext;
         }
     }
-  if (nb < 1 && !ExtraAbFlow (pAb, frame))
+  if (nb < 2 && !ExtraAbFlow (pAb, frame))
     /* there is only one child */
     *uniqueChild = TRUE;
   else
@@ -2102,7 +2190,7 @@ static void AddFloatingBox (PtrAbstractBox pAb, int frame, ThotBool left)
     {
       box = pAb->AbBox;
       if (pAb->AbLeafType == LtCompound &&
-          (pAb->AbWidth.DimIsPosition || IsFlow (box, frame) ||
+          (pAb->AbWidth.DimIsPosition || ExtraFlow (box, frame) ||
            pAb->AbWidth.DimAbRef))
         /* cannot be a floated box */
         pAb->AbFloat = 'N';
@@ -2655,6 +2743,13 @@ static PtrBox CreateBox (PtrAbstractBox pAb, int frame, ThotBool inLine,
               if (!pAb->AbHorizEnclosing || pAb->AbNotInLine)
                 /* the inline rule doesn't act on this box */
                 ComputePosRelation (&pAb->AbHorizPos, pBox, frame, TRUE);
+              else if (pAb->AbPresentationBox && pAb->AbTypeNum == 0 &&
+                       pAb->AbHorizPos.PosAbRef && pAb->AbHorizPos.PosAbRef->AbFloat != 'N')
+                {
+                /* the inline rule doesn't act on this box */
+                ComputePosRelation (&pAb->AbHorizPos, pBox, frame, TRUE);
+                ComputePosRelation (&pAb->AbVertPos, pBox, frame, FALSE);
+                }
               else
                 /* the box position depends of its horizontal reference axis */
                 SetPositionConstraint (VertRef, pBox, &i);
@@ -3256,11 +3351,21 @@ static void UpdateFloat (PtrAbstractBox pAb, PtrAbstractBox pParent,
     pAb->AbFloat = 'N';
   if (pAb->AbFloat == 'L' || pAb->AbFloat == 'R')
     {
+      // check if there is a previous or next element
+      pChild = pAb->AbPrevious;
+      while (pChild && pChild->AbPresentationBox)
+        pChild = pChild->AbPrevious;
+      if (pChild == NULL)
+        {
+          pChild = pAb->AbNext;
+          while (pChild && pChild->AbPresentationBox)
+            pChild = pChild->AbNext;
+        }
       if (pParent->AbFloat == 'N' && !ExtraAbFlow (pParent, frame) &&
           pParent->AbBox &&
           pParent->AbInLine &&
           pParent->AbEnclosing &&
-          pAb->AbNext == NULL &&
+          pChild == NULL && /* no previous or next */
           pAb->AbFloat != 'N' &&
           (pAb->AbLeafType == LtPicture ||
            (pAb->AbLeafType == LtCompound &&
@@ -3398,10 +3503,10 @@ ThotBool ComputeUpdates (PtrAbstractBox pAb, int frame, ThotBool *computeBBoxes)
   PtrLine             pLine;
   PtrAbstractBox      pCurrentAb, pCell, pBlock, pParent, curr, table, pChild;
   PtrBox              pNextBox, pCurrentBox = NULL;
-  PtrBox              pMainBox, pLastBox, pBox, box;
+  PtrBox              pMainBox, pLastBox, pBox, box = NULL;
   PtrElement          pEl;
   TypeUnit            unit;
-  ThotPictInfo       *imageDesc;
+  ThotPictInfo       *imageDesc = NULL;
   Propagation         savpropage;
   ViewFrame          *pFrame;
   AbDimension        *pDimAb;
@@ -4721,7 +4826,7 @@ void RebuildConcreteImage (int frame, ThotBool scrollUpdate)
       /* Box widths may change and the scroll must be recomputed */
       AnyWidthUpdate = TRUE;
       pAb = pFrame->FrAbstractBox;
-      if (pAb->AbBox)
+      if (pAb->AbBox && pAb->AbElement)
         {
           /* get the first visible abstract box and its current position */
           GetSizesFrame (frame, &width, &height);
@@ -5377,6 +5482,13 @@ ThotBool ChangeConcreteImage (int frame, int *pageHeight, PtrAbstractBox pAb)
   pLine = NULL;
   if (pAb && frame >= 1 && frame <= MAX_FRAME)
     {
+      while (pAb->AbEnclosing && pAb->AbEnclosing->AbNew)
+	{
+#ifdef THOT_DEBUG
+          TtaDisplaySimpleMessage (INFO, LIB, TMSG_VIEW_MODIFIED_BEFORE_CREATION);
+#endif /* THOT_DEBUG */
+	pAb = pAb->AbEnclosing;
+	}
       pFrame = &ViewFrameTable[frame - 1];
       if (pFrame->FrAbstractBox == NULL &&
           (pAb->AbEnclosing || pAb->AbPrevious || pAb->AbNext))

@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -97,7 +97,7 @@ typedef struct _RuleQueue
   AllRules*        rulesPseudo[MAX_QUEUE_LEN];
 } RuleQueue;
 
-static PresRule ListItemVisibility, ListItemListStyleType, ListItemListStyleImage, ListItemListStylePosition, ListItemVertPos, ListItemHorizPos, ListItemMarginRight, ListItemMarginLeft, ListItemSize, ListItemStyle, ListItemPtWeight, ListItemFont, ListItemOpacity, ListItemDirection, ListItemBackground, ListItemForeground;
+static PresRule ListItemVisibility, ListItemListStyleType, ListItemListStyleImage, ListItemListStylePosition, ListItemVertPos, ListItemHorizPos, ListItemMarginRight, ListItemMarginLeft, ListItemSize, ListItemStyle, ListItemPtWeight, ListItemVariant, ListItemFont, ListItemOpacity, ListItemDirection, ListItemBackground, ListItemForeground;
 
 /*----------------------------------------------------------------------
   SetAbsBoxAccessMode met a` jour le mode d'acces accessMode sur  
@@ -435,6 +435,7 @@ PtrAbstractBox InitAbsBoxes (PtrElement pEl, DocViewNumber view, int Visib,
   pAb->AbVisibility = Visib;
   pAb->AbFontStyle = 0;
   pAb->AbFontWeight = 0;
+  pAb->AbFontVariant = 1;
   pAb->AbSize = 1;
   pAb->AbLineWeight = 1;
   pAb->AbLineSpacing = 10;
@@ -524,10 +525,7 @@ PtrAbstractBox InitAbsBoxes (PtrElement pEl, DocViewNumber view, int Visib,
     pAb->AbSensitive = TRUE;
   pAb->AbReadOnly = FALSE;
   if (ro || ElementIsReadOnly (pEl))
-    {
-      pAb->AbCanBeModified = FALSE;
-      pAb->AbReadOnly = TRUE;
-    }
+    pAb->AbReadOnly = TRUE;
   pAb->AbNew = TRUE;
   pAb->AbDead = FALSE;
   pAb->AbWidthChange = FALSE;
@@ -997,7 +995,7 @@ static ThotBool ElemHasCondAttribute (PtrElement pEl, PtrCondition pCond,
                                     }
                                   else if (pCond->CoTextMatch == CoMatch)
                                     /* the whole attribute value must be equal */
-                                    found = attrVal[j + i] == EOS;
+                                    found = (attrVal[j + i] == EOS && j == 0);
                                 }
                               /* prepare next search */
                               j++;
@@ -1122,7 +1120,7 @@ ThotBool CondPresentation (PtrCondition pCond, PtrElement pEl,
                            PtrDocument pDoc)
 {
   PtrPSchema          pSchP = NULL;
-  PtrElement          pAsc, pElem, pRoot;
+  PtrElement          pAsc = NULL, pElem, pRoot;
   PtrReference        pRef;
   PtrCondition        firstCondLevel;
   int                 valcompt, valmaxi, valmini;
@@ -1372,9 +1370,11 @@ ThotBool CondPresentation (PtrCondition pCond, PtrElement pEl,
                   /* on compte les ancetres ou freres successifs de ce type */
                   while (pAsc && !found)
                     {
-                      if (pRule->PrCSSURL &&
-                          TypeHasException (ExcHidden, pAsc->ElTypeNumber,
-                                            pAsc->ElStructSchema))
+                      if ((pRule->PrCSSURL || pRule->PrCSSLine != 0) &&
+                          (TypeHasException (ExcHidden, pAsc->ElTypeNumber,
+                                             pAsc->ElStructSchema) ||
+                          (pAsc->ElStructSchema &&
+                           !strcmp (pAsc->ElStructSchema->SsName, "Template"))))
                         /* this ancestor is hidden. Skip it */
                         if (pCond->CoCondition == PcWithin)
                           pAsc = pAsc->ElParent;
@@ -1723,6 +1723,9 @@ PtrPRule SearchRuleListItemMarker (PRuleType ruleType, PtrElement pEl,
     case PtWeight:
       pRule = &ListItemPtWeight;
       break;
+    case PtVariant:
+      pRule = &ListItemVariant;
+      break;
     case PtFont:
       pRule = &ListItemFont;
       break;
@@ -1824,6 +1827,8 @@ PtrPRule SearchRuleListItemMarker (PRuleType ruleType, PtrElement pEl,
           /* Style: Creator = */
         case PtWeight:
           /* Weight: Creator = */
+        case PtVariant:
+          /* Variant: Creator = */
         case PtFont:
           /* Font: Creator = */
         case PtBackground:
@@ -2075,6 +2080,9 @@ ThotBool CreateListItemMarker (PtrAbstractBox pAb, PtrDocument pDoc,
       pRule = SearchRuleListItemMarker (PtWeight, pEl, pDoc);
       if (pRule)
         ApplyRule (pRule, NULL, pMarkerAb, pDoc, NULL, pMarkerAb);
+      pRule = SearchRuleListItemMarker (PtVariant, pEl, pDoc);
+      if (pRule)
+        ApplyRule (pRule, NULL, pMarkerAb, pDoc, NULL, pMarkerAb);
       pRule = SearchRuleListItemMarker (PtFont, pEl, pDoc);
       if (pRule)
         ApplyRule (pRule, NULL, pMarkerAb, pDoc, NULL, pMarkerAb);
@@ -2218,7 +2226,7 @@ PtrAbstractBox CrAbsBoxesPres (PtrElement pEl, PtrDocument pDoc,
   FunctionType        funct;
   TypeUnit            unit;
   ThotPictInfo       *image;
-  int                 view, vis;
+  int                 view, vis, index;
   int                 viewSch, viewIndex;
   PtrPresVariable     pVar;
   PresVarItem        *pItem;
@@ -2272,16 +2280,17 @@ PtrAbstractBox CrAbsBoxesPres (PtrElement pEl, PtrDocument pDoc,
       default:
         break;
       }
-
+  index = pRCre->PrPresBox[0];
   if (ok)
     {
-      if (pRCre->PrPresBox[0] == 0)
+      if (index == 0)
         ok = FALSE;
       else if (pSchP->PsPresentBox == NULL)
         ok = FALSE;
       else if (funct != FnContent &&
-               pSchP->PsPresentBox->PresBox[pRCre->PrPresBox[0] - 1] == NULL)
-        /* for function FnContent, pRCre->PrPresBox[0] is the number of the
+               (index > pSchP->PsNPresentBoxes ||
+                pSchP->PsPresentBox->PresBox[index - 1] == NULL))
+        /* for function FnContent, index is the number of the
            presentation variable that will generate content, not the number
            of the presentation box to be created */
         ok = FALSE;
@@ -2290,7 +2299,7 @@ PtrAbstractBox CrAbsBoxesPres (PtrElement pEl, PtrDocument pDoc,
   /* si c'est une boite de haut de page et qu'il s'agit de la derniere */
   /* marque de page du document, on ne cree pas la boite */
   if (ok && funct != FnContent)
-    if (pSchP->PsPresentBox->PresBox[pRCre->PrPresBox[0] - 1]->PbPageHeader)
+    if (pSchP->PsPresentBox->PresBox[index - 1]->PbPageHeader)
       /* c'est une boite de haut de page */
       {
         pE = pEl;
@@ -2357,7 +2366,7 @@ PtrAbstractBox CrAbsBoxesPres (PtrElement pEl, PtrDocument pDoc,
            CSS pseudo-elements generated by :before and :after */
         pRS = pSchP->PsPresentBox->PresBox[0]->PbFirstPRule;
       else
-        pRS = pSchP->PsPresentBox->PresBox[pRCre->PrPresBox[0]-1]->PbFirstPRule;
+        pRS = pSchP->PsPresentBox->PresBox[index-1]->PbFirstPRule;
       /* pRD : premiere regle de presentation par defaut du schema de */
       /* presentation */
       pRD = pSchP->PsFirstDefaultPRule;
@@ -2414,7 +2423,7 @@ PtrAbstractBox CrAbsBoxesPres (PtrElement pEl, PtrDocument pDoc,
                CSS pseudo-elements generated by :before and :after */
             pAb->AbTypeNum = 1;
           else
-            pAb->AbTypeNum = pRCre->PrPresBox[0];
+            pAb->AbTypeNum = index;
           pAb->AbVarNum = 0;
           pAb->AbCanBeModified = FALSE;
           pAb->AbPSchema = pSchP;
@@ -2813,7 +2822,7 @@ PtrAbstractBox CrAbsBoxesPres (PtrElement pEl, PtrDocument pDoc,
                    pRCre->PrPresBox refers to the variable to be generated */
                 {
                   done = FALSE;
-                  pVar = pSchP->PsVariable->PresVar[pRCre->PrPresBox[0] - 1];
+                  pVar = pSchP->PsVariable->PresVar[index - 1];
                   if (pVar->PvNItems == 1)
                     /* there is 1 and only 1 item in this variable */
                     {
@@ -2834,12 +2843,11 @@ PtrAbstractBox CrAbsBoxesPres (PtrElement pEl, PtrDocument pDoc,
                         }
                     }
                   if (!done)
-                    NewVariable (pRCre->PrPresBox[0], pSS, pSchP, pAb, pAttr,
-                                 pDoc);
+                    NewVariable (index, pSS, pSchP, pAb, pAttr, pDoc);
                 }
               else
                 {
-                  pBox = pSchP->PsPresentBox->PresBox[pRCre->PrPresBox[0] - 1];
+                  pBox = pSchP->PsPresentBox->PresBox[index - 1];
                   switch (pBox->PbContent)
                     {
                     case FreeContent:
@@ -5480,7 +5488,7 @@ PtrAbstractBox AbsBoxesCreate (PtrElement pEl, PtrDocument pDoc,
   RuleQueue           queue;
   Cascade             casc;
   AllRules*           rulesPseudo;
-  int                 vis, typePres;
+  int                 vis, typePres = 0;
   int                 viewSch;
   int                 index;
   int                 lqueue, pqueue;

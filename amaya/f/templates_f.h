@@ -8,6 +8,10 @@
 
 extern ThotBool IsTemplateInstanceDocument ( Document doc );
 extern ThotBool IsTemplateDocument ( Document doc );
+extern ThotBool CheckPromptIndicator ( Element el,
+                                       Document doc );
+extern void RemovePromptIndicator ( Element el,
+                                    Document doc );
 extern void* AllocTemplateRepositoryListElement ( const char* path,
                                                   void* prevElement );
 extern void FreeTemplateRepositoryList ( void* list );
@@ -21,6 +25,8 @@ extern void CreateInstanceOfTemplate ( Document doc,
                                        char *docname );
 extern void PreventReloadingTemplate ( char* template_url );
 extern void AllowReloadingTemplate ( char* template_url );
+extern ThotBool isEOSorWhiteSpace ( const char c );
+extern ThotBool isWhiteSpace ( const char c );
 extern void giveItems ( char *text,
                         int size,
                         struct menuType **items,
@@ -41,6 +47,7 @@ extern Element Template_InsertRepeatChild ( Document doc,
 extern Element Template_InsertBagChild ( Document doc,
                                          Element el,
                                          Declaration decl );
+extern ThotBool BagButtonClicked ( NotifyElement *event );
 extern ThotBool RepeatButtonClicked ( NotifyElement *event );
 extern ThotBool UseButtonClicked ( NotifyElement *event );
 extern ThotBool UseSimpleButtonClicked ( NotifyElement *event );
@@ -60,6 +67,10 @@ extern ThotBool TemplateAttrInMenu ( NotifyAttribute * event );
 
 extern ThotBool IsTemplateInstanceDocument ( Document doc );
 extern ThotBool IsTemplateDocument ( Document doc );
+extern ThotBool CheckPromptIndicator ( Element el,
+                                         Document doc );
+extern void RemovePromptIndicator ( Element el,
+                                      Document doc );
 extern void* AllocTemplateRepositoryListElement ( const char* path,
                                                     void* prevElement );
 extern void FreeTemplateRepositoryList ( void* list );
@@ -73,6 +84,8 @@ extern void CreateInstanceOfTemplate ( Document doc,
                                          char *docname );
 extern void PreventReloadingTemplate ( char* template_url );
 extern void AllowReloadingTemplate ( char* template_url );
+extern ThotBool isEOSorWhiteSpace ( const char c );
+extern ThotBool isWhiteSpace ( const char c );
 extern void giveItems ( char *text,
                           int size,
                           struct menuType **items,
@@ -93,6 +106,7 @@ extern Element Template_InsertRepeatChild ( Document doc,
 extern Element Template_InsertBagChild ( Document doc,
                                            Element el,
                                            Declaration decl );
+extern ThotBool BagButtonClicked ( NotifyElement *event );
 extern ThotBool RepeatButtonClicked ( NotifyElement *event );
 extern ThotBool UseButtonClicked ( NotifyElement *event );
 extern ThotBool UseSimpleButtonClicked ( NotifyElement *event );

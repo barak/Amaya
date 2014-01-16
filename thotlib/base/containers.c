@@ -1,6 +1,6 @@
 /*
  *
- *  COPYRIGHT INRIA and W3C, 1996-2005
+ *  COPYRIGHT INRIA and W3C, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -11,9 +11,9 @@
  */
 #include "thot_sys.h"
 #include "containers.h"
-
 #include "application.h"
 
+#define HASHMAP_DEFAULT_NODE_NUMBER 32
 
 /*------------------------------------------------------------------------------
  * Generic container
@@ -36,7 +36,7 @@ ContainerElement ContainerNode_GetElement(ContainerNode node)
  */
 void Container_DeleteElement(Container container, ContainerNode node)
 {
-  if(container && node && node->elem && container->destroyElement)
+  if (container && node && node->elem && container->destroyElement)
     container->destroyElement(node);
 }
 
@@ -47,9 +47,9 @@ void Container_DeleteElement(Container container, ContainerNode node)
  */
 void Container_DeleteNode(Container container, ContainerNode node)
 {
-  if(node)
+  if (node)
   {
-    if(container && node->elem && container->destroyElement)
+    if (container && node->elem && container->destroyElement)
       container->destroyElement(node);
     TtaFreeMemory(node);
   }
@@ -66,15 +66,17 @@ void Container_DeleteNode(Container container, ContainerNode node)
  * @param getFirst GetFirst function address.
  * @param getNext GetNext function address.
  */
-ForwardIterator ForwardIterator_Create(Container container,
+ForwardIterator ForwardIterator_Create (Container container,
                     ForwardIterator_GetFirstFunction getFirst,
                     ForwardIterator_GetNextFunction  getNext)
 {
-  ForwardIterator iter = (ForwardIterator)TtaGetMemory(sizeof(sForwardIterator));
-  iter->container   = container;
-  iter->currentNode = NULL;
-  iter->getFirst    = getFirst;
-  iter->getNext     = getNext;
+  ForwardIterator iter;
+
+  iter = (ForwardIterator) TtaGetMemory (sizeof(sForwardIterator));
+  memset (iter, 0, sizeof(sForwardIterator));
+  iter->container = container;
+  iter->getFirst = getFirst;
+  iter->getNext = getNext;
   return iter;
 }
 
@@ -83,10 +85,15 @@ ForwardIterator ForwardIterator_Create(Container container,
  * @param iter Iterator
  * @return First node or NULL if empty.
  */
-ContainerNode ForwardIterator_GetFirst(ForwardIterator iter)
+ContainerNode ForwardIterator_GetFirst (ForwardIterator iter)
 {
-  iter->currentNode = iter->getFirst(iter);
-  return iter->currentNode;
+  if (iter)
+    {
+      iter->currentNode = iter->getFirst(iter);
+      return iter->currentNode;
+    }
+  else
+    return NULL;
 }
 
 /**
@@ -94,13 +101,32 @@ ContainerNode ForwardIterator_GetFirst(ForwardIterator iter)
  * @param iter Iterator.
  * @return next node or NULL if no more object.
  */
-ContainerNode ForwardIterator_GetNext(ForwardIterator iter)
+ContainerNode ForwardIterator_GetNext (ForwardIterator iter)
 {
-  iter->currentNode = iter->getNext(iter);
-  return iter->currentNode; 
+  if (iter)
+    {
+      iter->currentNode = iter->getNext(iter);
+      return iter->currentNode;
+    }
+  else
+    return NULL;
 }
 
-
+/**
+ * Count the number of element in the iterator.
+ */
+long ForwardIterator_GetCount (ForwardIterator iter)
+{
+  long l = 0;
+  if (iter)
+    {
+      ContainerNode node = ForwardIterator_GetFirst(iter);
+      for (node = ForwardIterator_GetFirst(iter); node;
+            node = ForwardIterator_GetNext(iter))
+          l++;
+    }
+  return l;
+}
 
 /*------------------------------------------------------------------------------
  * Double linked list
@@ -113,10 +139,7 @@ ContainerNode ForwardIterator_GetNext(ForwardIterator iter)
 DLList DLList_Create()
 {
   DLList list = (DLList)TtaGetMemory (sizeof(sDLList));
-  list->first = NULL;
-  list->last  = NULL;
-  
-  list->destroyElement = NULL;
+  memset (list, 0, sizeof(sDLList));
   return list;
 }
 
@@ -125,17 +148,23 @@ DLList DLList_Create()
  * All elements are freed.
  * @param list List to empty.
  */
-void DLList_Empty(DLList list){
-  DLListNode node = list->first;
-  
-  while(node!=NULL)
-  {
-    DLListNode next = (DLListNode)node->next;
-    if(list->destroyElement!=NULL)
-      list->destroyElement(node->elem);
-    TtaFreeMemory(node);
-    node = next;
-  }
+void DLList_Empty(DLList list)
+{
+  DLListNode node;
+
+  if (list == NULL)
+    return;
+
+  node = list->first;
+  while (node)
+    {
+      DLListNode next = (DLListNode) node->next;
+      if (list->destroyElement)
+        list->destroyElement (node->elem);
+      node->elem = NULL;
+      TtaFreeMemory (node);
+      node = next;
+    }
   list->first = list->last = NULL;  
 }
 
@@ -144,18 +173,21 @@ void DLList_Empty(DLList list){
  * All element are freed.
  * @param list List to destroy.
  */
-void DLList_Destroy(DLList list)
+void DLList_Destroy (DLList list)
 {
-  DLList_Empty(list);
-  TtaFreeMemory(list);
+  if (list)
+    {
+      DLList_Empty (list);
+      TtaFreeMemory( list);
+    }
 }
 
 /**
  * Test if a list is empty.
  */
-ThotBool DLList_IsEmpty(DLList list)
+ThotBool DLList_IsEmpty (DLList list)
 {
-  return list->first==NULL;
+  return list == NULL || list->first == NULL;
 }
 
 /**
@@ -163,19 +195,22 @@ ThotBool DLList_IsEmpty(DLList list)
  * @param list List at which the new element is append.
  * @param elem Element to append.
  */
-DLListNode DLList_Append(DLList list, ContainerElement elem)
+DLListNode DLList_Append (DLList list, ContainerElement elem)
 {
-  DLListNode node = (DLListNode)TtaGetMemory (sizeof(sDLListNode));
-  node->elem = elem;
-  node->prev = list->last;
-  node->next = NULL;
-
-  if(list->first==NULL)
-    list->first = (DLListNode)node;
-
-  if(list->last!=NULL)
-    list->last->next = node;
-  list->last = (DLListNode)node;
+  DLListNode node = NULL;
+  if (list)
+    {
+      node = (DLListNode) TtaGetMemory (sizeof (sDLListNode));
+      memset (node, 0, sizeof(sDLListNode));
+      node->elem = elem;
+      
+      node->prev = list->last;
+      if (!list->first)
+        list->first = (DLListNode) node;
+      if (list->last)
+        list->last->next = node;
+      list->last = (DLListNode) node;
+    }
   return node;
 }
 
@@ -184,17 +219,20 @@ DLListNode DLList_Append(DLList list, ContainerElement elem)
  * @param list List at which the new element is append.
  * @param elem Element to append.
  */
-DLListNode DLList_Prepend(DLList list, ContainerElement elem)
+DLListNode DLList_Prepend (DLList list, ContainerElement elem)
 {
-  DLListNode node = (DLListNode)TtaGetMemory (sizeof(sDLListNode));
+  DLListNode node = (DLListNode) TtaGetMemory (sizeof(sDLListNode));
+
+  memset (node, 0, sizeof(sDLListNode));
   node->elem = elem;
-  node->prev = NULL;
-  node->next = list->first;
-  
-  list->first = (DLListNode)node;
-  if(list->last==NULL)
-    list->last = (DLListNode)node;
-  ((DLListNode)node->next)->prev = node;
+  if (list)
+    {
+      node->next = list->first;
+      list->first = (DLListNode) node;
+      if (list->last == NULL)
+        list->last = (DLListNode) node;
+      ((DLListNode)node->next)->prev = node;
+    }
   return node;
 }
 
@@ -204,18 +242,23 @@ DLListNode DLList_Prepend(DLList list, ContainerElement elem)
  * @param before Node after which the element is to be inserted.
  * @param elem Element to append.
  */
-DLListNode DLList_InsertAfter(DLList list, DLListNode before, ContainerElement elem)
+DLListNode DLList_InsertAfter (DLList list, DLListNode before, ContainerElement elem)
 {
   DLListNode node = (DLListNode)TtaGetMemory (sizeof(sDLListNode));
+
+  memset (node, 0, sizeof(sDLListNode));
   node->elem = elem;
-  node->prev = before;
-  node->next = before->next;
-  
-  before->next = node;
-  if(node->next==NULL)
-    list->last = node;
-  else
+  if (before)
+    {
+      node->prev = before;
+      node->next = before->next;
+      before->next = node;
+    }
+
+  if (node->next)
     ((DLListNode)node->next)->prev = node;
+  else
+    list->last = node;
   
   return node;
 }
@@ -226,18 +269,23 @@ DLListNode DLList_InsertAfter(DLList list, DLListNode before, ContainerElement e
  * @param after Node before which the element is to be inserted.
  * @param elem Element to append.
  */
-DLListNode DLList_InsertBefore(DLList list, DLListNode after, ContainerElement elem)
+DLListNode DLList_InsertBefore (DLList list, DLListNode after, ContainerElement elem)
 {
   DLListNode node = (DLListNode)TtaGetMemory (sizeof(sDLListNode));
+
+  memset (node, 0, sizeof(sDLListNode));
   node->elem = elem;
-  node->prev = after->prev;
-  node->next = after;
-  
-  after->prev = node;
-  if(node->prev==NULL)
-    list->first = node;
-  else
+  if (after)
+    {
+      node->next = after;
+      node->prev = after->prev;
+      after->prev = node;
+    }
+
+  if (node->prev)
     ((DLListNode)node->prev)->next = node;
+  else
+    list->first = node;
   
   return node;
 }
@@ -248,16 +296,20 @@ DLListNode DLList_InsertBefore(DLList list, DLListNode after, ContainerElement e
  * @param node Node to remove.
  * @return Element
  */
-ContainerElement DLList_RemoveElement(DLList list, DLListNode node)
+ContainerElement DLList_RemoveElement (DLList list, DLListNode node)
 {
-  ContainerElement elem = node->elem;
-  
-  if(node==list->first)
+  ContainerElement elem;
+
+  if (node == NULL)
+    return NULL;
+
+  elem = node->elem;
+  if (node == list->first)
     list->first = node->next;
   else
     node->prev->next = node->next;
 
-  if(node==list->last)
+  if (node == list->last)
     list->last = node->prev;
   else
     node->next->prev = node->prev;
@@ -272,18 +324,18 @@ ContainerElement DLList_RemoveElement(DLList list, DLListNode node)
  * @param list List from which remove the element.
  * @param node Node to remove.
  */
-void  DLList_DestroyElement(DLList list, DLListNode node)
+void  DLList_DestroyElement (DLList list, DLListNode node)
 {
   ContainerElement elem = DLList_RemoveElement(list, node);
-  if(elem && list->destroyElement)
+  if (elem && list->destroyElement)
     list->destroyElement(elem);
 }
 
 
-static DLListNode DLListIterator_GetFirst(ForwardIterator iter)
+static DLListNode DLListIterator_GetFirst (ForwardIterator iter)
 {
   DLList list = (DLList)iter->container;
-  if(list)
+  if (list)
     return list->first;
   else
     return NULL;
@@ -292,7 +344,7 @@ static DLListNode DLListIterator_GetFirst(ForwardIterator iter)
 static DLListNode DLListIterator_GetNext(ForwardIterator iter)
 {
   DLListNode node = (DLListNode) iter->currentNode;
-  if(node)
+  if (node)
     return node->next;
   else
     return NULL;
@@ -314,45 +366,75 @@ ForwardIterator DLList_GetForwardIterator(DLList list)
 /**
  * Swap two nodes.
  */
-void DLList_Swap(DLList list, DLListNode node1, DLListNode node2)
+void DLList_SwapContent(DLList list, DLListNode node1, DLListNode node2)
 {
-  DLListNode prev1 = node1->prev,
-             prev2 = node2->prev, 
-             next1 = node1->next,
-             next2 = node2->next;
-  DLListNode node;
-  node1->next = next2;
-  node1->prev = prev2;
-  node2->next = next1;
-  node2->prev = prev1;
-  
-  if(prev1==NULL)
-    list->first = node2;
-  if(next2==NULL)
-    list->last = node1;
-    
-  node = node2;
-  node2 = node1;
-  node1 = node;
+  ContainerElement elem;
+  elem = node1->elem;
+  node1->elem = node2->elem;
+  node2->elem = elem;
 }
 
+/**
+ * Retrieve the size of the list.
+ * \note : o(n) function.
+ */
+int DLList_GetSize(DLList list)
+{
+  int        i = 0;
+  DLListNode node;
+  if(list && list->first!=0)
+    {
+      node = list->first;
+      while(node)
+        {
+          i++;
+          node = node->next;
+        }
+    }
+  return i;
+}
+
+/**
+ * Retrieve an element from its index.
+ * \note : o(n) function.
+ */
+DLListNode DLList_GetElement(DLList list, int index)
+{
+  int        i = 0;
+  DLListNode node = NULL;
+  if(list && list->first!=0)
+    {
+      node = list->first;
+      while(node)
+        {
+          if(i==index)
+            break;
+          i++;
+          node = node->next;
+        }
+    }
+  return node;  
+}
 
 /**
  * Sort a list content.
  * @note use a simple bubble sort algorithm (o(n^2)).
+ * @todo Implement another more efficient alorithm (in o(nlogn)) 
  * @param compare, comparaison function.
  */
 void DLList_Sort(DLList list, Container_CompareFunction compare)
 {
   DLListNode node1, node2;
   node1 = list->first;
-  while(node1!=NULL)
+  while (node1!=NULL)
   {
     node2 = node1->next;
-    while(node2!=NULL)
+    while (node2!=NULL)
     {
-      if(compare(node1->elem, node2->elem)>0)
-        DLList_Swap(list, node1, node2);
+      if (compare(node1->elem, node2->elem)>0)
+      {
+        DLList_SwapContent(list, node1, node2);
+      }
       node2 = node2->next;
     }
     node1 = node1->next;    
@@ -370,9 +452,9 @@ DLList DLList_GetRefList(DLList srcList, Container_CompareFunction compare)
 {
   DLList list = DLList_Create();
   DLListNode node = srcList->first;
-  if(compare==NULL)
+  if (compare == NULL)
   {
-    while(node)
+    while (node)
     {
       DLList_Append(list, node->elem);
       node = node->next;
@@ -380,17 +462,17 @@ DLList DLList_GetRefList(DLList srcList, Container_CompareFunction compare)
   }
   else
   {
-    if(node)
+    if (node)
     {
       DLList_Append(list, node->elem);
       node = node->next;
     }
-    while(node)
+    while (node)
     {
       DLListNode test = list->first;
-      while(test && compare(test->elem, node->elem))
+      while (test && compare(test->elem, node->elem))
         test = test->next;
-      if(test)
+      if (test)
         DLList_InsertBefore(list, test, node->elem);
       else
         DLList_Append(list, node->elem);
@@ -407,12 +489,13 @@ DLList DLList_GetRefList(DLList srcList, Container_CompareFunction compare)
  * @param compare, If not NULL, use it to sort references.
  * @note Use an insert sort algorithm.
  */
-DLList DLList_GetRefListFromIterator(ForwardIterator iter, Container_CompareFunction compare){
+DLList DLList_GetRefListFromIterator(ForwardIterator iter, Container_CompareFunction compare)
+{
   DLList list = DLList_Create();
   ContainerNode node = ForwardIterator_GetFirst(iter);
-  if(compare==NULL)
+  if (compare==NULL)
   {
-    while(node)
+    while (node)
     {
       DLList_Append(list, node->elem);
       node = ForwardIterator_GetNext(iter);
@@ -420,17 +503,17 @@ DLList DLList_GetRefListFromIterator(ForwardIterator iter, Container_CompareFunc
   }
   else
   {
-    if(node)
+    if (node)
     {
       DLList_Append(list, node->elem);
       node = ForwardIterator_GetNext(iter);
     }
-    while(node)
+    while (node)
     {
       DLListNode test = list->first;
-      while(test && compare(test->elem, node->elem))
+      while (test && compare(test->elem, node->elem))
         test = test->next;
-      if(test)
+      if (test)
         DLList_InsertBefore(list, test, node->elem);
       else
         DLList_Append(list, node->elem);
@@ -441,28 +524,27 @@ DLList DLList_GetRefListFromIterator(ForwardIterator iter, Container_CompareFunc
 }
 
 
-/*------------------------------------------------------------------------------
- * Hash map
- *----------------------------------------------------------------------------*/
-/**
- * Simple Hash map "destroy key" function.
- */
+/*----------------------------------------------------------------------
+  Simple Hash map "destroy key" function.
+  -----------------------------------------------------------------------*/
 static void HashMap_SimpleDestroyKey(HashMapKey key)
 {
   /* Do nothing.*/
 }
 
-/**
- * Simple Hash map "compare key" function.
- */
+/*----------------------------------------------------------------------
+  Simple Hash map "compare key" function.
+  -----------------------------------------------------------------------*/
 static int HashMap_SimpleCompareKey(HashMapKey key1, HashMapKey key2)
 {
-  return (int)key1-(int)key2;
+  return (int)((intptr_t)key1-(intptr_t)key2);
 }
   
 /**
  * Allocate a hash map key node (list of node).
  */
+/*----------------------------------------------------------------------
+  -----------------------------------------------------------------------*/
 static HashMapKeyNode HashMap_CreateHashMapKeyNode(HashMap map)
 {
   HashMapKeyNode node = (HashMapKeyNode)DLList_Create();
@@ -470,15 +552,21 @@ static HashMapKeyNode HashMap_CreateHashMapKeyNode(HashMap map)
   return node;
 }
  
-/**
- * Create a new hash map.
- * @return Empty hash map. 
- */
+/*----------------------------------------------------------------------
+  Create a new hash map.
+  Nodes Number of hashing slot, 0 or negative to default node number.
+  return Empty hash map. 
+  -----------------------------------------------------------------------*/
 HashMap HashMap_Create(Container_DestroyElementFunction destroy,
                        HashMap_HashFunction hash,
                        int nbNodes)
 {
   HashMap map = (HashMap)TtaGetMemory (sizeof(sHashMap));
+  
+  memset (map, 0, sizeof(sHashMap));
+  if (nbNodes < 1)   /* 0 or negative : Default node number.*/
+    nbNodes = 32; /* Default node number.*/
+  
   map->destroyElement = destroy;
   map->destroyKey     = HashMap_SimpleDestroyKey;
   map->compare        = HashMap_SimpleCompareKey;
@@ -497,11 +585,11 @@ HashMap HashMap_Create(Container_DestroyElementFunction destroy,
 void HashMap_Empty(HashMap map)
 {
   int i;
-  for(i=0; i<map->nbNodes; i++)
+  for (i=0; i<map->nbNodes; i++)
   {
-    if(map->nodes[i] !=NULL)
+    if (map->nodes[i] !=NULL)
     {
-      DLList_Destroy((DLList)map->nodes[i]);
+      DLList_Destroy ((DLList)map->nodes[i]);
       map->nodes[i] = NULL;
     }
   }  
@@ -514,9 +602,12 @@ void HashMap_Empty(HashMap map)
  */
 void HashMap_Destroy(HashMap map)
 {
-  HashMap_Empty(map);
-  TtaFreeMemory(map->nodes);
-  TtaFreeMemory(map);
+  if (map)
+  {
+    HashMap_Empty (map);
+    TtaFreeMemory (map->nodes);
+    TtaFreeMemory (map);
+  }
 }
 
 /**
@@ -525,9 +616,9 @@ void HashMap_Destroy(HashMap map)
 ThotBool HashMap_IsEmpty(HashMap map)
 {
   int i;
-  for(i=0; i<map->nbNodes; i++)
+  for (i = 0; i<map->nbNodes; i++)
   {
-    if(map->nodes[i] !=NULL)
+    if (map->nodes[i] != NULL)
     {
       return FALSE;
     }
@@ -542,8 +633,8 @@ ThotBool HashMap_IsEmpty(HashMap map)
 static HashMapKeyNode HashMap_GetHashMapKeyNode(HashMap map, HashMapKey key, ThotBool create)
 {
   int keyval = (map->hash(key))%map->nbNodes;
-  if(map->nodes[keyval]==NULL){
-    if(create)
+  if (map->nodes[keyval]==NULL){
+    if (create)
       map->nodes[keyval] = HashMap_CreateHashMapKeyNode(map);
   }
   return map->nodes[keyval];
@@ -561,21 +652,23 @@ ContainerElement HashMap_Set(HashMap map, HashMapKey key, ContainerElement elem)
   HashMapKeyNode keynode = HashMap_GetHashMapKeyNode(map, key, TRUE);
   HashMapNode node = (HashMapNode)keynode->first;
   ContainerElement old = NULL;
-  while(node!=NULL && map->compare(key, node->key)!=0)
+  while (node && map->compare(key, node->key) != 0)
     node = (HashMapNode)node->next;
 
-  if(node!=NULL)
+  if (node)
   {
     old = node->elem;
     node->elem = elem;
+    // TODO Probably a memory leak with stored key duplication.
   }
   else
   {
-    node = (HashMapNode)TtaGetMemory(sizeof(sHashMapNode));
+    node = (HashMapNode) TtaGetMemory (sizeof(sHashMapNode));
+    memset (node, 0, sizeof(sHashMapNode));
     node->elem = elem;
     node->key  = key;
     node->prev = NULL;
-    if(keynode->first==NULL)
+    if (keynode->first == NULL)
     {
       keynode->first = keynode->last = (DLListNode)node;
       node->next = NULL;
@@ -594,15 +687,15 @@ ContainerElement HashMap_Set(HashMap map, HashMapKey key, ContainerElement elem)
  * Find an element of the map.
  * Return the element node or NULL if not found.
  */
-HashMapNode HashMap_Find(HashMap map, HashMapKey key)
+HashMapNode HashMap_Find(HashMap map, const HashMapKey key)
 {
   HashMapKeyNode keynode = HashMap_GetHashMapKeyNode(map, key, FALSE);
-  if(keynode!=NULL)
+  if (keynode!=NULL)
   {
     HashMapNode node = (HashMapNode)keynode->first;
-    while(node!=NULL)
+    while (node!=NULL)
     {
-      if(map->compare(key, node->key)==0)
+      if (map->compare(key, node->key)==0)
         return node;
       node = node->next;
     }
@@ -616,10 +709,10 @@ HashMapNode HashMap_Find(HashMap map, HashMapKey key)
  * @param key Key of the element
  * @return The searched element or NULL if not found.
  */
-ContainerElement HashMap_Get(HashMap map, HashMapKey key)
+ContainerElement HashMap_Get(HashMap map, const HashMapKey key)
 {
   HashMapNode node = HashMap_Find(map, key);
-  if(node!=NULL)
+  if (node!=NULL)
     return node->elem;
   return NULL;
 }
@@ -631,14 +724,14 @@ ContainerElement HashMap_Get(HashMap map, HashMapKey key)
 ContainerElement HashMap_Remove(HashMap map, HashMapKey key)
 {
   HashMapKeyNode keynode = HashMap_GetHashMapKeyNode(map, key, FALSE);  
-  if(keynode!=NULL)
+  if (keynode != NULL)
   {
     HashMapNode node = (HashMapNode)keynode->first;
-    while(node!=NULL)
+    while (node != NULL)
     {
-      if(map->compare(key, node->key)==0)
+      if (map->compare(key, node->key)==0)
       {
-        if(node->key)
+        if (node->key)
           map->destroyKey(node->key);
         return DLList_RemoveElement((DLList)keynode, (DLListNode) node); 
       }
@@ -655,14 +748,14 @@ ContainerElement HashMap_Remove(HashMap map, HashMapKey key)
 void HashMap_DestroyElement(HashMap map, HashMapKey key)
 {
   HashMapKeyNode keynode = HashMap_GetHashMapKeyNode(map, key, FALSE);
-  if(keynode!=NULL)
+  if (keynode!=NULL)
   {
     HashMapNode node = (HashMapNode)keynode->first;
-    while(node!=NULL)
+    while (node != NULL)
     {
-      if(map->compare(key, node->key)==0)
+      if (map->compare(key, node->key)==0)
       {
-        if(node->key)
+        if (node->key)
           map->destroyKey(node->key);
         DLList_DestroyElement((DLList)keynode, (DLListNode) node);
         return;
@@ -672,37 +765,42 @@ void HashMap_DestroyElement(HashMap map, HashMapKey key)
   }
 }
 
+/*----------------------------------------------------------------------
+  -----------------------------------------------------------------------*/
 static HashMapNode HashMapIterator_GetFirst(ForwardIterator iter)
 {
   HashMap map = (HashMap) iter->container;
   int i;
-  for(i=0; i< map->nbNodes; i++)
+  for (i=0; i< map->nbNodes; i++)
   {
-    if(map->nodes[i]!=NULL){
-      if(map->nodes[i]->first!=NULL)
+    if (map->nodes[i]!=NULL){
+      if (map->nodes[i]->first!=NULL)
         return (HashMapNode)map->nodes[i]->first;
     }
   }
   return NULL;
 }
 
+/*----------------------------------------------------------------------
+  -----------------------------------------------------------------------*/
 static HashMapNode HashMapIterator_GetNext(ForwardIterator iter)
 {
   HashMap map = (HashMap) iter->container;
   HashMapNode node = (HashMapNode) iter->currentNode;
-  if(node->next!=NULL)
+  if (node->next!=NULL)
   {
     return node->next;
   }
   else
   {
     int i = (map->hash(node->key)%map->nbNodes)+1;
-    for(; i< map->nbNodes; i++)
+    for (; i< map->nbNodes; i++)
     {
-      if(map->nodes[i]!=NULL){
-        if(map->nodes[i]->first!=NULL)
-          return (HashMapNode)map->nodes[i]->first;
-      }
+      if (map->nodes[i] != NULL)
+        {
+          if (map->nodes[i]->first != NULL)
+            return (HashMapNode)map->nodes[i]->first;
+        }
     }
   }
   return NULL;
@@ -714,64 +812,132 @@ static HashMapNode HashMapIterator_GetNext(ForwardIterator iter)
  */
 ForwardIterator  HashMap_GetForwardIterator(HashMap map)
 {
-  return ForwardIterator_Create((Container)map,
-          (ForwardIterator_GetFirstFunction)HashMapIterator_GetFirst,
-          (ForwardIterator_GetNextFunction)HashMapIterator_GetNext);  
+  if (map)
+    return ForwardIterator_Create((Container)map,
+            (ForwardIterator_GetFirstFunction)HashMapIterator_GetFirst,
+            (ForwardIterator_GetNextFunction)HashMapIterator_GetNext);
+  else
+    return NULL;
+}
+
+
+/**
+ * Swap the content of two HashMap.
+ * Usefull to move the content of a map (funtion param) to an empty map
+ * and to clean the first one.
+ */
+void HashMap_SwapContents(HashMap map1, HashMap map2)
+{
+  _sHashMap temp;
+  memcpy(&temp, map2, sizeof(_sHashMap));
+  memcpy(map2, map1, sizeof(_sHashMap));
+  memcpy(map1, &temp, sizeof(_sHashMap));
+}
+
+/**
+ * Dump the content of a hashmap.
+ */
+void HashMap_Dump (HashMap map, ThotBool isKeyString)
+{
+  int            i;
+  HashMapKeyNode keynode;
+  HashMapNode    node;
+  
+  printf ("Dump of hashmap %p\n", map);
+  if (map)
+    {
+      printf("  destroyElement : %p\n", map->destroyElement);
+      printf("  destroyKey     : %p\n", map->destroyKey);
+      printf("  hash           : %p\n", map->hash);
+      printf("  compare        : %p\n", map->compare);
+      printf("  nodes          : %p\n", map->nodes);
+      printf("  nbNodes        : %d\n", map->nbNodes);
+      for (i = 0; i<map->nbNodes; i++)
+        {
+          keynode = map->nodes[i];
+          if (keynode)
+            {
+              printf("  [%02d] %p (%p -> %p)\n", i,  keynode, keynode->first, keynode->last);
+              node = (HashMapNode) keynode->first;
+              while (node!=NULL)
+                {
+                  if(isKeyString)
+                    printf("      (%p>>) %p (>>%p) : %p %s  (%d) - %p\n", node->prev, 
+                                        node, node->next,
+                                        node->key, (char*)node->key, 
+                                        map->hash(node->key), node->elem);
+                  else
+                    printf("      (%p>>) %p (>>%p) : %p (%d) - %p\n", node->prev, 
+                                        node, node->next,
+                                        node->key, map->hash(node->key), node->elem);
+                  node = node->next;
+                }
+            }
+        }
+    }
+}
+
+/*----------------------------------------------------------------------
+  Pointer hash map
+  -----------------------------------------------------------------------*/
+static intptr_t PointerHashMap_HashFunction (void* key)
+{
+  return (intptr_t) key; 
 }
 
 /*------------------------------------------------------------------------------
- * Pointer hash map
- *----------------------------------------------------------------------------*/
-
-static int PointerHashMap_HashFunction(void* key)
-{
-  return (int) key; 
-}
-
-HashMap PointerHashMap_Create(Container_DestroyElementFunction destroy,
-                                      int nbNodes)
+ ----------------------------------------------------------------------------*/
+HashMap PointerHashMap_Create(Container_DestroyElementFunction destroy, int nbNodes)
 {
   return HashMap_Create(destroy, (HashMap_HashFunction)PointerHashMap_HashFunction, nbNodes);
 }
 
 /*------------------------------------------------------------------------------
- * String hash map
- *----------------------------------------------------------------------------*/
-
+  String hash map
+ ----------------------------------------------------------------------------*/
 static int StringHashMap_HashFunction(char* key)
 {
   int res = 0;
-  while(*key!=0){
-    res += *key;
-    key++;
-  }
-  res %= 256;
+  if (key!=NULL)
+    {
+      while (*key!=0)
+        {
+          res += *key;
+          key++;
+        }
+      res %= 256;
+    }
   return res;
 }
 
+/*------------------------------------------------------------------------------
+ ----------------------------------------------------------------------------*/
 static int StringHashMap_CompareKey(HashMapKey key1, HashMapKey key2)
 {
   return strcmp((const char*)key1, (const char*)key2);
 }
   
-
-/**
- * Create a string hash map
- */
-HashMap StringHashMap_Create(Container_DestroyElementFunction destroy, ThotBool keyIsStored, int nbNodes)
+/*------------------------------------------------------------------------------
+  Create a string hash map
+ ----------------------------------------------------------------------------*/
+HashMap StringHashMap_Create (Container_DestroyElementFunction destroy,
+                              ThotBool keyIsStored, int nbNodes)
 {
-  HashMap map = HashMap_Create(destroy,
+  HashMap map = HashMap_Create (destroy,
                               (HashMap_HashFunction)StringHashMap_HashFunction, nbNodes);
   map->compare = StringHashMap_CompareKey;
   return map;
 }
 
 /*------------------------------------------------------------------------------
- * Keyword hash map
- *----------------------------------------------------------------------------*/
+  Keyword hash map
+ ----------------------------------------------------------------------------*/
 static int KeywordHashMap_HashFunction(char* key)
 {
-  return *key;
+  if (key)
+   return (int)key[0];
+  else
+    return 0;
 }
  
 HashMap KeywordHashMap_Create(Container_DestroyElementFunction destroy,
@@ -780,5 +946,42 @@ HashMap KeywordHashMap_Create(Container_DestroyElementFunction destroy,
   HashMap map = HashMap_Create(destroy,
                               (HashMap_HashFunction)KeywordHashMap_HashFunction, nbNodes);
   map->compare = StringHashMap_CompareKey;
+  return map;
+}
+
+
+static ThotBool isEOSorWhiteSpace (const char c)
+{
+  return c == SPACE || c == '\t' || c == '\n' || c == EOS;
+}
+
+HashMap KeywordHashMap_CreateFromList(Container_DestroyElementFunction destroy,
+                                      int nbNodes, const char *list)
+{
+  char temp[128];
+  int labelSize;
+
+  HashMap map = KeywordHashMap_Create(destroy, TRUE, nbNodes);
+  if (list!=NULL && *list!=0)
+    {
+      for (unsigned int i=0; i<strlen (list); i++)
+        {   
+          labelSize = 0;
+        
+          while (isEOSorWhiteSpace (list[i]))
+            ++i;
+    
+          while (!isEOSorWhiteSpace (list[i]))
+            {
+              temp[labelSize]=list[i];
+              ++i;
+              ++labelSize;
+            }
+    
+          temp[labelSize] = EOS;
+          HashMap_Set (map, TtaStrdup(temp), NULL);
+        }
+    }
+  
   return map;
 }

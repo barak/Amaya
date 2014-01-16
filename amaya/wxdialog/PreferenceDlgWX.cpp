@@ -6,7 +6,7 @@
 #include "wx/arrstr.h"
 #include "wx/spinctrl.h"
 #include "wx/notebook.h"
-#include "wx/xrc/xmlres.h"
+#include "wx/listbook.h"
 #include "wx/colordlg.h"
 #include "wx/listbox.h"
 #include "AmayaApp.h"
@@ -22,6 +22,7 @@
 #include "templates.h"
 #include "Elemlist.h"
 #include "templates_f.h"
+#include "HTMLhistory_f.h"
 
 bool PreferenceDlgWX::m_OnApplyLock = FALSE;
 static int MyRef = 0;
@@ -31,7 +32,7 @@ static int MyRef = 0;
 //-----------------------------------------------------------------------------
 BEGIN_EVENT_TABLE(PreferenceDlgWX, AmayaDialog)
 
-  EVT_NOTEBOOK_PAGE_CHANGED( XRCID("wxID_NOTEBOOK"), PreferenceDlgWX::OnPageChanged )
+  EVT_LISTBOOK_PAGE_CHANGED( XRCID("wxID_NOTEBOOK"), PreferenceDlgWX::OnPageChanged )
   EVT_BUTTON( XRCID("wxID_OK"),           PreferenceDlgWX::OnOk )
   EVT_BUTTON( XRCID("wxID_DEFAULT"),      PreferenceDlgWX::OnDefault )
   EVT_BUTTON( XRCID("wxID_CANCEL"),       PreferenceDlgWX::OnCancel )
@@ -59,17 +60,23 @@ BEGIN_EVENT_TABLE(PreferenceDlgWX, AmayaDialog)
   EVT_CLOSE( PreferenceDlgWX::OnClose )
   // Templates tab callbacks
 #ifdef TEMPLATES
-  EVT_BUTTON( XRCID("wxID_BUTTON_DELETE_TEMPLATE"),   PreferenceDlgWX::OnTemplateDel )
-  EVT_BUTTON( XRCID("wxID_BUTTON_MOVEUP_TEMPLATE"),   PreferenceDlgWX::OnTemplateMoveUp )
-  EVT_BUTTON( XRCID("wxID_BUTTON_MOVEDOWN_TEMPLATE"),   PreferenceDlgWX::OnTemplateMoveDown )
-  EVT_BUTTON( XRCID("wxID_BUTTON_CHOOSE_TEMPLATE"),   PreferenceDlgWX::OnTemplateChoose )
-  EVT_BUTTON( XRCID("wxID_BUTTON_ADD_TEMPLATE"),   PreferenceDlgWX::OnTemplateAdd )
-  EVT_UPDATE_UI( XRCID("wxID_BUTTON_DELETE_TEMPLATE"),   PreferenceDlgWX::OnUpdateTemplateDel )
-  EVT_UPDATE_UI( XRCID("wxID_BUTTON_MOVEUP_TEMPLATE"),   PreferenceDlgWX::OnUpdateTemplateMoveUp )
-  EVT_UPDATE_UI( XRCID("wxID_BUTTON_MOVEDOWN_TEMPLATE"),   PreferenceDlgWX::OnUpdateTemplateMoveDown )
-  EVT_UPDATE_UI( XRCID("wxID_BUTTON_ADD_TEMPLATE"),   PreferenceDlgWX::OnUpdateTemplateAdd )
+  EVT_BUTTON( XRCID("wxID_BUTTON_DELETE_TEMPLATE"),    PreferenceDlgWX::OnTemplateDel )
+  EVT_BUTTON( XRCID("wxID_BUTTON_MOVEUP_TEMPLATE"),    PreferenceDlgWX::OnTemplateMoveUp )
+  EVT_BUTTON( XRCID("wxID_BUTTON_MOVEDOWN_TEMPLATE"),  PreferenceDlgWX::OnTemplateMoveDown )
+  EVT_BUTTON( XRCID("wxID_BUTTON_CHOOSE_TEMPLATE"),    PreferenceDlgWX::OnTemplateChoose )
+  EVT_BUTTON( XRCID("wxID_BUTTON_ADD_TEMPLATE"),       PreferenceDlgWX::OnTemplateAdd )
+  //EVT_TEXT_ENTER( XRCID("wxID_TEXT_NEW_TEMPLATE"),     PreferenceDlgWX::OnTemplateAdd )
+  EVT_UPDATE_UI( XRCID("wxID_BUTTON_DELETE_TEMPLATE"), PreferenceDlgWX::OnUpdateTemplateDel )
+  EVT_UPDATE_UI( XRCID("wxID_BUTTON_MOVEUP_TEMPLATE"), PreferenceDlgWX::OnUpdateTemplateMoveUp )
+  EVT_UPDATE_UI( XRCID("wxID_BUTTON_MOVEDOWN_TEMPLATE"), PreferenceDlgWX::OnUpdateTemplateMoveDown )
+  EVT_UPDATE_UI( XRCID("wxID_BUTTON_ADD_TEMPLATE"),     PreferenceDlgWX::OnUpdateTemplateAdd )
   EVT_LISTBOX(XRCID("wxID_LIST_TEMPLATE_REPOSITORIES"), PreferenceDlgWX::OnTemplateSelected)
 #endif /* TEMPLATES*/
+  // Passwords tab callbacks
+  EVT_LISTBOX(XRCID("wxID_LIST_PASSWORDS"),         PreferenceDlgWX::OnPasswordSelected)
+  EVT_BUTTON( XRCID("wxID_BUTTON_DELETE_PASSWORD"), PreferenceDlgWX::OnPasswordDeleted )
+  EVT_BUTTON( XRCID("wxID_BUTTON_EMPTY_PASSWORDS"), PreferenceDlgWX::OnEmptyPasswords )
+
 END_EVENT_TABLE()
 
 
@@ -92,7 +99,7 @@ END_EVENT_TABLE()
   MyRef = ref;
 
 #if !defined(DAV) || !defined(TEMPLATES)
-  wxNotebook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxNotebook);
+  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
 #endif /* DAV || TEMPLATES */
 #ifndef DAV
   // invalid WebDAV Page
@@ -126,9 +133,11 @@ END_EVENT_TABLE()
   if (templates_page_id)
     p_notebook->DeletePage(templates_page_id );  
 #endif /* TEMPLATES */
+  SetupLabelDialog_Emails();
+  SetupLabelDialog_Passwords();
 
   XRCCTRL(*this, "wxID_OK", wxButton)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_APPLY_BUTTON)));
-  XRCCTRL(*this, "wxID_CANCEL", wxButton)->SetLabel(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_DONE)));
+  XRCCTRL(*this, "wxID_CANCEL", wxButton)->SetLabel(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_CANCEL)));
   XRCCTRL(*this, "wxID_DEFAULT", wxButton)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_DEFAULT_BUTTON)));
 
   // load current values and send it to the dialog
@@ -147,6 +156,8 @@ END_EVENT_TABLE()
 #ifdef TEMPLATES
   SetupDialog_Templates( GetProp_Templates() );
 #endif /* TEMPLATES */
+  SetupDialog_Emails( GetProp_Emails() );
+  SetupDialog_Passwords( GetProp_Passwords() );
 
   // give focus to ...
   //  XRCCTRL(*this, "wxID_COMBOBOX_HOMEPAGE", wxComboBox)->SetFocus();
@@ -175,7 +186,7 @@ PreferenceDlgWX::~PreferenceDlgWX()
   ----------------------------------------------------------------------*/
 int PreferenceDlgWX::GetPagePosFromXMLID( const wxString & xml_id )
 {
-  wxNotebook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxNotebook);
+  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
   wxPanel *    p_page     = (wxPanel *)FindWindow(wxXmlResource::GetXRCID(xml_id));
   int          page_id    = 0;
   bool         found      = false;
@@ -196,9 +207,9 @@ int PreferenceDlgWX::GetPagePosFromXMLID( const wxString & xml_id )
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-void PreferenceDlgWX::OnPageChanged( wxNotebookEvent& event )
+void PreferenceDlgWX::OnPageChanged( wxListbookEvent& event )
 {
-  wxNotebook *p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxNotebook);
+  wxListbook *p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
   wxPanel *p_new_page = (wxPanel *)((event.GetSelection()>=0 && p_notebook)?p_notebook->GetPage(event.GetSelection()):NULL);
 
   if(!m_IsInitialized || !p_new_page || !XRCCTRL(*this,"wxID_OK",wxButton) ||
@@ -238,7 +249,7 @@ void PreferenceDlgWX::SetupLabelDialog_General()
 {
   // Setup notebook tab names :
   int page_id;
-  wxNotebook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxNotebook);
+  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
   page_id = GetPagePosFromXMLID( _T("wxID_PAGE_GENERAL") );
   if (page_id >= 0)
     p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_GENERAL_MENU)) );
@@ -396,7 +407,7 @@ void PreferenceDlgWX::SetupLabelDialog_Browse()
 {
   // Setup notebook tab names :
   int page_id;
-  wxNotebook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxNotebook);
+  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
   page_id = GetPagePosFromXMLID( _T("wxID_PAGE_BROWSE") );
   if (page_id >= 0)
     p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_BROWSE_MENU)) );
@@ -482,7 +493,7 @@ void PreferenceDlgWX::SetupLabelDialog_Publish()
 {
   // Setup notebook tab names :
   int page_id;
-  wxNotebook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxNotebook);
+  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
   page_id = GetPagePosFromXMLID( _T("wxID_PAGE_PUBLISH") );
   if (page_id >= 0)
     p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_PUBLISH_MENU)) );
@@ -566,7 +577,7 @@ void PreferenceDlgWX::SetupLabelDialog_Cache()
 {
   // Setup notebook tab names :
   int page_id;
-  wxNotebook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxNotebook);
+  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
   page_id = GetPagePosFromXMLID( _T("wxID_PAGE_CACHE") );
   if (page_id >= 0)
     p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_CACHE_MENU)) );
@@ -665,7 +676,7 @@ void PreferenceDlgWX::SetupLabelDialog_Proxy()
 {
   // Setup notebook tab names :
   int page_id;
-  wxNotebook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxNotebook);
+  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
   page_id = GetPagePosFromXMLID( _T("wxID_PAGE_PROXY") );
   if (page_id >= 0)
     p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_PROXY_MENU)) );
@@ -730,7 +741,7 @@ void PreferenceDlgWX::SetupLabelDialog_Color()
 {
   // Setup notebook tab names :
   int page_id;
-  wxNotebook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxNotebook);
+  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
   page_id = GetPagePosFromXMLID( _T("wxID_PAGE_COLOR") );
   if (page_id >= 0)
     p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_COLOR_MENU)) );
@@ -947,7 +958,7 @@ void PreferenceDlgWX::SetupLabelDialog_Geometry()
   ThotBool val;
 
   // Setup notebook tab names :
-  wxNotebook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxNotebook);
+  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
   page_id = GetPagePosFromXMLID( _T("wxID_PAGE_GEOMETRY") );
   if (page_id >= 0)
     p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_GEOMETRY_MENU)) );
@@ -1008,7 +1019,7 @@ void PreferenceDlgWX::SetupLabelDialog_Annot()
 {
   // Setup notebook tab names :
   int page_id;
-  wxNotebook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxNotebook);
+  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
   page_id = GetPagePosFromXMLID( _T("wxID_PAGE_ANNOT") );
   if (page_id >= 0)
     p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_ANNOT_CONF_MENU)) );
@@ -1079,7 +1090,7 @@ void PreferenceDlgWX::SetupLabelDialog_DAV()
 {
   // Setup notebook tab names :
   int page_id;
-  wxNotebook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxNotebook);
+  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
   page_id = GetPagePosFromXMLID( _T("wxID_PAGE_DAV") );
   if (page_id >= 0)
     p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_DAV_PREFERENCES)) );
@@ -1188,7 +1199,7 @@ Prop_DAV PreferenceDlgWX::GetValueDialog_DAV()
 #ifdef TEMPLATES
 
 /*----------------------------------------------------------------------
-  SetupLabelDialog_Templates init labels
+  SetupLabelDialog_Templates inits template labels
   params:
   returns:
   ----------------------------------------------------------------------*/
@@ -1196,12 +1207,11 @@ void PreferenceDlgWX::SetupLabelDialog_Templates()
 {
   // Setup notebook tab names :
   int page_id;
-  wxNotebook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxNotebook);
+  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
   page_id = GetPagePosFromXMLID( _T("wxID_PAGE_TEMPLATES") );
   if (page_id >= 0)
     p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_TEMPLATES)));
 
-  XRCCTRL(*this, "wxID_CHECK_SHOWTEMPLATES", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_SHOW_TEMPLATES)));
   XRCCTRL(*this, "wxID_BUTTON_CHOOSE_TEMPLATE", wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_SEL)));
   XRCCTRL(*this, "wxID_BUTTON_ADD_TEMPLATE", wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_APPLY_BUTTON)));
   wxStaticBoxSizer *sz = (wxStaticBoxSizer*)XRCCTRL(*this, "wxID_PAGE_TEMPLATES", wxPanel)->GetSizer()->GetItem((size_t)0)->GetSizer();
@@ -1209,49 +1219,54 @@ void PreferenceDlgWX::SetupLabelDialog_Templates()
 }
 
 /*----------------------------------------------------------------------
-  SetupDialog_Templates init labels
+  SetupDialog_Templates inits template dialog
   params:
   returns:
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::SetupDialog_Templates( const Prop_Templates & prop)
 {
-  //printf("PreferenceDlgWX::SetupDialog_Templates : %d\n", prop.S_Templates);
-  XRCCTRL(*this, "wxID_CHECK_SHOWTEMPLATES", wxCheckBox)->SetValue( prop.S_Templates );
-  
   wxListBox *box = XRCCTRL(*this, "wxID_LIST_TEMPLATE_REPOSITORIES", wxListBox);
   Prop_Templates_Path* path = prop.FirstPath;
   while (path)
-  {
-    box->Append(TtaConvMessageToWX(path->Path));
-    path = path->NextPath;
-  }
+    {
+      box->Append(TtaConvMessageToWX(path->Path));
+      path = path->NextPath;
+    }
 }
 
 /*----------------------------------------------------------------------
-  GetValueDialog_Templates init labels
+  UpdateTemplateList updates the current list of templates
   params:
   returns:
   ----------------------------------------------------------------------*/
-Prop_Templates PreferenceDlgWX::GetValueDialog_Templates()
+void PreferenceDlgWX::UpdateTemplateList()
 {
-  wxString            value;
-  Prop_Templates      prop;
+  wxString             value;
+  Prop_Templates       prop = GetProp_Templates();
   Prop_Templates_Path *element = NULL;
+  wxListBox           *box;
+  int                  i;
 
-  memset( &prop, 0, sizeof(Prop_Templates) );
-  prop.S_Templates = XRCCTRL(*this, "wxID_CHECK_SHOWTEMPLATES", wxCheckBox)->GetValue();
-  
-  wxListBox *box = XRCCTRL(*this, "wxID_LIST_TEMPLATE_REPOSITORIES", wxListBox);
-  int i;
-  for (i=0; i<(int)box->GetCount(); i++)
-  {
+  FreeTemplateRepositoryList(&(prop.FirstPath));
+  box = XRCCTRL(*this, "wxID_LIST_TEMPLATE_REPOSITORIES", wxListBox);
+  for (i = 0; i < (int)box->GetCount(); i++)
+    {
     element = (Prop_Templates_Path*) AllocTemplateRepositoryListElement( (const char*) box->GetString(i).mb_str(*wxConvCurrent), element);
-    if (i==0)
+    if (i == 0)
        prop.FirstPath = element;
-  }
-  return prop;
+    }
+  SetTemplateRepositoryList ((const Prop_Templates_Path**)&(prop.FirstPath));
 }
 
+/*----------------------------------------------------------------------
+  GetValueDialog_Templates gets the show template indicator
+  params:
+  returns:
+  ----------------------------------------------------------------------*/
+void PreferenceDlgWX::GetValueDialog_Templates()
+{
+  //Prop_Templates       prop = GetProp_Templates();
+}
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
@@ -1261,10 +1276,9 @@ void PreferenceDlgWX::OnTemplateChoose(wxCommandEvent& event)
   wxFileDialog  *p_dlg;
   
   wxString path = XRCCTRL(*this, "wxID_TEXT_NEW_TEMPLATE", wxTextCtrl)->GetValue();
-  if(!path.IsEmpty())
+  if (!path.IsEmpty())
     path.Replace(wxT("~"), home);
   
-  // wxString dir = wxDirSelector(wxT("*Choose a folder*"), path);
   p_dlg = new wxFileDialog(this,
                            TtaConvMessageToWX( TtaGetMessage (AMAYA, AM_OPEN_URL) ),
                            _T(""), _T(""), _T("Templates (*.xtd)|*.xtd"),
@@ -1281,9 +1295,27 @@ void PreferenceDlgWX::OnTemplateChoose(wxCommandEvent& event)
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::OnTemplateAdd(wxCommandEvent& event)
 {
+  wxString   path = XRCCTRL(*this, "wxID_TEXT_NEW_TEMPLATE", wxTextCtrl)->GetValue();
   wxListBox *box = XRCCTRL(*this, "wxID_LIST_TEMPLATE_REPOSITORIES", wxListBox);
-  box->Append(XRCCTRL(*this, "wxID_TEXT_NEW_TEMPLATE", wxTextCtrl)->GetValue());
+  int        i;
+  
+  if (path.IsEmpty())
+    return;
+  for (i = 0; i < (int)box->GetCount(); i++)
+    {
+      box->GetString(i).mb_str(*wxConvCurrent);
+      if (!strcmp (path.mb_str(wxConvUTF8), box->GetString(i).mb_str(wxConvUTF8)))
+        {
+          // this entry already exists
+          box->SetSelection(box->GetCount()-1);
+          return;
+        }
+    }
+  box->Append(path);
   box->SetSelection(box->GetCount()-1);
+
+  // Update the list of templates
+  UpdateTemplateList();
 }
 
 /*----------------------------------------------------------------------
@@ -1293,16 +1325,17 @@ void PreferenceDlgWX::OnUpdateTemplateAdd(wxUpdateUIEvent& event)
   event.Enable(!XRCCTRL(*this, "wxID_TEXT_NEW_TEMPLATE", wxTextCtrl)->GetValue().IsEmpty());
 }
 
-
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::OnTemplateDel(wxCommandEvent& event)
 {
   wxListBox *box = XRCCTRL(*this, "wxID_LIST_TEMPLATE_REPOSITORIES", wxListBox);
   int sel = box->GetSelection();
-  if(sel!=wxNOT_FOUND)
+  if (sel != wxNOT_FOUND)
   {
     box->Delete(sel);
+    // Update the list of templates
+    UpdateTemplateList();
   }
 }
 
@@ -1310,7 +1343,8 @@ void PreferenceDlgWX::OnTemplateDel(wxCommandEvent& event)
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::OnUpdateTemplateDel(wxUpdateUIEvent& event)
 {
-  event.Enable(XRCCTRL(*this, "wxID_LIST_TEMPLATE_REPOSITORIES", wxListBox)->GetSelection()!=wxNOT_FOUND);
+  event.Enable(XRCCTRL(*this, "wxID_LIST_TEMPLATE_REPOSITORIES",
+                       wxListBox)->GetSelection() != wxNOT_FOUND);
 }
 
 /*----------------------------------------------------------------------
@@ -1319,12 +1353,14 @@ void PreferenceDlgWX::OnTemplateMoveUp(wxCommandEvent& event)
 {
   wxListBox *box = XRCCTRL(*this, "wxID_LIST_TEMPLATE_REPOSITORIES", wxListBox);
   int sel = box->GetSelection();
-  if (sel!=wxNOT_FOUND && sel>0)
+  if (sel != wxNOT_FOUND && sel > 0)
   {
     wxString str = box->GetString(sel);
     box->Delete(sel);
     box->Insert(str, sel-1);
     box->SetSelection(sel-1);
+    // Update the list of templates
+    UpdateTemplateList();
   }
 }
 
@@ -1333,7 +1369,7 @@ void PreferenceDlgWX::OnTemplateMoveUp(wxCommandEvent& event)
 void PreferenceDlgWX::OnUpdateTemplateMoveUp(wxUpdateUIEvent& event)
 {
   wxListBox *box = XRCCTRL(*this, "wxID_LIST_TEMPLATE_REPOSITORIES", wxListBox);
-  event.Enable(box->GetSelection()!=wxNOT_FOUND && box->GetSelection()!=0);
+  event.Enable (box->GetSelection() != wxNOT_FOUND && box->GetSelection() !=0 );
 }
 
 
@@ -1343,12 +1379,14 @@ void PreferenceDlgWX::OnTemplateMoveDown(wxCommandEvent& event)
 {
   wxListBox *box = XRCCTRL(*this, "wxID_LIST_TEMPLATE_REPOSITORIES", wxListBox);
   int sel = box->GetSelection();
-  if (sel!=wxNOT_FOUND && sel<(int)box->GetCount()-2)
+  if (sel != wxNOT_FOUND && sel<(int)box->GetCount()-2)
   {
     wxString str = box->GetString(sel);
     box->Delete(sel);
     box->Insert(str, sel+1);
     box->SetSelection(sel+1);
+    // Update the list of templates
+    UpdateTemplateList();
   }
 }
 
@@ -1357,19 +1395,165 @@ void PreferenceDlgWX::OnTemplateMoveDown(wxCommandEvent& event)
 void PreferenceDlgWX::OnUpdateTemplateMoveDown(wxUpdateUIEvent& event)
 {
   wxListBox *box = XRCCTRL(*this, "wxID_LIST_TEMPLATE_REPOSITORIES", wxListBox);
-  event.Enable(box->GetSelection()!=wxNOT_FOUND && box->GetSelection()!=(int)box->GetCount()-1);
+  event.Enable (box->GetSelection() != wxNOT_FOUND && box->GetSelection() != (int)box->GetCount()-1);
 }
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::OnTemplateSelected(wxCommandEvent& event)
 {
-  if(event.IsSelection())
+  if (event.IsSelection())
     XRCCTRL(*this, "wxID_TEXT_NEW_TEMPLATE", wxTextCtrl)->SetValue(event.GetString());
 }
-
 #endif /* Templates */
 
+
+/************************************************************************/
+/* Emails tab                                                           */
+/************************************************************************/
+
+/*----------------------------------------------------------------------
+  SetupLabelDialog_Emails init labels
+  params:
+  returns:
+  ----------------------------------------------------------------------*/
+void PreferenceDlgWX::SetupLabelDialog_Emails()
+{
+  // Setup notebook tab names :
+  int page_id;
+  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
+  page_id = GetPagePosFromXMLID( _T("wxID_PAGE_EMAILS") );
+  if (page_id >= 0)
+    p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EMAILS)));
+
+  XRCCTRL(*this, "wxID_LABEL_EMAIL", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EMAILS_PROPERTIES)));
+  XRCCTRL(*this, "wxID_LABEL_EMAIL_SERVER_ADDRESS", wxStaticText)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EMAILS_SERVER_ADDRESS)));
+  XRCCTRL(*this, "wxID_LABEL_EMAIL_SERVER_PORT", wxStaticText)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_EMAILS_SERVER_PORT)));
+  XRCCTRL(*this, "wxID_LABEL_EMAIL_DEFAULT_SERVER_PORT", wxStaticText)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EMAILS_SERVER_DEFPORT)));
+  XRCCTRL(*this, "wxID_LABEL_EMAIL_FROM_ADDRESS", wxStaticText)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_EMAILS_FROM_)));
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void PreferenceDlgWX::SetupDialog_Emails( const Prop_Emails & prop )
+{
+  XRCCTRL(*this, "wxID_VALUE_EMAIL_SERVER_ADDRESS", wxTextCtrl)->SetValue( TtaConvMessageToWX(prop.serverAddress) );
+  XRCCTRL(*this, "wxID_SPIN_EMAIL_SERVER_PORT", wxSpinCtrl)->SetValue( prop.serverPort );  
+  XRCCTRL(*this, "wxID_VALUE_EMAIL_FROM_ADDRESS", wxTextCtrl)->SetValue( TtaConvMessageToWX(prop.fromAddress) );
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+Prop_Emails PreferenceDlgWX::GetValueDialog_Emails()
+{
+  Prop_Emails prop;
+  wxString    value;
+  
+  memset( &prop, 0, sizeof(Prop_Emails) );
+  value = XRCCTRL(*this, "wxID_VALUE_EMAIL_SERVER_ADDRESS", wxTextCtrl)->GetValue();
+  strcpy( prop.serverAddress, (const char*)value.mb_str(wxConvUTF8) );
+  prop.serverPort = XRCCTRL(*this, "wxID_SPIN_EMAIL_SERVER_PORT", wxSpinCtrl)->GetValue();
+  value = XRCCTRL(*this, "wxID_VALUE_EMAIL_FROM_ADDRESS", wxTextCtrl)->GetValue();
+  strcpy( prop.fromAddress, (const char*)value.mb_str(wxConvUTF8) );
+
+  return prop;
+}
+
+
+/************************************************************************/
+/* Passwords tab                                                        */
+/************************************************************************/
+
+/*----------------------------------------------------------------------
+  SetupLabelDialog_Passwords inits Passwords labels
+  params:
+  returns:
+  ----------------------------------------------------------------------*/
+void PreferenceDlgWX::SetupLabelDialog_Passwords()
+{
+  // Setup notebook tab names :
+  int page_id;
+  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
+  page_id = GetPagePosFromXMLID( _T("wxID_PAGE_PASSWORDS") );
+  if (page_id >= 0)
+    p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_PASSWORDS)));
+
+  XRCCTRL(*this, "wxID_CHECK_DEF_PASSWORDS", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_PASSWORDS_SAVE_OPTION)));
+  XRCCTRL(*this, "wxID_BUTTON_EMPTY_PASSWORDS", wxButton)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_PASSWORDS_EMPTY)));
+  XRCCTRL(*this, "wxID_BUTTON_DELETE_PASSWORD", wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB, TMSG_DEL)));
+
+  wxStaticBoxSizer *sz = (wxStaticBoxSizer*)XRCCTRL(*this, "wxID_PAGE_PASSWORDS", wxPanel)->GetSizer()->GetItem((size_t)0)->GetSizer();
+  sz->GetStaticBox()->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_PASSWORDS_LIST)));
+}
+
+/*----------------------------------------------------------------------
+  SetupDialog_Passwordss inits password dialog
+  params:
+  returns:
+  ----------------------------------------------------------------------*/
+void PreferenceDlgWX::SetupDialog_Passwords( const Prop_Passwords & prop)
+{
+  XRCCTRL(*this, "wxID_CHECK_DEF_PASSWORDS", wxCheckBox)->SetValue( prop.S_Passwords );
+  wxListBox *box = XRCCTRL(*this, "wxID_LIST_PASSWORDS", wxListBox);
+  box->Clear();
+  /* Build the list of server/realm pair from the internal table */
+  LoadPasswordsSiteList();
+  Prop_Passwords_Site* site;
+  site = GetFirtsPasswordsSite();
+  while (site)
+    {
+      box->Append(TtaConvMessageToWX(site->Site));
+      site = site->NextSite;
+    }
+}
+
+/*----------------------------------------------------------------------
+  OnEmptyPasswords is called when the user click on flush password button
+  params:
+  returns:
+  ----------------------------------------------------------------------*/
+void PreferenceDlgWX::OnEmptyPasswords( wxCommandEvent& event )
+{
+  wxListBox *box = XRCCTRL(*this, "wxID_LIST_PASSWORDS", wxListBox);
+  box->Clear();
+  ThotCallback (GetPrefPasswordsBase() + PasswordsMenu, INTEGER_DATA, (char*) 3);
+}
+
+/*----------------------------------------------------------------------
+  GetValueDialog_Passwords gets the save passwords indicator
+  params:
+  returns:
+  ----------------------------------------------------------------------*/
+Prop_Passwords PreferenceDlgWX::GetValueDialog_Passwords()
+{
+  Prop_Passwords       prop = GetProp_Passwords();
+
+  prop.S_Passwords = XRCCTRL(*this, "wxID_CHECK_DEF_PASSWORDS", wxCheckBox)->GetValue();
+  return prop;
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void PreferenceDlgWX::OnPasswordSelected(wxCommandEvent& event)
+{
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void PreferenceDlgWX::OnPasswordDeleted(wxCommandEvent& event)
+{
+  wxListBox *box = XRCCTRL(*this, "wxID_LIST_PASSWORDS", wxListBox);
+  int sel = box->GetSelection();
+  if (sel != wxNOT_FOUND)
+  {
+    char buffer[MAX_LENGTH];
+    strcpy (buffer, (const char*)box->GetString(sel).mb_str(*wxConvCurrent) );
+    box->Delete(sel);
+    // Update the password table
+    sel++;
+    UpdatePasswordsSiteList(sel, &buffer[0]);
+  }
+}
 
 /************************************************************************/
 /* General events                                                       */
@@ -1424,14 +1608,20 @@ void PreferenceDlgWX::OnOk( wxCommandEvent& event )
 #endif /* DAV */
 
 #ifdef TEMPLATES
-  Prop_Templates prop_templates = GetValueDialog_Templates();
-  SetProp_Templates( &prop_templates );
+  // not necessary to update the list
+  GetValueDialog_Templates();
   ThotCallback (GetPrefTemplatesBase() + TemplatesMenu, INTEGER_DATA, (char*) 1);
-  FreeTemplateRepositoryList(&(prop_templates.FirstPath));
 #endif /* TEMPLATES */
 
-  ThotCallback (MyRef, INTEGER_DATA, (char*) 1);
+  Prop_Emails prop_emails = GetValueDialog_Emails();
+  SetProp_Emails( &prop_emails );
+  ThotCallback (GetPrefEmailsBase() + EmailsMenu, INTEGER_DATA, (char*) 1);
 
+  Prop_Passwords prop_passwords = GetValueDialog_Passwords();
+  SetProp_Passwords( &prop_passwords );
+  ThotCallback (GetPrefPasswordsBase() + PasswordsMenu, INTEGER_DATA, (char*) 1);
+
+  ThotCallback (MyRef, INTEGER_DATA, (char*) 1);
   XRCCTRL(*this, "wxID_CANCEL", wxButton)->Enable();
   m_OnApplyLock = FALSE;
 
@@ -1446,7 +1636,7 @@ void PreferenceDlgWX::OnOk( wxCommandEvent& event )
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::OnDefault( wxCommandEvent& event )
 {
-  wxNotebook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxNotebook);
+  wxListbook * p_notebook = XRCCTRL(*this, "wxID_NOTEBOOK", wxListbook);
   wxWindow * p_page = (wxWindow *) (p_notebook->GetSelection() != -1) ? p_notebook->GetPage(p_notebook->GetSelection()) : NULL;
 
   if (!p_page)
@@ -1507,6 +1697,16 @@ void PreferenceDlgWX::OnDefault( wxCommandEvent& event )
       SetupDialog_Templates( GetProp_Templates() );
     }
 #endif /* TEMPLATES */
+  else if ( p_page->GetId() == wxXmlResource::GetXRCID(_T("wxID_PAGE_EMAILS")) )
+    {
+      ThotCallback (GetPrefEmailsBase() + EmailsMenu, INTEGER_DATA, (char*) 2);
+      SetupDialog_Emails( GetProp_Emails() );
+    }
+  else if ( p_page->GetId() == wxXmlResource::GetXRCID(_T("wxID_PAGE_PASSWORDS")) )
+    {
+      ThotCallback (GetPrefPasswordsBase() + PasswordsMenu, INTEGER_DATA, (char*) 2);
+      SetupDialog_Passwords( GetProp_Passwords() );
+    }
 
   ThotCallback (MyRef, INTEGER_DATA, (char*) 2);
 }
@@ -1538,6 +1738,9 @@ void PreferenceDlgWX::OnCancel( wxCommandEvent& event )
 #ifdef TEMPLATES
   ThotCallback (GetPrefTemplatesBase() + TemplatesMenu, INTEGER_DATA, (char*) 0);
 #endif /* TEMPLATES */
+  ThotCallback (GetPrefEmailsBase() + EmailsMenu, INTEGER_DATA, (char*) 0);
+  ThotCallback (GetPrefPasswordsBase() + PasswordsMenu, INTEGER_DATA, (char*) 0);
+
   ThotCallback (MyRef, INTEGER_DATA, (char*) 0);
   m_OnApplyLock = FALSE;
 }

@@ -131,8 +131,7 @@ UnicodeFallbackEntry	UnicodeFallbackTable[] =
     /* ensp     */ {8194, 1130}, /* en space, U+2002 ISOpub */
     /* emsp     */ {8195, 1160}, /* em space, U+2003 ISOpub */
     /* thinsp   */ {8201, 1129}, /* thin space, U+2009 ISOpub */
-    /*InvisibleComa*/ {8203, 1129}, /* thin space, U+2009 ISOpub */
-    /* zwnj     */ {8204, 1063}, /* zero width non-joiner, U+200C NEW RFC 2070 */
+       /* zwnj     */ {8204, 1063}, /* zero width non-joiner, U+200C NEW RFC 2070 */
     /* zwj      */ {8205, 1063}, /* zero width joiner, U+200D NEW RFC 2070 */
     /* lrm      */ {8206, 1063}, /* left-to-right mark, U+200E NEW RFC 2070 */
     /* rlm      */ {8207, 1063}, /* right-to-left mark, U+200F NEW RFC 2070 */
@@ -164,6 +163,7 @@ UnicodeFallbackEntry	UnicodeFallbackTable[] =
     /* frasl    */ {8260, 164},  /* fraction slash, U+2044 NEW */
     /*ApplyFunction*/ {8289, 1129}, /* thin space, U+2009 ISOpub */
     /*InvisibleTimes*/ {8290, 1129}, /* thin space, U+2009 ISOpub */
+    /*InvisibleComa*/ {8291, 1129}, /* thin space, U+2009 ISOpub */
     /* euro     */ {8364, 2206}, /* euro sign, U+20AC NEW */
     /*TripleDot */ {8411, 188},  /* tdot, U+20DB ISOtech */
     /* image    */ {8465, 193},  /* blackletter capital I = imaginary part,  U+2111 ISOamso */
@@ -303,7 +303,7 @@ static int          CharLevelElement[] =
     HTML_EL_Keyboard, HTML_EL_Variable_, HTML_EL_Cite, HTML_EL_ABBR,
     HTML_EL_ACRONYM,
     HTML_EL_Font_, HTML_EL_Quotation, HTML_EL_Subscript, HTML_EL_Superscript,
-    HTML_EL_Span, HTML_EL_BDO, HTML_EL_INS, HTML_EL_DEL,
+    HTML_EL_Span, HTML_EL_BDO, HTML_EL_ins, HTML_EL_del,
     HTML_EL_IMG, HTML_EL_Input,
     HTML_EL_Option, HTML_EL_OptGroup, HTML_EL_Option_Menu,
     HTML_EL_Text_Input, HTML_EL_Password_Input, HTML_EL_File_Input,
@@ -322,6 +322,7 @@ static int          BlockLevelElement[] =
     HTML_EL_H1, HTML_EL_H2, HTML_EL_H3, HTML_EL_H4, HTML_EL_H5, HTML_EL_H6,
     HTML_EL_Paragraph, HTML_EL_Pseudo_paragraph, HTML_EL_Text_Area,
     HTML_EL_Term, HTML_EL_Address, HTML_EL_LEGEND, HTML_EL_CAPTION,
+    HTML_EL_INS, HTML_EL_DEL, HTML_EL_Division,
     0};
 
 /* start tags that imply the end of a current element */
@@ -1066,17 +1067,15 @@ static ThotBool IsEmptyElement (Element el)
 }
 
 /*----------------------------------------------------------------------
-  IsCharacterLevelElement return TRUE if element el is a
+  IsCharacterLevelType return TRUE if element type is a
   character level element, FALSE if not.
   ----------------------------------------------------------------------*/
-ThotBool IsCharacterLevelElement (Element el)
+ThotBool IsCharacterLevelType (ElementType elType)
 {
-  ElementType      elType;
   int              i;
   ThotBool         ret;
 
   ret = FALSE;
-  elType = TtaGetElementType (el);
   if (strcmp (TtaGetSSchemaName (elType.ElSSchema), "HTML") != 0)
     return ret;
   i = 0;
@@ -1089,16 +1088,27 @@ ThotBool IsCharacterLevelElement (Element el)
 }
 
 /*----------------------------------------------------------------------
-  IsBlockElement  return TRUE if element el is a block element.
+  IsCharacterLevelElement return TRUE if element el is a
+  character level element, FALSE if not.
   ----------------------------------------------------------------------*/
-ThotBool IsBlockElement (Element el)
+ThotBool IsCharacterLevelElement (Element el)
 {
-  ElementType   elType;
+  ElementType      elType;
+
+  elType = TtaGetElementType (el);
+  return IsCharacterLevelType (elType);
+}
+
+/*----------------------------------------------------------------------
+  IsBlockElementType  return TRUE if element type is a block element.
+  Same as IsBlockElement but just with the element type.
+  ----------------------------------------------------------------------*/
+ThotBool IsBlockElementType (ElementType elType)
+{
   int           i;
   ThotBool      ret;
 
   ret = FALSE;
-  elType = TtaGetElementType (el);
   if (strcmp (TtaGetSSchemaName (elType.ElSSchema), "HTML") != 0)
     return ret;
   i = 0;
@@ -1108,6 +1118,17 @@ ThotBool IsBlockElement (Element el)
   if (BlockLevelElement[i] == elType.ElTypeNum)
     ret = TRUE;
   return ret;
+}
+
+/*----------------------------------------------------------------------
+  IsBlockElement  return TRUE if element el is a block element.
+  ----------------------------------------------------------------------*/
+ThotBool IsBlockElement (Element el)
+{
+  ElementType   elType;
+
+  elType = TtaGetElementType (el);
+  return IsBlockElementType (elType);
 }
 
  
@@ -2622,7 +2643,13 @@ static void EndOfCDataLine (char c)
   ----------------------------------------------------------------------*/
 static void EndOfCData (char c)
 {
+  ElementType         elType;
+
   CloseCDataLine (c);
+  HTMLcontext.lastElementClosed = TRUE;
+  elType.ElSSchema = DocumentSSchema;
+  elType.ElTypeNum = HTML_EL_CDATA;
+  HTMLcontext.lastElement = TtaGetTypedAncestor (HTMLcontext.lastElement, elType);
 }
 
 /*----------------------------------------------------------------------
@@ -3526,7 +3553,7 @@ static void         PutLessAndSpace (char c)
 /*----------------------------------------------------------------------
   StartOfComment  Beginning of a HTML comment.
   ----------------------------------------------------------------------*/
-static void         StartOfComment (char c)
+static void StartOfComment (char c)
 {
   ElementType      elType;
   Element          elComment, elCommentLine;
@@ -3559,7 +3586,7 @@ static void         StartOfComment (char c)
 /*----------------------------------------------------------------------
   PutInComment    put character c in the current HTML comment.
   ----------------------------------------------------------------------*/
-static void         PutInComment (unsigned char c)
+static void PutInComment (unsigned char c)
 {
   ElementType       elType;
   Element           elCommentLine, prevElCommentLine;
@@ -3607,7 +3634,7 @@ static void         PutInComment (unsigned char c)
 /*----------------------------------------------------------------------
   EndOfComment    End of a HTML comment.
   ----------------------------------------------------------------------*/
-static void         EndOfComment (char c)
+static void EndOfComment (char c)
 {
   if (LgBuffer > 0)
     {
@@ -3624,7 +3651,7 @@ static void         EndOfComment (char c)
 /*----------------------------------------------------------------------
   StartOfASP  Beginning of a HTML ASP
   ----------------------------------------------------------------------*/
-static void         StartOfASP (char c)
+static void StartOfASP (char c)
 {
   ElementType      elType;
   Element          elASP, elASPLine;
@@ -3657,7 +3684,7 @@ static void         StartOfASP (char c)
 /*----------------------------------------------------------------------
   PutInASP    put character c in the current HTML ASP
   ----------------------------------------------------------------------*/
-static void         PutInASP (unsigned char c)
+static void PutInASP (unsigned char c)
 {
   ElementType       elType;
   Element           elASPLine, prevElASPLine;
@@ -3758,7 +3785,7 @@ static void EndOfDoctypeDecl (char c)
   unsigned char  *buffer;
 
   CloseBuffer ();
-  buffer = (unsigned char*)TtaGetMemory (strlen ((char *)inputBuffer) + 4);
+  buffer = (unsigned char*)TtaGetMemory (strlen ((char *)inputBuffer) + 20);
   strcpy ((char *)buffer, (char *)"<!DOCTYPE ");
   j = strlen ((char *)buffer);
   /* process the Doctype declaration available in inputBuffer */
@@ -4096,15 +4123,23 @@ static sourceTransition sourceAutomaton[] =
     {22, '*', (Proc) PutQuestionMark, 20},
     /* state 23: "<![*" has been read, wait for CDATA */
     {23, '[', (Proc) StartCData, 24},
-    {23, '*', (Proc) PutInBuffer, 23},
+    {23, 'C', (Proc) PutInBuffer, 23},
+    {23, 'D', (Proc) PutInBuffer, 23},
+    {23, 'A', (Proc) PutInBuffer, 23},
+    {23, 'T', (Proc) PutInBuffer, 23},
+    {23, ']', (Proc) PutInBuffer, -1},
+    {23, '*', (Proc) PutInBuffer, 15},
     /* state 24: "<![CDATA[" has been read: read its contents */
-    {24, '>', (Proc) Do_nothing, 0},
-    {24, ']', (Proc) Do_nothing, 24},
+    {24, ']', (Proc) PutInBuffer, 25},
     {24, '\n', (Proc) EndOfCDataLine, 24},
     {24, '*', (Proc) PutInBuffer, 24},
-    /* state 25: "]" has been read: check the end of CDATA */
-    {25, ']', (Proc) EndOfCData, 24},
-    {25, '*', (Proc) PutInBuffer, -1},
+    /* state 25: "]" has been read: check the second "]" */
+    {25, ']', (Proc) PutInBuffer, 26},
+    {25, '*', (Proc) PutInBuffer, 24},
+    /* state 26: "]]" has been read: check the end of CDATA */
+    {26, ']', (Proc) PutInBuffer, 26},
+    {26, '>', (Proc) EndOfCData, 0},
+    {26, '*', (Proc) PutInBuffer, 24},
 
     /* sub automaton for reading entities in various contexts */
     /* state -1 means "return to calling state" */
@@ -4912,7 +4947,7 @@ static void ReadTextFile (FILE *infile, char *textbuf, Document doc,
       if (charRead != EOS)
         {
           /* a valid character has been read */
-          if (charRead == '@' && DocumentTypes[doc] == docLog)
+          if (charRead == '@' && DocumentTypes[doc] == docLog && LgBuffer == 0)
             {
               attrType.AttrTypeNum = TextFile_ATTR_IsLink;
               val = TextFile_ATTR_IsLink_VAL_Yes_;
@@ -5885,7 +5920,7 @@ void CheckBlocksInCharElem (Document doc)
   /* check all block-level elements whose parent 
      was a character-level element */
   elTBC = FirstElemToBeChecked;
-  while (elTBC != NULL)
+  while (elTBC)
     {
       el = elTBC->Elem;
       while (el != NULL)
@@ -6114,13 +6149,12 @@ static Element ParentOfType (Element el, int typeNum)
 void CheckAbstractTree (Document doc, ThotBool isXTiger)
 {
   ElementType	elType, newElType, headElType;
-  Element	elRoot;
-  Element	el, elHead, elBody, elFrameset, elNoframes, nextEl, newEl,
-    prevEl, lastChild, firstTerm, lastTerm, termList, child,
-		parent, firstDef, lastDef, defList, firstEntry, lastEntry,
-    glossary, list, elText, previous;
-  ThotBool	ok, moved;
-  SSchema       htmlSSchema;
+  Element	    elRoot, glossary, list, elText, previous;
+  Element	    el, elHead, elBody, elFrameset, elNoframes, nextEl, newEl;
+  Element	    prevEl, lastChild, firstTerm, lastTerm, termList, child;
+	Element		  parent, firstDef, lastDef, defList, firstEntry, lastEntry;
+  ThotBool	  ok, moved;
+  SSchema     htmlSSchema;
 
   /* the root HTML element only accepts elements HEAD, BODY, FRAMESET
      Comment and PI as children */
@@ -7071,6 +7105,39 @@ void ParseExternalHTMLDoc (Document doc, FILE * infile, CHARSET charset, char *e
   DocumentSSchema = NULL;
   HTMLcontext.doc = 0;
   return;
+}
+
+/*-------------------------------------------------------------------------------
+  ClearHTMLParser 
+  Clear all parser variables
+  ------------------------------------------------------------------------------*/
+void ClearHTMLParser ()
+{
+  PtrElemToBeChecked  elTBC;
+
+  /* clean up the list of ElemToBeChecked */
+  elTBC = FirstElemToBeChecked;
+  while (FirstElemToBeChecked)
+    {
+      LastElemToBeChecked = FirstElemToBeChecked->nextElemToBeChecked;
+      TtaFreeMemory (FirstElemToBeChecked);
+      FirstElemToBeChecked = LastElemToBeChecked;
+    }
+  FirstElemToBeChecked = NULL;
+  LastElemToBeChecked = NULL;
+  lastElemEntry = 0;
+  lastAttribute = NULL;
+  lastAttrElement = NULL;
+  lastAttrEntry = NULL;
+  UnknownAttr = FALSE;
+  ReadingAnAttrValue = FALSE;
+  CommentText = NULL;
+  UnknownTag = FALSE;
+  LastCharInWorkBuffer = 0;
+  FileBuffer[0] = EOS;
+  LgEntityName = 0;
+  EntityTableEntry = 0;
+  CharRank = 0;
 }
 
 /*-------------------------------------------------------------------------------

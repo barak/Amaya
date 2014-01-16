@@ -53,7 +53,7 @@ TtcNextElement
 
 <Editor_WX>
 +config_WX
-#+templates
++templates
 +browsing_WX
 +edit_WX
 HelpLocal
@@ -246,7 +246,7 @@ DAVLockDocument
 
 ######### BROWSING
 [browsing]
-+annot
++annot-module
 +views
 +print
 AmayaClose
@@ -298,7 +298,7 @@ TtcCopySelection
 TtcSearchText
 
 [browsing_WX]
-+annot
++annot-module
 +views_WX
 +print
 AmayaClose
@@ -352,7 +352,7 @@ ReadAsEUC_JP
 ReadAsSHIFT_JIS
 TtcCopySelection
 TtcSearchText
-
+SendByMail
 
 ########### EDITING
 [edit]
@@ -451,13 +451,14 @@ HelpXml
 HelpDocument
 HelpAttributes
 HelpChanging
+HelpTemplating
 HelpPublishing
 HelpAccess
 HelpXml
 #&MenuAttribute
 &NewXHTML
 &NewMathML
-#&NewSVG
+&NewSVG
 &NewCss
 &RemoveDoctype
 &AddDoctype
@@ -762,7 +763,7 @@ HelpNumbering
 [makeid]
 &MakeIDMenu
 
-[annot]
+[annot-module]
 AnnotateSelection
 AnnotateDocument
 DeleteAnnotation

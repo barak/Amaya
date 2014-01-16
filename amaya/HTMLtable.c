@@ -27,6 +27,8 @@
 static Element      CurrentColumn = NULL;
 static Element      CurrentTable = NULL;
 static Element      LastPastedEl = NULL; // last pasted table element
+static Element      DeletedTable = NULL; // the current deleted table element
+static Element      ParentDeletedTable = NULL; // the parent of the deleted table
 static int          PreviousColspan;
 static int          PreviousRowspan;
 
@@ -84,26 +86,114 @@ static Element GetSiblingCell (Element cell, ThotBool before, ThotBool inMath)
 {
   ElementType         elType;
   SSchema             cellSS;
+  Element             sibling, child, ancestor, prev;
 
-  if (cell)
+  sibling = cell;
+  if (sibling)
     {
       cellSS = TtaGetElementType(cell).ElSSchema;
       do
         {
           if (before)
-            TtaPreviousSibling (&cell);
+            TtaPreviousSibling (&sibling);
           else
-            TtaNextSibling (&cell);
-          elType = TtaGetElementType (cell);
-          if (elType.ElSSchema == cellSS &&
-              ((inMath && elType.ElTypeNum == MathML_EL_MTD) ||
-               (!inMath && (elType.ElTypeNum == HTML_EL_Data_cell ||
-                            elType.ElTypeNum == HTML_EL_Heading_cell))))
-            return cell;
+            TtaNextSibling (&sibling);
+          if (sibling)
+            {
+              elType = TtaGetElementType (sibling);
+              if (!strcmp (TtaGetSSchemaName (elType.ElSSchema), "Template"))
+                /* it's a Template element. Look for its first descendant that
+                   is not a Template element */
+                {
+                  child = sibling;
+                  do
+                    {
+                      child = TtaGetFirstChild (child);
+                      if (child)
+                        elType = TtaGetElementType (child);
+                    }
+                  while (child &&
+                   !strcmp (TtaGetSSchemaName (elType.ElSSchema), "Template"));
+                  if (child)
+                    return child;
+                  else
+                    // ignore empty template elements
+                    return GetSiblingCell (sibling, before, inMath);
+                }
+              else
+                if (elType.ElSSchema == cellSS &&
+                    ((inMath && elType.ElTypeNum == MathML_EL_MTD) ||
+                     (!inMath && (elType.ElTypeNum == HTML_EL_Data_cell ||
+                                  elType.ElTypeNum == HTML_EL_Heading_cell))))
+                  return sibling;
+            }
+          else
+            /* no sibling. If the ancestor is a Template element, find the last
+               ancestor that is a Template element and take its next sibling */
+            {
+              ancestor = TtaGetParent (cell);
+              prev = NULL;
+              while (ancestor)
+                {
+                  elType = TtaGetElementType (ancestor);
+                  if (strcmp (TtaGetSSchemaName (elType.ElSSchema),"Template"))
+                    /* this ancestor is not a Template element */
+                    {
+                      /* take the sibling of the previous ancestor */
+                      if (prev)
+                        {
+                          sibling = prev;
+                          if (before)
+                            TtaPreviousSibling (&sibling);
+                          else
+                            TtaNextSibling (&sibling);
+                        }
+                      else
+                        sibling = NULL;
+                      ancestor = NULL;
+                    }
+                  else
+                    {
+                      /* this ancestor is a Template element. Remember it and
+                         get the next ancestor */
+                      prev = ancestor;
+                      sibling = ancestor;
+                      if (before)
+                        TtaPreviousSibling (&sibling);
+                      else
+                        TtaNextSibling (&sibling);
+                      if (!sibling)
+                        ancestor = TtaGetParent (ancestor);
+                      else
+                        {
+                          elType = TtaGetElementType (sibling);
+                          if (strcmp (TtaGetSSchemaName (elType.ElSSchema),
+                                      "Template"))
+                            /* not a template element */
+                            ancestor = NULL;
+                          else
+                            /* it's a Template element. Look for its first
+                               descendant that is not a Template element */
+                            {
+                              child = sibling;
+                              do
+                                {
+                                  child = TtaGetFirstChild (child);
+                                  if (child)
+                                    elType = TtaGetElementType (child);
+                                }
+                              while (child &&
+                                     !strcmp (TtaGetSSchemaName (elType.ElSSchema), "Template"));
+                              return child;
+                            } 
+                        }
+                    }
+                }
+            }
         } 
-      while (cell);
+      while (sibling);
     }
-  return cell;
+  return sibling;
 }
 
 /*----------------------------------------------------------------------
@@ -121,6 +211,14 @@ static Element GetFirstCellOfRow (Element row, ThotBool inMath)
     {
       rowType = TtaGetElementType (row);
       el = TtaGetFirstChild (row);
+      // skip template elements
+      elType = TtaGetElementType (el);
+      while (el && !strcmp (TtaGetSSchemaName (elType.ElSSchema), "Template"))
+        {
+          el = TtaGetFirstChild (el);
+          if (el)
+            elType = TtaGetElementType (el);
+        }
       while (!firstCell && el)
         {
           elType = TtaGetElementType (el);
@@ -958,11 +1056,15 @@ static Element NextRow (Element row)
             }
           while (child &&
                  !strcmp (TtaGetSSchemaName (elType.ElSSchema), "Template"));
-          return child;
+          if (child)
+            return child;
+          else
+            // ignore empty template elements
+            return NextRow (next);
         }
     }
   else
-    /* no sibling. If the ancestor is a Tepmlate element, find the last
+    /* no sibling. If the ancestor is a Template element, find the last
        ancestor that is a Template element and take its next sibling */
     {
       ancestor = TtaGetParent (row);
@@ -988,7 +1090,32 @@ static Element NextRow (Element row)
               /* this ancestor is a Template element. Remember it and get the
                  next ancestor */
               prev = ancestor;
-              ancestor = TtaGetParent (ancestor);
+              next = ancestor;
+              TtaNextSibling (&next);
+              if (!next)
+                ancestor = TtaGetParent (ancestor);
+              else
+                {
+                  elType = TtaGetElementType (next);
+                  if (strcmp (TtaGetSSchemaName (elType.ElSSchema), "Template"))
+                    /* not a template element */
+                    ancestor = NULL;
+                  else
+                    /* it's a Template element. Look for its first descendant
+                       that is not a Template element */
+                    {
+                      child = next;
+                      do
+                        {
+                          child = TtaGetFirstChild (child);
+                          if (child)
+                            elType = TtaGetElementType (child);
+                        }
+                      while (child &&
+                             !strcmp (TtaGetSSchemaName (elType.ElSSchema), "Template"));
+                      return child;
+                    } 
+                }
             }
         }
     }
@@ -1112,7 +1239,7 @@ void CheckAllRows (Element table, Document doc, ThotBool placeholder,
               while (nextCell)
                 {
                   cell = nextCell;
-                  TtaNextSibling (&nextCell);
+                  nextCell = GetSiblingCell (nextCell, FALSE, inMath);
                   elType = TtaGetElementType (cell);
                   if (!inMath && elType.ElTypeNum == HTML_EL_Table_cell)
                     {
@@ -1402,6 +1529,10 @@ void CheckTable (Element table, Document doc)
   ThotBool            previousStructureChecking;
   ThotBool            before, inMath;
 
+  if (DocumentMeta[doc] && DocumentMeta[doc]->isTemplate)
+    /* do not check the structure of a table when loading a template.
+       Checking will be done when instanciating a template */
+    return;
   firstcolhead = NULL;
   previousStructureChecking = 0;
   if (table)
@@ -1758,7 +1889,7 @@ void NewCell (Element cell, Document doc, ThotBool generateColumn,
               ThotBool generateEmptyCells, ThotBool check)
 {
   Element             newcell, row, colhead, lastColhead, chead, pcell,
-    spannedCell;
+                      spannedCell;
   ElementType         elType;
   AttributeType       attrTypeCspan, attrTypeRspan, attrTypeRefC;
   Attribute           attr;
@@ -2367,7 +2498,36 @@ static void ClearColumn (Element colhead, Document doc)
 }
 
 /*----------------------------------------------------------------------
-  DeleteDeleteTBody
+  DeleteTable
+  A table will be deleted by the user.
+  ----------------------------------------------------------------------*/
+ThotBool DeleteTable (NotifyElement * event)
+{
+  if (DeletedTable == NULL)
+    {
+      // don't register children tables
+      ParentDeletedTable = TtaGetParent (event->element);
+      DeletedTable = event->element;
+    }
+  return FALSE;		/* let Thot perform normal operation */
+}
+
+/*----------------------------------------------------------------------
+  TableDeleted
+  A table has been deleted
+  ----------------------------------------------------------------------*/
+void TableDeleted (NotifyElement *event)
+{
+  if (DeletedTable && ParentDeletedTable == event->element)
+    {
+      // the deleted table is the registered table
+      DeletedTable = NULL;
+      ParentDeletedTable = NULL;
+    }
+}
+
+/*----------------------------------------------------------------------
+  DeleteTBody
   A tbody will be deleted by the user.
   ----------------------------------------------------------------------*/
 ThotBool DeleteTBody (NotifyElement * event)
@@ -2375,31 +2535,88 @@ ThotBool DeleteTBody (NotifyElement * event)
   Element             el, sibling;
   ElementType         elType;
   Document            doc = event->document;
+  int                 end;
+  ThotBool            before;
 
+  if (event->info == 1)
+    // do nothing when undo is performed
+    return FALSE;		/* let Thot perform normal operation */
   LastPastedEl = NULL;
   el = event->element;
+  // skip siblings that are not tbody elements
   sibling = el;
   TtaNextSibling (&sibling);
-  elType = TtaGetElementType (sibling);
-  if (elType.ElTypeNum == HTML_EL_tbody)
+  if (sibling)
+    elType = TtaGetElementType (sibling);
+  while (sibling && (elType.ElSSchema != event->elementType.ElSSchema ||
+                     elType.ElTypeNum != event->elementType.ElTypeNum))
+    {
+      TtaNextSibling (&sibling);
+      if (sibling)
+        elType = TtaGetElementType (sibling);
+    }
+  if (sibling && elType.ElSSchema == event->elementType.ElSSchema &&
+      elType.ElTypeNum == event->elementType.ElTypeNum)
+    // there is a following sibling tbody
     return FALSE;		/* let Thot perform normal operation */
   sibling = el;
   TtaPreviousSibling (&sibling);
   elType = TtaGetElementType (sibling);
-  if (elType.ElTypeNum == HTML_EL_tbody)
+  while (sibling && (elType.ElSSchema != event->elementType.ElSSchema ||
+                     elType.ElTypeNum != event->elementType.ElTypeNum))
+    {
+      TtaPreviousSibling (&sibling);
+      elType = TtaGetElementType (sibling);
+    }
+  if (sibling && elType.ElSSchema == event->elementType.ElSSchema &&
+      elType.ElTypeNum == event->elementType.ElTypeNum)
+    // there is a previous sibling tbody
     return FALSE;		/* let Thot perform normal operation */
+
   // remove the table instead of the tbody
   elType = TtaGetElementType (el);
   elType.ElTypeNum = HTML_EL_Table_;
   el = TtaGetTypedAncestor (el, elType);
-  if (el)
+  if (el &&
+      (el == DeletedTable || TtaIsAncestor (el, DeletedTable)))
+    return FALSE;		/* let Thot perform normal operation */
+  else
     {
       if (TtaPrepareUndo (doc))
-      TtaRegisterElementDelete (el, doc);
+        TtaRegisterElementDelete (el, doc);
+      // prepare the next selection
+      sibling = GetNoTemplateSibling (el, FALSE);
+      before = (sibling == NULL);
+      if (before)
+        sibling = GetNoTemplateSibling (el, TRUE);
       TtaDeleteTree (el, doc);
       TtaSetDocumentModified (doc);
+      elType = TtaGetElementType (sibling);
+      while (sibling)
+        {
+          elType = TtaGetElementType (sibling);
+          if (!TtaIsLeaf (elType))
+            el = GetNoTemplateChild (sibling, !before);
+          else
+            el = NULL;
+          if (el)
+            sibling = el;
+          else
+            {
+              if (elType.ElTypeNum != HTML_EL_TEXT_UNIT)
+                TtaSelectElement (doc, sibling);
+              else if (!before)
+                TtaSelectString (doc, sibling, 1, 0);
+              else
+                {
+                  end = TtaGetElementVolume (sibling);
+                  TtaSelectString (doc, sibling, end + 1, end);
+                }
+              sibling = NULL;
+            }
+        }
+      return TRUE;		/* don't let Thot perform normal operation */
     }
-  return TRUE;		/* don't let Thot perform normal operation */
 }
 
 /*----------------------------------------------------------------------
@@ -3206,7 +3423,7 @@ void RowPasted (NotifyElement * event)
 static void MoveCellContents (Element nextCell, Element cell,
                               Element* previous, Document doc, ThotBool inMath)
 {
-  Element             child, nextChild;
+  Element             child, nextChild, prev;
   ElementType         elType;
 
   TtaRegisterElementDelete (nextCell, doc);
@@ -3219,6 +3436,20 @@ static void MoveCellContents (Element nextCell, Element cell,
       if (inMath)
         /* get the first element contained in the CellWrapper */
         child = TtaGetFirstChild (child);
+    }
+  /* in a HTML table, if previous is an empty Element and the content of the
+     next cell is not empty, delete the empty Element */
+  if (!inMath && child && *previous)
+    {
+      elType = TtaGetElementType (*previous);
+      if (elType.ElTypeNum == HTML_EL_Element)
+        if (TtaGetElementVolume (*previous) == 0)
+          {
+            TtaRegisterElementDelete (*previous, doc);
+            prev = *previous; TtaPreviousSibling (&prev);
+            TtaDeleteTree (*previous, doc);
+            *previous = prev;
+          }
     }
   /* move the contents of this cell to the cell whose attribute colspan
      has changed */
