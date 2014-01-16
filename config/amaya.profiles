@@ -189,6 +189,7 @@ HelpAtW3C
 +struct-module
 +text-module
 +css-style
+&RemoveDeprecatedElements
 
 ################# XHTML1.1
 {XHTML 1.1}
@@ -394,6 +395,7 @@ HelpMath
 &CreateDoctypeXhtmlTransitional
 &CreateDoctypeXhtmlStrict
 &CreateDoctypeXhtmlBasic
+&CreateDoctypeXhtmlRDFa
 &CreateDoctypeHtmlTransitional
 &CreateDoctypeHtmlStrict
 
@@ -541,6 +543,7 @@ HelpLinks
 [edit-module]
 &SetOnOffINS
 &SetOnOffDEL
+&RemoveDeprecatedElements
 
 [bdi-text-module]
 &SetOnOffBDO
@@ -612,8 +615,6 @@ SelectColumn
 [tables]
 +basic-table-module
 +table-edit
-&CreateColgroup
-&CreateCol
 &CreateTHead
 &CreateTFoot
 &ChangeToDataCell
@@ -635,6 +636,7 @@ SelectColumn
 &CreateMSQRT
 &CreateMENCLOSE
 &CreateMFRAC
+&CreateMLFRAC
 &CreateMSUBSUP
 &CreateMSUB
 &CreateMSUP
@@ -717,6 +719,9 @@ HelpShortCuts
 
 [templates]
 ConfigTemplates
+CreateTemplateFromDocument
+TemplateCreateTextBox
+TemplateCreateFreeBox
 
 [spell]
 SpellCheck

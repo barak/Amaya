@@ -34,10 +34,9 @@ extern Element NewColumnHead ( Element lastcolhead,
                                Document doc,
                                ThotBool inMath,
                                ThotBool generateEmptyCells );
-extern ThotBool RemoveColumn ( Element colhead,
-                               Document doc,
-                               ThotBool ifEmpty,
-                               ThotBool inMath );
+extern void NewColElement ( Element colhead,
+                            ThotBool before,
+                            Document doc );
 extern Element NextTableRow ( Element row );
 extern void CheckAllRows ( Element table,
                            Document doc,
@@ -58,6 +57,13 @@ extern void CheckDeleteParentTable ( Element el );
 extern ThotBool DeleteTable ( NotifyElement * event );
 extern void TableDeleted ( NotifyElement *event );
 extern ThotBool DeleteTBody ( NotifyElement * event );
+extern ThotBool ModifySpan ( NotifyAttribute * event );
+extern void SpanModified ( NotifyAttribute * event );
+extern void SpanCreated ( NotifyAttribute * event );
+extern ThotBool DeleteSpan ( NotifyAttribute * event );
+extern ThotBool DeleteColElement ( NotifyElement * event );
+extern ThotBool CreateColElement ( NotifyElement * event );
+extern ThotBool PasteColElement ( NotifyOnValue * event );
 extern ThotBool DeleteColumn ( NotifyElement * event );
 extern void ColumnDeleted ( NotifyElement *event );
 extern void ColumnPasted ( NotifyElement * event );
@@ -128,10 +134,9 @@ extern Element NewColumnHead ( Element lastcolhead,
                                  Document doc,
                                  ThotBool inMath,
                                  ThotBool generateEmptyCells );
-extern ThotBool RemoveColumn ( Element colhead,
-                                 Document doc,
-                                 ThotBool ifEmpty,
-                                 ThotBool inMath );
+extern void NewColElement ( Element colhead,
+                              ThotBool before,
+                              Document doc );
 extern Element NextTableRow ( Element row );
 extern void CheckAllRows ( Element table,
                              Document doc,
@@ -152,6 +157,13 @@ extern void CheckDeleteParentTable ( Element el );
 extern ThotBool DeleteTable ( NotifyElement * event );
 extern void TableDeleted ( NotifyElement *event );
 extern ThotBool DeleteTBody ( NotifyElement * event );
+extern ThotBool ModifySpan ( NotifyAttribute * event );
+extern void SpanModified ( NotifyAttribute * event );
+extern void SpanCreated ( NotifyAttribute * event );
+extern ThotBool DeleteSpan ( NotifyAttribute * event );
+extern ThotBool DeleteColElement ( NotifyElement * event );
+extern ThotBool CreateColElement ( NotifyElement * event );
+extern ThotBool PasteColElement ( NotifyOnValue * event );
 extern ThotBool DeleteColumn ( NotifyElement * event );
 extern void ColumnDeleted ( NotifyElement *event );
 extern void ColumnPasted ( NotifyElement * event );

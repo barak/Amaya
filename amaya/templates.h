@@ -8,32 +8,47 @@
 #include "MENUconf.h"
 
 
-/* Structure of a template */
+#define Template_Current_Version "0.9"
+
+
+typedef enum _TemplateFlag
+{
+  templNone = 0,
+  templTemplate    = 1 << 0,  // Template
+  templLibraryFlag = 1 << 1,   // Library (implies template).
+  templLibrary     = templLibraryFlag+templTemplate,
+  templInstance    = 1 << 2,  // Instance of template
+  
+  templloaded      = 1 << 4,  // Template is really loaded.
+  
+  templInternal    = 1 << 8,  // Internal only, no edited document.
+  templPredefined  = 1 << 9   // predefined library (base or html).
+}TemplateFlag;
+
+
 struct _XTigerTemplate;
 typedef struct _XTigerTemplate *XTigerTemplate;
-
-//Private structure of a template
 struct _XTigerTemplate
-{	
-  char*           name;           //Template name
-  char*           version;        //Version of XTiger language
-  char*           templateVersion;//Version of template
-  ThotBool        isLibrary;			//Is this a library? (otherway it's a template)
-  ThotBool        isPredefined;   //Is this the predefined library
-  ThotBool        isLoaded;       //Is the template is loaded ?
-  HashMap         libraries;			//Imported libraries (StringHashMap<XTigerTemplate>)
-  HashMap         simpleTypes;		//All simple types declared in the document (KeywordHashMap<Declaration>)
-  HashMap         elements;				//All element types declared in the document (KeywordHashMap<Declaration>)
-  HashMap         components;			//All component types declared in the document (KeywordHashMap<Declaration>)
-  HashMap         unions;				  //All union types declared in the document (KeywordHashMap<Declaration>)
-  HashMap         unknowns;       //All unknown declarations, used in template parsing,
-                                  // must be empty after parsing. (KeywordHashMap<Declaration>)
-  Document        doc;            //Use to store component structures
-  int             users;          //Number of documents using this template
+{
+  int           state;          // Union of TemplateFlag
+  char*         uri;            // Template URI (formerly name).
+  char*         base_uri;       // URI of template if this is an instance.
+  char*         version;        // Version of XTiger language
+  char*         templateVersion;// Version of template
+
+  HashMap       libraries;      // Imported libraries (StringHashMap<XTigerTemplate>)
   
-  DLList          errorList;      //Error string list (DLList<char*>)
-                                  //  Used until new error system is written.
+  SearchSet     simpleTypes;    // All simple types declared in the document (SearchSet<Declaration, char*>)
+  SearchSet     elements;       // All element types declared in the document (SearchSet<Declaration, char*>)
+  SearchSet     components;     // All component types declared in the document (SearchSet<Declaration, char*>)
+  SearchSet     unions;         // All union types declared in the document (SearchSet<Declaration, char*>)
+  SearchSet     unknowns;       // All unknown declarations, used in template parsing (SearchSet<Declaration, char*>)
+
+  Document      doc;            // Use to store component structures
+  int           ref;            // Reference counting
+  SList         errorList;      // Error string list (DLList<char*>)
 };
+
 
 // Notes : 
 // All KeywordHashMap<Declaration> must embed their own copy of their keys
@@ -72,9 +87,11 @@ typedef struct _Component
 
 typedef struct _Union
 {
-	HashMap  include;  //KeywordHashMap<Declaration>
-	HashMap  exclude;  //KeywordHashMap<Declaration>
-  HashMap  expanded; //KeywordHashMap<Declaration>
+  SearchSet  include;  // SearchSet<Declaration, char*>
+  SearchSet  exclude;  // SearchSet<Declaration, char*>
+  SearchSet  expanded; // SearchSet<Declaration, char*>
+  char*      includeStr;
+  char*      excludeStr;
 } Union;
 
 /* Structure of a declaration */

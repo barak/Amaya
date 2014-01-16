@@ -69,7 +69,6 @@ CSSProperty;
 static int           LineNumber = -1; /* The line where the error occurs */
 static int           NewLineSkipped = 0;
 static int           RedisplayImages = 0; /* number of BG images loading */
-static int           RedisplayDoc = 0; /* document to be redisplayed */
 static int           Style_parsing = 0; /* > 0 when parsing a set of CSS rules */
 static char         *ImportantPos = NULL;
 static ThotBool      RedisplayBGImage = FALSE; /* TRUE when a BG image is inserted */
@@ -82,7 +81,7 @@ static ThotBool      All_sides = FALSE; // TRUE when "boder valus must be displa
   ----------------------------------------------------------------------*/
 static char *SkipWord (char *ptr)
 {
-  while (isalnum((int)*ptr) || *ptr == '-' || *ptr == '#' || *ptr == '%')
+  while (isalnum((int)*ptr) || *ptr == '-' || *ptr == '#' || *ptr == '%' || *ptr == '.')
     ptr++;
   return (ptr);
 }
@@ -132,7 +131,7 @@ char *SkipBlanksAndComments (char *ptr)
 static int NumberOfValues (char *ptr)
 {
   int n = 0;
-  while (*ptr != EOS && *ptr != ';' &&  *ptr != '}')
+  while (*ptr != EOS && *ptr != ';' &&  *ptr != '}' &&  *ptr != ',')
     {
       ptr = SkipBlanksAndComments (ptr);
       n++;
@@ -303,7 +302,12 @@ static char *SkipProperty (char *ptr, ThotBool reportError)
 {
   char       *deb;
   char        c;
+  ThotBool    warn;
 
+  // check if Amaya should report CSS warnings
+  TtaGetEnvBoolean ("CSS_WARN", &warn);
+  if (!warn)
+    reportError = FALSE;
   deb = ptr;
   while (*ptr != EOS && *ptr != ';' && *ptr != '}' && *ptr != '}')
     {
@@ -709,6 +713,7 @@ static char *ParseCSSColor (char *cssRule, PresentationValue * val)
   unsigned short      greenval = 0;	/* composant of each RGB       */
   unsigned short      blueval = 0;	/* default to red if unknown ! */
   int                 best = 0;	/* best color in list found */
+  ThotBool            warn;
 
   cssRule = SkipBlanksAndComments (cssRule);
   val->typed_data.unit = UNIT_INVALID;
@@ -800,11 +805,29 @@ static char *ParseCSSColor (char *cssRule, PresentationValue * val)
       val->typed_data.unit = VALUE_INHERIT;
       cssRule += 7;
     }
-
+  else if (!strncasecmp (cssRule, "hsl", 3))
+    {
+      val->typed_data.unit = VALUE_INHERIT;
+      // check if Amaya should report CSS warnings
+      TtaGetEnvBoolean ("CSS_WARN", &warn);
+      if (warn)
+	cssRule = SkipValue ("Warning: CSS3 value not supported", cssRule);
+      else
+	cssRule = SkipValue (NULL, cssRule);
+    }
+  else if (!strncasecmp (cssRule, "rgba", 4))
+    {
+      val->typed_data.unit = VALUE_INHERIT;
+      // check if Amaya should report CSS warnings
+      TtaGetEnvBoolean ("CSS_WARN", &warn);
+      if (warn)
+	cssRule = SkipValue ("Warning: CSS3 value not supported", cssRule);
+      else
+	cssRule = SkipValue (NULL, cssRule);
+    }
   if (ptr == cssRule)
     {
-      cssRule = SkipWord (cssRule);
-      CSSParseError ("Invalid color value", ptr, cssRule);
+      cssRule = SkipValue ("Invalid color value", cssRule);
       val->typed_data.value = 0;
       val->typed_data.unit = UNIT_INVALID;
     }
@@ -1724,7 +1747,10 @@ static char *ParseCSSFloat (Element element, PSchema tsch,
   DisplayMode         dispMode;
   PresentationValue   pval;
   char               *ptr = cssRule;
+  ThotBool            warn;
 
+  // check if Amaya should report CSS warnings
+  TtaGetEnvBoolean ("CSS_WARN", &warn);
   pval.typed_data.value = 0;
   pval.typed_data.unit = UNIT_BOX;
   pval.typed_data.real = FALSE;
@@ -1757,7 +1783,12 @@ static char *ParseCSSFloat (Element element, PSchema tsch,
           !strncasecmp (cssRule, "outside", 7) ||
           !strncasecmp (cssRule, "start", 5) ||
           !strncasecmp (cssRule, "end", 3))
-        cssRule = SkipValue ("Warning: CSS3 value not supported", cssRule);
+	{
+	  if (warn)
+	    cssRule = SkipValue ("Warning: CSS3 value not supported", cssRule);
+	  else
+	    cssRule = SkipValue (NULL, cssRule);
+	}
       else
         cssRule = SkipValue ("Invalid float value", cssRule);
     }
@@ -1880,6 +1911,7 @@ static char *ParseCSSDisplay (Element element, PSchema tsch,
 {
   PresentationValue   pval;
   char               *ptr;
+  ThotBool            warn;
 
   pval.typed_data.unit = UNIT_REL;
   pval.typed_data.real = FALSE;
@@ -1922,7 +1954,9 @@ static char *ParseCSSDisplay (Element element, PSchema tsch,
     }
   else
     {
-      if (strncasecmp (cssRule, "table-row-group", 15) &&
+      TtaGetEnvBoolean ("CSS_WARN", &warn);
+      if (warn &&
+	  strncasecmp (cssRule, "table-row-group", 15) &&
           strncasecmp (cssRule, "table-column-group", 18) &&
           strncasecmp (cssRule, "table-header-group", 5) &&
           strncasecmp (cssRule, "table-footer-group", 6) &&
@@ -2126,7 +2160,7 @@ static char *ParseCSSUrl (char *cssRule, char **url)
         }
       /* keep the current position */
       ptr = cssRule;
-      if (saved == ')')
+      if (saved == '(')
         {
           /* remove extra spaces */
           if (cssRule[-1] == SPACE)
@@ -2166,7 +2200,8 @@ void ParseCSSImageCallback (Document doc, Element element, char *file,
   CSSImageCallbackPtr        callblock;
   Element                    el;
   PSchema                    tsch;
-  PInfoPtr                   pInfo;
+  Document                   redisplaydoc;
+  PInfoPtr                   pInfo = NULL;
   CSSInfoPtr                 css;
   PresentationContext        ctxt;
   PresentationValue          image;
@@ -2181,19 +2216,14 @@ void ParseCSSImageCallback (Document doc, Element element, char *file,
   el = callblock->el;
   tsch = callblock->tsch;
   ctxt = callblock->ctxt;
+  redisplaydoc = ctxt->doc;
   if (doc == 0 && !isnew)
     /* apply to the current document only */
-    doc = ctxt->doc;
+    doc = redisplaydoc;
   if (doc)
-    {
-      /* avoid too many redisplay */
-      dispMode = TtaGetDisplayMode (doc);
-      if (dispMode == DisplayImmediately)
-        TtaSetDisplayMode (doc, DeferredDisplay);
-    }
+    redisplaydoc = doc;
   else
     {
-      dispMode = TtaGetDisplayMode (RedisplayDoc);
       /* check if the CSS still exists */
       css = CSSList;
       while (css && css != callblock->css)
@@ -2203,10 +2233,19 @@ void ParseCSSImageCallback (Document doc, Element element, char *file,
         tsch = NULL;
     }
 
-  if (tsch && css && ctxt && ctxt->doc)
+  if (tsch && css && ctxt && redisplaydoc)
     {
       // check if the presentation schema is still there
-      pInfo = css->infos[ctxt->doc];
+      pInfo = css->infos[redisplaydoc];
+      if (pInfo == NULL && DocumentURLs[redisplaydoc] == NULL)
+        {
+          // the redisplaydoc was probably an object
+          while (redisplaydoc > 0 && pInfo == 0)
+            pInfo = css->infos[--redisplaydoc];
+          if (redisplaydoc)
+            ctxt->doc = redisplaydoc;
+        }
+
       found = FALSE;
       while (!found && pInfo)
         {
@@ -2243,29 +2282,20 @@ void ParseCSSImageCallback (Document doc, Element element, char *file,
   TtaFreeMemory (callblock);
   if (css)
     RedisplayImages--;
-  if (doc)
+  if (redisplaydoc &&
+      /* check if all background images are now loaded */
+      (css == NULL || (pInfo && Style_parsing == 0 && RedisplayImages == 0)))
     {
-      if (dispMode == DisplayImmediately)
-        /* restore the display mode */
-        TtaSetDisplayMode (doc, dispMode);
-    }
-  else if (css && Style_parsing == 0 && RedisplayImages == 0 && RedisplayDoc)
-    {
-      /* all background images are now loaded */
-      if (css->infos[RedisplayDoc] &&
-          /* don't manage a document used by make book */
-          (DocumentMeta[RedisplayDoc] == NULL ||
-           DocumentMeta[RedisplayDoc]->method != CE_MAKEBOOK))
+      /* don't manage a document used by make book */
+      if (DocumentMeta[redisplaydoc] == NULL ||
+          DocumentMeta[redisplaydoc]->method != CE_MAKEBOOK)
         {
           /* Change the Display Mode to take into account the new
              presentation */
-          dispMode = TtaGetDisplayMode (RedisplayDoc);
-#ifdef AMAYA_DEBUG
-          //printf ("ParseCSSImageCallback Show BGimages\n");
-#endif /* AMAYA_DEBUG */
+          dispMode = TtaGetDisplayMode (redisplaydoc);
           /* force the redisplay of this box */
-          TtaSetDisplayMode (RedisplayDoc, NoComputedDisplay);
-          TtaSetDisplayMode (RedisplayDoc, dispMode);
+          TtaSetDisplayMode (redisplaydoc, NoComputedDisplay);
+          TtaSetDisplayMode (redisplaydoc, dispMode);
         }
       RedisplayBGImage = FALSE;
     }
@@ -2340,7 +2370,6 @@ static char *SetCSSImage (Element element, PSchema tsch,
                   /* check if the image url is related to an external CSS */
                   if (css)
                     {
-                      RedisplayDoc = ctxt->doc;
                       /* fetch and display background image of element */
                       if (FetchImage (0, el, tempname, AMAYA_LOAD_IMAGE,
                                       ParseCSSImageCallback, callblock))
@@ -4130,6 +4159,12 @@ static char *ParseACSSMarginTop (Element element, PSchema tsch,
       margin.typed_data.value = 0;
       cssRule += 4;
     }
+  else if (!strncasecmp (cssRule, "inherit", 7))
+    {
+      margin.typed_data.unit = VALUE_AUTO;
+      margin.typed_data.value = 0;
+      cssRule += 7;
+    }
   else
     cssRule = ParseCSSUnit (cssRule, &margin);
 
@@ -4184,6 +4219,12 @@ static char *ParseACSSMarginBottom (Element element, PSchema tsch,
       margin.typed_data.unit = VALUE_AUTO;
       margin.typed_data.value = 0;
       cssRule += 4;
+    }
+  else if (!strncasecmp (cssRule, "inherit", 7))
+    {
+      margin.typed_data.unit = VALUE_AUTO;
+      margin.typed_data.value = 0;
+      cssRule += 7;
     }
   else
     cssRule = ParseCSSUnit (cssRule, &margin);
@@ -4285,6 +4326,12 @@ static char *ParseACSSMarginRight (Element element, PSchema tsch,
       margin.typed_data.unit = VALUE_AUTO;
       margin.typed_data.value = 0;
       cssRule += 4;
+    }
+  else if (!strncasecmp (cssRule, "inherit", 7))
+    {
+      margin.typed_data.unit = VALUE_AUTO;
+      margin.typed_data.value = 0;
+      cssRule += 7;
     }
   else
     cssRule = ParseCSSUnit (cssRule, &margin);
@@ -6384,12 +6431,14 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
   int                att, kind;
   int                specificity, xmlType;
   int                skippedNL;
-  ThotBool           isHTML, noname;
+  ThotBool           isHTML, noname, warn;
   ThotBool           level, quoted, doubleColon;
 #define ATTR_ID 1
 #define ATTR_CLASS 2
 #define ATTR_PSEUDO 3
 
+  // check if Amaya should report CSS warnings
+  TtaGetEnvBoolean ("CSS_WARN", &warn);
   sel = ctxt->sel;
   sel[0] = EOS;
   // get the limit of the string
@@ -6586,6 +6635,11 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
                        !strcmp (deb, "focus"))
                 /* hover, active, focus pseudo-classes */
                 {
+                  attrnames[0] = NULL;
+                  attrnums[0] = ATTR_PSEUDO;
+                  attrlevels[0] = 0;
+                  attrmatch[0] = Txtmatch;
+                  attrvals[0] = deb;
                   specificity += 10;
                   /* not supported */
                   DoApply = FALSE;
@@ -6631,7 +6685,7 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
                        !strcmp (deb, "first-letter"))
                 /* pseudo-elements first-line or first-letter */
                 {
-                  if (doubleColon)
+                  if (doubleColon && warn)
                     CSSPrintError ("Warning: \"::\" is CSS3 syntax", NULL);
                   specificity += 1;
                   /* not supported */
@@ -6640,7 +6694,7 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
               else if (!strncmp (deb, "before", 6))
                 /* pseudo-element before */
                 {
-                  if (doubleColon)
+                  if (doubleColon && warn)
                     CSSPrintError ("Warning: \"::before\" is CSS3 syntax",
                                    NULL);
                   ctxt->pseudo = PbBefore;
@@ -6649,13 +6703,21 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
               else if (!strncmp (deb, "after", 5))
                 /* pseudo-element after */
                 {
-                  if (doubleColon)
+                  if (doubleColon && warn)
                     CSSPrintError ("Warning: \"::after\" is CSS3 syntax",
                                    NULL);
                   ctxt->pseudo = PbAfter;
                   specificity += 1;
                 }
-              else
+	      else if (!strncmp (deb, "target", 6))
+                {
+		  if (warn)
+                   CSSPrintError ("Warning: \":target\" is CSS3 syntax",
+                                   NULL);
+                  specificity += 1;
+                  DoApply = FALSE;
+                }
+	      else
                 {
                   CSSPrintError ("Invalid pseudo-element", deb);
                   DoApply = FALSE;
@@ -6758,9 +6820,9 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
                     }
                   else if (*selector == '|' || *selector == '$' || *selector == '*')
                     {
-                      if (*selector == '$')
+                      if (*selector == '$' && warn)
                         CSSPrintError ("Warning: \"$=\" is CSS3 syntax", NULL);
-                      if (*selector == '*')
+                      if (*selector == '*' && warn)
                         CSSPrintError ("Warning: \"*=\" is CSS3 syntax", NULL);
                       attrmatch[0] = Txtsubstring;
                       selector++;
@@ -8050,7 +8112,6 @@ char ReadCSSRules (Document docRef, CSSInfoPtr css, char *buffer, char *url,
       RedisplayBGImage = FALSE;
       if (dispMode != NoComputedDisplay)
         {
-          RedisplayDoc = 0;
           //printf ("ReadCSS Show BGimages\n");
           TtaSetDisplayMode (docRef, NoComputedDisplay);
           TtaSetDisplayMode (docRef, dispMode);

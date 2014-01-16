@@ -749,10 +749,16 @@ extern void  TtaSetDocumentCharset (Document document,
 extern int TtaGetDocumentProfile (Document document);
 
 /*----------------------------------------------------------------------
+  TtaGetDocumentExtraProfile
+  Gets the 'extra' document profile
+ ----------------------------------------------------------------------*/
+extern int TtaGetDocumentExtraProfile (Document document);
+
+/*----------------------------------------------------------------------
   TtaSetDocumentProfile
   Sets the document profile
  ----------------------------------------------------------------------*/
-extern void TtaSetDocumentProfile (Document document, int profile);
+extern void TtaSetDocumentProfile (Document document, int profile, int extraProfile);
 
 /*----------------------------------------------------------------------
   TtaSetNamespaceDeclaration
@@ -785,6 +791,19 @@ void TtaFreeNamespaceDeclarations (Document document);
  ----------------------------------------------------------------------*/
 void TtaSetUriSSchema (SSchema sSchema, char *sSchemaUri);
 
+
+/*----------------------------------------------------------------------
+  TtaAddDocumentReference
+  Add a reference to the specified document.
+  ----------------------------------------------------------------------*/
+void TtaAddDocumentReference (Document document);
+
+/*----------------------------------------------------------------------
+  TtaRemoveDocumentReference
+  Remove a reference to the specified document.
+  If the document has no reference anymore, it is freed.
+  ----------------------------------------------------------------------*/
+void TtaRemoveDocumentReference (Document document);
 #endif /* __CEXTRACT__ */
 
 /*----------------------------------------------------------------------
@@ -794,6 +813,5 @@ void TtaSetUriSSchema (SSchema sSchema, char *sSchemaUri);
   schema: the structure schema of interest.
   ----------------------------------------------------------------------*/
 ThotBool TtaIsXmlSSchema (SSchema schema);
-
 
 #endif

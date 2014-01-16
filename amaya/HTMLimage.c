@@ -593,7 +593,7 @@ void DisplayImage (Document doc, Element el, LoadedImageDesc *desc,
   int                 i;
   DocumentType        thotType;
   PicType             picType;
-  int                 parsingLevel;
+  int                 parsingLevel, extraProfile;
   CHARSET             charset;
   char                charsetname[MAX_LENGTH];
   char               *imageName;
@@ -673,8 +673,8 @@ void DisplayImage (Document doc, Element el, LoadedImageDesc *desc,
                 is_html = TRUE;
               else /* try sniffing */
                 {
-                  CheckDocHeader (tempfile, &xmlDec, &withDoctype, &isXML, &useMath,
-                                  &isKnown, &parsingLevel, &charset, charsetname, &thotType);
+                  CheckDocHeader (tempfile, &xmlDec, &withDoctype, &isXML, &useMath, &isKnown, 
+				  &parsingLevel, &charset, charsetname, &thotType, &extraProfile);
                   if (isXML && thotType == docSVG)
                     is_svg = TRUE;
                   if (isXML && thotType == docMath)
@@ -926,7 +926,7 @@ static void HandleImageLoaded (int doc, int status, char *urlName, char *outputf
       desc->elImage = NULL;
       /* Avoid too many redisplay */
       dispMode = TtaGetDisplayMode (doc);
-      if (dispMode == DisplayImmediately)
+      if (doc != 0 && dispMode == DisplayImmediately)
         TtaSetDisplayMode (doc, DeferredDisplay);
       while (ctxEl)
         {
@@ -972,7 +972,7 @@ static void HandleImageLoaded (int doc, int status, char *urlName, char *outputf
           TtaFreeMemory (ctxPrev);
         }
       /* Restore the display mode */
-      if (dispMode == DisplayImmediately)
+      if (doc != 0 && dispMode == DisplayImmediately)
         TtaSetDisplayMode (doc, dispMode);
     }
 }

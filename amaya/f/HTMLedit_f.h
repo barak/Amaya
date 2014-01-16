@@ -29,6 +29,7 @@ extern ThotBool CheckMandatory ( NotifyAttribute *event );
 extern void AttributeChange ( int aType,
                               char * data );
 extern ThotBool GenerateInlineElement ( int eType,
+                                        SSchema eSchema,
                                         int aType,
                                         char * data,
                                         ThotBool replace );
@@ -104,6 +105,7 @@ extern ThotBool AttrFontSizeDelete ( NotifyAttribute * event );
 extern void AttrColorCreated ( NotifyAttribute * event );
 extern ThotBool AttrColorDelete ( NotifyAttribute *event );
 extern ThotBool GlobalAttrInMenu ( NotifyAttribute * event );
+extern ThotBool AttrRELREVinMenu ( NotifyAttribute * event );
 extern ThotBool AttrNAMEinMenu ( NotifyAttribute * event );
 extern ThotBool AttrScriptLanguageinMenu ( NotifyAttribute * event );
 extern void SetOnOffEmphasis ( Document document,
@@ -178,6 +180,7 @@ extern ThotBool CheckMandatory ( NotifyAttribute *event );
 extern void AttributeChange ( int aType,
                                 char * data );
 extern ThotBool GenerateInlineElement ( int eType,
+                                          SSchema eSchema,
                                           int aType,
                                           char * data,
                                           ThotBool replace );
@@ -253,6 +256,7 @@ extern ThotBool AttrFontSizeDelete ( NotifyAttribute * event );
 extern void AttrColorCreated ( NotifyAttribute * event );
 extern ThotBool AttrColorDelete ( NotifyAttribute *event );
 extern ThotBool GlobalAttrInMenu ( NotifyAttribute * event );
+extern ThotBool AttrRELREVinMenu ( NotifyAttribute * event );
 extern ThotBool AttrNAMEinMenu ( NotifyAttribute * event );
 extern ThotBool AttrScriptLanguageinMenu ( NotifyAttribute * event );
 extern void SetOnOffEmphasis ( Document document,

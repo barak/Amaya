@@ -145,15 +145,13 @@ SSchema GetGenericXMLSSchema (char *schemaName, Document doc)
   Returns the XML Thot schema for the document doc.
   ----------------------------------------------------------------------*/
 SSchema GetGenericXMLSSchemaByUri (char *uriName, Document doc, ThotBool *isnew)
-
 {
   SSchema	XMLSSchema;
 
   if (uriName == NULL)
-    XMLSSchema = NULL;
+    XMLSSchema = TtaGetSSchemaByUri ("Default_Uri", doc);
   else
     XMLSSchema = TtaGetSSchemaByUri (uriName, doc);
-
   if (XMLSSchema == NULL)
     {
       XMLSSchema = TtaNewNature(doc, TtaGetDocumentSSchema(doc), uriName,
@@ -168,7 +166,6 @@ SSchema GetGenericXMLSSchemaByUri (char *uriName, Document doc, ThotBool *isnew)
   GetXMLSSchema returns the XML Thot schema for document doc.
   ----------------------------------------------------------------------*/
 SSchema GetXMLSSchema (int XMLtype, Document doc)
-
 {
   if (XMLtype == XHTML_TYPE)
     return GetXHTMLSSchema (doc);
@@ -312,7 +309,7 @@ void MapXMLElementType (int XMLtype, char *XMLname, ElementType *elType,
                  strcmp (ptr[i].XMLname, XMLname))
           /* it's not the tag */
           i++;
-        else if (profile != L_Other && !(ptr[i].Level & profile))
+        else if (XMLtype == XHTML_TYPE && profile != L_Other && !(ptr[i].Level & profile))
           {
             /* this tag is not valid in the document profile */
             *checkProfile = FALSE;
@@ -369,6 +366,7 @@ char *GetXMLElementName (ElementType elType, Document doc)
       profile = TtaGetDocumentProfile (doc);
       if (profile == L_Annot)
         profile = L_Other;
+
       if (ptr)
         do
           {
@@ -485,7 +483,7 @@ int MapXMLAttribute (int XMLtype, char *attrName, char *elementName,
 {
   AttributeMapping   *ptr;
   char                c;
-  int                 i, profile;
+  int                 i, profile, extraprofile;
   ThotBool            xmlformat;
 
   /* Initialization */
@@ -532,6 +530,8 @@ int MapXMLAttribute (int XMLtype, char *attrName, char *elementName,
     c = attrName[0];
 
   profile = TtaGetDocumentProfile (doc);
+  extraprofile = TtaGetDocumentExtraProfile (doc);
+
   if (profile == L_Annot)
     profile = L_Other;
   /* look for the first concerned entry in the table */
@@ -549,20 +549,29 @@ int MapXMLAttribute (int XMLtype, char *attrName, char *elementName,
                 (ptr[i].XMLelement[0] != EOS && elementName &&
                  strcmp (ptr[i].XMLelement, elementName))))
         i++;
-      else if (profile != L_Other && !(ptr[i].Level & profile))
+      else if (profile != L_Other && extraprofile == 0 && !(ptr[i].Level & profile))
+        {
+          *checkProfile = FALSE;
+          i++;
+        }
+      else if ((ptr[i].Level == L_RDFaValue) && (extraprofile != L_RDFa))
         {
           *checkProfile = FALSE;
           i++;
         }
       else
         {
-          /* Special case for the 'name' attribute for 
-             elements 'a' and 'map' in xhtml1.1 profile */
+          /* Special case for the 'name' attribute for elements 'a' and 'map' in xhtml1.1 profile */
           if ((profile == L_Xhtml11) &&
               !strcmp (attrName, "name") && elementName &&
               (!strcmp (elementName, "a") || !strcmp (elementName, "map")))
             *checkProfile = FALSE;
-          else
+          /* Special case for the attributes 'rel' and 'rev' for elements 'a' and 'link' */
+          else if ((!strcmp (attrName, "rel") || !strcmp (attrName, "rev")) &&
+		   (strcmp (elementName, "a") && strcmp (elementName, "link")) &&
+		   (extraprofile != L_RDFa))
+	    *checkProfile = FALSE;
+	  else
             *thotType = ptr[i].ThotAttribute;
           return (i);
         }
@@ -581,7 +590,7 @@ char *GetXMLAttributeName (AttributeType attrType, ElementType elType,
 {
   AttributeMapping   *ptr;
   char               *name, *tag;
-  int                 i, profile;
+  int                 i, profile, extraprofile;
   ThotBool            invalid = FALSE;
 
   if (attrType.AttrTypeNum > 0)
@@ -611,20 +620,27 @@ char *GetXMLAttributeName (AttributeType attrType, ElementType elType,
         ptr = XHTMLAttributeMappingTable;
       
       profile = TtaGetDocumentProfile (doc);
+      extraprofile = TtaGetDocumentExtraProfile (doc);
       if (profile == L_Annot)
         profile = L_Other;
+
       if (ptr)
         do
           {
             if (ptr[i].ThotAttribute == attrType.AttrTypeNum &&
-                (ptr[i].XMLelement[0] == EOS ||
-                 !strcmp (ptr[i].XMLelement, tag)))
+                (ptr[i].XMLelement[0] == EOS || !strcmp (ptr[i].XMLelement, tag)))
               {
-                if (doc != 0 &&
-                    profile != L_Other &&
-                    !(ptr[i].Level & profile))
+                if (doc != 0 && profile != L_Other && extraprofile == L_NoExtraProfile && !(ptr[i].Level & profile))
                   invalid = TRUE;
-                else
+                else if (doc != 0 && ptr[i].Level == L_RDFaValue && extraprofile != L_RDFa)
+                  invalid = TRUE;
+		else if ((attrType.AttrTypeNum == HTML_ATTR_REL ||
+			  attrType.AttrTypeNum == HTML_ATTR_REV) &&
+		 	  elType.ElTypeNum != HTML_EL_Anchor &&
+			  elType.ElTypeNum != HTML_EL_LINK &&
+			  extraprofile != L_RDFa)
+                  invalid = TRUE;
+		else
                   return ptr[i].XMLattribute;
               }
             i++;

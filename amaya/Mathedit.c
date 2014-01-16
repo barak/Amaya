@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2007
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -1987,19 +1987,33 @@ static void CreateMathConstruct (int construct, ...)
       if(construct == 2)
         moveHere = TtaGetFirstChild(TtaGetLastChild(el));
 
+      if (construct == 4)
+        {
+          if (va_arg(varpos, int) == 1)
+            {
+              // generate the bevelled attribute
+              attrType.AttrSSchema = elType.ElSSchema;
+              attrType.AttrTypeNum = MathML_ATTR_bevelled;
+              attr = TtaNewAttribute (attrType);
+              TtaAttachAttribute (el, attr, doc);
+              TtaSetAttributeValue (attr, MathML_ATTR_bevelled_VAL_true, el, doc);
+              TtaChangeTypeOfElement (el, doc, MathML_EL_BevelledMFRAC);
+            }
+        }
+      
       if(construct == 11 || (construct >= 14 && construct <= 19) || construct == 61)
         moveHere = TtaGetFirstChild(el);
 
       if (construct == 18)
         {
-        if (va_arg(varpos, int) == 1)
-          {/* actuarial */
-          attrType.AttrSSchema = elType.ElSSchema;
-          attrType.AttrTypeNum = MathML_ATTR_notation;
-          attr = TtaNewAttribute (attrType);
-          TtaAttachAttribute (el, attr, doc);
-          TtaSetAttributeValue (attr, MathML_ATTR_notation_VAL_actuarial, el, doc);
-          }
+          if (va_arg(varpos, int) == 1)
+            {/* actuarial */
+              attrType.AttrSSchema = elType.ElSSchema;
+              attrType.AttrTypeNum = MathML_ATTR_notation;
+              attr = TtaNewAttribute (attrType);
+              TtaAttachAttribute (el, attr, doc);
+              TtaSetAttributeValue (attr, MathML_ATTR_notation_VAL_actuarial, el, doc);
+            }
         }
       if (construct == 20)
         {
@@ -3457,44 +3471,10 @@ gboolean CloseMathMenu (GtkWidget *widget,
   ----------------------------------------------------------------------*/
 static void CreateMathMenu (Document doc, View view)
 {
-#ifdef _GTK
-  GtkWidget *w;
-#endif /*_GTK*/
-
   if (!TtaGetDocumentAccessMode (doc))
     /* the document is in ReadOnly mode */
     return;
 
-#if defined(_GTK)
-  if (!InitMaths)
-    {
-      InitMaths = TRUE;
-
-      /* Dialogue box for the Math palette */
-      TtaNewSheet (MathsDialogue + FormMaths, TtaGetViewFrame (doc, view), 
-                   TtaGetMessage (AMAYA, AM_BUTTON_MATH),
-                   0, NULL, TRUE, 2, 'L', D_DONE);
-      TtaNewIconMenu (MathsDialogue + MenuMaths, MathsDialogue + FormMaths, 0,
-                      NULL, 7, mIcons, FALSE);
-      TtaNewIconMenu (MathsDialogue + MenuMaths1, MathsDialogue + FormMaths, 0,
-                      NULL, 7, &mIcons[7], FALSE);
-      /* do not need to initialise the selection into the palette */
-      /*TtaSetMenuForm (MathsDialogue + MenuMaths, 0);*/
-      TtaSetDialoguePosition ();
-      w =   CatWidget (MathsDialogue + FormMaths);
-      gtk_signal_connect (GTK_OBJECT (w), 
-                          "delete_event",
-                          GTK_SIGNAL_FUNC (CloseMathMenu), 
-                          (gpointer)(MathsDialogue + FormMaths));
-
-      gtk_signal_connect (GTK_OBJECT (w), 
-                          "destroy",
-                          GTK_SIGNAL_FUNC (CloseMathMenu), 
-                          (gpointer)(MathsDialogue + FormMaths));
-    }
-  TtaShowDialogue (MathsDialogue + FormMaths, TRUE); 
-#endif /* #if defined(_GTK)  */
-  
 #ifdef _WINGUI
   CreateMathDlgWindow (TtaGetViewFrame (doc, view));
 #endif /* _WINGUI */
@@ -3579,7 +3559,15 @@ void CreateMPHANTOM (Document document, View view)
   ----------------------------------------------------------------------*/
 void CreateMFRAC (Document document, View view)
 {
-  CreateMathConstruct (4);
+  CreateMathConstruct (4, 0);
+}
+
+/*----------------------------------------------------------------------
+  CreateMLFRAC
+  ----------------------------------------------------------------------*/
+void CreateMLFRAC (Document document, View view)
+{
+  CreateMathConstruct (4, 1);
 }
 
 /*----------------------------------------------------------------------
@@ -5482,7 +5470,10 @@ static ThotBool MathMoveForward ()
           do
             {
               successorType = TtaGetElementType (nextEl);
-              if (successorType.ElTypeNum == MathML_EL_XMLcomment &&
+              if ((successorType.ElTypeNum == MathML_EL_XMLcomment ||
+                   successorType.ElTypeNum == MathML_EL_Overscript ||
+                   successorType.ElTypeNum == MathML_EL_Superscript ||
+                   successorType.ElTypeNum == MathML_EL_MO) &&
                   !strcmp (TtaGetSSchemaName (successorType.ElSSchema), "MathML"))
                 nextEl = TtaGetSuccessor (nextEl);
               else
@@ -5628,7 +5619,10 @@ static ThotBool MathMoveBackward ()
           do
             {
               predecType = TtaGetElementType (prevEl);
-              if (predecType.ElTypeNum == MathML_EL_XMLcomment &&
+              if ((predecType.ElTypeNum == MathML_EL_XMLcomment ||
+                   predecType.ElTypeNum == MathML_EL_Overscript ||
+                   predecType.ElTypeNum == MathML_EL_Superscript ||
+                   predecType.ElTypeNum == MathML_EL_MO) &&
                   !strcmp (TtaGetSSchemaName (predecType.ElSSchema), "MathML"))
                 prevEl = TtaGetPredecessor (prevEl);
               else
@@ -7080,18 +7074,6 @@ void CreateMathEntity (Document document, View view)
   TtaShowDialogue (BaseDialog + MathEntityForm, FALSE);
   TtaWaitShowDialogue ();
 #endif /* _WX */
-
-#if defined(_GTK)
-  TtaNewForm (BaseDialog + MathEntityForm, TtaGetViewFrame (document, view), 
-              TtaGetMessage (AMAYA, AM_MEntity), TRUE, 1, 'L', D_CANCEL);
-  TtaNewTextForm (BaseDialog + MathEntityText, BaseDialog + MathEntityForm,
-                  TtaGetMessage (AMAYA, AM_MATH_ENTITY_NAME), NAME_LENGTH, 1,
-                  FALSE);
-  TtaSetTextForm (BaseDialog + MathEntityText, MathMLEntityName);
-  TtaSetDialoguePosition ();
-  TtaShowDialogue (BaseDialog + MathEntityForm, FALSE);
-  TtaWaitShowDialogue ();
-#endif /* #if defined(_GTK) */
 
   if (MathMLEntityName[0] != EOS)
     InsertMathEntity ((unsigned char *)MathMLEntityName, document);

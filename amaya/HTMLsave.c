@@ -403,9 +403,9 @@ char *UpdateDocResource (Document doc, char *oldpath, char *newpath,
     {
       // look for the beginning and the end of the url
       e = b;
-      while ((*e != '"' || *e != '\'') && *e != EOS)
+      while (*e != '"' && *e != '\'' && *e != EOS)
         e++;
-      while ((*b != '"' || *b != '\'') && b != sString)
+      while (*b != '"' && *b != '\'' && b != sString)
         b--;
       if (*b == '"' || *b == '\'')
         b++;
@@ -511,6 +511,8 @@ fprintf(stderr, "Move file: from %s to %s\n", old_url, new_url);
             }
           if (old_url[0] != EOS && TtaFileExist (old_url))
             {
+              if (saveResources)
+                {
               if (dst_is_local)
                 {
                   /* copy the file to the new location */
@@ -528,6 +530,7 @@ fprintf(stderr, "Move file: from %s to %s\n", old_url, new_url);
               if (!src_is_local)
                 // remove the temporay file
                 TtaFileUnlink (tempdocument);
+                }
             }
           TtaFreeMemory (tempdocument);
         }
@@ -585,7 +588,7 @@ void SetRelativeURLs (Document doc, char *newpath, char *cssbase,
   searchedType3.ElTypeNum = 0;
   searchedType4.ElTypeNum = 0;
   searchedType5.ElTypeNum = 0;
-  if (elType.ElSSchema == XHTMLSSchema || elType.ElSSchema == SVGSSchema)
+  if (elType.ElSSchema != XLinkSSchema)
     {
       if (elType.ElSSchema == XHTMLSSchema)
         {
@@ -625,6 +628,7 @@ void SetRelativeURLs (Document doc, char *newpath, char *cssbase,
     }
   else
     el = NULL;
+
   while (el)
     {
       /* this is a style element */
@@ -668,15 +672,19 @@ void SetRelativeURLs (Document doc, char *newpath, char *cssbase,
                 newString = UpdateCSSURLs (doc, oldpath, newpath, NULL, orgString,
                                         FALSE, FALSE);
               else
+		{
                 // Update the XML PI content
-                newString = UpdateDocResource (doc, oldpath, newpath, cssbase, orgString,
+                newString = UpdateDocResource (doc, oldpath, newpath,
+					       cssbase, orgString,
                                                el, savedResources, FALSE, fullCopy);
+		}
               if (newString)
                 {
                   /* register the modification to be able to undo it */
                   TtaRegisterElementReplace (next, doc);
                   TtaSetTextContent (next, (unsigned char *)newString, lang, doc);
                   TtaFreeMemory (newString);
+                  newString = NULL;
                 }
               else
                 // no change
@@ -1191,7 +1199,7 @@ void SetNamespacesAndDTD (Document doc)
   char         *charsetname = NULL;
   char          buffer[300];
   char         *attrText;
-  int           length, profile, pi_type;
+  int           length, profile, extraProfile, pi_type;
   ThotBool      useMathML, useSVG, useHTML, useXML, mathPI, useXLink;
   ThotBool      xmlDecl, xhtml_mimetype, insertMeta;
 
@@ -1204,19 +1212,22 @@ void SetNamespacesAndDTD (Document doc)
   nature = NULL;
   doctype = NULL; /* no DOCTYPE */
   elDecl = NULL;
+  if (DocumentTypes[doc] == docText || DocumentTypes[doc] == docSource)
+    return;
+#ifdef BOOKMARKS
+  else if (DocumentTypes[doc] == docBookmark)
+    return;
+#endif /* BOOKMARKS */
 #ifdef ANNOTATIONS
-  if (DocumentTypes[doc] == docAnnot)
+  else if (DocumentTypes[doc] == docAnnot)
     /* in an annotation, the body of the annotation corresponds to the
        root element we would normally get */
     root = ANNOT_GetHTMLRoot (doc, TRUE);
-  else
 #endif /* ANNOTATIONS */
-#ifdef BOOKMARKS
-    if (DocumentTypes[doc] == docBookmark)
-      return;
-    else
-#endif /* BOOKMARKS */
-      root = TtaGetRootElement (doc);
+  else if (DocumentTypes[doc] == docXml)
+    root = TtaGetMainRoot (doc);
+  else
+    root = TtaGetRootElement (doc);
    
   /* Look for all natures used in the document */
   if (DocumentMeta[doc] && DocumentMeta[doc]->compound)
@@ -1261,27 +1272,32 @@ void SetNamespacesAndDTD (Document doc)
 #endif /* ANNOTATIONS */
     elType = TtaGetElementType (docEl);
   s = TtaGetSSchemaName (elType.ElSSchema);
+  attrType.AttrSSchema = elType.ElSSchema;
   if (strcmp (s, "HTML") == 0)
     {
       elType.ElTypeNum = HTML_EL_DOCTYPE;
       pi_type = HTML_EL_XMLPI;
+      attrType.AttrTypeNum = HTML_ATTR_PI;
     }
 #ifdef _SVG
   else if (strcmp (s, "SVG") == 0)
     {
       elType.ElTypeNum = SVG_EL_DOCTYPE;
       pi_type = SVG_EL_XMLPI;
+      attrType.AttrTypeNum = 0;
     }
 #endif /* _SVG */
   else if (strcmp (s, "MathML") == 0)
     {
       elType.ElTypeNum = MathML_EL_DOCTYPE;
       pi_type = MathML_EL_XMLPI;
+      attrType.AttrTypeNum = 0;
     }
   else
     {
       elType.ElTypeNum = XML_EL_doctype;
       pi_type = XML_EL_xmlpi;
+      attrType.AttrTypeNum = 0;
     }
   doctype = TtaSearchTypedElement (elType, SearchInTree, docEl);
 
@@ -1289,12 +1305,13 @@ void SetNamespacesAndDTD (Document doc)
   if (DocumentMeta[doc]->xmlformat)
     {
       profile = TtaGetDocumentProfile(doc);
+      extraProfile = TtaGetDocumentExtraProfile(doc);
       if (DocumentTypes[doc] == docHTML && doctype)
         {
           /* Create a XHTML + MathML + SVG doctype */
           if ((useMathML || useSVG) && !useXML && !useXLink && profile == L_Xhtml11)
             {
-              CreateDoctype (doc, doctype, L_Xhtml11, useMathML, useSVG);
+              CreateDoctype (doc, doctype, L_Xhtml11, extraProfile, useMathML, useSVG);
               /* it's not necessary to generate the math PI */
               mathPI = FALSE;
             }
@@ -1303,7 +1320,7 @@ void SetNamespacesAndDTD (Document doc)
             TtaDeleteTree (doctype, doc);
           else
             // regenerate the doctype with the right profile
-            CreateDoctype (doc, doctype, profile, useMathML, useSVG);
+            CreateDoctype (doc, doctype, profile, extraProfile, useMathML, useSVG);
         }
       else if (doctype &&
                ((useSVG && (useMathML || useHTML || useXML || useXLink)) ||
@@ -1314,129 +1331,114 @@ void SetNamespacesAndDTD (Document doc)
    
   /* Create or update the document charset */
   charsetname = UpdateDocumentCharset (doc);
-  if (
-#ifdef ANNOTATIONS
-      (DocumentTypes[doc] == docAnnot && ANNOT_bodyType (doc) == docHTML) ||
-#endif /* ANNOTATIONS */
-      DocumentTypes[doc] == docHTML || DocumentTypes[doc] == docTemplate)
+  if (attrType.AttrTypeNum != 0)
     {
       /* delete the previous PI attribute */
-      attrType.AttrSSchema = TtaGetSSchema ("HTML", doc);
-      attrType.AttrTypeNum = HTML_ATTR_PI;
       attr = TtaGetAttribute (root, attrType);
       if (attr)
         TtaRemoveAttribute (root, attr, doc);
+    }
 
-      /* check if XML declaration or the math PI are already defined */
-      xmlDecl = DocumentMeta[doc]->xmlformat;
-      el = TtaGetFirstChild (docEl);
-      while (el)
+  /* check if XML declaration or the math PI are already defined */
+  xmlDecl = DocumentMeta[doc]->xmlformat;
+  el = TtaGetFirstChild (docEl);
+  while (el)
+    {
+      elType = TtaGetElementType (el);
+      if (elType.ElTypeNum != pi_type)
+        TtaNextSibling (&el);
+      else
         {
-          elType = TtaGetElementType (el);
-          if (elType.ElTypeNum != pi_type)
-            TtaNextSibling (&el);
-          else
+          /* get PI lines */
+          next = el;
+          TtaNextSibling (&next);
+          elFound = TtaGetFirstChild (el);
+          while (elFound)
             {
-              /* get PI lines */
-              next = el;
-              TtaNextSibling (&next);
-              elFound = TtaGetFirstChild (el);
-              while (elFound)
+              /* get PI text */
+              text = TtaGetFirstChild (elFound);
+              if (text == NULL)
+                text = elFound;
+              length = 300;
+              TtaGiveTextContent (text, (unsigned char *)buffer, &length,
+                                  &lang);
+              if (strstr (buffer, "xml version="))
                 {
-                  /* get PI text */
-                  text = TtaGetFirstChild (elFound);
-                  if (text == NULL)
-                    text = elFound;
-                  length = 300;
-                  TtaGiveTextContent (text, (unsigned char *)buffer, &length,
-                                      &lang);
-                  if (strstr (buffer, "xml version="))
+                  if (strstr (buffer, charsetname))
                     {
-                      if (strstr (buffer, charsetname))
-                        {
-                          /* not necessary to generate the XML declaration */
-                          xmlDecl = FALSE;
-                          elDecl = el;
-                        }
-                      else
-                        {
-                          // the charset changed -> regenerate the declaration
-                          xmlDecl = TRUE;
-                          elDecl = NULL;
-                          TtaDeleteTree (el, doc);
-                          el = next;
-                        }
-                      elFound = NULL;
+                      /* not necessary to generate the XML declaration */
+                      xmlDecl = FALSE;
+                      elDecl = el;
                     }
-                  else if (strstr (buffer, "mathml.xsl"))
+                  else
                     {
-                      if (!mathPI)
-                        {
-                          if (el)
-                            // this PI must be removed
-                            TtaDeleteTree (el, doc);
-                        }
-                      /* it's not necessary to generate the math PI */
-                      mathPI = FALSE;
-                      elFound = NULL;
-                    }
-                  else if (RemoveTemplate && strstr (buffer, "xtiger template"))
-                    {
+                      // the charset changed -> regenerate the declaration
+                      xmlDecl = TRUE;
+                      elDecl = NULL;
                       TtaDeleteTree (el, doc);
-                      if (DocumentMeta[doc])
-                        {
-                          TtaFreeMemory (DocumentMeta[doc]->template_url);
-                          DocumentMeta[doc]->template_url = NULL;
-                          TtaFreeMemory (DocumentMeta[doc]->template_version);
-                          DocumentMeta[doc]->template_version = NULL;
-                        }
+                      el = next;
                     }
-                  if (elFound)
-                    TtaNextSibling (&elFound);
+                  elFound = NULL;
                 }
-              el = next;
+              else if (strstr (buffer, "mathml.xsl"))
+                {
+                  if (!mathPI)
+                    {
+                      if (el)
+                        // this PI must be removed
+                        TtaDeleteTree (el, doc);
+                    }
+                  /* it's not necessary to generate the math PI */
+                  mathPI = FALSE;
+                  elFound = NULL;
+                }
+              else if (RemoveTemplate && strstr (buffer, "xtiger template"))
+                TtaDeleteTree (el, doc);
+              if (elFound)
+                TtaNextSibling (&elFound);
             }
+          el = next;
         }
+    }
 
-      if (xmlDecl)
-        // check if the user wants to generate xml declaration
-        TtaGetEnvBoolean ("USE_XML_DECLARATION", &xmlDecl);
-      if (xmlDecl && charsetname[0] != EOS)
-        {
-          /* generate the XML declaration */
-          /* Check the Thot abstract tree against the structure schema. */
-          TtaSetStructureChecking (FALSE, doc);
-          elType.ElTypeNum = HTML_EL_XMLPI;
-          el = TtaNewTree (doc, elType, "");
-          elDecl = el;
-          TtaInsertFirstChild (&el, docEl, doc);
-          elFound = TtaGetFirstChild (el);
-          text = TtaGetFirstChild (elFound);
-          strcpy (buffer, "xml version=\"1.0\" encoding=\"");
-          strcat (buffer, charsetname);
-          strcat (buffer, "\"");
-          TtaSetTextContent (text, (unsigned char*)buffer,  Latin_Script, doc);
-          TtaSetStructureChecking (TRUE, doc);
-        }
-      if (mathPI)
-        {
-          /* generate the David Carliste's xsl stylesheet for MathML */
-          /* Check the Thot abstract tree against the structure schema. */
-          TtaSetStructureChecking (FALSE, doc);
-          elType.ElTypeNum = HTML_EL_XMLPI;
-          el = TtaNewTree (doc, elType, "");
-          if (elDecl)
-            TtaInsertSibling(el,elDecl, FALSE, doc );
-          else
-            TtaInsertFirstChild (&el, docEl, doc);
-          elFound = TtaGetFirstChild (el);
-          text = TtaGetFirstChild (elFound);
-          strcpy (buffer, MATHML_XSLT_URI);
-          strcat (buffer, MATHML_XSLT_NAME);
-          strcat (buffer, "\"");
-          TtaSetTextContent (text, (unsigned char*)buffer,  Latin_Script, doc);
-          TtaSetStructureChecking (TRUE, doc);
-        }
+  if (xmlDecl)
+    // check if the user wants to generate xml declaration
+    TtaGetEnvBoolean ("USE_XML_DECLARATION", &xmlDecl);
+  if (xmlDecl && charsetname[0] != EOS)
+    {
+      /* generate the XML declaration */
+      /* Check the Thot abstract tree against the structure schema. */
+      TtaSetStructureChecking (FALSE, doc);
+      elType.ElTypeNum = pi_type;
+      el = TtaNewTree (doc, elType, "");
+      elDecl = el;
+      TtaInsertFirstChild (&el, docEl, doc);
+      elFound = TtaGetFirstChild (el);
+      text = TtaGetFirstChild (elFound);
+      strcpy (buffer, "xml version=\"1.0\" encoding=\"");
+      strcat (buffer, charsetname);
+      strcat (buffer, "\"");
+      TtaSetTextContent (text, (unsigned char*)buffer,  Latin_Script, doc);
+      TtaSetStructureChecking (TRUE, doc);
+    }
+  if (mathPI)
+    {
+      /* generate the David Carliste's xsl stylesheet for MathML */
+      /* Check the Thot abstract tree against the structure schema. */
+      TtaSetStructureChecking (FALSE, doc);
+      elType.ElTypeNum = pi_type;
+      el = TtaNewTree (doc, elType, "");
+      if (elDecl)
+        TtaInsertSibling(el,elDecl, FALSE, doc );
+      else
+        TtaInsertFirstChild (&el, docEl, doc);
+      elFound = TtaGetFirstChild (el);
+      text = TtaGetFirstChild (elFound);
+      strcpy (buffer, MATHML_XSLT_URI);
+      strcat (buffer, MATHML_XSLT_NAME);
+      strcat (buffer, "\"");
+      TtaSetTextContent (text, (unsigned char*)buffer,  Latin_Script, doc);
+      TtaSetStructureChecking (TRUE, doc);
     }
 
   /* Create or update a META element to specify Content-type and Charset */
@@ -1584,7 +1586,7 @@ void SetNamespacesAndDTD (Document doc)
   the parsing errors due to the new doctype
   ----------------------------------------------------------------------*/
 ThotBool ParseWithNewDoctype (Document doc, char *localFile, char *tempdir,
-                              char *documentname, int new_doctype,
+                              char *documentname, int new_doctype, int new_extraProfile,
                               ThotBool *error, ThotBool xml_doctype,
                               ThotBool useMathML, ThotBool useSVG)
 {
@@ -1595,7 +1597,7 @@ ThotBool ParseWithNewDoctype (Document doc, char *localFile, char *tempdir,
   ElementType   elType;
   Element       docEl, eltype;
   char          charsetname[MAX_LENGTH];
-  int           parsingLevel;
+  int           parsingLevel, extraProfile;
   char         *s;
   char          type[NAME_LENGTH];
   char          tempdoc2 [100];
@@ -1636,7 +1638,7 @@ ThotBool ParseWithNewDoctype (Document doc, char *localFile, char *tempdir,
       DocumentMeta[ext_doc]->xmlformat = xml_doctype;
       charset = TtaGetDocumentCharset (doc);
       TtaSetDocumentCharset (ext_doc, charset, FALSE);
-      TtaSetDocumentProfile (ext_doc, new_doctype);
+      TtaSetDocumentProfile (ext_doc, new_doctype, new_extraProfile);
 
       /* Copy the current document into a second temporary file */
       sprintf (tempdoc2, "%s%c%d%c%s",
@@ -1651,9 +1653,9 @@ ThotBool ParseWithNewDoctype (Document doc, char *localFile, char *tempdir,
   /* Check if there is a doctype declaration */
   charsetname[0] = EOS;
   CheckDocHeader (localFile, &xmlDec, &withDoctype, &isXML, &useMath, &isKnown,
-                  &parsingLevel, &charset, charsetname, &thotType);
+                  &parsingLevel, &charset, charsetname, &thotType, &extraProfile);
   /* Store the new document type */
-  TtaSetDocumentProfile (ext_doc, new_doctype);
+  TtaSetDocumentProfile (ext_doc, new_doctype, new_extraProfile);
 
   // Get user information about read IDs
   Check_read_ids = TRUE;
@@ -1717,7 +1719,7 @@ ThotBool ParseWithNewDoctype (Document doc, char *localFile, char *tempdir,
         elType.ElTypeNum = SVG_EL_DOCTYPE;
       eltype = TtaSearchTypedElement (elType, SearchInTree, docEl);
       /* Add the new doctype */
-      CreateDoctype (ext_doc, eltype, new_doctype, useMathML, useSVG);
+      CreateDoctype (ext_doc, eltype, new_doctype, new_extraProfile, useMathML, useSVG);
 
       /* Save this new document state */
       if (DocumentTypes[doc] == docSVG)
@@ -1764,7 +1766,7 @@ void RestartParser (Document doc, char *localFile,
   CHARSET       charset, doc_charset;
   DocumentType  thotType;
   char          charsetname[MAX_LENGTH];
-  int           profile, parsingLevel;
+  int           profile, parsingLevel, extraProfile, old_extraProfile;
   ThotBool      xmlDec, withDoctype, isXML, useMath, isKnown;
 
   if (doc == 0)
@@ -1780,7 +1782,7 @@ void RestartParser (Document doc, char *localFile,
   /* check if there is an XML declaration with a charset declaration */
   charsetname[0] = EOS;
   CheckDocHeader (localFile, &xmlDec, &withDoctype, &isXML, &useMath, &isKnown,
-                  &parsingLevel, &charset, charsetname, &thotType);
+                  &parsingLevel, &charset, charsetname, &thotType, &extraProfile);
   /* Check charset information in a meta */
   if (charset == UNDEFINED_CHARSET)
     CheckCharsetInMeta (localFile, &charset, charsetname);
@@ -1817,9 +1819,10 @@ void RestartParser (Document doc, char *localFile,
   TtaClearUndoHistory (doc);
   /* Store the document profile if it has been modified */
   profile = TtaGetDocumentProfile (doc);
-  if (profile != parsingLevel)
+  old_extraProfile = TtaGetDocumentExtraProfile (doc);
+  if ((profile != parsingLevel) || (old_extraProfile != extraProfile))
     {
-      TtaSetDocumentProfile (doc, parsingLevel);
+      TtaSetDocumentProfile (doc, parsingLevel, extraProfile);
       TtaUpdateMenus (doc, 1, FALSE);
     }
 

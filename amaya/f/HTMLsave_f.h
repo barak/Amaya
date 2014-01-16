@@ -5,6 +5,7 @@
 
 #ifndef __CEXTRACT__
 #ifdef __STDC__
+
 extern ThotBool CheckValidProfile ( NotifyElement *event );
 extern ThotBool CheckGenerator ( NotifyElement *event );
 extern ThotBool CheckUSEMAP ( NotifyAttribute *event );
@@ -40,6 +41,7 @@ extern ThotBool ParseWithNewDoctype ( Document doc,
                                       char *tempdir,
                                       char *documentname,
                                       int new_doctype,
+                                      int new_extraProfile,
                                       ThotBool *error,
                                       ThotBool xml_doctype,
                                       ThotBool useMathML,
@@ -79,6 +81,7 @@ extern void SendByMail ( Document document,
                          View view );
 
 #else /* __STDC__ */
+
 extern ThotBool CheckValidProfile ( NotifyElement *event );
 extern ThotBool CheckGenerator ( NotifyElement *event );
 extern ThotBool CheckUSEMAP ( NotifyAttribute *event );
@@ -114,6 +117,7 @@ extern ThotBool ParseWithNewDoctype ( Document doc,
                                         char *tempdir,
                                         char *documentname,
                                         int new_doctype,
+                                        int new_extraProfile,
                                         ThotBool *error,
                                         ThotBool xml_doctype,
                                         ThotBool useMathML,

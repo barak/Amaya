@@ -16,7 +16,7 @@ void AnnotApplicationInitialise ()
  PtrEventsSet appliActions;
 
   /* Create the new application context*/
-  appliActions = TteNewEventsSet (45276, "Annot");
+  appliActions = TteNewEventsSet (18653, "Annot");
    /* Generate event/action entries */
   TteAddActionEvent (appliActions, 0, TteElemActivate, 1, "Annot_RaiseSourceDoc");
   TteAddActionEvent (appliActions, 18, TteElemActivate, 1, "Annot_RaiseSourceDoc");

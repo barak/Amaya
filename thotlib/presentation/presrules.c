@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2007
+ *  (c) COPYRIGHT INRIA, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -4072,7 +4072,7 @@ ThotBool ApplyRule (PtrPRule pPRule, PtrPSchema pSchP, PtrAbstractBox pAb,
             /* Pas de regle pour la racine, on met la valeur par defaut */
             {
               pAb->AbStrokeOpacity = 1000;
-              appl = TRUE;	      
+              appl = TRUE;
             }
           break;
         case PtBackground:
@@ -4238,11 +4238,8 @@ ThotBool ApplyRule (PtrPRule pPRule, PtrPSchema pSchP, PtrAbstractBox pAb,
                              pParent->AbElement->ElStructSchema &&
                              pParent->AbElement->ElStructSchema->SsName &&
                              !strcmp (pParent->AbElement->ElStructSchema->SsName, "Template"))
-                        {
-                          // Skip template elements
-                          pParent->AbBuildAll = TRUE;
-                          pParent = pParent->AbEnclosing;
-                        }
+                        // Skip template elements
+                        pParent = pParent->AbEnclosing;
                       if (pParent)
                         {
                           pParent->AbInLine = TRUE;
@@ -4257,16 +4254,17 @@ ThotBool ApplyRule (PtrPRule pPRule, PtrPSchema pSchP, PtrAbstractBox pAb,
                 /* display: inline */
                 {
                   pParent = pAb->AbEnclosing;
-                  while (pParent && pParent->AbElement &&
+                  while (pParent && pParent->AbElement && pParent->AbEnclosing &&
                          pParent->AbElement->ElStructSchema &&
                          pParent->AbElement->ElStructSchema->SsName &&
-                         !strcmp (pParent->AbElement->ElStructSchema->SsName, "Template"))
-                    {
-                      // Skip template elements
-                      pParent->AbBuildAll = TRUE;
-                      pParent = pParent->AbEnclosing;
-                    }
-                  if (pParent)
+                         // look for an enclosing block element
+                         (pParent->AbDisplay == 'I' ||
+                          // U = I for generic XML documents
+                         (pParent->AbDisplay == 'U' &&
+                          pParent->AbElement->ElStructSchema->SsIsXml) ||
+                          !strcmp (pParent->AbElement->ElStructSchema->SsName, "Template")))
+                    pParent = pParent->AbEnclosing;
+                  if (pParent && !pParent->AbInLine)
                     {
                       pParent->AbInLine = TRUE;
                       pParent->AbBuildAll = TRUE;

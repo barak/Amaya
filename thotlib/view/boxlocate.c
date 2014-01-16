@@ -649,8 +649,11 @@ static ThotBool IsWithinPath (int x, int y, ThotPoint *points, int npoints)
               i++;		/* changement de point */
               prevY = nextY;
               prevX = nextX;
-              nextX = (int) points[i].x;
-              nextY = (int) points[i].y;
+              if (i < npoints)
+                {
+                  nextX = (int) points[i].x;
+                  nextY = (int) points[i].y;
+                }
             }
           if (i >= npoints)
             break;
@@ -766,6 +769,7 @@ ThotPoint *BuildPolygonForPath (PtrPathSeg pPa, int frame,
   /* get a buffer to store the points of the polygon */
   maxpoints = ALLOC_POINTS;
   points = (ThotPoint *) TtaGetMemory (maxpoints * sizeof(ThotPoint));
+  memset (points, 0, maxpoints * sizeof(ThotPoint));
   *npoints = 0;
   /* assume there is a single path */
   *subpathStart = NULL;
@@ -2840,7 +2844,7 @@ void LocateClickedChar (PtrBox pBox, int frame, ThotBool extend,
   CHAR_T              c;
   ThotBool            notfound, rtl;
 
-  GetExtraMargins (pBox, NULL, frame, &t, &b, &l, &r);
+  GetExtraMargins (pBox, frame, FALSE, &t, &b, &l, &r);
   *x = *x - l - pBox->BxLMargin - pBox->BxLBorder - pBox->BxLPadding;
   /* Nombre de caracteres qui precedent */
   *index = 0;

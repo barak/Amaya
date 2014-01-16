@@ -6,15 +6,14 @@
  */
 
 #include "templates.h"
-
 #define THOT_EXPORT extern
+#include "amaya.h"
 #include "templateDeclarations.h"
 
 #include "Elemlist.h"
-
 #include "AHTURLTools_f.h"
+#include "wxdialogapi_f.h"
 #include "EDITimage_f.h"
-#include "HTMLactions_f.h"
 #include "HTMLsave_f.h"
 #include "HTMLtable_f.h"
 #include "html2thot_f.h"
@@ -23,22 +22,13 @@
 #include "templateDeclarations_f.h"
 #include "templateInstantiate_f.h"
 #include "Templatebuilder_f.h"
+#include "templateLoad_f.h"
 #include "templateUtils_f.h"
 #include "fetchHTMLname_f.h"
 #include "Template.h"
 
 #ifdef TEMPLATES
 #define TEMPLATE_SCHEMA_NAME "Template"
-
-typedef struct _InstantiateCtxt
-{
-  char         *templatePath;
-  char         *instancePath;
-  char         *schemaName;
-  Document      doc;
-  DocumentType  docType;
-  ThotBool      dontReplace;
-} InstantiateCtxt;
 #endif /* TEMPLATES */
 
 
@@ -195,19 +185,166 @@ Element Template_InsertBagChild (Document doc, Element el, Declaration decl, Tho
   return NULL;
 }
 
+
+/*----------------------------------------------------------------------
+  CreateTemplate
+  Create a template from any document.
+  ----------------------------------------------------------------------*/
+void CreateTemplate(Document doc, char *templatePath)
+{
+#ifdef TEMPLATES
+  Document          newdoc = 0;
+  Element           root, head, elem, xt, title, child, last;
+  ElementType       elType, xtType;
+  char             *s;
+  ThotBool          mathPI;
+  SSchema           templSchema;
+  XTigerTemplate    t;
+  
+  if(IsTemplateInstanceDocument(doc))
+    {
+      ShowMessage(TtaGetMessage (AMAYA, AM_TEMPLATE_ERR_INSTANCE),
+          TtaGetMessage (AMAYA, AM_TEMPLATE_ERR_CREATION));
+      return;
+    }
+
+  if(IsTemplateDocument(doc))
+    {
+      ShowMessage(TtaGetMessage (AMAYA, AM_TEMPLATE_ERR_TEMPLATE),
+          TtaGetMessage (AMAYA, AM_TEMPLATE_ERR_CREATION));
+      return;
+    }
+  
+  root = TtaGetRootElement(doc);
+  elType = TtaGetElementType (root);
+  // get the target document type
+  s = TtaGetSSchemaName (elType.ElSSchema);
+  
+  TtaNewNature (doc, elType.ElSSchema,  NULL, "Template", "TemplateP");
+  TtaSetANamespaceDeclaration(doc, root, "xt", Template_URI);
+  templSchema = TtaGetSSchema("Template", doc);
+  TtaSetUriSSchema(templSchema, Template_URI);
+
+  // Insert xt:head and others
+  TtaSetStructureChecking (FALSE, doc);
+  if (strcmp (s, "HTML") == 0)
+    {
+      // Initialize the xt:head
+      elType.ElTypeNum = HTML_EL_HEAD;
+      head = TtaSearchTypedElement (elType, SearchInTree, root);
+      if(head)
+        {
+          xtType.ElSSchema = templSchema;
+          xtType.ElTypeNum = Template_EL_head;
+          xt = TtaNewElement(doc, xtType);
+          
+          elem = TtaGetLastChild(head);
+          if(elem)
+              TtaInsertSibling(xt, elem, FALSE, doc);
+          else
+              TtaInsertFirstChild(&xt, head, doc);
+          
+          SetAttributeStringValue(xt, Template_ATTR_version, Template_Current_Version);
+          SetAttributeStringValue(xt, Template_ATTR_templateVersion, "1.0");
+        }
+      
+      // Initialize the document title
+      elType.ElTypeNum = HTML_EL_TITLE;
+      title = TtaSearchTypedElement (elType, SearchInTree, root);
+      if(title)
+        {
+          // Create xt:use for title
+          xtType.ElTypeNum = Template_EL_useSimple;
+          xt = TtaNewElement(doc, xtType);
+          TtaInsertFirstChild(&xt, title, doc);
+          SetAttributeStringValue(xt, Template_ATTR_types, "string");
+          SetAttributeStringValue(xt, Template_ATTR_title, "title");
+          
+          // Move current title content to xt:use
+          last = NULL;
+          while(child = TtaGetLastChild(title), child!=NULL)
+            {
+              if(child==xt)
+                break;
+              TtaRemoveTree(child, doc);
+              if(last)
+                TtaInsertSibling(child, last, FALSE, doc);
+              else
+                TtaInsertFirstChild(&child, xt, doc);
+              last = child;
+            }
+        }
+    }
+  else
+    {
+      xtType.ElSSchema = templSchema;
+      xtType.ElTypeNum = Template_EL_head;
+      xt = TtaNewElement(doc, xtType);
+      TtaInsertFirstChild(&xt, root, doc);
+      SetAttributeStringValue(xt, Template_ATTR_version, Template_Current_Version);
+      SetAttributeStringValue(xt, Template_ATTR_templateVersion, "1.0");      
+    }
+  // Save changes
+  TtaSetStructureChecking (TRUE, doc);
+  
+  // Save document
+  TtaGetEnvBoolean ("GENERATE_MATHPI", &mathPI);
+  TtaSetEnvBoolean("GENERATE_MATHPI", TRUE, TRUE);
+  SaveDocumentToNewDoc(doc, newdoc, templatePath);
+  TtaSetEnvBoolean("GENERATE_MATHPI", mathPI, TRUE);
+  
+  TtaClearUndoHistory (doc);
+  RemoveParsingErrors (doc);
+
+  TtaFreeMemory(DocumentURLs[doc]);
+  DocumentURLs[doc] = TtaStrdup(templatePath);
+  
+  if(DocumentMeta[doc]==NULL)
+    DocumentMeta[doc] = DocumentMetaDataAlloc();
+  
+  DocumentMeta[doc]->method = CE_TEMPLATE;
+  if(DocumentMeta[doc]->initial_url)
+    {
+      TtaFreeMemory(DocumentMeta[doc]->initial_url);
+      DocumentMeta[doc]->initial_url = NULL;
+    }
+  TtaSetDocumentModified (doc);
+
+  // Load template-related infos :
+  // like LoadTemplate(..)
+  t = LookForXTigerTemplate(templatePath);
+  t->doc = doc;
+  Template_PrepareTemplate(t);
+  //  DocumentTypes[doc] = docTemplate;
+  t->state |= templloaded|templTemplate;
+
+#ifdef AMAYA_DEBUG  
+    DumpAllDeclarations();
+#endif /* AMAYA_DEBUG */
+    
+  /* Update the URL combo box */
+  AddURLInCombobox (DocumentURLs[doc], NULL, FALSE);
+  TtaSetTextZone (doc, 1, URL_list);
+  /* Update template menus */
+  UpdateTemplateMenus(doc);
+
+#endif /* TEMPLATES */  
+}
+
 /*----------------------------------------------------------------------
   CreateInstance
   basedoc is the displayed doc that launchs the creation of instance
   ----------------------------------------------------------------------*/
-void  CreateInstance(char *templatePath, char *instancePath, int basedoc)
+void CreateInstance(char *templatePath, char *instancePath,
+                    char *docname,  DocumentType docType, int basedoc)
 {
 #ifdef TEMPLATES
   Document          doc = 0, newdoc = 0;
-  DocumentType      docType;
   ElementType       elType;
   Element           root, title, text;
   CHARSET           charset;
-  char             *localFile, *s, *charsetname;
+  char             *s, *charsetname;
+  ThotBool          changes = FALSE;
 
   XTigerTemplate t = GetXTigerTemplate(templatePath);
   if (t == NULL)
@@ -224,7 +361,8 @@ void  CreateInstance(char *templatePath, char *instancePath, int basedoc)
   else
     newdoc = basedoc;
 
-  localFile = GetLocalPath (newdoc, instancePath);
+  // register the document type to open the right page model
+  DocumentTypes[newdoc] = docType;
   if (!TtaHasUndoSequence (doc))
     {
       TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
@@ -232,29 +370,9 @@ void  CreateInstance(char *templatePath, char *instancePath, int basedoc)
       elType = TtaGetElementType (root);
       // get the target document type
       s = TtaGetSSchemaName (elType.ElSSchema);
+      // Do special stuff for HTML documents
       if (strcmp (s, "HTML") == 0)
-        docType = docHTML;
-      else if (strcmp (s, "SVG") == 0)
-        docType = docSVG;
-      else if (strcmp (s, "MathML") == 0)
-        docType = docMath;
-      else
-        docType = docXml;
-      // update all links
-      SetRelativeURLs (doc, instancePath, "", FALSE, FALSE, FALSE);
-
-      // prepare the new document view
-      TtaExtractName (instancePath, DirectoryName, DocumentName);
-      // save in the local path
-      switch (docType)
         {
-        case docSVG:
-          TtaExportDocumentWithNewLineNumbers (doc, localFile, "SVGT", FALSE);
-          break;
-        case docMath:
-          TtaExportDocumentWithNewLineNumbers (doc, localFile, "MathMLT", FALSE);
-          break;
-        case docHTML:
           // Initialize the document title
           elType.ElTypeNum = HTML_EL_TITLE;
           title = TtaSearchTypedElement (elType, SearchInTree, root);
@@ -277,89 +395,41 @@ void  CreateInstance(char *templatePath, char *instancePath, int basedoc)
                 // Look for the first text child
                 TtaNextSibling (&text);
             }
-        
-          // update the charset if needed
-          charsetname = TtaGetEnvString ("DOCUMENT_CHARSET");
-          charset = TtaGetCharset (charsetname);
-          if (charset != UNDEFINED_CHARSET &&
-              DocumentMeta[doc]->charset &&
-              strcmp (charsetname, DocumentMeta[doc]->charset))
-            {
-              TtaSetDocumentCharset (doc, charset, FALSE);
-              DocumentMeta[doc]->charset = TtaStrdup (charsetname);
-              SetNamespacesAndDTD (doc);
-            }
-
-          // export the document
-          if (TtaGetDocumentProfile(doc) == L_Xhtml11 ||
-              TtaGetDocumentProfile(doc) == L_Basic)
-            TtaExportDocumentWithNewLineNumbers (doc, localFile, "HTMLT11", FALSE);
-          else
-            TtaExportDocumentWithNewLineNumbers (doc, localFile, "HTMLTX", FALSE);
-          break;
-        default:
-          TtaExportDocumentWithNewLineNumbers (doc, localFile, NULL, FALSE);
-          break;
         }
 
+      // update the charset if needed
+      charsetname = TtaGetEnvString ("DOCUMENT_CHARSET");
+      charset = TtaGetCharset (charsetname);
+      if (charset != UNDEFINED_CHARSET &&
+          DocumentMeta[doc]->charset &&
+          strcmp (charsetname, DocumentMeta[doc]->charset))
+        {
+          TtaSetDocumentCharset (doc, charset, FALSE);
+          DocumentMeta[doc]->charset = TtaStrdup (charsetname);
+          SetNamespacesAndDTD (doc);
+        }
+      // Save HTML special changes
       TtaCloseUndoSequence (doc);
-      TtaUndoNoRedo (doc);
+      changes = TRUE;
+
+      // Save document
+      SaveDocumentToNewDoc(doc, newdoc, instancePath);
+
+      // Revert HTML special changes
+      if (changes)
+        TtaUndoNoRedo (doc);
+      
       TtaClearUndoHistory (doc);
       RemoveParsingErrors (doc);
+      // now load the document as an instance
       GetAmayaDoc (instancePath, NULL, basedoc, basedoc, CE_INSTANCE,
                    !DontReplaceOldDoc, NULL, NULL);
       TtaSetDocumentModified (newdoc);
+      UpdateTemplateMenus(newdoc);
     }
-  TtaFreeMemory (localFile);
 #endif /* TEMPLATES */
 }
 
-/*----------------------------------------------------------------------
-  ----------------------------------------------------------------------*/
-void InstantiateTemplate_callback (int newdoc, int status,  char *urlName,
-                                   char *outputfile,
-                                   char *proxyName, AHTHeaders *http_headers,
-                                   void * context)
-{
-#ifdef TEMPLATES
-  InstantiateCtxt *ctx = (InstantiateCtxt*)context;
-
-  DoInstanceTemplate (ctx->templatePath);
-  CreateInstance (ctx->templatePath, ctx->instancePath, ctx->doc);
-  TtaFreeMemory (ctx->templatePath);
-  TtaFreeMemory (ctx->instancePath);
-  TtaFreeMemory (ctx);
-#endif /* TEMPLATES */
-}
-
-/*----------------------------------------------------------------------
-  ----------------------------------------------------------------------*/
-void InstantiateTemplate (Document doc, char *templatename, char *docname,
-                          DocumentType docType, ThotBool loaded)
-{
-#ifdef TEMPLATES
-  if (!loaded)
-    {
-      // Create the callback context
-      InstantiateCtxt *ctx = (InstantiateCtxt *)TtaGetMemory (sizeof (InstantiateCtxt));
-      ctx->templatePath	= TtaStrdup (templatename);
-      ctx->instancePath	= TtaStrdup (docname);
-      ctx->schemaName = GetSchemaFromDocType(docType);
-      ctx->doc = doc;
-      ctx->docType = docType;
-
-      GetAmayaDoc (templatename, NULL, doc, doc, CE_MAKEBOOK, FALSE, 
-                   (void (*)(int, int, char*, char*, char*,
-                             const AHTHeaders*, void*)) InstantiateTemplate_callback,
-                   (void *) ctx);
-    }
-  else
-    {
-      DoInstanceTemplate (templatename);
-      CreateInstance (templatename, docname, doc);
-    }  
-#endif /* TEMPLATES */
-}
 
 /*----------------------------------------------------------------------
   InstantiateAttribute
@@ -627,22 +697,6 @@ Element Template_InsertUseChildren(Document doc, Element el, Declaration dec)
         TtaDeleteTree(newEl, doc);
         newEl = el;
         break;
-      case UnionNat :
-        /* Nothing to do.*/
-  //                elType.ElTypeNum = Template_EL_useEl;
-  //                cont = TtaNewElement (doc, elType);
-  //                if (cont)
-  //                  {
-  //                    TtaSetAccessRight (cont, ReadWrite, doc);
-  //                    at = TtaNewAttribute (att);
-  //                    if (at)
-  //                      {
-  //                        TtaAttachAttribute (cont, at, doc);
-  //                        TtaSetAttributeText(at, types, cont, doc);
-  //                      }
-  //                  }
-        /* @@@@@ */
-        break;
       default :
         //Impossible
         break;   
@@ -665,8 +719,6 @@ void Template_FixAccessRight (XTigerTemplate t, Element el, Document doc)
   Element     child;
   char        currentType[MAX_LENGTH];
   Declaration decl;
-  
-//  DumpElementPath(el);
   
   if (t && el && doc)
     {
@@ -728,11 +780,18 @@ void AddPromptIndicator (Element el, Document doc)
   AttributeType       attrType;
   Attribute           att;
 
-  elType = TtaGetElementType (el);
-  attrType.AttrSSchema = elType.ElSSchema;
-  attrType.AttrTypeNum = Template_ATTR_prompt;
-  att = TtaNewAttribute (attrType);
-  TtaAttachAttribute (el, att, doc);
+  if (el)
+    {
+      elType = TtaGetElementType (el);
+      attrType.AttrSSchema = elType.ElSSchema;
+      attrType.AttrTypeNum = Template_ATTR_prompt;
+      att = TtaGetAttribute (el, attrType);
+      if (att == NULL)
+        {
+          att = TtaNewAttribute (attrType);
+          TtaAttachAttribute (el, att, doc);
+        }
+    }
 #endif /* TEMPLATES */
 }
 
@@ -1017,9 +1076,8 @@ static void ParseTemplate (XTigerTemplate t, Element el, Document doc,
           /* if this use element is not empty, don't do anything: it is
              supposed to contain a valid instance. This should be
              checked, though */
-          if (DocumentMeta[doc] && DocumentMeta[doc]->isTemplate)
             // add the initial indicator
-            AddPromptIndicator (el, doc);
+          AddPromptIndicator (el, doc);
             
           if (!TtaGetFirstChild (el))
             InstantiateUse (t, el, doc, FALSE);
@@ -1055,7 +1113,7 @@ void DoInstanceTemplate (char *templatename)
 #ifdef TEMPLATES
   XTigerTemplate  t;
   ElementType     elType;
-  Element         root, piElem, doctype, elFound, text;
+  Element         root, piElem, doctype, line, text, elNew, elFound;
   Document        doc;
   char           *s, *charsetname = NULL, buffer[MAX_LENGTH];
   int             pi_type;
@@ -1102,33 +1160,40 @@ void DoInstanceTemplate (char *templatename)
     }
 
   doctype = TtaSearchTypedElement (elType, SearchInTree, root);
-  if (!doctype)
+  if (doctype == NULL)
     {
-      /* generate the XML declaration */
-      /* Check the Thot abstract tree against the structure schema. */
-      TtaSetStructureChecking (FALSE, doc);
-      elType.ElTypeNum = pi_type;
-      doctype = TtaNewTree (doc, elType, "");
-      TtaInsertFirstChild (&doctype, root, doc);
-      elFound = TtaGetFirstChild (doctype);
-      text = TtaGetFirstChild (elFound);
-      strcpy (buffer, "xml version=\"1.0\" encoding=\"");
-      charsetname = UpdateDocumentCharset (doc);
-      strcat (buffer, charsetname);
-      strcat (buffer, "\"");
-      TtaSetTextContent (text, (unsigned char*)buffer,  Latin_Script, doc);
-      TtaSetStructureChecking (TRUE, doc);
-      TtaFreeMemory(charsetname);
+      elType.ElTypeNum = pi_type;      
+      piElem = TtaSearchTypedElement (elType, SearchInTree, root);
+      if (piElem == NULL)
+        {
+          /* generate the XML declaration */
+          /* Check the Thot abstract tree against the structure schema. */
+          TtaSetStructureChecking (FALSE, doc);
+          piElem = TtaNewTree (doc, elType, "");
+          TtaInsertFirstChild (&piElem, root, doc);
+          line = TtaGetFirstChild (piElem);
+          text = TtaGetFirstChild (line);
+          strcpy (buffer, "xml version=\"1.0\" encoding=\"");
+          charsetname = UpdateDocumentCharset (doc);
+          strcat (buffer, charsetname);
+          strcat (buffer, "\"");
+          TtaSetTextContent (text, (unsigned char*)buffer,  Latin_Script, doc);
+          TtaSetStructureChecking (TRUE, doc);
+          TtaFreeMemory(charsetname);
+        }
     }
   
   /* generate the XTiger PI */
   /* Check the Thot abstract tree against the structure schema. */
   TtaSetStructureChecking (FALSE, doc);
   elType.ElTypeNum = pi_type;
-  piElem = TtaNewTree (doc, elType, "");
-  TtaInsertSibling (piElem, doctype, FALSE, doc);
-  elFound = TtaGetFirstChild (piElem);
-  text = TtaGetFirstChild (elFound);
+  elNew = TtaNewTree (doc, elType, "");
+  if (doctype)
+    TtaInsertSibling (elNew, doctype, FALSE, doc);
+  else
+    TtaInsertSibling (elNew, piElem, FALSE, doc);
+  line = TtaGetFirstChild (elNew);
+  text = TtaGetFirstChild (line);
   strcpy (buffer, "xtiger template=\"");
   strcat (buffer, templatename);
   strcat (buffer, "\" version=\"");
@@ -1162,8 +1227,8 @@ void DoInstanceTemplate (char *templatename)
 }
 
 /*----------------------------------------------------------------------
-  Template_PreInstantiateComponents: Instantiates all components in 
-  order to improve editing.
+  Template_PreInstantiateComponents
+  Instantiates all components in order to improve editing.
   ----------------------------------------------------------------------*/
 void Template_PreInstantiateComponents (XTigerTemplate t)
 {
@@ -1171,15 +1236,14 @@ void Template_PreInstantiateComponents (XTigerTemplate t)
   if (!t)
     return;
 
-  HashMap         components = GetComponents(t);
-  ForwardIterator iter = HashMap_GetForwardIterator(components);
-  Declaration     comp;
-  HashMapNode     node;
+  ForwardIterator iter = SearchSet_GetForwardIterator(GetComponents(t));
+  Declaration     dec;
+  SearchSetNode   node;
 
-  ITERATOR_FOREACH(iter, HashMapNode, node)
+  ITERATOR_FOREACH(iter, SearchSetNode, node)
     {
-      comp = (Declaration) node->elem;
-      ParseTemplate(t, GetComponentContent(comp), GetTemplateDocument(t), TRUE);
+      dec = (Declaration) node->elem;
+      ParseTemplate(t, GetComponentContent(dec), GetTemplateDocument(t), TRUE);
     }
   TtaFreeMemory(iter);
 #endif /* TEMPLATES */

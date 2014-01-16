@@ -74,6 +74,17 @@ ConstructType;
    ---------------------------------------------------------------------- */
 extern void TtaChangeElementType (Element element, int typeNum);
 
+/* ----------------------------------------------------------------------
+   TtaUpdateRootElementType
+   Change the document and the root element schema if different to the
+   requested schema.
+   CAUTION: THIS FUNCTION SHOULD BE USED VERY CARFULLY!
+   Parameters:
+   root:   the concerned element must be the root of the document
+   schemaName: the requested schema name.
+   ---------------------------------------------------------------------- */
+extern void TtaUpdateRootElementType (Element element, char *schemaName, Document doc);
+
 /*----------------------------------------------------------------------
    TtaChangeTypeOfElement
    Change the type of element elem into newTypeNum
