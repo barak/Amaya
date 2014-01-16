@@ -60,6 +60,7 @@ AmayaStatusBar::AmayaStatusBar( wxWindow * p_parent )
   : wxStatusBar(p_parent, wxID_ANY)
     ,m_LogErrorBmp_Green(TtaGetResourcePathWX( WX_RESOURCES_ICON_16X16, "ledgreen.png"), wxBITMAP_TYPE_PNG)
     ,m_LogErrorBmp_Red(TtaGetResourcePathWX( WX_RESOURCES_ICON_16X16, "ledred.png"), wxBITMAP_TYPE_PNG)
+    ,m_pathCtrl(NULL)
 {
   TTALOGDEBUG_0( TTA_LOG_DIALOG, _T("AmayaStatusBar::AmayaStatusBar"));
 
@@ -68,10 +69,12 @@ AmayaStatusBar::AmayaStatusBar( wxWindow * p_parent )
   m_pLogErrorButton = new wxBitmapButton( this, wxID_ANY, m_LogErrorBmp_Red,
                                           wxDefaultPosition, wxDefaultSize,
                                           wxBU_EXACTFIT | wxNO_BORDER);
-  wxASSERT(m_pLogErrorButton);  
+  wxASSERT(m_pLogErrorButton);
+  
+  m_pathCtrl = new AmayaPathControl(this, wxID_ANY);
 
   // setup statusbar attributes
-  static const int widths[Field_Max] = { -1, m_pLogErrorButton->GetSize().GetWidth()+LOG_SHIFT};
+  static const int widths[Field_Max] = { -1, -1, m_pLogErrorButton->GetSize().GetWidth()+LOG_SHIFT};
   SetFieldsCount(Field_Max);
   SetStatusWidths(Field_Max, widths);
   SetMinHeight(m_pLogErrorButton->GetSize().GetHeight()+4);
@@ -110,7 +113,10 @@ void AmayaStatusBar::OnSize(wxSizeEvent& event)
   wxSize size = m_pLogErrorButton->GetSize();
   m_pLogErrorButton->Move(rect.x + (rect.width - size.x - LOG_SHIFT + 4) / 2,
                           rect.y + (rect.height - size.y) / 2);
-  
+
+  GetFieldRect(Field_Path, rect);
+  m_pathCtrl->SetSize(rect.x+1, rect.y+1, rect.width-1, rect.height-1);
+
   event.Skip();
 }
 
@@ -132,6 +138,25 @@ void AmayaStatusBar::EnableLogError( bool enable )
       m_pLogErrorButton->SetBitmapLabel(m_LogErrorBmp_Green);
       m_pLogErrorButton->SetBitmapDisabled(m_LogErrorBmp_Green);
     }
+}
+
+/*----------------------------------------------------------------------
+  SetSelectedElement
+  change the path of the selected element (2nd field).
+  ----------------------------------------------------------------------*/
+void AmayaStatusBar::SetSelectedElement(Element elem)
+{
+  if (m_pathCtrl)
+    m_pathCtrl->SetSelection(elem);
+}
+
+/*----------------------------------------------------------------------
+  SetStatusText
+  Set the text of the status bar.
+  ----------------------------------------------------------------------*/
+void AmayaStatusBar::SetStatusText(const wxString& text, int i)
+{
+  wxStatusBar::SetStatusText(text, Field_Text);
 }
 
 #endif /* _WX */

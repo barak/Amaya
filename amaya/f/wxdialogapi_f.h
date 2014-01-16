@@ -11,6 +11,12 @@ extern void ParseStyleDlgValues ( void *style_widget,
 extern void DisplayStyleValue ( char *property,
                                 char *start_value,
                                 char *end_value );
+extern ThotBool CreateSelectOperatorDlgWX ( int ref,
+                                            ThotWindow parent );
+extern ThotBool CreateSelectFenceAttributesDlgWX ( int ref,
+                                                   ThotWindow parent );
+extern ThotBool CreateSelectIntegralDlgWX ( int ref,
+                                            ThotWindow parent );
 extern ThotBool CreateInitConfirmDlgWX ( int ref,
                                          ThotWindow parent,
                                          char *title,
@@ -157,6 +163,12 @@ extern void ParseStyleDlgValues ( void *style_widget,
 extern void DisplayStyleValue ( char *property,
                                   char *start_value,
                                   char *end_value );
+extern ThotBool CreateSelectOperatorDlgWX ( int ref,
+                                              ThotWindow parent );
+extern ThotBool CreateSelectFenceAttributesDlgWX ( int ref,
+                                                     ThotWindow parent );
+extern ThotBool CreateSelectIntegralDlgWX ( int ref,
+                                              ThotWindow parent );
 extern ThotBool CreateInitConfirmDlgWX ( int ref,
                                            ThotWindow parent,
                                            char *title,

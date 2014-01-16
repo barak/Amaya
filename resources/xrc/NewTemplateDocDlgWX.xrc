@@ -121,6 +121,7 @@
                     <item>*Repleace current one*</item>
                     <item>*In new window*</item>
                   </content>
+                  <size>250,-1</size>
                   <style>wxRA_SPECIFY_COLS</style>
                 </object>
               </object>
@@ -193,6 +194,14 @@
             </object>
             <option>2</option>
             <flag>wxALL|wxEXPAND</flag>
+            <border>4</border>
+          </object>
+          <object class="sizeritem">
+            <object class="wxStaticText" name="wxID_ERROR">
+              <label>Title is mandatory</label>
+              <fg>#7A1919</fg>
+            </object>
+            <flag>wxRIGHT|wxALIGN_CENTRE_VERTICAL</flag>
             <border>4</border>
           </object>
         </object>

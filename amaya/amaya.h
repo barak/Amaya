@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2005
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -90,8 +90,8 @@ typedef void   TIcbf (Document doc, int status, char *urlName,
 		      void *context);
 
 typedef void  TTcbf (Document doc, int status, char *urlName,
-                     char *outputfile, const AHTHeaders *http_headers,
-                     void *context);
+                     char *outputfile, char *proxyName,
+                     const AHTHeaders *http_headers, void *context);
 
 /* How are Network accesses provided ? */
 #include "libwww.h"
@@ -261,9 +261,21 @@ typedef enum _ClickEvent {
 #define MAX_CSS_REF     4
 
 #define FormMaths 0
-#define MenuMaths 1
-#define MenuMaths1 2
-#define MAX_MATHS  3
+#define FormMathOperator 1
+
+#define FormMathFenceAttributes 2
+#define MathAttributeOpen 3
+#define MathAttributeSeparators 4
+#define MathAttributeClose 5
+
+#define FormMathIntegral 6
+#define MathIntegralNumber 7
+#define MathIntegralContour 8
+#define MathIntegralType 9
+
+#define MenuMaths 10
+#define MenuMaths1 11
+#define MAX_MATHS 12
 
 #define FormGraph 0
 #define MenuGraph 1

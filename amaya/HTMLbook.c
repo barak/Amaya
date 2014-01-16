@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2005
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -1142,7 +1142,8 @@ static void CloseMakeBook (Document document)
   ----------------------------------------------------------------------*/
 void   GetIncludedDocuments_callback (int newdoc, int status, 
                                       char *urlName,
-                                      char *outputfile, 
+                                      char *outputfile,
+				      char *proxyName, 
                                       AHTHeaders *http_headers,
                                       void * context)
 {
@@ -1293,7 +1294,7 @@ static ThotBool GetIncludedDocuments (Element el, Element link,
                   SetStopButton (doc);
                   newdoc = GetAmayaDoc (utf8path, NULL, IncludedDocument,
                                         doc, CE_MAKEBOOK, FALSE, 
-                                        (void (*)(int, int, char*, char*, const AHTHeaders*, void*)) GetIncludedDocuments_callback,
+                                        (void (*)(int, int, char*, char*, char*, const AHTHeaders*, void*)) GetIncludedDocuments_callback,
                                         (void *) ctx);
                   found = TRUE;
                 }
@@ -1692,7 +1693,7 @@ void SectionNumbering (Document doc, View view)
   ----------------------------------------------------------------------*/
 void MakeToc (Document doc, View view)
 {
-  Element             el, new_, *list, parent, copy, srce, child, prev;
+  Element             el, new_, *list, parent, copy, srce, child, prev, ancest;
   Element             toc, lH2, lH3, lH4, lH5, lH6, item;
   ElementType         elType, searchedType1, searchedType2;
   ElementType         searchedType3, searchedType4, searchedType5;
@@ -1727,7 +1728,22 @@ void MakeToc (Document doc, View view)
   s = TtaGetSSchemaName (elType.ElSSchema);
   if (strcmp (s, "HTML"))
     /* not within HTML element */
-    return;
+    {
+      /* skip ancestors that are Template elements */
+      ancest = el;
+      while (ancest && !strcmp (s, "Template"))
+        {
+          ancest = TtaGetParent (ancest);
+          if (ancest)
+            {
+              elType = TtaGetElementType (ancest);
+              s = TtaGetSSchemaName (elType.ElSSchema);
+            }
+        }
+      if (strcmp (s, "HTML"))
+        return;
+    }
+
   if (!HTMLelementAllowed (doc))
     /* the creation of an HTML element is not allowed here */
     return;
@@ -1895,12 +1911,28 @@ void MakeToc (Document doc, View view)
                   while (srce)
                     {
                       copyType = TtaGetElementType (srce);
-                      if (copyType.ElTypeNum == HTML_EL_Anchor &&
+                      s = TtaGetSSchemaName (copyType.ElSSchema);
+                      while (srce && !TtaIsLeaf (copyType) &&
+                             !strcmp (s, "Template"))
+                        {
+                          /* copy the anchor contents instead of the anchor */
+                          if (parent == NULL)
+                            parent = srce;
+                          srce = TtaGetFirstChild (srce);
+                          if (srce)
+                            {
+                              copyType = TtaGetElementType (srce);
+                              s = TtaGetSSchemaName (copyType.ElSSchema);
+                            }
+                        }
+                      if (srce &&
+                          copyType.ElTypeNum == HTML_EL_Anchor &&
                           copyType.ElSSchema == elType.ElSSchema)
                         {
                           /* copy the anchor contents instead of the anchor */
-                          parent = srce;
-                          srce = TtaGetFirstChild (parent);
+                          if (parent == NULL)
+                            parent = srce;
+                          srce = TtaGetFirstChild (srce);
                         }
                       if (srce)
                         {

@@ -1293,7 +1293,22 @@ void *TtaCopyTransform(void *void_pPa)
       current->TransType = pPa->TransType;    
       switch (pPa->TransType)
         {
+        case PtElScale:
+        case PtElTranslate:
+        case PtElAnimTranslate:
+          current->XScale = pPa->XScale;	  
+          current->YScale = pPa->YScale;	  
+          break;
+        case PtElViewBox:
+          current->VbXTranslate = pPa->VbXTranslate;
+          current->VbYTranslate = pPa->VbYTranslate;
+          current->VbWidth = pPa->VbWidth;
+          current->VbHeight = pPa->VbHeight;
+          current->VbAspectRatio = pPa->VbAspectRatio;
+          current->VbMeetOrSlice = pPa->VbMeetOrSlice;
+          break;
         case PtElRotate:
+        case PtElAnimRotate:
           current->XRotate = pPa->XRotate;	  
           current->YRotate = pPa->YRotate;	  
           current->TrAngle = pPa->TrAngle;
@@ -1311,8 +1326,6 @@ void *TtaCopyTransform(void *void_pPa)
           current->TrFactor = pPa->TrFactor;
           break;	  
         default:
-          current->XScale = pPa->XScale;	  
-          current->YScale = pPa->YScale;	  
           break;
         }	       
       if (pPa->Next)
@@ -1343,15 +1356,12 @@ void *TtaNewBoxTransformTranslate (float x, float y)
 /*----------------------------------------------------------------------
   TtaNewTransformTranslate
   ---------------------------------------------------------------------- */
-void *TtaNewTransformTranslate (float x, float y, ThotBool viewbox)   
+void *TtaNewTransformTranslate (float x, float y)   
 {
   PtrTransform pPa;
 
   pPa = (Transform*)TtaNewTransform ();
-  if (viewbox)
-    pPa->TransType = PtElviewboxTranslate;
-  else
-    pPa->TransType = PtElTranslate;
+  pPa->TransType = PtElTranslate;
   pPa->XScale = x;
   pPa->YScale = y;
   return (pPa);
@@ -1430,17 +1440,32 @@ void *TtaNewTransformSkewY (float factor)
 /*----------------------------------------------------------------------
   TtaNewTransformScale
   ---------------------------------------------------------------------- */
-void *TtaNewTransformScale (float x_scale, float y_scale, ThotBool viewbox)	   
+void *TtaNewTransformScale (float x_scale, float y_scale)	   
 {
   PtrTransform pPa;
 
   pPa = (Transform*)TtaNewTransform ();
-  if (viewbox)
-    pPa->TransType = PtElviewboxScale;
-  else
-    pPa->TransType = PtElScale;   
+  pPa->TransType = PtElScale;   
   pPa->XScale = x_scale;
   pPa->YScale = y_scale;
+  return (pPa);
+}
+
+/*----------------------------------------------------------------------
+  TtaNewTransformViewBox
+  ---------------------------------------------------------------------- */
+void *TtaNewTransformViewBox (float x, float y, float w, float h, int align, int meetOrSlice)	   
+{
+  PtrTransform pPa;
+
+  pPa = (Transform*)TtaNewTransform ();
+  pPa->TransType = PtElViewBox;
+  pPa->VbXTranslate = x;
+  pPa->VbYTranslate = y;
+  pPa->VbWidth = w;
+  pPa->VbHeight = h;
+  pPa->VbAspectRatio = (ViewBoxAspectRatio) align;
+  pPa->VbMeetOrSlice = (ViewBoxMeetOrSlice) meetOrSlice;
   return (pPa);
 }
 

@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2005
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -390,8 +390,8 @@ void UpdateStyleSheet (char *url, char *tempdoc)
   PInfoPtr            pInfo, refInfo, nextInfo;
   DisplayMode         dispMode;
   Element             el;
-  int		      position;
-  int		      distance;
+  int		              position;
+  int		              distance;
   ThotBool            found;
 
   css = CSSList;
@@ -766,9 +766,9 @@ static void CallbackCSS (int ref, int typedata, char *data)
               /* display the CSS file */
 #ifdef _WX
               GetAmayaDoc (ptr, NULL, CSSdocument,
-                           CSSdocument, CE_CSS, FALSE, NULL, NULL);
+                           CSSdocument, CE_CSS, TRUE, NULL, NULL);
 #else /* _WX */
-              GetAmayaDoc (ptr, NULL, 0, 0, CE_CSS, FALSE, NULL, NULL);
+              GetAmayaDoc (ptr, NULL, 0, 0, CE_CSS, TRUE, NULL, NULL);
 #endif /* _WX */
               break;
             case 2:

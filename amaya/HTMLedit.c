@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2005
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -29,6 +29,9 @@
 #endif /* SVG */
 #ifdef TEMPLATES
 #include "Template.h"
+#include "templates.h"
+#include "templates_f.h"
+#include "templateDeclarations_f.h"
 #endif /* TEMPLATES */
 
 static char        *TargetDocumentURL = NULL;
@@ -458,10 +461,13 @@ void GenerateInlineElement (int eType, int aType, char * data)
   DisplayMode     dispMode;
   ThotBool	      doit, split, before, charlevel, inside, done;
   ThotBool        lastChanged, parse, open, selpos, isPict = FALSE;
+  SSchema         templateSSchema;
 
   doc = TtaGetSelectedDocument();
   if (doc)
     {
+
+
       if (DocumentTypes[doc] == docText ||
           DocumentTypes[doc] == docCSS ||
           DocumentTypes[doc] == docSource)
@@ -471,6 +477,27 @@ void GenerateInlineElement (int eType, int aType, char * data)
           /* give current position */
           TtaGiveFirstSelectedElement (doc, &firstSel, &firstchar, &i);
           TtaGiveLastSelectedElement (doc, &lastSel, &j, &lastchar);
+          
+#ifdef TEMPLATES
+          /* Verify if template allow this element.*/
+          templateSSchema = TtaGetSSchema (TEMPLATE_SSHEMA_NAME, doc);
+          if(templateSSchema)
+          {
+            parent = GetFirstTemplateParentElement(firstSel);
+            elType.ElSSchema = TtaGetSSchema ("HTML", doc);
+            elType.ElTypeNum = eType;
+            if(parent)
+            {
+              parentType = TtaGetElementType(parent);
+              if(parentType.ElSSchema==templateSSchema && parentType.ElTypeNum==Template_EL_bag)
+              {
+                if(!Template_CanInsertElementInBagElement(doc, elType, parent))
+                  return;
+              }
+            }
+          }
+#endif /* TEMPLATES */
+          
           if (TtaIsReadOnly (firstSel))
             {
               /* the selected element is read-only */
@@ -1366,6 +1393,17 @@ void ChangeTitle (Document doc, View view)
       elType.ElTypeNum = HTML_EL_TITLE;
       el = TtaSearchTypedElement (elType, SearchForward, el);
       child = TtaGetFirstChild (el);
+#ifdef TEMPLATES
+      if (child)
+        {
+          elType = TtaGetElementType (child);
+          if ((elType.ElTypeNum == Template_EL_useEl ||
+               elType.ElTypeNum == Template_EL_useSimple) &&
+              !strcmp (TtaGetSSchemaName (elType.ElSSchema), "Template"))
+            // Ignore the template use element
+            child = TtaGetFirstChild (child);
+        }
+#endif /* TEMPLATES */
       if (child == NULL)
         {
           /* insert the text element */
@@ -1433,6 +1471,17 @@ void SetNewTitle (Document doc)
       elType.ElTypeNum = HTML_EL_TITLE;
       el = TtaSearchTypedElement (elType, SearchForward, el);
       child = TtaGetFirstChild (el);
+#ifdef TEMPLATES
+      if (child)
+        {
+          elType = TtaGetElementType (child);
+          if ((elType.ElTypeNum == Template_EL_useEl ||
+               elType.ElTypeNum == Template_EL_useSimple) &&
+              !strcmp (TtaGetSSchemaName (elType.ElSSchema), "Template"))
+            // Ignore the template use element
+            child = TtaGetFirstChild (child);
+        }
+#endif /* TEMPLATES */
       if (child)
         {
           TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
@@ -2269,21 +2318,14 @@ ThotBool MakeUniqueName (Element el, Document doc, ThotBool doIt,
 #ifdef TEMPLATES
   else if (!strcmp(name, "Template"))
     {
-      //TODO : Check if NAME and ID must be different.
-      /* it's an element from Template namespace, look for the
-         id attribute from the same namespace */
-      attrIDType.AttrTypeNum = Template_ATTR_id;
-      attrID = TtaGetAttribute (el, attrIDType);
-      if (attrID)
-        /* the element has a id attribute. Check it too */
-        checkXMLID = TRUE;
-      /* it's an element from Template namespace, look for the
+      /* it's an element from the SVG namespace, look for the
          id attribute from the same namespace */
       attrIDType.AttrTypeNum = Template_ATTR_name;
       attrID = TtaGetAttribute (el, attrIDType);
       if (attrID)
-        /* the element has a id attribute. Check it too */
+        /* the element has a name attribute. Check it too */
         checkXMLID = TRUE;
+      attrType.AttrTypeNum = Template_ATTR_name;
     }
 #endif /* TEMPLATES */
   else
@@ -3557,6 +3599,9 @@ void CheckNewLines (NotifyOnTarget *event)
               TtaFreeMemory (content);
               return;
             }
+          else if (!strcmp(name, "Template"))
+            /* just skip ancestors that are template elements */
+            ancestor = TtaGetParent (ancestor);
           else
             ancestor = NULL;  /* not an HTML element */
         }

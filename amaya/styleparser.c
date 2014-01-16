@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2005
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -1666,6 +1666,7 @@ static char *ParseCSSBorderRight (Element element, PSchema tsch,
       /* get the box color */
       best.typed_data.value = -1;
       best.typed_data.unit = UNIT_REL;
+      best.typed_data.real = FALSE;
       TtaSetStylePresentation (PRBorderRightColor, element, tsch, context, best);
     }
   return (cssRule);

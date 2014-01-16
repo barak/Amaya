@@ -1,4 +1,11 @@
 /*
+ *
+ *  COPYRIGHT INRIA and W3C, 2006-2007
+ *  Please first read the full copyright statement in file COPYRIGHT.
+ *
+ */
+
+/*
  *  FILE   : mydictionary.c
  *  AUTHOR : Francesc Campoy Flores
 
@@ -14,7 +21,7 @@
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-DicDictionary CreateDictionary ()
+DicDictionary Dictionary_Create ()
 {
 	DicDictionary dic = (DicDictionary)TtaGetMemory (sizeof (sDictionary));
   memset (dic, 0, sizeof (sDictionary));
@@ -25,29 +32,33 @@ DicDictionary CreateDictionary ()
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-void CleanDictionary (DicDictionary dic)
+void Dictionary_Clean (DicDictionary dic)
 {
-	Record rec = dic->first;
-	Record old;
-	while (rec)
+  if(dic)
+  {
+  	Record rec = dic->first;
+  	Record old;
+  	while (rec)
     {
-      free (rec->key);
       old = rec;
-	  rec = rec->next;
-      free (old);
+      TtaFreeMemory (rec->key);
+      rec->key = NULL;
+      rec->element = NULL;
+      rec = rec->next;
+      TtaFreeMemory (old);
     }
-	dic->first = NULL;
-	dic->iter = NULL;
-  TtaFreeMemory (dic);
+  	dic->first = NULL;
+  	dic->iter = NULL;
+    TtaFreeMemory (dic);
+  }
 }
-
 
 /*----------------------------------------------------------------------
   Returns the Record with the passed key or the Record which would be
   before if there is no Record with that key.
   If the element should be the first it returns NULL
   ----------------------------------------------------------------------*/
-Record Find (DicDictionary dic, const char * key)
+Record Dictionary_Find (DicDictionary dic, const char * key)
 {
 	Record rec = dic->first;
 	Record precedent = NULL;
@@ -81,7 +92,7 @@ Record Find (DicDictionary dic, const char * key)
   in the linked list.
   !null !isFirst : if the element key has been found returns the previous element.
   ----------------------------------------------------------------------*/
-Record FindPrevious (DicDictionary dic, const char * key, ThotBool *isFirst)
+Record Dictionary_FindPrevious (DicDictionary dic, const char * key, ThotBool *isFirst)
 {
 	Record rec = dic->first;
 	Record precedent = NULL;
@@ -117,7 +128,7 @@ Record FindPrevious (DicDictionary dic, const char * key, ThotBool *isFirst)
   in the linked list.
   !null !isFirst : if the element key has been found returns the previous element.
   ----------------------------------------------------------------------*/
-Record FindPreviousElement (DicDictionary dic, const DicElement el, ThotBool *isFirst)
+Record Dictionary_FindPreviousElement (DicDictionary dic, const DicElement el, ThotBool *isFirst)
 {
 	Record rec        = dic->first;
 	Record precedent  = NULL;
@@ -147,9 +158,9 @@ Record FindPreviousElement (DicDictionary dic, const DicElement el, ThotBool *is
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-DicElement Add (DicDictionary dic, const char * key, const DicElement el)
+DicElement Dictionary_Add (DicDictionary dic, const char * key, const DicElement el)
 {	
-	Record     rec = Find (dic, key);
+	Record     rec = Dictionary_Find (dic, key);
 	Record     newRec;
 	DicElement result = NULL;
 	
@@ -186,15 +197,17 @@ DicElement Add (DicDictionary dic, const char * key, const DicElement el)
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-DicElement Remove (DicDictionary dic, const char * key)
+DicElement Dictionary_Remove (DicDictionary dic, const char * key)
 {
 	ThotBool isFirst;
 	Record aux = NULL;
 	DicElement result = NULL;
 
-	Record rec = FindPrevious (dic, key, &isFirst);
+	Record rec = Dictionary_FindPrevious (dic, key, &isFirst);
 	if (isFirst)
     {
+      if(dic->iter==dic->first)
+        dic->iter = dic->first->next; 
       aux = dic->first;
       dic->first = aux->next;
     }
@@ -205,6 +218,8 @@ DicElement Remove (DicDictionary dic, const char * key)
     {
       aux = rec->next;
       rec->next = aux->next;
+      if(dic->iter==rec)
+        dic->iter = aux->next; 
     }
 
 	TtaFreeMemory (aux->key);
@@ -217,15 +232,17 @@ DicElement Remove (DicDictionary dic, const char * key)
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-DicElement RemoveElement (DicDictionary dic, const DicElement el)
+DicElement Dictionary_RemoveElement (DicDictionary dic, const DicElement el)
 {
 	ThotBool isFirst;
 	Record aux = NULL;
 	DicElement result = NULL;
 
-	Record rec = FindPreviousElement (dic, el, &isFirst);
+	Record rec = Dictionary_FindPreviousElement (dic, el, &isFirst);
 	if (isFirst)
     {
+      if(dic->iter==dic->first)
+        dic->iter = dic->first->next; 
       aux = dic->first;
       dic->first = aux->next;
     }
@@ -236,6 +253,8 @@ DicElement RemoveElement (DicDictionary dic, const DicElement el)
     {
       aux = rec->next;
       rec->next = aux->next;
+      if(dic->iter==rec)
+        dic->iter = aux->next; 
     }
 
 	TtaFreeMemory (aux->key);
@@ -247,17 +266,33 @@ DicElement RemoveElement (DicDictionary dic, const DicElement el)
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-DicElement Get (DicDictionary dic, const char * key)
+Record Dictionary_GetLastRecord(DicDictionary dic)
 {
+  Record rec, last = NULL;
+  
+  rec = dic->first;
+  while(rec)
+  {
+    last = rec;
+    rec = rec->next;
+  }
+
+  return last;
+}
+
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+DicElement Dictionary_Get (DicDictionary dic, const char * key)
+{
+  Record rec;
+
   if (!key)
     return NULL;
-
-	Record rec = Find (dic,key);
-	
+  rec = Dictionary_Find (dic,key);
 	if (!rec)
     return NULL;
-
-	if (strcmp (rec->key,key) == 0)
+	else if (strcmp (rec->key, key) == 0)
 		return rec->element;
 	else
 		return NULL;
@@ -265,14 +300,14 @@ DicElement Get (DicDictionary dic, const char * key)
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-void First (DicDictionary dic)
+void Dictionary_First (DicDictionary dic)
 {
 	dic->iter = dic->first;
 }
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-void Next (DicDictionary dic)
+void Dictionary_Next (DicDictionary dic)
 {
 	if (dic->iter)
 		dic->iter = dic->iter->next;
@@ -280,14 +315,14 @@ void Next (DicDictionary dic)
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-ThotBool IsDone (const DicDictionary dic)
+ThotBool Dictionary_IsDone (const DicDictionary dic)
 {
 	return dic->iter == NULL;
 }
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-char* CurrentKey (const DicDictionary dic)
+char* Dictionary_CurrentKey (const DicDictionary dic)
 {
 	if (dic->iter)
 		return dic->iter->key;
@@ -297,7 +332,7 @@ char* CurrentKey (const DicDictionary dic)
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-void* CurrentElement (const DicDictionary dic)
+void* Dictionary_CurrentElement (const DicDictionary dic)
 {
 	if (dic->iter)
 		return dic->iter->element;
@@ -307,10 +342,12 @@ void* CurrentElement (const DicDictionary dic)
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-ThotBool IsEmpty (const DicDictionary dic)
+ThotBool Dictionary_IsEmpty (const DicDictionary dic)
 {
 	return !dic->first;
 }
+
+
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
@@ -321,12 +358,12 @@ ThotBool isEOSorWhiteSpace (const char c)
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-DicDictionary CreateDictionaryFromList (const char *list)
+DicDictionary Dictionary_CreateFromList (const char *list)
 {
 	char temp[128];
 	int labelSize;
 
-	DicDictionary dic = CreateDictionary ();
+	DicDictionary dic = Dictionary_Create ();
 
 	for (unsigned int i=0; i<strlen (list); i++)
     {		
@@ -343,7 +380,7 @@ DicDictionary CreateDictionaryFromList (const char *list)
         }
 
       temp[labelSize] = EOS;
-      Add (dic,temp, NULL);
+      Dictionary_Add (dic,temp, NULL);
     }
 	return dic;
 }

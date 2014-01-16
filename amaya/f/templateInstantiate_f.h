@@ -6,14 +6,13 @@
 #ifndef __CEXTRACT__
 #ifdef __STDC__
 
-extern void RegisterURLs ( Document doc,
-                           Element el );
 extern void CreateInstance ( char *templatePath,
                              char *instancePath );
 extern void InstantiateTemplate_callback ( int newdoc,
                                            int status,
                                            char *urlName,
                                            char *outputfile,
+                                           char *proxyName,
                                            AHTHeaders *http_headers,
                                            void * context );
 extern void InstantiateTemplate ( Document doc,
@@ -21,26 +20,35 @@ extern void InstantiateTemplate ( Document doc,
                                   char *docname,
                                   DocumentType docType,
                                   ThotBool loaded );
+extern Element Template_GetNewSimpleTypeInstance ( Document doc,
+                                                   Element parent,
+                                                   Declaration decl );
+extern Element Template_GetNewXmlElementInstance ( Document doc,
+                                                   Element parent,
+                                                   Declaration decl );
+extern Element Template_InsertUseChildren ( Document doc,
+                                            Element el,
+                                            Declaration dec );
 extern Element InstantiateUse ( XTigerTemplate t,
                                 Element el,
                                 Document doc,
-                                ThotBool insert );
+                                ThotBool registerUndo );
 extern void InstantiateRepeat ( XTigerTemplate t,
                                 Element el,
-                                Document doc );
+                                Document doc,
+                                ThotBool registerUndo );
 extern void DoInstanceTemplate ( char *templatename );
 extern void PreInstantiateComponents ( XTigerTemplate t );
 
 #else /* __STDC__ */
 
-extern void RegisterURLs ( Document doc,
-                             Element el );
 extern void CreateInstance ( char *templatePath,
                                char *instancePath );
 extern void InstantiateTemplate_callback ( int newdoc,
                                              int status,
                                              char *urlName,
                                              char *outputfile,
+                                             char *proxyName,
                                              AHTHeaders *http_headers,
                                              void * context );
 extern void InstantiateTemplate ( Document doc,
@@ -48,13 +56,23 @@ extern void InstantiateTemplate ( Document doc,
                                     char *docname,
                                     DocumentType docType,
                                     ThotBool loaded );
+extern Element Template_GetNewSimpleTypeInstance ( Document doc,
+                                                     Element parent,
+                                                     Declaration decl );
+extern Element Template_GetNewXmlElementInstance ( Document doc,
+                                                     Element parent,
+                                                     Declaration decl );
+extern Element Template_InsertUseChildren ( Document doc,
+                                              Element el,
+                                              Declaration dec );
 extern Element InstantiateUse ( XTigerTemplate t,
                                   Element el,
                                   Document doc,
-                                  ThotBool insert );
+                                  ThotBool registerUndo );
 extern void InstantiateRepeat ( XTigerTemplate t,
                                   Element el,
-                                  Document doc );
+                                  Document doc,
+                                  ThotBool registerUndo );
 extern void DoInstanceTemplate ( char *templatename );
 extern void PreInstantiateComponents ( XTigerTemplate t );
 

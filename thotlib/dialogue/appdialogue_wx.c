@@ -36,7 +36,7 @@
 
 /* implement panel array */
 #define THOT_EXPORT
-#include "panel_tv.h"
+#include "paneltypes_wx.h"
 
 #undef THOT_EXPORT
 #define THOT_EXPORT extern
@@ -215,7 +215,7 @@ int TtaMakeWindow( int x, int y, int w, int h, int kind, int parent_window_id )
   WindowTable[window_id].WdWindow = p_window;
   WindowTable[window_id].FrWidth  = p_window->GetSize().GetWidth();
   WindowTable[window_id].FrHeight = p_window->GetSize().GetHeight();
-  WindowTable[window_id].WdStatus = p_window->GetStatusBar();
+  WindowTable[window_id].WdStatus = p_window->GetAmayaStatusBar();
 
   // setup window panel
   AmayaPanel * p_panel = p_window->GetAmayaPanel();
@@ -312,8 +312,18 @@ static void BuildPopdownWX ( int window_id, Menu_Ctl *ptrmenu, ThotMenu p_menu )
   wxMenu *     p_submenu = NULL;
   int          max_item_label_lg = 0;
   wxString     label;
-  
+  wxString     menu_label;
+
   wxASSERT (p_menu);
+
+#if defined (_MACOS) 
+   if (ptrmenu->MenuHelp)
+      {
+        menu_label = TtaConvMessageToWX(TtaGetMessage (THOT, ptrmenu->MenuID));
+        wxApp::s_macHelpMenuTitleName = menu_label;
+      }
+#endif /* _MACOS */
+
   /* first of all check for the largest menuitem label */
   while (item_nb < ptrmenu->ItemsNb)
     {
@@ -460,8 +470,13 @@ static void TtaMakeWindowMenuBar( int window_id )
             WindowTable[window_id].MenuAttr = ptrmenu->MenuID;
           else if (ptrmenu->MenuSelect) 
             WindowTable[window_id].MenuSelect = ptrmenu->MenuID;
-          else if (ptrmenu->MenuHelp) 
-            WindowTable[window_id].MenuHelp = ptrmenu->MenuID;
+          else if (ptrmenu->MenuHelp)
+            { 
+               WindowTable[window_id].MenuHelp = ptrmenu->MenuID;
+#if defined (_MACOS) 
+             // wxApp::s_macHelpMenuTitleName = "Aide";
+#endif /* _MACOS */ 
+             }
           
           /* Now create the menu's widgets and hangs it to our p_menu */
           BuildPopdownWX( window_id, ptrmenu, p_menu );
@@ -666,8 +681,9 @@ void TtaRefreshMenuItemStats( int doc_id, Menu_Ctl * ptrmenu, int menu_item_id )
   /* refresh every entry */
   while (ptrmenu)
     {
+      if (!ptrmenu->MenuContext)
+	  {
       ptritem = ptrmenu->ItemsList;
-      
       item_nb = 0;      
       while (item_nb < ptrmenu->ItemsNb)
         {
@@ -711,7 +727,7 @@ void TtaRefreshMenuItemStats( int doc_id, Menu_Ctl * ptrmenu, int menu_item_id )
           
           item_nb++;
         }
-      
+      }
       ptrmenu = ptrmenu->NextMenu;
     }
 #endif /* _WX */
@@ -1027,7 +1043,8 @@ ThotBool TtaAttachFrame( int frame_id, int window_id, int page_id, int position 
     {
       AmayaPage * p_page = p_window->GetPage(page_id);
       wxASSERT_MSG(p_page, _T("TtaAttachFrame: the page doesn't exists"));
-      
+      if (p_page == NULL)
+        return FALSE;
       /* now detach the old frame -> unsplit the page */
       //  p_page->DetachFrame( position );
       
@@ -1191,6 +1208,28 @@ ThotBool TtaClosePage( int window_id, int page_id )
   AmayaWindow * p_window = TtaGetWindowFromId( window_id );
   if (p_window && page_id >= 0)
     return p_window->ClosePage( page_id );
+  else
+    return FALSE;
+#else
+  return FALSE;
+#endif /* #ifdef _WX */
+}
+
+/*----------------------------------------------------------------------
+  TtaCloseAllPageButThis close all pages of a window but one
+  params:
+  + int window_id : the window which contains the pages
+  + int page_id : the page index (0 is the first one)
+  returns:
+  + true : pages closed
+  + false: not closed
+  ----------------------------------------------------------------------*/
+ThotBool TtaCloseAllPageButThis( int window_id, int page_id )
+{
+#ifdef _WX 
+  AmayaWindow * p_window = TtaGetWindowFromId( window_id );
+  if (p_window && page_id >= 0)
+    return p_window->CloseAllButPage( page_id );
   else
     return FALSE;
 #else
@@ -1477,6 +1516,8 @@ int TtaGetFrameId( int window_id, int page_id, int position )
 void TtaCloseWindow( int window_id )
 {
 #ifdef _WX
+  // handle all pending events before closing the current window
+  TtaHandlePendingEvents ();
   AmayaWindow * p_window = TtaGetWindowFromId(window_id);
   if (p_window)
     p_window->Close();
@@ -1549,6 +1590,9 @@ void TtaSetURLBar( int frame_id,
                    void (*      procedure)() )
 {
 #ifdef _WX
+  const    char *ptr, *ptr1;
+  wxString urltoappend, firsturl;
+
   if (!FrameTable[frame_id].WdFrame || FrameTable[frame_id].FrWindowId == -1)
     return;
   AmayaWindow * p_window = WindowTable[FrameTable[frame_id].FrWindowId].WdWindow;
@@ -1567,8 +1611,6 @@ void TtaSetURLBar( int frame_id,
   p_window->EmptyURLBar();
 
   /* Append URL from url list to the urlbar */
-  const char *ptr, *ptr1;
-  wxString urltoappend;
   ptr = listUrl;
   /* function will stop on double EOS */
   if (listUrl)
@@ -1578,14 +1620,20 @@ void TtaSetURLBar( int frame_id,
           ptr1 = ptr;
           while (*ptr1 != EOS)
             ptr1++;
-          urltoappend = TtaConvMessageToWX( ptr );
+          if (!strcmp (ptr, "empty"))
+            urltoappend = TtaConvMessageToWX( "" );
+          else
+            urltoappend = TtaConvMessageToWX( ptr );
           p_window->AppendURL( urltoappend );
           ptr = ptr1 + 1;
         }
     }
 
   /* the first url in the list is the used one for the current frame */
-  wxString firsturl = TtaConvMessageToWX( listUrl );
+  if (listUrl && !strcmp (listUrl, "empty"))
+    firsturl = TtaConvMessageToWX( "" );
+  else
+    firsturl = TtaConvMessageToWX( listUrl );
 
   /* setup the internal frame variable used to remember the frame's url string
    * this string is temporary and is updated each times the user modify the string.
@@ -2012,7 +2060,10 @@ ThotBool TtaHandleUnicodeKey (wxKeyEvent& event)
   int thot_keysym = event.GetUnicodeKey();
   int ret = 0;
 
-  if ((thot_keysym != 0) && !TtaIsSpecialKey(thot_keycode) &&
+  if (thot_keysym != 0 &&
+	  ((thot_keysym >= WXK_START && thot_keysym <= WXK_COMMAND) ||
+	  (thot_keysym >= WXK_NUMPAD0 && thot_keysym <= WXK_NUMPAD9) ||
+	  !TtaIsSpecialKey(thot_keycode)) &&
       (!event.CmdDown() || event.AltDown())
 #if !defined(_MACOS) && !defined(_WINDOWS)
        && !event.AltDown()
@@ -2039,7 +2090,8 @@ ThotBool TtaHandleUnicodeKey (wxKeyEvent& event)
                 thotMask |= THOT_MOD_ALT;
               if (event.ShiftDown())
                 thotMask |= THOT_MOD_SHIFT; 
-              ret = ThotInput (TtaGiveActiveFrame(), thot_keysym, 0, thotMask, thot_keycode);
+              ret = ThotInput (TtaGiveActiveFrame(), thot_keysym, 0, thotMask,
+                               thot_keycode, FALSE);
               if (ret == 3)
                 {
                 /* if a simple caractere has been entred, give focus to canvas
@@ -2078,8 +2130,8 @@ ThotBool TtaHandleUnicodeKey (wxKeyEvent& event)
 ThotBool TtaHandleShortcutKey( wxKeyEvent& event )
 {
   wxChar thot_keysym = event.GetKeyCode();  
-  
-  int thotMask = 0;
+  int    thotMask = 0;
+
   if (event.CmdDown() || event.ControlDown())
     thotMask |= THOT_MOD_CTRL;
   if (event.AltDown())
@@ -2096,12 +2148,33 @@ ThotBool TtaHandleShortcutKey( wxKeyEvent& event )
   wxTextCtrl *     p_text_ctrl         = wxDynamicCast(p_win_focus, wxTextCtrl);
   wxComboBox *     p_combo_box         = wxDynamicCast(p_win_focus, wxComboBox);
   wxSpinCtrl *     p_spinctrl          = wxDynamicCast(p_win_focus, wxSpinCtrl);
-  if (( p_text_ctrl || p_combo_box || p_spinctrl )
-      && (event.CmdDown() &&
-          (thot_keysym == 'C' || thot_keysym == 'X' || thot_keysym == 'V' ||
-           thot_keysym == 'c' || thot_keysym == 'x' || thot_keysym == 'v')) )
+  if (( p_text_ctrl || p_combo_box || p_spinctrl ) && event.CmdDown())
+      /* &&
+          (thot_keysym == 'C' || thot_keysym == 'X' || thot_keysym == 'V' || thot_keysym == 'Z' ||
+          thot_keysym == 'c' || thot_keysym == 'x' || thot_keysym == 'v' || thot_keysym == 'z')) )*/
     {
-      event.Skip();
+      if (p_combo_box)
+        {
+          if (thot_keysym == 67) // Ctrl C
+            p_combo_box->Copy();
+          else if (thot_keysym == 86) // Ctrl V
+            p_combo_box->Paste();
+          else if (thot_keysym == 88) // Ctrl X
+            p_combo_box->Cut();
+          else if (thot_keysym == 90) // Ctrl Z
+            p_combo_box->Undo();
+        }
+      else if (p_text_ctrl)
+        {
+          if (thot_keysym == 67) // Ctrl C
+            p_text_ctrl->Copy();
+          else if (thot_keysym == 86) // Ctrl V
+            p_text_ctrl->Paste();
+          else if (thot_keysym == 88) // Ctrl X
+            p_text_ctrl->Cut();
+          else if (thot_keysym == 90) // Ctrl Z
+            p_text_ctrl->Undo();
+        }
       return true;      
     }
 
@@ -2114,8 +2187,7 @@ ThotBool TtaHandleShortcutKey( wxKeyEvent& event )
     }
   // on windows, CTRL+ALT is equivalent to ALTGR key
   if (!TtaIsSpecialKey(thot_keysym) &&
-      ((event.ControlDown() && !event.AltDown()) /*||
-       (event.AltDown() && !event.CmdDown() && (thot_keysym < 'A' || thot_keysym > 'Z'))*/))
+      event.ControlDown() && !event.AltDown())
        // this is for the Windows menu shortcuts, ALT+F => should open File menu
 #else /* _MACOS */
   // on windows, CTRL+ALT is equivalent to ALTGR key
@@ -2141,7 +2213,8 @@ ThotBool TtaHandleShortcutKey( wxKeyEvent& event )
             }
         }
       // Call the generic function for key events management
-      ThotInput (TtaGiveActiveFrame(), (int)thot_keysym, 0, thotMask, (int)thot_keysym);
+      ThotInput (TtaGiveActiveFrame(), (int)thot_keysym, 0, thotMask,
+                 (int)thot_keysym, TRUE);
       
       // try to redraw something because when a key in pressed a long time
       // the ThotInput action is repeted but nothing is shown on the screen 
@@ -2162,7 +2235,7 @@ ThotBool TtaHandleShortcutKey( wxKeyEvent& event )
     {
       /* it is now the turn of special key shortcuts : CTRL+RIGHT, CTRL+ENTER ...*/
       TTALOGDEBUG_1( TTA_LOG_KEYINPUT, _T("TtaHandleShortcutKey : special shortcut thot_keysym=%x"), thot_keysym );
-      ThotInput (TtaGiveActiveFrame(), thot_keysym, 0, thotMask, thot_keysym);
+      ThotInput (TtaGiveActiveFrame(), thot_keysym, 0, thotMask, thot_keysym, TRUE);
       
       // try to redraw something because when a key in pressed a long time
       // the ThotInput action is repeted but nothing is shown on the screen 
@@ -2177,7 +2250,7 @@ ThotBool TtaHandleShortcutKey( wxKeyEvent& event )
             thot_keysym == (int) WXK_F11 ||
             thot_keysym == (int) WXK_F12)
     {
-      ThotInput (TtaGiveActiveFrame(), thot_keysym, 0, thotMask, thot_keysym);
+      ThotInput (TtaGiveActiveFrame(), thot_keysym, 0, thotMask, thot_keysym, TRUE);
       
       // try to redraw something because when a key in pressed a long time
       // the ThotInput action is repeted but nothing is shown on the screen 
@@ -2203,7 +2276,8 @@ ThotBool TtaHandleShortcutKey( wxKeyEvent& event )
 #ifdef _WX
 ThotBool TtaHandleSpecialKey( wxKeyEvent& event )
 {
-  if ( /*!event.CmdDown() &&*/ !event.AltDown() && TtaIsSpecialKey(event.GetKeyCode()))
+  if (!event.AltDown() &&
+	  TtaIsSpecialKey(event.GetKeyCode()))
     {
       int thot_keysym = event.GetKeyCode();  
       
@@ -2241,30 +2315,16 @@ ThotBool TtaHandleSpecialKey( wxKeyEvent& event )
       
       if (p_win_focus)
         TTALOGDEBUG_1( TTA_LOG_FOCUS, _T("focus = %s"), p_win_focus->GetClassInfo()->GetClassName())
-        else
-          TTALOGDEBUG_0( TTA_LOG_FOCUS, _T("no focus"))
+      else
+        TTALOGDEBUG_0( TTA_LOG_FOCUS, _T("no focus"))
               
-            /* do not allow special key outside the canvas */
-            if (!p_gl_canvas && !p_splitter && !p_notebook && !p_scrollbar && proceed_key )
-              {
-                event.Skip();
-                return true;      
-              }
-      
-#if 0
-      /* j'ai supprime cette partir du code car qd le notebook a le focus (c'est assez aleatoire...),
-       * tous les caracteres speciaux ne peuvent pas etre entres car il sont captures par le notbook
-       * en commentant cette partie du code, je laisse passer touts les caracteres qd le notebook a le focus. */
-#ifdef _WINDOWS
-      /* on windows, when the notebook is focused, the RIGHT and LEFT key are forwarded to wxWidgets,
-         we must ignore it */
-      if ( p_notebook && proceed_key )
-        {
+      /* do not allow special key outside the canvas */
+      if (!p_gl_canvas && !p_splitter && !p_notebook && !p_scrollbar && proceed_key )
+	  {
           event.Skip();
-          return true;
-        }
-#endif /* _WINDOWS */
-#endif /* 0 */
+          return true;      
+	  }
+      
       if ( proceed_key )
         {
           int thotMask = 0;
@@ -2277,7 +2337,7 @@ ThotBool TtaHandleSpecialKey( wxKeyEvent& event )
 
           TTALOGDEBUG_1( TTA_LOG_KEYINPUT, _T("TtaHandleSpecialKey: thot_keysym=%x"), thot_keysym);
           
-          ThotInput (TtaGiveActiveFrame(), thot_keysym, 0, thotMask, thot_keysym);
+          ThotInput (TtaGiveActiveFrame(), thot_keysym, 0, thotMask, thot_keysym, TRUE);
           
           // try to redraw something because when a key in pressed a long time
           // the ThotInput action is repeted but nothing is shown on the screen 
@@ -2304,13 +2364,16 @@ ThotBool TtaHandleSpecialKey( wxKeyEvent& event )
 #ifdef _WX
 ThotBool TtaIsSpecialKey( int wx_keycode )
 {
-  return ( wx_keycode == WXK_BACK ||
-           wx_keycode == WXK_TAB  ||
-           wx_keycode == WXK_RETURN ||
-           wx_keycode == WXK_ESCAPE ||
-           /*wx_keycode == WXK_INSERT  ||*/
-           wx_keycode == WXK_DELETE ||
-           (wx_keycode >= WXK_START && wx_keycode <= WXK_COMMAND)
+  if (wx_keycode >= WXK_NUMPAD0 && wx_keycode <= WXK_NUMPAD9)
+    return TRUE;
+  else
+    return ( wx_keycode == WXK_BACK ||
+             wx_keycode == WXK_TAB  ||
+             wx_keycode == WXK_RETURN ||
+             wx_keycode == WXK_ESCAPE ||
+             /*wx_keycode == WXK_INSERT  ||*/
+             wx_keycode == WXK_DELETE ||
+             (wx_keycode >= WXK_START && wx_keycode <= WXK_COMMAND)
            );
 }
 #endif /* _WX */

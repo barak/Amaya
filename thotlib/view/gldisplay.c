@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -1569,7 +1569,7 @@ void DrawPath (int frame, int thick, int style, int x, int y,
 
 /*----------------------------------------------------------------------
   DrawOval draw a rectangle with rounded corners.
-  Parameters fg, bg, and pattern are for drawing
+  ttern are for drawing
   color, background color and fill pattern.
   ----------------------------------------------------------------------*/
 void DrawOval (int frame, int thick, int style, int x, int y, int width,
@@ -1762,88 +1762,320 @@ void DrawEllips (int frame, int thick, int style, int x, int y, int width,
 }
 
 /*----------------------------------------------------------------------
-  DrawHorizontalLine draw a horizontal line aligned top center or bottom
-  depending on align value.
+  DrawHorizontalLine draw a horizontal line aligned top (0), center (1)
+  or bottom (2) depending on align value.
+  The style parameter is dotted (3), dashed (4), solid (5), etc.
   The parameter fg indicates the drawing color.
   ----------------------------------------------------------------------*/
 void DrawHorizontalLine (int frame, int thick, int style, int x, int y,
-                         int l, int h, int align, int fg)
+                         int l, int h, int align, int fg, PtrBox box)
+{
+  ThotPoint           point[4];
+  int                 Y, left = x, right = x + l;
+  int                 light = fg, dark = fg;
+  unsigned short      red, green, blue;
+
+  if (thick > 0 && fg >= 0)
+    {
+      if (style > 6 && align != 1)
+        {
+          /*  */
+          TtaGiveThotRGB (fg, &red, &green, &blue);
+          dark = TtaGetThotColor (red & 0xCF, green & 0xCF, blue & 0xCF);
+          light = TtaGetThotColor (red | 0xC0, green | 0xC0, blue | 0xC0);
+        }
+
+      y += FrameTable[frame].FrTopMargin;
+      if (style < 5 || thick < 2)
+        {
+          if (align == 1)
+            Y = y + (h - thick) / 2;// middle
+          else if (align == 2)
+            Y = y + h - (thick + 1) / 2;// bottom
+          else
+            Y = y + thick / 2;// top
+          
+          InitDrawing (style, thick, fg);
+          DoDrawOneLine (frame, x, Y, x + l, Y);
+        }
+      else
+        {
+          if (style == 7 || style == 8)
+            thick = thick / 2; // groove, ridge
+          else
+            thick--; // solid, outset inset, double
+          if (box)
+            {
+              left = box->BxClipX + box->BxLMargin + box->BxLBorder;
+              right = box->BxClipX + box->BxClipW - box->BxRMargin - box->BxRBorder;
+            }
+          // check if the top of the box is displayed
+          if (left < x)
+            left = 0;
+          else
+            left = thick;
+          if (right > x + l)
+            right = 0;
+          else
+            right = thick;
+          if (align == 1)
+            {
+              // middle
+              point[0].x = x;
+              point[0].y = y + (h - thick) / 2;
+              point[1].x = x + l;
+              point[1].y = y + (h - thick) / 2;
+              point[2].x = x + l;
+              point[2].y = y + (h + thick) / 2;
+              point[3].x = x;
+              point[3].y = y + (h + thick) / 2;
+            }
+          else if (align == 2)
+            {
+              // bottom
+              if (style == 7 || style == 9)
+                // groove or inset
+                fg = light;
+              else if (style == 8 || style == 10)
+                // ridge or outset
+                fg = dark;
+              point[0].x = x + left;
+              point[0].y = y + h - thick;
+              point[1].x = x + l - right;
+              point[1].y = y + h - thick;
+              point[2].x = x + l;
+              point[2].y = y + h;
+              point[3].x = x;
+              point[3].y = y + h;
+            }
+          else
+            {
+              // top
+              if (style == 7 || style == 9)
+                // groove or inset
+                fg = dark;
+              else if (style == 8 || style == 10)
+                fg = light;
+              point[0].x = x;
+              point[0].y = y;
+              point[1].x = x + l;
+              point[1].y = y;
+              point[2].x = x + l - right;
+              point[2].y = y + thick;
+              point[3].x = x + left;
+              point[3].y = y + thick;
+            }
+
+          if (style == 6)
+            {
+              // double style
+              InitDrawing (5, 1, fg);
+              DoDrawOneLine (frame, (int)point[0].x, (int)point[0].y,
+                             (int)point[1].x, (int)point[1].y);
+              DoDrawOneLine (frame, (int)point[3].x, (int)point[3].y,
+                             (int)point[2].x, (int)point[2].y);
+            }
+          else
+            {
+              GL_SetForeground (fg, TRUE);
+              GL_DrawPolygon (point, 4);
+              if (align != 1 && (style == 7 || style == 8))
+                {
+                  // invert light and dark
+                  if (fg == dark)
+                    fg = light;
+                  else
+                    fg = dark;
+                  if (align == 0)
+                    {
+                      // top
+                      point[0].x = point[3].x + left;
+                      point[0].y = point[3].y + thick;
+                      point[1].x = point[2].x - right;
+                      point[1].y = point[2].y + thick;
+                    }
+                  else
+                    {
+                      // bottom
+                      point[2].x = point[1].x + left;
+                      point[2].y = point[1].y - thick;
+                      point[3].x = point[0].x - right;
+                      point[3].y = point[0].y - thick;
+                    }
+                  GL_SetForeground (fg, TRUE);
+                  GL_DrawPolygon (point, 4);
+                }
+            }
+        }
+    }
+}
+
+/*----------------------------------------------------------------------
+  DrawVerticalLine draw a vertical line aligned top (0), center (1)
+  or bottom (2) depending on align value.
+  The style parameter is dotted (3), dashed (4), solid (5), etc.
+  The parameter fg indicates the drawing color
+  ----------------------------------------------------------------------*/
+void DrawVerticalLine (int frame, int thick, int style, int x, int y,
+                       int l, int h, int align, int fg, PtrBox box)
+{
+  ThotPoint           point[4];
+  int                 X, top = y, bottom = y + h;
+  int                 light = fg, dark = fg;
+  unsigned short      red, green, blue;
+
+  if (thick > 0 && fg >= 0)
+    {
+      if (style > 6 && align != 1)
+        {
+          /*  */
+          TtaGiveThotRGB (fg, &red, &green, &blue);
+          dark = TtaGetThotColor (red & 0xCF, green & 0xCF, blue & 0xCF);
+          light = TtaGetThotColor (red | 0xC0, green | 0xC0, blue | 0xC0);
+        }
+
+      y += FrameTable[frame].FrTopMargin;
+      if (style < 5 || thick < 2)
+        {
+          if (align == 1)
+            X = x + (l - thick) / 2;// midle
+          else if (align == 2)
+            X = x + l - (thick + 1) / 2;// right
+          else
+            X = x + thick / 2;// left
+            
+          InitDrawing (style, thick, fg);
+          DoDrawOneLine (frame, X, y, X, y + h);
+        }
+      else
+        {
+          if (style == 7 || style == 8)
+            thick = thick / 2; // groove, ridge
+          else
+            thick--; // solid, outset, inset style
+          if (box)
+            {
+              top = box->BxClipY + box->BxTMargin + box->BxTBorder;
+              bottom = box->BxClipY + box->BxClipH - box->BxBMargin - box->BxBBorder;
+            }
+          // check if the top of the box is displayed
+          if (top < y)
+            top = 0;
+          else
+            top = thick;
+          if (bottom > y + h)
+            bottom = 0;
+          else
+            bottom = thick;
+          if (align == 1)
+            {
+              // midle
+              point[0].x = x + (l - thick) / 2;
+              point[0].y = y;
+              point[1].x = x + (l + thick) / 2;
+              point[1].y = y;
+              point[2].x = x + (l + thick) / 2;
+              point[2].y = y + h;
+              point[3].x = x + (l - thick) / 2;
+              point[3].y = y + h;
+            }
+          else if (align == 2)
+            {
+              // right
+              if (style == 7 || style == 9)
+                // groove or inset
+                fg = light;
+              else if (style == 8 || style == 10)
+                // ridge or outset
+                fg = dark;
+              point[0].x = x + l - thick;
+              point[0].y = y + top;
+              point[1].x = x + l;
+              point[1].y = y;
+              point[2].x = x + l;
+              point[2].y = y + h;
+              point[3].x = x + l - thick;
+              point[3].y = y + h - bottom;
+            }
+          else
+            {
+              // left
+              if (style == 7 || style == 9)
+                // groove or inset
+                fg = dark;
+              else if (style == 8 || style == 10)
+                // ridge or outset
+                fg = light;
+              point[0].x = x;
+              point[0].y = y;
+              point[1].x = x + thick;
+              point[1].y = y + top;
+              point[2].x = x + thick;
+              point[2].y = y + h - bottom;
+              point[3].x = x;
+              point[3].y = y + h;
+            }
+          if (style == 6)
+            {
+              // double style
+              InitDrawing (5, 1, fg);
+              DoDrawOneLine (frame, (int)point[0].x, (int)point[0].y,
+                             (int)point[3].x, (int)point[3].y);
+              DoDrawOneLine (frame, (int)point[1].x, (int)point[1].y,
+                             (int)point[2].x, (int)point[2].y);
+            }
+          else
+            {
+              GL_SetForeground (fg, TRUE);
+              GL_DrawPolygon (point, 4);
+              if (align != 1 && (style == 7 || style == 8))
+                {
+                  // invert light and dark
+                  if (fg == dark)
+                    fg = light;
+                  else
+                    fg = dark;
+                  if (align == 0)
+                    {
+                      // left
+                      point[0].x = point[1].x + thick;
+                      point[0].y = point[1].y + top;
+                      point[3].x = point[2].x + thick;
+                      point[3].y = point[2].y - bottom;
+                    }
+                  else
+                    {
+                      // right
+                      point[1].x = point[0].x - thick;
+                      point[1].y = point[0].y + top;
+                      point[2].x = point[3].x - thick;
+                      point[2].y = point[3].y - bottom;
+                    }
+                  GL_SetForeground (fg, TRUE);
+                  GL_DrawPolygon (point, 4);
+                }
+            }
+        }
+    }
+}
+
+/*----------------------------------------------------------------------
+  DrawHat draw a hat aligned top
+  The parameter fg indicates the drawing color.
+  ----------------------------------------------------------------------*/
+void DrawHat (int frame, int thick, int style, int x, int y,
+                          int l, int h, int align, int fg)
 {
   int        Y;
 
   if (thick > 0 && fg >= 0)
     {
       y += FrameTable[frame].FrTopMargin;
-
-      if (align == 1)
-        Y = y + (h - thick) / 2;
-      else if (align == 2)
-        Y = y + h - (thick + 1) / 2;
-      else
-        Y = y + thick / 2;
-
-      /* x += thick / 2; */
-      /*       l -= thick; */
-            
+      y += (h - thick) / 2;
+      Y = y + (h - thick) / 2;
       InitDrawing (style, thick, fg);
-      DoDrawOneLine (frame, x, Y, x + l, Y);
-    }
-}
-/*----------------------------------------------------------------------
-  DrawVerticalLine draw a vertical line aligned left center or right
-  depending on align value.
-  parameter fg indicates the drawing color
-  ----------------------------------------------------------------------*/
-void DrawVerticalLine (int frame, int thick, int style, int x, int y,
-                       int l, int h, int align, int fg)
-{
-  int        X;
-
-  if (thick > 0 && fg >= 0)
-    {
-      if (align == 1)
-        X = x + (l - thick) / 2;
-      else if (align == 2)
-        X = x + l - (thick + 1) / 2;
-      else
-        X = x + thick / 2;
-      
-      /* y += thick / 2; */
-      /*       h -= thick; */
-
-      y += FrameTable[frame].FrTopMargin;
-      InitDrawing (style, thick, fg);
-      DoDrawOneLine (frame, X, y, X, y + h);
-    }
-}
-
-/*----------------------------------------------------------------------
-  DrawDoubleVerticalLine draw a double vertical line aligned left center
-  or right depending on align value.
-  parameter fg indicates the drawing color
-  ----------------------------------------------------------------------*/
-void DrawDoubleVerticalLine (int frame, int thick, int style, int x, int y,
-                             int l, int h, int align, int fg)
-{
-  int        X;
-
-  if (thick > 0 && fg >= 0)
-    {
-      if (align == 1)
-        X = x + (l - thick) / 2;
-      else if (align == 2)
-        X = x + l - (thick + 1) / 2;
-      else
-        X = x + thick / 2;
-      
-      y += FrameTable[frame].FrTopMargin;
-
-      /* y += thick / 2; */
-      /*       h -= thick;   */
-
-      InitDrawing (style, thick, fg);
-      DoDrawOneLine (frame, X, y, X, y + h);
-      DoDrawOneLine (frame, X + (3 * thick), y, X + (3 * thick), y + h);
+      DoDrawOneLine (frame, x, Y, x + (l / 2), y);
+      DoDrawOneLine (frame, x + (l / 2), y, x + l - thick, Y);
     }
 }
 

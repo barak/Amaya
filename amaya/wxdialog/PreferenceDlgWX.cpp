@@ -19,6 +19,8 @@
 #include "MENUconf_f.h"
 #include "registry_wx.h"
 #include "PreferenceDlgWX.h"
+#include "templates.h"
+#include "Elemlist.h"
 #include "templates_f.h"
 
 bool PreferenceDlgWX::m_OnApplyLock = FALSE;
@@ -57,16 +59,16 @@ BEGIN_EVENT_TABLE(PreferenceDlgWX, AmayaDialog)
   EVT_CLOSE( PreferenceDlgWX::OnClose )
   // Templates tab callbacks
 #ifdef TEMPLATES
-  EVT_BUTTON( XRCID("wxID_BUTTON_DELETE_TEMPLATE_REPOSITORY"),   PreferenceDlgWX::OnTemplateDelRepository )
-  EVT_BUTTON( XRCID("wxID_BUTTON_MOVEUP_TEMPLATE_REPOSITORY"),   PreferenceDlgWX::OnTemplateMoveUpRepository )
-  EVT_BUTTON( XRCID("wxID_BUTTON_MOVEDOWN_TEMPLATE_REPOSITORY"),   PreferenceDlgWX::OnTemplateMoveDownRepository )
-  EVT_BUTTON( XRCID("wxID_BUTTON_CHOOSE_TEMPLATE_REPOSITORY"),   PreferenceDlgWX::OnTemplateChooseRepository )
-  EVT_BUTTON( XRCID("wxID_BUTTON_ADD_TEMPLATE_REPOSITORY"),   PreferenceDlgWX::OnTemplateAddRepository )
-  EVT_UPDATE_UI( XRCID("wxID_BUTTON_DELETE_TEMPLATE_REPOSITORY"),   PreferenceDlgWX::OnUpdateTemplateDelRepository )
-  EVT_UPDATE_UI( XRCID("wxID_BUTTON_MOVEUP_TEMPLATE_REPOSITORY"),   PreferenceDlgWX::OnUpdateTemplateMoveUpRepository )
-  EVT_UPDATE_UI( XRCID("wxID_BUTTON_MOVEDOWN_TEMPLATE_REPOSITORY"),   PreferenceDlgWX::OnUpdateTemplateMoveDownRepository )
-  EVT_UPDATE_UI( XRCID("wxID_BUTTON_ADD_TEMPLATE_REPOSITORY"),   PreferenceDlgWX::OnUpdateTemplateAddRepository )
-  EVT_LISTBOX(XRCID("wxID_LIST_TEMPLATE_REPOSITORIES"), PreferenceDlgWX::OnTemplateRepositorySelected)
+  EVT_BUTTON( XRCID("wxID_BUTTON_DELETE_TEMPLATE"),   PreferenceDlgWX::OnTemplateDel )
+  EVT_BUTTON( XRCID("wxID_BUTTON_MOVEUP_TEMPLATE"),   PreferenceDlgWX::OnTemplateMoveUp )
+  EVT_BUTTON( XRCID("wxID_BUTTON_MOVEDOWN_TEMPLATE"),   PreferenceDlgWX::OnTemplateMoveDown )
+  EVT_BUTTON( XRCID("wxID_BUTTON_CHOOSE_TEMPLATE"),   PreferenceDlgWX::OnTemplateChoose )
+  EVT_BUTTON( XRCID("wxID_BUTTON_ADD_TEMPLATE"),   PreferenceDlgWX::OnTemplateAdd )
+  EVT_UPDATE_UI( XRCID("wxID_BUTTON_DELETE_TEMPLATE"),   PreferenceDlgWX::OnUpdateTemplateDel )
+  EVT_UPDATE_UI( XRCID("wxID_BUTTON_MOVEUP_TEMPLATE"),   PreferenceDlgWX::OnUpdateTemplateMoveUp )
+  EVT_UPDATE_UI( XRCID("wxID_BUTTON_MOVEDOWN_TEMPLATE"),   PreferenceDlgWX::OnUpdateTemplateMoveDown )
+  EVT_UPDATE_UI( XRCID("wxID_BUTTON_ADD_TEMPLATE"),   PreferenceDlgWX::OnUpdateTemplateAdd )
+  EVT_LISTBOX(XRCID("wxID_LIST_TEMPLATE_REPOSITORIES"), PreferenceDlgWX::OnTemplateSelected)
 #endif /* TEMPLATES*/
 END_EVENT_TABLE()
 
@@ -253,7 +255,7 @@ void PreferenceDlgWX::SetupLabelDialog_General()
   XRCCTRL(*this, "wxID_CHECK_DATE", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_DATE)) );
   XRCCTRL(*this, "wxID_CHECK_SHOWTARGETS", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_SHOW_TARGETS)) );
   XRCCTRL(*this, "wxID_CHECK_SHOWSHORTCUTS", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_SHOWSHORTCUTS)));
-//  XRCCTRL(*this, "wxID_CHECK_SHOWTEMPLATES", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_SHOW_TEMPLATES)));
+  XRCCTRL(*this, "wxID_CHECK_WARNCTAB", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_WARNCTAB)) );
 
   XRCCTRL(*this, "wxID_RADIO_QUICKAXX", wxRadioBox)->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_ACCESSKEY)) );
   XRCCTRL(*this, "wxID_RADIO_QUICKAXX", wxRadioBox)->SetString(2,TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_NONE)) );
@@ -298,7 +300,7 @@ void PreferenceDlgWX::SetupDialog_General( const Prop_General & prop )
   XRCCTRL(*this, "wxID_CHECK_DATE", wxCheckBox)->SetValue( prop.S_DATE );
   XRCCTRL(*this, "wxID_CHECK_SHOWTARGETS", wxCheckBox)->SetValue( prop.S_Targets );
   XRCCTRL(*this, "wxID_CHECK_SHOWSHORTCUTS", wxCheckBox)->SetValue( prop.S_Shortcuts );
-//  XRCCTRL(*this, "wxID_CHECK_SHOWTEMPLATES", wxCheckBox)->SetValue( prop.S_Templates );
+  XRCCTRL(*this, "wxID_CHECK_WARNCTAB", wxCheckBox)->SetValue( prop.WarnCTab );
 
   XRCCTRL(*this, "wxID_RADIO_QUICKAXX", wxRadioBox)->SetSelection( prop.AccesskeyMod );
   if (!strcmp (prop.DialogueLang, "de"))
@@ -315,8 +317,12 @@ void PreferenceDlgWX::SetupDialog_General( const Prop_General & prop )
     value = TtaConvMessageToWX(prop.DialogueLang)+_T(" (Hungarian)");
   else if (!strcmp (prop.DialogueLang, "it"))
     value = TtaConvMessageToWX(prop.DialogueLang)+_T(" (Italian)");
+  else if (!strcmp (prop.DialogueLang, "jp"))
+    value = TtaConvMessageToWX(prop.DialogueLang)+_T(" (Japanese)");
   else if (!strcmp (prop.DialogueLang, "ka"))
     value = TtaConvMessageToWX(prop.DialogueLang)+_T(" (Georgian)");
+  else if (!strcmp (prop.DialogueLang, "no"))
+    value = TtaConvMessageToWX(prop.DialogueLang)+_T(" (Norwegian)");
   else if (!strcmp (prop.DialogueLang, "pt"))
     value = TtaConvMessageToWX(prop.DialogueLang)+_T(" (Portuguese)");
   else if (!strcmp (prop.DialogueLang, "ru"))
@@ -363,7 +369,7 @@ Prop_General PreferenceDlgWX::GetValueDialog_General()
   prop.S_DATE = XRCCTRL(*this, "wxID_CHECK_DATE", wxCheckBox)->GetValue();
   prop.S_Targets = XRCCTRL(*this, "wxID_CHECK_SHOWTARGETS", wxCheckBox)->GetValue();
   prop.S_Shortcuts = XRCCTRL(*this, "wxID_CHECK_SHOWSHORTCUTS", wxCheckBox)->GetValue();
-//  prop.S_Templates = XRCCTRL(*this, "wxID_CHECK_SHOWTEMPLATES", wxCheckBox)->GetValue();
+  prop.WarnCTab = XRCCTRL(*this, "wxID_CHECK_WARNCTAB", wxCheckBox)->GetValue();
   prop.AccesskeyMod = XRCCTRL(*this, "wxID_RADIO_QUICKAXX", wxRadioBox)->GetSelection();
 
   value = XRCCTRL(*this, "wxID_CHOICE_LG", wxChoice)->GetStringSelection();
@@ -407,7 +413,7 @@ void PreferenceDlgWX::SetupLabelDialog_Browse()
   XRCCTRL(*this, "wxID_CHECK_APPLYCSS", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_LOAD_CSS)) );
   XRCCTRL(*this, "wxID_CHECK_LINKDBCLICK", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_ENABLE_DOUBLECLICK)) );
   XRCCTRL(*this, "wxID_LABEL_LANNEGLISTLG", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_LANG_NEGOTIATION)) );
-  XRCCTRL(*this, "wxID_CHECK_WARNCTAB", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_WARNCTAB)) );
+  XRCCTRL(*this, "wxID_CHECK_WARNIDS", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_WARNIDS)) );
   XRCCTRL(*this, "wxID_LABEL_MAXURL", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_MAXURLLIST)) );
   XRCCTRL(*this, "wxID_BUTTON_CLEARURL", wxButton)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_CLEARURLLIST)) );
 }
@@ -426,7 +432,7 @@ void PreferenceDlgWX::SetupDialog_Browse( const Prop_Browse & prop )
   XRCCTRL(*this, "wxID_CHECK_SHOWBACKGROUND", wxCheckBox)->SetValue( prop.BgImages );
   XRCCTRL(*this, "wxID_CHECK_APPLYCSS", wxCheckBox)->SetValue( prop.LoadCss );
   XRCCTRL(*this, "wxID_CHECK_LINKDBCLICK", wxCheckBox)->SetValue( prop.DoubleClick );
-  XRCCTRL(*this, "wxID_CHECK_WARNCTAB", wxCheckBox)->SetValue( prop.WarnCTab );
+  XRCCTRL(*this, "wxID_CHECK_WARNIDS", wxCheckBox)->SetValue( prop.WarnIDs );
   XRCCTRL(*this, "wxID_CHOICE_SCREEN", wxChoice)->SetStringSelection( TtaConvMessageToWX(prop.ScreenType) );
   XRCCTRL(*this, "wxID_VALUE_LANNEGLISTLG", wxTextCtrl)->SetValue( TtaConvMessageToWX(prop.LanNeg) );
   XRCCTRL(*this, "wxID_VALUE_MAXURL", wxSpinCtrl)->SetValue( prop.MaxURL );
@@ -450,7 +456,7 @@ Prop_Browse PreferenceDlgWX::GetValueDialog_Browse()
   prop.BgImages = XRCCTRL(*this, "wxID_CHECK_SHOWBACKGROUND", wxCheckBox)->GetValue();
   prop.LoadCss = XRCCTRL(*this, "wxID_CHECK_APPLYCSS", wxCheckBox)->GetValue();
   prop.DoubleClick = XRCCTRL(*this, "wxID_CHECK_LINKDBCLICK", wxCheckBox)->GetValue();
-  prop.WarnCTab = XRCCTRL(*this, "wxID_CHECK_WARNCTAB", wxCheckBox)->GetValue();
+  prop.WarnIDs = XRCCTRL(*this, "wxID_CHECK_WARNIDS", wxCheckBox)->GetValue();
   
   value = XRCCTRL(*this, "wxID_CHOICE_SCREEN", wxChoice)->GetStringSelection();
   strcpy( prop.ScreenType, (const char*)value.mb_str(wxConvUTF8) );
@@ -489,6 +495,7 @@ void PreferenceDlgWX::SetupLabelDialog_Publish()
   XRCCTRL(*this, "wxID_CHECK_ETAGS", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_USE_ETAGS)) );
   XRCCTRL(*this, "wxID_CHECK_PUTGET", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_VERIFY_PUT)) );
   XRCCTRL(*this, "wxID_CHECK_CRLF", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_EXPORT_CRLF)) );
+  XRCCTRL(*this, "wxID_CHECK_MATHPI", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_MATHPI)) );
   XRCCTRL(*this, "wxID_LABEL_EXPORTLENGTH", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_EXPORT_LENGTH)) );
   XRCCTRL(*this, "wxID_EXPORTLENGTH", wxSpinCtrl)->SetRange( 0, 1000 );
 }
@@ -507,6 +514,7 @@ void PreferenceDlgWX::SetupDialog_Publish( const Prop_Publish & prop )
   XRCCTRL(*this, "wxID_CHECK_ETAGS", wxCheckBox)->SetValue( prop.LostUpdateCheck );
   XRCCTRL(*this, "wxID_CHECK_PUTGET", wxCheckBox)->SetValue( prop.VerifyPublish );
   XRCCTRL(*this, "wxID_CHECK_CRLF", wxCheckBox)->SetValue( prop.ExportCRLF );
+  XRCCTRL(*this, "wxID_CHECK_MATHPI", wxCheckBox)->SetValue( prop.GenerateMathPI );
   XRCCTRL(*this, "wxID_EXPORTLENGTH", wxSpinCtrl)->SetValue( prop.ExportLength );
 
   XRCCTRL(*this, "wxID_VALUE_DEFAULTNAME", wxTextCtrl)->SetValue( TtaConvMessageToWX(prop.DefaultName) );
@@ -532,6 +540,7 @@ Prop_Publish PreferenceDlgWX::GetValueDialog_Publish()
   prop.LostUpdateCheck  = XRCCTRL(*this, "wxID_CHECK_ETAGS", wxCheckBox)->GetValue();
   prop.VerifyPublish    = XRCCTRL(*this, "wxID_CHECK_PUTGET", wxCheckBox)->GetValue();
   prop.ExportCRLF       = XRCCTRL(*this, "wxID_CHECK_CRLF", wxCheckBox)->GetValue();
+  prop.GenerateMathPI   = XRCCTRL(*this, "wxID_CHECK_MATHPI", wxCheckBox)->GetValue();
   prop.ExportLength     = XRCCTRL(*this, "wxID_EXPORTLENGTH", wxSpinCtrl)->GetValue();
 
   value = XRCCTRL(*this, "wxID_VALUE_DEFAULTNAME", wxTextCtrl)->GetValue();
@@ -1193,9 +1202,10 @@ void PreferenceDlgWX::SetupLabelDialog_Templates()
     p_notebook->SetPageText( page_id, TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_TEMPLATES)));
 
   XRCCTRL(*this, "wxID_CHECK_SHOWTEMPLATES", wxCheckBox)->SetLabel( TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_SHOW_TEMPLATES)));
-  
+  XRCCTRL(*this, "wxID_BUTTON_CHOOSE_TEMPLATE", wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(LIB,TMSG_SEL)));
+  XRCCTRL(*this, "wxID_BUTTON_ADD_TEMPLATE", wxBitmapButton)->SetToolTip(TtaConvMessageToWX(TtaGetMessage(AMAYA,AM_APPLY_BUTTON)));
   wxStaticBoxSizer *sz = (wxStaticBoxSizer*)XRCCTRL(*this, "wxID_PAGE_TEMPLATES", wxPanel)->GetSizer()->GetItem((size_t)0)->GetSizer();
-  sz->GetStaticBox()->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_TEMPLATE_REPOSITORIES)));
+  sz->GetStaticBox()->SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_TEMPLATES)));
 }
 
 /*----------------------------------------------------------------------
@@ -1205,7 +1215,7 @@ void PreferenceDlgWX::SetupLabelDialog_Templates()
   ----------------------------------------------------------------------*/
 void PreferenceDlgWX::SetupDialog_Templates( const Prop_Templates & prop)
 {
-  printf("PreferenceDlgWX::SetupDialog_Templates : %d\n", prop.S_Templates);
+  //printf("PreferenceDlgWX::SetupDialog_Templates : %d\n", prop.S_Templates);
   XRCCTRL(*this, "wxID_CHECK_SHOWTEMPLATES", wxCheckBox)->SetValue( prop.S_Templates );
   
   wxListBox *box = XRCCTRL(*this, "wxID_LIST_TEMPLATE_REPOSITORIES", wxListBox);
@@ -1226,7 +1236,7 @@ Prop_Templates PreferenceDlgWX::GetValueDialog_Templates()
 {
   wxString            value;
   Prop_Templates      prop;
-  Prop_Templates_Path *element=NULL;
+  Prop_Templates_Path *element = NULL;
 
   memset( &prop, 0, sizeof(Prop_Templates) );
   prop.S_Templates = XRCCTRL(*this, "wxID_CHECK_SHOWTEMPLATES", wxCheckBox)->GetValue();
@@ -1245,40 +1255,49 @@ Prop_Templates PreferenceDlgWX::GetValueDialog_Templates()
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-void PreferenceDlgWX::OnTemplateChooseRepository(wxCommandEvent& event){
+void PreferenceDlgWX::OnTemplateChoose(wxCommandEvent& event)
+{
   static const wxString home = TtaGetHomeDir();
+  wxFileDialog  *p_dlg;
   
-  
-  wxString path = XRCCTRL(*this, "wxID_TEXT_NEW_TEMPLATE_REPOSITORY", wxTextCtrl)->GetValue();
+  wxString path = XRCCTRL(*this, "wxID_TEXT_NEW_TEMPLATE", wxTextCtrl)->GetValue();
   if(!path.IsEmpty())
-  {
     path.Replace(wxT("~"), home);
-  }
   
-  wxString dir = wxDirSelector(wxT("*Choose a folder*"), path);
-  if ( !dir.empty() )
-  {
-    dir.Replace(home, wxT("~"));
-    XRCCTRL(*this, "wxID_TEXT_NEW_TEMPLATE_REPOSITORY", wxTextCtrl)->SetValue(dir);
-  }
+  // wxString dir = wxDirSelector(wxT("*Choose a folder*"), path);
+  p_dlg = new wxFileDialog(this,
+                           TtaConvMessageToWX( TtaGetMessage (AMAYA, AM_OPEN_URL) ),
+                           _T(""), _T(""), _T("Templates (*.xtd)|*.xtd"),
+                           wxOPEN | wxCHANGE_DIR);
+  if (p_dlg->ShowModal() == wxID_OK)
+    {
+      path = p_dlg->GetPath();
+      XRCCTRL(*this, "wxID_TEXT_NEW_TEMPLATE", wxTextCtrl)->SetValue(path);
+    }
+  p_dlg->Destroy();
 }
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-void PreferenceDlgWX::OnTemplateAddRepository(wxCommandEvent& event){
+void PreferenceDlgWX::OnTemplateAdd(wxCommandEvent& event)
+{
   wxListBox *box = XRCCTRL(*this, "wxID_LIST_TEMPLATE_REPOSITORIES", wxListBox);
-  box->Append(XRCCTRL(*this, "wxID_TEXT_NEW_TEMPLATE_REPOSITORY", wxTextCtrl)->GetValue());
+  box->Append(XRCCTRL(*this, "wxID_TEXT_NEW_TEMPLATE", wxTextCtrl)->GetValue());
   box->SetSelection(box->GetCount()-1);
 }
 
-void PreferenceDlgWX::OnUpdateTemplateAddRepository(wxUpdateUIEvent& event){
-  event.Enable(!XRCCTRL(*this, "wxID_TEXT_NEW_TEMPLATE_REPOSITORY", wxTextCtrl)->GetValue().IsEmpty());
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void PreferenceDlgWX::OnUpdateTemplateAdd(wxUpdateUIEvent& event)
+{
+  event.Enable(!XRCCTRL(*this, "wxID_TEXT_NEW_TEMPLATE", wxTextCtrl)->GetValue().IsEmpty());
 }
 
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-void PreferenceDlgWX::OnTemplateDelRepository(wxCommandEvent& event){
+void PreferenceDlgWX::OnTemplateDel(wxCommandEvent& event)
+{
   wxListBox *box = XRCCTRL(*this, "wxID_LIST_TEMPLATE_REPOSITORIES", wxListBox);
   int sel = box->GetSelection();
   if(sel!=wxNOT_FOUND)
@@ -1287,13 +1306,17 @@ void PreferenceDlgWX::OnTemplateDelRepository(wxCommandEvent& event){
   }
 }
 
-void PreferenceDlgWX::OnUpdateTemplateDelRepository(wxUpdateUIEvent& event){
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void PreferenceDlgWX::OnUpdateTemplateDel(wxUpdateUIEvent& event)
+{
   event.Enable(XRCCTRL(*this, "wxID_LIST_TEMPLATE_REPOSITORIES", wxListBox)->GetSelection()!=wxNOT_FOUND);
 }
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-void PreferenceDlgWX::OnTemplateMoveUpRepository(wxCommandEvent& event){
+void PreferenceDlgWX::OnTemplateMoveUp(wxCommandEvent& event)
+{
   wxListBox *box = XRCCTRL(*this, "wxID_LIST_TEMPLATE_REPOSITORIES", wxListBox);
   int sel = box->GetSelection();
   if (sel!=wxNOT_FOUND && sel>0)
@@ -1305,7 +1328,10 @@ void PreferenceDlgWX::OnTemplateMoveUpRepository(wxCommandEvent& event){
   }
 }
 
-void PreferenceDlgWX::OnUpdateTemplateMoveUpRepository(wxUpdateUIEvent& event){
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void PreferenceDlgWX::OnUpdateTemplateMoveUp(wxUpdateUIEvent& event)
+{
   wxListBox *box = XRCCTRL(*this, "wxID_LIST_TEMPLATE_REPOSITORIES", wxListBox);
   event.Enable(box->GetSelection()!=wxNOT_FOUND && box->GetSelection()!=0);
 }
@@ -1313,7 +1339,8 @@ void PreferenceDlgWX::OnUpdateTemplateMoveUpRepository(wxUpdateUIEvent& event){
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-void PreferenceDlgWX::OnTemplateMoveDownRepository(wxCommandEvent& event){
+void PreferenceDlgWX::OnTemplateMoveDown(wxCommandEvent& event)
+{
   wxListBox *box = XRCCTRL(*this, "wxID_LIST_TEMPLATE_REPOSITORIES", wxListBox);
   int sel = box->GetSelection();
   if (sel!=wxNOT_FOUND && sel<(int)box->GetCount()-2)
@@ -1325,17 +1352,20 @@ void PreferenceDlgWX::OnTemplateMoveDownRepository(wxCommandEvent& event){
   }
 }
 
-void PreferenceDlgWX::OnUpdateTemplateMoveDownRepository(wxUpdateUIEvent& event){
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void PreferenceDlgWX::OnUpdateTemplateMoveDown(wxUpdateUIEvent& event)
+{
   wxListBox *box = XRCCTRL(*this, "wxID_LIST_TEMPLATE_REPOSITORIES", wxListBox);
   event.Enable(box->GetSelection()!=wxNOT_FOUND && box->GetSelection()!=(int)box->GetCount()-1);
 }
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-void PreferenceDlgWX::OnTemplateRepositorySelected(wxCommandEvent& event)
+void PreferenceDlgWX::OnTemplateSelected(wxCommandEvent& event)
 {
   if(event.IsSelection())
-    XRCCTRL(*this, "wxID_TEXT_NEW_TEMPLATE_REPOSITORY", wxTextCtrl)->SetValue(event.GetString());
+    XRCCTRL(*this, "wxID_TEXT_NEW_TEMPLATE", wxTextCtrl)->SetValue(event.GetString());
 }
 
 #endif /* Templates */

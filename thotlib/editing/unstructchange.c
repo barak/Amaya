@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -1567,7 +1567,14 @@ void TtcCreateElement (Document doc, View view)
                     GetElementConstruct (pParent->ElParent, &nComp) == CsAny)
                   pListEl = pParent->ElParent;
                 else
-                  pListEl = AncestorList (pParent);
+                  {
+                    pAncest = pParent;
+                    /* ignore the next Template ancestors */
+                    while (pAncest->ElParent && pAncest->ElParent->ElStructSchema &&
+                           !strcmp (pAncest->ElParent->ElStructSchema->SsName, "Template"))
+                      pAncest = pAncest->ElParent;
+                    pListEl = AncestorList (pAncest);
+                  }
                 if (TypeHasException (ExcNoBreakByReturn,pParent->ElTypeNumber,
                                       pParent->ElStructSchema))
                   /* the parent element can't be split with the Return key.
@@ -1683,8 +1690,16 @@ void TtcCreateElement (Document doc, View view)
                             pElDelete = pElem;
                             createAfter = TRUE;
                             pElReplicate = pParent;
-                            while (pElReplicate->ElParent != pListEl)
-                              pElReplicate = pElReplicate->ElParent;
+                            pAncest = pElReplicate->ElParent;
+                            while (pAncest && pAncest->ElStructSchema &&
+                                   !strcmp (pAncest->ElStructSchema->SsName, "Template"))
+                              pAncest = pAncest->ElParent;
+
+                            while (pAncest && pAncest != pListEl)
+                              {
+                                pElReplicate = pAncest;
+                                pAncest = pAncest->ElParent;
+                              }
                           }
                       }
                     else if (pElem->ElNext && !pElem->ElPrevious &&
@@ -1698,8 +1713,16 @@ void TtcCreateElement (Document doc, View view)
                         pElDelete = pElem;
                         createAfter = FALSE;
                         pElReplicate = pParent;
-                        while (pElReplicate->ElParent != pListEl)
-                          pElReplicate = pElReplicate->ElParent;
+                            pAncest = pElReplicate->ElParent;
+                            while (pAncest && pAncest->ElStructSchema &&
+                                   !strcmp (pAncest->ElStructSchema->SsName, "Template"))
+                              pAncest = pAncest->ElParent;
+
+                            while (pAncest != pListEl)
+                              {
+                                pElReplicate = pAncest;
+                                pAncest = pAncest->ElParent;
+                              }
                       }
                     else if (!TypeHasException (ExcNoCreate,
                                                 pParent->ElTypeNumber,
@@ -1739,7 +1762,12 @@ void TtcCreateElement (Document doc, View view)
                   }
                 if (list && pListEl == NULL)
                   {
-                    pListEl = AncestorList (pElem);
+                    pAncest = pElem;
+                    /* ignore the next Template ancestors */
+                    while (pAncest->ElParent && pAncest->ElParent->ElStructSchema &&
+                           !strcmp (pAncest->ElParent->ElStructSchema->SsName, "Template"))
+                      pAncest = pAncest->ElParent;
+                    pListEl = AncestorList (pAncest);
                     if (pListEl != NULL)
                       if (!TypeHasException (ExcNoCreate,
                                              pElem->ElTypeNumber,
@@ -1768,6 +1796,7 @@ void TtcCreateElement (Document doc, View view)
           /* La selection commence-t-elle en tete ou en queue d'element? */
           selBegin = FALSE;
           selEnd = FALSE;
+          ok = TRUE;
           if (firstSel == lastSel)
             /* only one element selected */
             {
@@ -1854,8 +1883,12 @@ void TtcCreateElement (Document doc, View view)
                   return;
                 }
               else
+                {
+                  ok = FALSE;
+                  pListEl = NULL;
                 /* remove operation from history */
                 CancelLastEditFromHistory (pDoc);
+                }
             }
 
           /* on cherche l'element CsList ascendant qui permet de creer un */
@@ -1863,13 +1896,20 @@ void TtcCreateElement (Document doc, View view)
           if (lastSel->ElTerminal && lastSel->ElLeafType == LtPageColBreak)
             /* on ne duplique pas les sauts de pages */
             pListEl = NULL;
-          else
+          else if (ok)
             {
               if (lastSel->ElParent &&
                   GetElementConstruct (lastSel->ElParent, &nComp) == CsAny)
                 pListEl = lastSel->ElParent;
               else
-                pListEl = AncestorList (lastSel);
+                {
+                  pAncest = lastSel;
+                  /* ignore the next Template ancestors */
+                  while (pAncest->ElParent && pAncest->ElParent->ElStructSchema &&
+                         !strcmp (pAncest->ElParent->ElStructSchema->SsName, "Template"))
+                    pAncest = pAncest->ElParent;
+                  pListEl = AncestorList (pAncest);
+                }
               /* si c'est la fin d'une liste de Textes on remonte */
               if (pListEl != NULL)
                 {
@@ -1885,7 +1925,14 @@ void TtcCreateElement (Document doc, View view)
                           GetElementConstruct (pListEl->ElParent, &nComp) == CsAny)
                         pListEl = pListEl->ElParent;
                       else
-                        pListEl = AncestorList (pListEl);
+                        {
+                          pAncest = pListEl;
+                          /* ignore the next Template ancestors */
+                          while (pAncest->ElParent && pAncest->ElParent->ElStructSchema &&
+                                 !strcmp (pAncest->ElParent->ElStructSchema->SsName, "Template"))
+                            pAncest = pAncest->ElParent;
+                        pListEl = AncestorList (pAncest);
+                        }
                     }
                 }
               else
@@ -1909,7 +1956,7 @@ void TtcCreateElement (Document doc, View view)
             }
 
           /* verifie si les elements a doubler portent l'exception NoCreate */
-          if (pListEl != NULL)
+          if (pListEl)
             {
               pE = lastSel;
               pElReplicate = NULL;
@@ -1925,7 +1972,9 @@ void TtcCreateElement (Document doc, View view)
                       pE = pE->ElParent;
                     }
                 }
-              while (pE != pListEl && pListEl != NULL && pE != NULL);
+              while (pE != pListEl && pListEl != NULL && pE != NULL &&
+                    (pE->ElStructSchema &&
+                     strcmp (pE->ElStructSchema->SsName, "Template")));
 
               /* a priori, on creera le meme type d'element */
               if (pElReplicate)
@@ -1942,7 +1991,7 @@ void TtcCreateElement (Document doc, View view)
                 }
             }
 
-          if (pListEl != NULL)
+          if (pListEl)
             {
               /* verifie si la selection est en fin ou debut de paragraphe */
               if (selEnd && pElReplicate)
@@ -1964,10 +2013,10 @@ void TtcCreateElement (Document doc, View view)
             }
         }
       /* verifie que la liste ne depasse pas deja la longueur maximum */
-      if (pListEl != NULL)
+      if (pListEl)
         if (!CanChangeNumberOfElem (pListEl, 1))
           pListEl = NULL;
-      if (pListEl != NULL || pAggregEl != NULL)
+      if (pListEl || pAggregEl)
         {
           if (pListEl == NULL)
             pListEl = pAggregEl;
@@ -1992,7 +2041,7 @@ void TtcCreateElement (Document doc, View view)
             /* l'application refuse */
             pListEl = NULL;
         }
-      if (pListEl != NULL)
+      if (pListEl)
         {
           ok = !ElementIsReadOnly (pListEl);
           if (ok && pElDelete != NULL)
@@ -2079,7 +2128,9 @@ void TtcCreateElement (Document doc, View view)
                                      TRUE, TRUE, TRUE, TRUE);
                   DuplicateAttrWithExc (pNew, lastSel);
                   pE = lastSel;
-                  while (pE->ElParent != pListEl)
+                  while (pE->ElParent != pListEl && pE->ElParent &&
+                         pE->ElParent->ElStructSchema &&
+                         strcmp (pE->ElParent->ElStructSchema->SsName, "Template"))
                     {
                       pE = pE->ElParent;
                       pAncest = ReplicateElement (pE, pDoc);
@@ -2277,13 +2328,12 @@ void DeleteNextChar (int frame, PtrElement pEl, ThotBool before)
             pParent = NULL;
         }
     }
-  while (pParent != NULL && pSibling == NULL);
+  while (pParent && pSibling == NULL);
 
   if (pParent == NULL || pSibling == NULL)
     return;
 
   /* We do nothing if the parent or the sibling elements are read-only */
-
   if (TtaIsReadOnly((Element) pParent) || TtaIsReadOnly((Element) pSibling))
     return;
 
@@ -2332,7 +2382,7 @@ void DeleteNextChar (int frame, PtrElement pEl, ThotBool before)
         pE = pE->ElParent;
     }
 
-  if (pSibling != NULL && pParent != pEl && pElem != NULL)
+  if (pSibling && pParent != pEl && pElem)
     {
       if (pSibling->ElTerminal)
         /* don't merge a structured element with a text string */
@@ -2461,7 +2511,8 @@ void DeleteNextChar (int frame, PtrElement pEl, ThotBool before)
                     else
                       SelectString (pDoc, pSibling, 1, 0);
                     /* simulate a delete */
-                    TtcDeleteSelection (IdentDocument (pDoc), 0);
+                    ContentEditing (TEXT_DEL);
+                    //TtcDeleteSelection (IdentDocument (pDoc), 0);
                   }
               else if (strcmp (pSibling->ElStructSchema->SsName, "SVG"))
                 /* don't delete a graphic element when the user enters

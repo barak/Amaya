@@ -1,7 +1,16 @@
+/*
+ *
+ *  COPYRIGHT INRIA and W3C, 2006-2007
+ *  Please first read the full copyright statement in file COPYRIGHT.
+ *
+ */
+
 #include "templates.h"
 
 #define THOT_EXPORT extern
 #include "templateDeclarations.h"
+
+#include "Elemlist.h"
 
 #include "EDITimage_f.h"
 #include "HTMLactions_f.h"
@@ -29,78 +38,6 @@ typedef struct _InstantiateCtxt
 } InstantiateCtxt;
 #endif /* TEMPLATES */
 
-typedef struct _AttSearch
-{
-  int   att;
-  int   type;
-} AttSearch;
-
-static AttSearch    URL_attr_tab[] =
-  {
-    {HTML_ATTR_HREF_, XHTML_TYPE},
-    {HTML_ATTR_codebase, XHTML_TYPE},
-    {HTML_ATTR_Script_URL, XHTML_TYPE},
-    {HTML_ATTR_SRC, XHTML_TYPE},
-    {HTML_ATTR_data, XHTML_TYPE},
-    {HTML_ATTR_background_, XHTML_TYPE},
-    {HTML_ATTR_Style_, XHTML_TYPE},
-    {HTML_ATTR_cite, XHTML_TYPE},
-    //{XLink_ATTR_href_, XLINK_TYPE},
-    {MathML_ATTR_style_, MATH_TYPE},
-#ifdef _SVG
-    {SVG_ATTR_style_, SVG_TYPE},
-    {SVG_ATTR_xlink_href, SVG_TYPE}
-#endif
-  };
-
-/*----------------------------------------------------------------------
-  RegisterURLs
-  ----------------------------------------------------------------------*/
-void RegisterURLs(Document doc, Element el)
-{
-#ifdef TEMPLATES
-  SSchema             XHTMLSSchema, MathSSchema, SVGSSchema, XLinkSSchema;
-  AttributeType       attrType;
-  Attribute           attr;
-  int                 max;
-
-  XHTMLSSchema = TtaGetSSchema ("HTML", doc);
-  MathSSchema = TtaGetSSchema ("MathML", doc);
-  SVGSSchema = TtaGetSSchema ("SVG", doc);
-  XLinkSSchema = TtaGetSSchema ("XLink", doc);
-
-  max = sizeof (URL_attr_tab) / sizeof (AttSearch);
-
-  for(int i=0; i<max; i++)
-    {
-      attrType.AttrTypeNum = URL_attr_tab[i].att;
-      switch (URL_attr_tab[i].type)
-        {
-        case XHTML_TYPE:
-          attrType.AttrSSchema = XHTMLSSchema;
-          break;
-        case MATH_TYPE:
-          attrType.AttrSSchema = MathSSchema;
-          break;
-        case SVG_TYPE:
-          attrType.AttrSSchema = SVGSSchema;
-          break;
-        case XLINK_TYPE:
-          attrType.AttrSSchema = XLinkSSchema;
-          break;
-        default:
-          attrType.AttrSSchema = NULL;
-        }
-
-      attr = TtaGetAttribute(el, attrType);
-      if (attr!=NULL)      
-        TtaRegisterAttributeReplace(attr, el, doc);
-    }  
-
-  for (Element child = TtaGetFirstChild (el); child; TtaNextSibling (&child))
-    RegisterURLs (doc, child);
-#endif /* TEMPLATES*/
-}
 
 /*----------------------------------------------------------------------
   CreateInstance
@@ -108,18 +45,23 @@ void RegisterURLs(Document doc, Element el)
 void  CreateInstance(char *templatePath, char *instancePath)
 {
 #ifdef TEMPLATES
-  Document doc = 0;
+  Document     doc = 0;
   DocumentType docType;
-  ThotBool alreadyViewing = FALSE;
-  int      alreadyOnDoc = 0;
+  ElementType  elType;
+  Element      root, title, text;
+  char        *s;
+  int          alreadyOnDoc = 0;
+  ThotBool     alreadyViewing = FALSE;
 
-  XTigerTemplate t = (XTigerTemplate)Get (Templates_Dic, templatePath);
+  XTigerTemplate t = (XTigerTemplate)Dictionary_Get (Templates_Dic, templatePath);
   if (t == NULL)
-    //The template must be loaded before calling this function
-    return;
+    {
+      // the template cannot be loaded
+      InitConfirm (doc, 1, TtaGetMessage (AMAYA, AM_BAD_TEMPLATE));
+      return;
+    }
 
   doc = GetTemplateDocument (t);
-  docType = DocumentTypes[doc];
   while (alreadyOnDoc < DocumentTableLength-1 && !alreadyViewing)
     {
       alreadyOnDoc++;
@@ -130,24 +72,58 @@ void  CreateInstance(char *templatePath, char *instancePath)
   if (!TtaPrepareUndo (doc))
     {
       TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
-      RegisterURLs (doc, TtaGetRootElement(doc));
+      root = TtaGetRootElement(doc);
+      elType = TtaGetElementType (root);
+      // get the target document type
+      s = TtaGetSSchemaName (elType.ElSSchema);
+      if (strcmp (s, "HTML") == 0)
+        docType = docHTML;
+      else if (strcmp (s, "SVG") == 0)
+        docType = docSVG;
+      else if (strcmp (s, "MathML") == 0)
+        docType = docMath;
+      else
+        docType = docXml;
+
       SetRelativeURLs (doc, instancePath);
       
       switch (docType)
         {
-        case docSVG :
+        case docSVG:
           TtaExportDocumentWithNewLineNumbers (doc, instancePath, "SVGT");
           break;
-        case docMath :
+        case docMath:
           TtaExportDocumentWithNewLineNumbers (doc, instancePath, "MathMLT");
           break;
-        case docHTML :
+        case docHTML:
+          // Initialize the document title
+          elType.ElTypeNum = HTML_EL_TITLE;
+          title = TtaSearchTypedElement (elType, SearchInTree, root);
+          text = TtaGetFirstChild (title);
+          while (text)
+            {
+              elType = TtaGetElementType (text);
+              if (elType.ElTypeNum == HTML_EL_TEXT_UNIT && Answer_text[0] != EOS)
+                {
+                  TtaSetTextContent (text, (unsigned char*)Answer_text,
+                                     TtaGetDefaultLanguage (), doc);
+                  text = NULL;
+                }
+              else if ((elType.ElTypeNum == Template_EL_useEl ||
+                        elType.ElTypeNum == Template_EL_useSimple) &&
+                       !strcmp (TtaGetSSchemaName (elType.ElSSchema), "Template"))
+                // Ignore the template use element
+                text = TtaGetFirstChild (text);
+              else
+                // Look for the first text child
+                TtaNextSibling (&text);
+            }
           if (TtaGetDocumentProfile(doc)==L_Xhtml11 || TtaGetDocumentProfile(doc)==L_Basic)
             TtaExportDocumentWithNewLineNumbers (doc, instancePath, "HTMLT11");
           else
             TtaExportDocumentWithNewLineNumbers (doc, instancePath, "HTMLTX");
           break;
-        default :
+        default:
           TtaExportDocumentWithNewLineNumbers (doc, instancePath, NULL);
           break;
         }
@@ -173,9 +149,8 @@ void  CreateInstance(char *templatePath, char *instancePath)
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-void InstantiateTemplate_callback (int newdoc, int status,  char *urlName,
-                                   char *outputfile, AHTHeaders *http_headers,
-                                   void * context)
+void InstantiateTemplate_callback (int newdoc, int status,  char *urlName, char *outputfile,
+				   char *proxyName, AHTHeaders *http_headers, void * context)
 {
 #ifdef TEMPLATES
 	InstantiateCtxt *ctx = (InstantiateCtxt*)context;
@@ -204,7 +179,7 @@ void InstantiateTemplate (Document doc, char *templatename, char *docname,
       ctx->docType = docType;
 		
       GetAmayaDoc (templatename, NULL, doc, doc, CE_MAKEBOOK, FALSE, 
-                   (void (*)(int, int, char*, char*, const AHTHeaders*, void*)) InstantiateTemplate_callback,
+                   (void (*)(int, int, char*, char*, char*, const AHTHeaders*, void*)) InstantiateTemplate_callback,
                    (void *) ctx);
     }
 	else
@@ -239,19 +214,26 @@ static void InstantiateAttribute (XTigerTemplate t, Element el, Document doc)
   if (useAttr)
     // there is a "use" attribute. Check its value
     {
-      text = GetAttributeStringValue (el, useAttr);
-      if (text && strcmp (text, "optional") == 0)
+      text = GetAttributeStringValue (el, useAttr, NULL);
+      if (!text)
         return;
+      if (strcmp (text, "optional") == 0)
+      {
+        TtaFreeMemory(text);
+        return;
+      }
+      TtaFreeMemory(text);
     }
+    
   // get the "name" and "default" attributes
   nameType.AttrSSchema = defaultType.AttrSSchema = TtaGetSSchema (TEMPLATE_SCHEMA_NAME, doc);
-  nameType.AttrTypeNum = Template_ATTR_name;
+  nameType.AttrTypeNum = Template_ATTR_ref_name;
   defaultType.AttrTypeNum = Template_ATTR_defaultAt;
   nameAttr = TtaGetAttribute (el, nameType);
   defAttr = TtaGetAttribute (el, defaultType);
   if (nameAttr)
     {
-      text = GetAttributeStringValue (el, nameAttr);
+      text = GetAttributeStringValue (el, nameAttr, NULL);
       if (text)
         {
           elType = TtaGetElementType (parent);
@@ -265,8 +247,9 @@ static void InstantiateAttribute (XTigerTemplate t, Element el, Document doc)
               TtaAttachAttribute (parent, attr, doc);
               if (defAttr)
                 {
-                  text = GetAttributeStringValue (el, defAttr);
-                  TtaSetAttributeText(attr, text, parent, doc);
+                  text = GetAttributeStringValue (el, defAttr, NULL);
+                  if (text)
+                    TtaSetAttributeText(attr, text, parent, doc);
                   TtaFreeMemory(text);
                   // if it's a src arttribute for an image, load the image
                   if (!strcmp (TtaGetSSchemaName (elType.ElSSchema), "HTML") &&
@@ -289,7 +272,7 @@ static void InstantiateAttribute (XTigerTemplate t, Element el, Document doc)
 #ifdef TEMPLATES
 /*----------------------------------------------------------------------
   ProcessAttr
-  Look for all "attribute" elements in the subtree and instanciate them
+  Look for all "attribute" elements in the subtree and instantiate them
   ----------------------------------------------------------------------*/
 static void ProcessAttr (XTigerTemplate t, Element el, Document doc)
 {
@@ -308,122 +291,204 @@ static void ProcessAttr (XTigerTemplate t, Element el, Document doc)
 }
 #endif /* TEMPLATES */
 
+
+/*----------------------------------------------------------------------
+  Template_GetNewSimpleTypeInstance
+  Create an new instance of xt:use/SimpleType
+  The decl attribute must embed SimpleType declaration (no validation).
+  @param decl Declaration of new element
+  @param parent Future parent element
+  @param doc Document
+  @return The new element
+  ----------------------------------------------------------------------*/
+Element Template_GetNewSimpleTypeInstance(Document doc, Element parent, Declaration decl)
+{
+  Element           newEl = NULL;
+#ifdef TEMPLATES
+  ElementType       elType;
+  char             *empty = " ";
+
+  elType.ElSSchema = TtaGetSSchema(TEMPLATE_SSHEMA_NAME, doc);
+  elType.ElTypeNum = Template_EL_TEXT_UNIT;
+  newEl = TtaNewElement (doc, elType);
+  TtaSetTextContent (newEl, (unsigned char*) empty, 0, doc);
+#endif /* TEMPLATES */
+  return newEl;
+}
+
+/*----------------------------------------------------------------------
+  Template_GetNewXmlElementInstance
+  Create an new instance of xt:use/XmlElement
+  The decl attribute must embed XmlElement declaration (no validation).
+  @param decl Declaration of new element
+  @param parent Future parent element
+  @param doc Document
+  @return The new element
+  ----------------------------------------------------------------------*/
+Element Template_GetNewXmlElementInstance(Document doc, Element parent, Declaration decl)
+{
+  Element           newEl = NULL;
+#ifdef TEMPLATES
+  ElementType       elType;
+
+  GIType (decl->name, &elType, doc);
+  if (elType.ElTypeNum != 0)
+  {
+    newEl = TtaNewTree (doc, elType, "");
+  }
+#endif /* TEMPLATES */
+  return newEl;
+}
+
+/*----------------------------------------------------------------------
+  Template_InsertUseChildren
+  Insert children to a xt:use
+  The dec parameter must be valid and will not be verified. It must be a
+    direct child element (for union elements).
+  @param el element (xt:use) in which insert a new element
+  @param dec Template declaration of the element to insert
+  @return The inserted element (the xt:use element if insertion is multiple as component)
+  ----------------------------------------------------------------------*/
+Element Template_InsertUseChildren(Document doc, Element el, Declaration dec)
+{
+  Element     newEl   = NULL;
+#ifdef TEMPLATES
+  Element     current = NULL;
+  Element     child   = NULL;
+  //char       *attrCurrentTypeValue;
+  //ElementType elType;
+  
+  if (TtaGetDocumentAccessMode(doc))
+  {
+    switch (dec->nature)
+    {
+      case SimpleTypeNat:
+        newEl = Template_GetNewSimpleTypeInstance(doc, el, dec);
+        TtaInsertFirstChild (&newEl, el, doc);
+        break;
+      case XmlElementNat:
+        newEl = Template_GetNewXmlElementInstance(doc, el, dec);
+        TtaInsertFirstChild (&newEl, el, doc);
+        break;
+      case ComponentNat:
+        newEl = TtaCopyTree(dec->componentType.content, doc, doc, el);
+        ProcessAttr (dec->declaredIn, newEl, doc);
+        
+        /* Copy elements from new use to existing use. */
+        while((child = TtaGetFirstChild(newEl)))
+        {
+          TtaRemoveTree (child, doc);
+          if (current)
+            TtaInsertSibling (child, current, FALSE, doc);
+          else
+            TtaInsertFirstChild (&child, el, doc);      
+          current = child; 
+        }
+        
+        /* Copy currentType attribute. */
+        //attrCurrentTypeValue = GetAttributeStringValue (el, Template_ATTR_currentType, NULL);
+        //SetAttributeStringValue (el, Template_ATTR_currentType, attrCurrentTypeValue);
+        TtaDeleteTree(newEl, doc);
+        newEl = el;
+        break;
+      case UnionNat :
+        /* Nothing to do.*/
+  //                elType.ElTypeNum = Template_EL_useEl;
+  //                cont = TtaNewElement (doc, elType);
+  //                if (cont)
+  //                  {
+  //                    TtaSetAccessRight (cont, ReadWrite, doc);
+  //                    at = TtaNewAttribute (att);
+  //                    if (at)
+  //                      {
+  //                        TtaAttachAttribute (cont, at, doc);
+  //                        TtaSetAttributeText(at, types, cont, doc);
+  //                      }
+  //                  }
+        /* @@@@@ */
+        break;
+      default :
+        //Impossible
+        break;   
+    }
+  }  
+#endif /* TEMPLATES */
+  return newEl;
+}
+
 /*----------------------------------------------------------------------
   InstantiateUse
   ----------------------------------------------------------------------*/
 Element InstantiateUse (XTigerTemplate t, Element el, Document doc,
-                        ThotBool insert)
+                        ThotBool registerUndo)
 {
 #ifdef TEMPLATES
-	Element          cont, child, prev, next;
+	Element          cont = NULL;
   ElementType      elType;
-	Attribute        at;
-	AttributeType    att;
   Declaration      dec;
-  int              size, nbitems;
+  int              size, nbitems, i;
   struct menuType  *items;
   char             *types;
-  char             *empty = " ";
   ThotBool          oldStructureChecking;
+
+  if (!t)
+    return NULL;
 
   /* get the value of the "types" attribute */
   cont = NULL;
   elType = TtaGetElementType (el);
-	att.AttrSSchema = elType.ElSSchema;
-	att.AttrTypeNum = Template_ATTR_types;
-	at = TtaGetAttribute (el, att);
-  if (!at)
+  types = GetAttributeStringValueFromNum(el, Template_ATTR_types, &size);
+  if (!types)
     return NULL;
-	size = TtaGetTextAttributeLength (at);
-	types = (char *) TtaGetMemory (size+1);	
-	TtaGiveTextAttributeValue (at, types, &size);
   giveItems (types, size, &items, &nbitems);
   // No structure checking
   oldStructureChecking = TtaGetStructureChecking (doc);
   TtaSetStructureChecking (FALSE, doc);
+  
   if (nbitems == 1)
     /* only one type in the "types" attribute */
     {
-      dec = GetDeclaration (t, items[0].label);
+      dec = Template_GetDeclaration (t, items[0].label);
       if (dec)
-        switch(dec->nature)
-          {
-          case SimpleTypeNat :
-            elType.ElTypeNum = Template_EL_TEXT_UNIT;
-            cont = TtaNewElement (doc, elType);
-            TtaInsertFirstChild (&cont, el, doc);
-            TtaSetTextContent (cont, (unsigned char*) empty, 0, doc);
-            cont = NULL;
-            break;
-          case XmlElementNat :
-            GIType (dec->name, &elType, doc);
-            cont = TtaNewElement (doc, elType);
-            if (insert)
-              TtaInsertFirstChild (&cont, el, doc);
-            break;
-          case ComponentNat :
-            cont = TtaCopyTree (dec->componentType.content, doc, doc, el);
-            ProcessAttr (t, cont, doc);
-            if (insert)
-              {
-                prev = NULL;
-                child = TtaGetFirstChild (cont);
-                while (child)
-                  {
-                    next = child;
-                    TtaNextSibling (&next);
-                    TtaRemoveTree (child, doc);
-                    if (prev)
-                      TtaInsertSibling (child, prev, FALSE, doc);
-                    else
-                      TtaInsertFirstChild (&child, el, doc);
-                    prev = child;
-                    child = next;
-                  }
-                TtaDeleteTree (cont, doc);
-                cont = el;
-              }
-            break;
-          case UnionNat :
-            if (!insert)
-              /* the user has clicked a "repeat" button and wants to create
-                 a new instance of the repeated element. Just create the
-                 use element */
-              {
-                elType.ElTypeNum = Template_EL_useEl;
-                cont = TtaNewElement (doc, elType);
-                if (cont)
-                  {
-                    TtaSetAccessRight (cont, ReadWrite, doc);
-                    at = TtaNewAttribute (att);
-                    if (at)
-                      {
-                        TtaAttachAttribute (cont, at, doc);
-                        TtaSetAttributeText(at, types, cont, doc);
-                      }
-                  }
-              }
-            break;
-          default :
-            //Impossible
-            break;   
-          }
+      {
+        cont = Template_InsertUseChildren(doc, el, dec);
+        if(cont)
+        {
+          TtaChangeTypeOfElement (el, doc, Template_EL_useSimple);
+          if(registerUndo)
+            TtaRegisterElementTypeChange(el, Template_EL_useEl, doc);
+        }
+      }
     }
+
   TtaFreeMemory(types);
+  
+  
+  for(i=0; i<nbitems; i++)
+    TtaFreeMemory(items[i].label);
+  TtaFreeMemory(items);
   TtaSetStructureChecking (oldStructureChecking, doc);
   return cont;
+#else /* TEMPLATES */
+  return NULL;
 #endif /* TEMPLATES */
 }
 
 /*----------------------------------------------------------------------
+  InstantiateRepeat
+  Check for min and max param and validate xt:repeat element content.
+  @param registerUndo True to register undo creation sequences.
   ----------------------------------------------------------------------*/
-void InstantiateRepeat (XTigerTemplate t, Element el, Document doc)
+void InstantiateRepeat (XTigerTemplate t, Element el, Document doc, ThotBool registerUndo)
 {
 #ifdef TEMPLATES
   int            curVal,  minVal,  maxVal;
   Attribute      curAtt,  minAtt,  maxAtt;
   AttributeType  curType, minType, maxType;
-  char           *text;
+  char           *text, *types = NULL, *title=NULL;
+
+  if (!t)
+    return;
 
   //Preparing types
   curType.AttrSSchema = TtaGetSSchema (TEMPLATE_SCHEMA_NAME, doc);
@@ -440,7 +505,7 @@ void InstantiateRepeat (XTigerTemplate t, Element el, Document doc)
   //Get the values
   if (minAtt)
     {
-      text = GetAttributeStringValue(el, minAtt);
+      text = GetAttributeStringValue(el, minAtt, NULL);
       if (text)
         {
           minVal = atoi(text);
@@ -455,7 +520,7 @@ void InstantiateRepeat (XTigerTemplate t, Element el, Document doc)
 
   if (maxAtt)
     {
-      text = GetAttributeStringValue (el, maxAtt);
+      text = GetAttributeStringValue (el, maxAtt, NULL);
       if (text)
         {
           if (!strcmp (text, "*"))
@@ -473,7 +538,7 @@ void InstantiateRepeat (XTigerTemplate t, Element el, Document doc)
 
   if (curAtt)
     {
-      text = GetAttributeStringValue(el, curAtt);
+      text = GetAttributeStringValue(el, curAtt, NULL);
       if (text)
         {
           curVal = atoi(text);
@@ -495,6 +560,8 @@ void InstantiateRepeat (XTigerTemplate t, Element el, Document doc)
       sprintf(text,"%d",minVal);
       TtaAttachAttribute(el, minAtt, doc);
       TtaSetAttributeText(minAtt, text, el, doc);
+      if (registerUndo)
+        TtaRegisterAttributeCreate(minAtt, el, doc);
     }
 
   if (!maxAtt)
@@ -506,6 +573,8 @@ void InstantiateRepeat (XTigerTemplate t, Element el, Document doc)
         sprintf(text,"*");
       TtaAttachAttribute(el, maxAtt, doc);      
       TtaSetAttributeText(maxAtt, text, el, doc);
+      if (registerUndo)
+        TtaRegisterAttributeCreate(maxAtt, el, doc);
     }
 
   if (!curAtt)
@@ -514,6 +583,8 @@ void InstantiateRepeat (XTigerTemplate t, Element el, Document doc)
       sprintf(text,"%d",curVal);
       TtaAttachAttribute(el, curAtt, doc);
       TtaSetAttributeText(curAtt, text, el, doc);
+      if (registerUndo)
+        TtaRegisterAttributeCreate(curAtt, el, doc);
     }
 
   if (text)
@@ -539,15 +610,32 @@ void InstantiateRepeat (XTigerTemplate t, Element el, Document doc)
     return;  
 
   child = TtaGetLastChild(el);
+  types = GetAttributeStringValueFromNum(child, Template_ATTR_types, NULL);
+  title = GetAttributeStringValueFromNum(child, Template_ATTR_title, NULL);
+  
 
   while(childrenCount < curVal)
     {
-      //Create a new child
-      newChild = TtaCopyTree(child, doc, doc, el);
+      ElementType newElType;
+      newElType.ElSSchema = TtaGetSSchema (TEMPLATE_SCHEMA_NAME, doc);
+      newElType.ElTypeNum = Template_EL_useEl;
+      newChild = TtaNewElement(doc, newElType);
+      
+      // Insert it
       TtaInsertSibling(newChild, child, FALSE, doc);
+      SetAttributeStringValueWithUndo(newChild, Template_ATTR_types, types);
+      SetAttributeStringValueWithUndo(newChild, Template_ATTR_title, title);
+      
+      InstantiateUse(t, newChild, doc, TRUE);
+      
+      if (registerUndo)
+        TtaRegisterElementCreate(newChild, doc);
       child = newChild;
       childrenCount++;
     }
+    
+    TtaFreeMemory(types);
+    TtaFreeMemory(title);
 #endif /* TEMPLATES */
 }
 
@@ -564,6 +652,9 @@ static void ParseTemplate (XTigerTemplate t, Element el, Document doc,
 	char         *name;
 	ElementType   elType = TtaGetElementType (el);
 	
+  if (!t)
+    return;
+  
   name = TtaGetSSchemaName (elType.ElSSchema);
 	if (!strcmp (name, "Template"))
     {
@@ -576,27 +667,35 @@ static void ParseTemplate (XTigerTemplate t, Element el, Document doc,
           return;
           break;
         case Template_EL_component :
-          //Replace by a use				
+          // remove the name attribute
           attType.AttrSSchema = elType.ElSSchema;
           attType.AttrTypeNum = Template_ATTR_name;
-          
-          name = GetAttributeStringValue (el, Template_ATTR_name);		  		  
+          name = GetAttributeStringValueFromNum (el, Template_ATTR_name, NULL);		  		  
           TtaRemoveAttribute (el, TtaGetAttribute (el, attType), doc);
+          // replace the component by a use
           if (NeedAMenu (el, doc))
             TtaChangeElementType (el, Template_EL_useEl);
           else
             TtaChangeElementType (el, Template_EL_useSimple);
-          
+          // generate the types attribute
           attType.AttrTypeNum = Template_ATTR_types;
           att = TtaNewAttribute (attType);
           TtaAttachAttribute (el, att, doc);
-          TtaSetAttributeText (att, name, el, doc);
-          
+          if (name)
+            TtaSetAttributeText (att, name, el, doc);
+          // generate the title attribute
+          attType.AttrTypeNum = Template_ATTR_title;
+          att = TtaNewAttribute (attType);
+          TtaAttachAttribute (el, att, doc);
+          if (name)
+            TtaSetAttributeText (att, name, el, doc);
+          // generate the currentType attribute
           attType.AttrTypeNum = Template_ATTR_currentType;
           att = TtaNewAttribute (attType);
-          TtaAttachAttribute (el, att, doc);		  
-          TtaSetAttributeText (att, name, el, doc);
-          
+          TtaAttachAttribute (el, att, doc);
+          if (name)
+            TtaSetAttributeText (att, name, el, doc);
+          TtaFreeMemory(name);
           break;
         case Template_EL_option :
           aux = NULL;
@@ -611,14 +710,14 @@ static void ParseTemplate (XTigerTemplate t, Element el, Document doc,
              supposed to contain a valid instance. This should be
              checked, though */
           if (!TtaGetFirstChild (el))
-            InstantiateUse (t, el, doc, TRUE);
+            InstantiateUse (t, el, doc, FALSE);
           break;
         case Template_EL_attribute :
           if (!loading)
             InstantiateAttribute (t, el, doc);
           break;
         case Template_EL_repeat :
-          InstantiateRepeat (t, el, doc);
+          InstantiateRepeat (t, el, doc, FALSE);
           break;
         default :
           break;
@@ -649,7 +748,10 @@ void DoInstanceTemplate (char *templatename)
   Document        doc;
 
 	//Instantiate all elements
-	t = (XTigerTemplate) Get (Templates_Dic, templatename);
+	t = (XTigerTemplate) Dictionary_Get (Templates_Dic, templatename);
+  if (!t)
+    return;
+  
   doc = GetTemplateDocument (t);
 	root =	TtaGetMainRoot (doc);
 	ParseTemplate (t, root, doc, FALSE);
@@ -702,6 +804,7 @@ void DoInstanceTemplate (char *templatename)
       strcat (buffer, "\"");
       TtaSetTextContent (text, (unsigned char*)buffer,  Latin_Script, doc);
       TtaSetStructureChecking (TRUE, doc);
+      TtaFreeMemory(charsetname);
     }
   
   /* generate the XTiger PI */
@@ -714,7 +817,18 @@ void DoInstanceTemplate (char *templatename)
   text = TtaGetFirstChild (elFound);
   strcpy (buffer, "xtiger template=\"");
   strcat (buffer, templatename);
+  strcat (buffer, "\" version=\"");
+  if (t->version)
+    strcat (buffer, t->version);
+  else
+    strcat (buffer, "0.8");
   strcat (buffer, "\"");
+  if (t->templateVersion)
+    {
+      strcat (buffer, " templateVersion=\"");
+      strcat (buffer, t->templateVersion);
+      strcat (buffer, "\"");
+    }
   TtaSetTextContent (text, (unsigned char*)buffer,  Latin_Script, doc);
   TtaSetStructureChecking (TRUE, doc);
 
@@ -737,15 +851,18 @@ void DoInstanceTemplate (char *templatename)
   PreInstantiateComponents: Instantiates all components in order to improve
   editing.
   ----------------------------------------------------------------------*/
-void PreInstantiateComponents(XTigerTemplate t)
+void PreInstantiateComponents (XTigerTemplate t)
 {
 #ifdef TEMPLATES 
+  if (!t)
+    return;
+
   DicDictionary components = GetComponents(t);
   Declaration comp;
 
-  for(First(components);!IsDone(components);Next(components))
+  for(Dictionary_First(components);!Dictionary_IsDone(components);Dictionary_Next(components))
     {
-      comp = (Declaration) CurrentElement(components);
+      comp = (Declaration) Dictionary_CurrentElement(components);
       ParseTemplate(t, GetComponentContent(comp), GetTemplateDocument(t), TRUE);
     }
 #endif /* TEMPLATES */

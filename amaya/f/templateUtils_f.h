@@ -7,18 +7,36 @@
 #ifdef __STDC__
 
 extern char *GetSchemaFromDocType ( DocumentType docType );
+extern void SetAttributeStringValue ( Element el,
+                                      int att,
+                                      char* value );
+extern void SetAttributeStringValueWithUndo ( Element el,
+                                              int att,
+                                              char* value );
+extern char *GetAttributeStringValueFromNum ( Element el,
+                                              int att,
+                                              int* sz );
 extern char *GetAttributeStringValue ( Element el,
-                                       int att );
-extern char *GetAttributeStringValue ( Element el,
-                                       Attribute attribute );
+                                       Attribute attribute,
+                                       int* sz );
+extern Element GetFirstEditableElement ( Element el );
 
 #else /* __STDC__ */
 
 extern char *GetSchemaFromDocType ( DocumentType docType );
+extern void SetAttributeStringValue ( Element el,
+                                        int att,
+                                        char* value );
+extern void SetAttributeStringValueWithUndo ( Element el,
+                                                int att,
+                                                char* value );
+extern char *GetAttributeStringValueFromNum ( Element el,
+                                                int att,
+                                                int* sz );
 extern char *GetAttributeStringValue ( Element el,
-                                         int att );
-extern char *GetAttributeStringValue ( Element el,
-                                         Attribute attribute );
+                                         Attribute attribute,
+                                         int* sz );
+extern Element GetFirstEditableElement ( Element el );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

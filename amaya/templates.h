@@ -7,6 +7,8 @@
 
 #include "MENUconf.h"
 
+#define TEMPLATE_SSHEMA_NAME  "Template"
+
 typedef void  *DicElement;
 
 //A record contains an element and its key.
@@ -35,6 +37,9 @@ typedef struct _XTigerTemplate *XTigerTemplate;
 //Private structure of a template
 struct _XTigerTemplate
 {	
+  char*           name;           //Template name
+  char*           version;        //Version of XTiger language
+  char*           templateVersion;//Version of template
   ThotBool        isLibrary;			//Is this a library? (otherway it's a template)
   ThotBool        isPredefined;   //Is this the predefined library
   DicDictionary   libraries;			//Imported libraries
@@ -67,12 +72,13 @@ typedef struct _SimpleType
 typedef struct _Component
 {
 	Element        content;
-} Component;
+} Component_;
 
 typedef struct _Union
 {
-	DicDictionary  include; //Dictionary<Declaration>
-	DicDictionary  exclude; //Dictionary<Declaration>
+	DicDictionary  include;  //Dictionary<Declaration>
+	DicDictionary  exclude;  //Dictionary<Declaration>
+  DicDictionary  expanded; //Dictionary<Declaration>
 } Union;
 
 /* Structure of a declaration */
@@ -87,7 +93,7 @@ struct _Declaration
 	union
 	{
 		SimpleType   simpleType;
-		Component    componentType;
+		Component_   componentType;
 		Union        unionType;
 		XmlElement   elementType;
 	};

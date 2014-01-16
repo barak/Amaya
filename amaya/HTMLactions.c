@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2005
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -24,12 +24,20 @@
 #ifdef _SVG
 #include "SVG.h"
 #endif /* _SVG */
+
+
 #ifdef TEMPLATES
+#include "templates.h"
+
+#include "containers.h"
+#include "Elemlist.h"
+#include "insertelem_f.h"
+
 #include "Template.h"
+#include "templates_f.h"
 #endif /* TEMPLATES */
 
 #include "XML.h"
-
 #include "anim_f.h"
 #include "css_f.h"
 #include "init_f.h"
@@ -68,6 +76,7 @@
 #include "appdialogue_wx.h"
 #include "paneltypes_wx.h"
 #endif /* _WX */
+
 
 /* Some prototypes */
 static ThotBool     FollowTheLink (Element anchor, Element elSource,
@@ -240,13 +249,8 @@ Element SearchNAMEattribute (Document doc, char *nameVal, Attribute ignoreAtt,
       if (attrType.AttrSSchema)
         {
           /* search all elements having an attribute ID (defined in the XTiger schema) */
-          attrType.AttrTypeNum = Template_ATTR_id;
+          attrType.AttrTypeNum = Template_ATTR_name;
           elFound = GetElemWithAttr (doc, attrType, nameVal, ignoreAtt, ignoreEl);
-		  if(!elFound) {
-		    /* search all elements having an attribute NAME (defined in the XTiger schema) */
-            attrType.AttrTypeNum = Template_ATTR_name;
-            elFound = GetElemWithAttr (doc, attrType, nameVal, ignoreAtt, ignoreEl);
-		  }
         }
 
     }
@@ -332,8 +336,8 @@ void CheckUniqueName (Element el, Document doc, Attribute attr,
   This function is called when the document is loaded
   ----------------------------------------------------------------------*/
 void FollowTheLink_callback (int targetDocument, int status, char *urlName,
-                             char *outputfile, AHTHeaders *http_headers,
-                             void *context)
+                             char *outputfile, char *proxyname,
+                             AHTHeaders *http_headers, void *context)
 {
   Element             elFound=NULL;
   ElementType         elType;
@@ -571,7 +575,7 @@ static ThotBool FollowTheLink (Element anchor, Element elSource,
           /* the target element is part of the same document */
           targetDocument = doc;
           /* manually invoke the callback */
-          FollowTheLink_callback (targetDocument, 0, NULL, NULL, NULL, 
+          FollowTheLink_callback (targetDocument, 0, NULL, NULL, NULL, NULL, 
                                   (void *) ctx);
         }
       else
@@ -666,7 +670,8 @@ static ThotBool FollowTheLink (Element anchor, Element elSource,
               /* Load the new document */
               targetDocument = GetAmayaDoc (pathname, NULL, reldoc, doc, 
                                             method, history, 
-                                            (void (*)(int, int, char*, char*, const AHTHeaders*, void*)) FollowTheLink_callback,
+                                            (void (*)(int, int, char*, char*, char*,
+                                                      const AHTHeaders*, void*)) FollowTheLink_callback,
                                             (void *) ctx);
               if (readonly)
                 {
@@ -1035,7 +1040,7 @@ static void DisplayUrlAnchor (Element element, Document document)
 }
 
 /*----------------------------------------------------------------------
-  DoAction activates the current element from the keyborad
+  DoAction activates the current element from the keyboard
   ----------------------------------------------------------------------*/
 void DoAction (Document doc, View view)
 {
@@ -1482,8 +1487,36 @@ ThotBool AnnotSimpleClick (NotifyElement *event)
 
 
 /*----------------------------------------------------------------------
+  UpdateXmlElementListTool update the content of the XML element list tool.
+  doc : Current document.
+  el : Selected element.
+  ----------------------------------------------------------------------*/
+void UpdateXmlElementListTool (Element el, Document doc)
+{
+#ifdef TEMPLATES
+  if(IsTemplateInstanceDocument(doc))
+  {
+    if(!IsTemplateElement(el))
+      el = GetFirstTemplateParentElement(el);
+    
+    DLList list = InsertableElement_Update(doc, el);
+ 
+    AmayaParams    p = {-1, list, (void*)InsertableElement_DoInsertElement, NULL};
+    
+    TtaSendDataToPanel( WXAMAYA_PANEL_XML, p );
+    
+  }
+  else
+#endif /* TEMPLATE */
+  {
+    TtaRefreshElementMenu(doc, 1);
+  }
+}
+
+
+/*----------------------------------------------------------------------
   UpdateTitle update the content of the Title field on top of the 
-  main window, according to the contents of element el.   
+  main window, according to the contents of element el.
   ----------------------------------------------------------------------*/
 void UpdateTitle (Element el, Document doc)
 {
@@ -1524,7 +1557,7 @@ void UpdateTitle (Element el, Document doc)
     }
 
   textElem = TtaGetFirstChild (el);
-  if (textElem != NULL)
+  if (textElem)
     {
       /* what is the length of the title? */
       length = 0;
@@ -1534,7 +1567,15 @@ void UpdateTitle (Element el, Document doc)
           elType = TtaGetElementType (next);
           if (elType.ElTypeNum == HTML_EL_TEXT_UNIT)
             length += TtaGetTextLength (next);
-          TtaNextSibling (&next);
+#ifdef TEMPLATES
+          if ((elType.ElTypeNum == Template_EL_useEl ||
+                    elType.ElTypeNum == Template_EL_useSimple) &&
+                   !strcmp (TtaGetSSchemaName (elType.ElSSchema), "Template"))
+            // Ignore the template use element
+            next = TtaGetFirstChild (next);
+          else
+#endif /* TEMPLATES */
+            TtaNextSibling (&next);
         }
       /* get the text of the title */
       length++;
@@ -1551,7 +1592,15 @@ void UpdateTitle (Element el, Document doc)
               TtaGiveTextContent (next, (unsigned char *)&text[i], &l, &lang);
               i += l;
             }
-          TtaNextSibling (&next);
+#ifdef TEMPLATES
+          if ((elType.ElTypeNum == Template_EL_useEl ||
+                    elType.ElTypeNum == Template_EL_useSimple) &&
+                   !strcmp (TtaGetSSchemaName (elType.ElSSchema), "Template"))
+            // Ignore the template use element
+            next = TtaGetFirstChild (next);
+          else
+#endif /* TEMPLATES */
+            TtaNextSibling (&next);
         }
       if (DocumentTypes[doc] != docSource)
         TtaChangeWindowTitle (doc, 0, text, UTF_8);
@@ -1610,6 +1659,8 @@ void CloseLogs (Document doc)
   -----------------------------------------------------------------------*/
 void FocusChanged (Document doc)
 {
+#ifdef LC 
+/* Temporary disabled to go round a crash on Mac OSX with the Show Applied Style window */
   int		     i;
 
   if ( DocumentTypes[doc] == docSource)
@@ -1628,9 +1679,16 @@ void FocusChanged (Document doc)
         TtaFreeMemory (DocumentURLs[i]);
         DocumentURLs[i] = NULL;
         DocumentSource[i] = 0;
+        if (DocumentMeta[i])
+          {
+            DocumentMetaClear (DocumentMeta[i]);
+            TtaFreeMemory (DocumentMeta[i]);
+            DocumentMeta[i] = NULL;
+          }
         /* restore the default document type */
         DocumentTypes[i] = docFree;
       }
+#endif /* LC */
 }
 
 /*----------------------------------------------------------------------
@@ -1662,6 +1720,10 @@ void FreeDocumentResource (Document doc)
           /* remove the Parsing errors file */
           RemoveParsingErrors (doc);
           ClearMathFrame (doc);
+#ifdef _SVG
+          if (DocumentTypes[doc] == docLibrary)
+            CloseLibrary (doc);
+#endif /* _SVG */
 #ifdef ANNOTATIONS
           ANNOT_FreeDocumentResource (doc);
 #endif /* ANNOTATIONS */
@@ -2980,6 +3042,15 @@ void SelectionChanged (NotifyElement *event)
   /* update the displayed style information */
   SynchronizeAppliedStyle (event);
   UnFrameMath ();
+  
+  if (DocumentTypes[event->document] != docLog)
+  {
+    UpdateXmlElementListTool(event->element,event->document);
+#ifdef _WX
+    TtaSetStatus (event->document, 1, "  ", NULL);
+#endif /* _WX */
+    TtaSetStatusSelectedElement(event->document, 1, event->element);
+  }
   SelectionChanging = FALSE;
 }
 

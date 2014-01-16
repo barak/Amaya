@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -471,20 +471,20 @@ void DrawStixIntegral (int frame, int x, int y, int l, int h,
                        int type, int size, int fg)
 {
   unsigned char   symb = 0x34;
-  int             delta;
+  int             delta = 0;
   ThotFont        font;
 
   size = PixelToPoint (h);
   font = (ThotFont)LoadStixFont (6, size);
-  if (CharacterHeight (0x21, font) > (3 * h) / 4 ||
-      (type != 0 && type != 2))
+  if (CharacterHeight (0x21, font) > (3 * h) / 4 || type == 1 || type == 4 || type == 5)
     {
       /* Integrals using esstix6 charmap
          52 - => 3x text 3 line eq
          33 - => 2x text 2 line eq
          69 - => 1x text for oneline eq */
       /* display a single glyph */
-      if (type == 0 || type == 2)
+
+      if (type == 0 || type == 2 || type == 3)
         {
           if (h < LOW_CHAR)
             symb = 0x45;
@@ -494,7 +494,7 @@ void DrawStixIntegral (int frame, int x, int y, int l, int h,
             symb = 0x34;
           DrawStixChar (font, symb, x, y, h, fg, frame);
         }
-      if (type == 2)		
+      if (type == 2 || type == 3)		
         /* double integral, display the second integral sign */
         {
           delta = CharacterWidth (symb, font) / 3;
@@ -502,6 +502,12 @@ void DrawStixIntegral (int frame, int x, int y, int l, int h,
             delta = 3;
           DrawStixChar (font, symb, x+delta, y, h, fg, frame);
         }
+      if (type == 3)		
+        /* triple integral, display the third integral sign */
+        {
+          DrawStixChar (font, symb, x+delta+delta, y, h, fg, frame);
+        }
+
       if (type == 1)	
         /* contour integral */
         {
@@ -513,6 +519,30 @@ void DrawStixIntegral (int frame, int x, int y, int l, int h,
             symb = 0x35;
           DrawStixChar (font, symb, x, y, h, fg, frame);
         }
+
+      if (type == 4)	
+        /* double contour integral */
+        {
+          if (h < LOW_CHAR)
+            symb = 0x48;
+          else if (h < MID_CHAR)
+            symb = 0x25;
+          else
+            symb = 0x37;
+          DrawStixChar (font, symb, x, y, h, fg, frame);
+        }
+
+      if (type == 5)	
+        /* triple contour integral */
+        {
+          if (h < LOW_CHAR)
+            symb = 0x49;
+          else if (h < MID_CHAR)
+            symb = 0x26;
+          else
+            symb = 0x39;
+          DrawStixChar (font, symb, x, y, h, fg, frame);
+        }
     }
   else
     /* very high character. Display it with several components from the
@@ -521,9 +551,13 @@ void DrawStixIntegral (int frame, int x, int y, int l, int h,
       x -= l / 3;   /* in font Esstix these characters have too a wide margin*/
       DrawCompoundExtendedStix (frame, x, y, -1, h, size, fg,
                                 0x61, 0x62, 0x63);
-      if (type == 2)		
+      if (type == 2 || type == 3)		
         /* double integral, display the second integral sign */
         DrawCompoundExtendedStix (frame, x+l/4, y, -1, h, size, fg,
+                                  0x61, 0x62, 0x63);
+      if (type == 3)		
+        /* double integral, display the second integral sign */
+        DrawCompoundExtendedStix (frame, x+l/2, y, -1, h, size, fg,
                                   0x61, 0x62, 0x63);
     }
 }
@@ -540,33 +574,39 @@ static int StixIntegralWidth (int height, int type)
   font = (ThotFont)LoadStixFont (6, size);  
   if (height < LOW_CHAR)
     {
-      if (type == 0 || type == 2)
+      if (type == 0 || type == 2 || type == 3)
         {
           i = CharacterWidth (0x45, font);
           if (type == 2)
             i += i/4; /* double integral, drawn as 2 single integrals */
+          if (type == 3)
+            i += i/2; /* triple integral, drawn as 3 single integrals */
         }
       else if (type == 1)
         i = CharacterWidth (0x46, font);
     }
   else if (height < MID_CHAR)
     {
-      if (type == 0 || type == 2)
+      if (type == 0 || type == 2 || type == 3)
         {
           i = CharacterWidth (0x21, font);
           if (type == 2)
             i += i/4;
+          if (type == 3)
+            i += i/2;
         }
       else if (type == 1)
         i = CharacterWidth (0x23, font);
     }
   else 
     {
-      if (type == 0 || type == 2)
+      if (type == 0 || type == 2 || type == 3)
         {
           i = CharacterWidth (0x34, font);
           if (type == 2)
             i += i/4;
+          if (type == 3)
+            i += i/2;
         }
       else if (type == 1)
         i = CharacterWidth (0x35, font);
@@ -1002,6 +1042,9 @@ int GetMathFontWidth (char shape, SpecFont font, int height)
         case 'c':	/* circle integral */
           i = StixIntegralWidth (height, 1);
           break;
+        case 't':	/* triple integral */
+          i = StixIntegralWidth (height, 3);
+          break;
         case '(':
         case ')':
           i = StixParenthesisWidth (height, font);
@@ -1040,15 +1083,15 @@ void GiveStixSize (ThotFont pfont, PtrAbstractBox pAb, int *width,
     {
     case 'd':	/* double integral */
       *width = StixIntegralWidth (*height, 2);
-      //*height *= 2;
       break;
     case 'i':	/* integral */
       *width = StixIntegralWidth (*height, 0);
-      //*height *= 2;
       break;
     case 'c':	/* circle integral */
       *width = StixIntegralWidth (*height, 1);
-      //*height *= 2;
+      break;
+    case 't':	/* circle integral */
+      *width = StixIntegralWidth (*height, 3);
       break;
     case '(':
     case ')':
@@ -1080,6 +1123,10 @@ void GiveStixSize (ThotFont pfont, PtrAbstractBox pAb, int *width,
       *height = hfont;
       break;
 #endif
+    default:
+      // like an integral
+      *width = StixIntegralWidth (*height, 0);
+      break;
     }
 }
 
@@ -1097,6 +1144,7 @@ void GetMathFontFromChar (char typesymb, SpecFont fontset, void **font,
     case 'i':
     case 'c':
     case 'd':	  
+    case 't':	  
     case 'I':
     case 'U':
       *font =  LoadStixFont (6, size);
@@ -1119,7 +1167,11 @@ void GetMathFontFromChar (char typesymb, SpecFont fontset, void **font,
       *font = LoadStixFont (8, size);
       break;
     default:
+#ifdef _GL
+      GetStixFontAndIndex ((int)typesymb, fontset, (ThotFont **)font);
+#else /* _GL */
       *font = NULL;	  
+#endif /* _GL */
       return;
       break;
     }

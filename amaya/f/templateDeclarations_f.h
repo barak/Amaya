@@ -25,11 +25,13 @@ extern void NewUnion ( const XTigerTemplate t,
                        const char *name,
                        DicDictionary include,
                        DicDictionary exclude );
-extern void NewElement ( const XTigerTemplate t,
-                         const char *name );
+extern Declaration NewElement ( const XTigerTemplate t,
+                                const char *name );
 extern void FreeDeclaration ( Declaration dec );
-extern Declaration GetDeclaration ( const XTigerTemplate t,
-                                    const char *name );
+extern Declaration Template_GetDeclaration ( const XTigerTemplate t,
+                                             const char *name );
+extern Declaration Template_GetSimpleTypeDeclaration ( const XTigerTemplate t,
+                                                       const char *name );
 extern void FreeXTigerTemplate ( XTigerTemplate t );
 extern void AddLibraryDeclarations ( XTigerTemplate t,
                                      XTigerTemplate lib );
@@ -40,7 +42,6 @@ extern void PrintUnion ( Declaration dec,
 extern void PrintDeclarations ( XTigerTemplate t,
                                 FILE *file );
 extern void DumpDeclarations ( XTigerTemplate t );
-extern void RedefineSpecialUnions ( XTigerTemplate t );
 extern DicDictionary GetComponents ( XTigerTemplate t );
 extern Element GetComponentContent ( Declaration d );
 extern Document GetTemplateDocument ( XTigerTemplate t );
@@ -48,6 +49,31 @@ extern void SetTemplateDocument ( XTigerTemplate t,
                                   Document doc );
 extern void AddUser ( XTigerTemplate t );
 extern void RemoveUser ( XTigerTemplate t );
+extern DicDictionary Template_ExpandUnion ( XTigerTemplate t,
+                                            Declaration decl );
+extern char* Template_ExpandTypes ( XTigerTemplate t,
+                                    char* types );
+extern ThotBool Template_IsElementTypeAllowed ( ElementType type,
+                                                Declaration decl );
+extern ThotBool Template_IsTypeAllowed ( const char* type,
+                                         Declaration decl );
+extern ThotBool Template_CanInsertElementInBag ( Document doc,
+                                                 ElementType type,
+                                                 char* bagTypes );
+extern ThotBool Template_CanInsertTypeInBag ( Document doc,
+                                              const char* type,
+                                              char* bagTypes );
+extern ThotBool Template_CanInsertElementInBagElement ( Document doc,
+                                                        ElementType type,
+                                                        Element bag );
+extern ThotBool Template_CanInsertElementInBagElement ( Document doc,
+                                                        const char* type,
+                                                        Element bag );
+extern ThotBool Template_CanInsertElementInUse ( Document doc,
+                                                 ElementType type,
+                                                 char* useType,
+                                                 Element parent,
+                                                 int position );
 
 #else /* __STDC__ */
 
@@ -70,11 +96,13 @@ extern void NewUnion ( const XTigerTemplate t,
                          const char *name,
                          DicDictionary include,
                          DicDictionary exclude );
-extern void NewElement ( const XTigerTemplate t,
-                           const char *name );
+extern Declaration NewElement ( const XTigerTemplate t,
+                                  const char *name );
 extern void FreeDeclaration ( Declaration dec );
-extern Declaration GetDeclaration ( const XTigerTemplate t,
-                                      const char *name );
+extern Declaration Template_GetDeclaration ( const XTigerTemplate t,
+                                               const char *name );
+extern Declaration Template_GetSimpleTypeDeclaration ( const XTigerTemplate t,
+                                                         const char *name );
 extern void FreeXTigerTemplate ( XTigerTemplate t );
 extern void AddLibraryDeclarations ( XTigerTemplate t,
                                        XTigerTemplate lib );
@@ -85,7 +113,6 @@ extern void PrintUnion ( Declaration dec,
 extern void PrintDeclarations ( XTigerTemplate t,
                                   FILE *file );
 extern void DumpDeclarations ( XTigerTemplate t );
-extern void RedefineSpecialUnions ( XTigerTemplate t );
 extern DicDictionary GetComponents ( XTigerTemplate t );
 extern Element GetComponentContent ( Declaration d );
 extern Document GetTemplateDocument ( XTigerTemplate t );
@@ -93,6 +120,31 @@ extern void SetTemplateDocument ( XTigerTemplate t,
                                     Document doc );
 extern void AddUser ( XTigerTemplate t );
 extern void RemoveUser ( XTigerTemplate t );
+extern DicDictionary Template_ExpandUnion ( XTigerTemplate t,
+                                              Declaration decl );
+extern char* Template_ExpandTypes ( XTigerTemplate t,
+                                      char* types );
+extern ThotBool Template_IsElementTypeAllowed ( ElementType type,
+                                                  Declaration decl );
+extern ThotBool Template_IsTypeAllowed ( const char* type,
+                                           Declaration decl );
+extern ThotBool Template_CanInsertElementInBag ( Document doc,
+                                                   ElementType type,
+                                                   char* bagTypes );
+extern ThotBool Template_CanInsertTypeInBag ( Document doc,
+                                                const char* type,
+                                                char* bagTypes );
+extern ThotBool Template_CanInsertElementInBagElement ( Document doc,
+                                                          ElementType type,
+                                                          Element bag );
+extern ThotBool Template_CanInsertElementInBagElement ( Document doc,
+                                                          const char* type,
+                                                          Element bag );
+extern ThotBool Template_CanInsertElementInUse ( Document doc,
+                                                   ElementType type,
+                                                   char* useType,
+                                                   Element parent,
+                                                   int position );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

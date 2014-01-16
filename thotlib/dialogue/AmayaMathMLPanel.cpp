@@ -25,7 +25,7 @@
 
 #define THOT_EXPORT extern
 #include "frame_tv.h"
-#include "panel_tv.h"
+#include "paneltypes_wx.h"
 
 #include "AmayaMathMLPanel.h"
 #include "AmayaNormalWindow.h"
@@ -157,6 +157,16 @@ void AmayaMathMLPanel::OnButton( wxCommandEvent& event )
   if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_OVERCHECK")) )
     {
       TtaExecuteMenuAction ("CreateMOVERCHECK", doc, view, FALSE);
+      return;
+    }
+  if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_OVERBRACE")) )
+    {
+      TtaExecuteMenuAction ("CreateMOVERBRACE", doc, view, FALSE);
+      return;
+    }
+  if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_UNDERBRACE")) )
+    {
+      TtaExecuteMenuAction ("CreateMUNDERBRACE", doc, view, FALSE);
       return;
     }
   if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_OVERDOT")) )
@@ -374,6 +384,11 @@ void AmayaMathMLPanel::OnButton( wxCommandEvent& event )
       TtaExecuteMenuAction ("CreateMDIFF2", doc, view, FALSE);
       return;
     }
+  if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_DIFF3")) )
+    {
+      TtaExecuteMenuAction ("CreateMDIFF3", doc, view, FALSE);
+      return;
+    }
   if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_DIRECTSUM")) )
     {
       TtaExecuteMenuAction ("CreateMDIRECTSUM", doc, view, FALSE);
@@ -392,11 +407,6 @@ void AmayaMathMLPanel::OnButton( wxCommandEvent& event )
   if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_DOMAIN")) )
     {
       TtaExecuteMenuAction ("CreateMDOMAIN", doc, view, FALSE);
-      return;
-    }
-  if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_CLASSICALFUNCTIONS")) )
-    {
-      TtaExecuteMenuAction ("CreateMCLASSICALFUNCTIONS", doc, view, FALSE);
       return;
     }
   if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_EMPTYSET")) )
@@ -437,6 +447,16 @@ void AmayaMathMLPanel::OnButton( wxCommandEvent& event )
   if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_ENCLOSE")) )
     {
       TtaExecuteMenuAction ("CreateMENCLOSE", doc, view, FALSE);
+      return;
+    }
+  if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_ENCLOSE2")) )
+    {
+      TtaExecuteMenuAction ("CreateMENCLOSE2", doc, view, FALSE);
+      return;
+    }
+  if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_MPHANTOM")) )
+    {
+      TtaExecuteMenuAction ("CreateMPHANTOM", doc, view, FALSE);
       return;
     }
   if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_EULERGAMMA")) )
@@ -582,6 +602,11 @@ void AmayaMathMLPanel::OnButton( wxCommandEvent& event )
   if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_INTERSECTUNDER")) )
     {
       TtaExecuteMenuAction ("CreateMINTERSECTUNDER", doc, view, FALSE);
+      return;
+    }
+  if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_INTERVAL")) )
+    {
+      TtaExecuteMenuAction ("CreateMINTERVAL", doc, view, FALSE);
       return;
     }
   if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_INTUNDER")) )
@@ -793,6 +818,11 @@ void AmayaMathMLPanel::OnButton( wxCommandEvent& event )
   if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_PIECEWISE")) )
     {
       TtaExecuteMenuAction ("CreateMPIECEWISE", doc, view, FALSE);
+      return;
+    }
+  if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_VERTICALBRACE")) )
+    {
+      TtaExecuteMenuAction ("CreateMVERTICALBRACE", doc, view, FALSE);
       return;
     }
   if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_PLUS")) )
@@ -1010,7 +1040,157 @@ void AmayaMathMLPanel::OnButton( wxCommandEvent& event )
       TtaExecuteMenuAction ("CreateMXORBINARY", doc, view, FALSE);
       return;
     }
-  if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_QUATERNIONS")) )    {      TtaExecuteMenuAction ("CreateMQUATERNIONS", doc, view, FALSE);      return;    }  if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_OVERFROWN")) )    {      TtaExecuteMenuAction ("CreateMOVERFROWN", doc, view, FALSE);      return;    }  if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_PARALLEL")) )    {      TtaExecuteMenuAction ("CreateMPARALLEL", doc, view, FALSE);      return;    }  if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_SYMBOLO")) )    {      TtaExecuteMenuAction ("CreateMSYMBOLO", doc, view, FALSE);      return;    }  if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_SYMBOLOO")) )    {      TtaExecuteMenuAction ("CreateMSYMBOLOO", doc, view, FALSE);      return;    }  if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_NORM")) )    {      TtaExecuteMenuAction ("CreateMNORM", doc, view, FALSE);      return;    }  if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_GG")) )    {      TtaExecuteMenuAction ("CreateMGG", doc, view, FALSE);      return;    }  if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_LL")) )    {      TtaExecuteMenuAction ("CreateMLL", doc, view, FALSE);      return;    }}
+  if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_QUATERNIONS")) )
+    {
+      TtaExecuteMenuAction ("CreateMQUATERNIONS", doc, view, FALSE);
+      return;
+    }
+  if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_OVERFROWN")) )
+    {
+      TtaExecuteMenuAction ("CreateMOVERFROWN", doc, view, FALSE);
+      return;
+    }
+  if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_PARALLEL")) )
+    {
+      TtaExecuteMenuAction ("CreateMPARALLEL", doc, view, FALSE);
+      return;
+    }
+  if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_SYMBOLO")) )
+    {
+      TtaExecuteMenuAction ("CreateMSYMBOLO", doc, view, FALSE);
+      return;
+    }
+  if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_SYMBOLOO")) )
+    {
+      TtaExecuteMenuAction ("CreateMSYMBOLOO", doc, view, FALSE);
+      return;
+    }
+  if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_NORM")) )
+    {
+      TtaExecuteMenuAction ("CreateMNORM", doc, view, FALSE);
+      return;
+    }
+  if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_GG")) )
+    {
+      TtaExecuteMenuAction ("CreateMGG", doc, view, FALSE);
+      return;
+    }
+  if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_LL")) )
+    {
+      TtaExecuteMenuAction ("CreateMLL", doc, view, FALSE);
+      return;
+    }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_ARCCOS")) )
+  {
+   TtaExecuteMenuAction ("CreateMARCCOS", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_ARCCOSH")) )
+  {
+   TtaExecuteMenuAction ("CreateMARCCOSH", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_ARCCOT")) )
+  {
+   TtaExecuteMenuAction ("CreateMARCCOT", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_ARCCOTH")) )
+  {
+   TtaExecuteMenuAction ("CreateMARCCOTH", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_ARCCSC")) )
+  {
+   TtaExecuteMenuAction ("CreateMARCCSC", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_ARCCSCH")) )
+  {
+   TtaExecuteMenuAction ("CreateMARCCSCH", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_ARCSEC")) )
+  {
+   TtaExecuteMenuAction ("CreateMARCSEC", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_ARCSECH")) )
+  {
+   TtaExecuteMenuAction ("CreateMARCSECH", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_ARCSIN")) )
+  {
+   TtaExecuteMenuAction ("CreateMARCSIN", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_ARCSINH")) )
+  {
+   TtaExecuteMenuAction ("CreateMARCSINH", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_ARCTAN")) )
+  {
+   TtaExecuteMenuAction ("CreateMARCTAN", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_ARCTANH")) )
+  {
+   TtaExecuteMenuAction ("CreateMARCTANH", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_COS")) )
+  {
+   TtaExecuteMenuAction ("CreateMCOS", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_COSH")) )
+  {
+   TtaExecuteMenuAction ("CreateMCOSH", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_COT")) )
+  {
+   TtaExecuteMenuAction ("CreateMCOT", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_COTH")) )
+  {
+   TtaExecuteMenuAction ("CreateMCOTH", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_CSC")) )
+  {
+   TtaExecuteMenuAction ("CreateMCSC", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_CSCH")) )
+  {
+   TtaExecuteMenuAction ("CreateMCSCH", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_EXP")) )
+  {
+   TtaExecuteMenuAction ("CreateMEXP", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_LN")) )
+  {
+   TtaExecuteMenuAction ("CreateMLN", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_LOG")) )
+  {
+   TtaExecuteMenuAction ("CreateMLOG", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_SEC")) )
+  {
+   TtaExecuteMenuAction ("CreateMSEC", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_SECH")) )
+  {
+   TtaExecuteMenuAction ("CreateMSECH", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_SIN")) )
+  {
+   TtaExecuteMenuAction ("CreateMSIN", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_SINH")) )
+  {
+   TtaExecuteMenuAction ("CreateMSINH", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_TAN")) )
+  {
+   TtaExecuteMenuAction ("CreateMTAN", doc, view, FALSE);
+  }
+if ( id == wxXmlResource::GetXRCID(_T("wxID_PANEL_MATH_TANH")) )
+  {
+   TtaExecuteMenuAction ("CreateMTANH", doc, view, FALSE);
+  }
+
+
+}
 
 /*----------------------------------------------------------------------
  *       Class:  AmayaMathMLPanel
@@ -1055,7 +1235,8 @@ bool AmayaMathMLPanel::IsActive()
  *----------------------------------------------------------------------*/
 BEGIN_EVENT_TABLE(AmayaMathMLPanel, AmayaSubPanel)
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_BMATH"), AmayaMathMLPanel::OnButton ) 
-  EVT_BUTTON( XRCID("wxID_PANEL_MATH_PARENTHESIS"), AmayaMathMLPanel::OnButton )   EVT_BUTTON( XRCID("wxID_PANEL_MATH_MROW"), AmayaMathMLPanel::OnButton ) 
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_PARENTHESIS"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_MROW"), AmayaMathMLPanel::OnButton ) 
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_SQRT"), AmayaMathMLPanel::OnButton ) 
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_ROOT"), AmayaMathMLPanel::OnButton ) 
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_FRAC"), AmayaMathMLPanel::OnButton ) 
@@ -1075,6 +1256,8 @@ BEGIN_EVENT_TABLE(AmayaMathMLPanel, AmayaSubPanel)
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_OVERBAR"), AmayaMathMLPanel::OnButton ) 
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_OVERBREVE"), AmayaMathMLPanel::OnButton ) 
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_OVERCHECK"), AmayaMathMLPanel::OnButton ) 
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_OVERBRACE"), AmayaMathMLPanel::OnButton ) 
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_UNDERBRACE"), AmayaMathMLPanel::OnButton ) 
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_OVERDOT"), AmayaMathMLPanel::OnButton ) 
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_OVERHAT"), AmayaMathMLPanel::OnButton ) 
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_OVERTILDE"), AmayaMathMLPanel::OnButton ) 
@@ -1110,11 +1293,11 @@ BEGIN_EVENT_TABLE(AmayaMathMLPanel, AmayaSubPanel)
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_DIAGONALINTERSECTION"), AmayaMathMLPanel::OnButton )
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_DIFF"), AmayaMathMLPanel::OnButton )
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_DIFF2"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_DIFF3"), AmayaMathMLPanel::OnButton )
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_DIRECTSUM"), AmayaMathMLPanel::OnButton )
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_DIVERGENCE"), AmayaMathMLPanel::OnButton )
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_DIVIDE"), AmayaMathMLPanel::OnButton )
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_DOMAIN"), AmayaMathMLPanel::OnButton )
-  EVT_BUTTON( XRCID("wxID_PANEL_MATH_CLASSICALFUNCTIONS"), AmayaMathMLPanel::OnButton )
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_EMPTYSET"), AmayaMathMLPanel::OnButton )
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_EQ"), AmayaMathMLPanel::OnButton )
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_EQUIVALENT"), AmayaMathMLPanel::OnButton )
@@ -1123,6 +1306,8 @@ BEGIN_EVENT_TABLE(AmayaMathMLPanel, AmayaSubPanel)
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_EQUIVALENTBINARY"), AmayaMathMLPanel::OnButton )
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_EQUIVALENTUNDER"), AmayaMathMLPanel::OnButton )
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_ENCLOSE"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_ENCLOSE2"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_MPHANTOM"), AmayaMathMLPanel::OnButton )
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_EULERGAMMA"), AmayaMathMLPanel::OnButton )
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_EXISTS"), AmayaMathMLPanel::OnButton )
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_EXISTS2"), AmayaMathMLPanel::OnButton )
@@ -1152,6 +1337,7 @@ BEGIN_EVENT_TABLE(AmayaMathMLPanel, AmayaSubPanel)
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_INTERSECT"), AmayaMathMLPanel::OnButton )
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_INTERSECTBINARY"), AmayaMathMLPanel::OnButton )
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_INTERSECTUNDER"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_INTERVAL"), AmayaMathMLPanel::OnButton )
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_INTUNDER"), AmayaMathMLPanel::OnButton )
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_INVERSE"), AmayaMathMLPanel::OnButton )
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_ISOMORPHIC"), AmayaMathMLPanel::OnButton )
@@ -1235,9 +1421,44 @@ BEGIN_EVENT_TABLE(AmayaMathMLPanel, AmayaSubPanel)
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_VECTORPRODUCT"), AmayaMathMLPanel::OnButton )
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_VECTORROW"), AmayaMathMLPanel::OnButton )
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_VECTORCOLUMN"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_VERTICALBRACE"), AmayaMathMLPanel::OnButton )
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_XOR"), AmayaMathMLPanel::OnButton )
   EVT_BUTTON( XRCID("wxID_PANEL_MATH_XORBINARY"), AmayaMathMLPanel::OnButton )
-  EVT_BUTTON( XRCID("wxID_PANEL_MATH_LL"), AmayaMathMLPanel::OnButton )   EVT_BUTTON( XRCID("wxID_PANEL_MATH_GG"), AmayaMathMLPanel::OnButton )   EVT_BUTTON( XRCID("wxID_PANEL_MATH_NORM"), AmayaMathMLPanel::OnButton )   EVT_BUTTON( XRCID("wxID_PANEL_MATH_SYMBOLOO"), AmayaMathMLPanel::OnButton )   EVT_BUTTON( XRCID("wxID_PANEL_MATH_SYMBOLO"), AmayaMathMLPanel::OnButton )   EVT_BUTTON( XRCID("wxID_PANEL_MATH_PARALLEL"), AmayaMathMLPanel::OnButton )   EVT_BUTTON( XRCID("wxID_PANEL_MATH_QUATERNIONS"), AmayaMathMLPanel::OnButton )   EVT_BUTTON( XRCID("wxID_PANEL_MATH_OVERFROWN"), AmayaMathMLPanel::OnButton ) 
-  END_EVENT_TABLE()
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_LL"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_GG"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_NORM"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_SYMBOLOO"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_SYMBOLO"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_PARALLEL"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_QUATERNIONS"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_OVERFROWN"), AmayaMathMLPanel::OnButton ) 
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_ARCCOS"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_ARCCOSH"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_ARCCOT"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_ARCCOTH"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_ARCCSC"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_ARCCSCH"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_ARCSEC"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_ARCSECH"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_ARCSIN"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_ARCSINH"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_ARCTAN"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_ARCTANH"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_COS"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_COSH"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_COT"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_COTH"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_CSC"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_CSCH"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_EXP"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_LN"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_LOG"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_SEC"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_SECH"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_SIN"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_SINH"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_TAN"), AmayaMathMLPanel::OnButton )
+  EVT_BUTTON( XRCID("wxID_PANEL_MATH_TANH"), AmayaMathMLPanel::OnButton )
+END_EVENT_TABLE()
 
 #endif /* #ifdef _WX */

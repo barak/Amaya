@@ -765,7 +765,7 @@ RConstruct          GetElementConstruct (PtrElement pEl, int *nComp)
   agregat entre l'element et cet ancetre. Rend cet ancetre ou	
   NULL si ce n'est pas le cas.					
   ----------------------------------------------------------------------*/
-PtrElement          AncestorList (PtrElement pEl)
+PtrElement AncestorList (PtrElement pEl)
 {
   ThotBool            stop;
   RConstruct          constr;
@@ -896,10 +896,10 @@ PtrElement      ParentAny (PtrElement pEl)
   est un composant optionnel d'agregat ou un composant d'un	
   agregat non ordonne'.						
   ----------------------------------------------------------------------*/
-void                SRuleForSibling (PtrDocument pDoc, PtrElement pEl,
-                                     ThotBool before, int distance,
-                                     int *typeNum, PtrSSchema * pSS,
-                                     ThotBool * list, ThotBool * optional)
+void SRuleForSibling (PtrDocument pDoc, PtrElement pEl,
+                      ThotBool before, int distance,
+                      int *typeNum, PtrSSchema *pSS,
+                      ThotBool * list, ThotBool * optional)
 {
   int                 i;
   PtrElement          pE;
@@ -922,8 +922,16 @@ void                SRuleForSibling (PtrDocument pDoc, PtrElement pEl,
           /* Teste si l'element pointe par pEl est un element de liste */
           /* ou d'agregat */
           {
-            *typeNum = pEl->ElParent->ElTypeNumber;
-            *pSS = pEl->ElParent->ElStructSchema;
+            // skip Template elements
+            pE = pEl;
+            do
+              {
+                pE = pE->ElParent;
+               *typeNum = pE->ElTypeNumber;
+                *pSS = pE->ElStructSchema;
+              }
+            while (pE->ElParent && *pSS && (*pSS)->SsName &&
+                   !strcmp ((*pSS)->SsName, "Template"));
             ListOrAggregateRule (pDoc, pEl, typeNum, pSS);
             pEquivEl = pEl;
           }
@@ -1150,9 +1158,9 @@ void                SRuleForSibling (PtrDocument pDoc, PtrElement pEl,
   Retourne typeNum = 0 et pSS = NULL s'il s'agit d'une reference	
   non typee : CsReference(Any)					
   ----------------------------------------------------------------------*/
-void                ReferredType (PtrElement pRefEl, PtrAttribute pRefAttr,
-                                  PtrSSchema * pSS, int *typeNum,
-                                  PtrDocument pDoc)
+void ReferredType (PtrElement pRefEl, PtrAttribute pRefAttr,
+                   PtrSSchema * pSS, int *typeNum,
+                   PtrDocument pDoc)
 {
   int                 referredNature;
   PtrSRule            pRule;
@@ -1346,7 +1354,7 @@ ThotBool AllowedSibling (PtrElement pEl, PtrDocument pDoc,
 {
   PtrSSchema          pAscSS;
   PtrSRule            pRule;
-  PtrElement          pEl1;
+  PtrElement          pEl1, pAsc;
   ThotBool            ok;
   ThotBool            isPageBrOrIncl;
   ThotBool            optional;
@@ -1445,8 +1453,18 @@ ThotBool AllowedSibling (PtrElement pEl, PtrDocument pDoc,
               {
                 /* Teste si l'element pointe par pEl est un element de */
                 /* liste ou d'agregat */
-                ascTypeNum = pEl->ElParent->ElTypeNumber;
-                pAscSS = pEl->ElParent->ElStructSchema;
+                pAsc = pEl->ElParent;
+                ascTypeNum = pAsc->ElTypeNumber;
+                pAscSS = pAsc->ElStructSchema;
+                while (pAscSS && pAsc && !strcmp (pAscSS->SsName, "Template"))
+                  {
+                    pAsc = pAsc->ElParent;
+                    if (pAsc)
+                      {
+                        ascTypeNum = pAsc->ElTypeNumber;
+                        pAscSS = pAsc->ElStructSchema;
+                      }
+                  }
                 if (pAscSS->SsRule->SrElem[ascTypeNum - 1]->SrConstruct == CsAny)
                   /* the parent element does not put any constraint on its
                      content */
@@ -1945,7 +1963,11 @@ void InsertChildFirst (PtrElement pEl, PtrElement pChild,
 }
 
 /*----------------------------------------------------------------------
-  CreateDescendant  Cherche a creer, pour un element defini par la	
+  CreateDescendant  tres to create a child of the pParent element
+  according to the typeNum rule of the pSS schema definition until an
+  element of the descTypeNum in pDescSS is created.
+
+  Cherche a creer, pour un element defini par la	
   regle typeNum du schema de structure pSS, une descendance	
   jusqu'a un element de type descTypeNum defini dans le schema de	
   structure pDescSS.						
@@ -1957,7 +1979,7 @@ void InsertChildFirst (PtrElement pEl, PtrElement pChild,
   ----------------------------------------------------------------------*/
 PtrElement CreateDescendant (int typeNum, PtrSSchema pSS,
                              PtrDocument pDoc, PtrElement *pLeaf,
-                             int descTypeNum, PtrSSchema pDescSS)
+                             int descTypeNum, PtrSSchema pDescSS, PtrElement pParent)
 {
   PtrElement          pEl, pDesc, pEl1, pEl2;
   int                 i, j;
@@ -2004,7 +2026,7 @@ PtrElement CreateDescendant (int typeNum, PtrSSchema pSS,
               {
                 pEl = CreateDescendant (pRule1->SrSSchemaNat->SsRootElem,
                                         pRule1->SrSSchemaNat, pDoc, pLeaf,
-                                        descTypeNum, pDescSS);
+                                        descTypeNum, pDescSS, pParent);
                 if (pEl != NULL)
                   if (pEl->ElTypeNumber != pRule1->SrSSchemaNat->SsRootElem)
                     /* cree un element du type de la regle racine */
@@ -2023,7 +2045,7 @@ PtrElement CreateDescendant (int typeNum, PtrSSchema pSS,
             else
               {
                 pEl = CreateDescendant (pRule1->SrIdentRule, pSS, pDoc, pLeaf,
-                                        descTypeNum, pDescSS);
+                                        descTypeNum, pDescSS, pParent);
                 if (pEl != NULL)
                   /* on a effectivement cree une descendance */
                   if (pEl->ElTypeNumber != pRule1->SrIdentRule)
@@ -2045,8 +2067,23 @@ PtrElement CreateDescendant (int typeNum, PtrSSchema pSS,
 	       
             break;
           case CsList:
-            pEl = CreateDescendant (pRule1->SrListItem, pSS, pDoc, pLeaf,
-                                    descTypeNum, pDescSS);
+            if (pSS && pSS->SsName && !strcmp (pSS->SsName, "Template"))
+              {
+                // look for an enclosing CsList constructor
+                pEl1 = pParent->ElParent;
+                while (pEl1 && pSS && pSS->SsName && !strcmp (pSS->SsName, "Template"))
+                  {
+                    pSS = pEl1->ElStructSchema;
+                    typeNum = pEl1->ElTypeNumber;
+                    pRule1 = pSS->SsRule->SrElem[typeNum - 1];
+                  }
+                if (descTypeNum == 1)
+                  // update the schema of the inserted text unit
+                  pDescSS = pSS;
+              }
+            if (pRule1)
+              pEl = CreateDescendant (pRule1->SrListItem, pSS, pDoc, pLeaf,
+                                      descTypeNum, pDescSS, pParent);
             if (pEl != NULL)
               {
                 pRule2 = pSS->SsRule->SrElem[pRule1->SrListItem - 1];
@@ -2105,7 +2142,7 @@ PtrElement CreateDescendant (int typeNum, PtrSSchema pSS,
                   {
                     if (pSS->SsRule->SrElem[i++]->SrConstruct == CsNatureSchema)
                       pEl = CreateDescendant (i, pSS, pDoc, pLeaf,
-                                              descTypeNum, pDescSS);
+                                              descTypeNum, pDescSS, pParent);
                   }
                 while (pEl == NULL && i < pSS->SsNRules);
               }
@@ -2116,7 +2153,7 @@ PtrElement CreateDescendant (int typeNum, PtrSSchema pSS,
                 pDesc = NULL;
                 do
                   pDesc = CreateDescendant (pRule1->SrChoice[i++], pSS, pDoc,
-                                            pLeaf, descTypeNum, pDescSS);
+                                            pLeaf, descTypeNum, pDescSS, pParent);
                 while (pDesc == NULL && i < pRule1->SrNChoices);
                 if (pDesc != NULL)
                   {
@@ -2157,14 +2194,14 @@ PtrElement CreateDescendant (int typeNum, PtrSSchema pSS,
               for (i = 0; pDesc == NULL && i < pRule1->SrNComponents; i++)
                 if (!pRule1->SrOptComponent[i])
                   pDesc = CreateDescendant (pRule1->SrComponent[i], pSS, pDoc,
-                                            pLeaf, descTypeNum, pDescSS);
+                                            pLeaf, descTypeNum, pDescSS, pParent);
             if (pDesc == NULL)
               /* on n'a rien pu creer en ne prenant que les composants */
               /* obligatoires, on essaie maintenant les composants optionnels */
               for (i = 0; pDesc == NULL && i < pRule1->SrNComponents; i++)
                 if (pRule1->SrOptComponent[i])
                   pDesc = CreateDescendant (pRule1->SrComponent[i], pSS, pDoc,
-                                            pLeaf, descTypeNum, pDescSS);
+                                            pLeaf, descTypeNum, pDescSS, pParent);
             if (pDesc != NULL)
               /* on a pu creer une descendance */
               {
@@ -2496,7 +2533,7 @@ ThotBool CanSplitElement (PtrElement firstEl, int firstChar,
               /* on cherche d'abord si un element ascendant
                  possede une exception ParagraphBreak */
               pE = firstEl->ElParent;
-              while (pE != NULL && *pList == NULL)
+              while (pE && *pList == NULL)
                 {
                   if (TypeHasException (ExcParagraphBreak,
                                         pE->ElTypeNumber, pE->ElStructSchema))
@@ -2532,12 +2569,12 @@ ThotBool CanSplitElement (PtrElement firstEl, int firstChar,
                     }
                 }
             }
-          if (*pList != NULL &&
+          if (*pList &&
               TypeHasException (ExcNoCreate,
                                 (*pList)->ElFirstChild->ElTypeNumber,
                                 (*pList)->ElFirstChild->ElStructSchema))
             *pList = NULL;
-          if (*pList != NULL && !CanChangeNumberOfElem (*pList, 1))
+          if (*pList && !CanChangeNumberOfElem (*pList, 1))
             *pList = NULL;
         }
       else
@@ -2582,7 +2619,7 @@ ThotBool CanSplitElement (PtrElement firstEl, int firstChar,
             }
         }
     }
-  if (*pList != NULL)
+  if (*pList)
     {
       /* cherche l'element de plus haut niveau a dupliquer */
       pE = (*pEl)->ElParent;

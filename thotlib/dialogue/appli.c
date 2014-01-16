@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -93,6 +93,7 @@ static ThotBool TtAppVersion_IsInit = FALSE;
 #include "appdialogue_wx.h"
 #include "message_wx.h"
 #include "AmayaScrollBar.h"
+#include "AmayaStatusBar.h"
 #endif /* _WX */
 #ifdef _GTK
 #include "gtk-functions.h"
@@ -1613,7 +1614,8 @@ void TtaRaiseView (Document document, View view)
 
 /*----------------------------------------------------------------------
   DisplaySelMessage affiche la se'lection donne'e en parame`tre (texte) dans 
-  la fenetre active.                                            
+  la fenetre active.
+  @todo Supprimer tous les appels à cette fonction                                            
   ----------------------------------------------------------------------*/
 void DisplaySelMessage (char *text, PtrDocument pDoc)
 {
@@ -1647,7 +1649,7 @@ void DisplaySelMessage (char *text, PtrDocument pDoc)
 void TtaSetStatus (Document document, View view, char *text, char *name)
 {
   int                 frame, length;
-  char                *s;
+  char                *s = NULL;
 
 #ifdef _GTK
   gchar * title_string;
@@ -1659,67 +1661,79 @@ void TtaSetStatus (Document document, View view, char *text, char *name)
     {
       /* clean up old message */
       OldMsgSelect[0] = EOS;
-
       frame = GetWindowNumber (document, view);
       if (frame == 0)
         /* try to display in document 1 */
         frame = GetWindowNumber (1, view);
       if (frame != 0)
 #ifndef _WX
-        if (FrameTable[frame].WdStatus != 0)
+      if (FrameTable[frame].WdStatus != 0)
 #endif /* _WX */
-          {
-            length = strlen (text) + 1;
-            if (name)
-              length += strlen (name);
-            s = (char *)TtaGetMemory (length);
-#ifdef _WINGUI
-            if (name)
-              /* text est un format */
+        {
+          length = strlen (text) + 1;
+          if (name == NULL)
+            {
+              s = (char *)TtaGetMemory (length);
+              sprintf (s, "%s", text);
+            }
+          else
+            {
+              s = (char *)TtaGetMemory (length + strlen (name));
               sprintf (s, text, name);
-            else
-              strncpy (s, text, length);
-            
-            SendMessage (FrameTable[frame].WdStatus, SB_SETTEXT, (WPARAM) 0, (LPARAM) s);
-            SendMessage (FrameTable[frame].WdStatus, WM_PAINT, (WPARAM) 0, (LPARAM) 0);
+            }
+#ifdef _WINGUI
+          SendMessage (FrameTable[frame].WdStatus, SB_SETTEXT, (WPARAM) 0, (LPARAM) s);
+          SendMessage (FrameTable[frame].WdStatus, WM_PAINT, (WPARAM) 0, (LPARAM) 0);
 #endif /* _WINGUI */
 #ifdef _GTK
-            if (name)
-              {
-                /* text est un format */
-                sprintf (s, text, name);
-                title_string = s;
-              }
-            else
-              title_string = text;
-            gtk_statusbar_pop (GTK_STATUSBAR(FrameTable[frame].WdStatus),
-                               (intptr_t)gtk_object_get_data (GTK_OBJECT(FrameTable[frame].WdStatus), "MainSerie"));
-            gtk_statusbar_push (GTK_STATUSBAR(FrameTable[frame].WdStatus),
-                                (intptr_t)gtk_object_get_data (GTK_OBJECT(FrameTable[frame].WdStatus), "MainSerie"),
-                                title_string);
-            gtk_widget_show_all (GTK_WIDGET(FrameTable[frame].WdStatus));
+          title_string = s;
+          gtk_statusbar_pop (GTK_STATUSBAR(FrameTable[frame].WdStatus),
+                             (intptr_t)gtk_object_get_data (GTK_OBJECT(FrameTable[frame].WdStatus), "MainSerie"));
+          gtk_statusbar_push (GTK_STATUSBAR(FrameTable[frame].WdStatus),
+                              (intptr_t)gtk_object_get_data (GTK_OBJECT(FrameTable[frame].WdStatus), "MainSerie"),
+                              title_string);
+          gtk_widget_show_all (GTK_WIDGET(FrameTable[frame].WdStatus));
 #endif /* _GTK */
-            
 #ifdef _WX
-            if (name)
-              /* text est un format */
-              sprintf (s, text, name);
-            else
-              strncpy (s, text, length);
-            
-            /* 
-             * do not use the FrameTable[frame].WdStatus field because it's simplier
-             * to update only the frame's parent window
-             */
-            if (FrameTable[frame].WdFrame)
-              FrameTable[frame].WdFrame->SetStatusBarText( TtaConvMessageToWX( s ) );
+          /* 
+           * do not use the FrameTable[frame].WdStatus field because it's simplier
+           * to update only the frame's parent window
+           */
+          if (FrameTable[frame].WdFrame)
+            FrameTable[frame].WdFrame->SetStatusBarText( TtaConvMessageToWX( s ) );
 #endif /* _WX */
-            
-            TtaFreeMemory (s);
-          }
+          TtaFreeMemory (s);
+          s = NULL;
+        }
     }
 }
 
+
+/*----------------------------------------------------------------------
+  TtaSetStatusSelectedElement Set the current selected element in the status bar.
+  ----------------------------------------------------------------------*/
+void TtaSetStatusSelectedElement(Document document, View view, Element elem)
+{
+#ifdef _WX
+  AmayaWindow  *window;
+  int           frame;
+  
+  frame = GetWindowNumber (document, view);
+  if (frame == 0)
+    /* try to display in document 1 */
+    frame = GetWindowNumber (1, view);
+
+  if (FrameTable[frame].WdFrame)
+    {
+      window = wxDynamicCast(wxGetTopLevelParent(FrameTable[frame].WdFrame), AmayaWindow);
+      if (window)
+        ((AmayaStatusBar*)window->GetStatusBar())->SetSelectedElement( elem );
+    }
+#else  /* _WX */
+  if (elem)
+    BuildSelectionMessage();
+#endif /* _WX */
+}
 
 
 #ifdef _WINGUI
@@ -2729,7 +2743,8 @@ ThotBool FrameButtonDClickCallback( int frame, int thot_button_id,
 #if !defined (_WINDOWS) && !defined (_MACOS)
         /* a word is probably selected, copy it into clipboard */
         FrameToView (frame, &document, &view);
-        DoCopyToClipboard (document, view, FALSE, TRUE);
+        if (document && view)
+          DoCopyToClipboard (document, view, FALSE, TRUE);
 #endif /* _WINDOWS */
       }
       break;

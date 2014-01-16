@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -1135,6 +1135,10 @@ void   TtaSetDisplayMode (Document doc, DisplayMode newDisplayMode)
                 DestroyImage (pDoc);
               else if (newDisplayMode == SuspendDisplay)
                 TtaClearViewSelections ();
+              else
+                // By default the selection doesn't need to be reset
+                NewDocSelection[doc - 1].SDSelActive = FALSE;
+
               /* on met a jour le mode d'affichage */
               documentDisplayMode[doc - 1] = newDisplayMode;
             }

@@ -1,5 +1,5 @@
 	{ Translation Schema for XTiger Templates
-	  Francesc Campoy Flores	 31/03/2006 }
+	  Francesc Campoy Flores & I. Vatton    January 2007 }
 
 
 TRANSLATION Template;
@@ -153,15 +153,24 @@ ATTRIBUTES
       create DoubleQuote;
     end;
 
+  ref_name :
+    begin
+      create SAN;
+      create 'name=';
+      create DoubleQuote;
+      create ref_name;
+      create DoubleQuote;
+    end;
+
   title :
     begin
       create SAN;
-      create 'title=';
+      create 'label=';
       create DoubleQuote;
       create title;
       create DoubleQuote;
     end;
-	
+
   includeAt :
     begin
       create SAN;
@@ -276,6 +285,24 @@ ATTRIBUTES
       create 'values=';
       create DoubleQuote;
       create values;
+      create DoubleQuote;
+    end;
+
+  version :
+    begin
+      create SAN;
+      create 'version=';
+      create DoubleQuote;
+      create version;
+      create DoubleQuote;
+    end;
+
+  templateVersion :
+    begin
+      create SAN;
+      create 'templateVersion=';
+      create DoubleQuote;
+      create templateVersion;
       create DoubleQuote;
     end;
 

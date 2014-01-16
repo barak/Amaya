@@ -5,8 +5,12 @@
 #include "wx/string.h"
 #include "wx/arrstr.h"
 #include "wx/dir.h"
+#include "application.h"
 #include "AmayaApp.h"
 #include "NewTemplateDocDlgWX.h"
+
+#include "Elemlist.h"
+#include "containers.h"
 
 #define THOT_EXPORT extern
 #include "amaya.h"
@@ -14,12 +18,16 @@
 #include "message_wx.h"
 #include "thot_sys.h"
 #include "init_f.h"
+#include "templates.h"
 #include "templates_f.h"
 #include "registry_wx.h"
+#include "MENUconf_f.h"
 
 static int      MyRef = 0;
 static int      Mydoc = 0;
 static int      Waiting = 0;
+
+
 
 //-----------------------------------------------------------------------------
 // Event table: connect the events to the handler functions to process them
@@ -73,6 +81,7 @@ NewTemplateDocDlgWX::NewTemplateDocDlgWX ( int ref,
   Mydoc = doc;
   // update dialog labels with given ones
   SetTitle( title );
+  GetTemplatesConf ();
 
   //XRCCTRL(*this, "wxID_LABEL_TEMPLATE", wxStaticText)->SetLabel( TtaConvMessageToWX( TtaGetMessage(AMAYA,AM_TEMPLATE) ));
   XRCCTRL(*this, "wxID_LABEL_TEMPLATEDIRNAME", wxStaticText)->SetLabel( TtaConvMessageToWX( TtaGetMessage(AMAYA, AM_DIRECTORY) ));
@@ -93,6 +102,7 @@ NewTemplateDocDlgWX::NewTemplateDocDlgWX ( int ref,
   XRCCTRL(*this, "wxID_OK", wxButton)->SetLabel( TtaConvMessageToWX( TtaGetMessage(AMAYA,AM_OPEN_URL) ));
   XRCCTRL(*this, "wxID_CLEAR", wxButton)->SetLabel( TtaConvMessageToWX( TtaGetMessage(AMAYA,AM_CLEAR) ));
   XRCCTRL(*this, "wxID_CANCEL", wxButton)->SetLabel( TtaConvMessageToWX( TtaGetMessage(LIB,TMSG_CANCEL) ));
+  XRCCTRL(*this, "wxID_ERROR", wxStaticText)->SetLabel(TtaConvMessageToWX(""));
 
   // set the default WHERE_TO_OPEN value : in new tab
   int where_to_open_doc;
@@ -105,10 +115,13 @@ NewTemplateDocDlgWX::NewTemplateDocDlgWX ( int ref,
 
   // set the default templates directory
   XRCCTRL(*this, "wxID_TEMPLATEDIRNAME", wxTextCtrl)->SetValue(templateDir);
+
+
   // Update the template combobox with templates in directory "templateDir"
 #if defined(_WINDOWS) || defined(_MACOS)
   UpdateTemplateFromDir ();
 #endif /* _WINDOWS  || MACOS */
+
   // set the default instance path
   wxString homedir = TtaGetHomeDir();
   wxString filename = TtaConvMessageToWX("New.html");
@@ -191,23 +204,46 @@ void NewTemplateDocDlgWX::OnInstanceFilenameButton( wxCommandEvent& event )
   ----------------------------------------------------------------------*/
 void NewTemplateDocDlgWX::UpdateTemplateFromDir ()
 {
+  Prop_Templates       prop = GetProp_Templates();
+  Prop_Templates_Path *path = prop.FirstPath;
+  wxArrayString        templateList;
+  wxString             value;
+  bool                 initialized = false;
+
   if (!m_LockUpdateFlag)
     {
       m_LockUpdateFlag = true;
-      wxString dir_value = XRCCTRL(*this, "wxID_TEMPLATEDIRNAME", wxTextCtrl)->GetValue();
-#ifdef _WINDOWS
-      if (dir_value.IsEmpty())
-        dir_value = _T("C:\\");
-#endif /* _WINDOWS */
-      if (dir_value.Last() != m_DirSep)
-        dir_value += m_DirSep;
       XRCCTRL(*this, "wxID_TEMPLATEFILENAME", wxComboBox)->Clear();
       XRCCTRL(*this, "wxID_TEMPLATEFILENAME", wxComboBox)->SetValue( TtaConvMessageToWX(""));
-      wxArrayString templateList;
-      wxDir::GetAllFiles(dir_value, &templateList, _T("*.xtd"), wxDIR_FILES);
-      XRCCTRL(*this, "wxID_TEMPLATEFILENAME", wxComboBox)->Append( templateList );
-      //XRCCTRL(*this, "wxID_TEMPLATEFILENAME", wxComboBox)->SetSelection (0);
-       m_LockUpdateFlag = false;
+      while (path)
+        {
+		  value = TtaConvMessageToWX(path->Path);
+          XRCCTRL(*this, "wxID_TEMPLATEFILENAME", wxComboBox)->Append(value);
+		  if (!initialized)
+		  {
+            XRCCTRL(*this, "wxID_TEMPLATEFILENAME", wxComboBox)->SetStringSelection(value);
+            initialized = true;
+		  }
+          path = path->NextPath;
+        }
+
+      value = XRCCTRL(*this, "wxID_TEMPLATEDIRNAME", wxTextCtrl)->GetValue();
+      if (!value.StartsWith(_T("http")))
+        {
+          // get the directory list when it is a local directory
+#ifdef _WINDOWS
+          if (value.IsEmpty())
+            value = _T("C:\\");
+#endif /* _WINDOWS */
+          if (value.Last() != m_DirSep)
+            value += m_DirSep;
+          wxDir::GetAllFiles(value, &templateList, _T("*.xtd"), wxDIR_FILES);
+          XRCCTRL(*this, "wxID_TEMPLATEFILENAME", wxComboBox)->Append( templateList );
+          if (!initialized && !templateList.IsEmpty())
+            XRCCTRL(*this, "wxID_TEMPLATEFILENAME", wxComboBox)->SetStringSelection(templateList.Item(0));
+        }
+      // adding paths form preferences
+      m_LockUpdateFlag = false;
    }
 }
 
@@ -281,7 +317,7 @@ void NewTemplateDocDlgWX::OnCreateButton( wxCommandEvent& event )
   value = XRCCTRL(*this, "wxID_TEMPLATEFILENAME", wxComboBox)->GetValue( );
   strncpy (temp, (const char*)value.mb_str(wxConvUTF8), MAX_LENGTH - 1);
   temp[MAX_LENGTH - 1] = EOS;
-  if (TtaFileExist(temp))
+  if (!strncmp (temp, "http:", 5) || TtaFileExist(temp))
     {
       // get the doc instance path
       value = XRCCTRL (*this, "wxID_INSTANCEFILENAME", wxTextCtrl)->GetValue();
@@ -292,13 +328,23 @@ void NewTemplateDocDlgWX::OnCreateButton( wxCommandEvent& event )
       title = XRCCTRL(*this, "wxID_TITLE", wxTextCtrl)->GetValue( );
       if (title.Len() == 0)
         {
-          int end_slash_pos = value.Find(DIR_SEP, true);
-          m_LockUpdateFlag = true;
-          title = value.SubString(end_slash_pos+1, value.Length());
-          m_LockUpdateFlag = false;
-          strncpy( buffer, (const char*)title.mb_str(wxConvUTF8), MAX_LENGTH - 1);
-          buffer[MAX_LENGTH - 1] = EOS;
-          ThotCallback (BaseDialog + TitleText,  STRING_DATA, (char *)buffer);
+          if (Waiting == 1)
+            {
+              // request the title
+              XRCCTRL(*this, "wxID_ERROR", wxStaticText)->SetLabel( TtaConvMessageToWX(TtaGetMessage (AMAYA, AM_MISSING_TITLE)));
+              Waiting = 2;
+              return;
+            }
+          else
+            {
+              int end_slash_pos = value.Find(DIR_SEP, true);
+              m_LockUpdateFlag = true;
+              title = value.SubString(end_slash_pos+1, value.Length());
+              m_LockUpdateFlag = false;
+              strncpy( buffer, (const char*)title.mb_str(wxConvUTF8), MAX_LENGTH - 1);
+              buffer[MAX_LENGTH - 1] = EOS;
+              ThotCallback (BaseDialog + TitleText,  STRING_DATA, (char *)buffer);
+            }
         }
       else
         {
@@ -358,7 +404,7 @@ void NewTemplateDocDlgWX::OnCancelButton( wxCommandEvent& event )
   ----------------------------------------------------------------------*/
 void NewTemplateDocDlgWX::OnClose( wxCloseEvent& event )
 {
-  //TtaDestroyDialogue (MyRef);  
+  TtaDestroyDialogue (MyRef);  
 }
 
 /*----------------------------------------------------------------------

@@ -6,6 +6,8 @@
 #ifndef __CEXTRACT__
 #ifdef __STDC__
 
+extern ThotBool IsTemplateInstanceDocument ( Document doc );
+extern ThotBool IsTemplateDocument ( Document doc );
 extern void* AllocTemplateRepositoryListElement ( const char* path,
                                                   void* prevElement );
 extern void FreeTemplateRepositoryList ( void* list );
@@ -17,21 +19,47 @@ extern void NewTemplate ( Document doc,
 extern void CreateInstanceOfTemplate ( Document doc,
                                        char *templatename,
                                        char *docname );
+extern void PreventReloadingTemplate ( char* template_url );
+extern void AllowReloadingTemplate ( char* template_url );
 extern void giveItems ( char *text,
                         int size,
                         struct menuType **items,
                         int *nbitems );
 extern ThotBool UseToBeCreated ( NotifyElement *event );
 extern void UseCreated ( NotifyElement *event );
-extern ThotBool UseButtonClicked ( NotifyElement *event );
-extern ThotBool OptionButtonClicked ( NotifyElement *event );
+extern void Template_IncrementRepeatOccurNumber ( Element el );
+extern void Template_DecrementRepeatOccurNumber ( Element el );
+extern ThotBool Template_CanInsertRepeatChild ( Element el );
+extern Element Template_InsertRepeatChildAfter ( Document doc,
+                                                 Element el,
+                                                 Declaration decl,
+                                                 Element elPrev );
+extern Element Template_InsertRepeatChild ( Document doc,
+                                            Element el,
+                                            Declaration decl,
+                                            int pos );
+extern Element Template_InsertBagChild ( Document doc,
+                                         Element el,
+                                         Declaration decl );
 extern ThotBool RepeatButtonClicked ( NotifyElement *event );
+extern ThotBool UseButtonClicked ( NotifyElement *event );
+extern ThotBool UseSimpleButtonClicked ( NotifyElement *event );
+extern ThotBool OptionButtonClicked ( NotifyElement *event );
+extern void CheckTemplate ( Document doc );
 extern void OpeningInstance ( char *fileName,
                               Document doc );
 extern ThotBool ClosingInstance ( NotifyDialog* dialog );
+extern ThotBool IsTemplateElement ( Element elem );
+extern Element GetFirstTemplateParentElement ( Element elem );
+extern ThotBool TemplateElementWillBeCreated ( NotifyElement *event );
+extern ThotBool TemplateElementWillBeDeleted ( NotifyElement *event );
+extern ThotBool CurrentTypeWillBeExported ( NotifyAttribute *event );
+extern ThotBool TemplateAttrInMenu ( NotifyAttribute * event );
 
 #else /* __STDC__ */
 
+extern ThotBool IsTemplateInstanceDocument ( Document doc );
+extern ThotBool IsTemplateDocument ( Document doc );
 extern void* AllocTemplateRepositoryListElement ( const char* path,
                                                     void* prevElement );
 extern void FreeTemplateRepositoryList ( void* list );
@@ -43,18 +71,42 @@ extern void NewTemplate ( Document doc,
 extern void CreateInstanceOfTemplate ( Document doc,
                                          char *templatename,
                                          char *docname );
+extern void PreventReloadingTemplate ( char* template_url );
+extern void AllowReloadingTemplate ( char* template_url );
 extern void giveItems ( char *text,
                           int size,
                           struct menuType **items,
                           int *nbitems );
 extern ThotBool UseToBeCreated ( NotifyElement *event );
 extern void UseCreated ( NotifyElement *event );
-extern ThotBool UseButtonClicked ( NotifyElement *event );
-extern ThotBool OptionButtonClicked ( NotifyElement *event );
+extern void Template_IncrementRepeatOccurNumber ( Element el );
+extern void Template_DecrementRepeatOccurNumber ( Element el );
+extern ThotBool Template_CanInsertRepeatChild ( Element el );
+extern Element Template_InsertRepeatChildAfter ( Document doc,
+                                                   Element el,
+                                                   Declaration decl,
+                                                   Element elPrev );
+extern Element Template_InsertRepeatChild ( Document doc,
+                                              Element el,
+                                              Declaration decl,
+                                              int pos );
+extern Element Template_InsertBagChild ( Document doc,
+                                           Element el,
+                                           Declaration decl );
 extern ThotBool RepeatButtonClicked ( NotifyElement *event );
+extern ThotBool UseButtonClicked ( NotifyElement *event );
+extern ThotBool UseSimpleButtonClicked ( NotifyElement *event );
+extern ThotBool OptionButtonClicked ( NotifyElement *event );
+extern void CheckTemplate ( Document doc );
 extern void OpeningInstance ( char *fileName,
                                 Document doc );
 extern ThotBool ClosingInstance ( NotifyDialog* dialog );
+extern ThotBool IsTemplateElement ( Element elem );
+extern Element GetFirstTemplateParentElement ( Element elem );
+extern ThotBool TemplateElementWillBeCreated ( NotifyElement *event );
+extern ThotBool TemplateElementWillBeDeleted ( NotifyElement *event );
+extern ThotBool CurrentTypeWillBeExported ( NotifyAttribute *event );
+extern ThotBool TemplateAttrInMenu ( NotifyAttribute * event );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

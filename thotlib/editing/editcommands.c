@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2007
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -462,7 +462,8 @@ static ThotBool CloseTextInsertionWithControl (ThotBool toNotify)
                 {
                   pBox = pBox->BxAbstractBox->AbEnclosing->AbBox;
                   if (pBox->BxType == BoBlock ||
-                      pBox->BxType == BoFloatBlock)
+                      pBox->BxType == BoFloatBlock ||
+                      pBox->BxType == BoCellBlock)
                     {
                       LastInsertParagraph = pBox->BxAbstractBox;
                       LastInsertElement = LastInsertParagraph->AbElement;
@@ -2261,7 +2262,17 @@ ThotBool ContentEditing (int editType)
                        FirstSelectedElement &&
                        (editType == TEXT_CUT || editType == TEXT_DEL ||
                         editType == TEXT_SUP || editType == TEXT_COPY))
-                pAb = NULL;
+                {
+                  // xt:use is equivalent to a text selection
+                  if (FirstSelectedElement != LastSelectedElement ||
+                      pAb->AbLeafType != LtText ||
+                      FirstSelectedElement == NULL ||
+                      FirstSelectedElement->ElStructSchema == NULL ||
+                      strcmp (FirstSelectedElement->ElStructSchema->SsName, "Template") ||
+                      pAb->AbElement->ElParent != FirstSelectedElement ||
+                      pAb->AbElement->ElNext)
+                  pAb = NULL;
+                }
               else if ((pAb->AbLeafType == LtText && editType == TEXT_INSERT)||
                        pAb->AbLeafType == LtCompound || /*le pave est compose*/
                        pAb->AbLeafType == LtPageColBreak) /* marque de page */
@@ -2541,7 +2552,8 @@ ThotBool ContentEditing (int editType)
           /* we have to propage the position to children */
           savePropagate = Propagate;
           Propagate = ToChildren;
-          pBlock = SearchEnclosingType (pBox->BxAbstractBox, BoBlock, BoFloatBlock);
+          pBlock = SearchEnclosingType (pBox->BxAbstractBox, BoBlock,
+                                        BoFloatBlock, BoCellBlock);
           if (pBlock)
             RecomputeLines (pBlock, NULL, NULL, frame);
           UpdateColumnWidth (pCell, NULL, frame);
@@ -2645,11 +2657,9 @@ ThotBool InsertChar (int frame, CHAR_T c, int keyboard)
   LeafType            nat;
   Propagation         savePropagate;
   int                 xx, xDelta, adjust;
-  int                 spacesDelta;
-  int                 topY, bottomY;
-  int                 charsDelta, pix;
-  int                 visib, zoom;
-  int                 ind;
+  int                 spacesDelta, charsDelta, pix;
+  int                 topY, bottomY, visib, zoom;
+  int                 t, b, l, r, ind;
   int                 previousChars, previousInd, previousPos;
   char                script, oldscript;
   ThotBool            beginOfBox, toDelete;
@@ -3106,16 +3116,17 @@ ThotBool InsertChar (int frame, CHAR_T c, int keyboard)
                               pViewSelEnd->VsIndBuf++;
                             }
 			  
-                          /* ==> La boite entiere n'est plus vide */
+                          /* ==> The complete box is no longer empty */
                           if (pSelBox->BxNChars == 0 &&
                               pSelBox->BxType == BoComplete)
                             {
                               /* Mise a jour des marques */
+                              GetExtraMargins (pSelBox, NULL, frame, &t, &b, &l, &r);
                               xDelta = BoxCharacterWidth (c, font);
-                              pViewSel->VsXPos = xDelta;
+                              pViewSel->VsXPos = xDelta + l;
                               pViewSel->VsIndBox = charsDelta;
                               pViewSel->VsNSpaces = spacesDelta;
-                              pViewSelEnd->VsXPos = xDelta + 2;
+                              pViewSelEnd->VsXPos = pViewSel->VsXPos + 2;
                               pViewSelEnd->VsIndBox = charsDelta;
                               pViewSelEnd->VsNSpaces = spacesDelta;
                               /* Le caractere insere' est un Ctrl Return ? */
@@ -3130,9 +3141,9 @@ ThotBool InsertChar (int frame, CHAR_T c, int keyboard)
                               DefBoxRegion (frame, pSelBox, -1, -1, -1, -1);
 			      
                               /* Prepare la mise a jour de la boite */
-                              xDelta -= pSelBox->BxWidth;
+                              xDelta = xDelta + l + r - pSelBox->BxWidth;
                             }
-                          /* ==> Insertion d'un caractere entre deux boites */
+                          /* ==> Insert a chacracter between 2 boxes */
                           else if (previousChars > pSelBox->BxNChars ||
                                    /* ==> ou d'un blanc en fin de boite      */
                                    (c == SPACE &&
@@ -3230,7 +3241,8 @@ ThotBool InsertChar (int frame, CHAR_T c, int keyboard)
                       /* check now if the script changes */
                       if  (toSplitForScript)
                         {
-                          pBlock = SearchEnclosingType (pAb, BoBlock, BoFloatBlock);
+                          pBlock = SearchEnclosingType (pAb, BoBlock,
+                                                        BoFloatBlock, BoCellBlock);
                           oldscript = pSelBox->BxScript;
                           if (previousChars == 0)
                             {
@@ -3292,7 +3304,8 @@ ThotBool InsertChar (int frame, CHAR_T c, int keyboard)
                           savePropagate = Propagate;
                           Propagate = ToChildren;
                           if (!toSplitForScript)
-                            pBlock = SearchEnclosingType (pAb, BoBlock, BoFloatBlock);
+                            pBlock = SearchEnclosingType (pAb, BoBlock,
+                                                          BoFloatBlock, BoCellBlock);
                           if (pBlock)
                             RecomputeLines (pBlock, NULL, NULL, frame);
                           if (LastInsertCell)
@@ -3604,7 +3617,7 @@ void TtcInsertChar (Document doc, View view, CHAR_T c)
   ViewSelection      *pViewSel;
   DisplayMode         dispMode;
   PtrDocument         pDoc;
-  PtrElement          firstEl, lastEl;
+  PtrElement          firstEl, lastEl, pEl;
   int                 firstChar, lastChar;
   int                 frame;
   ThotBool            lock;
@@ -3681,9 +3694,35 @@ void TtcInsertChar (Document doc, View view, CHAR_T c)
                                   firstEl->ElStructSchema) ||
                !TypeHasException (ExcIsBreak, firstEl->ElTypeNumber,
                                   firstEl->ElStructSchema)))
+            {
+              if (firstEl == lastEl &&
+                  !firstEl->ElTerminal &&
+                  firstEl->ElStructSchema &&
+                  !strcmp (firstEl->ElStructSchema->SsName, "Template"))
+                {
+                  // try to move the selection to children
+                  do
+                    {
+                      firstEl = firstEl->ElFirstChild;
+                    }
+                  while (firstEl && !firstEl->ElTerminal &&
+                         firstEl->ElStructSchema &&
+                         !strcmp (firstEl->ElStructSchema->SsName, "Template"));
+                  if (firstEl)
+                    {
+                      SelectElement (pDoc, firstEl, TRUE, FALSE);
+                      pEl = firstEl->ElNext;
+                      if (pEl)
+                        {
+                          while (pEl->ElNext)
+                            pEl = pEl->ElNext;
+                          ExtendSelection (pEl, pEl->ElVolume, FALSE, FALSE, FALSE);
+                        }
+                    }
+                }
             /* delete the current selection */
             ContentEditing (TEXT_SUP);
-
+            }
           InsertChar (frame, c, -1);
           if (!lock)
             /* unlock table formatting */
