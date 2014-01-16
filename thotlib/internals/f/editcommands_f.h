@@ -14,11 +14,42 @@ extern void CloseTextInsertion ( void );
 extern void CloseParagraphInsertion ( PtrAbstractBox pAb,
                                       int frame );
 extern void ClearClipboard ( PtrTextBuffer clipboard );
+extern ThotBool AskShapePoints ( Document doc,
+                                 Element svgAncestor,
+                                 Element svgCanvas,
+                                 int shape,
+                                 Element el );
+extern ThotBool AskSurroundingBox ( Document doc,
+                                    Element svgAncestor,
+                                    Element svgCanvas,
+                                    int shape,
+                                    int *x1,
+                                    int *y1,
+                                    int *x2,
+                                    int *y2,
+                                    int *x3,
+                                    int *y3,
+                                    int *x4,
+                                    int *y4,
+                                    int *lx,
+                                    int *ly );
+extern ThotBool AskTransform ( Document doc,
+                               Element svgAncestor,
+                               Element svgCanvas,
+                               int transform_type,
+                               Element el );
+extern ThotBool AskPathEdit ( Document doc,
+                              int edit_type,
+                              Element el,
+                              int point );
+extern ThotBool AskShapeEdit ( Document doc,
+                               Element el,
+                               int point );
 extern ThotBool ContentEditing ( int editType );
 extern ThotBool InsertChar ( int frame,
                              CHAR_T c,
                              int keyboard );
-extern void PasteXClipboard ( unsigned char *src,
+extern void PasteXClipboard ( const unsigned char *src,
                               int nbytes,
                               CHARSET charset );
 extern void TtcInsertChar ( Document doc,
@@ -32,7 +63,7 @@ extern void TtcDeleteSelection ( Document doc,
                                  View view );
 extern void TtcInclude ( Document doc,
                          View view );
-extern void TtaPasteFromBuffer ( unsigned char *src,
+extern void TtaPasteFromBuffer ( const unsigned char *src,
                                  int length,
                                  CHARSET charset );
 extern void TtcPasteFromClipboard ( Document doc,
@@ -55,11 +86,42 @@ extern void CloseTextInsertion ( void );
 extern void CloseParagraphInsertion ( PtrAbstractBox pAb,
                                         int frame );
 extern void ClearClipboard ( PtrTextBuffer clipboard );
+extern ThotBool AskShapePoints ( Document doc,
+                                   Element svgAncestor,
+                                   Element svgCanvas,
+                                   int shape,
+                                   Element el );
+extern ThotBool AskSurroundingBox ( Document doc,
+                                      Element svgAncestor,
+                                      Element svgCanvas,
+                                      int shape,
+                                      int *x1,
+                                      int *y1,
+                                      int *x2,
+                                      int *y2,
+                                      int *x3,
+                                      int *y3,
+                                      int *x4,
+                                      int *y4,
+                                      int *lx,
+                                      int *ly );
+extern ThotBool AskTransform ( Document doc,
+                                 Element svgAncestor,
+                                 Element svgCanvas,
+                                 int transform_type,
+                                 Element el );
+extern ThotBool AskPathEdit ( Document doc,
+                                int edit_type,
+                                Element el,
+                                int point );
+extern ThotBool AskShapeEdit ( Document doc,
+                                 Element el,
+                                 int point );
 extern ThotBool ContentEditing ( int editType );
 extern ThotBool InsertChar ( int frame,
                                CHAR_T c,
                                int keyboard );
-extern void PasteXClipboard ( unsigned char *src,
+extern void PasteXClipboard ( const unsigned char *src,
                                 int nbytes,
                                 CHARSET charset );
 extern void TtcInsertChar ( Document doc,
@@ -73,7 +135,7 @@ extern void TtcDeleteSelection ( Document doc,
                                    View view );
 extern void TtcInclude ( Document doc,
                            View view );
-extern void TtaPasteFromBuffer ( unsigned char *src,
+extern void TtaPasteFromBuffer ( const unsigned char *src,
                                    int length,
                                    CHARSET charset );
 extern void TtcPasteFromClipboard ( Document doc,

@@ -73,7 +73,6 @@ typedef struct _AttSearch
 #endif /* TEMPLATES */
 
 #define StdDefaultName "Overview.html"
-static char        *DefaultName;
 static char         tempSavedObject[MAX_LENGTH];
 static ThotBool     TextFormat;
 static ThotBool     Saving_lock = FALSE;
@@ -982,6 +981,7 @@ void SaveDocumentAs (Document doc, View view)
 {
   char                tempname[MAX_LENGTH];
   int                 i;
+  char               *defaultName;
 
   if (DocumentURLs[doc] == 0)
     return;
@@ -1026,7 +1026,7 @@ void SaveDocumentAs (Document doc, View view)
         strcpy (UserMimeType, AM_SVG_MIME_TYPE);
       else if (DocumentTypes[doc] == docMath)
         strcpy (UserMimeType, AM_MATHML_MIME_TYPE);
-      else if (DocumentTypes[doc] == docXml)
+      else if (DocumentTypes[doc] == docXml || DocumentTypes[doc] == docTemplate)
         strcpy (UserMimeType, AM_GENERIC_XML_MIME_TYPE);
       else if (DocumentTypes[doc] == docCSS)
         strcpy (UserMimeType, "text/css");
@@ -1076,10 +1076,11 @@ void SaveDocumentAs (Document doc, View view)
             }
           else if (SaveName[0] == EOS)
             {
-              DefaultName = TtaGetEnvString ("DEFAULTNAME");
-              if (DefaultName == NULL || *DefaultName == EOS)
-                DefaultName = StdDefaultName;
-              strcpy (SaveName, DefaultName);
+              defaultName = TtaGetEnvString ("DEFAULTNAME");
+              if (defaultName == NULL || *defaultName == EOS)
+                strcpy (SaveName, StdDefaultName);
+              else
+                strcpy (SaveName, defaultName);
               strcat (tempname, SaveName);
             }
 	  
@@ -1175,6 +1176,8 @@ char *UpdateDocumentCharset (Document doc)
           TtaSetStructureChecking (oldStructureChecking, doc);
         }
     }
+  else if (charset == UNDEFINED_CHARSET)
+     strcat (charsetname, TtaGetEnvString ("DOCUMENT_CHARSET"));
   return charsetname;
 }
 
@@ -1293,6 +1296,12 @@ void SetNamespacesAndDTD (Document doc)
       pi_type = MathML_EL_XMLPI;
       attrType.AttrTypeNum = 0;
     }
+  else if (strcmp (s, "Template") == 0)
+    {
+      elType.ElTypeNum = 0;
+      pi_type = Template_EL_XMLPI;
+      attrType.AttrTypeNum = 0;
+    }
   else
     {
       elType.ElTypeNum = XML_EL_doctype;
@@ -1311,7 +1320,7 @@ void SetNamespacesAndDTD (Document doc)
           /* Create a XHTML + MathML + SVG doctype */
           if ((useMathML || useSVG) && !useXML && !useXLink && profile == L_Xhtml11)
             {
-              CreateDoctype (doc, doctype, L_Xhtml11, extraProfile, useMathML, useSVG);
+              CreateDoctype (doc, doctype, L_Xhtml11, extraProfile, useMathML, useSVG, FALSE);
               /* it's not necessary to generate the math PI */
               mathPI = FALSE;
             }
@@ -1320,7 +1329,7 @@ void SetNamespacesAndDTD (Document doc)
             TtaDeleteTree (doctype, doc);
           else
             // regenerate the doctype with the right profile
-            CreateDoctype (doc, doctype, profile, extraProfile, useMathML, useSVG);
+            CreateDoctype (doc, doctype, profile, extraProfile, useMathML, useSVG, FALSE);
         }
       else if (doctype &&
                ((useSVG && (useMathML || useHTML || useXML || useXLink)) ||
@@ -1719,7 +1728,7 @@ ThotBool ParseWithNewDoctype (Document doc, char *localFile, char *tempdir,
         elType.ElTypeNum = SVG_EL_DOCTYPE;
       eltype = TtaSearchTypedElement (elType, SearchInTree, docEl);
       /* Add the new doctype */
-      CreateDoctype (ext_doc, eltype, new_doctype, new_extraProfile, useMathML, useSVG);
+      CreateDoctype (ext_doc, eltype, new_doctype, new_extraProfile, useMathML, useSVG, TRUE);
 
       /* Save this new document state */
       if (DocumentTypes[doc] == docSVG)
@@ -1803,7 +1812,7 @@ void RestartParser (Document doc, char *localFile,
   DocumentMeta[doc]->compound = FALSE;
   if (isXML || IsMathMLName (localFile) ||
       IsSVGName (localFile) || IsXMLName (localFile) ||
-      DocumentTypes[doc] == docXml)
+      DocumentTypes[doc] == docXml || DocumentTypes[doc] == docTemplate)
     DocumentMeta[doc]->xmlformat = TRUE;
   else
     DocumentMeta[doc]->xmlformat = FALSE;
@@ -1876,11 +1885,7 @@ void RedisplaySourceFile (Document doc)
   int		              position, distance;
   NotifyElement       event;
 
-  if (DocumentTypes[doc] == docHTML ||
-      DocumentTypes[doc] == docLibrary ||
-      DocumentTypes[doc] == docSVG ||
-      DocumentTypes[doc] == docXml ||
-      DocumentTypes[doc] == docMath)
+  if (IsXMLDocType (doc))
     /* it's a structured document */
     if (DocumentSource[doc])
       /* The source code of this document is currently displayed */
@@ -1965,6 +1970,8 @@ static ThotBool SaveDocumentLocally (Document doc, char *directoryName,
         ok = TtaExportDocumentWithNewLineNumbers (doc, tempname, "SVGT", RemoveTemplate);
       else if (DocumentTypes[doc] == docMath)
         ok = TtaExportDocumentWithNewLineNumbers (doc, tempname, "MathMLT", RemoveTemplate);
+      else if (DocumentTypes[doc] == docTemplate)
+        ok = TtaExportDocumentWithNewLineNumbers (doc, tempname, "TemplateT", FALSE);
       else if (DocumentTypes[doc] == docXml)
         ok = TtaExportDocumentWithNewLineNumbers (doc, tempname, NULL, RemoveTemplate);
       else if (DocumentTypes[doc] == docImage)
@@ -2036,6 +2043,7 @@ static ThotBool HasSavingName (Document doc, View view, char *url,
   char            documentname[MAX_LENGTH];
   int             len;
   ThotBool        ok;
+  char           *defaultName;
 
   len = strlen (url);
   TtaExtractName (url, msg, documentname);
@@ -2067,15 +2075,15 @@ static ThotBool HasSavingName (Document doc, View view, char *url,
         }
       else
         {
-          DefaultName = TtaGetEnvString ("DEFAULTNAME");
-          if (DefaultName == NULL || *DefaultName == EOS)
-            DefaultName = StdDefaultName;
-          strcat (msg, DefaultName);
+          defaultName = TtaGetEnvString ("DEFAULTNAME");
+          if (defaultName == NULL || *defaultName == EOS)
+            defaultName = (char*)StdDefaultName;
+          strcat (msg, defaultName);
           InitConfirm (doc, view, msg);
           
           if (UserAnswer != 0 && DocumentMeta[doc])
             {
-              DocumentMeta[doc]->content_location = TtaStrdup (DefaultName);
+              DocumentMeta[doc]->content_location = TtaStrdup (defaultName);
               ok = (DocumentMeta[doc]->content_location != NULL);
             }
           if (ok)
@@ -2105,7 +2113,7 @@ static int SafeSaveFileThroughNet (Document doc, char *localfile,
   char              msg[MAX_LENGTH];
   char              tempfile[MAX_LENGTH]; /* File name used to refetch */
   char              tempURL[MAX_LENGTH];  /* May be redirected */
-  char             *verify_publish;
+  const char       *verify_publish;
   int               res;
   int               mode = 0;
 #ifdef AMAYA_DEBUG
@@ -2303,6 +2311,8 @@ static ThotBool SaveDocumentThroughNet (Document doc, View view, char *url,
     TtaExportDocumentWithNewLineNumbers (doc, tempname, "SVGT", RemoveTemplate);
   else if (DocumentTypes[doc] == docMath)
     TtaExportDocumentWithNewLineNumbers (doc, tempname, "MathMLT", RemoveTemplate);
+  else if (DocumentTypes[doc] == docTemplate)
+    TtaExportDocumentWithNewLineNumbers (doc, tempname, "MathMLT", FALSE);
   else if (DocumentTypes[doc] == docXml)
     TtaExportDocumentWithNewLineNumbers (doc, tempname, NULL, RemoveTemplate);
 #ifdef BOOKMARKS
@@ -2395,14 +2405,10 @@ static ThotBool SaveDocumentThroughNet (Document doc, View view, char *url,
         {
           DocNetworkStatus[doc] |= AMAYA_NET_ERROR;
           ResetStop (doc);
-          if (AmayaLastHTTPErrorMsg[0] != EOS)
-            InitInfo ("", AmayaLastHTTPErrorMsg);
-          else
-            {
+          if (AmayaLastHTTPErrorMsg[0] == EOS)
               sprintf (AmayaLastHTTPErrorMsg, TtaGetMessage (AMAYA, AM_CANNOT_SAVE),
                        DocumentURLs[doc]);
-              InitInfo ("", AmayaLastHTTPErrorMsg);
-            }
+          InitInfo ("", AmayaLastHTTPErrorMsg);
           res = -1;
         }
 
@@ -2474,12 +2480,7 @@ Document GetDocFromSource (Document sourceDoc)
   if (DocumentTypes[sourceDoc] == docSource)
     /* It's a source document */
     for (i = 1; i < DocumentTableLength && xmlDoc == 0; i++)
-      if (DocumentTypes[i] == docHTML ||
-          DocumentTypes[i] == docAnnot ||
-          DocumentTypes[i] == docSVG ||
-          DocumentTypes[i] == docXml ||
-          DocumentTypes[i] == docLibrary ||
-          DocumentTypes[i] == docMath)
+      if (IsXMLDocType (i))
         if (DocumentSource[i] == sourceDoc)
           xmlDoc = i;
   return xmlDoc;
@@ -2542,11 +2543,7 @@ void DoSynchronize (Document doc, View view, NotifyElement *event)
   /* change display mode to avoid flicker due to callbacks executed when
      saving some elements, for instance META */
   dispMode = TtaGetDisplayMode (doc);
-  if (DocumentTypes[doc] == docHTML ||
-      DocumentTypes[doc] == docSVG ||
-      DocumentTypes[doc] == docLibrary ||
-      DocumentTypes[doc] == docMath ||
-      DocumentTypes[doc] == docXml)
+  if (IsXMLDocType (doc))
     /* it's the structured form of the document */
     {
       if (dispMode == DisplayImmediately)
@@ -2613,7 +2610,8 @@ void DoSynchronize (Document doc, View view, NotifyElement *event)
             TtaSetDocumentModified (otherDoc);
           // check if it's a template instance
 #ifdef TEMPLATES
-          CheckTemplate (otherDoc);
+          // Fill template internal structures and prepare the instance if any
+          Template_FillFromDocument (otherDoc);
 #endif /* TEMPLATES */
           /* restore original display mode */
           TtaSetDisplayMode (doc, dispMode);
@@ -2788,7 +2786,6 @@ void SaveDocument (Document doc, View view)
   Document	      xmlDoc;
   DisplayMode         dispMode;
   char                tempname[MAX_LENGTH];
-  char                localFile[MAX_LENGTH];
   char                msg[MAX_LENGTH];
   char               *ptr;
   int                 i;
@@ -2896,18 +2893,21 @@ void SaveDocument (Document doc, View view)
 
       if (!ok || !with_suffix)
         {
-          // call Save As when there is no suffix
-          SavingDocument = 0;
-          Saving_lock = FALSE;
-          TtaSetDisplayMode (doc, dispMode);
-          SaveDocumentAs (doc, view);
-         return;
+	  // if the content_location is known, don't redirect to the Save As dialog
+	  if (!DocumentMeta[doc] || !DocumentMeta[doc]->full_content_location)
+	    {
+	      // call Save As when there is no suffix
+	      SavingDocument = 0;
+	      Saving_lock = FALSE;
+	      TtaSetDisplayMode (doc, dispMode);
+	      SaveDocumentAs (doc, view);
+	      return;
+	    }
         }
 
       ptr = GetLocalPath (doc, DocumentURLs[doc]);
       /*  no need to protect against a null ptr, as GetLocalPath
           will always return something at this point */
-      strcpy (localFile, ptr);
       TtaFreeMemory (ptr);
       /* it's a complete name: save it */
       if (ok)
@@ -3208,6 +3208,8 @@ static ThotBool  AutoSaveDocument (Document doc, View view, char *local_url)
         ok = TtaExportDocumentWithNewLineNumbers (doc, tempname, "SVGT", FALSE);
       else if (DocumentTypes[doc] == docMath)
         ok = TtaExportDocumentWithNewLineNumbers (doc, tempname, "MathMLT", FALSE);
+      else if (DocumentTypes[doc] == docTemplate)
+        ok = TtaExportDocumentWithNewLineNumbers (doc, tempname, "TemplateT", FALSE);
       else if (DocumentTypes[doc] == docXml)
         ok = TtaExportDocumentWithNewLineNumbers (doc, tempname, NULL, FALSE);
     }
@@ -3869,7 +3871,7 @@ static void UpdateCss (Document doc, ThotBool src_is_local,
 #ifdef AMAYA_DEBUG
   fprintf(stderr, "UpdateCSS: from %s to %s\n", oldpath, url);
 #endif
-                  if (dst_is_local && localname)
+                  if (dst_is_local)
                     TtaFileCopy (localname, url);
                   else
                     {
@@ -4314,6 +4316,7 @@ void DoSaveAs (char *user_charset, char *user_mimetype, ThotBool fullCopy)
             {
               if (CopyImages &&
                   DocumentTypes[doc] != docMath &&
+                  DocumentTypes[doc] != docTemplate &&
                   DocumentTypes[doc] != docXml)
                 UpdateImages (doc, src_is_local, dst_is_local, imgbase, documentFile);
               if (CopyCss)
@@ -4527,6 +4530,7 @@ ThotBool SaveTempCopy (Document doc, const char* dstdir, char** filename)
 {
   char buff[MAX_LENGTH];
   char* oldURL;
+  char* defaultName;
   
   oldURL = TtaStrdup(DocumentURLs[doc]);
   if (Saving_lock)
@@ -4542,10 +4546,11 @@ ThotBool SaveTempCopy (Document doc, const char* dstdir, char** filename)
   TtaExtractName (DocumentURLs[doc], buff, SaveName);
   if (SaveName[0]==EOS)
     {
-      DefaultName = TtaGetEnvString ("DEFAULTNAME");
-      if (DefaultName == NULL || *DefaultName == EOS)
-        DefaultName = StdDefaultName;
-      strcpy(SaveName, DefaultName);
+      defaultName = TtaGetEnvString ("DEFAULTNAME");
+      if (defaultName == NULL || *defaultName == EOS)
+        strcpy(SaveName, StdDefaultName);
+      else
+        strcpy(SaveName, defaultName);
     }
   
   CopyImages = FALSE;

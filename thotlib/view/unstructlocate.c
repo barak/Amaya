@@ -70,7 +70,7 @@ int GetDistance (int value, int delta)
 int GetBoxDistance (PtrBox pBox, PtrFlow pFlow, int xRef, int yRef,
                     int ratio, int frame, PtrElement *matchCell)
 {
-  PtrAbstractBox      pCell, row;
+  PtrAbstractBox      pCell, row, pAb;
   PtrBox              sibling;
   PtrDocument         pDoc;
   int                 value, x, y, width, height;
@@ -89,7 +89,7 @@ int GetBoxDistance (PtrBox pBox, PtrFlow pFlow, int xRef, int yRef,
     pCell = GetParentCell (pBox);
   else
     pCell = NULL;
-
+  pAb = pBox->BxAbstractBox;
   xcell = ycell = 0;
   wcell = hcell = MAX_DISTANCE;
 #ifdef _GL
@@ -158,6 +158,12 @@ int GetBoxDistance (PtrBox pBox, PtrFlow pFlow, int xRef, int yRef,
       x += pFlow->FlXStart;
       y += pFlow->FlYStart;
     }
+
+  if (pAb && pAb->AbElement &&
+      xRef >= x && xRef <= x + width &&
+      yRef >= y && yRef <= y + height &&
+       TypeHasException (ExcIsDraw, pAb->AbElement->ElTypeNumber, pAb->AbElement->ElStructSchema))
+    return 0;
   if (pCell && pCell->AbBox)
     {
       pFlow = GetRelativeFlow (pCell->AbBox, frame);
@@ -280,8 +286,9 @@ void GetClickedBox (PtrBox *result, PtrFlow *pFlow, PtrAbstractBox pRootAb,
                        pAb->AbEnclosing->AbBox->BxType == BoColumn))
                     {
 #ifdef _GL
-                      if (bx <= x && bx + pBox->BxClipW >= x &&
-                          by <= y && by + pBox->BxClipH >= y)
+		      if(pAb->AbLeafType == LtPath ||
+		      (bx <= x && bx + pBox->BxClipW >= x &&
+		       by <= y && by + pBox->BxClipH >= y))
 #endif  /* _GL */
                         {
                           if (pAb->AbLeafType == LtPicture &&
@@ -324,10 +331,13 @@ void GetClickedBox (PtrBox *result, PtrFlow *pFlow, PtrAbstractBox pRootAb,
 		  
                   /* select the nearest box */
                   active = GetParentWithException (ExcClickableSurface, pAb);
-                  if (active &&
-                      (active->AbBox == NULL ||
-                       GetBoxDistance (active->AbBox, *pFlow, x, y, ratio, frame, &matchCell) != 0))
-                    active = NULL;
+                  if (active)
+                    {
+                    if (active->AbBox == NULL)
+                      active = NULL;
+                    else if (GetBoxDistance (active->AbBox, *pFlow, x, y, ratio, frame, &matchCell) != 0)
+                      active = NULL;
+                    }
                   if (active && sel_active == NULL)
                     dist = d + 1;
                   else if (active == NULL && sel_active)

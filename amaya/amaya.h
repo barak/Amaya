@@ -384,6 +384,7 @@ THOT_EXPORT char      *SavedDocumentURL;/* URL of the document that contained th
 THOT_EXPORT char      *AutoSave_list;
 THOT_EXPORT char      *Template_list; /* list of templates */
 THOT_EXPORT char      *URL_list; /* list of previous open URLs */
+THOT_EXPORT char      *RDFa_list; /* list of Namespace declarations for RDFa */
 #ifdef _SVG
 THOT_EXPORT char      *SVGlib_list;
 #endif /* _SVG */
@@ -392,6 +393,7 @@ THOT_EXPORT char       Answer_text[MAX_LENGTH];
 THOT_EXPORT char       Answer_name[NAME_LENGTH];
 THOT_EXPORT char       Answer_password[NAME_LENGTH];
 THOT_EXPORT char       Display_password[NAME_LENGTH];
+THOT_EXPORT char       CurrentNameSpace[MAX_LENGTH]; // namespace of the sniffed document
 THOT_EXPORT char       ScanFilter[NAME_LENGTH]; /* to scan directories    */
 THOT_EXPORT char       MathMLEntityName[MAX_LENGTH]; /* entity name typed by the user for a MathML expression */
 THOT_EXPORT char       JavascriptPromptValue[MAX_LENGTH]; /* value typed by the user in a prompt form */
@@ -417,6 +419,7 @@ THOT_EXPORT char       SaveFormTmp[MAX_LENGTH];
 
 THOT_EXPORT int        URL_list_len;
 THOT_EXPORT int        Template_list_len;
+THOT_EXPORT int        RDFa_list_len;
 /* list of auto-saved files */
 THOT_EXPORT int        AutoSave_list_len;
 THOT_EXPORT int        AutoSave_Interval;
@@ -495,6 +498,7 @@ THOT_EXPORT ThotBool   SelectionInB;
 THOT_EXPORT ThotBool   SelectionInTT;
 THOT_EXPORT ThotBool   SelectionInBIG;
 THOT_EXPORT ThotBool   SelectionInSMALL;
+THOT_EXPORT ThotBool   SelectionInSpan;
 THOT_EXPORT ThotBool   SelectionInSub;
 THOT_EXPORT ThotBool   SelectionInSup;
 THOT_EXPORT ThotBool   SelectionInQuote;
@@ -593,7 +597,7 @@ typedef struct _DocumentMetaDataElement
 
 #define DocumentTableLength MAX_DOCUMENTS
 /* URL of each loaded document */
-THOT_EXPORT char                    *DocumentURLs[DocumentTableLength];
+extern char                         *DocumentURLs[MAX_DOCUMENTS];
 /* Any formdata associated with a URL */
 THOT_EXPORT DocumentMetaDataElement *DocumentMeta[DocumentTableLength];
 /* Type of document */

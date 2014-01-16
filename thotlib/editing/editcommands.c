@@ -28,6 +28,8 @@
 #include "appaction.h"
 #include "appdialogue.h"
 #include "logdebug.h"
+#include "content.h"
+#include "svgedit.h"
 
 /* variables */
 #undef THOT_EXPORT
@@ -46,11 +48,7 @@ static Language     ClipboardLanguage = 0;
 /* X Clipboard */
 static struct _TextBuffer XClipboard;
 
-#ifdef _GTK
-static ThotBool     ClipboardToPaste = FALSE;
-#endif /* _GTK */
 static ThotBool     NewInsert;
-
 #include "abspictures_f.h"
 #include "actions_f.h"
 #include "appdialogue_f.h"
@@ -106,6 +104,8 @@ static ThotBool     NewInsert;
 #ifdef _GL
 #include "glwindowdisplay.h"
 #endif /*_GL*/
+
+extern int SelectedPointInPolyline;
 
 /*----------------------------------------------------------------------
   TtaIsTextInserting returns the TextInserting status
@@ -234,7 +234,8 @@ static ThotBool APPattrModify (PtrAttribute pAttr, PtrElement pEl,
   selection is between two different character scripts ('*'
   if there is no specific script),
   - frame: the curent frame.
-  Returns:                     
+  Parameter toDelete is TRUE if a delete of previous character is requested
+  Returns:
   - pBox: the selected box,
   - pBuffer: the selected buffer,
   - ind: the character position within the buffer,                  
@@ -243,9 +244,9 @@ static ThotBool APPattrModify (PtrAttribute pAttr, PtrElement pEl,
   ----------------------------------------------------------------------*/
 static void GiveInsertPoint (PtrAbstractBox pAb, char script, int frame,
                              PtrBox *pBox, PtrTextBuffer *pBuffer, int *ind,
-                             int *x, int *previousChars)
+                             int *x, int *previousChars, ThotBool toDelete)
 {
-  ViewSelection      *pViewSel;
+  ViewSelection      *pViewSel, *pViewSelEnd;
   PtrBox              box;
   ThotBool            ok;
   ThotBool            endOfPicture;
@@ -289,11 +290,27 @@ static void GiveInsertPoint (PtrAbstractBox pAb, char script, int frame,
         {
           /* the box is already selected */
           *pBox = pViewSel->VsBox;
+          if (toDelete && (*pBox)->BxType == BoScript &&
+              pViewSel->VsIndBox == 0)
+            {
+              // move the selection at the end of the previous script
+              *pBox = (*pBox)->BxPrevious;
+              pViewSel->VsBox = *pBox;
+              pViewSel->VsXPos = (*pBox)->BxW;
+              pViewSel->VsNSpaces = (*pBox)->BxNSpaces;
+              pViewSel->VsIndBox = (*pBox)->BxNChars;
+              pViewSelEnd = &ViewFrameTable[frame - 1].FrSelectionEnd;
+              pViewSelEnd->VsBox = pViewSel->VsBox;
+              pViewSelEnd->VsXPos = pViewSel->VsXPos + 2;
+              pViewSelEnd->VsNSpaces = pViewSel->VsNSpaces;
+              pViewSelEnd->VsIndBox = pViewSel->VsIndBox;
+            }
+
           *pBuffer = pViewSel->VsBuffer;
           *ind = pViewSel->VsIndBuf;
           *x = pViewSel->VsXPos;
           *previousChars = pViewSel->VsIndBox;
-          if (script != ' ' && script != '*' &&
+          if (!toDelete && script != ' ' && script != '*' &&
               script != pViewSel->VsBox->BxScript)
             {
               /* a specific script is requested */
@@ -392,7 +409,8 @@ static ThotBool CloseTextInsertionWithControl (ThotBool toNotify)
           /* close the current insertion */
           TextInserting = FALSE;
           /* Where is the insert point (&i not used)? */
-          GiveInsertPoint (NULL, '*', frame, &pSelBox, &pBuffer, &ind, &i, &j);
+          GiveInsertPoint (NULL, '*', frame, &pSelBox, &pBuffer, &ind, &i,
+                           &j, FALSE);
           if (pSelBox == NULL || pSelBox->BxAbstractBox == NULL ||
               pSelBox->BxAbstractBox->AbLeafType != LtText)
             /* no more selection */
@@ -845,9 +863,11 @@ static void CopyBuffers (SpecFont font, int variant, int frame, int startInd,
 
 /*----------------------------------------------------------------------
   Debute l'insertion de caracteres dans une boite de texte.      
+  Parameter toDelete is TRUE if a delete of previous character is requested
   ----------------------------------------------------------------------*/
 static void StartTextInsertion (PtrAbstractBox pAb, int frame, PtrBox pSelBox,
-                                PtrTextBuffer pBuffer, int ind, int prev)
+                                PtrTextBuffer pBuffer, int ind, int prev,
+                                ThotBool toDelete)
 {
   PtrBox              pBox;
   PtrTextBuffer       pPreviousBuffer;
@@ -861,7 +881,8 @@ static void StartTextInsertion (PtrAbstractBox pAb, int frame, PtrBox pSelBox,
     {
       /* get the insert point (&i not used) */
       if (pAb == NULL)
-        GiveInsertPoint (NULL, '*', frame, &pSelBox, &pBuffer, &ind, &i, &prev);
+        GiveInsertPoint (NULL, '*', frame, &pSelBox, &pBuffer, &ind, &i,
+                         &prev,toDelete);
       TextInserting = TRUE;
       /* the split box */
       pBox = pSelBox->BxAbstractBox->AbBox;
@@ -1378,11 +1399,7 @@ static void LoadShape (char c, PtrLine pLine, ThotBool defaultHeight,
                 pAb->AbVolume = PolyLineCreation (frame, &x, &y, pBox, 0);
               pAb->AbElement->ElNPoints = pAb->AbVolume;
               pBox->BxNChars = pAb->AbVolume;
-              DisplayPointSelection (frame, pBox, 0);
-#ifdef _GTK
-              pBox->BxXRatio = 1;
-              pBox->BxYRatio = 1;
-#endif /* _GTK */
+              DisplayPointSelection (frame, pBox, 0, FALSE);
             }
 
           /* redisplay the whole box */
@@ -1433,7 +1450,7 @@ static void LoadShape (char c, PtrLine pLine, ThotBool defaultHeight,
             }
           else
             {
-              if (c == 'C')
+              if (c == 1 || c == 'C')
                 /* rectangle with rounded corners */
                 {
                   pAb->AbRx = 0;
@@ -1615,7 +1632,7 @@ static void RemoveSelection (int charsDelta, int spacesDelta, int xDelta,
         pViewSel = &pFrame->FrSelectionBegin;
         pViewSelEnd = &pFrame->FrSelectionEnd;
         /* Note que le texte de l'e'le'ment va changer */
-        StartTextInsertion (NULL, frame, NULL, NULL, 0, 0);
+        StartTextInsertion (NULL, frame, NULL, NULL, 0, 0, FALSE);
         /* fusionne le premier et dernier buffer de la selection */
         /* target of the moving */
         pTargetBuffer = pViewSel->VsBuffer;
@@ -1788,7 +1805,8 @@ static void RemoveSelection (int charsDelta, int spacesDelta, int xDelta,
         else
           yDelta = 0;
         BoxUpdate (pBox, pLine, -1, 0, -xDelta, 0, -yDelta, frame, FALSE);
-        if (pAb->AbLeafType == LtGraphics && pAb->AbShape == 'C')
+        if (pAb->AbLeafType == LtGraphics &&
+	    (pAb->AbShape == 1 || pAb->AbShape == 'C'))
           {
             pAb->AbRx = 0;
             pAb->AbRy = 0;
@@ -1893,7 +1911,7 @@ static void PasteClipboard (ThotBool defaultHeight, ThotBool defaultWidth,
 
       /* Coupure des buffers pour l'insertion */
       if (!TextInserting)
-        StartTextInsertion (NULL, frame, NULL, NULL, 0, 0);
+        StartTextInsertion (NULL, frame, NULL, NULL, 0, 0, FALSE);
 
       /* Insertion en fin de buffer */
       if (pViewSel->VsIndBuf >= pViewSel->VsBuffer->BuLength)
@@ -2004,8 +2022,442 @@ static void PasteClipboard (ThotBool defaultHeight, ThotBool defaultWidth,
 }
 
 /*----------------------------------------------------------------------
-  ContentEditing manages Cut, Paste, Copy, Remvoe, and Insert commands.
+  AskShapePoints
+  Ask the user the list of points of a polyline or curve.
+  --------------------------------------------------------------------*/
+ThotBool AskShapePoints (Document doc,
+			 Element svgAncestor,
+			 Element svgCanvas,
+			 int shape,
+			 Element el)
+{
+  PtrAbstractBox pAb;
+  PtrBox pBox;
+  ViewFrame          *pFrame;
+  int frame;
+  PtrTransform CTM, inverse;
+  int canvasWidth,canvasHeight,ancestorX,ancestorY;
+  ThotBool created = FALSE;
+
+  frame = ActiveFrame;
+
+  if(frame <= 0 || svgCanvas == NULL || svgAncestor == NULL )return FALSE;
+
+  /* Get the current transform matrix */
+  CTM = (PtrTransform)TtaGetCurrentTransformMatrix(svgCanvas, svgAncestor);
+
+  if(CTM == NULL)
+    {
+      inverse = NULL;
+    }
+  else
+    {
+      /* Get the inverse of the CTM and free the CTM */
+      inverse = (PtrTransform)(TtaInverseTransform ((PtrTransform)CTM));
+      TtaFreeTransform(CTM);
+
+      if(inverse == NULL)
+	/* Transform not inversible */
+	return FALSE;
+    }
+
+  pFrame = &ViewFrameTable[frame - 1];
+
+  /* Get the size of the SVG Canvas */
+  TtaGiveBoxSize (svgCanvas, doc, 1, UnPixel, &canvasWidth, &canvasHeight);
+
+  /* Get the origin of the ancestor */
+  //TtaGiveBoxPosition (svgAncestor, doc, 1, UnPixel, &ancestorX, &ancestorY);
+  pAb = ((PtrElement)svgAncestor) -> ElAbstractBox[0];
+  if(pAb && pAb -> AbBox)
+    pBox = pAb -> AbBox;
+  else return FALSE;
+  ancestorX = pBox->BxXOrg - pFrame->FrXOrg;
+  ancestorY = pBox->BxYOrg - pFrame->FrYOrg;
+  
+  /* Call the interactive module */
+  created = PathCreation (frame,
+			  doc,
+			  inverse,
+			  ancestorX, ancestorY,
+			  canvasWidth, canvasHeight,
+			  shape, el);
+
+  /* Free the inverse of the CTM */
+  if(inverse != NULL)
+    TtaFreeTransform(inverse);
+
+  return created;
+}
+
+/*----------------------------------------------------------------------
+  AskSurroundingBox
+  Ask the user the position and size of the surrounding box or the extremities
+  of a line.
+  --------------------------------------------------------------------*/
+ThotBool AskSurroundingBox (Document doc, Element svgAncestor,
+                            Element svgCanvas, int shape,
+                            int *x1, int *y1,
+                            int *x2, int *y2,
+                            int *x3, int *y3,
+                            int *x4, int *y4,
+                            int *lx, int *ly)
+{
+  PtrAbstractBox pAb;
+  PtrBox         pBox;
+  ViewFrame     *pFrame;
+  PtrTransform   CTM, inverse;
+  int            frame;
+  int            canvasWidth, canvasHeight, ancestorX, ancestorY;
+  ThotBool       created = FALSE;
+
+  frame = ActiveFrame;
+  if (frame <= 0 || svgCanvas == NULL || svgAncestor == NULL)
+    return FALSE;
+
+  *x1 = *y1 = *x2 = *y2 = *x3 = *y3 = *x4 = *y4 = *lx = * ly = 0;
+  /* Get the current transform matrix */
+  CTM = (PtrTransform)TtaGetCurrentTransformMatrix(svgCanvas, svgAncestor);
+
+  if(CTM == NULL)
+    inverse = NULL;
+  else
+    {
+      /* Get the inverse of the CTM and free the CTM */
+      inverse = (PtrTransform)(TtaInverseTransform ((PtrTransform)CTM));
+      TtaFreeTransform(CTM);
+
+      if(inverse == NULL)
+        /* Transform not inversible */
+        return FALSE;
+    }
+
+  pFrame = &ViewFrameTable[frame - 1];
+  /* Get the size of the SVG Canvas */
+  TtaGiveBoxSize (svgCanvas, doc, 1, UnPixel, &canvasWidth, &canvasHeight);
+
+  /* Get the origin of the ancestor */
+  //TtaGiveBoxPosition (svgAncestor, doc, 1, UnPixel, &ancestorX, &ancestorY);
+  pAb = ((PtrElement)svgAncestor) -> ElAbstractBox[0];
+  if(pAb && pAb -> AbBox)
+    pBox = pAb -> AbBox;
+  else return FALSE;
+  ancestorX = pBox->BxXOrg - pFrame->FrXOrg;
+  ancestorY = pBox->BxYOrg - pFrame->FrYOrg;
+  
+  /* Call the interactive module */
+  created = ShapeCreation (frame, doc,
+                           (void *)inverse,
+                           ancestorX, ancestorY,
+                           canvasWidth, canvasHeight,
+                           shape,
+                           x1, y1,
+                           x2, y2,
+                           x3, y3,
+                           x4, y4,
+                           lx, ly);
+
+  /* Free the inverse of the CTM */
+  if(inverse != NULL)
+    TtaFreeTransform(inverse);
+
+  return created;
+}
+
+/*----------------------------------------------------------------------
+  AskTransform
+  --------------------------------------------------------------------*/
+ThotBool AskTransform (Document doc, Element svgAncestor,
+                       Element svgCanvas,
+                       int transform_type, Element el)
+{
+  PtrAbstractBox pAb;
+  PtrBox pBox;
+  ViewFrame          *pFrame;
+  int frame;
+  PtrTransform CTM, inverse;
+  int canvasWidth,canvasHeight,ancestorX,ancestorY;
+  ThotBool transformApplied;
+
+  frame = ActiveFrame;
+  if(frame <= 0)
+    return FALSE;
+
+  /* The svgCanvas and ancestor are not explicitly given */
+  if (svgCanvas == NULL || svgAncestor == NULL)
+    {
+      if(!GetAncestorCanvasAndObject(doc, &el, &svgAncestor, &svgCanvas))
+	/* Can not find the <svg> elements */
+	return FALSE;
+
+    }
+
+  /* Get the current transform matrix */
+  CTM = (PtrTransform)TtaGetCurrentTransformMatrix(svgCanvas, svgAncestor);
+
+  if(CTM == NULL)
+      inverse = NULL;
+  else
+    {
+      /* Get the inverse of the CTM and free the CTM */
+      inverse = (PtrTransform)(TtaInverseTransform ((PtrTransform)CTM));
+
+      if(inverse == NULL)
+	{
+      /* Transform not inversible */
+	  TtaFreeTransform(CTM);
+	  return FALSE;
+	}
+    }
+
+  pFrame = &ViewFrameTable[frame - 1];
+  /* Get the size of the SVG Canvas */
+  TtaGiveBoxSize (svgCanvas, doc, 1, UnPixel, &canvasWidth, &canvasHeight);
+
+  /* Get the origin of the ancestor */
+  //TtaGiveBoxPosition (svgAncestor, doc, 1, UnPixel, &ancestorX, &ancestorY);
+  pAb = ((PtrElement)svgAncestor) -> ElAbstractBox[0];
+  if(pAb && pAb -> AbBox)
+    pBox = pAb -> AbBox;
+  else return FALSE;
+  ancestorX = pBox->BxXOrg - pFrame->FrXOrg;
+  ancestorY = pBox->BxYOrg - pFrame->FrYOrg;
+
+  /* Call the interactive module */
+  transformApplied = TransformSVG (frame,
+				   doc, 
+				   CTM, inverse,
+				   ancestorX, ancestorY,
+				   canvasWidth, canvasHeight,
+				   transform_type,
+				   el);
+
+  /* Free the transform matrix */
+  if(CTM)TtaFreeTransform(CTM);
+  if(inverse)TtaFreeTransform(inverse);
+
+  /* Update the transform */
+  if(transformApplied)
+    UpdateTransformMatrix(doc, el);
+
+  return transformApplied;
+}
+
+/*----------------------------------------------------------------------
+  AskPathEdit
+  --------------------------------------------------------------------*/
+ThotBool AskPathEdit (Document doc,
+		      int edit_type, Element el, int point)
+{
+  Element svgCanvas = NULL, svgAncestor = NULL, el2;
+  PtrAbstractBox pAb;
+  PtrBox pBox;
+  ViewFrame          *pFrame;
+  int frame;
+  PtrTransform CTM, inverse;
+  int canvasWidth,canvasHeight,ancestorX,ancestorY;
+  ThotBool transformApplied;
+
+  frame = ActiveFrame;
+
+  if(frame <= 0)return FALSE;
+
+  /* Get the ancestor and svg canvas */
+  el2 = el;
+
+  if(!GetAncestorCanvasAndObject(doc, &el, &svgAncestor, &svgCanvas))
+  
+    return FALSE;
+
+  if(el2 != el)
+    /* el has changed: it was not a direct child of svgCanvas. Hence
+       transforming it is forbidden. */
+    return FALSE;
+
+  /* Get the current transform matrix */
+  CTM = (PtrTransform)TtaGetCurrentTransformMatrix(el, svgAncestor);
+
+  if(CTM == NULL)
+      inverse = NULL;
+  else
+    {
+      /* Get the inverse of the CTM and free the CTM */
+      inverse = (PtrTransform)(TtaInverseTransform ((PtrTransform)CTM));
+      TtaFreeTransform(CTM);
+
+      if(inverse == NULL)
+	{
+      /* Transform not inversible */
+	  TtaFreeTransform(CTM);
+	  return FALSE;
+	}
+    }
+
+  pFrame = &ViewFrameTable[frame - 1];
+  /* Get the size of the SVG Canvas */
+  TtaGiveBoxSize (svgCanvas, doc, 1, UnPixel, &canvasWidth, &canvasHeight);
+
+  /* Get the origin of the ancestor */
+  //TtaGiveBoxPosition (svgAncestor, doc, 1, UnPixel, &ancestorX, &ancestorY);
+  pAb = ((PtrElement)svgAncestor) -> ElAbstractBox[0];
+  if(pAb && pAb -> AbBox)
+    pBox = pAb -> AbBox;
+  else return FALSE;
+  ancestorX = pBox->BxXOrg - pFrame->FrXOrg;
+  ancestorY = pBox->BxYOrg - pFrame->FrYOrg;
+
+  /* Call the interactive module */
+  transformApplied = PathEdit (frame,
+			       doc, 
+			       inverse,
+			       ancestorX, ancestorY,
+			       canvasWidth, canvasHeight,
+			       el, point);
+
+  /* Free the transform matrix */
+  if(inverse)TtaFreeTransform(inverse);
+
+
+  /* Update the attribute */
+  if(transformApplied)
+    UpdatePointsOrPathAttribute(doc, el, 0, 0, TRUE);
+
+  return transformApplied;
+}
+
+/*----------------------------------------------------------------------
+  AskShapeEdit
+  --------------------------------------------------------------------*/
+ThotBool AskShapeEdit (Document doc,
+		       Element el, int point)
+{
+  Element svgCanvas = NULL, svgAncestor = NULL, el2;
+  PtrAbstractBox pAb;
+  PtrBox pBox;
+  ViewFrame          *pFrame;
+  int frame;
+  PtrTransform CTM, inverse;
+  int canvasWidth,canvasHeight,ancestorX,ancestorY;
+  ThotBool hasBeenEdited;
+  Element leaf;
+
+  char shape;
+  int x,y,w,h,rx,ry;
+
+  frame = ActiveFrame;
+
+  if(frame <= 0)return FALSE;
+
+  /* Get the ancestor and svg canvas */
+  el2 = el;
+
+  if(!GetAncestorCanvasAndObject(doc, &el, &svgAncestor, &svgCanvas))
+    return FALSE;
+
+  if(el2 != el)
+    /* el has changed: it was not a direct child of svgCanvas. Hence
+       transforming it is forbidden. */
+    return FALSE;
+
+  /* Get the current transform matrix */
+  CTM = (PtrTransform)TtaGetCurrentTransformMatrix(el, svgAncestor);
+
+  if(CTM == NULL)
+    inverse = NULL;
+  else
+    {
+      /* Get the inverse of the CTM and free the CTM */
+      inverse = (PtrTransform)(TtaInverseTransform ((PtrTransform)CTM));
+      TtaFreeTransform(CTM);
+
+      if(inverse == NULL)
+	{
+	  /* Transform not inversible */
+	  TtaFreeTransform(CTM);
+	  return FALSE;
+	}
+    }
+
+  pFrame = &ViewFrameTable[frame - 1];
+  /* Get the size of the SVG Canvas */
+  TtaGiveBoxSize (svgCanvas, doc, 1, UnPixel, &canvasWidth, &canvasHeight);
+
+  /* Get the origin of the ancestor */
+  //TtaGiveBoxPosition (svgAncestor, doc, 1, UnPixel, &ancestorX, &ancestorY);
+  pAb = ((PtrElement)svgAncestor) -> ElAbstractBox[0];
+  if(pAb && pAb -> AbBox)
+    pBox = pAb -> AbBox;
+  else return FALSE;
+  ancestorX = pBox->BxXOrg - pFrame->FrXOrg;
+  ancestorY = pBox->BxYOrg - pFrame->FrYOrg;
+
+  /* Call the interactive module */
+  hasBeenEdited = ShapeEdit (frame,
+			     doc, 
+			     inverse,
+			     ancestorX, ancestorY,
+			     canvasWidth, canvasHeight,
+			     el, point);
+
+  /* Free the transform matrix */
+  if(inverse)TtaFreeTransform(inverse);
+
+
+  /* Update the attribute */
+  if(hasBeenEdited)
+    {
+      leaf =  TtaGetLastChild(el);
+      if(leaf && 
+	 ((PtrElement)leaf)->ElAbstractBox[0])
+	{
+	  pAb = ((PtrElement)leaf)->ElAbstractBox[0];
+	  pBox = pAb->AbBox;
+	  shape = pAb->AbShape;
+
+	  if(pBox)
+	    {
+
+	      if(shape == 1 || shape == 'C')
+		{
+		  rx = pBox->BxRx;
+		  ry = pBox->BxRy;
+		}
+	      else
+		{
+		  rx = 0;
+		  ry = 0;
+		}
+
+	      x = pBox->BxXOrg;
+	      y = pBox->BxYOrg;
+	      w = pBox->BxW;
+	      h = pBox->BxH;
+	      if(shape == 'g')
+		{
+		  if((pAb->AbEnclosing->AbHorizPos.PosEdge == Left
+		      && pAb->AbEnclosing->AbVertPos.PosEdge == Top) ||
+		     (pAb->AbEnclosing->AbHorizPos.PosEdge == Right
+		      && pAb->AbEnclosing->AbVertPos.PosEdge == Bottom))
+		      /* draw a \ */
+		    UpdateShapeElement(doc, el, shape, x,y,x+w,y+h, 0, 0);
+		  else
+		    /* draw a / */
+		    UpdateShapeElement(doc, el, shape, x+w,y,x,y+h, 0, 0);
+		}
+	      else
+		UpdateShapeElement(doc, el, shape, x,y,w,h, rx, ry);
+	    }
+	}
+    }
+  return hasBeenEdited;
+}
+
+/*----------------------------------------------------------------------
+  ContentEditing manages Cut, Paste, Copy, Remove, and Insert commands.
   Return TRUE if a Cut command moved the selection to a next element.
+
+  TEXT_CUT, TEXT_PASTE, TEXT_X_PASTE, TEXT_COPY, TEXT_DEL, TEXT_SUP,
+  TEXT_INSERT.
   ----------------------------------------------------------------------*/
 ThotBool ContentEditing (int editType)
 {
@@ -2031,6 +2483,7 @@ ThotBool ContentEditing (int editType)
   ThotBool            still, ok, textPasted;
   ThotBool            defaultWidth, defaultHeight;
   ThotBool            show, graphEdit, open, selNext = FALSE;
+  ThotBool            pointDeleted;
 
   pCell = NULL;
   textPasted = FALSE;
@@ -2117,16 +2570,55 @@ ThotBool ContentEditing (int editType)
                 }
             }
         }
-      /*-- La commande coller concerne le mediateur --*/
-      if (editType == TEXT_PASTE && !NewInsert)
-        /* Il faut peut-etre deplacer la selection courante */
-        SetInsert (&pAb, &frame, ClipboardType, FALSE);
 
       pFrame = &ViewFrameTable[frame - 1];
       doc = FrameTable[frame].FrDoc;
       pDoc = LoadedDocument[doc - 1];
       if (pDoc == NULL)
         return selNext;
+
+      /****************************************************/
+      /* A specific treatment for polyline/path - F.Wang */
+      if(FirstSelectedElement &&
+	 FirstSelectedElement == LastSelectedElement &&
+	 FirstSelectedElement->ElTerminal)
+	{
+	  if(FirstSelectedElement->ElLeafType == LtPath)
+	    {
+	      if(editType == TEXT_DEL)
+		{
+		  if(SelectedPointInPolyline >= 1 &&
+		     FirstSelectedElement->ElVolume > 1)
+		    {
+			  pointDeleted = TtaDeletePointInCurve (doc,
+								(Element)FirstSelectedElement,
+								SelectedPointInPolyline);
+			  /* Update the attribute */
+			  if(pointDeleted)
+			    {
+			      UpdatePointsOrPathAttribute(doc,
+							  TtaGetParent((Element)FirstSelectedElement), 0, 0, TRUE);
+			      TtaSetDocumentModified(doc);
+			    }
+		    }
+		  return FALSE;
+		}
+	      else
+		  return FALSE;
+	    }
+	  else if(FirstSelectedElement->ElLeafType == LtPolyLine)
+	    {
+	      if(editType != TEXT_DEL)
+		return FALSE;
+	    }
+	}
+      /****************************************************/
+
+      /*-- La commande coller concerne le mediateur --*/
+      if (editType == TEXT_PASTE && !NewInsert)
+        /* Il faut peut-etre deplacer la selection courante */
+        SetInsert (&pAb, &frame, ClipboardType, FALSE);
+
       open = !pDoc->DocEditSequence;
       pViewSel = &pFrame->FrSelectionBegin;
       show = (documentDisplayMode[doc - 1] == DisplayImmediately);
@@ -2225,7 +2717,8 @@ ThotBool ContentEditing (int editType)
             }
 	  
           /* Recherche le point d'insertion (&i non utilise) */
-          GiveInsertPoint (pAb, '*', frame, &pBox, &pBuffer, &i, &x, &charsDelta);
+          GiveInsertPoint (pAb, '*', frame, &pBox, &pBuffer, &i, &x,
+                           &charsDelta, FALSE);
           if (pBox == NULL)
             {
               /* take in account another box */
@@ -2748,7 +3241,7 @@ ThotBool InsertChar (int frame, CHAR_T c, int keyboard)
                 {
                   /* Look for the insert point */
                   GiveInsertPoint (pAb, script, frame, &pSelBox, &pBuffer,
-                                   &ind, &xx, &previousChars);
+                                   &ind, &xx, &previousChars, toDelete);
                   /* keep in mind previous information about the insert point */
                   previousPos = pViewSel->VsXPos;
 		  
@@ -2768,9 +3261,8 @@ ThotBool InsertChar (int frame, CHAR_T c, int keyboard)
                       variant = pAb->AbFontVariant;
                       /* initialise l'insertion */
                       if (!TextInserting)
-                        StartTextInsertion (pAb, frame, pSelBox,
-                                            pBuffer, ind,
-                                            previousChars);
+                        StartTextInsertion (pAb, frame, pSelBox, pBuffer, ind,
+                                            previousChars, toDelete);
                       font = pSelBox->BxFont;
 		      
                       if (pBuffer == NULL)
@@ -2781,11 +3273,19 @@ ThotBool InsertChar (int frame, CHAR_T c, int keyboard)
                           pBuffer = pBuffer->BuPrevious;
                           ind = pBuffer->BuLength;
                           previousInd = ind;
+                          pViewSel->VsBuffer = pBuffer;
+                          pViewSel->VsIndBuf = ind;
+                          pViewSelEnd->VsBuffer = pBuffer;
+                          pViewSelEnd->VsIndBuf = ind;
                         }
 
                       /* prepare the clipping area */
                       DefBoxRegion (frame, pSelBox, xx, xx, -1, -1);
-
+                      if (pViewSel->VsLine)
+                        // take into account sibling boxes in the line
+                        UpdateBoxRegion (frame, pSelBox, 0,
+                                         -pViewSel->VsLine->LiHorizRef, 0,
+                                         pViewSel->VsLine->LiHeight);
                       /* Est-on au debut d'une boite entiere ou coupee ? */
                       pBox = pAb->AbBox->BxNexChild;
                       if ((pBox == NULL || pSelBox == pBox) &&
@@ -2903,7 +3403,7 @@ ThotBool InsertChar (int frame, CHAR_T c, int keyboard)
                                     else
                                       pBuffer = DeleteBuffer (pBuffer, frame);
                                   }
-			    
+
                               if (c == SPACE && pBuffer && pBuffer->BuLength)
                                 {
                                   // A space is deleted
@@ -2924,7 +3424,6 @@ ThotBool InsertChar (int frame, CHAR_T c, int keyboard)
                               else
                                 spacesDelta = 0;
                               toSplit = FALSE;
-			    
                               if (previousChars == 1 &&
                                   pSelBox->BxType == BoComplete &&
                                   pSelBox->BxNChars == 1)
@@ -2954,7 +3453,7 @@ ThotBool InsertChar (int frame, CHAR_T c, int keyboard)
                                             TtcNextChar (FrameTable[frame].FrDoc,
                                                          FrameTable[frame].FrView);
                                         }
-                                      return FALSE/*selNext*/;
+                                      return FALSE;
                                     }
                                   /* update selection marks */
                                   xDelta = 2; // instead of BoxCharacterWidth (109, 1, font);
@@ -3262,8 +3761,9 @@ ThotBool InsertChar (int frame, CHAR_T c, int keyboard)
                         DefBoxRegion (frame, pSelBox, -1, -1, -1, -1);
                       else
                         DefBoxRegion (frame, pSelBox, xx, xx+2, -1, -1);
-                      BoxUpdate (pSelBox, pViewSel->VsLine, charsDelta,
-                                 spacesDelta, xDelta, adjust, 0, frame, toSplit);
+                      pSelBox = BoxUpdate (pSelBox, pViewSel->VsLine, charsDelta,
+                                           spacesDelta, xDelta, adjust, 0, frame,
+                                           toSplit);
                       ReadyToDisplay = status;
                       /* Mise a jour du volume du pave */
                       pAb->AbVolume += charsDelta;
@@ -3453,7 +3953,7 @@ ThotBool InsertChar (int frame, CHAR_T c, int keyboard)
   PasteXCliboard reads nbytes from the buffer and calls Paste_X as
   many times as necessary with the characters read.     
   ----------------------------------------------------------------------*/
-void PasteXClipboard (unsigned char *src, int nbytes, CHARSET charset)
+void PasteXClipboard (const unsigned char *src, int nbytes, CHARSET charset)
 {
   PtrTextBuffer       clipboard;
   PtrAbstractBox      pAb;
@@ -3465,18 +3965,6 @@ void PasteXClipboard (unsigned char *src, int nbytes, CHARSET charset)
   int                 i, j;
   int                 frame, lg;
   ThotBool            lock = TRUE;
-
-#ifdef _GTK
-  if (src == NULL)
-    {
-      ClipboardToPaste = FALSE;
-      return;
-    }
-  if (ClipboardToPaste)
-    ClipboardToPaste = FALSE;
-  else
-    return;
-#endif /* _GTK */
 
   /* check the current selection */
   if (!GetCurrentSelection (&pDoc, &pEl, &pEl, &i, &i))
@@ -3658,15 +4146,18 @@ void TtcInsertChar (Document doc, View view, CHAR_T c)
                 SelectString (pDoc, firstEl, 1, 0);
               else
                 SelectElement (pDoc, firstEl, TRUE, FALSE, TRUE);
-              if (lastEl != firstEl)
+              if (lastEl)
                 {
-                  if (lastEl->ElTerminal && lastEl->ElLeafType == LtText)
+                  if (lastEl != firstEl)
+                    {
+                      if (lastEl->ElTerminal && lastEl->ElLeafType == LtText)
+                        ExtendSelection (lastEl, lastEl->ElVolume+1, TRUE, FALSE, FALSE);
+                      else
+                        ExtendSelection (lastEl, 0, FALSE, FALSE, FALSE);
+                    }
+                  else if (lastEl->ElTerminal && lastEl->ElLeafType == LtText)
                     ExtendSelection (lastEl, lastEl->ElVolume+1, TRUE, FALSE, FALSE);
-                  else
-                    ExtendSelection (lastEl, 0, FALSE, FALSE, FALSE);
                 }
-              else if (lastEl->ElTerminal && lastEl->ElLeafType == LtText)
-                ExtendSelection (lastEl, lastEl->ElVolume+1, TRUE, FALSE, FALSE);
             }
 
           /* in principle, the entered character should replace the current
@@ -4041,7 +4532,7 @@ void TtcInclude (Document doc, View view)
   TtcPasteFormBuffer pastes at the current insert position the content
   of the buffer.
   ----------------------------------------------------------------------*/
-void TtaPasteFromBuffer (unsigned char *src, int length, CHARSET charset)
+void TtaPasteFromBuffer (const unsigned char *src, int length, CHARSET charset)
 {
   PasteXClipboard (src, length, charset);
 }
@@ -4089,39 +4580,6 @@ void TtcPasteFromClipboard (Document doc, View view)
       TTALOGDEBUG_0( TTA_LOG_CLIPBOARD, _T("Closed the clipboard.\n") );
     }
 #endif /* _WX */
-#ifdef _GTK
-  DisplayMode         dispMode;
-  int                 frame;
-
-  if (doc == 0)
-    return;
-  frame = GetWindowNumber (doc, view);
-  if (frame != ActiveFrame)
-    {
-      if (ActiveFrame > 0 && FrameTable[ActiveFrame].FrDoc != doc)
-        return;
-      else
-        {
-          CloseTextInsertion ();
-          /* use the right frame */
-          ActiveFrame = frame;
-        }
-    }
-  else
-    /* close previous changes without notification */
-    CloseTextInsertionWithControl (FALSE);
-
-  /* avoid to redisplay step by step */
-  dispMode = TtaGetDisplayMode (doc);
-  if (dispMode == DisplayImmediately)
-    TtaSetDisplayMode (doc, DeferredDisplay);
-  ClipboardToPaste = TRUE;
-   
-  /* just manage differed enclosing rules */
-  ComputeEnclosing (frame);
-  if (dispMode == DisplayImmediately)
-    TtaSetDisplayMode (doc, dispMode);   
-#endif /* _GTK */
 }
 
 
@@ -4338,14 +4796,6 @@ void TtcPaste (Document doc, View view)
               ContentEditing (TEXT_PASTE);
             }
 #endif /* _WX */
-#ifdef _GTK
-          if (FirstSelectedElement == NULL && FirstSavedElement)
-            {
-              /* TODO: paste only the text */
-            }
-          else
-            ContentEditing (TEXT_PASTE);
-#endif /*  _GTK*/
     
           if (!lock)
             /* unlock table formatting */

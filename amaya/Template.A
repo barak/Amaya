@@ -14,6 +14,11 @@ DEFAULT
    
 ELEMENTS
 
+  component :
+    BEGIN
+      ElemDelete.Pre -> TemplateComponentWillBeDeleted;
+    END;
+
    useEl :
       BEGIN
          ElemLClick.Pre -> UseButtonClicked;
@@ -34,10 +39,10 @@ ELEMENTS
       BEGIN
          ElemLClick.Pre -> BagButtonClicked;
       END;
-   option :
+   {option :
       BEGIN
          ElemLClick.Pre -> OptionButtonClicked;
-      END;
+      END;}
 
 
    TEXT_UNIT:

@@ -578,7 +578,8 @@ void TtaRefreshMenuItemStats( int doc_id, void * context, int menu_item_id )
   Menu_Ctl *    item_submenu = NULL;
   int           item_nb = 0;
   int           item_id = menu_item_id;
-  char          item_type = ' ', *name;
+  char          item_type = ' ';
+  const char    *name;
   int           item_action = 0;
   ThotBool      item_enable = FALSE;
   ThotBool      item_toggle = FALSE;
@@ -1414,7 +1415,12 @@ void TtaCloseWindow( int window_id )
   TtaHandlePendingEvents ();
   AmayaWindow * p_window = TtaGetWindowFromId(window_id);
   if (p_window)
+  {
+	// Windows : prevent sending size event when closing window
+	p_window->Hide();
+
     p_window->Close();
+  }
 }
 
 /*----------------------------------------------------------------------
@@ -1878,11 +1884,7 @@ void TtaSendDataToPanel( int panel_type, AmayaParams& params )
 {
   AmayaWindow * activeWindow = TtaGetActiveWindow();
   if(activeWindow)
-    {
-      AmayaToolPanel* panel = activeWindow->GetToolPanel(panel_type);
-      if (panel)
-        panel->SendDataToPanel(params);
-    }
+    activeWindow->SendDataToPanel(panel_type, params);
 }
 #endif /* _WX */
 
@@ -2146,6 +2148,20 @@ ThotBool TtaHandleShortcutKey( wxKeyEvent& event )
 }
 #endif /* _WX */
 
+/*----------------------------------------------------------------------
+  TtaFrameIsShown returs TRUE is the frame is shown
+  ----------------------------------------------------------------------*/
+ThotBool TtaFrameIsShown (int frame)
+{
+#ifdef _WX
+  // do not draw anything if the animated canvas page is not raidsed
+  if (frame > 0 && FrameTable[frame].WdFrame &&
+      FrameTable[frame].WdFrame->GetPageParent() &&
+      FrameTable[frame].WdFrame->GetPageParent()->IsShown())
+    return TRUE;
+#endif /* _WX */
+  return FALSE;
+}
 
 /*----------------------------------------------------------------------
   TtaHandleSpecialKey
@@ -2158,36 +2174,39 @@ ThotBool TtaHandleShortcutKey( wxKeyEvent& event )
 #ifdef _WX
 ThotBool TtaHandleSpecialKey( wxKeyEvent& event )
 {
+  int thot_keysym;
+  int frame;
+  bool proceed_key;
+
   if (!event.AltDown() &&
 	  TtaIsSpecialKey(event.GetKeyCode()))
     {
-      int thot_keysym = event.GetKeyCode();  
-      
-      bool proceed_key = ( thot_keysym == WXK_INSERT   ||
-                           thot_keysym == WXK_DELETE   ||
-                           thot_keysym == WXK_HOME     ||
-                           thot_keysym == WXK_PRIOR    ||
-                           thot_keysym == WXK_NEXT     ||
+      thot_keysym = event.GetKeyCode();  
+      proceed_key = ( thot_keysym == WXK_INSERT   ||
+                      thot_keysym == WXK_DELETE   ||
+                      thot_keysym == WXK_HOME     ||
+                      thot_keysym == WXK_PRIOR    ||
+                      thot_keysym == WXK_NEXT     ||
 #ifdef _MACOS
-                           thot_keysym == WXK_PAGEUP   ||
-                           thot_keysym == WXK_PAGEDOWN ||
+                      thot_keysym == WXK_PAGEUP   ||
+                      thot_keysym == WXK_PAGEDOWN ||
 #endif /* _MACOS */
-                           thot_keysym == WXK_END      ||
-                           thot_keysym == WXK_LEFT     ||
-                           thot_keysym == WXK_RIGHT    ||
-                           thot_keysym == WXK_UP       ||
-                           thot_keysym == WXK_DOWN     ||
-                           thot_keysym == WXK_ESCAPE   ||
-                           thot_keysym == WXK_BACK     ||
-                           thot_keysym == WXK_RETURN   ||
-                           thot_keysym == WXK_NUMPAD_ENTER ||
-                           thot_keysym == WXK_TAB );
+                      thot_keysym == WXK_END      ||
+                      thot_keysym == WXK_LEFT     ||
+                      thot_keysym == WXK_RIGHT    ||
+                      thot_keysym == WXK_UP       ||
+                      thot_keysym == WXK_DOWN     ||
+                      thot_keysym == WXK_ESCAPE   ||
+                      thot_keysym == WXK_BACK     ||
+                      thot_keysym == WXK_RETURN   ||
+                      thot_keysym == WXK_NUMPAD_ENTER ||
+                      thot_keysym == WXK_TAB );
 
 #ifdef _MACOS
       if (proceed_key && thot_keysym == WXK_PAGEUP)
-	    thot_keysym = WXK_PRIOR;
+        thot_keysym = WXK_PRIOR;
       else if (proceed_key && thot_keysym == WXK_PAGEDOWN)
-	    thot_keysym = WXK_NEXT;
+        thot_keysym = WXK_NEXT;
 #endif /* _MACOS */
       
       wxWindow *       p_win_focus         = wxWindow::FindFocus();
@@ -2202,15 +2221,17 @@ ThotBool TtaHandleSpecialKey( wxKeyEvent& event )
         TTALOGDEBUG_0( TTA_LOG_FOCUS, _T("no focus"))
               
       /* do not allow special key outside the canvas */
-      if (!p_gl_canvas && !p_splitter && !p_notebook && !p_scrollbar && proceed_key)
-	  {
-        event.Skip();
-        return true;      
-	  }
-      
-      if ( proceed_key )
+      if (!p_gl_canvas && !p_splitter && !p_notebook &&
+          !p_scrollbar && proceed_key)
         {
-          int thotMask = 0;
+          event.Skip();
+          return true;      
+        }
+      
+      if (proceed_key)
+        {
+          int  thotMask = 0;
+
           if (event.CmdDown())
             thotMask |= THOT_MOD_CTRL;
           if (event.ControlDown())
@@ -2221,14 +2242,12 @@ ThotBool TtaHandleSpecialKey( wxKeyEvent& event )
             thotMask |= THOT_MOD_SHIFT;
 
           TTALOGDEBUG_1( TTA_LOG_KEYINPUT, _T("TtaHandleSpecialKey: thot_keysym=%x"), thot_keysym);
-          
-          ThotInput (TtaGiveActiveFrame(), thot_keysym, 0, thotMask, thot_keysym, TRUE);
-          
+          frame = TtaGiveActiveFrame();
+          ThotInput (frame, thot_keysym, 0, thotMask, thot_keysym, TRUE);
           // try to redraw something because when a key in pressed a long time
           // the ThotInput action is repeted but nothing is shown on the screen 
           // before the user release the key.
           GL_DrawAll();
-          
           return true;
         }
       else
@@ -2309,9 +2328,7 @@ void TtaSendStatsInfo()
 }
 
 
-
 #ifdef _WX
-
 static PopupDocContextMenuFuction s_PopupDocContextMenuFuction = NULL;
 
 /*----------------------------------------------------------------------
@@ -2328,10 +2345,11 @@ void TtaSetPopupDocContextMenuFunction(PopupDocContextMenuFuction fn)
   TtaPopupDocContextMenu(int, wxWindow*)
   Popup a context menu
   ----------------------------------------------------------------------*/
-void TtaPopupDocContextMenu(int document, int window, void* win, int x, int y)
+void TtaPopupDocContextMenu(int document, int view, int window, void* win,
+			    int x, int y)
 {
-  if(s_PopupDocContextMenuFuction && win)
-    s_PopupDocContextMenuFuction(document, window, win, x, y);
+  if (s_PopupDocContextMenuFuction && win)
+    s_PopupDocContextMenuFuction (document, view, window, win, x, y);
 }
 #endif /* _WX */
 
@@ -2430,6 +2448,28 @@ void TtaCloseAllHelpWindows ()
             win->Close();
         }
     }
+}
+
+/*----------------------------------------------------------------------
+  TtaRaiserPanel
+  ----------------------------------------------------------------------*/
+void TtaRaisePanel(int panel_type)
+{
+  AmayaWindow * activeWindow = TtaGetActiveWindow();
+  if(activeWindow)
+    activeWindow->RaisePanel(panel_type);
+  TtaRedirectFocus ();
+}
+
+/*----------------------------------------------------------------------
+  TtaRaiseDoctypePanels
+  ----------------------------------------------------------------------*/
+void TtaRaiseDoctypePanels(int doctype)
+{
+  AmayaWindow * activeWindow = TtaGetActiveWindow();
+  if(activeWindow)
+    activeWindow->RaiseDoctypePanels(doctype);
+  TtaRedirectFocus ();
 }
 
 #endif /* _WX */

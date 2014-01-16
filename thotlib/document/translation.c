@@ -144,7 +144,7 @@ void TtaSetDoctypeFunction (Proc3 procedure)
   Copy string value into variable buffer named bufferName in translation
   schema pTSch.
   ----------------------------------------------------------------------*/
-static void SetVariableBuffer (PtrTSchema pTSch, char* bufferName, char* value)
+static void SetVariableBuffer (PtrTSchema pTSch, const char* bufferName, char* value)
 {
   int     i, bufNum;
 
@@ -512,6 +512,11 @@ static void ExportChar (wchar_t c, int fnum, char *outBuf, Document doc,
                   len = indent;
                   OutFile[fnum].OfStartOfLine = FALSE;
                 }
+
+              /* avoid to generate a dot at position 0 of a line
+                 as sendmail will duplication a such dot */
+              if (len == 0 &&  mbc[0] == 46)
+                OutFile[fnum].OfBuffer[len++] = SPACE;
               /* store the character into the buffer */
               for (index = 0; index < nb_bytes2write; index++)
                 {
@@ -4288,7 +4293,7 @@ static void FlushOutputFiles ()
   tschema into the file fName.
   Returns TRUE if sucessful.
   ----------------------------------------------------------------------*/
-ThotBool ExportDocument (Document doc, char *fName, char *tschema,
+ThotBool ExportDocument (Document doc, const char *fName, const char *tschema,
                          ThotBool recordLineNb)
 {
   PtrDocument         pDoc;
@@ -4577,9 +4582,18 @@ static void ExportXmlText (Document doc, PtrTextBuffer pBT, ThotBool lineBreak,
   while (b)
     {
       i = 0;
+      if (b->BuContent[i] == SPACE && lineBreak && !entityName)
+        {
+          // generate a linebreak
+          PutChar (EOL, fnum, NULL, doc, lineBreak, translate, entityName);
+          i++;
+        }
       while (i < b->BuLength && b->BuContent[i] != EOS)
         {
           c = (wchar_t) b->BuContent[i];
+         if (c == 0x22 || c == 0x26 || c == 0x3C || c == 0x3E || c == 0xA0)
+           // generate an entity
+           entityName = TRUE;
           PutChar (c, fnum, NULL, doc, lineBreak, translate, entityName);
           /* Next character */
           i++;
@@ -4615,7 +4629,7 @@ static void ExportXmlElText (Document doc,  PtrElement pNode,
        (strcmp (pRe1->SrOrigName, "doctype_line") == 0)))
     translate = FALSE;
   /* in MathML, try to generate the name of the char. */
-  entityName = !strcmp (pNode->ElStructSchema->SsName, "MathML");
+  entityName = (strcmp (pNode->ElStructSchema->SsName, "MathML") == 0);
   /* Export the text buffer content */
   ExportXmlText (doc, pBT, lineBreak, translate, entityName);
 }
@@ -4685,6 +4699,9 @@ void ExportXmlElement (Document doc, PtrElement pEl,
                     {
                       /* Don't export hidden elements */
                       startName[0] = EOS;
+                      if (pEl->ElNext && strcmp (pRe1->SrOrigName, "xmlbr") == 0)
+                        // but keep newlines
+                        strcpy (startName, "\n");
                       pChild = pEl->ElNext;
                       endName[0] = EOS;
                       specialTag = TRUE;
@@ -4737,13 +4754,13 @@ void ExportXmlElement (Document doc, PtrElement pEl,
                           strcat (endName, ">");
                         }
                     }
-                  ExportXmlBuffer (doc, (unsigned char *)startName, FALSE);
 
                   /* if needed, record the current line number of the main
                      output file in the element being translated */
                   if (recordLineNb)
                     pEl->ElLineNb = OutFile[fnum].OfLineNumber + 1;
-		  
+                  ExportXmlBuffer (doc, (unsigned char *)startName, FALSE);
+
                   /* Export the namespace declarations */
                   if (!specialTag)
                     ExportNsDeclaration (doc, pEl);
@@ -4818,6 +4835,8 @@ void ExportXmlElement (Document doc, PtrElement pEl,
           else
             {
               /* It is a terminal element */
+              if (recordLineNb)
+                pEl->ElLineNb = OutFile[fnum].OfLineNumber + 1;
               switch (pEl->ElLeafType)
                 {
                 case LtPicture:
@@ -4840,8 +4859,8 @@ void ExportXmlElement (Document doc, PtrElement pEl,
   selon le schema de traduction de nom tschema et produit le resultat
   dans le fichier de nom fName ou dans le buffer.
   ----------------------------------------------------------------------*/
-void ExportTree (PtrElement pEl, Document doc, char *fName,
-                 char *tschema)
+void ExportTree (PtrElement pEl, Document doc, const char *fName,
+                 const char *tschema)
 {
   PtrDocument         pDoc;
   int                 i;
@@ -4918,7 +4937,7 @@ void ExportTree (PtrElement pEl, Document doc, char *fName,
   name must not be specified in parameter tschema. See
   function TtaSetSchemaPath.
   ----------------------------------------------------------------------*/
-ThotBool TtaExportDocument (Document document, char *fileName, char *tschema)
+ThotBool TtaExportDocument (Document document, const char *fileName, const char *tschema)
 {
   ThotBool ok = FALSE;
 
@@ -4956,8 +4975,8 @@ ThotBool TtaExportDocument (Document document, char *fileName, char *tschema)
   name must not be specified in parameter tschema (See TtaSetSchemaPath)
   skipXTiger is TRUE if XTiger elements are removed
   ----------------------------------------------------------------------*/
-ThotBool TtaExportDocumentWithNewLineNumbers (Document document, char *fileName,
-                                              char *tschema, ThotBool skipXTiger)
+ThotBool TtaExportDocumentWithNewLineNumbers (Document document, const char *fileName,
+                                              const char *tschema, ThotBool skipXTiger)
 {
   ThotBool ok = FALSE;
 

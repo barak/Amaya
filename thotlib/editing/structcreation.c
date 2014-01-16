@@ -901,8 +901,10 @@ void RedisplayNewContent (PtrElement pEl, PtrDocument pDoc, int dVol,
                     pAb->AbLeafType = pEl->ElLeafType;
                     pAb->AbShape = pEl->ElGraph;
                     pAb->AbGraphScript = 'G';
-                    if (pEl->ElLeafType == LtGraphics && pEl->ElGraph == 'C')
-                      /* rectangle with rounded corners */
+                    if (pEl->ElLeafType == LtGraphics && 
+			(pEl->ElGraph == 2 || pEl->ElGraph == 3))
+                      /* rectangle with rounded corners
+		       */
                       {
                         pAb->AbRx = 0;
                         pAb->AbRy = 0;
@@ -2595,7 +2597,7 @@ PtrElement CreateOrPasteInText (ThotBool create, ThotBool paste,
   Retourne Faux si le menu est sature' et que la nouvelle entree  
   n'a pas pu etre ajoutee.                                        
   ----------------------------------------------------------------------*/
-static ThotBool AddInsertMenuItem (Name word1, Name word2, Name word3,
+static ThotBool AddInsertMenuItem (const Name word1, const Name word2, const Name word3,
                                    int *prevMenuInd, int *nItems,
                                    int *menuInd, char *menuBuf)
 {

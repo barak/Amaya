@@ -58,6 +58,7 @@ extern void TtaInitMenuItemStats( int doc_id );
 #include "AmayaParams.h"
 extern void TtaSendDataToPanel( int panel_type, AmayaParams& params );
 
+extern ThotBool TtaFrameIsShown (int frame);
 extern ThotBool TtaHandleUnicodeKey( wxKeyEvent& event );
 extern ThotBool TtaHandleShortcutKey( wxKeyEvent& event );
 extern ThotBool TtaHandleSpecialKey( wxKeyEvent& event );
@@ -67,10 +68,10 @@ extern void TtaSendStatsInfo();
 
 
 /* Function prototype to show a context menu.*/
-typedef int(*PopupDocContextMenuFuction)(int document, int window, void* win, int x, int y);
+typedef int(*PopupDocContextMenuFuction)(int document, int view, int window, void* win, int x, int y);
 
 void TtaSetPopupDocContextMenuFunction(PopupDocContextMenuFuction fn);
-void TtaPopupDocContextMenu(int document, int window, void* win, int x, int y);
+void TtaPopupDocContextMenu(int document, int view, int window, void* win, int x, int y);
 
 #endif /* _WX */
 
@@ -85,5 +86,9 @@ int TtaGetEnumContextMenu();
 typedef int(*DocumentPageTypeFunction)(Document doc);
 void TtaRegisterDocumentPageTypeFunction(DocumentPageTypeFunction fct);
 int TtaGetDocumentPageType(Document doc);
+
+
+void TtaRaisePanel(int panel_type);
+void TtaRaiseDoctypePanels(int doctype);
 
 #endif /* #define __APPDIALOGUE_WX_H__ */

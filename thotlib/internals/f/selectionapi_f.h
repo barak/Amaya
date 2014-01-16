@@ -8,7 +8,7 @@
 
 extern ThotBool TtaIsDocumentSelected ( Document document );
 extern Attribute TtaGetSelectedAttribute ( void );
-extern ThotBool TtaIsColumnRowSelected ( Document document );
+extern ThotBool TtaIsColumnSelected ( Document document );
 extern void TtaSelectElement ( Document document,
                                Element selectedElement );
 extern void TtaSelectElementWithoutPath ( Document document,
@@ -31,6 +31,7 @@ extern void TtaSelectInterval ( void );
 extern void TtaUnselect ( Document document );
 extern void TtaSetSelectionMode ( ThotBool withMenu );
 extern ThotBool TtaIsSelectionEmpty ( void );
+extern ThotBool TtaIsSelectionUnique ( void );
 extern void TtaGiveFirstSelectedElement ( Document document,
                                           Element *selectedElement,
                                           int *firstCharacter,
@@ -51,7 +52,7 @@ extern void TtaGiveLastSelectedElement ( Document document,
 
 extern ThotBool TtaIsDocumentSelected ( Document document );
 extern Attribute TtaGetSelectedAttribute ( void );
-extern ThotBool TtaIsColumnRowSelected ( Document document );
+extern ThotBool TtaIsColumnSelected ( Document document );
 extern void TtaSelectElement ( Document document,
                                  Element selectedElement );
 extern void TtaSelectElementWithoutPath ( Document document,
@@ -74,6 +75,7 @@ extern void TtaSelectInterval ( void );
 extern void TtaUnselect ( Document document );
 extern void TtaSetSelectionMode ( ThotBool withMenu );
 extern ThotBool TtaIsSelectionEmpty ( void );
+extern ThotBool TtaIsSelectionUnique ( void );
 extern void TtaGiveFirstSelectedElement ( Document document,
                                             Element *selectedElement,
                                             int *firstCharacter,

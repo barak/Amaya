@@ -61,6 +61,22 @@
 extern XmlEntity *pMathEntityTable;
 #include "appdialogue_wx.h"
 
+/* SVG Templates */
+char *LastSVGelement = NULL;
+char *LastSVGelementTitle = NULL;
+ThotBool LastSVGelementIsFilled = FALSE;
+
+/* SVG Style panel */
+int  Current_Opacity = 100;
+ThotBool FillEnabled = FALSE;
+int  Current_FillColor = -1;
+int  Current_FillOpacity = 100;
+ThotBool StrokeEnabled = TRUE;
+int  Current_StrokeColor = -1;
+int  Current_StrokeOpacity = 100;
+int  Current_StrokeWidth = 1;
+
+/* HTML Style panel */
 int  Current_Color = -1;
 int  Current_BackgroundColor = -1;
 int  SavePANEL_PREFERENCES = 1;
@@ -113,7 +129,6 @@ static int          Loading_method = CE_INIT;
 #include "XPointer_f.h"
 #include "anim_f.h"
 #include "animbuilder_f.h"
-#include "libmanag_f.h"
 #ifdef ANNOTATIONS
 #include "annotlib.h"
 #include "ANNOTevent_f.h"
@@ -150,14 +165,13 @@ TypeBrowserFile WidgetParent;
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-static int AmayaPopupDocContextMenu(int doc, int window, wxWindow* win, int x, int y)
+static int AmayaPopupDocContextMenu(int doc, int view, int window,
+				    wxWindow* win,
+				    int x, int y)
 {
   wxMenu     *p_menu = TtaGetDocContextMenu ( window );
-
   if (p_menu && doc)
     {
-      ThotBool noLink = !CanFollowTheLink(doc);
-      
 #ifdef TEMPLATES
       ElementType     elType, parentType;
       DLList          list;
@@ -173,24 +187,73 @@ static int AmayaPopupDocContextMenu(int doc, int window, wxWindow* win, int x, i
                      *menuTemplateAppend = NULL;
       ThotBool        bTemplate = IsTemplateInstanceDocument(doc);
       ThotBool        do_insert = TRUE, do_append = TRUE;
-
 #endif /* TEMPLATES */
       
-      wxMenuItem* items[4];
-      if (noLink)
-        {
-          // Remove link menu items (open in ...)
-          items[0] = p_menu->Remove(p_menu->FindItemByPosition(0));
-          items[1] = p_menu->Remove(p_menu->FindItemByPosition(0));
-          items[2] = p_menu->Remove(p_menu->FindItemByPosition(0));
-          items[3] = p_menu->Remove(p_menu->FindItemByPosition(0));
-        }
-      else
+#ifdef _SVG
+      ElementType     elementType;
+      SSchema	      svgSchema;
+#endif /* _SVG */
+
+      /* First items of the context menu can be displayed/hidden. */
+#define NB_ITEM 16
+#define CUT_POS  NB_ITEM-6
+      wxMenuItem* items[NB_ITEM];
+      ThotBool    display_item[NB_ITEM];
+
+      /* By default, the first item until the "cut" command
+	 are not displayed... */
+      for(i = 0; i < CUT_POS; i++)
+	display_item[i] = FALSE;
+
+      /* ... and cut, paste etc are displayed. */
+      for(i = CUT_POS; i < NB_ITEM; i++)
+	display_item[i] = TRUE;
+
+      /* Is the element a link? */
+      if(CanFollowTheLink(doc))
 	{
-          items[0] = NULL;
-          items[1] = NULL;
-          items[2] = NULL;
-          items[3] = NULL;
+	  for(i = 0; i < 4; i++)
+	    display_item[i] = TRUE;
+	}
+
+#ifdef _SVG
+      /* Is it an SVG element? */
+      TtaGiveFirstSelectedElement (doc, &el, &firstChar, &lastChar);
+      if(el)
+	{
+	  svgSchema = GetSVGSSchema (doc);
+	  elementType = TtaGetElementType(el);
+	  if(elementType.ElSSchema == svgSchema && view == 1)
+	    {
+	      if(!TtaIsLeaf(elementType) ||
+		 elementType.ElTypeNum == SVG_EL_TEXT_UNIT)
+		/* Display the SVG transforms if a non-terminal SVG element
+		   or a TEXT_UNIT is selected */
+		{
+		  display_item[4] = TRUE;
+		  display_item[5] = TRUE;
+		  display_item[6] = TRUE;
+		  display_item[7] = TRUE;
+		  display_item[8] = (elementType.ElTypeNum == SVG_EL_g);
+		  display_item[9] = TRUE;
+		}
+	      else if(elementType.ElTypeNum == SVG_EL_GRAPHICS_UNIT)
+		{
+		  /* Remove cut, copy, paste commands */
+		  for(i = 0; i < 3; i++)
+		    display_item[CUT_POS+i] = FALSE;
+		}
+
+	      
+	    }
+	}
+#endif /* _SVG */
+
+      /* Remove all the item that must not be displayed */
+      for(i = NB_ITEM - 1; i >= 0; i--)
+	{
+	  if(!display_item[i])
+	    items[i] = p_menu->Remove(p_menu->FindItemByPosition(i));
 	}
 
 #ifdef TEMPLATES
@@ -305,14 +368,12 @@ static int AmayaPopupDocContextMenu(int doc, int window, wxWindow* win, int x, i
         }
 #endif /* TEMPLATES */
 
-      if (noLink)
-        {
-          // Reinsert link menu items (open in ...)
-          p_menu->Prepend(items[3]);
-          p_menu->Prepend(items[2]);
-          p_menu->Prepend(items[1]);
-          p_menu->Prepend(items[0]);
-        }
+      /* Reinsert the menu items */
+      for(i = 0; i < NB_ITEM; i++)
+	{
+	  if(!display_item[i])
+	    p_menu->Insert(i, items[i]);
+	}
     }
   return -1;
 }
@@ -362,13 +423,30 @@ void DocumentMetaClear (DocumentMetaDataElement *me)
 }
 
 /*----------------------------------------------------------------------
+  IsXMLDocType
+  Returns TRUE if the DocumentTypes of the document is XML
+  ----------------------------------------------------------------------*/
+ThotBool IsXMLDocType (Document doc)
+{
+  if (DocumentTypes[doc] == docHTML ||
+      DocumentTypes[doc] == docLibrary ||
+      DocumentTypes[doc] == docMath ||
+      DocumentTypes[doc] == docSVG  ||
+      DocumentTypes[doc] == docTemplate  ||
+      DocumentTypes[doc] == docXml)
+    return TRUE;
+  else
+    return FALSE;
+}
+
+/*----------------------------------------------------------------------
   DocumentTypeString
   Returns a string that represents the document type or the current
   profile.
   ----------------------------------------------------------------------*/
-char * DocumentTypeString (Document document)
+const char * DocumentTypeString (Document document)
 {
-  char *result;
+  const char *result;
   ThotBool isXml;
 
   result = NULL;
@@ -399,6 +477,9 @@ char * DocumentTypeString (Document document)
       break;
     case docLibrary:
       result = "HTML";
+      break;
+    case docTemplate:
+      result = "XTiger template";
       break;
     default:
       break;
@@ -463,7 +544,7 @@ void DocumentInfo (Document document, View view)
   IsDocumentLoaded returns the document identification if the        
   corresponding document is already loaded or 0.          
   ----------------------------------------------------------------------*/
-Document IsDocumentLoaded (char *documentURL, char *form_data)
+Document IsDocumentLoaded (const char *documentURL, const char *form_data)
 {
   int               i;
   ThotBool          found;
@@ -476,7 +557,7 @@ Document IsDocumentLoaded (char *documentURL, char *form_data)
   /* look for the URL into the list of downloaded documents */
   while (!found && i < DocumentTableLength)
     {
-      if (DocumentURLs[i] && DocumentTypes[i] != docTemplate)
+      if (DocumentURLs[i] && DocumentTypes[i] != docTemplate && DocumentMeta[i])
         {
           /* compare the url */
           found = (!strcmp (documentURL, DocumentURLs[i]) ||
@@ -493,8 +574,11 @@ Document IsDocumentLoaded (char *documentURL, char *form_data)
     }
   
   if (found)
-    /* document is found */
-    return ((Document) i);
+    {
+      /* document is found */
+      UpdateEditorMenus ((Document) i);
+      return ((Document) i);
+    }
   else
     /* document is not found */ 
     return ((Document) None);
@@ -928,6 +1012,7 @@ void UpdateEditorMenus (Document doc)
 
   /* Update the doctype menu */
   UpdateDoctypeMenu (doc);
+  UpdateTemplateMenus (doc);
 
   if (DocumentTypes[doc] == docCSS || DocumentTypes[doc] == docSource ||
       DocumentTypes[doc] == docText || DocumentTypes[doc] == docImage)
@@ -958,7 +1043,7 @@ void UpdateEditorMenus (Document doc)
       TtaSetItemOn (doc, 1, Views, BShowFormatted);
       TtaSetItemOn (doc, 1, Views, TSplitHorizontally);
       TtaSetItemOn (doc, 1, Views, TSplitVertically);
-      if  (DocumentTypes[doc] == docXml)
+      if  (DocumentTypes[doc] == docXml || DocumentTypes[doc] == docTemplate)
         {
           TtaSetItemOff (doc, 1, Views, BShowAlternate);
           TtaSetItemOff (doc, 1, Views, BShowToC);
@@ -989,12 +1074,7 @@ void UpdateEditorMenus (Document doc)
           else
             SetTableMenuOff (doc, 1);
     
-          if (DocumentTypes[doc] == docHTML ||
-              DocumentTypes[doc] == docAnnot ||
-              DocumentTypes[doc] == docSVG ||
-              DocumentTypes[doc] == docMath ||
-              DocumentTypes[doc] == docXml ||
-              DocumentTypes[doc] == docImage)
+          if (IsXMLDocType (doc))
             {
               TtaSetItemOn (doc, 1, Tools, BSpellCheck);
               TtaSetMenuOn (doc, 1, Style);
@@ -1608,7 +1688,7 @@ void InitFormAnswer (Document document, View view, const char *auth_realm,
   InitInfo
   Displays a message box with the given info text
   ----------------------------------------------------------------------*/
-void InitInfo (char *label, char *info)
+void InitInfo (const char *label, const char *info)
 {
   if (!info || *info == EOS)
     return;
@@ -1682,8 +1762,8 @@ void ConfirmError3L (Document document, View view, char *label1, char *label2,
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
-void InitConfirm3L (Document document, View view, char *label1, char *label2,
-                    char *label3, ThotBool withCancel)
+void InitConfirm3L (Document document, View view, const char *label1, const char *label2,
+                    const char *label3, ThotBool withCancel)
 {
   /* IV: This widget can't be called twice, but it happens when downloading a
      document with protected images. This is a quick silution to avoid the
@@ -1760,7 +1840,7 @@ void InitCharset (Document document, View view, char *url)
   ----------------------------------------------------------------------*/
 void InitMimeType (Document document, View view, char *url, char *status)
 {
-  char *mimetypes_list;
+  const char *mimetypes_list;
   int nbmimetypes;
 
   if (DocumentTypes[document] == docImage)
@@ -1822,7 +1902,7 @@ static void BrowserForm (Document doc, View view, char *urlname)
   The parameter name gives a proposed document name (New document).
   The parameter title gives the title of the the form.
   ----------------------------------------------------------------------*/
-static void InitOpenDocForm (Document doc, View view, char *name, char *title,
+static void InitOpenDocForm (Document doc, View view, const char *name, const char *title,
                              DocumentType docType)
 {
   char              s [MAX_LENGTH];
@@ -2174,7 +2254,7 @@ void AddDirAttributeToDocEl (Document doc)
 static void GiveWindowGeometry (Document doc, int docType, int method,
                                 int *x, int *y, int *w, int *h)
 {
-  char      *label;
+  const char      *label;
 
   /* get the window geometry */
   if (docType == docAnnot)
@@ -2251,12 +2331,7 @@ void WhereOpenView(Document oldDoc, ThotBool replaceOldDoc, ThotBool inNewWindow
       /* force the document's page position because sometime oldDoc is
          a source document placed on the bottom part of the page */
       page_position = 1;
-      if (DocumentTypes[doc] == docHTML ||
-          DocumentTypes[doc] == docSVG ||
-          DocumentTypes[doc] == docXml ||
-          DocumentTypes[doc] == docMath ||
-          DocumentTypes[doc] == docLibrary ||
-          DocumentTypes[doc] == docImage)
+      if (IsXMLDocType (doc))
         {
           /* close the Alternate view if it is open */
           altView = TtaGetViewFromName (doc, "Alternate_view");
@@ -2424,7 +2499,6 @@ View InitView(Document oldDoc, Document doc,
 
    /* update the menus according to the profile */
    /* By default no log file */
-  //UpdateLogFile (doc, FALSE);
 #ifndef DAV    /* don't active the WebDAV menu if flag is off */
   TtaSetMenuOff (doc, 1, Cooperation_);
 #endif  /* DAV */
@@ -2433,16 +2507,6 @@ View InitView(Document oldDoc, Document doc,
   
   /* do we have to redraw buttons and menus? */
   reinitialized = (docType != DocumentTypes[doc]);
-  if (docType == docLog || docType == docLibrary || docType == docSource)
-    {
-#ifdef _SVG
-      if (docType == docLibrary)
-        /* Initialize SVG Library Buffer string */
-        TtaAddTextZone (doc, 1, TtaGetMessage (AMAYA,  AM_OPEN_URL),
-                        FALSE, (Proc)OpenLibraryCallback, SVGlib_list);
-#endif /* _SVG */
-    }
-  
   return mainView;
 }
 
@@ -2481,11 +2545,7 @@ void PostInitView(Document doc, DocumentType docType, int visibility,
   //if (DocumentURLs[doc] && strcmp (DocumentURLs[doc], "empty"))
   TtaAddTextZone ( doc, 1, TtaGetMessage (AMAYA,  AM_OPEN_URL),
                    TRUE, (Proc)TextURL, URL_list );
-  if ((DocumentTypes[doc] == docHTML ||
-       DocumentTypes[doc] == docSVG ||
-       DocumentTypes[doc] == docXml ||
-       DocumentTypes[doc] == docMath ||
-       DocumentTypes[doc] == docLibrary))
+  if (IsXMLDocType (doc))
     {
       /* init show target menu item */
       TtaGetEnvBoolean ("SHOW_TARGET", &show);
@@ -2574,11 +2634,7 @@ void PostInitView(Document doc, DocumentType docType, int visibility,
           TtaSetMenuOff (doc, 1, Types);
           TtaSetMenuOff (doc, 1, Links);
           if (DocumentTypes[doc] == docMath)
-            {
-              TtaSetItemOff (doc, 1, Tools, BShowLibrary);
-              TtaSetItemOff (doc, 1, Tools, BAddNewModel);
-              TtaSetMenuOn (doc, 1, Views);
-            }
+            TtaSetMenuOn (doc, 1, Views);
           else
             {
               if (DocumentTypes[doc] != docSource)
@@ -2630,6 +2686,8 @@ void PostInitView(Document doc, DocumentType docType, int visibility,
 }
 
 
+#include "templateUtils_f.h"
+
 /*----------------------------------------------------------------------
   InitDocAndView prepares the main view of a new document.
   logFile is TRUE if the new view is created to display a log file
@@ -2641,7 +2699,7 @@ void PostInitView(Document doc, DocumentType docType, int visibility,
   + ...
   ----------------------------------------------------------------------*/
 Document InitDocAndView (Document oldDoc, ThotBool replaceOldDoc, ThotBool inNewWindow,
-                         char *docname, DocumentType docType, Document sourceOfDoc,
+                         const char *docname, DocumentType docType, Document sourceOfDoc,
 			 ThotBool readOnly, int profile, int extraProfile, int method)
 {
   Document      doc; /* the new doc */
@@ -2682,23 +2740,27 @@ Document InitDocAndView (Document oldDoc, ThotBool replaceOldDoc, ThotBool inNew
   /* Init the new document */
   if (docType == docText || docType == docCSS ||
       docType == docSource || docType == docLog)
-    doc = TtaInitDocument ("TextFile", docname, requested_doc);
+    doc = TtaInitDocument ("TextFile", docname, CurrentNameSpace, requested_doc);
   else if (docType == docAnnot)
-    doc = TtaInitDocument ("Annot", docname, requested_doc);
+    doc = TtaInitDocument ("Annot", docname, CurrentNameSpace, requested_doc);
 #ifdef BOOKMARKS
   else if (docType == docBookmark)
-    doc = TtaInitDocument ("Topics", docname, requested_doc);
+    doc = TtaInitDocument ("Topics", docname, CurrentNameSpace, requested_doc);
 #endif /* BOOKMARKS */
   else if (docType == docSVG)
-    doc = TtaInitDocument ("SVG", docname, requested_doc);
+    doc = TtaInitDocument ("SVG", docname, CurrentNameSpace, requested_doc);
   else if (docType == docMath)
-    doc = TtaInitDocument ("MathML", docname, requested_doc);
+    doc = TtaInitDocument ("MathML", docname, CurrentNameSpace, requested_doc);
+#ifdef TEMPLATES
+  else if (docType == docTemplate)
+    doc = TtaInitDocument ("Template", docname, CurrentNameSpace, requested_doc);
+#endif /* TEMPLATES */
 #ifdef XML_GENERIC      
   else if (docType == docXml)
-    doc = TtaInitDocument ("XML", docname, requested_doc);
+    doc = TtaInitDocument ("XML", docname, CurrentNameSpace, requested_doc);
 #endif /* XML_GENERIC */
   else
-    doc = TtaInitDocument ("HTML", docname, requested_doc);
+    doc = TtaInitDocument ("HTML", docname, CurrentNameSpace, requested_doc);
   if (doc >= DocumentTableLength)
     {
       TtaCloseDocument (doc);
@@ -2726,6 +2788,10 @@ Document InitDocAndView (Document oldDoc, ThotBool replaceOldDoc, ThotBool inNew
         TtaSetPSchema (doc, "SVGP");
       else if (docType == docMath)
         TtaSetPSchema (doc, "MathMLP");
+#ifdef TEMPLATES
+      else if (docType == docTemplate)
+        TtaSetPSchema (doc, "TemplateP");      
+#endif /* TEMPLATES */
 #ifdef XML_GENERIC      
       else if (docType == docXml)
         TtaSetPSchema (doc, "XMLP");
@@ -2792,6 +2858,7 @@ Document InitDocAndView (Document oldDoc, ThotBool replaceOldDoc, ThotBool inNew
 
   // show the window if it's not allready done
   TtaShowWindow( window_id, TRUE );
+
   return (doc);
 }
 
@@ -3001,11 +3068,11 @@ void ParseAsHTML (Document doc, View view)
   /* Free access keys table */
   TtaRemoveDocAccessKeys (doc);
   // ignore the XML format
-  if (DocumentMeta && DocumentMeta[doc]->xmlformat)
+  if (DocumentMeta[doc]->xmlformat)
     DocumentMeta[doc]->xmlformat = FALSE;
   StartParser (doc, localFile, documentname, s, localFile, FALSE, FALSE);
   // restore the XML format
-  if (DocumentMeta && DocumentMeta[doc]->xmlformat)
+  if (DocumentMeta[doc]->xmlformat)
     DocumentMeta[doc]->xmlformat = TRUE;
   /* fetch and display all images referred by the document */
   DocNetworkStatus[doc] = AMAYA_NET_ACTIVE;
@@ -3214,13 +3281,6 @@ Document LoadDocument (Document doc, char *pathname,
           unknown = FALSE;
         }
 #endif /* XML_GENERIC */
-#ifdef _SVG
-      else if (IsLibraryName (pathname))
-        {
-          docType = docLibrary;
-          unknown = FALSE;
-        }
-#endif /* _SVG */
       else if (docProfile != L_Other || IsHTMLName (pathname))
         {
           /* it seems to be an HTML document */
@@ -3239,7 +3299,7 @@ Document LoadDocument (Document doc, char *pathname,
         strcpy (local_content_type , AM_MATHML_MIME_TYPE);
       else if (docType == docSVG)
         strcpy (local_content_type , AM_SVG_MIME_TYPE);
-      else if (docType == docXml)
+      else if (docType == docXml || docType == docTemplate)
         strcpy (local_content_type , "text/xml");
       else if (docType == docText || docType == docCSS ||
                docType == docSource || docType == docLog )
@@ -3555,11 +3615,9 @@ Document LoadDocument (Document doc, char *pathname,
             }
         }
       else
-        {
-          DocumentTypes[doc] = docType;
-          newdoc = doc;
-        }
+        newdoc = doc;
 
+      DocumentTypes[newdoc] = docType;
       if (docType == docImage)
         /* create an HTML container */
         {
@@ -3750,10 +3808,7 @@ Document LoadDocument (Document doc, char *pathname,
             {
 #ifdef _SVG
               if (DocumentTypes[newdoc] == docLibrary)
-                {
-                  SelectLibraryFromPath (DocumentURLs[newdoc]);
-                  TtaSetTextZone (newdoc, 1, SVGlib_list);
-                }
+                TtaSetTextZone (newdoc, 1, SVGlib_list);
               else
 #endif /* _SVG */
                 TtaSetTextZone (newdoc, 1, URL_list);
@@ -3766,15 +3821,11 @@ Document LoadDocument (Document doc, char *pathname,
       if (DocumentMeta[newdoc]->method == CE_INIT)
         DocumentMeta[newdoc]->method = CE_ABSOLUTE;
 
-      if (docType == docHTML ||
-          docType == docSVG ||
+      if (IsXMLDocType (newdoc) ||
 #ifdef ANNOTATIONS
           (docType == docAnnot && annotBodyType != docText) ||
 #endif /* ANNOTATIONS */
-          docType == docBookmark ||
-          docType == docXml ||
-          docType == docLibrary ||
-          docType == docMath)
+          docType == docBookmark)
         plainText = FALSE;
       else
         plainText = (docProfile == L_Other || docProfile == L_CSS || docProfile == L_TEXT);
@@ -3903,9 +3954,9 @@ void Reload_callback (int doc, int status, char *urlName, char *outputfile,
       res = LoadDocument (newdoc, urlName, form_data, NULL, method,
                           tempfile, documentname, http_headers, FALSE,
                           &DontReplaceOldDoc, NULL);
-      // check if it's a template instance
 #ifdef TEMPLATES
-      CheckTemplate (doc);
+      // Fill template internal structures and prepare the instance if any
+      Template_FillFromDocument (doc);
 #endif /* TEMPLATES */
       UpdateEditorMenus (doc);
       if (visibility == 4)
@@ -4134,7 +4185,6 @@ void ShowTargets (Document document, View view)
 void ZoomIn (Document document, View view)
 {
   int               zoom, zoomVal;
-  char             *zoomStr;
 
   zoom = TtaGetZoom (document, view);
   if (zoom < 10)
@@ -4144,23 +4194,9 @@ void ZoomIn (Document document, View view)
     }
 
   /* compare to the standard value? */
-  zoomStr = TtaGetEnvString ("ZOOM");
-  if (zoomStr == NULL)
-    zoomVal = 0;
-  else
-    {
-      sscanf (zoomStr, "%d", &zoomVal);
-      if (zoomVal > 10 || zoomVal < -10)
-        zoomVal = 0;
-    }
-  if (zoom > zoomVal)
-    TtaSetToggleItem (document, 1, Views, TZoomIn, TRUE);
-  else
-    TtaSetToggleItem (document, 1, Views, TZoomIn, FALSE);
-  if (zoom < zoomVal)
-    TtaSetToggleItem (document, 1, Views, TZoomOut, TRUE);
-  else
-    TtaSetToggleItem (document, 1, Views, TZoomOut, FALSE);
+  TtaGetEnvInt ("ZOOM", &zoomVal);
+  TtaSetToggleItem (document, 1, Views, TZoomIn, zoom > zoomVal);
+  TtaSetToggleItem (document, 1, Views, TZoomOut, zoom < zoomVal);
 }
 
 /*----------------------------------------------------------------------
@@ -4168,7 +4204,6 @@ void ZoomIn (Document document, View view)
 void ZoomOut (Document document, View view)
 {
   int               zoom, zoomVal;
-  char             *zoomStr;
 
   zoom = TtaGetZoom (document, view);
   if (zoom > -10)
@@ -4178,23 +4213,25 @@ void ZoomOut (Document document, View view)
     }
 
   /* compare to the standard value? */
-  zoomStr = TtaGetEnvString ("ZOOM");
-  if (zoomStr == NULL)
-    zoomVal = 0;
-  else
+  TtaGetEnvInt ("ZOOM", &zoomVal);
+  TtaSetToggleItem (document, 1, Views, TZoomIn, zoom > zoomVal);
+  TtaSetToggleItem (document, 1, Views, TZoomOut, zoom < zoomVal);
+}
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void ZoomNormal (Document document, View view)
+{
+  int               zoom, zoomVal;
+
+  zoom = TtaGetZoom (document, view);
+  TtaGetEnvInt ("ZOOM", &zoomVal);
+  if(zoom != zoomVal)
     {
-      sscanf (zoomStr, "%d", &zoomVal);
-      if (zoomVal > 10 || zoomVal < -10)
-        zoomVal = 0;
+      TtaSetZoom (document, view, zoomVal);
+      TtaSetToggleItem (document, 1, Views, TZoomIn, FALSE);
+      TtaSetToggleItem (document, 1, Views, TZoomOut, FALSE);
     }
-  if (zoom > zoomVal)
-    TtaSetToggleItem (document, 1, Views, TZoomIn, TRUE);
-  else
-    TtaSetToggleItem (document, 1, Views, TZoomIn, FALSE);
-  if (zoom < zoomVal)
-    TtaSetToggleItem (document, 1, Views, TZoomOut, TRUE);
-  else
-    TtaSetToggleItem (document, 1, Views, TZoomOut, FALSE);
 }
 
 /*----------------------------------------------------------------------
@@ -4215,11 +4252,7 @@ void ShowSource (Document doc, View view)
   if (!DocumentURLs[doc])
     /* the document is not loaded yet */
     return;
-  if (DocumentTypes[doc] != docHTML &&
-      DocumentTypes[doc] != docSVG &&
-      DocumentTypes[doc] != docXml &&
-      DocumentTypes[doc] != docLibrary &&
-      DocumentTypes[doc] != docMath)
+  if (!IsXMLDocType (doc))
     /* it's not an HTML or an XML document */
     return;
   if (!strcmp (DocumentURLs[doc], "empty"))
@@ -4256,6 +4289,9 @@ void ShowSource (Document doc, View view)
           else if (DocumentTypes[doc] == docMath)
             TtaExportDocumentWithNewLineNumbers (doc, localFile,
                                                  "MathMLT", FALSE);
+          else if (DocumentTypes[doc] == docTemplate)
+            TtaExportDocumentWithNewLineNumbers (doc, localFile,
+                                                 "TemplateT", FALSE);
 #ifdef XML_GENERIC
           else if (DocumentTypes[doc] == docXml)
             TtaExportDocumentWithNewLineNumbers (doc, localFile, NULL, FALSE);
@@ -4550,9 +4586,9 @@ void ShowToC (Document doc, View view)
   ----------------------------------------------------------------------*/
 ThotBool RequestView (NotifyDialog *event)
 {
-  ShowStructure (event->document, event->view);
-  /* Inform Thot that the view is open by Amaya */
-  return TRUE;
+  //ShowStructure (event->document, event->view);
+  /* Inform Thot that the view is not open by Amaya */
+  return FALSE;
 }
 
 /*----------------------------------------------------------------------
@@ -4686,6 +4722,10 @@ void GetAmayaDoc_callback (int newdoc, int status, char *urlName, char *outputfi
   else
     tempfile[0] = EOS;
    
+#ifdef TEMPLATES
+  Template_CheckAndPrepareTemplate(urlName);
+#endif /* TEMPLATES */  
+  
   /* now the new window is open */
   if (inNewWindow && (method == CE_RELATIVE || method == CE_ABSOLUTE))
     /* don't free the current loaded document */
@@ -4749,7 +4789,8 @@ void GetAmayaDoc_callback (int newdoc, int status, char *urlName, char *outputfi
           else
             CheckParsingErrors (newdoc);
 #ifdef TEMPLATES
-          CheckTemplate (newdoc);
+          // Fill template internal structures and prepare the instance if any
+          Template_FillFromDocument (newdoc);
 #endif /* TEMPLATES */
         }
       else
@@ -4763,7 +4804,6 @@ void GetAmayaDoc_callback (int newdoc, int status, char *urlName, char *outputfi
               if (DocumentTypes[newdoc] == docLibrary)
                 {
 #ifdef _SVG
-                  SelectLibraryFromPath (DocumentURLs[newdoc]);
                   TtaSetTextZone (newdoc, 1, SVGlib_list);
 #endif /* _SVG */
                 }
@@ -4791,8 +4831,6 @@ void GetAmayaDoc_callback (int newdoc, int status, char *urlName, char *outputfi
           if (status == -2)
             {
               s = HTTP_headers (http_headers, AM_HTTP_REASON);
-              if (!s)
-                s = "";
               sprintf (tempdocument, TtaGetMessage (AMAYA, AM_CANNOT_LOAD), pathname);
               if (proxyName != NULL)
                 {
@@ -4879,7 +4917,7 @@ void GetAmayaDoc_callback (int newdoc, int status, char *urlName, char *outputfi
   click.
   - history: record the URL in the browsing history
   ----------------------------------------------------------------------*/
-Document GetAmayaDoc (char *urlname, char *form_data,
+Document GetAmayaDoc (const char *urlname, const char *form_data,
                       Document doc, Document baseDoc, int method,
                       ThotBool history, TTcbf *cbf, void *ctx_cbf)
 {
@@ -4892,8 +4930,9 @@ Document GetAmayaDoc (char *urlname, char *form_data,
   char               *parameters;
   char               *target;
   char               *initial_url;
+  char                temp_url[MAX_LENGTH];
   char               *documentname;
-  char               *content_type = NULL;
+  const char         *content_type = NULL;
   char                charsetname[MAX_LENGTH];
   int                 parsingLevel, extraProfile;
   int                 toparse;
@@ -4924,15 +4963,19 @@ Document GetAmayaDoc (char *urlname, char *form_data,
   tempfile     = (char *)TtaGetMemory (MAX_LENGTH);
   tempfile[0]  = EOS;
   initial_url     = (char *)TtaGetMemory (MAX_LENGTH);
-  ExtractParameters (urlname, parameters);
+  
+  strcpy(temp_url,  urlname);
+  /* Extract parameters if any */
+  ExtractParameters (temp_url, parameters);
   /* Extract the target if necessary */
-  ExtractTarget (urlname, target);
+  ExtractTarget (temp_url, target);
+
   /* Add the  base content if necessary */
   if (method == CE_RELATIVE || method == CE_FORM_GET ||
       method == CE_FORM_POST || method == CE_MAKEBOOK || method == CE_TEMPLATE)
-    NormalizeURL (urlname, baseDoc, initial_url, documentname, NULL);
+    NormalizeURL (temp_url, baseDoc, initial_url, documentname, NULL);
   else
-    NormalizeURL (urlname, 0, initial_url, documentname, NULL);
+    NormalizeURL (temp_url, 0, initial_url, documentname, NULL);
 
   // check if the page is displayed in the help window
   if (DocumentMeta[baseDoc] && DocumentMeta[baseDoc]->method == CE_HELP)
@@ -4945,23 +4988,16 @@ Document GetAmayaDoc (char *urlname, char *form_data,
     docType = docSVG;
   else if (IsCSSName (documentname))
     docType = docCSS;
-#ifdef IV
-  else if (IsXTiger (documentname))
-      // @@@@ by default it's a HTML document
-      docType = docHTML;
-#endif /* TEMPLATES */
+  else if (IsXTigerLibrary (documentname))
+      docType = docTemplate;
   else if (IsXTiger (documentname) || IsXMLName (documentname))
     {
       docType = docXml;
       //TODO Check that urlname is a valid URL
-      if (!IsW3Path (urlname) && TtaFileExist (urlname))
-        CheckDocHeader(urlname, &xmlDec, &withDoctype, &isXML, &useMath, &isKnown, &parsingLevel, 
+      if (!IsW3Path (temp_url) && TtaFileExist (temp_url))
+        CheckDocHeader(temp_url, &xmlDec, &withDoctype, &isXML, &useMath, &isKnown, &parsingLevel, 
 		       &doc_charset, charsetname, (DocumentType*)&docType, &extraProfile);
     }
-#ifdef _SVG
-  else if (IsLibraryName (documentname))
-    docType = docLibrary;
-#endif /* _SVG */
   else if (method == CE_CSS)
     docType = docCSS;
   else if (method == CE_LOG)
@@ -5236,7 +5272,7 @@ Document GetAmayaDoc (char *urlname, char *form_data,
       TtaFreeMemory (target);
       TtaFreeMemory (documentname);
     }
-
+  
   TtaFreeMemory (parameters);
   TtaFreeMemory (tempfile);
   TtaFreeMemory (initial_url);
@@ -6722,6 +6758,7 @@ void InitAmaya (NotifyEvent * event)
   SelectionInTT = FALSE;
   SelectionInBIG = FALSE;
   SelectionInSMALL = FALSE;
+  SelectionInSpan = FALSE;
   Synchronizing = FALSE;
   TableMenuActive = FALSE;
   MTableMenuActive = FALSE;
@@ -6821,8 +6858,9 @@ void InitAmaya (NotifyEvent * event)
   TtaSetEnvBoolean ("LOAD_CSS", TRUE, FALSE);
   TtaSetEnvBoolean ("SEND_REFERER", FALSE, FALSE);
   TtaSetEnvBoolean ("INSERT_NBSP", FALSE, FALSE);
-  TtaSetEnvBoolean ("GENERATE_MATHPI", TRUE, FALSE);
+  TtaSetEnvBoolean ("GENERATE_MATHPI", FALSE, FALSE);
   TtaSetEnvBoolean ("EDIT_SRC_TEMPLATE", FALSE, FALSE);
+  TtaSetEnvBoolean ("SHOW_PLACEHOLDER", TRUE, FALSE);
   TtaSetEnvBoolean ("CLOSE_WHEN_APPLY", TRUE, FALSE);
   TtaSetEnvBoolean("OPEN_PANEL", TRUE, FALSE);
   TtaSetEnvBoolean("BROWSE_TOOLBAR", TRUE, FALSE);
@@ -6932,8 +6970,6 @@ void InitAmaya (NotifyEvent * event)
 #ifdef _SVG
   InitSVG ();
   InitSVGAnim ();
-  /*InitSVGLibraryManagerStructure ();*/
-  InitLibrary();
 #endif /* _SVG */
   /* MKP: disable "Cooperation" menu if DAV is not defined or
    *      initialize davlib module otherwise */
@@ -6958,6 +6994,10 @@ void InitAmaya (NotifyEvent * event)
   URL_list = NULL;
   URL_list_len = 0;
   InitStringForCombobox ();
+
+  RDFa_list = NULL;
+  RDFa_list_len = 0;
+  InitRDFaListForCombobox ();
 
   AutoSave_list = NULL;
   AutoSave_list_len = 0;
@@ -7340,9 +7380,6 @@ void CheckAmayaClosed ()
     {
       /* remove images loaded by shared CSS style sheets */
       RemoveDocumentImages (0);
-#ifdef _SVG
-      SVGLIB_FreeDocumentResource ();
-#endif /* _SVG */
 #ifdef  _JAVA
       DestroyJavascript ();
 #endif /* _JAVA */
@@ -7639,6 +7676,69 @@ void InitStringForCombobox ()
   TtaFreeMemory (urlstring);
 }
 
+/*----------------------------------------------------------------------
+  InitRDFaListForCombobox
+  Initializes the Namespace list for RDFa
+  ----------------------------------------------------------------------*/
+void InitRDFaListForCombobox ()
+{
+  unsigned char     *urlstring, c;
+  char              *ptr;
+  FILE              *file;
+  int                i, nb, len;
+
+  /* remove the previous list */
+  TtaFreeMemory (RDFa_list);
+  urlstring = (unsigned char *) TtaGetMemory (MAX_LENGTH);
+  /* open the file rdfa_list.dat into config directory */
+  ptr = TtaGetEnvString ("THOTDIR");
+  strcpy ((char *)urlstring, ptr);
+  strcat ((char *)urlstring, DIR_STR);
+  strcat ((char *)urlstring, "config");
+  strcat ((char *)urlstring, DIR_STR);
+  strcat ((char *)urlstring, "rdfa_list.dat");
+  file = TtaReadOpen ((char *)urlstring);
+  *urlstring = EOS;
+
+  if (file)
+    {
+      /* get the size of the file */
+      fseek (file, 0L, 2);	/* end of the file */
+      RDFa_list_len = (ftell (file) * 4) + GetMaxURLList() + 4;
+      RDFa_list = (char *)TtaGetMemory (RDFa_list_len);
+      RDFa_list[0] = EOS;
+      fseek (file, 0L, 0);	/* beginning of the file */
+      /* initialize the list by reading the file */
+      i = 0;
+      nb = 0;
+      while (TtaReadByte (file, &c))
+        {
+	  len = 0;
+	  urlstring[len] = EOS;
+	  urlstring[len++] = (char)c;
+	  while (len < MAX_LENGTH && TtaReadByte (file, &c) && c != EOL)
+	    {
+	      if (c == 13)
+		urlstring[len] = EOS;
+	      else
+		urlstring[len++] = (char)c;
+	    }
+	  urlstring[len] = EOS;
+	  if (i > 0 && len)
+	    /* add an EOS between two urls */
+	    RDFa_list[i++] = EOS;
+	  if (len)
+	    {
+	      nb++;
+	      strcpy ((char *)&RDFa_list[i], (char *)urlstring);
+	      i += len;
+	    }
+        }
+      RDFa_list[i + 1] = EOS;
+      TtaReadClose (file);
+    }
+  TtaFreeMemory (urlstring);
+}
 
 /*----------------------------------------------------------------------
   RemoveDocFromSaveList remove the file from the AutoSave list
@@ -7998,17 +8098,12 @@ char* CreateTempDirectory(const char* name)
   ----------------------------------------------------------------------*/
 int ChooseDocumentPage(Document doc)
 {
-  switch(DocumentTypes[doc])
-  {
-    case docHTML:
-    case docSVG:
-    case docMath:
-    case docXml:
-    case docTemplate:
-      return WXAMAYAPAGE_SPLITTABLE;
-    default :
-      return WXAMAYAPAGE_SIMPLE;
-  }
+  if (DocumentTypes[doc] == docLibrary)
+    return WXAMAYAPAGE_SIMPLE;
+  else if (IsXMLDocType (doc))
+    return WXAMAYAPAGE_SPLITTABLE;
+  else
+    return WXAMAYAPAGE_SIMPLE;
 }
 
 /*----------------------------------------------------------------------

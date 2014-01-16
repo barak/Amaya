@@ -396,11 +396,10 @@ static void WrText (PtrTextBuffer pBT, int ind, int length, FILE *fileDescriptor
 static void WrPath (PtrPathSeg pPE, int length, FILE *fileDescriptor)
 {
   PtrPathSeg          b;
-  int                 l;
 
-  l = 0;
   b = pPE;
-  while (b && l < length)
+  if (length)
+  while (b)
     /* ecrit le contenu du path */
     {
       switch (b->PaShape)
@@ -443,14 +442,8 @@ static void WrPath (PtrPathSeg pPE, int length, FILE *fileDescriptor)
             putc ('0', fileDescriptor);
           break;
         }
-      if (l < length)
-        {
-          fprintf (fileDescriptor, "|");
-          /* element suivant du meme path */
-          b = b->PaNext;
-        }
-      else
-        fprintf (fileDescriptor, "...");
+      /* next path segment */
+      b = b->PaNext;
     }
 }
 
@@ -1038,8 +1031,8 @@ void ListAbsBoxes (PtrAbstractBox pAb, int Indent, FILE *fileDescriptor)
           if (pAb->AbTypeNum == 0)
             fprintf (fileDescriptor, ".list-item-marker");
           else
-            fprintf (fileDescriptor, ".%s", pAb->AbPSchema->
-                     PsPresentBox->PresBox[pAb->AbTypeNum - 1]->PbName);
+            fprintf (fileDescriptor, ".%s",
+                      pAb->AbPSchema->PsPresentBox->PresBox[pAb->AbTypeNum - 1]->PbName);
         }
       fprintf (fileDescriptor, " TypeNum:%d", pAb->AbTypeNum);
       if (pAb->AbPresentationBox)
@@ -1476,7 +1469,8 @@ void ListAbsBoxes (PtrAbstractBox pAb, int Indent, FILE *fileDescriptor)
         case LtGraphics:
           fprintf (fileDescriptor, "script=%c \'%c\'",
                    pAb->AbGraphScript, pAb->AbShape);
-          if (pAb->AbLeafType == LtGraphics && pAb->AbShape == 'C')
+          if (pAb->AbLeafType == LtGraphics &&
+	      (pAb->AbShape == 1 || pAb->AbShape == 'C'))
             {
               fprintf (fileDescriptor, " rx:%d", pAb->AbRx);
               wrTypeUnit (pAb->AbRxUnit, fileDescriptor);
@@ -2147,7 +2141,7 @@ static void ListBoxTree (PtrAbstractBox pAb, int frame, int Indent,
               fprintf (fileDescriptor, " printed graphics: \'");
               putc (pAb->AbRealShape, fileDescriptor);
               fprintf (fileDescriptor, "\'");
-              if (pAb->AbShape == 'C')
+              if (pAb->AbShape == 1 || pAb->AbShape == 'C')
                 {
                   fprintf (fileDescriptor, " rx:%d", pAb->AbRx);
                   wrTypeUnit (pAb->AbRxUnit, fileDescriptor);

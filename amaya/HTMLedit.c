@@ -624,7 +624,7 @@ static void UpdateAttribute (Attribute attr, char * data, Element el, Document d
   If the selection is within a style element and the element type is
   a span adds the data into the style element.
   -----------------------------------------------------------------------*/
-ThotBool GenerateInlineElement (int eType, SSchema eSchema, int aType, char * data, ThotBool replace)
+ThotBool GenerateInlineElement (int eType, SSchema eSchema, int aType, const char * data, ThotBool replace)
 {
   Element         el, firstSel, lastSel, next, in_line, sibling, child;
   Element         last, parent, enclose, selected;
@@ -640,6 +640,7 @@ ThotBool GenerateInlineElement (int eType, SSchema eSchema, int aType, char * da
   SSchema         templateSSchema;
   int             i, j, firstchar, lastchar, lg, min, max;
   char           *name;
+  char           *tmpdata;
 
   doc = TtaGetSelectedDocument();
   done = FALSE;
@@ -741,6 +742,16 @@ ThotBool GenerateInlineElement (int eType, SSchema eSchema, int aType, char * da
               // check if the selection is within the head
               parentType.ElTypeNum = HTML_EL_HEAD;
               el = TtaGetTypedAncestor (firstSel, parentType);
+#ifdef TEMPLATES
+              if(el)
+                {
+                  // check if selection is within the xt:head
+                  parentType.ElSSchema = templateSSchema;
+                  parentType.ElTypeNum = Template_EL_head;
+                  if(TtaGetTypedAncestor (firstSel, parentType)!=NULL)
+                    el = NULL;
+                }
+#endif /* TEMPLATES */
             }
           
           if (el == NULL)
@@ -1293,8 +1304,12 @@ ThotBool GenerateInlineElement (int eType, SSchema eSchema, int aType, char * da
                               TtaRegisterElementCreate (in_line, doc);
                               done = TRUE; // action done
                               if (parse && data && data[0] != EOS)
-                                // apply CSS properties
-                                ParseHTMLSpecificStyle (in_line, data, doc, 1000, FALSE);
+                                {
+                                  // apply CSS properties
+                                  tmpdata = TtaStrdup(data);
+                                  ParseHTMLSpecificStyle (in_line, tmpdata, doc, 1000, FALSE);
+                                  TtaFreeMemory(tmpdata);
+                                }
                             }
                           else if (in_line && charlevel)
                             {
@@ -1355,8 +1370,12 @@ ThotBool GenerateInlineElement (int eType, SSchema eSchema, int aType, char * da
                                               TtaRegisterAttributeCreate (newAttr, child, doc);
                                               done = TRUE; // action done
                                               if (parse)
-                                                // apply CSS properties
-                                                ParseHTMLSpecificStyle (child, data, doc, 1000, FALSE);
+                                                {
+                                                  // apply CSS properties
+                                                  tmpdata = TtaStrdup(data);
+                                                  ParseHTMLSpecificStyle (child, tmpdata, doc, 1000, FALSE);
+                                                  TtaFreeMemory(tmpdata);
+                                                }
                                             }
                                           else
                                             {
@@ -1754,15 +1773,32 @@ void ChangeTitle (Document doc, View view)
   if (!TtaGetDocumentAccessMode (doc))
     /* the document is in ReadOnly mode */
     return;
-
   /* search the Title element */
-  el = TtaGetMainRoot (doc);
+  el = TtaGetRootElement (doc);
   elType.ElSSchema = TtaGetDocumentSSchema (doc);
   if (!strcmp (TtaGetSSchemaName (elType.ElSSchema), "HTML"))
     /* it's a HTML document */
     {
       elType.ElTypeNum = HTML_EL_TITLE;
       el = TtaSearchTypedElement (elType, SearchForward, el);
+    }
+  else if (!strcmp (TtaGetSSchemaName (elType.ElSSchema), "SVG"))
+    /* it's an SVG document */
+    {
+      child = TtaGetFirstChild (el);
+      elType = TtaGetElementType (child);
+      while (child && (elType.ElTypeNum != SVG_EL_title ||
+		       strcmp (TtaGetSSchemaName (elType.ElSSchema), "SVG")))
+	{
+	  TtaNextSibling (&child);
+	  elType = TtaGetElementType (child);
+	}
+      el = child;
+    }
+  else
+    el = NULL;
+  if (el)
+    {
       child = GetNoTemplateChild (el, TRUE);
       if (child == NULL)
         {
@@ -1824,12 +1860,29 @@ void SetNewTitle (Document doc)
     /* the document is in ReadOnly mode */
     return;
   /* search the Title element */
-  el = TtaGetMainRoot (doc);
+  el = TtaGetRootElement (doc);
   elType.ElSSchema = TtaGetDocumentSSchema (doc);
   if (!strcmp (TtaGetSSchemaName (elType.ElSSchema), "HTML"))
     {
       elType.ElTypeNum = HTML_EL_TITLE;
       el = TtaSearchTypedElement (elType, SearchForward, el);
+    }
+  else if (!strcmp (TtaGetSSchemaName (elType.ElSSchema), "SVG"))
+    {
+      child = TtaGetFirstChild (el);
+      elType = TtaGetElementType (child);
+      while (child && (elType.ElTypeNum != SVG_EL_title ||
+		       strcmp (TtaGetSSchemaName (elType.ElSSchema), "SVG")))
+	{
+	  TtaNextSibling (&child);
+	  elType = TtaGetElementType (child);
+	}
+      el = child;
+    }
+  else
+    el = NULL;
+  if (el)
+    {
       child = GetNoTemplateChild (el, TRUE);
       if (child)
         {
@@ -3406,7 +3459,7 @@ ThotBool ElementOKforProfile (Element el, Document doc)
       if (profile != L_Other)
         /* the document profile accepts only certain elements and attributes */
         {
-          name = GetXMLElementName (elType, doc);
+          name = (char*) GetXMLElementName (elType, doc);
           if (name == NULL || name[0] == EOS)
             /* this element type is not accepted in the document profile */
             ok = FALSE;
@@ -3420,7 +3473,7 @@ ThotBool ElementOKforProfile (Element el, Document doc)
                 {
                   nextAttr = attr;  TtaNextAttribute (el, &nextAttr);
                   TtaGiveAttributeType (attr, &attrType, &kind);
-                  name = GetXMLAttributeName (attrType, elType, doc);
+                  name = (char*) GetXMLAttributeName (attrType, elType, doc);
                   if (name == NULL || name[0] == EOS)
                     /* this attribute is not valid for this element in the
                        document profile. Delete it */
@@ -3527,8 +3580,8 @@ void CheckPastedElement (Element el, Document doc, int info, int position,
                          ThotBool by_ref)
 {
   Document            originDocument;
-  Element             anchor, child, previous, nextchild, parent, ancestor,
-    sibling;
+  Element             anchor, child, previous, nextchild, parent;
+  Element             root, ancestor, sibling;
   ElementType         elType;
   AttributeType       attrType;
   Attribute           attr;
@@ -3643,9 +3696,22 @@ void CheckPastedElement (Element el, Document doc, int info, int position,
 #ifdef _SVG
   else if (!strcmp (name, "SVG") && elType.ElTypeNum == SVG_EL_SVG)
     {
-      /* Set the MathML namespace declaration */
+      if (DocumentTypes[doc] != docSVG && DocumentMeta[doc])
+        {
+          DocumentMeta[doc]->compound = TRUE;
+          if (!DocumentMeta[doc]->xmlformat)
+            {
+              // the document becomes an XML document
+              DocumentMeta[doc]->xmlformat = TRUE;
+              root = TtaGetRootElement (doc);
+              TtaSetANamespaceDeclaration (doc, root, NULL, XHTML_URI);
+            }
+        }
+      /* Set the SVG namespace declaration */
       TtaSetUriSSchema (elType.ElSSchema, SVG_URI);
       TtaSetANamespaceDeclaration (doc, el, NULL, SVG_URI);
+      // mark the new Coordinate System
+      TtaSetElCoordinateSystem (el);
     }
 #endif /* _SVG */
 
@@ -4832,7 +4898,7 @@ ThotBool GlobalAttrInMenu (NotifyAttribute * event)
         }
     }
 
-  attr = GetXMLAttributeName (event->attributeType, elType, event->document);
+  attr = (char*)GetXMLAttributeName (event->attributeType, elType, event->document);
   if (attr[0] == EOS)
     return TRUE;	/* don't put an invalid attribute in the menu */
 
@@ -4860,7 +4926,6 @@ ThotBool GlobalAttrInMenu (NotifyAttribute * event)
       else
 	{
 	  event->restr.RestrEnumVal = TtaStrdup(REL_REV_Attr_Values);
-	  event->restr.RestrFlags |= attr_enum;
 	}
     }
   
@@ -5290,6 +5355,29 @@ void SetOnOffQuotation (Document document, View view)
 void SetOnOffBDO (Document document, View view)
 {
   SetCharFontOrPhrase (document, HTML_EL_BDO);
+}
+
+
+/*----------------------------------------------------------------------
+  Create a SPAN
+  ----------------------------------------------------------------------*/
+void CreateSpan (Document document, View view)
+{
+  Element       selectedEl;
+  ElementType   elType;
+  int           firstSelectedChar, lastSelectedChar;
+
+  TtaGiveFirstSelectedElement (document, &selectedEl, &firstSelectedChar,
+                               &lastSelectedChar);
+  if (selectedEl)
+    {
+      elType = TtaGetElementType (selectedEl);
+      if (!strcmp(TtaGetSSchemaName (elType.ElSSchema), "HTML"))
+        /* it's a HTML element */
+        SetCharFontOrPhrase (document, HTML_EL_Span);
+    }
+  else
+    TtaDisplaySimpleMessage (CONFIRM, AMAYA, AM_NO_INSERT_POINT);
 }
 
 /*----------------------------------------------------------------------

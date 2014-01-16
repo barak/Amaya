@@ -90,7 +90,7 @@ SSchema GetXLinkSSchema (Document doc)
   XLinkSSchema = TtaGetSSchema ("XLink", doc);
   if (XLinkSSchema == NULL)
     XLinkSSchema = TtaNewNature(doc, TtaGetDocumentSSchema(doc), NULL,
-                                "XLink", "XLinkP");
+                                    "XLink", "XLinkP");
   return (XLinkSSchema);
 }
 
@@ -103,8 +103,14 @@ SSchema GetTemplateSSchema (Document doc)
   
   TemplateSSchema = TtaGetSSchema ("Template",doc);
   if (TemplateSSchema == NULL)
-    TemplateSSchema = TtaNewNature (doc, TtaGetDocumentSSchema(doc), NULL,
-                                    "Template", "TemplateP");
+    {
+      if (DocumentMeta[doc] && DocumentMeta[doc]->method == CE_INSTANCE)
+        TemplateSSchema = TtaNewNature (doc, TtaGetDocumentSSchema(doc), NULL,
+                                    "Template", "TemplatePI");
+      else
+        TemplateSSchema = TtaNewNature (doc, TtaGetDocumentSSchema(doc), NULL,
+                                        "Template", "TemplateP");
+    }
   return (TemplateSSchema);
 }
     
@@ -129,7 +135,7 @@ SSchema GetTextSSchema (Document doc)
   GetGenericXMLSSchema
   Returns the XML Thot schema of name schemaName for the document doc.
   ----------------------------------------------------------------------*/
-SSchema GetGenericXMLSSchema (char *schemaName, Document doc)
+SSchema GetGenericXMLSSchema (const char *schemaName, Document doc)
 {
   SSchema	XMLSSchema;
 
@@ -144,7 +150,7 @@ SSchema GetGenericXMLSSchema (char *schemaName, Document doc)
   GetGenericXMLSSchemaByUri
   Returns the XML Thot schema for the document doc.
   ----------------------------------------------------------------------*/
-SSchema GetGenericXMLSSchemaByUri (char *uriName, Document doc, ThotBool *isnew)
+SSchema GetGenericXMLSSchemaByUri (const char *uriName, Document doc, ThotBool *isnew)
 {
   SSchema	XMLSSchema;
 
@@ -221,7 +227,7 @@ void HasNatures (Document document, ThotBool *useMathML, ThotBool *useSVG)
   - content information about this entry
   - checkProfile TRUE if the entry is valid for the current Doc profile.
   ----------------------------------------------------------------------*/
-void MapXMLElementType (int XMLtype, char *XMLname, ElementType *elType,
+void MapXMLElementType (int XMLtype, const char *XMLname, ElementType *elType,
                         char **mappedName, char *content,
                         ThotBool *checkProfile, Document doc)
 {
@@ -338,7 +344,7 @@ void MapXMLElementType (int XMLtype, char *XMLname, ElementType *elType,
   Generic function which searchs in the mapping tables the XML name for
   a given Thot type.
   ----------------------------------------------------------------------*/
-char *GetXMLElementName (ElementType elType, Document doc)
+const char *GetXMLElementName (ElementType elType, Document doc)
 {
   ElemMapping  *ptr;
   char         *name;
@@ -478,7 +484,7 @@ void MapXMLAttributeValue (int XMLtype, char *attVal, const AttributeType *attrT
   the entry attrName associated to the element elementName.
   Returns the corresponding entry or -1.
   ----------------------------------------------------------------------*/
-int MapXMLAttribute (int XMLtype, char *attrName, char *elementName,
+int MapXMLAttribute (int XMLtype, const char *attrName, const char *elementName,
                      ThotBool *checkProfile, Document doc, int *thotType)
 {
   AttributeMapping   *ptr;
@@ -568,7 +574,8 @@ int MapXMLAttribute (int XMLtype, char *attrName, char *elementName,
             *checkProfile = FALSE;
           /* Special case for the attributes 'rel' and 'rev' for elements 'a' and 'link' */
           else if ((!strcmp (attrName, "rel") || !strcmp (attrName, "rev")) &&
-		   (strcmp (elementName, "a") && strcmp (elementName, "link")) &&
+		   elementName && 
+                   (strcmp (elementName, "a") && strcmp (elementName, "link")) &&
 		   (extraprofile != L_RDFa))
 	    *checkProfile = FALSE;
 	  else
@@ -585,11 +592,12 @@ int MapXMLAttribute (int XMLtype, char *attrName, char *elementName,
   Generic function which searchs in the mapping tables the XML name for
   a given Thot type.
   ----------------------------------------------------------------------*/
-char *GetXMLAttributeName (AttributeType attrType, ElementType elType,
+const char *GetXMLAttributeName (AttributeType attrType, ElementType elType,
                            Document doc)
 {
   AttributeMapping   *ptr;
-  char               *name, *tag;
+  char               *name;
+  const char         *tag;
   int                 i, profile, extraprofile;
   ThotBool            invalid = FALSE;
 

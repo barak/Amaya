@@ -24,9 +24,9 @@ extern void UpdateStyleSheet ( char *url,
                                char *tempdoc );
 extern char *CssToPrint ( Document doc,
                           char *printdir );
-extern void GenerateStyle ( char * data,
-                            ThotBool add );
-extern void DoStyleColor ( char *color );
+extern ThotBool NoCSSEditing ( Document doc );
+extern void DoStyleColor ( char *color,
+                           ThotBool isBg );
 extern void UpdateStylePanel ( Document doc,
                                View view );
 extern void DoSelectFontSize ( Document doc,
@@ -39,8 +39,31 @@ extern void DoSelectColor ( Document doc,
                             View view );
 extern void DoSelectBgColor ( Document doc,
                               View view );
+extern void DoSelectStrokeColor ( Document doc,
+                                  View view );
+extern void DoSelectFillColor ( Document doc,
+                                View view );
+extern void DoSelectOpacity ( Document doc,
+                              View view );
+extern void DoSelectFillOpacity ( Document doc,
+                                  View view );
+extern void DoSelectStrokeOpacity ( Document doc,
+                                    View view );
+extern void DoSelectStrokeWidth ( Document doc,
+                                  View view );
+extern void DoStyleSVG ( Document doc,
+                         View view,
+                         int current_value,
+                         int type );
+extern void UpdateStylePanelSVG ( Document doc,
+                                  View view,
+                                  Element el );
+extern void DoUpdateStrokeStatus ( Document doc,
+                                   View view );
+extern void DoUpdateFillStatus ( Document doc,
+                                 View view );
 extern ThotBool RemoveSpecificStyle ( Document doc,
-                                      char *cssproperty );
+                                      const char *cssproperty );
 extern void DoRemoveColor ( Document doc,
                             View view );
 extern void DoRemoveBgColor ( Document doc,
@@ -116,9 +139,9 @@ extern void UpdateStyleSheet ( char *url,
                                  char *tempdoc );
 extern char *CssToPrint ( Document doc,
                             char *printdir );
-extern void GenerateStyle ( char * data,
-                              ThotBool add );
-extern void DoStyleColor ( char *color );
+extern ThotBool NoCSSEditing ( Document doc );
+extern void DoStyleColor ( char *color,
+                             ThotBool isBg );
 extern void UpdateStylePanel ( Document doc,
                                  View view );
 extern void DoSelectFontSize ( Document doc,
@@ -131,8 +154,31 @@ extern void DoSelectColor ( Document doc,
                               View view );
 extern void DoSelectBgColor ( Document doc,
                                 View view );
+extern void DoSelectStrokeColor ( Document doc,
+                                    View view );
+extern void DoSelectFillColor ( Document doc,
+                                  View view );
+extern void DoSelectOpacity ( Document doc,
+                                View view );
+extern void DoSelectFillOpacity ( Document doc,
+                                    View view );
+extern void DoSelectStrokeOpacity ( Document doc,
+                                      View view );
+extern void DoSelectStrokeWidth ( Document doc,
+                                    View view );
+extern void DoStyleSVG ( Document doc,
+                           View view,
+                           int current_value,
+                           int type );
+extern void UpdateStylePanelSVG ( Document doc,
+                                    View view,
+                                    Element el );
+extern void DoUpdateStrokeStatus ( Document doc,
+                                     View view );
+extern void DoUpdateFillStatus ( Document doc,
+                                   View view );
 extern ThotBool RemoveSpecificStyle ( Document doc,
-                                        char *cssproperty );
+                                        const char *cssproperty );
 extern void DoRemoveColor ( Document doc,
                               View view );
 extern void DoRemoveBgColor ( Document doc,

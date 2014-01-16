@@ -392,6 +392,7 @@ void GL_VideoInvert (int width, int height, int x, int y)
 { 
   /*a blend func like that could be coool ? 
     (GL_ONE_MINUS_DST_COLOR,GL_ZERO) */
+  
   glColor4ub (127, 127, 127, 80);
   glBegin (GL_QUADS);
   glVertex2i (x, y);
@@ -480,9 +481,10 @@ void GL_DrawSegments (ThotSegment *point, int npoints)
 
 /*----------------------------------------------------------------------
   GL_DrawArc : Draw an arc
+  mode = 0 (default mode), 1 (GLU_TESS_WINDING_ODD)
   ----------------------------------------------------------------------*/
 void GL_DrawArc (float x, float y, float w, float h, int startAngle,
-                 int sweepAngle, ThotBool filled)
+                 int sweepAngle, int mode, ThotBool filled)
 {
   int       i, slices, npoints, j;
   GLfloat   angleOffset;
@@ -571,8 +573,8 @@ void GL_DrawArc (float x, float y, float w, float h, int startAngle,
       npoints++;
       points[npoints].x = points[slices+1].x;
       points[npoints].y = points[slices+1].y;
-      // display a not convex polygon
-      MakefloatMesh (points, npoints);
+      // display a not convex polygon NONZERO mode
+      MakefloatMesh (points, npoints, mode);
     }
 }
 
@@ -623,10 +625,11 @@ void GL_DrawLine (int x1, int y1, int x2, int y2, ThotBool round)
 /*----------------------------------------------------------------------
   GL_DrawPolygon : tesselation handles 
   convex, concave and polygon with holes
+  mode = 0 (default mode), 1 (GLU_TESS_WINDING_ODD)
   ----------------------------------------------------------------------*/
-void GL_DrawPolygon (ThotPoint *points, int npoints)
+void GL_DrawPolygon (ThotPoint *points, int npoints, int mode)
 {
-  MakefloatMesh (points, npoints);
+  MakefloatMesh (points, npoints, mode);
 }
 
 
@@ -1034,6 +1037,7 @@ void DisplayTransformation (int frame, PtrTransform Trans, int Width, int Height
 {
 #ifdef _GL
   double trans_matrix[16];
+  double tx, ty;
     
   if (IsTransformed (Trans))
     {
@@ -1047,23 +1051,34 @@ void DisplayTransformation (int frame, PtrTransform Trans, int Width, int Height
               break;
             case PtElAnimTranslate:
             case PtElTranslate:
-              glTranslatef (ZoomedValue (Trans->XScale,
-                                         ViewFrameTable[frame - 1].FrMagnification),
-                            ZoomedValue (Trans->YScale, 
-                                         ViewFrameTable[frame - 1].FrMagnification),
-                            0);
+	      tx = ZoomedValue (Trans->XScale,
+				ViewFrameTable[frame - 1].FrMagnification);
+	      ty = ZoomedValue (Trans->YScale,
+				ViewFrameTable[frame - 1].FrMagnification);
+	      glTranslatef (tx, ty, 0);
               break;
             case PtElAnimRotate:
             case PtElRotate:
-              glTranslatef (Trans->XRotate, Trans->YRotate, 0);
+	      tx = ZoomedValue (Trans->XRotate,
+				ViewFrameTable[frame - 1].FrMagnification);
+	      ty = ZoomedValue (Trans->YRotate,
+				ViewFrameTable[frame - 1].FrMagnification);
+
+              glTranslatef (tx, ty , 0);
               glRotatef (Trans->TrAngle, 0, 0, 1);
-              glTranslatef (-Trans->XRotate, -Trans->YRotate, 0);
+              glTranslatef (-tx, -ty, 0);
               break;
             case PtElMatrix:
               /* Matrix 
                  GlMatrix is 4*4
                  Svg is 3*3 but 
                  only 2*3 is specified */
+	      tx = ZoomedValue (Trans->EMatrix,
+				ViewFrameTable[frame - 1].FrMagnification);
+	      ty = ZoomedValue (Trans->FMatrix,
+				ViewFrameTable[frame - 1].FrMagnification);
+	      glTranslatef (tx, ty , 0);	      
+
               trans_matrix[0] = Trans->AMatrix;
               trans_matrix[1] = Trans->BMatrix;
               trans_matrix[2] = 0;
@@ -1079,8 +1094,8 @@ void DisplayTransformation (int frame, PtrTransform Trans, int Width, int Height
               trans_matrix[10] = 1;
               trans_matrix[11] = 0;
 
-              trans_matrix[12] = Trans->EMatrix;
-              trans_matrix[13] = Trans->FMatrix;	  
+              trans_matrix[12] = 0;
+              trans_matrix[13] = 0;
               trans_matrix[14] = 0;
               trans_matrix[15] = 1;
 
@@ -1251,8 +1266,8 @@ void getboundingbox (int size, float *buffer, int frame,
   
   x = (double) *xorig;
   y = (double) *yorig;
-  w = (double) *xorig + *worig;
-  h = (double) *yorig + *horig;  
+  w = (double) *xorig + 1/**worig*/;
+  h = (double) *yorig + 1/**horig*/;  
   TotalHeight = (double) FrameTable[frame].FrHeight;  
   count = size;
   while (count > 0) 
@@ -1547,21 +1562,10 @@ void SetGlPipelineState ()
   glBlendFunc (GL_SRC_ALPHA, 
                GL_ONE_MINUS_SRC_ALPHA); 
   GL_SetOpacity (1000);
-
-#ifdef _GTK
-  if (GL_Err())
-    g_print ("OpenGL: Bad INIT\n");
-#endif /* _GTK */
-
 #ifdef _WX
   if (GL_Err())
     wxPrintf( _T("OpenGL: Bad INIT\n") ); 
 #endif /* _WX */
-
-#ifdef _WINGUI
-  if (GL_Err())
-    WinErrorBox (NULL, "OpenGL: Bad INIT\n");
-#endif  /* _WINGUI */
 }
 
 
@@ -1658,23 +1662,6 @@ void GL_window_copy_area (int frame, int xf, int yf, int x_source, int y_source,
     }
 }
 
-/*----------------------------------------------------------------------
-  GLSynchronize: Make sure all opengl calls are done
-  ----------------------------------------------------------------------*/
-#if 0
-/* NOT USED */
-void gl_synchronize ()
-{
-#ifdef _GTK
-  /* gtk_main_iteration_do (FALSE); */
-  /* 	while (gtk_events_pending ())  */
-  /* 	  gtk_main_iteration (); */
-
-  gdk_gl_wait_gdk ();
-  gdk_gl_wait_gl ();
-#endif /* _GTK */
-}
-#endif /* 0 */
 
 /*----------------------------------------------------------------------
   GLResize: 
@@ -1712,7 +1699,11 @@ void GLResize (int width, int height, int x, int y)
   ----------------------------------------------------------------------*/
 ThotBool glhard()
 {
+#ifdef _MACOS
+  return FALSE;
+#else /* _MACOS */
   return (!Software_Mode);
+#endif /* _MACOS */
 }
 
 /*----------------------------------------------------------------------

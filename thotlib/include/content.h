@@ -35,7 +35,7 @@ typedef int     *PathSegment;
    language: language of that Text element.
    document: the document containing that element.
   ----------------------------------------------------------------------*/
-extern void TtaSetTextContent (Element element, unsigned char *content,
+extern void TtaSetTextContent (Element element, const unsigned char *content,
 			       Language language, Document document);
 
 /*----------------------------------------------------------------------
@@ -52,8 +52,8 @@ extern void TtaSetTextContent (Element element, unsigned char *content,
    document: the document containing that element.
    mime_type: MIME type of the picture, if known. NULL, otherwise
   ----------------------------------------------------------------------*/
-extern void TtaSetPictureContent (Element element, unsigned char *content,
-				  Language language, Document document, char *mime_type);
+extern void TtaSetPictureContent (Element element, const unsigned char *content,
+				  Language language, Document document, const char *mime_type);
 
 /*----------------------------------------------------------------------
    TtaAppendTextContent
@@ -105,7 +105,7 @@ extern void TtaRemoveFinalSpaces (Element element, Document document,
   it. It return NULL if the string is not found.
   ----------------------------------------------------------------------*/
 extern Element TtaSearchText (Document document, Element element, ThotBool forward,
-			      char *text, int *firstCh, int *lastCh, CHARSET encoding);
+			      const char *text, int *firstCh, int *lastCh, CHARSET encoding);
 
 /* ----------------------------------------------------------------------
    TtaInsertTextContent
@@ -198,9 +198,13 @@ extern void TtaSetSymbolCode (Element element, wchar_t code, Document document);
    the upper left corner of the box. x and y
    must be positive or null.
    unit: UnPixel or UnPoint.
+   IsBarycenter: indicates if (x, y) are the actual coordinates of the new point
+                 or the coefficients that allows to defined this point as a
+		 barycenter.
   ----------------------------------------------------------------------*/
-extern void TtaAddPointInPolyline (Element element, int rank, TypeUnit unit,
-				   int x, int y, Document document);
+extern int TtaAddPointInPolyline (Element element, int rank, TypeUnit unit,
+				   int x, int y, Document document,
+				   ThotBool IsBarycenter);
 
 /*----------------------------------------------------------------------
    TtaDeletePointInPolyline
@@ -367,6 +371,7 @@ extern void TtaInsertTransform (Element element, void *transform,
 				 Document document);
 extern void TtaReplaceTransform (Element element, void *transform, 
 				 Document document);
+extern void TtaRemoveTransform (Document document, Element element);
 extern void TtaAppendTransform (Element element, void *transform, 
 				Document document);
 
@@ -500,7 +505,7 @@ extern PicType TtaGetPictureType (Element element);
    Parameter:
    mime_type: mime type of an image.
   ----------------------------------------------------------------------*/
-extern void TtaSetPictureType (Element element, char *mime_type);
+extern void TtaSetPictureType (Element element, const char *mime_type);
 
 /*----------------------------------------------------------------------
    TtaGetTextLength
@@ -654,6 +659,26 @@ extern int TtaGetPolylineLength (Element element);
 extern void TtaGivePolylinePoint (Element element, int rank, TypeUnit unit,
 				  /*OUT*/ int *x, /*OUT*/ int *y);
 
+
+
+/*----------------------------------------------------------------------
+  TtaRemovePathData
+  Remove the path data attached to an element
+  ----------------------------------------------------------------------*/
+extern void TtaRemovePathData (Document document, Element element);
+
+/*----------------------------------------------------------------------
+  TtaGetPathAttributeValue returns the path attribut valuee corresponding to
+  the current set of path segments
+  ---------------------------------------------------------------------- */
+extern char *TtaGetPathAttributeValue (Element el, int width, int height);
+
+/*----------------------------------------------------------------------
+  TtaGetPointsAttributeValue returns the path attribute value corresponding to
+  the current set of points
+  ---------------------------------------------------------------------- */
+extern char *TtaGetPointsAttributeValue (Element el, int width, int height);
+
 /*----------------------------------------------------------------------
    TtaGetPageNumber
    Returns the page number of a Page basic element.
@@ -678,15 +703,37 @@ extern int TtaGetPageView (Element pageElement);
   TtcPasteFormBuffer pastes at the current insert position the content
   of the buffer.
   ----------------------------------------------------------------------*/
-extern void TtaPasteFromBuffer (unsigned char *src, int length, CHARSET charset);
+extern void TtaPasteFromBuffer (const unsigned char *src, int length, CHARSET charset);
+extern void TtaApplyMatrixTransform (Document document, Element element,
+				     float a, float b, float c, float d,
+				     float e, float f);
+extern void TtaAppendMatrixTransform (Document document, Element element,
+				      float a, float b, float c, float d,
+				      float e, float f);
 
+extern void TtaGetMatrixTransform(Document document, Element el,
+				    float *a,
+				    float *b,
+				    float *c,
+				    float *d,
+				    float *e,			    
+				    float *f
+				    );
+extern void *TtaGetCurrentTransformMatrix(Element el, Element ancestor);
+extern void *TtaInverseTransform (void *transform);
+extern char *TtaGetTransformAttributeValue(Document document, Element el);
+
+extern ThotBool CheckGeometricProperties(Document doc, Element leaf,
+					 int *width, int *height,
+					 int *rx, int *ry);
+
+extern void TtaQuadraticToCubicPathSeg (void *quadratic_segment);
+extern void TtaSplitPathSeg (void *segment, Document doc, Element el);
+extern ThotBool TtaInsertPointInCurve (Document doc, Element el,
+				       ThotBool before, int point_number);
+extern ThotBool TtaDeletePointInCurve (Document doc, Element el,
+				       int point_number);
 #endif /* __CEXTRACT__ */
 
 #endif
-
-
-
-
-
-
 

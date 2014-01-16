@@ -9,6 +9,7 @@ DEFPRES TemplateP;
 ATTR
   { generic attributes for internal use }
   Unknown_attribute = TEXT;	{ to store an unknown attribute }
+  xmlid = Text;		{ id }
 
 CONST
 
@@ -16,23 +17,29 @@ CONST
 
 STRUCT
 
-  Template = CASE OF
+  Template ( ATTR version = TEXT; templateVersion = TEXT ) = LIST OF (TemplateObject);
+
+  TemplateObject = CASE OF
       head;
       repeat;
-      option;
+      {option;}
       useEl;
       useSimple;
       bag;
       attribute;
-    END;
+    END + (Comment\240, XMLPI);
 
-  head ( ATTR version = TEXT; templateVersion = TEXT ) = 
+  head ( ATTR version; templateVersion ) = 
     LIST OF ( Declaration = CASE OF
       component;
       union;
       import;
     END
    );
+
+  Comment\240 = LIST OF (Comment_line = TEXT) - (Comment\240);
+  
+  XMLPI (ATTR is_css = Text) = LIST OF (PI_line = TEXT);
 
   component ( ATTR name = TEXT ) = ANY - ( head, union, import );
   union ( ATTR name; includeAt = TEXT; exclude = TEXT ) = CONSTANT C_CR; {It is always empty}
@@ -43,19 +50,19 @@ STRUCT
 		  CASE OF
 		    useEl;
         useSimple;
-	    	option;
+	    	{option;}
 		    repeat;
 		    bag;
 		    END);
 
 
-  option ( ATTR title )
-  	= ANY - ( head, union, import, component );
+  {option ( ATTR title )
+  	= ANY - ( head, union, import, component );}
   
-  useEl ( ATTR title; types = TEXT; currentType = TEXT;  prompt = Yes_ )
+  useEl ( ATTR option = option_set, option_unset; title; types = TEXT; currentType = TEXT;  prompt = Yes_ )
      = ANY - ( head, union, import, component );
 
-  useSimple ( ATTR title; types; prompt)
+  useSimple ( ATTR option; title; types; prompt)
      = ANY - ( head, union, import, component );
 
   bag ( ATTR title; types ) 
@@ -71,19 +78,26 @@ STRUCT
     ) = CONSTANT C_CR; {It is always empty}
 
 EXCEPT
-  useEl:              NoReplicate, NoBreakByReturn;
+  XMLPI:              ReturnCreateNL, NoSpellCheck, NoReplicate, NotAnElementNode;
+  PI_line:            Hidden, MarkupPreserve;
+  Comment\240:        ReturnCreateNL, NoSpellCheck, NoReplicate, NotAnElementNode;
+  Comment_line:       Hidden, MarkupPreserve;
+  useEl:              NoReplicate, NoBreakByReturn, ClickableSurface;
+  component:          NewRoot;
   useSimple:          NoReplicate, NoBreakByReturn;
-  repeat:             NoReplicate, NoBreakByReturn, NoCreate;
-  option:             NoReplicate, NoBreakByReturn, NoCreate;
-  bag:                NoReplicate, NoBreakByReturn, NoCreate, ParagraphBreak;
+  repeat:             NoReplicate, NoBreakByReturn, NoCreate, ClickableSurface;
+  {option:             NoReplicate, NoBreakByReturn, NoCreate;}
+  bag:                NoReplicate, NoBreakByReturn, NoCreate, ParagraphBreak, ClickableSurface;
   {Hiding unkown and language attributes}
 	Unknown_attribute:  Invisible;
 	Language:           Invisible;
-  types :             DuplicateAttr;
+  types :             GiveTypes, DuplicateAttr;
+  option:             DuplicateAttr;
   currentType:        Invisible;
-  title:              GiveName;
   ref_name:		        GiveName;
   name:			          GiveName;
+  title:              GiveName;
   prompt:             Invisible;
+  xmlid:		          CssId;
 	
 END

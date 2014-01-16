@@ -9,14 +9,16 @@
  * This module contains editing functions for handling SVG objects.
  *
  * Author: I. Vatton
- *	   V. Quint
+ *         V. Quint
+ *         F. Wang - SVG panel
  */
+
+/* Included headerfiles */
 
 #ifdef _WX
 #include "wx/wx.h"
 #endif /* _WX */
 
-/* Included headerfiles */
 #undef THOT_EXPORT
 #define THOT_EXPORT extern
 #include "amaya.h"
@@ -26,28 +28,17 @@
 #include "view.h"
 #include "content.h"
 #include "document.h"
+#include <math.h>
+#include "svgedit.h"
 
 #include "SVG.h"
 #include "HTML.h"
 
-#include "libmanag_f.h"
 #include "anim_f.h"
 #include "Mathedit_f.h"
 #include "SVGedit_f.h"
 #include "UIcss_f.h"
 #include "templateUtils_f.h"
-
-static ThotIcon   iconGraph;
-static ThotIcon   iconGraphNo;
-static ThotIcon   mIcons[12];
-static ThotBool PaletteDisplayed = FALSE;
-static ThotBool InCreation = FALSE;
-
-#ifdef _WINGUI
-#include "wininclude.h"
-#define iconGraph 22
-#define iconGraphNo 22
-#endif /* _WINGUI */
 
 #include "EDITimage_f.h"
 #include "fetchXMLname_f.h"
@@ -59,11 +50,32 @@ static ThotBool InCreation = FALSE;
 #include "SVGbuilder_f.h"
 #include "XLinkedit_f.h"
 #include "Xmlbuilder_f.h"
+#include "styleparser_f.h"
+#include "registry_wx.h"
+#include "wxdialogapi_f.h"
+
+static ThotIcon   iconGraph;
+static ThotIcon   iconGraphNo;
+static ThotIcon   mIcons[12];
+static ThotBool PaletteDisplayed = FALSE;
+
+extern int ActiveFrame;
 
 #ifdef _GTK
 /* used for the close palette callback*/
 ThotWidget CatWidget(int ref);
 #endif/*  _GTK */
+
+#ifdef _WX
+#include "appdialogue_wx.h"
+#include "paneltypes_wx.h"
+#endif /* _WX */
+
+#ifdef _WINGUI
+#include "wininclude.h"
+#define iconGraph 22
+#define iconGraphNo 22
+#endif /* _WINGUI */
 
 #ifdef _WINDOWS
 #include <commctrl.h>
@@ -127,56 +139,112 @@ void NameSpaceGenerated (NotifyAttribute *event)
 /*----------------------------------------------------------------------
   A new element has been selected.
   Check that this element can be selected.
-  Synchronize selection in source view.      
+  Synchronize selection in source view.
   ----------------------------------------------------------------------*/
 void GraphicsSelectionChanged (NotifyElement * event)
 {
-  Element      asc, use;
+  Element      asc, use, svgCanvas;
+  AttributeType    attrType;
   ElementType  elType;
   int          elemType = 0;
+  SSchema      svgSchema;
+  Document doc;
+  View view;
 
-  /* if element is within a "use" or "tref" element, select that element
-     instead */
-  use = NULL;
-  asc = TtaGetParent (event->element);
-  /* look for the highest level use ancestor */
-  while (asc)
+  TtaGiveActiveView(&doc, &view);
+
+  svgSchema = GetSVGSSchema (event->document);
+  attrType.AttrSSchema = svgSchema;
+  elType = TtaGetElementType (event->element);
+  
+  if (view == 1 && elType.ElSSchema == svgSchema &&
+      /* In formatted view, you can only select the direct children of the
+         svgCanvas */
+      (elType.ElTypeNum == SVG_EL_g ||
+       elType.ElTypeNum == SVG_EL_path ||
+       elType.ElTypeNum == SVG_EL_rect ||
+       elType.ElTypeNum == SVG_EL_circle_ ||
+       elType.ElTypeNum == SVG_EL_ellipse ||
+       elType.ElTypeNum == SVG_EL_line_ ||
+       elType.ElTypeNum == SVG_EL_polyline ||
+       elType.ElTypeNum == SVG_EL_polygon ||
+       elType.ElTypeNum == SVG_EL_text_ ||
+       elType.ElTypeNum == SVG_EL_image ||
+       elType.ElTypeNum == SVG_EL_switch ||
+       elType.ElTypeNum == SVG_EL_GRAPHICS_UNIT)
+      )
     {
-      elType = TtaGetElementType (asc);
-      if (event->elementType.ElSSchema == elType.ElSSchema)
+      /* Search the ancestor which is a direct child of the svgCanvas */
+      elType.ElTypeNum = SVG_EL_SVG;
+      elType.ElSSchema = svgSchema;
+      svgCanvas = TtaGetTypedAncestor (event->element, elType);
+      asc = event->element;
+      while(TtaGetParent(asc) != svgCanvas)
+        asc = TtaGetParent(asc);
+      
+      /* Select the element asc, except if we actually select its
+         graphics leaf */
+      elType = TtaGetElementType (event->element);
+      if(elType.ElTypeNum != SVG_EL_GRAPHICS_UNIT ||
+         TtaGetParent(event->element) != asc)
         {
-          if (elType.ElTypeNum == SVG_EL_use_ ||
-              elType.ElTypeNum == SVG_EL_tref)
-            {
-              use = asc;
-              elemType = elType.ElTypeNum;
-            }
-          else if (elType.ElTypeNum == SVG_EL_desc ||
-                   elType.ElTypeNum == SVG_EL_title ||
-                   elType.ElTypeNum == SVG_EL_metadata)
-            /* even if a desc, title, or metadata is within a use or tref
-               element, selection is allowed within the desc, title, or
-               metadata element */
-            asc = NULL;
+          TtaSelectElement (event->document, asc);
+          event->element = asc;
+          event->elementType = TtaGetElementType(asc);
         }
-      if (asc)
-        asc = TtaGetParent (asc);
     }
-  if (use)
-    /* there is a use ancestor. Select it */
+  else
     {
-      TtaSelectElement (event->document, use);
-      event->element = use;
-      event->elementType.ElTypeNum = elemType;
+      /* if element is within a "use" or "tref" element, select that element
+         instead */
+      use = NULL;
+      asc = TtaGetParent (event->element);
+      /* look for the highest level use ancestor */
+      while (asc)
+        {
+          elType = TtaGetElementType (asc);
+          if (event->elementType.ElSSchema == elType.ElSSchema)
+            {
+              if (elType.ElTypeNum == SVG_EL_use_ ||
+                  elType.ElTypeNum == SVG_EL_tref)
+                {
+                  use = asc;
+                  elemType = elType.ElTypeNum;
+                }
+              else if (elType.ElTypeNum == SVG_EL_desc ||
+                       elType.ElTypeNum == SVG_EL_title ||
+                       elType.ElTypeNum == SVG_EL_metadata)
+                /* even if a desc, title, or metadata is within a use or tref
+                   element, selection is allowed within the desc, title, or
+                   metadata element */
+                asc = NULL;
+            }
+          if (asc)
+            asc = TtaGetParent (asc);
+        }
+
+      if (use)
+        /* there is a use ancestor. Select it */
+        {
+          TtaSelectElement (event->document, use);
+          event->element = use;
+          event->elementType.ElTypeNum = elemType;
+        }
     }
+
+  /* Update the style panel */
+  if(event->elementType.ElTypeNum != SVG_EL_GraphicsElement)
+    UpdateStylePanelSVG(doc, view, event->element);
+
   CheckSynchronize (event);
   Selection_changed_in_basedoc (event);
   /* update the displayed style information */
   SynchronizeAppliedStyle (event);
   UnFrameMath ();
-  
-  UpdateXmlElementListTool(event->element,event->document);
+
+  //UpdateXmlElementListTool(event->element,event->document);
   TtaSetStatusSelectedElement(event->document, 1, event->element);
+  TtaRaiseDoctypePanels(WXAMAYA_DOCTYPE_SVG);
 }
 
 /*----------------------------------------------------------------------
@@ -279,7 +347,7 @@ ThotBool ExtendSelectSVGElement (NotifyElement *event)
   TtaAddElementToSelection (event->document, selEl);
   return TRUE; /* Don't let Thot perform normal operation */
 }
- 
+
 /*----------------------------------------------------------------------
   AttrCoordChanged
   -----------------------------------------------------------------------*/
@@ -293,6 +361,7 @@ void AttrCoordChanged (NotifyAttribute *event)
   -----------------------------------------------------------------------*/
 void AttrTransformChanged (NotifyAttribute *event)
 {
+  TtaRemoveTransform (event->document, event->element);
   ParseTransformAttribute (event->attribute, event->element, event->document,
                            FALSE);
   /*******   CheckSVGRoot (event->document, event->element); *****/
@@ -304,8 +373,7 @@ void AttrTransformChanged (NotifyAttribute *event)
   ----------------------------------------------------------------------*/
 ThotBool AttrTransformDelete (NotifyAttribute * event)
 {
-  ParseTransformAttribute (event->attribute, event->element, event->document,
-                           TRUE);
+  TtaRemoveTransform (event->document, event->element);
   return FALSE; /* let Thot perform normal operation */
 }
 
@@ -336,6 +404,7 @@ void EvaluateSwitch (NotifyAttribute *event)
   -----------------------------------------------------------------------*/
 void AttrPathDataChanged (NotifyAttribute *event)
 {
+  TtaRemovePathData (event->document, event->element);
   ParsePathDataAttribute (event->attribute, event->element, event->document, TRUE);
 }
 
@@ -346,13 +415,14 @@ void AttrPathDataChanged (NotifyAttribute *event)
   ----------------------------------------------------------------------*/
 ThotBool AttrPathDataDelete (NotifyAttribute * event)
 {
+  TtaRemovePathData (event->document, event->element);
   return TRUE; /* don't let Thot perform normal operation */
 }
 
 /*----------------------------------------------------------------------
   UpdateAttrText creates or updates the text attribute attr of the
   element el.
-  The parameter delta is TRUE when the value is 
+  The parameter delta is TRUE when the value is
   The parameter update is TRUE when the attribute must be parsed after
   the change.
   -----------------------------------------------------------------------*/
@@ -390,7 +460,7 @@ static void UpdateAttrText (Element el, Document doc, AttributeType attrType,
           if (buffer[i] == '.')
             {
               buffer[i] = EOS;
-              sscanf (buffer, "%d", &pval);	      
+              sscanf (buffer, "%d", &pval);
               v = i + 1;
             }
           i++;
@@ -571,9 +641,9 @@ static void UpdatePositionAttribute (Element el, Document doc, int pos,
                         TtaRegisterAttributeCreate (newAttr, textEl, doc);
                       TtaFreeMemory (value);
                     }
-                } 
-            } 
-        } 
+                }
+            }
+        }
     }
 }
 
@@ -609,7 +679,7 @@ static void UpdateWidthHeightAttribute (Element el, Document doc, int dim,
   int                   width, height;
 
   elType = TtaGetElementType (el);
-  attrType.AttrSSchema = elType.ElSSchema;
+  attrType.AttrSSchema = TtaGetSSchema ("SVG", doc);/* elType.ElSSchema; */
   if (elType.ElTypeNum == SVG_EL_circle_)
     {
       /* express width or height as a radius */
@@ -627,7 +697,8 @@ static void UpdateWidthHeightAttribute (Element el, Document doc, int dim,
         attrType.AttrTypeNum = SVG_ATTR_ry;
       UpdateAttrText (el, doc, attrType, dim, FALSE, FALSE);
     }
-  else if (elType.ElTypeNum == SVG_EL_rect ||
+  else if (elType.ElTypeNum == SVG_EL_SVG ||
+           elType.ElTypeNum == SVG_EL_rect ||
            elType.ElTypeNum == SVG_EL_image ||
            elType.ElTypeNum == SVG_EL_foreignObject ||
            elType.ElTypeNum == SVG_EL_SVG)
@@ -673,7 +744,7 @@ void AttrCSSequivModified(NotifyAttribute *event)
                           event->attribute, event->element,
                           event->document, FALSE);
 }
- 
+
 /*----------------------------------------------------------------------
   AttrCSSequivDelete : attribute fill, stroke or stroke-width will be
   deleted. Remove the corresponding style presentation.
@@ -693,7 +764,7 @@ void AttrTextAnchorModified (NotifyAttribute *event)
 {
   SetTextAnchor (event->attribute, event->element, event->document, FALSE);
 }
- 
+
 /*----------------------------------------------------------------------
   AttrTextAnchorDelete : attribute text_anchor will be
   deleted. Remove the corresponding presentation.
@@ -1020,7 +1091,7 @@ ThotBool NewGraphElem (NotifyOnValue *event)
 {
   int           profile;
 
-  // is it a compound document?
+  /* is it a compound document? */
   profile = TtaGetDocumentProfile (event->document);
   if (profile == L_Strict || profile == L_Basic)
     {
@@ -1041,8 +1112,8 @@ void GraphElemPasted (NotifyElement *event)
 {
   ElementType    elType;
   SSchema	       SvgSchema;
-  AttributeType  attrType;
-  Attribute      attr;
+  /*  AttributeType  attrType;
+      Attribute      attr;*/
   Element        parent;
   int            profile;
 
@@ -1051,7 +1122,7 @@ void GraphElemPasted (NotifyElement *event)
   /*****  CheckSVGRoot (event->document, event->element); ****/
   SetGraphicDepths (event->document, event->element);
 
-  // it's a compound document
+  /* it's a compound document */
   profile = TtaGetDocumentProfile (event->document);
   if (DocumentTypes[event->document] == docMath ||
       profile == L_Strict || profile == L_Basic)
@@ -1077,14 +1148,14 @@ void GraphElemPasted (NotifyElement *event)
               /* Put a namespace declaration on the pasted <svg> element */
               TtaSetUriSSchema (elType.ElSSchema, SVG_URI);
               TtaSetANamespaceDeclaration (event->document, event->element,
-                                           NULL, SVG_URI);
+                                           "svg", SVG_URI);
               /* put a version attribute on the <svg> element */
-              attrType.AttrSSchema = SvgSchema;
-              attrType.AttrTypeNum = SVG_ATTR_version;
-              attr = TtaNewAttribute (attrType);
-              TtaAttachAttribute (event->element, attr, event->document);
-              TtaSetAttributeText (attr, SVG_VERSION, event->element,
-                                   event->document);
+              /*attrType.AttrSSchema = SvgSchema;
+                attrType.AttrTypeNum = SVG_ATTR_version;
+                attr = TtaNewAttribute (attrType);
+                TtaAttachAttribute (event->element, attr, event->document);
+                TtaSetAttributeText (attr, SVG_VERSION, event->element,
+                event->document);*/
             }
         }
     }
@@ -1135,7 +1206,7 @@ ThotBool GlobalSVGAttrInMenu (NotifyAttribute * event)
 {
   ElementType         elType, parentType;
   Element             parent;
-  char               *attr;
+  const char         *attr;
 
   elType = TtaGetElementType (event->element);
 
@@ -1181,7 +1252,7 @@ ThotBool GlobalSVGAttrInMenu (NotifyAttribute * event)
 #ifdef TEMPLATES
     return ValidateTemplateAttrInMenu(event);
 #else /* TEMPLATES */
-    return FALSE;
+  return FALSE;
 #endif /* TEMPLATES */
 
   if (strcmp (TtaGetSSchemaName (elType.ElSSchema),"SVG"))
@@ -1271,7 +1342,7 @@ ThotBool GraphicsPRuleChange (NotifyPresentation *event)
   int           presType;
   int           mainView;
   int           x, y, width, height;
- 
+
   el = event->element;
   elType = TtaGetElementType (el);
   doc = event->document;
@@ -1341,7 +1412,8 @@ ThotBool GraphicsPRuleChange (NotifyPresentation *event)
             UpdatePositionAttribute (el, doc, x, TRUE);
         }
       else if (presType == PRHeight &&
-               (elType.ElTypeNum == SVG_EL_rect ||
+               (elType.ElTypeNum == SVG_EL_SVG ||
+                elType.ElTypeNum == SVG_EL_rect ||
                 elType.ElTypeNum == SVG_EL_ellipse ||
                 elType.ElTypeNum == SVG_EL_polyline ||
                 elType.ElTypeNum == SVG_EL_polygon ||
@@ -1354,7 +1426,8 @@ ThotBool GraphicsPRuleChange (NotifyPresentation *event)
           UpdateWidthHeightAttribute (el, doc, height, FALSE);
         }
       else if (presType == PRWidth &&
-               (elType.ElTypeNum == SVG_EL_rect ||
+               (elType.ElTypeNum == SVG_EL_SVG ||
+                elType.ElTypeNum == SVG_EL_rect ||
                 elType.ElTypeNum == SVG_EL_circle_ ||
                 elType.ElTypeNum == SVG_EL_ellipse ||
                 elType.ElTypeNum == SVG_EL_polyline ||
@@ -1498,21 +1571,21 @@ ThotBool PastePicture (NotifyOnValue *event)
   Check if any ancestor of element el has a PRule of type property
   and return the PRule found or NULL if not found.
   -----------------------------------------------------------------------*/
-static PRule InheritPRule (Element el, int property)
-{
-  Element     asc;
-  PRule       inheritedPRule;
+/* static PRule InheritPRule (Element el, int property) */
+/* { */
+/*   Element     asc; */
+/*   PRule       inheritedPRule; */
 
-  inheritedPRule = NULL;
-  asc = TtaGetParent (el);
-  while (asc && !inheritedPRule)
-    {
-      inheritedPRule = TtaGetPRule (asc, property);
-      if (!inheritedPRule)
-        asc = TtaGetParent (asc);
-    }
-  return (inheritedPRule);
-}
+/*   inheritedPRule = NULL; */
+/*   asc = TtaGetParent (el); */
+/*   while (asc && !inheritedPRule) */
+/*     { */
+/*       inheritedPRule = TtaGetPRule (asc, property); */
+/*       if (!inheritedPRule) */
+/*         asc = TtaGetParent (asc); */
+/*     } */
+/*   return (inheritedPRule); */
+/* } */
 
 /*----------------------------------------------------------------------
   InheritAttribute
@@ -1546,41 +1619,278 @@ static Attribute InheritAttribute (Element el, AttributeType attrType)
 #endif /* _SVG */
 
 /*----------------------------------------------------------------------
+  GetElementData gets the SVG title or descriptor (according to the
+  given el_type_num) value of of the element el.
+  Return a string that gives the value or NULL.
+  The returned string mist be freed.
+  -----------------------------------------------------------------------*/
+char *GetElementData (Document doc, Element el, SSchema sschema, int el_type_num)
+{
+  Element child;
+  ElementType       elType;
+  Language       lang;
+  int len;
+  char *text;
+
+  // check the requested type
+  if(el_type_num != SVG_EL_title && el_type_num != SVG_EL_desc)
+    return NULL;
+
+  elType = TtaGetElementType (el);
+  if(elType.ElSSchema != sschema)
+    return NULL;
+
+  child = TtaGetFirstChild(el);
+  while(child)
+    {
+      elType = TtaGetElementType (child);
+      if(elType.ElSSchema == sschema && 
+         elType.ElTypeNum == el_type_num)
+        break;
+     
+      TtaNextSibling(&child);
+    }
+
+  if(child == NULL)
+    return NULL;
+
+  child = TtaGetFirstChild(child);
+  elType = TtaGetElementType (child);
+  if(elType.ElTypeNum != SVG_EL_TEXT_UNIT)
+    return NULL;
+
+  len = TtaGetTextLength(child);
+  if(len == 0)
+    return NULL;
+  text = (char *) TtaGetMemory (len+1);
+  TtaGiveTextContent (child, (unsigned char *)text, &len, &lang);
+  return text;
+}
+
+/*----------------------------------------------------------------------
+  SetElementData creates or update the title or description attached to
+  the element el.
+  The parameter value 
+  -----------------------------------------------------------------------*/
+ThotBool SetElementData (Document doc, Element el,
+                         SSchema sschema, int el_type_num, char *value)
+{
+  Element child, text_unit;
+  ElementType       elType;
+  ThotBool remove;
+
+  if(el_type_num != SVG_EL_title && el_type_num != SVG_EL_desc)
+    return FALSE;
+
+  elType = TtaGetElementType (el);
+  if(elType.ElSSchema != sschema)
+    return FALSE;
+
+  child = TtaGetFirstChild(el);
+  while(child)
+    {
+      elType = TtaGetElementType (child);
+      if(elType.ElSSchema == sschema && 
+         elType.ElTypeNum == el_type_num)
+        break;
+     
+      TtaNextSibling(&child);
+    }
+
+  remove = (value == NULL || *value == '\0');
+
+  if(child == NULL)
+    {
+      /* Nothing to remove */
+      if(remove)
+        return TRUE;
+
+      /* No element found, insert one */
+      elType.ElSSchema = sschema;
+      elType.ElTypeNum = el_type_num;
+      child = TtaNewElement (doc, elType);
+      TtaInsertFirstChild(&child, el, doc);
+      TtaRegisterElementCreate (child, doc);
+
+      elType.ElTypeNum = SVG_EL_TEXT_UNIT;
+      text_unit = TtaNewElement (doc, elType);
+      TtaInsertFirstChild(&text_unit, child, doc);
+      TtaRegisterElementCreate (text_unit, doc);
+    }
+  else
+    {
+      if(remove)
+        {
+          TtaRegisterElementDelete (child, doc);
+          TtaDeleteTree(child, doc);
+          return TRUE;
+        }
+
+      text_unit = TtaGetFirstChild(child);
+      elType = TtaGetElementType (text_unit);
+      if(elType.ElTypeNum != SVG_EL_TEXT_UNIT)
+        return FALSE;
+    }
+
+  TtaSetTextContent(text_unit, (unsigned char *)value,
+                    TtaGetDefaultLanguage (), doc);
+  return TRUE;
+}
+
+/*----------------------------------------------------------------------
+  GetAncestorCanvasAndObject
+  Get all the Elements necessary to draw SVG:
+  
+  - svgCanvas: the innermost <svg> element containing el
+  - svgAncestor: the ancestor last <svg> ancestor of el, so we suppose
+  that no transform are applied to it.
+  - el: The element clicked/selected SVG object. If it is not a direct
+  child of the svgCanvas, then we take the 
+  
+  ----------------------------------------------------------------------*/
+ThotBool GetAncestorCanvasAndObject(Document doc, Element *el,
+                                    Element *svgAncestor, Element *svgCanvas)
+{
+#ifdef _SVG
+  Element parent, newEl;
+  ElementType elType;
+  SSchema	    docSchema, svgSchema;
+
+  if (doc == 0)return FALSE;
+
+  docSchema = TtaGetDocumentSSchema (doc);
+  svgSchema = GetSVGSSchema (doc);
+
+  if (el)
+    {
+      elType = TtaGetElementType (*el);
+
+      /* Check whether el is an SVG element */
+      if (elType.ElSSchema != svgSchema)
+        return FALSE;
+
+      newEl = *el;
+      parent = TtaGetParent(newEl);
+
+      /* Look for el and svgCanvas */
+      while(parent)
+        {
+          elType = TtaGetElementType (parent);
+          if (elType.ElTypeNum == SVG_EL_SVG &&
+              elType.ElSSchema == svgSchema)
+            break;
+
+          newEl = parent;
+          parent = TtaGetParent(parent);
+        }
+
+      *el = newEl;
+      *svgCanvas = parent;
+    }
+
+  if (*svgCanvas == NULL)return FALSE;
+  
+  /* Look for svgAncestor */
+  *svgAncestor = *svgCanvas;
+  parent = *svgAncestor;
+  TtaGetParent(parent);
+
+  while(parent)
+    {
+      elType = TtaGetElementType (parent);
+      if (elType.ElTypeNum == SVG_EL_SVG && elType.ElSSchema == svgSchema)
+        *svgAncestor = parent;
+      parent = TtaGetParent(parent);
+    }
+
+  return TRUE;
+
+#endif /* _SVG */
+}
+
+/*----------------------------------------------------------------------
   CreateGraphicElement
   Create a Graphics element.
   entry is the number of the entry chosen by the user in the Graphics
   palette.
   ----------------------------------------------------------------------*/
-void CreateGraphicElement (int entry)
+void CreateGraphicElement (Document doc, View view, int entry)
 {
 #ifdef _SVG
-  Document	    doc;
-  Element	    first, SvgRoot, newEl, sibling, selEl;
-  Element           child, parent, elem, foreignObj, altText, leaf;
+  Document          tmpDoc;
+  Element           svgAncestor, svgCanvas, root;
+  Element	          first, newEl, sibling, selEl, next;
+  Element           child, parent, elem, switch_, foreignObj, altText, leaf;
   ElementType       elType, selType, newType, childType;
   AttributeType     attrType, attrTypeHTML;
   Attribute         attr, inheritedAttr;
-  SSchema	    docSchema, SvgSchema;
+  SSchema	          docSchema, svgSchema;
   DisplayMode       dispMode;
   Language          lang;
-  char		    shape;
-  char             *path;
-  int		    c1, i, w, h, dir, svgDir;
-  int               docModified;
-  ThotBool	    found, newGraph = FALSE, oldStructureChecking;;
+  int		            c1, i, dir, svgDir, profile;
+  int               docModified, error;
+  int               x1, y1, x2, y2, x3, y3, x4, y4, lx, ly;
+  int               tmpx1, tmpy1, tmpx2, tmpy2, tmpx3, tmpy3, tmpx4, tmpy4;
+  _ParserData       context;
+  char              buffer[500], buffer2[200];
+  ThotBool	        found, newSVG = FALSE, replaceGraph = FALSE;
+  ThotBool          created = FALSE;
+  ThotBool          oldStructureChecking;
+  ThotBool          isFilled = LastSVGelementIsFilled, isFormattedView, closed;   
 
-  doc = TtaGetSelectedDocument ();
-  if (doc == 0)
-    /* there is no selection. Nothing to do */
+  /* Check that a document is selected */
+  if (doc == 0 || !TtaGetDocumentAccessMode (doc))
+    {
+      TtaDisplaySimpleMessage (CONFIRM, AMAYA, AM_NO_INSERT_POINT);
+      return;
+    }
+  if (DocumentTypes[doc] == docSource ||
+      DocumentTypes[doc] == docText || DocumentTypes[doc] == docLog)
+    // cannot apply to a text file
     return;
+  profile = TtaGetDocumentProfile (doc);
+  if (profile == L_Strict || profile == L_Basic)
+    {
+      /* cannot insert here */
+      TtaDisplaySimpleMessage (CONFIRM, AMAYA, AM_NOT_ALLOWED);
+      return;
+    }
+  else if (DocumentTypes[doc] != docSVG && DocumentMeta[doc])
+    {
+      DocumentMeta[doc]->compound = TRUE;
+      if (!DocumentMeta[doc]->xmlformat)
+        {
+          // the document becomes an XML document
+          DocumentMeta[doc]->xmlformat = TRUE;
+          root = TtaGetRootElement (doc);
+          TtaSetANamespaceDeclaration (doc, root, NULL, XHTML_URI);
+        }
+    }
+  context.doc = doc;
+  /* Check that whether we are in formatted or strutured view. */
+  if (view == 1)
+    isFormattedView = TRUE;
+  else if (view == 2)
+    isFormattedView = FALSE;
+  else return;
+
   TtaGiveFirstSelectedElement (doc, &first, &c1, &i);
   if (first)
     {
       parent = TtaGetParent (first);
       if (TtaIsReadOnly (parent))
         /* do not create new elements within a read-only element */
-        return;
+        {
+          TtaDisplaySimpleMessage (CONFIRM, LIB, TMSG_EL_RO);
+          return;
+        }
     }
+  else
+    {
+      TtaDisplaySimpleMessage (CONFIRM, AMAYA, AM_NO_INSERT_POINT);
+      return;
+    }
+
   TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
   selEl = first;
   newEl = NULL;
@@ -1588,18 +1898,18 @@ void CreateGraphicElement (int entry)
   docModified = TtaIsDocumentModified (doc);
   /* Are we in a drawing? */
   docSchema = TtaGetDocumentSSchema (doc);
-  SvgSchema = GetSVGSSchema (doc);
-  attrType.AttrSSchema = SvgSchema;
+  svgSchema = GetSVGSSchema (doc);
+  attrType.AttrSSchema = svgSchema;
   elType = TtaGetElementType (selEl);
   if (elType.ElTypeNum == SVG_EL_SVG &&
-      elType.ElSSchema == SvgSchema)
-    SvgRoot = selEl;
+      elType.ElSSchema == svgSchema)
+    svgCanvas = selEl;
   else
     {
       elType.ElTypeNum = SVG_EL_SVG;
-      elType.ElSSchema = SvgSchema;
-      SvgRoot = TtaGetTypedAncestor (first, elType);
-      if (SvgRoot == NULL)
+      elType.ElSSchema = svgSchema;
+      svgCanvas = TtaGetTypedAncestor (first, elType);
+      if (svgCanvas == NULL)
         /* the current selection is not in a SVG element, create one */
         {
           selType = TtaGetElementType (first);
@@ -1611,10 +1921,11 @@ void CreateGraphicElement (int entry)
                 {
                   /* It's not a generic XML element */
                   TtaCancelLastRegisteredSequence (doc);
+                  TtaDisplaySimpleMessage (CONFIRM, AMAYA, AM_NOT_ALLOWED);
                   return;
                 }
             }
-          SvgSchema = TtaNewNature (doc, docSchema, NULL, "SVG", "SVGP");
+          svgSchema = TtaNewNature (doc, docSchema, NULL, "SVG", "SVGP");
           if (TtaIsSelectionEmpty ())
             {
               /* try to create the SVG here */
@@ -1622,7 +1933,8 @@ void CreateGraphicElement (int entry)
               TtaGiveFirstSelectedElement (doc, &elem, &c1, &i);
               selType = TtaGetElementType (elem);
               if (selType.ElTypeNum != elType.ElTypeNum)
-                SvgRoot = TtaGetTypedAncestor (elem, elType);
+                svgCanvas = TtaGetTypedAncestor (elem, elType);
+              newSVG = TRUE;
             }
           else
             {
@@ -1636,28 +1948,47 @@ void CreateGraphicElement (int entry)
                 }
               while (selType.ElTypeNum != HTML_EL_BODY &&
                      selType.ElTypeNum != HTML_EL_Division );
-	      
+
               /* create and insert a SVG element here */
-              SvgRoot = TtaNewElement (doc, elType);
-              TtaInsertSibling (SvgRoot, first, FALSE, doc);
-              first = SvgRoot;
-              newGraph = TRUE;
+              svgCanvas = TtaNewElement (doc, elType);
+              TtaInsertSibling (svgCanvas, first, FALSE, doc);
+              first = svgCanvas;
+              newSVG = TRUE;
             }
-          if (SvgRoot)
+          if (svgCanvas)
             /* a root SVG element was created. Create the required attributes*/
             {
-              attrType.AttrTypeNum = SVG_ATTR_version;
+              // mark the new Coordinate System
+              TtaSetElCoordinateSystem (svgCanvas);
+              /*attrType.AttrTypeNum = SVG_ATTR_version;
+                attr = TtaNewAttribute (attrType);
+                TtaAttachAttribute (svgCanvas, attr, doc);
+                TtaSetAttributeText (attr, SVG_VERSION, svgCanvas, doc);*/
+              attrType.AttrTypeNum = SVG_ATTR_width_;
               attr = TtaNewAttribute (attrType);
-              TtaAttachAttribute (SvgRoot, attr, doc);
-              TtaSetAttributeText (attr, SVG_VERSION, SvgRoot, doc);
+              TtaAttachAttribute (svgCanvas, attr, doc);
+              TtaSetAttributeText (attr, "500", svgCanvas, doc);
+              ParseWidthHeightAttribute (attr, svgCanvas, doc, FALSE);
+
+              attrType.AttrTypeNum = SVG_ATTR_height_;
+              attr = TtaNewAttribute (attrType);
+              TtaAttachAttribute (svgCanvas, attr, doc);
+              TtaSetAttributeText (attr, "300", svgCanvas, doc);
+              ParseWidthHeightAttribute (attr, svgCanvas, doc, FALSE);
+              // point to this default selection
+              selEl = svgCanvas;
             }
         }
     }
 
+  /* Look for the outermost <svg> element containg the svgCanvas. */
+  GetAncestorCanvasAndObject(doc, NULL,
+                             &svgAncestor, &svgCanvas);
+
   /* look for the element (sibling) in front of which the new element will be
      created */
   sibling = NULL;
-  if (first == SvgRoot)
+  if (first == svgCanvas)
     parent = NULL;
   else
     {
@@ -1669,7 +2000,7 @@ void CreateGraphicElement (int entry)
           if (parent)
             {
               elType = TtaGetElementType (parent);
-              if (elType.ElSSchema == SvgSchema &&
+              if (elType.ElSSchema == svgSchema &&
                   (elType.ElTypeNum == SVG_EL_g ||
                    elType.ElTypeNum == SVG_EL_SVG))
                 found = TRUE;
@@ -1682,339 +2013,1921 @@ void CreateGraphicElement (int entry)
 
   if (!parent)
     {
-      parent = SvgRoot;
-      sibling = TtaGetLastChild (SvgRoot);
+      parent = svgCanvas;
+      sibling = TtaGetLastChild (svgCanvas);
     }
 
-  newType.ElSSchema = SvgSchema;
+
+  /* Check whether the sibling is a graphics element */
+  elType = TtaGetElementType (sibling);
+  replaceGraph = (elType.ElTypeNum == SVG_EL_GraphicsElement);
+
+  if (isFormattedView)
+    {
+      /* Select the SVG element where we draw, so that we can see the frame */
+      TtaSelectElement(doc, svgCanvas);
+    }
+
+  newType.ElSSchema = svgSchema;
   newType.ElTypeNum = 0;
-  shape = EOS;
 
   switch (entry)
     {
+    case -2: /* template */
+      newType.ElTypeNum = SVG_EL_g;
+      break;
+
+    case -1: /* <svg/> */
+      newType.ElTypeNum = SVG_EL_SVG;
+      break;
+
     case 0:	/* line */
       newType.ElTypeNum = SVG_EL_line_;
-      shape = 'g';
       break;
+
     case 1:	/* rectangle */
-      newType.ElTypeNum = SVG_EL_rect;
-      shape = 'C';
-      break;
     case 2:	/* rectangle with rounded corners */
-      newType.ElTypeNum = SVG_EL_rect;
-      shape = 'C';
+    case 15: /* square */
+    case 16: /* rounded square */
+      if (svgCanvas == svgAncestor)
+        newType.ElTypeNum = SVG_EL_rect;
+      else
+        newType.ElTypeNum = SVG_EL_polygon;
       break;
+
+      newType.ElTypeNum = SVG_EL_rect;
+      break;
+
+      newType.ElTypeNum = SVG_EL_rect;
+      break;
+
     case 3:	/* circle */
       newType.ElTypeNum = SVG_EL_circle_;
-      shape = 'a';
       break;
+
     case 4:	/* ellipse */
       newType.ElTypeNum = SVG_EL_ellipse;
-      shape = 'c';
       break;
+
     case 5:	/* polyline */
       newType.ElTypeNum = SVG_EL_polyline;
-      shape = 'S';
       break;
+
     case 6:	/* polygon */
       newType.ElTypeNum = SVG_EL_polygon;
-      shape = 'p';
       break;
+
     case 7:	/* spline */
       newType.ElTypeNum = SVG_EL_path;
-      shape = 'B';
       break;
+
     case 8:	/* closed spline */
       newType.ElTypeNum = SVG_EL_path;
-      shape = 's';
       break;
-    case 9:	/* switch and foreignObject with some HTML code */
-      newType.ElTypeNum = SVG_EL_switch;
+
+      /* switch and foreignObject */
+    case 9: /* XHTML */
+    case 56: /* MathML */
+      if (isFormattedView)
+        newType.ElTypeNum = SVG_EL_g;
+      else
+        newType.ElTypeNum = SVG_EL_switch;
       break;
+
     case 10:	/* text */
       newType.ElTypeNum = SVG_EL_text_;
       break;
-    case 11:	/* group */
-      newType.ElTypeNum = 0;
+
+    case 12: /* Simple arrow */
+      newType.ElTypeNum = SVG_EL_path;
       break;
+
+    case 13: /* Double arrow */
+      newType.ElTypeNum = SVG_EL_path;
+      break;
+
+    case 14: /* Zigzag */
+      newType.ElTypeNum = SVG_EL_polyline;
+      break;
+
+    case 17: /* diamond */
+      newType.ElTypeNum = SVG_EL_polygon;
+      break;
+
+    case 18: /* trapezium */
+      newType.ElTypeNum = SVG_EL_polygon;
+      break;
+
+    case 19: /* parallelogram */
+      newType.ElTypeNum = SVG_EL_polygon;
+      break;
+
+    case 20: /* equilateral triangle */
+      newType.ElTypeNum = SVG_EL_polygon;
+      break;
+
+    case 21: /* isosceles triangle */
+      newType.ElTypeNum = SVG_EL_polygon;
+      break;
+
+    case 22: /* rectangle triangle */
+      newType.ElTypeNum = SVG_EL_polygon;
+      break;
+
+      /*     case 23: /\* cube *\/ */
+      /*       newType.ElTypeNum = SVG_EL_path; */
+      /*       break; */
+
+      /*     case 24: /\* parallelepiped *\/ */
+      /*       newType.ElTypeNum = SVG_EL_path; */
+      /*       break; */
+
+      /*     case 25: /\* cylinder *\/ */
+      /*       newType.ElTypeNum = SVG_EL_path; */
+      /*       break; */
+
     default:
       break;
     }
-  InCreation = TRUE;
-  if (newType.ElTypeNum > 0)
+
+  if (newType.ElTypeNum > 0 &&
+      (entry != -1 || !newSVG))
     {
       dispMode = TtaGetDisplayMode (doc);
       /* ask Thot to stop displaying changes made in the document */
       if (dispMode == DisplayImmediately)
         TtaSetDisplayMode (doc, DeferredDisplay);
-      
-      /* for rectangles, circle, ellipse, and text, ask for an elastic box */
-      if (newType.ElTypeNum == SVG_EL_rect ||
-          newType.ElTypeNum == SVG_EL_circle_ ||
-          newType.ElTypeNum == SVG_EL_ellipse ||
-          newType.ElTypeNum == SVG_EL_text_)
-        TtaAskFirstCreation ();
+
       /* create the new element */
       newEl = TtaNewElement (doc, newType);
-      if (!sibling)
-        TtaInsertFirstChild (&newEl, parent, doc);
-      else
+      if (isFormattedView)
         {
-          elType = TtaGetElementType (sibling);
-          if (elType.ElSSchema == SvgSchema &&
-              elType.ElTypeNum == SVG_EL_GraphicsElement)
-            /* the new element replaces the existing, empty element */
-            TtaInsertFirstChild (&newEl, sibling, doc);
+          /* Insert the element as the last child (i.e. in the foreground)
+             of the svgCanvas */
+          if (!replaceGraph)
+            {
+              sibling = TtaGetLastChild(svgCanvas);
+              if (!sibling)
+                TtaInsertFirstChild (&newEl, svgCanvas, doc);
+              else
+                TtaInsertSibling (newEl, sibling, FALSE, doc);
+            }
+          else if (!sibling)
+            TtaInsertFirstChild (&newEl, parent, doc);
           else
-            TtaInsertSibling (newEl, sibling, FALSE, doc);
+            {
+              elType = TtaGetElementType (sibling);
+              if (elType.ElSSchema == svgSchema &&
+                  elType.ElTypeNum == SVG_EL_GraphicsElement)
+                /* the new element replaces the existing, empty element */
+                TtaInsertFirstChild (&newEl, sibling, doc);
+              else
+                TtaInsertSibling (newEl, sibling, FALSE, doc);
+            }
+          // the top element is now inserted
+          sibling = NULL;
+          replaceGraph = FALSE;
         }
 
-      /* create attributes fill and stroke if they are not inherited */
-      if (newType.ElTypeNum == SVG_EL_line_ ||
-          newType.ElTypeNum == SVG_EL_rect ||
-          newType.ElTypeNum == SVG_EL_circle_ ||
-          newType.ElTypeNum == SVG_EL_ellipse ||
-          newType.ElTypeNum == SVG_EL_polyline ||
-          newType.ElTypeNum == SVG_EL_polygon ||
-          newType.ElTypeNum == SVG_EL_path)
+      if (entry == -2 && LastSVGelement != NULL)
         {
-          selEl = newEl;
-          /* attribute stroke="black" */
-          attrType.AttrTypeNum = SVG_ATTR_stroke;
-          if (!InheritAttribute (newEl, attrType))
+          tmpDoc = GetAmayaDoc (LastSVGelement, NULL,
+                                0, 0, CE_TEMPLATE, FALSE, NULL, NULL);
+          TtaFreeMemory(LastSVGelement);
+          LastSVGelement = NULL;
+
+          parent = TtaGetMainRoot(tmpDoc);
+          elType.ElSSchema = svgSchema;
+          elType.ElTypeNum = SVG_EL_SVG;
+          parent = TtaSearchTypedElement(elType, SearchForward, parent);
+
+          if (parent)
             {
-              /* is there a CSS stroke property? */
-              if (!InheritPRule (newEl, PRForeground))
+	      
+              child = TtaGetFirstChild(parent);
+              next = NULL;
+              while (child)
                 {
+                  elem = TtaCopyTree(child, tmpDoc, doc, newEl);
+                  if (next)
+                    TtaInsertSibling (elem, next, FALSE, doc);
+                  else
+                    TtaInsertFirstChild (&elem, newEl, doc);
+                  next = elem;
+                  TtaNextSibling(&child);
+                }
+              created = TRUE;
+            }
+          TtaRemoveDocumentReference (tmpDoc);
+
+          selEl = newEl;
+
+          /* Update the title */
+          SetElementData(doc, newEl, svgSchema, SVG_EL_title,
+                         LastSVGelementTitle);
+          TtaFreeMemory(LastSVGelementTitle);
+
+          /* mark the new Coordinate System */
+          TtaSetElCoordinateSystem (newEl);
+        }
+
+      if (entry == -1)
+        {
+          /* <svg/> */
+          if (isFormattedView)
+            {
+              created = AskSurroundingBox(doc,
+                                          svgAncestor,
+                                          svgCanvas,
+                                          entry,
+                                          &x1, &y1, &x2, &y2,
+                                          &x3, &y3, &x4, &y4,
+                                          &lx, &ly);
+            }
+          else
+            {
+              /* TODO: add a dialog box ? */
+              x1 = y1 = 0;
+              lx = 500;
+              ly = 300;
+              created = TRUE;
+            }
+
+          attrType.AttrTypeNum = SVG_ATTR_x;
+          UpdateAttrText (newEl, doc, attrType, x1, FALSE, TRUE);
+          attrType.AttrTypeNum = SVG_ATTR_y;
+          UpdateAttrText (newEl, doc, attrType, y1, FALSE, TRUE);
+          attrType.AttrTypeNum = SVG_ATTR_width_;
+          UpdateAttrText (newEl, doc, attrType, lx, FALSE, TRUE);
+          attrType.AttrTypeNum = SVG_ATTR_height_;
+          UpdateAttrText (newEl, doc, attrType, ly, FALSE, TRUE);
+          selEl = newEl;
+        }
+      else if ((0 <= entry && entry <= 4) || (entry >= 12 && entry <= 25))
+        {
+          /* Basic Shapes and lines */
+          selEl = newEl;
+
+          /*
+            1-------------2
+            |             |
+            |             |
+            |             |
+            3-------------4
+          */
+
+          if (isFormattedView)
+            {
+              created = AskSurroundingBox(doc,
+                                          svgAncestor,
+                                          svgCanvas,
+                                          entry,
+                                          &x1, &y1, &x2, &y2,
+                                          &x3, &y3, &x4, &y4,
+                                          &lx, &ly);
+            }
+          else
+            {
+              /* TODO: add a dialog box ? */
+              x1 = x3 = 0;
+              x2 = x4 = 100;
+              y1 = y2 = 0;
+              y3 = y4 = 100;
+              lx = ly = 100;
+              created = TRUE;
+            }
+
+          if (created)
+            {
+              switch(entry)
+                {
+                case 0: /* Line */
+                  attrType.AttrTypeNum = SVG_ATTR_x1;
+                  UpdateAttrText (newEl, doc, attrType, x1, FALSE, TRUE);
+
+                  attrType.AttrTypeNum = SVG_ATTR_y1;
+                  UpdateAttrText (newEl, doc, attrType, y1, FALSE, TRUE);
+
+                  attrType.AttrTypeNum = SVG_ATTR_x2;
+                  UpdateAttrText (newEl, doc, attrType, x4, FALSE, TRUE);
+
+                  attrType.AttrTypeNum = SVG_ATTR_y2;
+                  UpdateAttrText (newEl, doc, attrType, y4, FALSE, TRUE);
+
+                  SVGElementComplete (&context, newEl, &error);
+                  break;
+
+                case 12: /* Simple Arrow */
+                  attrType.AttrTypeNum = SVG_ATTR_d;
                   attr = TtaNewAttribute (attrType);
                   TtaAttachAttribute (newEl, attr, doc);
-                  TtaSetAttributeText (attr, "black", newEl, doc);
-                  ParseCSSequivAttribute (attrType.AttrTypeNum, attr, newEl,
-                                          doc, FALSE);
-                }
-            }
-          if (newType.ElTypeNum != SVG_EL_line_)
-            {
-              /* attribute fill="none" */
-              attrType.AttrTypeNum = SVG_ATTR_fill;
-              if (!InheritAttribute (newEl, attrType))
-                {
-                  /* is there a CSS fill property? */
-                  if (!InheritPRule (newEl, PRFillPattern))
+
+                  tmpx1 = x1; tmpy1 = y1;
+                  tmpx2 = x4; tmpy2 = y4;
+                  GetArrowCoord(&tmpx1, &tmpy1, &tmpx2, &tmpy2);
+
+                  sprintf(buffer, "M %d %d L %d %d M %d %d L %d %d %d %d",
+                          x1, y1, x4, y4,
+                          tmpx1, tmpy1, x4, y4, tmpx2, tmpy2
+                          );
+                  TtaSetAttributeText (attr, buffer, newEl, doc);
+                  ParsePathDataAttribute (attr, newEl, doc, TRUE);
+                  SVGElementComplete (&context, newEl, &error);
+                  break;
+
+                case 13: /* Double Arrow */
+                  attrType.AttrTypeNum = SVG_ATTR_d;
+                  attr = TtaNewAttribute (attrType);
+                  TtaAttachAttribute (newEl, attr, doc);
+
+                  tmpx1 = x1; tmpy1 = y1;
+                  tmpx2 = x4; tmpy2 = y4;
+                  GetArrowCoord(&tmpx1, &tmpy1, &tmpx2, &tmpy2);
+
+                  tmpx3 = x4; tmpy3 = y4;
+                  tmpx4 = x1; tmpy4 = y1;
+                  GetArrowCoord(&tmpx3, &tmpy3, &tmpx4, &tmpy4);
+
+                  sprintf(buffer, "M %d %d L %d %d M %d %d L %d %d %d %d M %d %d L %d %d %d %d",
+                          x1, y1, x4, y4,
+                          tmpx1, tmpy1, x4, y4, tmpx2, tmpy2,
+                          tmpx3, tmpy3, x1, y1, tmpx4, tmpy4
+                          );
+
+                  TtaSetAttributeText (attr, buffer, newEl, doc);
+                  ParsePathDataAttribute (attr, newEl, doc, TRUE);
+                  SVGElementComplete (&context, newEl, &error);
+                  break;
+
+                case 14: /* Zigzag */
+                  attrType.AttrTypeNum = SVG_ATTR_points;
+                  attr = TtaNewAttribute (attrType);
+                  TtaAttachAttribute (newEl, attr, doc);
+                  sprintf(buffer, "%d %d %d %d %d %d %d %d",
+                          x1,y1,
+                          x1,(y1+y4)/2,
+                          x4,(y1+y4)/2,
+                          x4,y4
+                          );
+                  TtaSetAttributeText (attr, buffer, newEl, doc);
+                  ParsePointsAttribute (attr, newEl, doc);
+                  SVGElementComplete (&context, newEl, &error);
+                  break;
+
+                  /* Square */
+                case 15:
+                  /* Rectangle */
+                case 1:
+                  /* Rounded Square */
+                case 16:
+                  /* Rounded-Rectangle */
+                case 2:
+                  if (svgCanvas == svgAncestor)
                     {
+                      if (x4 < x1)x1 = x4;
+                      if (y4 < y1)y1 = y4;
+
+                      attrType.AttrTypeNum = SVG_ATTR_x;
+                      UpdateAttrText (newEl, doc, attrType, x1, FALSE, TRUE);
+		  
+                      attrType.AttrTypeNum = SVG_ATTR_y;
+                      UpdateAttrText (newEl, doc, attrType, y1, FALSE, TRUE);
+		  
+                      attrType.AttrTypeNum = SVG_ATTR_width_;
+                      UpdateAttrText (newEl, doc, attrType, lx, FALSE, TRUE);
+	      
+                      attrType.AttrTypeNum = SVG_ATTR_height_;
+                      UpdateAttrText (newEl, doc, attrType, ly, FALSE, TRUE);
+
+                      SVGElementComplete (&context, newEl, &error);
+
+                      if (entry == 16 || entry == 2)
+                        {
+                          attrType.AttrTypeNum = SVG_ATTR_rx;
+                          attr = TtaNewAttribute (attrType);
+                          TtaAttachAttribute (newEl, attr, doc);
+                          TtaSetAttributeText (attr, "5px", newEl, doc);
+                          ParseWidthHeightAttribute (attr, newEl, doc, FALSE);
+                          SVGElementComplete (&context, newEl, &error);
+                        }
+                    }
+                  else
+                    {
+                      attrType.AttrTypeNum = SVG_ATTR_points;
                       attr = TtaNewAttribute (attrType);
                       TtaAttachAttribute (newEl, attr, doc);
-                      TtaSetAttributeText (attr, "none", newEl, doc);
-                      ParseCSSequivAttribute (attrType.AttrTypeNum, attr,
-                                              newEl, doc, FALSE);
+                      sprintf(buffer, "%d %d %d %d %d %d %d %d",
+                              x1,y1,
+                              x2,y2,
+                              x4,y4,
+                              x3,y3
+                              );
+                      TtaSetAttributeText (attr, buffer, newEl, doc);
+                      ParsePointsAttribute (attr, newEl, doc);
                     }
+
+                  break;
+
+                  /* Circle */
+                case 3:
+                  attrType.AttrTypeNum = SVG_ATTR_cx;
+                  UpdateAttrText (newEl, doc, attrType, (x1+x4)/2, FALSE, TRUE);
+
+                  attrType.AttrTypeNum = SVG_ATTR_cy;
+                  UpdateAttrText (newEl, doc, attrType, (y1+y4)/2, FALSE, TRUE);
+
+                  attrType.AttrTypeNum = SVG_ATTR_r;
+                  UpdateAttrText (newEl, doc, attrType, lx/2, FALSE, TRUE);
+
+
+                  SVGElementComplete (&context, newEl, &error);
+                  break;
+
+                  /* Ellipse */
+                case 4:
+                  attrType.AttrTypeNum = SVG_ATTR_cx;
+                  UpdateAttrText (newEl, doc, attrType, (x1+x4)/2, FALSE, TRUE);
+
+                  attrType.AttrTypeNum = SVG_ATTR_cy;
+                  UpdateAttrText (newEl, doc, attrType, (y1+y4)/2, FALSE, TRUE);
+
+                  attrType.AttrTypeNum = SVG_ATTR_rx;
+                  UpdateAttrText (newEl, doc, attrType, lx/2, FALSE, TRUE);
+
+                  attrType.AttrTypeNum = SVG_ATTR_ry;
+                  UpdateAttrText (newEl, doc, attrType, ly/2, FALSE, TRUE);;
+
+                  SVGElementComplete (&context, newEl, &error);
+                  break;
+
+                case 17: /* diamond */
+                  attrType.AttrTypeNum = SVG_ATTR_points;
+                  attr = TtaNewAttribute (attrType);
+                  TtaAttachAttribute (newEl, attr, doc);
+                  sprintf(buffer, "%d %d %d %d %d %d %d %d",
+                          (x1+x3)/2  , (y1+y3)/2,
+                          (x1+x2)/2  , (y1+y2)/2,
+                          (x2+x4)/2  , (y2+y4)/2,
+                          (x4+x3)/2  , (y4+y3)/2
+                          );
+                  TtaSetAttributeText (attr, buffer, newEl, doc);
+                  ParsePointsAttribute (attr, newEl, doc);
+                  SVGElementComplete (&context, newEl, &error);
+                  break;
+
+                case 18: /* trapezium */
+                  attrType.AttrTypeNum = SVG_ATTR_points;
+                  attr = TtaNewAttribute (attrType);
+                  TtaAttachAttribute (newEl, attr, doc);
+                  sprintf(buffer, "%d %d %d %d %d %d %d %d",
+                          x3, y3,
+                          (3*x1+x2)/4, (3*y1+y2)/4,
+                          (3*x2+x1)/4, (3*y2+y1)/4,
+                          x4, y4
+                          );
+                  TtaSetAttributeText (attr, buffer, newEl, doc);
+                  ParsePointsAttribute (attr, newEl, doc);
+                  SVGElementComplete (&context, newEl, &error);
+                  break;
+
+                case 19: /* parallelogram */
+                  attrType.AttrTypeNum = SVG_ATTR_points;
+                  attr = TtaNewAttribute (attrType);
+                  TtaAttachAttribute (newEl, attr, doc);
+                  sprintf(buffer, "%d %d %d %d %d %d %d %d",
+                          x3, y3,
+                          (3*x1+x2)/4, (3*y1+y2)/4,
+                          x2,y2,
+                          (3*x4+x3)/4, (3*y4+y3)/4
+                          );
+                  TtaSetAttributeText (attr, buffer, newEl, doc);
+                  ParsePointsAttribute (attr, newEl, doc);
+                  SVGElementComplete (&context, newEl, &error);
+                  break;
+
+                case 20: /* equilateral triangle */
+                  attrType.AttrTypeNum = SVG_ATTR_points;
+                  attr = TtaNewAttribute (attrType);
+                  TtaAttachAttribute (newEl, attr, doc);
+
+                  sprintf(buffer, "%d %d %d %d %d %d",
+                          (x1+x2)/2, (y1+y2)/2,
+                          x3,y3,
+                          x4,y4
+                          );
+                  TtaSetAttributeText (attr, buffer, newEl, doc);
+                  ParsePointsAttribute (attr, newEl, doc);
+                  SVGElementComplete (&context, newEl, &error);
+                  break;
+
+                case 21: /* isosceles triangle */
+                  attrType.AttrTypeNum = SVG_ATTR_points;
+                  attr = TtaNewAttribute (attrType);
+                  TtaAttachAttribute (newEl, attr, doc);
+                  sprintf(buffer, "%d %d %d %d %d %d",
+                          (x1+x2)/2, (y1+y2)/2,
+                          x3, y3,
+                          x4, y4
+                          );
+                  TtaSetAttributeText (attr, buffer, newEl, doc);
+                  ParsePointsAttribute (attr, newEl, doc);
+                  SVGElementComplete (&context, newEl, &error);
+                  break;
+
+                case 22: /* rectangle triangle */
+                  attrType.AttrTypeNum = SVG_ATTR_points;
+                  attr = TtaNewAttribute (attrType);
+                  TtaAttachAttribute (newEl, attr, doc);
+                  sprintf(buffer, "%d %d %d %d %d %d",
+                          x1, y1,
+                          x2, y2,
+                          x3, y3
+                          );
+                  TtaSetAttributeText (attr, buffer, newEl, doc);
+                  ParsePointsAttribute (attr, newEl, doc);
+                  SVGElementComplete (&context, newEl, &error);
+                  break;
+
+                default:
+                  break;
                 }
             }
         }
-
-      /* create a child for the new element */
-      if (shape != EOS)
-        /* create a graphic leaf according to the element's type */
+      else if (entry >= 5 && entry <= 8)
         {
-          childType.ElSSchema = SvgSchema;
-          childType.ElTypeNum = SVG_EL_GRAPHICS_UNIT;
-          child = TtaNewElement (doc, childType);
-          TtaInsertFirstChild (&child, newEl, doc);
-          TtaSetGraphicsShape (child, shape, doc);
-          if (entry == 2)
-            /* rectangle with rounded corners */
+          /* Polyline and curves */
+          selEl = newEl;
+
+          if (isFormattedView)
             {
-              /* create a default rx attribute */
-              attrType.AttrTypeNum = SVG_ATTR_rx;
+              elType = TtaGetElementType(newEl);
+              CreateGraphicLeaf (newEl, doc, &closed);
+              created = TRUE;
+            }
+          else created = FALSE;
+        }
+      else if (entry == 9 || entry == 56)
+        /* create a foreignObject containing an
+	   XHTML <div/> / MathML <math/> element */
+        {
+          created = TRUE;
+
+          if (isFormattedView)
+            {
+              /* Ask the position and size */
+              AskSurroundingBox(doc,
+                                svgAncestor,
+                                svgCanvas,
+                                9,
+                                &x1, &y1, &x2, &y2,
+                                &x3, &y3, &x4, &y4,
+                                &lx, &ly);
+
+              /* create a transform=translate attribute */
+              attrType.AttrTypeNum = SVG_ATTR_transform;
               attr = TtaNewAttribute (attrType);
               TtaAttachAttribute (newEl, attr, doc);
-              TtaSetAttributeText (attr, "5px", newEl, doc);
-              ParseWidthHeightAttribute (attr, newEl, doc, FALSE);
+              sprintf(buffer, "translate(%d,%d)", x1, y1);
+              TtaSetAttributeText (attr, buffer, newEl, doc);
+              ParseTransformAttribute (attr, newEl, doc, FALSE);
+
+              /* Create a switch element */
+              childType.ElSSchema = svgSchema;
+              childType.ElTypeNum = SVG_EL_switch;
+              switch_ = TtaNewElement (doc, childType);
+              TtaInsertFirstChild (&switch_, newEl, doc);
             }
-        }
-      else if (newType.ElTypeNum == SVG_EL_text_)
-        /* create a TEXT leaf */
-        {
-          childType.ElSSchema = SvgSchema;
-          childType.ElTypeNum = SVG_EL_TEXT_UNIT;
-          child = TtaNewElement (doc, childType);
-          TtaInsertFirstChild (&child, newEl, doc);
-          selEl = child;
-        }
-      else if (newType.ElTypeNum == SVG_EL_switch)
-        /* create a foreignObject containing an XHTML div element within the
-           new element */
-        {
-          childType.ElSSchema = SvgSchema;
+          else
+            switch_ = newEl;
+
+          /* Create a foreign Object */
+          childType.ElSSchema = svgSchema;
           childType.ElTypeNum = SVG_EL_foreignObject;
-          TtaAskFirstCreation ();
           foreignObj = TtaNewElement (doc, childType);
-          TtaInsertFirstChild (&foreignObj, newEl, doc);
+          TtaInsertFirstChild (&foreignObj, switch_, doc);
+
           /* associate a requiredExtensions attribute with the foreignObject
              element */
           attrType.AttrTypeNum = SVG_ATTR_requiredExtensions;
           attr = TtaNewAttribute (attrType);
           TtaAttachAttribute (foreignObj, attr, doc);
-          TtaSetAttributeText (attr, XHTML_URI, foreignObj, doc);
-          attrType.AttrTypeNum = SVG_ATTR_width_;
-          UpdateAttrText (foreignObj, doc, attrType, 100, FALSE, TRUE);
-          attrType.AttrTypeNum = SVG_ATTR_height_;
-          UpdateAttrText (foreignObj, doc, attrType, 100, FALSE, TRUE);
-          /* the document is supposed to be HTML */
-          childType.ElSSchema = TtaNewNature (doc, docSchema, NULL, "HTML",
+
+	  if(entry == 9)
+	    TtaSetAttributeText (attr, XHTML_URI, foreignObj, doc);
+	  else 
+	    TtaSetAttributeText (attr, MathML_URI, foreignObj, doc);
+
+          if (isFormattedView)
+            {
+              /* Size of the foreignObject */
+              attrType.AttrTypeNum = SVG_ATTR_width_;
+              UpdateAttrText (foreignObj, doc, attrType, 100, FALSE, TRUE);
+              attrType.AttrTypeNum = SVG_ATTR_height_;
+              UpdateAttrText (foreignObj, doc, attrType, 50, FALSE, TRUE);
+            }
+
+	  if(entry == 9)
+	    {
+	      /* the document is supposed to be HTML */
+	      childType.ElSSchema = TtaNewNature (doc, docSchema, NULL, "HTML",
                                               "HTMLP");
-          childType.ElTypeNum = HTML_EL_Division;
-          child = TtaNewTree (doc, childType, "");
-          /* do not check the Thot abstract tree against the structure */
-          /* schema when inserting this element */
-          oldStructureChecking = TtaGetStructureChecking (doc);
-          TtaSetStructureChecking (FALSE, doc);
-          /* insert the new <div> element */
-          TtaInsertFirstChild (&child, foreignObj, doc);
-          /* put an XHTML namespace declaration on the <div> element */
-          TtaSetUriSSchema (childType.ElSSchema, XHTML_URI);
-          TtaSetANamespaceDeclaration (doc, child, NULL, XHTML_URI);
-          TtaSetStructureChecking (oldStructureChecking, doc);
-          /* create an alternate SVG text element for viewers that are not
-             able to display embedded MathML */
-          elType.ElSSchema = SvgSchema;
-          elType.ElTypeNum = SVG_EL_text_;
-          altText = TtaNewElement (doc, elType);
-          TtaInsertSibling (altText, foreignObj, FALSE, doc);
-          elType.ElTypeNum = SVG_EL_TEXT_UNIT;
-          leaf = TtaNewElement (doc, elType);
-          TtaInsertFirstChild (&leaf, altText, doc);
-          lang = TtaGetLanguageIdFromScript('L');
-          TtaSetTextContent (leaf, (unsigned char *)"<html>", lang, doc);
-          /* is there a SVG direction attribute on any ancestor element? */
-          attrType.AttrTypeNum = SVG_ATTR_direction_;
-          inheritedAttr = InheritAttribute (foreignObj, attrType);
-          dir = -1;
-          if (!inheritedAttr)
-            /* no direction attribute. Create a HTML dir attribute with
-               value ltr */
-            dir = HTML_ATTR_dir_VAL_ltr_;
-          else
-            {
-              svgDir = TtaGetAttributeValue (inheritedAttr);
-              switch (svgDir)
-                {
-                case SVG_ATTR_direction__VAL_ltr_ :
-                  dir = HTML_ATTR_dir_VAL_ltr_;
-                  break;
-                case SVG_ATTR_direction__VAL_rtl_ :
-                  dir = HTML_ATTR_dir_VAL_rtl_;
-                  break;
-                case SVG_ATTR_direction__VAL_inherit :
-                  dir = -1;
-                  break;
-                }
-            }
-          if (dir >= 0)
-            {
-              /* create a dir attribute for the div element */
-              attrTypeHTML.AttrSSchema = childType.ElSSchema;
-              attrTypeHTML.AttrTypeNum = HTML_ATTR_dir;
-              attr = TtaNewAttribute (attrTypeHTML);
-              TtaAttachAttribute (child, attr, doc);	   
-              TtaSetAttributeValue (attr, dir, child, doc);
-            }
-          /* select the first leaf */
-          elem = child;
-          do
-            {
-              selEl = elem;
-              elem = TtaGetFirstChild (elem);
-            }
-          while (elem != NULL);
+	      childType.ElTypeNum = HTML_EL_Division;
+	      child = TtaNewTree (doc, childType, "");
+
+	      /* do not check the Thot abstract tree against the structure */
+	      /* schema when inserting this element */
+	      oldStructureChecking = TtaGetStructureChecking (doc);
+	      TtaSetStructureChecking (FALSE, doc);
+
+	      /* insert the new <div> element */
+	      TtaInsertFirstChild (&child, foreignObj, doc);
+
+	      /* put an XHTML namespace declaration on the <div> element */
+	      TtaSetUriSSchema (childType.ElSSchema, XHTML_URI);
+	      TtaSetANamespaceDeclaration (doc, child, NULL, XHTML_URI);
+	      TtaSetStructureChecking (oldStructureChecking, doc);
+
+	      /* is there a SVG direction attribute on any ancestor element? */
+	      attrType.AttrTypeNum = SVG_ATTR_direction_;
+	      inheritedAttr = InheritAttribute (foreignObj, attrType);
+	      dir = -1;
+	      if (!inheritedAttr)
+		/* no direction attribute. Create a HTML dir attribute with
+		   value ltr */
+		dir = HTML_ATTR_dir_VAL_ltr_;
+	      else
+		{
+		  svgDir = TtaGetAttributeValue (inheritedAttr);
+		  switch (svgDir)
+		    {
+		    case SVG_ATTR_direction__VAL_ltr_ :
+		      dir = HTML_ATTR_dir_VAL_ltr_;
+		      break;
+		    case SVG_ATTR_direction__VAL_rtl_ :
+		      dir = HTML_ATTR_dir_VAL_rtl_;
+		      break;
+		    case SVG_ATTR_direction__VAL_inherit :
+		      dir = -1;
+		      break;
+		    }
+		}
+	      if (dir >= 0)
+		{
+		  /* create a dir attribute for the div element */
+		  attrTypeHTML.AttrSSchema = childType.ElSSchema;
+		  attrTypeHTML.AttrTypeNum = HTML_ATTR_dir;
+		  attr = TtaNewAttribute (attrTypeHTML);
+		  TtaAttachAttribute (child, attr, doc);
+		  TtaSetAttributeValue (attr, dir, child, doc);
+		}
+  
+	      /* select the first leaf */
+	      elem = child;
+	      
+	      do
+		{
+		  selEl = elem;
+		  elem = TtaGetFirstChild (elem);
+		}
+	      while (elem != NULL);
+	    }
+	  else
+	    selEl = foreignObj;
+
+	  
+	  /* create an alternate SVG text element for viewers that are not
+	     able to display embedded XHTML/MathML */
+	  elType.ElSSchema = svgSchema;
+	  elType.ElTypeNum = SVG_EL_text_;
+	  altText = TtaNewElement (doc, elType);
+	  TtaInsertSibling (altText, foreignObj, FALSE, doc);
+	  elType.ElTypeNum = SVG_EL_TEXT_UNIT;
+	  leaf = TtaNewElement (doc, elType);
+	  TtaInsertFirstChild (&leaf, altText, doc);
+	  lang = TtaGetLanguageIdFromScript('L');
+	  if(entry == 9)
+	    TtaSetTextContent (leaf,
+			       (unsigned char *)"embedded XHTML not supported" ,
+			       lang, doc);
+	  else
+	    TtaSetTextContent (leaf,
+			       (unsigned char *)"embedded MathML not supported" ,
+			       lang, doc);
+
+
+          /* set the visibility of the alternate text */
+          EvaluateTestAttrs (switch_, doc);
         }
-      /* set the visibility of the alternate text */
-      EvaluateTestAttrs (newEl, doc);
-      if (newGraph)
-        TtaRegisterElementCreate (SvgRoot, doc);
+      else if (entry == 10)
+        /* creation of a TEXT leaf */
+        {
+          created = TRUE;
+	  
+          childType.ElSSchema = svgSchema;
+          childType.ElTypeNum = SVG_EL_TEXT_UNIT;
+          child = TtaNewElement (doc, childType);
+          TtaInsertFirstChild (&child, newEl, doc);
+          selEl = child;
+
+          if (isFormattedView)
+            {
+              /* Ask where the user wants to insert the text */
+              AskSurroundingBox(doc,
+                                svgAncestor,
+                                svgCanvas,
+                                entry,
+                                &x1, &y1, &x2, &y2,
+                                &x3, &y3, &x4, &y4,
+                                &lx, &ly);
+
+              attrType.AttrTypeNum = SVG_ATTR_x;
+              UpdateAttrText (newEl, doc, attrType, x1, FALSE, TRUE);
+
+              attrType.AttrTypeNum = SVG_ATTR_y;
+              UpdateAttrText (newEl, doc, attrType, y1, FALSE, TRUE);
+            }
+        }
+
+      if (created)
+        {
+
+          if (replaceGraph)
+            {
+              TtaRegisterElementDelete (sibling, doc);
+              TtaDeleteTree(sibling, doc);
+            }
+	  
+          if (newSVG)
+            TtaRegisterElementCreate (svgCanvas, doc);
+          else
+            TtaRegisterElementCreate (newEl, doc);
+        }
       else
-        TtaRegisterElementCreate (newEl, doc);
+        {
+          TtaDeleteTree(newEl, doc);
+          newEl = NULL;
+        }
+
+      if (entry == 56)
+        {
+          /* Creation of a MathML Foreign object: go back to the Mathedit
+             module */
+          TtaSelectElement (doc, foreignObj);
+          TtaCloseUndoSequence (doc);
+          return;
+        }
 
       /* ask Thot to display changes made in the document */
       TtaSetDisplayMode (doc, dispMode);
     }
-  
-  if (shape == 'S' || shape == 'p' || shape == 'B' ||
-      shape == 's' || shape == 'g')
-    /* multipoints element. Let the user enter the points */
+
+
+  /* create attributes fill and stroke */
+  if (entry != -1 && created && 
+      (newType.ElTypeNum == SVG_EL_g ||
+       newType.ElTypeNum == SVG_EL_line_ ||
+       newType.ElTypeNum == SVG_EL_rect ||
+       newType.ElTypeNum == SVG_EL_circle_ ||
+       newType.ElTypeNum == SVG_EL_ellipse ||
+       newType.ElTypeNum == SVG_EL_polyline ||
+       newType.ElTypeNum == SVG_EL_polygon ||
+       newType.ElTypeNum == SVG_EL_path))
     {
-      if (shape != 'g')
+
+      *buffer = EOS;
+      if (entry >= 5 && entry <= 8)
         {
-          TtaGiveBoxSize (parent, doc, 1, UnPixel, &w, &h);
-          TtaChangeLimitOfPolyline (child, UnPixel, w, h, doc);
+          /* Add a temporary style */
+          strcpy(buffer2, "stroke:black; fill:none;");
+          ParseHTMLSpecificStyle (newEl, buffer2, doc, 0, FALSE);
+          /* Ask the points of the polyline/curve */
+          created = AskShapePoints (doc, svgAncestor, svgCanvas,
+                                    entry, newEl);
+          if(created)
+            UpdatePointsOrPathAttribute(doc, newEl, 0, 0, TRUE);
+          else
+            {
+              /* Actually, the user don't create the shape */
+              TtaRegisterElementDelete (newEl, doc);
+              TtaDeleteTree(newEl, doc);
+              newEl = NULL;
+              TtaSelectElement(doc, sibling);
+            }
         }
-      /* select the leaf element and ask the user to enter the points */
-      TtaSelectElement (doc, child);
-      TtcInsertGraph (doc, 1, shape);
-      /* the user has created the points */
-      if (shape != 'g')
+      
+      if(created)
         {
-          if (TtaGetElementVolume (child) < 3)
-            {
-              /* the polyline doesn't have enough points */
-              TtaDeleteTree (newEl, doc);
-              TtaCancelLastRegisteredSequence (doc);
-              if (!docModified)
-                TtaSetDocumentUnmodified (doc);
-              TtaSelectElement (doc, first);
-              InCreation = FALSE;
-              return;
-            }
-          else if (shape == 'B' || /* open spline */
-                   shape == 's')   /* closed spline */
-            /* transform a Thot curve into a SVG path */
-            {
-              TtaCancelLastRegisteredOperation (doc);
-              path = TtaTransformCurveIntoPath (child);
-              TtaRemoveTree (child, doc);
-              TtaInsertFirstChild (&child, newEl, doc);
-              attrType.AttrTypeNum = SVG_ATTR_d;
-              attr = TtaNewAttribute (attrType);
-              TtaAttachAttribute (newEl, attr, doc);
-              TtaSetAttributeText (attr, path, newEl, doc);
-              TtaFreeMemory (path);
-              ParsePathDataAttribute (attr, newEl, doc, TRUE);
-              if (newGraph)
-                TtaRegisterElementCreate (SvgRoot, doc);
-              else
-                TtaRegisterElementCreate (newEl, doc);
-            }
+          sprintf (buffer,  "stroke: black; stroke-opacity: 1; stroke-width: 1;");
+          if (isFilled)
+            strcat (buffer, "fill: #9dc2de");
+          else if(entry != 0)
+            strcat (buffer, "fill:none;");
+          
+          ParseHTMLSpecificStyle (newEl, buffer, doc, 0, FALSE);
+          attrType.AttrTypeNum = SVG_ATTR_style_;
+          attr = TtaNewAttribute (attrType);
+          TtaAttachAttribute (newEl, attr, doc);
+          TtaSetAttributeText (attr, buffer, newEl, doc);
+          //  Update the style panel to display current properties
+          UpdateStylePanelSVG (doc, 1, newEl);
         }
     }
+
   if (selEl != NULL)
     /* select the right element */
     TtaSelectElement (doc, selEl);
-  
+
   /* adapt the size of the SVG root element if necessary */
-  InCreation = FALSE;
-  CheckSVGRoot (doc, newEl);
-  SetGraphicDepths (doc, SvgRoot);
+  /* CheckSVGRoot (doc, newEl);
+     SetGraphicDepths (doc, svgCanvas);*/
+
   TtaCloseUndoSequence (doc);
   TtaSetDocumentModified (doc);
-  if (newType.ElTypeNum == 0)
-    InitInfo ("      ", TtaGetMessage (AMAYA, AM_NOT_AVAILABLE));
 #endif /* _SVG */
 }
 
+/*----------------------------------------------------------------------
+  SelectGraphicElement
+  ----------------------------------------------------------------------*/
+void SelectGraphicElement (Document doc, View view)
+{
 #ifdef _SVG
+  Element          svgAncestor, svgCanvas;
+  Element	   first, sibling, parent;
+  int		   c1, c2;
+  int x1, y1, x2, y2, x3, y3, x4, y4, lx, ly;
+  float xmin, xmax, ymin, ymax;
+  float x,y,width,height;
+  ThotBool IsFirst;
+
+  /* Check that a document is selected */
+  if (doc == 0)return;
+
+  /* Check that whether we are in formatted view. */
+  if (view != 1 )return;
+
+  TtaGiveFirstSelectedElement (doc, &first, &c1, &c2);
+  if (first)
+    {
+      parent = TtaGetParent (first);
+      if (TtaIsReadOnly (parent))
+        /* do modify read-only element */
+        {
+          TtaDisplaySimpleMessage (CONFIRM, LIB, TMSG_EL_RO);
+          return;
+        }
+    }
+  else
+    /* no selection */
+    return;
+
+  if (!GetAncestorCanvasAndObject(doc, &first,
+                                  &svgAncestor, &svgCanvas))
+    return;
+
+  TtaSelectElement(doc, svgCanvas);
+
+  /* Ask a box surrounding the element the user wants to select */
+  AskSurroundingBox(doc,
+                    svgAncestor,
+                    svgCanvas,
+                    42,
+                    &x1, &y1, &x2, &y2,
+                    &x3, &y3, &x4, &y4,
+                    &lx, &ly);
+  xmin = x1;
+  xmax = x4;
+  ymin = y1;
+  ymax = y4;
+
+  TtaUnselect(doc);
+
+  /* Look for each child whether it is inside the box */
+  for(sibling = TtaGetFirstChild(svgCanvas), IsFirst = TRUE;
+      sibling;
+      TtaNextSibling(&sibling)
+      )
+    {
+      GetPositionAndSizeInParentSpace(doc, sibling, &x, &y, &width, &height);
+      if (x >= xmin && x + width <= xmax &&
+          y >= ymin && y + height <= ymax)
+        {
+          if (IsFirst)
+            {
+              TtaSelectElement(doc, sibling);  
+              IsFirst = FALSE;
+            }
+          else
+            TtaAddElementToSelection(doc, sibling);
+        }
+    }
+
+#endif /* _SVG */
+}
+
+/*----------------------------------------------------------------------
+  EditGraphicElement
+  entry is the number of the entry chosen by the user in the Graphics
+  palette.
+  ----------------------------------------------------------------------*/
+void EditGraphicElement (Document doc, View view, int entry)
+{
+#ifdef _SVG
+  DisplayMode  dispMode;
+  int		       c1, c2;
+  ThotBool     done;
+  Element      first, parent;
+  SSchema      svgSchema;
+#define MAX_TITLE 50
+  char         title[MAX_TITLE+1];
+  char         desc[MAX_LENGTH+1];
+  char        *title_, *desc_;
+
+  /* Check that a document is selected */
+  if (doc == 0)return;
+  svgSchema = GetSVGSSchema (doc);
+
+  TtaGiveFirstSelectedElement (doc, &first, &c1, &c2);
+  if (first)
+    {
+      parent = TtaGetParent (first);
+      if (TtaIsReadOnly (parent))
+        /* do modify read-only element */
+        {
+          TtaDisplaySimpleMessage (CONFIRM, LIB, TMSG_EL_RO);
+          return;
+        }
+    }
+  else
+    /* no selection */
+    return;
+
+  TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
+  dispMode = TtaGetDisplayMode (doc);
+  /* ask Thot to stop displaying changes made in the document */
+  if (dispMode == DisplayImmediately)
+    TtaSetDisplayMode (doc, DeferredDisplay);
+
+  switch (entry)
+    {
+    case 55:
+      done = GenerateDesc (doc, view, first);
+      break;
+
+    case 54:
+      /* Get the current title */
+      title_ = GetElementData(doc, first, svgSchema, SVG_EL_title);
+      if(title_)
+        {
+          strncpy(title, title_, MAX_TITLE);
+          title[MAX_TITLE] = EOS;
+          TtaFreeMemory(title_);
+        }
+      else
+        *title = EOS;
+
+      /* Get the current title */
+      desc_ = GetElementData(doc, first, svgSchema, SVG_EL_desc);
+      if(desc_)
+        {
+          strncpy (desc, desc_, MAX_LENGTH);
+          desc[MAX_LENGTH] = EOS;
+          TtaFreeMemory (desc_);
+        }
+      else
+        *desc = EOS;
+
+      /* Dialog box */
+      done = QueryTitleAndDescFromUser(title, MAX_TITLE,
+                                       desc, MAX_LENGTH);
+      if(done)
+        {
+          SetElementData(doc, first, svgSchema, SVG_EL_title, title);
+          SetElementData(doc, first, svgSchema, SVG_EL_desc, desc);
+        }
+
+      break;
+
+    default:
+      TtaDisplaySimpleMessage (CONFIRM, AMAYA, AM_NOT_AVAILABLE);
+      break;
+    }
+  
+  TtaCloseUndoSequence (doc);
+  if (!done)
+    /* no change done */
+    TtaCancelLastRegisteredSequence (doc);
+  /* ask Thot to display changes made in the document */
+  TtaSetDisplayMode (doc, dispMode);
+  TtaSetDocumentModified (doc);
+#endif /* _SVG */
+}
+
+/*----------------------------------------------------------------------
+  TransformGraphicElement
+  Apply a transformation to a Graphics element.
+  entry is the number of the entry chosen by the user in the Graphics
+  palette.
+  ----------------------------------------------------------------------*/
+void TransformGraphicElement (Document doc, View view, int entry)
+{
+#ifdef _SVG
+  Element          *selected;
+  int              *position;
+
+  Element          tmp_el;
+  int              tmp_pos;
+
+  int              nb_selected;
+  Element          svgAncestor, svgCanvas, group;
+  Element	         first, sibling, sibling2, child, parent;
+  DisplayMode      dispMode;
+  int		   c1, c2, i, j, k;
+  float            x, y, width, height;
+  float            xmin, ymin, xmax, ymax, xcenter, ycenter;
+  ThotBool         isFormattedView, done = TRUE;
+  ThotBool         isDistribution, sortSelection;
+  ElementType      elType;
+  SSchema          svgSchema;
+
+  /* Check that a document is selected */
+  if (doc == 0)return;
+
+  svgSchema = GetSVGSSchema (doc);
+
+  /* Check that whether we are in formatted or strutured view. */
+  if (view == 1) isFormattedView = TRUE;
+  else if (view == 2)isFormattedView = FALSE;
+  else return;
+
+  TtaGiveFirstSelectedElement (doc, &first, &c1, &c2);
+  if (first)
+    {
+      parent = TtaGetParent (first);
+      if (TtaIsReadOnly (parent))
+        /* do modify read-only element */
+        {
+          TtaDisplaySimpleMessage (CONFIRM, LIB, TMSG_EL_RO);
+          return;
+        }
+    }
+  else
+    /* no selection */
+    return;
+
+  /* If the element is a TEXT_UNIT, get the <text/> ancestor */
+  elType = TtaGetElementType(first);
+  if(elType.ElSSchema == svgSchema &&
+     elType.ElTypeNum == SVG_EL_TEXT_UNIT)
+    {
+      elType.ElTypeNum = SVG_EL_text_;
+      child = TtaGetTypedAncestor(first, elType);
+      if(child != NULL)
+	first = child;
+    }
+
+  /* Get the <svg/> ancestor, canvas and check that the first selected 
+     element is a child of canvas */
+  child = first;
+
+  if (!GetAncestorCanvasAndObject(doc, &child,
+                                  &svgAncestor, &svgCanvas))
+    return;
+
+  if (child != first)return;
+
+  /* Count how many children of svgCanvas are selected*/
+  for(nb_selected = 0, sibling = first;
+      sibling;
+      TtaGiveNextSelectedElement(doc, &sibling, &c1, &c2)
+      )
+    if (TtaGetParent(sibling) == svgCanvas)nb_selected++;
+  ;
+
+  /* Check if there are enough elements selected */
+  isDistribution = (46 <= entry && entry <= 53);
+
+  if (nb_selected == 0 || (isDistribution && nb_selected < 3))
+    return;
+
+  /* Put all the pointers to the selected children into a table */
+  selected = (Element *)(TtaGetMemory(nb_selected * sizeof(Element)));
+  if (selected == NULL)
+    return;
+
+  /* For distribution, allocate a table of positions */
+  if(isDistribution)
+    {
+      position = (int *)(TtaGetMemory(nb_selected * sizeof(int)));
+      if(position == NULL)
+        return;
+    }
+
+  /* For some operations, the order of the selection is important */
+  sortSelection = (entry == 11 || entry == 26 ||
+                   (29 <= entry && entry <= 32));
+
+  for(i = 0, sibling = first;
+      i < nb_selected;
+      TtaGiveNextSelectedElement(doc, &sibling, &c1, &c2)
+      )
+    {
+      /* Is the element a child the svgCanvas */
+      if (TtaGetParent(sibling) == svgCanvas)
+        {
+          selected[i] = sibling;
+
+          if(sortSelection)
+            {
+              /* Search where the element must be inserted */
+              for(j = 0; j < i; j++)
+                {
+                  if(TtaIsBefore(selected[i], selected[j]))
+                    break;
+                }
+	      
+              if(j < i)
+                {
+                  /* selected[i] must be inserted before selected[j] */
+                  tmp_el = selected[i];
+                  for(k = i; k > j; k--)
+                    selected[k] = selected[k-1];
+                  selected[j] = tmp_el;
+                }
+            }
+
+          i++;
+        }
+    }
+
+  TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
+  dispMode = TtaGetDisplayMode (doc);
+  /* ask Thot to stop displaying changes made in the document */
+  if (dispMode == DisplayImmediately)
+    TtaSetDisplayMode (doc, DeferredDisplay);
+
+  switch (entry)
+    {
+    case 11: /* group */
+      elType.ElSSchema = svgSchema;
+      elType.ElTypeNum = SVG_EL_g;
+      group = TtaNewElement (doc, elType);
+
+      /* insert the new group element */
+      TtaInsertSibling (group, selected[nb_selected - 1], FALSE, doc);
+      TtaRegisterElementCreate (group, doc);
+
+      for (i = 0; i < nb_selected; i++)
+        {
+          TtaRegisterElementDelete (selected[i], doc);
+          TtaRemoveTree (selected[i], doc);
+          if(i == 0)
+            TtaInsertFirstChild (&selected[i], group, doc);
+          else
+            TtaInsertSibling (selected[i], selected[i-1], FALSE, doc);
+
+          TtaRegisterElementCreate (selected[i], doc);
+        }
+
+      TtaSelectElement (doc, group);
+      break;
+
+    case 26:	/* Ungroup */
+      for (i = 0; i < nb_selected; i++)
+        {
+          Ungroup (doc, selected[i]);
+        }
+      break;
+      
+    case 27:   /* Flip Vertically */
+    case 28:   /* Flip Horizontally */
+      for (i = 0; i < nb_selected; i++)
+        FlipElementInParentSpace(doc, selected[i], entry == 28);
+      break;
+
+    case 29:   /* BringToFront */
+      for (i = 0, sibling = TtaGetLastChild(svgCanvas); i < nb_selected; i++)
+        {
+          child = selected[i];
+          if (child != sibling)
+            {
+              TtaRegisterElementDelete (child, doc);
+              TtaRemoveTree(child, doc);
+              TtaInsertSibling(child, sibling, FALSE, doc);
+              TtaRegisterElementCreate (child, doc);
+              sibling = child;
+            }
+        }
+      break;
+
+    case 30:   /* BringForward */
+      for(i = nb_selected - 1, sibling2 = NULL; i >= 0; i--)
+        {
+          child = selected[i];
+          sibling = selected[i];
+          TtaNextSibling(&sibling);
+          
+          if (sibling != sibling2)
+            {
+              TtaRegisterElementDelete (child, doc);
+              TtaRemoveTree(child, doc);
+              TtaInsertSibling(child, sibling, FALSE, doc);
+              TtaRegisterElementCreate (child, doc);
+            }
+
+          sibling2 = child;
+        }
+      break;
+
+    case 31:   /* SendBackward */
+      for(i = 0, sibling2 = NULL; i < nb_selected; i++)
+        {
+          child = selected[i];
+          sibling = selected[i];
+          TtaPreviousSibling(&sibling);
+
+          if (sibling != sibling2)
+            {
+              TtaRegisterElementDelete (child, doc);
+              TtaRemoveTree(child, doc);
+              TtaInsertSibling(child, sibling, TRUE, doc);
+              TtaRegisterElementCreate (child, doc);
+            }
+
+          sibling2 = child;
+        }
+      break;
+
+    case 32:   /* SendToBack */
+      for(i = 0, sibling = TtaGetFirstChild(svgCanvas); i < nb_selected; i++)
+        {
+          child = selected[i];
+          if (child != sibling)
+            {
+              TtaRegisterElementDelete (child, doc);
+              TtaRemoveTree(child, doc);
+              TtaInsertSibling(child, sibling, i == 0, doc);
+              TtaRegisterElementCreate (child, doc);
+              sibling = child;
+            }
+        }
+      break;
+
+    case 33:   /* RotateAntiClockWise */
+    case 34:   /* RotateClockWise */
+      for(i = 0; i < nb_selected; i++)
+        RotateElementInParentSpace(doc, selected[i], entry == 33 ? 90 : -90);
+      break;
+
+    case 35:   /* AlignLeft */
+    case 36:   /* AlignCenter */
+    case 37:   /* AlignRight */
+    case 38:   /* AlignTop */
+    case 39:   /* AlignMiddle */
+    case 40:   /* AlignBottom */
+      if (nb_selected == 1)
+        {
+          /* Only one element is selected: do the alignment in the svgCanvas */
+          TtaGiveBoxSize (svgCanvas, doc, 1, UnPixel, &c1, &c2);
+          xmax = (float)c1;ymax = (float)c2;
+
+          GetPositionAndSizeInParentSpace(doc, selected[0],
+                                          &x, &y, &width, &height);
+
+          switch(entry)
+            {
+            case 35:   /* AlignLeft */
+              MoveElementInParentSpace(doc, selected[0], 0, y);
+              break;
+
+            case 36:   /* AlignCenter */
+              MoveElementInParentSpace(doc, selected[0], ((float)(xmax-width))/2, y);
+              break;
+
+            case 37:   /* AlignRight */
+              MoveElementInParentSpace(doc, selected[0], xmax-width, y);
+              break;
+
+            case 38:   /* AlignTop */
+              MoveElementInParentSpace(doc, selected[0], x, 0);
+              break;
+
+            case 39:   /* AlignMiddle */
+              MoveElementInParentSpace(doc, selected[0], x, ((float)(ymax-height))/2);
+              break;
+
+            case 40:   /* AlignBottom */
+              MoveElementInParentSpace(doc, selected[0], x, ymax-height);
+              break;
+            }
+	  
+        }
+      else
+        {
+          /* More than one element */
+          GetPositionAndSizeInParentSpace(doc, selected[0],
+                                          &x, &y, &width, &height);
+          xmin = x; xmax = x + width;
+          ymin = y; ymax = y + height;
+
+          for(i = 1; i < nb_selected; i++)
+            {
+              GetPositionAndSizeInParentSpace(doc, selected[i],
+                                              &x, &y, &width, &height);
+              if (x < xmin)xmin = x;
+              if (y < ymin)ymin = y;
+              if (x + width > xmax)xmax = x + width;
+              if (y + height > ymax)ymax = y + height;
+            }
+
+          xcenter = (xmin+xmax)/2;
+          ycenter = (ymin+ymax)/2;
+
+          for(i = 0; i < nb_selected; i++)
+            {
+              GetPositionAndSizeInParentSpace(doc, selected[i],
+                                              &x, &y, &width, &height);
+              switch(entry)
+                {
+                case 35:   /* AlignLeft */
+                  MoveElementInParentSpace(doc, selected[i], xmin, y);
+                  break;
+
+                case 36:   /* AlignCenter */
+                  MoveElementInParentSpace(doc, selected[i],
+                                           xcenter - ((float)width)/2, y);
+                  break;
+
+                case 37:   /* AlignRight */
+                  MoveElementInParentSpace(doc, selected[i], xmax - width, y);
+                  break;
+
+                case 38:   /* AlignTop */
+                  MoveElementInParentSpace(doc, selected[i], x, ymin);
+                  break;
+
+                case 39:   /* AlignMiddle */
+                  MoveElementInParentSpace(doc, selected[i], x,
+                                           ycenter - ((float)height)/2);
+                  break;
+
+                case 40:   /* AlignBottom */
+                  MoveElementInParentSpace(doc, selected[i], x, ymax - height);
+                  break;
+                }
+            }
+        }
+      break;
+
+    case 41:   /* Rotate */
+      if (isFormattedView)
+        done = AskTransform(doc, svgAncestor, svgCanvas, 2, selected[0]);
+      break;
+
+    case 43:   /* Skew */
+      if (isFormattedView)
+        done = AskTransform(doc, svgAncestor, svgCanvas, 4, selected[0]);
+      break;
+
+    case 44:   /* Scale */
+      if (isFormattedView)
+        done = AskTransform(doc, svgAncestor, svgCanvas, 1, selected[0]);
+      break;
+
+    case 45: /* Translate */
+      if (isFormattedView)
+        done = AskTransform(doc, svgAncestor, svgCanvas, 17, selected[0]);
+      break;
+
+    case 46:   /* DistributeLeft */
+    case 47:   /* DistributeCenter */
+    case 48:   /* DistributeRight */
+    case 49:   /* DistributeTop */
+    case 50:   /* DistributeMiddle */
+    case 51:   /* DistributeBottom */
+    case 52:   /* DistributeHorizontalSpacing */
+    case 53:   /* DistributeVerticalSpacing */
+
+      /* Get positions of selected elements and sort them */
+      for(i = 0; i < nb_selected; i++)
+        {
+          GetPositionAndSizeInParentSpace(doc, selected[i],
+                                          &x, &y, &width, &height);
+          switch(entry)
+            {
+            case 46:   /* DistributeLeft */
+              position[i] = (int)x;
+              break;
+            case 47:   /* DistributeCenter */
+            case 52:
+              position[i] = (int)(x+width/2);
+              break;
+
+            case 48:   /* DistributeRight */
+              position[i] = (int)(x+width);
+              break;
+
+            case 49:   /* DistributeTop */
+              position[i] = (int)y;
+              break;
+
+            case 50:   /* DistributeMiddle */
+            case 53:
+              position[i] = (int)(y+height/2);
+              break;
+
+            case 51:   /* DistributeBottom */
+              position[i] = (int)(y+height);
+              break;
+            }
+
+          /* Search where the element must be inserted */
+          for(j = 0; j < i; j++)
+            {
+              if(position[i] < position[j])
+                break;
+            }
+
+          if(j < i)
+            {
+              /* selected[i] must be inserted before selected[j] */
+              tmp_el = selected[i];
+              tmp_pos = position[i];
+              for(k = i; k > j; k--)
+                {
+                  selected[k] = selected[k-1];
+                  position[k] = position[k-1];
+                }
+              selected[j] = tmp_el;
+              position[j] = tmp_pos;
+            }
+        }
+
+      /* Now we can distribute the elements
+
+      We are going to compute:
+      j = left side
+      k = (n-1)*delta
+
+      Where delta is the distance we want to be constant.
+      */
+
+      if(entry == 52 || entry == 53)
+        {
+          /* It's a distribution according to space */
+          for(i = 0; i < nb_selected; i++)
+            {
+              GetPositionAndSizeInParentSpace(doc, selected[i],
+                                              &x, &y, &width, &height);
+
+              switch(entry)
+                {
+                case 52:
+                  if(i == 0) { k = (int)(-x); j = (int)x; }
+                  else if(i == nb_selected - 1)k+=(int)(x+width);
+
+                  k-=(int)width;
+                  break;
+
+                case 53:
+                  if(i == 0) { k = (int)(-y); j = (int)y; }
+                  else if(i == nb_selected - 1)k+=(int)(y+height);
+
+                  k-=(int)height;
+                  break;
+                }
+            }
+        }
+      else
+        {
+          /* It's a distribution according to position. */
+          j = position[0];
+          k = position[nb_selected - 1] - j;
+        }
+
+
+      for(i = 0; i < nb_selected; i++)
+        {
+          GetPositionAndSizeInParentSpace(doc, selected[i],
+                                          &x, &y, &width, &height);
+
+          switch(entry)
+            {
+            case 52:   /* DistributeHorizontalSpacing */
+            case 46:   /* DistributeLeft */
+              MoveElementInParentSpace(doc, selected[i],
+                                       j + ((float)(i*k))/(nb_selected-1),
+                                       y);
+              break;
+            case 47:   /* DistributeCenter */
+              MoveElementInParentSpace(doc, selected[i],
+                                       j + ((float)(i*k))/(nb_selected-1)
+                                       - ((float)width)/2,
+                                       y);
+              break;
+
+            case 48:   /* DistributeRight */
+              MoveElementInParentSpace(doc, selected[i],
+                                       j + ((float)(i*k))/(nb_selected-1)
+                                       - width,
+                                       y);
+              break;
+
+            case 53: /* DistributeVerticalSpacing */
+            case 49:   /* DistributeTop */
+              MoveElementInParentSpace(doc, selected[i],
+                                       x,
+                                       j + ((float)(i*k))/(nb_selected-1));
+              break;
+
+            case 50:   /* DistributeMiddle */
+              MoveElementInParentSpace(doc, selected[i],
+                                       x,
+                                       j + ((float)(i*k))/(nb_selected-1)
+                                       - ((float)height/2));
+              break;
+
+            case 51:   /* DistributeBottom */
+              MoveElementInParentSpace(doc, selected[i],
+                                       x,
+                                       j + ((float)(i*k))/(nb_selected-1)
+                                       - height);
+              break;
+            }
+
+          /* For distribution according to space, update the origin */
+          if(entry == 52)j+=(int)width;
+          else if(entry == 53)j+=(int)height;
+
+        }
+      
+      break;
+
+
+    }
+  
+  TtaFreeMemory(selected);
+  if(isDistribution)
+    TtaFreeMemory(position);
+
+  TtaCloseUndoSequence (doc);
+  if (!done)
+    /* no change done */
+    TtaCancelLastRegisteredSequence (doc);
+  /* ask Thot to display changes made in the document */
+  TtaSetDisplayMode (doc, dispMode);
+  TtaSetDocumentModified (doc);
+#endif /* _SVG */
+}
+
+/*----------------------------------------------------------------------
+  UpdateTransformMatrix
+  ----------------------------------------------------------------------*/
+void UpdateTransformMatrix(Document doc, Element el)
+{
+  char         *buffer;
+  Attribute     attr;
+  AttributeType attrType;
+  ThotBool      new_, open;
+  SSchema      svgSchema = GetSVGSSchema (doc);
+
+  /* Get the new attribute value */
+  buffer = TtaGetTransformAttributeValue(doc, el);
+
+  /* Check if the attribute already exists */
+  attrType.AttrSSchema = svgSchema;
+  attrType.AttrTypeNum = SVG_ATTR_transform;
+  attr = TtaGetAttribute (el, attrType);
+
+  /* check if the undo sequence is open */
+  open = !TtaHasUndoSequence (doc);
+  if (open)
+    TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
+
+  if (buffer == NULL)
+    {
+      if (attr)
+        {
+          /* Remove the current transform attribute */
+          TtaRegisterAttributeDelete (attr, el, doc);
+          TtaRemoveAttribute (el, attr, doc);
+        }
+      return;
+    }
+    
+  new_ = (attr == NULL);
+  if (new_)
+    {
+      attr = TtaNewAttribute (attrType);
+      TtaAttachAttribute (el, attr, doc);
+    }
+  else
+    TtaRegisterAttributeReplace (attr, el, doc);
+  TtaSetAttributeText (attr, buffer, el, doc);
+  if (new_)
+    TtaRegisterAttributeCreate (attr, el, doc);
+  TtaFreeMemory(buffer);
+ 
+  /* Update the attribute menu */
+  TtaUpdateAttrMenu(doc);
+
+  if (open)
+    TtaCloseUndoSequence (doc);
+}
+
+/*----------------------------------------------------------------------
+  UpdatePointsOrPathAttribute
+  ----------------------------------------------------------------------*/
+void UpdatePointsOrPathAttribute(Document doc, Element el, int w, int h,
+                                 ThotBool withUndo)
+{
+  char         *buffer;
+  Attribute     attr;
+  AttributeType attrType;
+  ElementType   elType;
+  ThotBool      new_, open;
+  Element leaf;
+  SSchema      svgSchema = GetSVGSSchema (doc);
+  ThotBool isPath;
+
+  /* Check whether the element is a Path or a polyline/polygon */
+  elType = TtaGetElementType (el);
+  if(elType.ElTypeNum == SVG_EL_path)
+    {
+      /* It's a Path */
+      isPath = TRUE;
+    }
+  else if(elType.ElTypeNum == SVG_EL_polyline ||
+          elType.ElTypeNum == SVG_EL_polygon)
+    {
+      /* It's a Polygon/polyline */
+      isPath = FALSE;
+    }
+  else
+    return;
+
+  /* Get the attribute value from the GRAPHICS leaf */
+  leaf = TtaGetLastChild(el);
+
+  if(isPath)
+    buffer = TtaGetPathAttributeValue(leaf, w, h);
+  else
+    buffer = TtaGetPointsAttributeValue(leaf, w, h);
+
+  /* Check if the attribute already exists */
+  attrType.AttrSSchema = svgSchema;
+
+  if(isPath)
+    attrType.AttrTypeNum = SVG_ATTR_d;
+  else
+    attrType.AttrTypeNum = SVG_ATTR_points;
+
+  attr = TtaGetAttribute (el, attrType);
+
+  /* check if the undo sequence is open */
+  if (withUndo)
+    {
+      open = !TtaHasUndoSequence (doc);
+      if (open)
+        {
+          TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
+          TtaSetDocumentModified(doc);
+        }
+    }
+
+  if (buffer == NULL)
+    {
+      if (attr)
+        {
+          /* Remove the current path attribute */
+          TtaRegisterAttributeDelete (attr, el, doc);
+          TtaRemoveAttribute (el, attr, doc);
+        }
+      return;
+    }
+    
+  new_ = (attr == NULL);
+  if (new_)
+    {
+      attr = TtaNewAttribute (attrType);
+      TtaAttachAttribute (el, attr, doc);
+    }
+  else
+    TtaRegisterAttributeReplace (attr, el, doc);
+  TtaSetAttributeText (attr, buffer, el, doc);
+  if (new_)
+    TtaRegisterAttributeCreate (attr, el, doc);
+  TtaFreeMemory(buffer);
+ 
+  /* Update the attribute menu */
+  TtaUpdateAttrMenu(doc);
+
+  if (withUndo && open)
+    {
+      TtaCloseUndoSequence (doc);
+      TtaSetDocumentUnmodified(doc);
+    }
+}
+
+/*----------------------------------------------------------------------
+  UpdateShapeElement
+  ----------------------------------------------------------------------*/
+void UpdateShapeElement(Document doc, Element el,
+                        char shape,
+                        int x, int y, int width, int height,
+                        int rx, int ry)
+{
+  SSchema      svgSchema = GetSVGSSchema (doc);
+  AttributeType attrType;
+  attrType.AttrSSchema = svgSchema;
+
+  DisplayMode     dispMode;
+
+  dispMode = TtaGetDisplayMode (doc);
+  /* ask Thot to stop displaying changes made to the document*/
+  if (dispMode == DisplayImmediately)
+    TtaSetDisplayMode (doc, DeferredDisplay);
+
+  TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
+
+
+  /* Apply the translate */
+  UpdateTransformMatrix(doc, el);
+
+  switch(shape)
+    {
+    case 'g':
+      UpdateWidthHeightAttribute (el, doc, width, TRUE);
+      UpdateWidthHeightAttribute (el, doc, height, FALSE);
+      UpdatePositionAttribute (el, doc, x, TRUE);
+      UpdatePositionAttribute (el, doc, y, FALSE);
+      break;
+
+    case 'a': /* circle */
+    case 'c': /* ellipse */
+      x+=(width/2);
+      y+=(height/2);
+      UpdateWidthHeightAttribute (el, doc, width, TRUE);
+      UpdateWidthHeightAttribute (el, doc, height, FALSE);
+      UpdatePositionAttribute (el, doc, x, TRUE);
+      UpdatePositionAttribute (el, doc, y, FALSE);
+      break;
+
+    case 1:
+    case 'C':
+      UpdateWidthHeightAttribute (el, doc, width, TRUE);
+      UpdateWidthHeightAttribute (el, doc, height, FALSE);
+      UpdatePositionAttribute (el, doc, x, TRUE);
+      UpdatePositionAttribute (el, doc, y, FALSE);
+      if(rx != -1)
+        {
+          attrType.AttrTypeNum = SVG_ATTR_rx;
+          UpdateAttrText (el, doc,  attrType, rx, FALSE, TRUE);
+        }
+
+      if(ry != -1)
+        {
+          attrType.AttrTypeNum = SVG_ATTR_ry;
+          UpdateAttrText (el, doc,  attrType, ry, FALSE, TRUE);
+        }
+      break;
+
+    default:
+      UpdatePointsOrPathAttribute(doc, el, width, height, TRUE);
+      break;
+    }
+
+  TtaCloseUndoSequence (doc);
+  TtaSetDisplayMode (doc, dispMode);
+}
+
+/*----------------------------------------------------------------------
+  RotateElementInParentSpace
+  ----------------------------------------------------------------------*/
+void RotateElementInParentSpace(Document doc, Element el, float theta)
+{
+  float X, Y, width, height, cx, cy, cost, sint;
+
+  /* Get the coordinates in Parent Space */
+  GetPositionAndSizeInParentSpace(doc, el, &X, &Y, &width, &height);
+  cx = X + width/2;
+  cy = Y + height/2;
+
+  /* Apply a rotation */
+  theta *= ((float)M_PI)/180;
+  cost = cos(theta);
+  sint = sin(theta);
+  TtaApplyMatrixTransform (doc, el, 1, 0, 0, 1, -cx, -cy);
+  TtaApplyMatrixTransform (doc, el, cost, -sint, sint, cost, 0, 0);
+  TtaApplyMatrixTransform (doc, el, 1, 0, 0, 1, +cx, +cy);
+
+  /* Update the attribute */
+  UpdateTransformMatrix(doc, el);
+}
+
+/*----------------------------------------------------------------------
+  FlipElementInParentSpace
+  According to the parameter horiz, flip the element el vertically or
+  horizontally, using the system of coordinates of its parent.
+  ----------------------------------------------------------------------*/
+void FlipElementInParentSpace(Document doc, Element el, ThotBool horiz)
+{
+  float X, Y, width, height, cx, cy;
+
+  /* Get the coordinates in Parent Space */
+  GetPositionAndSizeInParentSpace(doc, el, &X, &Y, &width, &height);
+  cx = X + width/2;
+  cy = Y + height/2;
+
+  /* Apply flip an get the new transform matrix */
+  TtaApplyMatrixTransform (doc, el, 1, 0, 0, 1, -cx, -cy);
+  
+  if (horiz)
+    TtaApplyMatrixTransform (doc, el, 1, 0, 0, -1, 0, 0);
+  else
+    TtaApplyMatrixTransform (doc, el, -1, 0, 0, 1, 0, 0);
+
+  TtaApplyMatrixTransform (doc, el, 1, 0, 0, 1, +cx, +cy);
+
+  /* Update the attribute */
+  UpdateTransformMatrix(doc, el);
+}
+
+/*----------------------------------------------------------------------
+  MoveElementInParentSpace
+  Move the element el at the position (x,y) in the system of coordinates
+  of its parent.
+  ----------------------------------------------------------------------*/
+void MoveElementInParentSpace(Document doc, Element el, float x, float y)
+{
+  float X, Y, width, height;
+
+  GetPositionAndSizeInParentSpace(doc, el, &X, &Y, &width, &height);
+  
+  /* Apply translation an get the new transform matrix */
+  TtaApplyMatrixTransform (doc, el, 1, 0, 0, 1, x - X, y - Y);
+
+  /* Update the attribute */
+  UpdateTransformMatrix(doc, el);
+}
+
+/*----------------------------------------------------------------------
+  
+
+----------------------------------------------------------------------*/
+void GetPositionAndSizeInParentSpace (Document doc, Element el, float *X,
+                                      float *Y, float *width, float *height)
+{ 
+#ifdef _SVG
+  Element	   parent;
+  SSchema          svgSchema;
+  ElementType      elType;
+  int dummy1,dummy2;
+
+  if (!el)return;
+  parent = TtaGetParent(el);
+
+  /* Check whether the parent is an SVG element */
+  svgSchema = GetSVGSSchema (doc);
+  elType = TtaGetElementType (parent);
+  if (elType.ElSSchema != svgSchema)
+    return;
+
+  /* Get the position and size of the box
+
+  X,Y---width-----
+  |             |
+  height          |
+  |             |
+  ---------------
+
+  */
+
+  TtaGiveBoxPosition (el, doc, 1, UnPixel, &dummy1, &dummy2);
+  *X = (float)(dummy1);
+  *Y = (float)(dummy2);
+
+  TtaGiveBoxSize (el, doc, 1, UnPixel, &dummy1, &dummy2);
+  *width = (float)(dummy1);
+  *height = (float)(dummy2);
+#endif /* _SVG */
+}
+
 /*----------------------------------------------------------------------
   CreateGroup
   Create a g element surrounding the selected elements
   ----------------------------------------------------------------------*/
-static void CreateGroup ()
+void CreateGroup ()
 {
+#ifdef _SVG
   Document	doc;
-  Element	el, prevSel, prevChild, group;
+  Element	el, prevSel, prevChild, group, parent;
   ElementType	elType;
   AttributeType	attrType;
-  int		c1, i, minX, minY;
+  int		c1, i;
   DisplayMode	dispMode;
   ThotBool	position;
+  SSchema       docSchema, svgSchema;
 
   doc = TtaGetSelectedDocument ();
   if (doc == 0)
@@ -2025,6 +3938,14 @@ static void CreateGroup ()
     /* no selection. Return */
     return;
 
+  if (el)
+    {
+      parent = TtaGetParent (el);
+      if (TtaIsReadOnly (parent))
+        /* do not create new elements within a read-only element */
+        return;
+    }
+
   dispMode = TtaGetDisplayMode (doc);
   /* ask Thot to stop displaying changes made in the document */
   if (dispMode == DisplayImmediately)
@@ -2033,59 +3954,144 @@ static void CreateGroup ()
   TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
   prevSel = NULL;
   prevChild = NULL;
-  /* Create a Group element */
-  elType = TtaGetElementType (el);
-  elType.ElTypeNum = SVG_EL_g;
-  group = TtaNewElement (doc, elType);
-  /* insert the new group element */
-  TtaInsertSibling (group, el, TRUE, doc);
-  TtaRegisterElementCreate (group, doc);
 
-  attrType.AttrSSchema = elType.ElSSchema;
-  minX = minY = 32000;
-  position = FALSE;
-  while (el != NULL)
+  /* Check whether the selection is in a SVG element */
+  docSchema = TtaGetDocumentSSchema (doc);
+  svgSchema = GetSVGSSchema (doc);
+  attrType.AttrSSchema = svgSchema;
+  elType = TtaGetElementType (el);
+  if (!(elType.ElTypeNum == SVG_EL_SVG &&
+        elType.ElSSchema == svgSchema))
     {
-      if (prevSel != NULL)
+
+      elType.ElTypeNum = SVG_EL_SVG;
+      elType.ElSSchema = svgSchema;
+      parent = TtaGetTypedAncestor (el, elType);
+      if (parent)
         {
-          TtaRegisterElementDelete (prevSel, doc);
-          TtaRemoveTree (prevSel, doc);
-          if (prevChild == NULL)
-            TtaInsertFirstChild (&prevSel, group, doc);
-          else
-            TtaInsertSibling (prevSel, prevChild, FALSE, doc);
-          TtaRegisterElementCreate (prevSel, doc);
-          prevChild = prevSel;
+          /* Create a Group element */
+          elType = TtaGetElementType (el);
+          elType.ElTypeNum = SVG_EL_g;
+          group = TtaNewElement (doc, elType);
+
+          /* insert the new group element */
+          TtaInsertSibling (group, el, TRUE, doc);
+          TtaRegisterElementCreate (group, doc);
+
+          attrType.AttrSSchema = elType.ElSSchema;
+          position = FALSE;
+          while (el != NULL)
+            {
+              if (prevSel != NULL)
+                {
+                  TtaRegisterElementDelete (prevSel, doc);
+                  TtaRemoveTree (prevSel, doc);
+                  if (prevChild == NULL)
+                    TtaInsertFirstChild (&prevSel, group, doc);
+                  else
+                    TtaInsertSibling (prevSel, prevChild, FALSE, doc);
+                  TtaRegisterElementCreate (prevSel, doc);
+                  prevChild = prevSel;
+                }
+              prevSel = el;
+              TtaGiveNextSelectedElement (doc, &el, &c1, &i);
+            }
+          if (prevSel != NULL)
+            {
+              TtaRegisterElementDelete (prevSel, doc);
+              TtaRemoveTree (prevSel, doc);
+              if (prevChild == NULL)
+                TtaInsertFirstChild (&prevSel, group, doc);
+              else
+                TtaInsertSibling (prevSel, prevChild, FALSE, doc);
+              TtaRegisterElementCreate (prevSel, doc);
+            }
+          TtaSelectElement (doc, group);
+
         }
-      prevSel = el;
-      TtaGiveNextSelectedElement (doc, &el, &c1, &i);
-    }
-  if (prevSel != NULL)
-    {
-      TtaRegisterElementDelete (prevSel, doc);
-      TtaRemoveTree (prevSel, doc);
-      if (prevChild == NULL)
-        TtaInsertFirstChild (&prevSel, group, doc);
-      else
-        TtaInsertSibling (prevSel, prevChild, FALSE, doc);      
-      TtaRegisterElementCreate (prevSel, doc);
     }
 
   TtaCloseUndoSequence (doc);
   /* ask Thot to display changes made in the document */
   TtaSetDisplayMode (doc, dispMode);
-  TtaSelectElement (doc, group);
+
+  TtaSetDocumentModified (doc);
+#endif /* _SVG */
 }
 
+/*----------------------------------------------------------------------
+  Ungroup
+  Ungroup the elements of a g element
+  ----------------------------------------------------------------------*/
+void Ungroup (Document doc, Element el)
+{
+#ifdef _SVG
+  ElementType   elType;
+  SSchema       svgSchema;  
+  Element child, nextchild, sibling;
+  Attribute attr;
+  AttributeType attrType;
+  float a,b,c,d,e,f;
 
+  svgSchema = GetSVGSSchema (doc);
+  elType = TtaGetElementType (el);
+
+  if (!(elType.ElTypeNum == SVG_EL_g &&
+        elType.ElSSchema == svgSchema))
+    /* The element is not a g: nothing to do */
+    
+    return;
+
+  /* Check if the attribute already exists */
+  attrType.AttrSSchema = elType.ElSSchema;
+  attrType.AttrTypeNum = SVG_ATTR_transform;
+  attr = TtaGetAttribute (el, attrType);
+
+  /* Get the transform matrix of the g element */
+  if (attr)TtaGetMatrixTransform(doc, el, &a, &b, &c, &d, &e, &f);
+
+  child = TtaGetFirstChild(el);
+  sibling = el;
+  while(child)
+    {
+      nextchild = child;
+      TtaNextSibling(&nextchild);
+
+      elType = TtaGetElementType(child);
+      if (!(elType.ElTypeNum == SVG_EL_title ||
+            elType.ElTypeNum == SVG_EL_desc))
+        {
+          /* Move the child */
+          TtaRegisterElementDelete (child, doc);
+          TtaRemoveTree(child, doc);
+          TtaInsertSibling(child, sibling, FALSE, doc);
+          TtaRegisterElementCreate (child, doc);
+
+          if (attr)
+            {
+              /* Apply the transformation matrix to the children */
+              TtaApplyMatrixTransform (doc, child, a, b, c, d, e, f);
+              UpdateTransformMatrix(doc, child);
+            }
+
+          sibling = child;
+
+        }
+      child = nextchild;
+    }
+
+  TtaRegisterElementDelete (el, doc);
+  TtaDeleteTree(el, doc);
+#endif /* _SVG */
+}
+
+#ifdef _SVG
 /*----------------------------------------------------------------------
   CallbackGraph: manage Graph dialogue events.
   ----------------------------------------------------------------------*/
 static void CallbackGraph (int ref, int typedata, char *data)
 {
-  Document           doc;
   long int           val = (long int) data;
-  int                profile;
 
   ref -= GraphDialogue;
   if (ref == MenuGraph1)
@@ -2098,32 +4104,12 @@ static void CallbackGraph (int ref, int typedata, char *data)
     case FormGraph:
       /* the user has clicked the DONE button in the Graphics dialog box */
       PaletteDisplayed = FALSE;
-      TtaDestroyDialogue (ref);    
+      TtaDestroyDialogue (ref);
       break;
- 
+
     case MenuGraph:
-      /* the user has selected an entry in the Graphics palette */
-      doc = TtaGetSelectedDocument ();
-      if (doc > 0)
-        {
-          // is it a compound document
-          profile = TtaGetDocumentProfile (doc);
-          if (profile == L_Strict || profile == L_Basic)
-            {
-              /* no selection. Nothing to do */
-              TtaDisplaySimpleMessage (CONFIRM, AMAYA, AM_NOT_ALLOWED);
-              return;
-            }
-          else if (DocumentTypes[doc] != docSVG && DocumentMeta[doc])
-            DocumentMeta[doc]->compound = TRUE;
-          /* there is a selection */
-          if (val == 11)
-            CreateGroup ();
-          else
-            CreateGraphicElement (val);
-        }
       break;
- 
+
     default:
       break;
     }
@@ -2143,7 +4129,7 @@ void FreeSVG ()
     delete iconGraphNo;
   for (int i = 0; i < 12; i++)
     {
-      if(mIcons[i])
+      if (mIcons[i])
         delete mIcons[i];
     }
 
@@ -2176,7 +4162,7 @@ void InitSVG ()
   mIcons[10] = TtaCreatePixmapLogo (text_xpm);
   mIcons[11] = TtaCreatePixmapLogo (group_xpm);
 #endif /* #if defined(_GTK) */
-   
+
   GraphDialogue = TtaSetCallback ((Proc)CallbackGraph, MAX_GRAPH);
 #endif /* _SVG */
 }
@@ -2216,7 +4202,7 @@ void SVGCreated (NotifyElement * event)
            declaration on the  <svg> element */
         {
           TtaSetUriSSchema (elType.ElSSchema, SVG_URI);
-          TtaSetANamespaceDeclaration (event->document, event->element, NULL,
+          TtaSetANamespaceDeclaration (event->document, event->element, "svg",
                                        SVG_URI);
         }
     }
@@ -2241,7 +4227,7 @@ ThotBool SVGWillBeDeleted (NotifyElement * event)
   TtaFreeElemNamespaceDeclarations (event->document, event->element);
   return FALSE; /* let Thot perform normal operation */
 }
- 
+
 /*----------------------------------------------------------------------
   TspanCreated
   A tspan element has been created by the user hitting a Enter key
@@ -2366,7 +4352,7 @@ ThotBool DeleteAttrXlinkHref (NotifyAttribute *event)
   /* prevents Thot from deleting the xlink:href attribute */
   return TRUE;
 }
- 
+
 
 /*----------------------------------------------------------------------
   AttrAnimTimeChanged
@@ -2390,3 +4376,744 @@ void Timeline_cross_prule_modified (NotifyPresentation *event)
 	Key_position_defined (event->document, event->element);
 #endif /* _SVG */
 }
+
+typedef struct object_
+{
+  Element el;
+  char *title;
+  float cx, cy;
+  float w, h;
+} object;
+
+/*----------------------------------------------------------------------
+  GetAbsolutePosition
+  -----------------------------------------------------------------------*/
+static const char *GetAbsolutePosition(object el, float w, float h)
+{
+  float px = el.cx / w;
+  float py = el.cy / h;
+
+  if(px < .3)
+    {
+      if(py < .3)
+        return TtaGetMessage(AMAYA, AM_SVG_ABSOLUTE_TOP_LEFT);
+      else if(py > .6)
+        return TtaGetMessage(AMAYA, AM_SVG_ABSOLUTE_BOTTOM_LEFT);
+      else
+        return TtaGetMessage(AMAYA, AM_SVG_ABSOLUTE_LEFT);
+    }
+  else if (px > .6)
+    {
+      if(py < .3)
+        return TtaGetMessage(AMAYA, AM_SVG_ABSOLUTE_TOP_RIGHT);
+      else if(py > .6)
+        return TtaGetMessage(AMAYA, AM_SVG_ABSOLUTE_BOTTOM_RIGHT);
+      else
+        return TtaGetMessage(AMAYA, AM_SVG_ABSOLUTE_RIGHT);
+    }
+  else
+    {
+      if(py < .3)
+        return TtaGetMessage(AMAYA, AM_SVG_ABSOLUTE_TOP);
+      else if(py > .6)
+        return TtaGetMessage(AMAYA, AM_SVG_ABSOLUTE_BOTTOM);
+      else
+        return TtaGetMessage(AMAYA, AM_SVG_ABSOLUTE_CENTER);
+    }
+
+  return NULL;
+}
+
+/*----------------------------------------------------------------------
+  GetRelativePosition
+  -----------------------------------------------------------------------*/
+static const char *GetRelativePosition(object ref, object obj)
+{
+  int dx, dy;
+
+  if(ref.cx+.5*ref.w <= obj.cx-.5*obj.w)
+    dx = +1;
+  else if(ref.cx-.5*ref.w >= obj.cx+.5*obj.w)
+    dx = -1;
+  else dx = 0;
+
+  if(ref.cy+.5*ref.h <= obj.cy-.5*obj.h)
+    dy = +1;
+  else if(ref.cy-.5*ref.h >= obj.cy+.5*obj.h)
+    dy = -1;
+  else dy = 0;
+
+  if(dx == -1)
+    {
+      if(dy == -1)
+        return TtaGetMessage(AMAYA, AM_SVG_RELATIVE_LEFT_ABOVE);
+      else if(dy == 1)
+        return TtaGetMessage(AMAYA, AM_SVG_RELATIVE_LEFT_BELOW);
+      else
+        return TtaGetMessage(AMAYA, AM_SVG_RELATIVE_LEFT);
+    }
+  else if(dx == +1)
+    {
+      if(dy == -1)
+        return TtaGetMessage(AMAYA, AM_SVG_RELATIVE_RIGHT_ABOVE);
+      else if(dy == 1)
+        return TtaGetMessage(AMAYA, AM_SVG_RELATIVE_RIGHT_BELOW);
+      else
+        return TtaGetMessage(AMAYA, AM_SVG_RELATIVE_RIGHT);
+    }
+  else if(dx == 0)
+    {
+      if(dy == -1)
+        return TtaGetMessage(AMAYA, AM_SVG_RELATIVE_ABOVE);
+      else if(dy == 1)
+        return TtaGetMessage(AMAYA, AM_SVG_RELATIVE_BELOW);
+      else
+        return TtaGetMessage(AMAYA, AM_SVG_RELATIVE_IN_FRONT_OF);
+    }
+
+  return NULL;
+}
+
+static ThotBool StrCat(char **desc, int *max_length, int *length, char *buffer)
+{
+  *length += strlen(buffer);
+  if(*length >= *max_length)
+    {
+      *max_length += MAX_LENGTH;
+      *desc = (char *)realloc ( *desc, (size_t)max_length );
+      if(*desc == NULL)
+        return FALSE;
+    }
+  strcat ( *desc, buffer);
+  return TRUE;
+}
+
+/*----------------------------------------------------------------------
+  GetDistanceBetweenCenters
+  -----------------------------------------------------------------------*/
+static float GetDistanceBetweenCenters(object a, object b)
+{
+  float dx, dy;
+  dx = a.cx - b.cx;
+  dy = a.cy - b.cy;
+  return sqrt(dx*dx + dy*dy);
+}
+
+/*----------------------------------------------------------------------
+  GenerateDesc
+  ----------------------------------------------------------------------*/
+ThotBool GenerateDesc (Document doc, View view, Element el)
+{
+  int dummy1, dummy2;
+  float w, h;
+  
+  ElementType       elType;
+  SSchema	    svgSchema = GetSVGSSchema (doc);
+  Element child;
+  int i, j, j_nearest, nb;
+  float r_nearest, r;
+
+  object *children;
+  
+  char *desc;
+  int length = 0;
+  int max_length = MAX_LENGTH;
+  char buffer[MAX_LENGTH];
+  ThotBool still;
+
+  if(doc == 0 || el == NULL)
+    return FALSE;
+
+  elType = TtaGetElementType (el);
+  if (elType.ElSSchema != svgSchema)
+    return FALSE;
+
+  /* Get the size of the element */
+  TtaGiveBoxSize (el, doc, 1, UnPixel, &dummy1, &dummy2);
+  w = (float)(dummy1);
+  h = (float)(dummy2);
+
+  /* Count how manu children there are */
+  child = TtaGetFirstChild(el);
+  nb = 0;
+  while(child)
+    {
+      nb++;
+      TtaNextSibling(&child);
+    }
+
+  if(nb == 0)return FALSE;
+
+  desc = (char *)malloc(max_length);
+  if(desc == NULL)return FALSE;
+  *desc = '\0';
+
+  /* Get information on the children */
+  children = (object *)TtaGetMemory(sizeof(object) * nb);
+  if(children == NULL)return FALSE;
+
+  for(child = TtaGetFirstChild(el), i = 0;
+      child;
+      TtaNextSibling(&child))
+    {
+      children[i].title = GetElementData(doc, child, svgSchema,
+                                         SVG_EL_title);
+       
+      if(children[i].title != NULL)
+        {
+          /* This child has a title, take it into account */
+          children[i].el = child;
+          GetPositionAndSizeInParentSpace(doc,
+                                          children[i].el,
+                                          &(children[i].cx),
+                                          &(children[i].cy),
+                                          &(children[i].w),
+                                          &(children[i].h));
+	   
+          children[i].cx += (children[i].w/2);
+          children[i].cy += (children[i].h/2);
+	   
+          i++;
+        }      
+    }
+   
+  nb = i;
+
+  if(nb > 0)
+    {
+      sprintf(buffer, TtaGetMessage(AMAYA, AM_SVG_THERE_ARE), nb);
+      still = StrCat(&desc, &max_length, &length, buffer);
+
+      for(i = 0; i < nb && still; i++)
+        {
+
+          /* Give absolute position */
+          sprintf(buffer, "[%s] %s",
+                  children[i].title,
+                  GetAbsolutePosition(children[i], w, h)
+                  );
+          still = StrCat(&desc, &max_length, &length, buffer);
+          if(!still)break;
+	   
+          if(i > 0)
+            {
+              strcpy(buffer, ", ");
+              still = StrCat(&desc, &max_length, &length, buffer);
+              if(!still)break;
+	       
+              /* Search for the nearest object */
+              j_nearest = 0;
+              r_nearest = GetDistanceBetweenCenters(children[0], children[i]);
+              for(j = 1; j < i; j++)
+                {
+                  r = GetDistanceBetweenCenters(children[j], children[i]);
+                  if(r < r_nearest)
+                    {
+                      j_nearest = j;
+                      r_nearest = r;
+                    }
+                }
+	       
+              /* Give the relative position */
+              sprintf(buffer, "%s [%s]",
+                      GetRelativePosition(children[j_nearest], children[i]),
+                      children[j_nearest].title);
+              still = StrCat(&desc, &max_length, &length, buffer);
+              if(!still)break;
+            }
+	   
+	   
+          strcpy(buffer, ". ");
+          StrCat(&desc, &max_length, &length, buffer);
+        }
+     
+
+      /* Free the memory */
+      for(i = 0; i < nb; i++)
+        TtaFreeMemory(children[i].title);
+    }
+   
+  TtaFreeMemory(children);
+
+  if(nb > 0)
+    SetElementData(doc, el, svgSchema, SVG_EL_desc, desc);
+
+  free(desc);
+
+  return (nb > 0);
+}
+
+/*----------------------------------------------------------------------
+  CreateSVG_Template
+  ----------------------------------------------------------------------*/
+void CreateSVG_Template (Document document, View view)
+{
+  CreateGraphicElement (document, view, -2);
+}
+
+/*----------------------------------------------------------------------
+  CreateSVG_Svg
+  ----------------------------------------------------------------------*/
+void CreateSVG_Svg (Document document, View view)
+{
+  CreateGraphicElement (document, view, -1);
+}
+
+/*----------------------------------------------------------------------
+  CreateSVG_Line
+  ----------------------------------------------------------------------*/
+void CreateSVG_Line (Document document, View view)
+{
+  CreateGraphicElement (document, view, 0);
+}
+
+/*----------------------------------------------------------------------
+  CreateSVG_Rectangle
+  ----------------------------------------------------------------------*/
+void CreateSVG_Rectangle (Document document, View view)
+{
+  CreateGraphicElement (document, view, 1);
+}
+
+/*----------------------------------------------------------------------
+  CreateSVG_RoundedRectangle
+  ----------------------------------------------------------------------*/
+void CreateSVG_RoundedRectangle (Document document, View view)
+{
+  CreateGraphicElement (document, view, 2);
+}
+
+/*----------------------------------------------------------------------
+  CreateSVG_Circle
+  ----------------------------------------------------------------------*/
+void CreateSVG_Circle (Document document, View view)
+{
+  CreateGraphicElement (document, view, 3);
+}
+
+/*----------------------------------------------------------------------
+  CreateSVG_Ellipse
+  ----------------------------------------------------------------------*/
+void CreateSVG_Ellipse (Document document, View view)
+{
+  CreateGraphicElement (document, view, 4);
+}
+
+/*----------------------------------------------------------------------
+  CreateSVG_Polyline
+  ----------------------------------------------------------------------*/
+void CreateSVG_Polyline (Document document, View view)
+{
+  CreateGraphicElement (document, view, 5);
+}
+
+/*----------------------------------------------------------------------
+  CreateSVG_Polygon
+  ----------------------------------------------------------------------*/
+void CreateSVG_Polygon (Document document, View view)
+{
+  CreateGraphicElement (document, view, 6);
+}
+
+/*----------------------------------------------------------------------
+  CreateSVG_Spline
+  ----------------------------------------------------------------------*/
+void CreateSVG_Spline (Document document, View view)
+{
+  CreateGraphicElement (document, view, 7);
+}
+
+/*----------------------------------------------------------------------
+  CreateSVG_Closed
+  ----------------------------------------------------------------------*/
+void CreateSVG_Closed (Document document, View view)
+{
+  CreateGraphicElement (document, view, 8);
+}
+
+/*----------------------------------------------------------------------
+  CreateSVG_ForeignObject
+  ----------------------------------------------------------------------*/
+void CreateSVG_ForeignObject (Document document, View view)
+{
+  CreateGraphicElement (document, view, 9);
+}
+
+/*----------------------------------------------------------------------
+  CreateSVG_Text
+  ----------------------------------------------------------------------*/
+void CreateSVG_Text (Document document, View view)
+{
+  CreateGraphicElement (document, view, 10);
+}
+
+/*----------------------------------------------------------------------
+  CreateSVG_Group
+  ----------------------------------------------------------------------*/
+void CreateSVG_Group (Document document, View view)
+{
+  TransformGraphicElement (document, view, 11);
+}
+
+/*----------------------------------------------------------------------
+  CreateSVG_SimpleArrow
+  ----------------------------------------------------------------------*/
+void CreateSVG_SimpleArrow (Document document, View view)
+{
+  CreateGraphicElement (document, view, 12);
+}
+
+/*----------------------------------------------------------------------
+  CreateSVG_DoubleArrow
+  ----------------------------------------------------------------------*/
+void CreateSVG_DoubleArrow (Document document, View view)
+{
+  CreateGraphicElement (document, view, 13);
+}
+
+/*----------------------------------------------------------------------
+  CreateSVG_Zigzag
+  ----------------------------------------------------------------------*/
+void CreateSVG_Zigzag (Document document, View view)
+{
+  CreateGraphicElement (document, view, 14);
+}
+
+/*----------------------------------------------------------------------
+  CreateSVG_Square
+  ----------------------------------------------------------------------*/
+void CreateSVG_Square (Document document, View view)
+{
+  CreateGraphicElement (document, view, 15);
+}
+
+/*----------------------------------------------------------------------
+  CreateSVG_RoundedSquare
+  ----------------------------------------------------------------------*/
+void CreateSVG_RoundedSquare (Document document, View view)
+{
+  CreateGraphicElement (document, view, 16);
+}
+
+/*----------------------------------------------------------------------
+  CreateSVG_Diamond
+  ----------------------------------------------------------------------*/
+void CreateSVG_Diamond (Document document, View view)
+{
+  CreateGraphicElement (document, view, 17);
+}
+
+/*----------------------------------------------------------------------
+  CreateSVG_Trapezium
+  ----------------------------------------------------------------------*/
+void CreateSVG_Trapezium (Document document, View view)
+{
+  CreateGraphicElement (document, view, 18);
+}
+
+/*----------------------------------------------------------------------
+  CreateSVG_Parallelogram
+  ----------------------------------------------------------------------*/
+void CreateSVG_Parallelogram (Document document, View view)
+{
+  CreateGraphicElement (document, view, 19);
+}
+
+/*----------------------------------------------------------------------
+  CreateSVG_EquilateralTriangle
+  ----------------------------------------------------------------------*/
+void CreateSVG_EquilateralTriangle (Document document, View view)
+{
+  CreateGraphicElement (document, view, 20);
+}
+
+/*----------------------------------------------------------------------
+  CreateSVG_IsoscelesTriangle
+  ----------------------------------------------------------------------*/
+void CreateSVG_IsoscelesTriangle (Document document, View view)
+{
+  CreateGraphicElement (document, view, 21);
+}
+
+/*----------------------------------------------------------------------
+  CreateSVG_RectangleTriangle
+  ----------------------------------------------------------------------*/
+void CreateSVG_RectangleTriangle (Document document, View view)
+{
+  CreateGraphicElement (document, view, 22);
+}
+
+/* /\*---------------------------------------------------------------------- */
+/*   CreateSVG_Cube */
+/*   ----------------------------------------------------------------------*\/ */
+/* void CreateSVG_Cube (Document document, View view) */
+/* { */
+/*   CreateGraphicElement (document, view, 23); */
+/* } */
+
+/* /\*---------------------------------------------------------------------- */
+/*   CreateSVG_Parallelepiped */
+/*   ----------------------------------------------------------------------*\/ */
+/* void CreateSVG_Parallelepiped (Document document, View view) */
+/* { */
+/*   CreateGraphicElement (document, view, 24); */
+/* } */
+
+/* /\*---------------------------------------------------------------------- */
+/*   CreateSVG_Cylinder */
+/*   ----------------------------------------------------------------------*\/ */
+/* void CreateSVG_Cylinder (Document document, View view) */
+/* { */
+/*   CreateGraphicElement (document, view, 25); */
+/* } */
+
+/*----------------------------------------------------------------------
+  TransformSVG_Ungroup
+  ----------------------------------------------------------------------*/
+void TransformSVG_Ungroup (Document document, View view)
+{
+  TransformGraphicElement (document, view, 26);
+}
+
+/*----------------------------------------------------------------------
+  TransformSVG_FlipVertically
+  ----------------------------------------------------------------------*/
+void TransformSVG_FlipVertically (Document document, View view)
+{
+  TransformGraphicElement (document, view, 27);
+}
+
+/*----------------------------------------------------------------------
+  TransformSVG_FlipHorizontally
+  ----------------------------------------------------------------------*/
+void TransformSVG_FlipHorizontally (Document document, View view)
+{
+  TransformGraphicElement (document, view, 28);
+}
+      
+/*----------------------------------------------------------------------
+  TransformSVG_BringToFront
+  ----------------------------------------------------------------------*/
+void TransformSVG_BringToFront (Document document, View view)
+{
+  TransformGraphicElement (document, view, 29);
+}
+
+/*----------------------------------------------------------------------
+  TransformSVG_BringForward
+  ----------------------------------------------------------------------*/
+void TransformSVG_BringForward (Document document, View view)
+{
+  TransformGraphicElement (document, view, 30);
+}
+
+/*----------------------------------------------------------------------
+  TransformSVG_SendBackward
+  ----------------------------------------------------------------------*/
+void TransformSVG_SendBackward (Document document, View view)
+{
+  TransformGraphicElement (document, view, 31);
+}
+
+/*----------------------------------------------------------------------
+  TransformSVG_SendToBack
+  ----------------------------------------------------------------------*/
+void TransformSVG_SendToBack (Document document, View view)
+{
+  TransformGraphicElement (document, view, 32);
+}
+
+/*----------------------------------------------------------------------
+  TransformSVG_RotateAntiClockWise
+  ----------------------------------------------------------------------*/
+void TransformSVG_AntiClockWise (Document document, View view)
+{
+  TransformGraphicElement (document, view, 33);
+}
+
+/*----------------------------------------------------------------------
+  TransformSVG_RotateClockWise
+  ----------------------------------------------------------------------*/
+void TransformSVG_ClockWise (Document document, View view)
+{
+  TransformGraphicElement (document, view, 34);
+}
+
+/*----------------------------------------------------------------------
+  TransformSVG_AlignLeft
+  ----------------------------------------------------------------------*/
+void TransformSVG_AlignLeft (Document document, View view)
+{
+  TransformGraphicElement (document, view, 35);
+}
+
+/*----------------------------------------------------------------------
+  TransformSVG_AlignCenter
+  ----------------------------------------------------------------------*/
+void TransformSVG_AlignCenter (Document document, View view)
+{
+  TransformGraphicElement (document, view, 36);
+}
+
+/*----------------------------------------------------------------------
+  TransformSVG_AlignRight
+  ----------------------------------------------------------------------*/
+void TransformSVG_AlignRight (Document document, View view)
+{
+  TransformGraphicElement (document, view, 37);
+}
+
+/*----------------------------------------------------------------------
+  TransformSVG_AlignTop
+  ----------------------------------------------------------------------*/
+void TransformSVG_AlignTop (Document document, View view)
+{
+  TransformGraphicElement (document, view, 38);
+}
+
+/*----------------------------------------------------------------------
+  TransformSVG_AlignMiddle
+  ----------------------------------------------------------------------*/
+void TransformSVG_AlignMiddle (Document document, View view)
+{
+  TransformGraphicElement (document, view, 39);
+}
+
+/*----------------------------------------------------------------------
+  TransformSVG_AlignBottom
+  ----------------------------------------------------------------------*/
+void TransformSVG_AlignBottom (Document document, View view)
+{
+  TransformGraphicElement (document, view, 40);
+}
+
+/*----------------------------------------------------------------------
+  TransformSVG_Rotate
+  ----------------------------------------------------------------------*/
+void TransformSVG_Rotate (Document document, View view)
+{
+  TransformGraphicElement (document, view, 41);
+}
+
+/*----------------------------------------------------------------------
+  EditSVG_Select
+  ----------------------------------------------------------------------*/
+void EditSVG_Select (Document document, View view)
+{
+  SelectGraphicElement (document, view);
+}
+
+
+/*----------------------------------------------------------------------
+  SVG_Select
+  ----------------------------------------------------------------------*/
+void CreateSVG_Image (Document document, View view)
+{
+  AddNewImage (document, view, FALSE, TRUE);
+}
+
+/*----------------------------------------------------------------------
+  TransformSVG_Skew
+  ----------------------------------------------------------------------*/
+void TransformSVG_Skew (Document document, View view)
+{
+  TransformGraphicElement (document, view, 43);
+}
+
+/*----------------------------------------------------------------------
+  TransformSVG_Scale
+  ----------------------------------------------------------------------*/
+void TransformSVG_Scale (Document document, View view)
+{
+  TransformGraphicElement (document, view, 44);
+}
+
+/*----------------------------------------------------------------------
+  TransformSVG_Translate
+  ----------------------------------------------------------------------*/
+void TransformSVG_Translate (Document document, View view)
+{
+  TransformGraphicElement (document, view, 45);
+}
+
+/*----------------------------------------------------------------------
+  TransformSVG_DistributeLeft
+  ----------------------------------------------------------------------*/
+void TransformSVG_DistributeLeft (Document document, View view)
+{
+  TransformGraphicElement (document, view, 46);
+}
+
+/*----------------------------------------------------------------------
+  TransformSVG_DistributeCenter
+  ----------------------------------------------------------------------*/
+void TransformSVG_DistributeCenter (Document document, View view)
+{
+  TransformGraphicElement (document, view, 47);
+}
+
+/*----------------------------------------------------------------------
+  TransformSVG_DistributeRight
+  ----------------------------------------------------------------------*/
+void TransformSVG_DistributeRight (Document document, View view)
+{
+  TransformGraphicElement (document, view, 48);
+}
+
+/*----------------------------------------------------------------------
+  TransformSVG_DistributeTop
+  ----------------------------------------------------------------------*/
+void TransformSVG_DistributeTop (Document document, View view)
+{
+  TransformGraphicElement (document, view, 49);
+}
+
+/*----------------------------------------------------------------------
+  TransformSVG_DistributeMiddle
+  ----------------------------------------------------------------------*/
+void TransformSVG_DistributeMiddle (Document document, View view)
+{
+  TransformGraphicElement (document, view, 50);
+}
+
+/*----------------------------------------------------------------------
+  TransformSVG_DistributeBottom
+  ----------------------------------------------------------------------*/
+void TransformSVG_DistributeBottom (Document document, View view)
+{
+  TransformGraphicElement (document, view, 51);
+}
+
+/*----------------------------------------------------------------------
+  TransformSVG_DistributeMiddle
+  ----------------------------------------------------------------------*/
+void TransformSVG_DistributeHSpacing (Document document, View view)
+{
+  TransformGraphicElement (document, view, 52);
+}
+
+/*----------------------------------------------------------------------
+  TransformSVG_DistributeBottom
+  ----------------------------------------------------------------------*/
+void TransformSVG_DistributeVSpacing (Document document, View view)
+{
+  TransformGraphicElement (document, view, 53);
+}
+
+/*----------------------------------------------------------------------
+  EditSVG_TitleAndDescription
+  ----------------------------------------------------------------------*/
+void EditSVG_Information (Document document, View view)
+{
+  EditGraphicElement (document, view, 54);
+}
+
+/*----------------------------------------------------------------------
+  EditSVG_GenerateDescription
+  ----------------------------------------------------------------------*/
+void EditSVG_GenerateDescription (Document document, View view)
+{
+  EditGraphicElement (document, view, 55);
+}
+
+/* 56 = foreignObject+MathML */

@@ -37,7 +37,7 @@ extern void DisplayPRule ( PtrPRule RP,
                            PtrPSchema pSchP,
                            int indent );
 extern void DisplayStyleValue ( const char *property,
-                                char *start_value,
+                                const char *start_value,
                                 char *end_value );
 extern void NewInitialSequence ( PtrDocument pDoc );
 extern void ShowBox ( int frame,
@@ -61,7 +61,7 @@ extern void InitDialogueFont ( void );
 extern void TteFreeAllEventsList ( void );
 extern int GetObjectWWW ( int docid,
                           char *urlName,
-                          char *formdata,
+                          const char *formdata,
                           char *outputfile,
                           int mode,
                           void *incremental_cbf,
@@ -69,14 +69,14 @@ extern int GetObjectWWW ( int docid,
                           void *terminate_cbf,
                           void* context_tcbf,
                           ThotBool error_html,
-                          char *content_type );
+                          const char *content_type );
 extern ThotBool IsW3Path ( const char* path );
 extern void CloseTextInsertion ( void );
 extern void NormalizeURL ( char* orgName,
                            Document doc,
                            char* newName,
                            char* docName,
-                           char* otherPath );
+                           const char* otherPath );
 extern ThotBool LoadRemoteStyleSheet ( char *url,
                                        Document doc,
                                        Element el,
@@ -112,8 +112,8 @@ extern ThotBool CallEventAttribute ( NotifyAttribute * notifyAttr,
                                      ThotBool pre );
 extern void TtaSetStatus ( Document document,
                            View view,
-                           char *text,
-                           char *name );
+                           const char *text,
+                           const char *name );
 extern void FreeMenus ( void );
 extern void SwitchPaste ( PtrDocument pDoc,
                           ThotBool on );
@@ -159,7 +159,8 @@ extern void SelectRange ( PtrDocument SelDoc,
                           int dercar );
 extern void DisplayPointSelection ( int frame,
                                     PtrBox pBox,
-                                    int pointselect );
+                                    int pointselect,
+                                    ThotBool could_resize );
 extern void DisplayBgBoxSelection ( int frame,
                                     PtrBox pBox );
 extern void SetNewSelectionStatus ( int frame,
@@ -190,10 +191,15 @@ extern PtrElement CreateSibling ( PtrDocument pDoc,
                                   ThotBool inclusion );
 extern void CloseAttributeDialogues ( PtrDocument pDoc );
 extern ThotBool OpenParsingErrors ( Document document );
+extern ThotBool TtaIsSelectionUnique ( void );
 extern int TtaGiveActiveFrame ( void );
 extern ThotBool GL_DrawAll ( void );
 extern ThotBool TtaDetachFrame ( int frame_id );
 extern void TtaCloseAllHelpWindows ( void );
+extern void ColApplyCSSRule ( Element el,
+                              PresentationContext ctxt,
+                              char *cssRule,
+                              CSSInfoPtr css );
 
 #else /* __STDC__ */
 
@@ -228,7 +234,7 @@ extern void DisplayPRule ( PtrPRule RP,
                              PtrPSchema pSchP,
                              int indent );
 extern void DisplayStyleValue ( const char *property,
-                                  char *start_value,
+                                  const char *start_value,
                                   char *end_value );
 extern void NewInitialSequence ( PtrDocument pDoc );
 extern void ShowBox ( int frame,
@@ -252,7 +258,7 @@ extern void InitDialogueFont ( void );
 extern void TteFreeAllEventsList ( void );
 extern int GetObjectWWW ( int docid,
                             char *urlName,
-                            char *formdata,
+                            const char *formdata,
                             char *outputfile,
                             int mode,
                             void *incremental_cbf,
@@ -260,14 +266,14 @@ extern int GetObjectWWW ( int docid,
                             void *terminate_cbf,
                             void* context_tcbf,
                             ThotBool error_html,
-                            char *content_type );
+                            const char *content_type );
 extern ThotBool IsW3Path ( const char* path );
 extern void CloseTextInsertion ( void );
 extern void NormalizeURL ( char* orgName,
                              Document doc,
                              char* newName,
                              char* docName,
-                             char* otherPath );
+                             const char* otherPath );
 extern ThotBool LoadRemoteStyleSheet ( char *url,
                                          Document doc,
                                          Element el,
@@ -303,8 +309,8 @@ extern ThotBool CallEventAttribute ( NotifyAttribute * notifyAttr,
                                        ThotBool pre );
 extern void TtaSetStatus ( Document document,
                              View view,
-                             char *text,
-                             char *name );
+                             const char *text,
+                             const char *name );
 extern void FreeMenus ( void );
 extern void SwitchPaste ( PtrDocument pDoc,
                             ThotBool on );
@@ -350,7 +356,8 @@ extern void SelectRange ( PtrDocument SelDoc,
                             int dercar );
 extern void DisplayPointSelection ( int frame,
                                       PtrBox pBox,
-                                      int pointselect );
+                                      int pointselect,
+                                      ThotBool could_resize );
 extern void DisplayBgBoxSelection ( int frame,
                                       PtrBox pBox );
 extern void SetNewSelectionStatus ( int frame,
@@ -381,10 +388,15 @@ extern PtrElement CreateSibling ( PtrDocument pDoc,
                                     ThotBool inclusion );
 extern void CloseAttributeDialogues ( PtrDocument pDoc );
 extern ThotBool OpenParsingErrors ( Document document );
+extern ThotBool TtaIsSelectionUnique ( void );
 extern int TtaGiveActiveFrame ( void );
 extern ThotBool GL_DrawAll ( void );
 extern ThotBool TtaDetachFrame ( int frame_id );
 extern void TtaCloseAllHelpWindows ( void );
+extern void ColApplyCSSRule ( Element el,
+                                PresentationContext ctxt,
+                                char *cssRule,
+                                CSSInfoPtr css );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

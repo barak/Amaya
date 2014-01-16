@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2007
+ *  (c) COPYRIGHT INRIA, 1996-2008
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -110,13 +110,14 @@ Document TtaGetNextDocumentIndex ()
   characters). The directory name is not part of this parameter
   (see TtaSetDocumentPath).
   document: the requested document or 0.
+  nspace: namespace used for the XML document
 
   Return value:
   the document that has been created or 0 if the document has not
   been created.
   ----------------------------------------------------------------------*/
-Document TtaInitDocument (char *structureSchema, char *documentName,
-                          Document document)
+Document TtaInitDocument (const char *structureSchema, const char *documentName,
+                          const char *nspace, Document document)
 {
   PtrDocument         pDoc;
   PtrElement          pEl;
@@ -137,7 +138,10 @@ Document TtaInitDocument (char *structureSchema, char *documentName,
       else
         {	  
           /* charge le schema de structure */
-          pDoc->DocSSchema = LoadStructureSchema (NULL, structureSchema, pDoc);
+          if (structureSchema && !strcmp (structureSchema, "XML"))
+            pDoc->DocSSchema = LoadStructureSchema (nspace, structureSchema, pDoc);
+          else
+            pDoc->DocSSchema = LoadStructureSchema (NULL, structureSchema, pDoc);
           if (pDoc->DocSSchema == NULL || pDoc->DocSSchema->SsExtension)
             /* failure while reading the structure schema or while loading
                a schema extension */
@@ -225,9 +229,9 @@ Document TtaInitDocument (char *structureSchema, char *documentName,
   the document that has been created or 0 if the document has not
   been created.
   ----------------------------------------------------------------------*/
-Document TtaNewDocument (char *structureSchema, char *documentName)
+Document TtaNewDocument (const char *structureSchema, const char *documentName)
 {
-  return TtaInitDocument (structureSchema, documentName, 0);
+  return TtaInitDocument (structureSchema, documentName, structureSchema, 0);
 }
 
 /*----------------------------------------------------------------------

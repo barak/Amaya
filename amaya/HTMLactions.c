@@ -54,7 +54,6 @@
 #include "HTMLimage_f.h"
 #include "HTMLsave_f.h"
 #include "html2thot_f.h"
-#include "libmanag_f.h"
 #include "Mathedit_f.h"
 #include "selection.h"
 #include "styleparser_f.h"
@@ -1274,7 +1273,7 @@ void CheckUniqueName (Element el, Document doc, Attribute attr,
   elType = TtaGetElementType (el);
   if (attr)
     {
-      name = GetXMLAttributeName (attrType, elType, doc);
+      name = (char*)GetXMLAttributeName (attrType, elType, doc);
       if (!strcmp (name, "id"))
         {
           if (!TtaIsValidID (attr, FALSE))
@@ -2460,7 +2459,38 @@ ThotBool DoubleClick (NotifyElement *event)
   ----------------------------------------------------------------------*/
 ThotBool SimpleClick (NotifyElement *event)
 {
-  ThotBool usedouble;
+  /*
+#define MAX_NS 20
+  char     *declarations[MAX_NS];
+  char     *prefixes[MAX_NS];
+  int       i;
+
+  for (i=0; i<MAX_NS; i++)
+    {
+      declarations[i] = NULL;
+      prefixes[i] = NULL;
+    }
+
+
+  TtaGiveElemNamespaceDeclarations (event->document, event->element,
+				    &declarations[0], &prefixes[0]);
+
+  for (i=0; i<MAX_NS; i++)
+    {
+      if (declarations[i] != NULL)
+	{
+	  printf ("\nxmlns= ");
+	  if (prefixes[i] != NULL)
+	    printf ("%s: ", prefixes[i]);
+	  printf ("%s ", declarations[i]);
+	}
+      if (prefixes[i] == NULL && declarations[i] == NULL)
+	i = MAX_NS;
+    }
+  printf ("\n");
+  */
+
+  ThotBool  usedouble;
 
   TtaGetEnvBoolean ("ENABLE_DOUBLECLICK", &usedouble);
   if (usedouble)
@@ -2480,34 +2510,6 @@ ThotBool SimpleClick (NotifyElement *event)
   ----------------------------------------------------------------------*/
 ThotBool SimpleLClick (NotifyElement *event)
 {
-#ifdef _SVG
-  ElementType       elType;
-  ThotBool usedouble;
-
-  TtaGetEnvBoolean ("ENABLE_DOUBLECLICK", &usedouble);
-  if (DocumentTypes[event->document] == docLibrary)
-    {
-      /* Check the sschema of the document (HTML) */
-      elType.ElSSchema = TtaGetDocumentSSchema (event->document);
-      if (!strcmp (TtaGetSSchemaName (elType.ElSSchema), "HTML"))
-        {
-          /* check the element type */
-          elType = TtaGetElementType (event->element);
-          if (elType.ElTypeNum == HTML_EL_PICTURE_UNIT)
-            /* Activate Library dialogue because he has selected picture into the document */
-            /* Now we are going to browse the document tree to take the url models */
-            {
-              /* Browse the document tree to save model url */
-              SaveSVGURL (event->document, event->element);
-              /* Browse the document tree to view line selected */
-              ChangeSVGLibraryLinePresentation (event->document, event->element);
-              /* Show Drop dialog option */
-              CopyOrReference (event->document, 1);
-              return TRUE;
-            }
-        }
-    }
-#endif /* _SVG */
   /* let Thot perform normal operation */
   return FALSE;
 }
@@ -2789,10 +2791,6 @@ void FreeDocumentResource (Document doc)
           /* remove the Parsing errors file */
           RemoveParsingErrors (doc);
           ClearMathFrame (doc);
-#ifdef _SVG
-          if (DocumentTypes[doc] == docLibrary)
-            CloseLibrary (doc);
-#endif /* _SVG */
 #ifdef ANNOTATIONS
           ANNOT_FreeDocumentResource (doc);
 #endif /* ANNOTATIONS */
@@ -3090,6 +3088,7 @@ void UpdateContextSensitiveMenus (Document doc, View view)
           TtaSetItemOff (doc, 1, Types, BObject);
           TtaSetItemOff (doc, 1, Types, TBig);
           TtaSetItemOff (doc, 1, Types, TSmall);
+          TtaSetItemOff (doc, 1, Types, TSpan);
           TtaSetItemOff (doc, 1, Types, TSub);
           TtaSetItemOff (doc, 1, Types, TSup);
         }
@@ -3099,6 +3098,7 @@ void UpdateContextSensitiveMenus (Document doc, View view)
           TtaSetItemOn (doc, 1, Types, BObject);
           TtaSetItemOn (doc, 1, Types, TBig);
           TtaSetItemOn (doc, 1, Types, TSmall);
+          TtaSetItemOn (doc, 1, Types, TSpan);
           TtaSetItemOn (doc, 1, Types, TSub);
           TtaSetItemOn (doc, 1, Types, TSup);
         }
@@ -3290,6 +3290,14 @@ void UpdateContextSensitiveMenus (Document doc, View view)
       TtaSetToggleItem (doc, 1, Types, TSmall, newSelInElem);
     }
 
+  elType.ElTypeNum = HTML_EL_Span;
+  newSelInElem = IsSelInElement (firstSel, lastSel, elType, elTypeFirst, elTypeLast);
+  if (SelectionInSpan != newSelInElem)
+    {
+      SelectionInSpan = newSelInElem;
+      TtaSetToggleItem (doc, 1, Types, TSpan, newSelInElem);
+    }
+
   elType.ElTypeNum = HTML_EL_Subscript;
   newSelInElem = IsSelInElement (firstSel, lastSel, elType, elTypeFirst, elTypeLast);
   if (SelectionInSub != newSelInElem)
@@ -3470,11 +3478,7 @@ void SynchronizeSourceView (NotifyElement *event)
      user has just clicked */
   otherDoc = 0;
   otherDocIsStruct = FALSE;
-  if (DocumentTypes[doc] == docHTML ||
-      DocumentTypes[doc] == docLibrary ||
-      DocumentTypes[doc] == docMath ||
-      DocumentTypes[doc] == docSVG  ||
-      DocumentTypes[doc] == docXml)
+  if (IsXMLDocType (doc))
     /* the user clicked on a structured document, the other doc is the
        corresponding source document */
     otherDoc = DocumentSource[doc];
@@ -3485,11 +3489,7 @@ void SynchronizeSourceView (NotifyElement *event)
       otherDocIsStruct = TRUE;
       for (i = 1; i < DocumentTableLength; i++)
         if (DocumentURLs[i] &&
-            (DocumentTypes[i] == docHTML ||
-             DocumentTypes[i] == docLibrary ||
-             DocumentTypes[i] == docMath ||
-             DocumentTypes[i] == docSVG ||
-             DocumentTypes[i] == docXml) &&
+            IsXMLDocType (i) &&
             DocumentSource[i] == doc)
           {
             otherDoc = i;
@@ -3930,11 +3930,7 @@ void CheckSynchronize (NotifyElement *event)
           /* Synchronize the content of the old document */
           if (DocumentTypes[SelectionDoc] == docSource || /* source of ... */
               (DocumentSource[SelectionDoc] && /* has a source */
-               (DocumentTypes[SelectionDoc] == docHTML ||
-                DocumentTypes[SelectionDoc] == docSVG ||
-                DocumentTypes[SelectionDoc] == docLibrary ||
-                DocumentTypes[SelectionDoc] == docMath ||
-                DocumentTypes[SelectionDoc] == docXml)))
+               IsXMLDocType (SelectionDoc)))
             {
               if (event->info == 1)
                 /* an undo operation was done in event->document */
@@ -3971,7 +3967,7 @@ void SelectionChanged (NotifyElement *event)
   Element             child, el = event->element;
   ElementType         elType;
   Document            doc = event->document;
-  char                message[50];
+  char                message[50], *s;
   int                 i, index = 0;
 
   if (SelectionChanging)
@@ -3996,6 +3992,11 @@ void SelectionChanged (NotifyElement *event)
             // no current text insertion
             CheckPromptIndicator (el, doc);
 #endif /* TEMPLATES */
+          TtaGiveFirstSelectedElement (doc, &child, &index, &i);
+          elType = TtaGetElementType (el);
+          s = TtaGetSSchemaName (elType.ElSSchema);
+          if (!strcmp (s, "HTML"))
+            TtaRaiseDoctypePanels (WXAMAYA_DOCTYPE_XHTML);
         }
 #ifdef _WX
       else

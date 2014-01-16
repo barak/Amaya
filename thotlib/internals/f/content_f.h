@@ -30,7 +30,7 @@ extern ThotBool TextsEqual ( PtrTextBuffer pBuf1,
 extern void CopyTextToText ( PtrTextBuffer pSrceBuf,
                              PtrTextBuffer pCopyBuf,
                              int *len );
-extern int CopyMBs2Buffer ( unsigned char *src,
+extern int CopyMBs2Buffer ( const unsigned char *src,
                             PtrTextBuffer pBuf,
                             int pos,
                             int slength );
@@ -42,10 +42,12 @@ extern void CopyStringToBuffer ( unsigned char *src,
                                  PtrTextBuffer pDestBuf,
                                  int *length );
 extern void ClearText ( PtrTextBuffer pBuf );
-extern void AddPointInPolyline ( PtrTextBuffer firstBuffer,
-                                 int rank,
-                                 int x,
-                                 int y );
+extern int AddPointInPolyline ( PtrTextBuffer firstBuffer,
+                                int rank,
+                                int x,
+                                int y,
+                                ThotBool IsBarycenter,
+                                ThotBool IsClosed );
 extern void DeletePointInPolyline ( PtrTextBuffer * firstBuffer,
                                     int rank );
 extern void ModifyPointInPolyline ( PtrTextBuffer firstBuffer,
@@ -118,7 +120,7 @@ extern ThotBool TextsEqual ( PtrTextBuffer pBuf1,
 extern void CopyTextToText ( PtrTextBuffer pSrceBuf,
                                PtrTextBuffer pCopyBuf,
                                int *len );
-extern int CopyMBs2Buffer ( unsigned char *src,
+extern int CopyMBs2Buffer ( const unsigned char *src,
                               PtrTextBuffer pBuf,
                               int pos,
                               int slength );
@@ -130,10 +132,12 @@ extern void CopyStringToBuffer ( unsigned char *src,
                                    PtrTextBuffer pDestBuf,
                                    int *length );
 extern void ClearText ( PtrTextBuffer pBuf );
-extern void AddPointInPolyline ( PtrTextBuffer firstBuffer,
-                                   int rank,
-                                   int x,
-                                   int y );
+extern int AddPointInPolyline ( PtrTextBuffer firstBuffer,
+                                  int rank,
+                                  int x,
+                                  int y,
+                                  ThotBool IsBarycenter,
+                                  ThotBool IsClosed );
 extern void DeletePointInPolyline ( PtrTextBuffer * firstBuffer,
                                       int rank );
 extern void ModifyPointInPolyline ( PtrTextBuffer firstBuffer,

@@ -48,6 +48,7 @@
 #include "animbox_f.h"
 #include "glwindowdisplay.h"
 #endif /* _GL */
+#include "tree_f.h"
 
 extern Frame_Ctl   FrameTable[MAX_FRAME+1];
 
@@ -74,6 +75,7 @@ static int             BiwIndex = 0;
 #include "language_f.h"
 #include "memory_f.h"
 #include "picture_f.h"
+#include "registry_f.h"
 #include "scroll_f.h"
 #include "stix_f.h"
 #include "structselect_f.h"
@@ -81,6 +83,7 @@ static int             BiwIndex = 0;
 #include "textcommands_f.h"
 #include "units_f.h"
 #include "windowdisplay_f.h"
+#include "spline_f.h"
 
 #define		_2xPI		6.2832
 #define		_1dSQR2		0.7071
@@ -95,6 +98,25 @@ static int             BiwIndex = 0;
 static ThotBool EmbeddedScript = FALSE;
 
 
+
+/*----------------------------------------------------------------------
+  IsSVGComponent returns TRUE if the element is a SVG component and
+  then can be transformed.
+  ----------------------------------------------------------------------*/
+ThotBool IsSVGComponent (PtrElement pEl)
+{
+  if (pEl && !(pEl->ElTerminal) &&
+      pEl->ElStructSchema &&
+      pEl->ElStructSchema->SsName &&
+      !strcmp (pEl->ElStructSchema->SsName,"SVG") &&
+      pEl->ElParent && pEl->ElParent->ElStructSchema &&
+      pEl->ElParent->ElStructSchema->SsName &&
+      !strcmp (pEl->ElParent->ElStructSchema->SsName,"SVG"))
+     // the element and its parent are SVG elements
+    return TRUE;
+  else
+    return FALSE;
+}
 
 /*----------------------------------------------------------------------
   SearchNextAbsBox returns the first child or the next sibling or the
@@ -909,6 +931,12 @@ void GiveGraphicSize (PtrAbstractBox pAb, int *width, int *height)
       *width = *height;
       *height = hfont / 3;
       break;
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
     case 'C':
     case 'a':
     case 'c':
@@ -949,8 +977,294 @@ static void GivePolylineSize (PtrAbstractBox pAb, int zoom, int *width,
       /* La hauteur est donnee par le point limite */
       *height =  PixelValue (pBuffer->BuPoints[0].YCoord, UnPixel, NULL, zoom);
     }
+
 }
 
+#ifdef path_limits
+/*----------------------------------------------------------------------
+  UpdateLimits
+  Update the values min and max so that min <= v <= max
+  ----------------------------------------------------------------------*/
+static void UpdateLimits(int *min, int *max, int v)
+{
+  if(min && max)
+    {
+      if(v < *min)*min = v;
+      else if(v > *max)*max = v;
+    }
+}
+
+/*----------------------------------------------------------------------
+  UpdateLimits_QuadraticBezier
+
+  Update the values min and max using f(0), f(1) and the values of f
+  at its critical points. f is defined by:
+
+  (%i1) f(t) := a0*(1-t)^2 + 2*a1*(1-t)*t + a2*t^2;
+  (%o1) f(t):=a0*(1-t)^2+2*a1*(1-t)*t+a2*t^2
+  (%i2) diff(f(t), t);
+  (%o2) 2*a2*t-2*a1*t+2*a1*(1-t)-2*a0*(1-t)
+  (%i3) partfrac(%, t);
+  (%o3) (2*a2-4*a1+2*a0)*t+2*a1-2*a0
+
+  ----------------------------------------------------------------------*/
+static void UpdateLimits_QuadraticBezier(int a0, int a1, int a2, 
+					int *min, int *max)
+{
+  int f_t;
+  double a,b,t;
+
+  UpdateLimits(min, max, a0);
+  UpdateLimits(min, max, a2);
+
+  a = 2*a2-4*a1+2*a0;
+  b = 2*a1-2*a0;
+
+  if(a != 0)
+    {
+      t = -b/a;
+      
+      if(t >= 0 && t <= 1)
+	{
+	  f_t = (int)(a0*(1-t)*(1-t)+
+		      2*a1*(1-t)*t+
+		      a2*t*t);
+	  UpdateLimits(min, max, f_t);
+	}
+    }
+}
+
+/*----------------------------------------------------------------------
+  UpdateLimits_EvaluateCubicBezier
+  ----------------------------------------------------------------------*/
+static void UpdateLimits_EvaluateCubicBezier(int a0, int a1, int a2, int a3,
+						double t, int *min, int *max)
+{
+  int f_t;
+
+  if(t >= 0 && t <= 1)
+    {
+      f_t = (int)(t*t*t*a3+
+		  3*(1-t)*t*t*a2+
+		  3*(1-t)*(1-t)*t*a1+
+		  (1-t)*(1-t)*(1-t)*a0);
+      UpdateLimits(min, max, f_t);
+    }
+}
+
+/*----------------------------------------------------------------------
+  UpdateLimits_CubicBezier
+
+  Update the values min and max using f(0), f(1) and the values of f
+  at its critical points. f is defined by:
+
+  (%i1) f(t) := t^3*a3+3*(1-t)*t^2*a2+3*(1-t)^2*t*a1+(1-t)^3*a0;
+  (%o1) f(t):=t^3*a3+3*(1-t)*t^2*a2+3*(1-t)^2*t*a1+(1-t)^3*a0
+  (%i2) diff(f(t), t);
+  (%o2) 3*a3*t^2-3*a2*t^2+6*a2*(1-t)*t-6*a1*(1-t)*t+3*a1*(1-t)^2-3*a0*(1-t)^2
+  (%i3) partfrac(%, t);
+  (%o3) (3*a3-9*a2+9*a1-3*a0)*t^2+(6*a2-12*a1+6*a0)*t+3*a1-3*a0
+
+  ----------------------------------------------------------------------*/
+static void UpdateLimits_CubicBezier(int a0, int a1, int a2, int a3,
+				      int *min, int *max)
+{
+  double a,b,c,delta;
+
+  UpdateLimits(min, max, a0);
+  UpdateLimits(min, max, a3);
+
+  a = 3*a3-9*a2+9*a1-3*a0;
+  b = 6*a2-12*a1+6*a0;
+  c = 3*a1-3*a0;
+
+  if(a == 0)
+    {
+      /* bX + c = 0 ? */
+
+      if(b != 0)
+	UpdateLimits_EvaluateCubicBezier(a0, a1, a2, a3,
+					  -c/b,
+					 min, max);
+    }
+  else
+    {
+      /* aX^2 + bX + c = 0 ? */
+
+      delta = b*b - 4*a*c;
+      
+      if(delta == 0)
+	  /* One root */
+	UpdateLimits_EvaluateCubicBezier(a0, a1, a2, a3,
+					  -b/(2*a),
+					 min, max);
+      else if(delta > 0)
+	{
+	  /* Two roots */
+	  UpdateLimits_EvaluateCubicBezier(a0, a1, a2, a3,
+					    (-b + sqrt(delta))/(2*a),
+					   min, max);
+
+	  UpdateLimits_EvaluateCubicBezier(a0, a1, a2, a3,
+					    (-b - sqrt(delta))/(2*a),
+					   min, max);
+	}
+    }
+}
+
+
+/*----------------------------------------------------------------------
+  UpdateLimits_EllipticalArc
+  ----------------------------------------------------------------------*/
+static void UpdateLimits_EllipticalArc(PtrPathSeg pPa,
+				       int *xmin,
+				       int *xmax,
+				       int *ymin,
+				       int *ymax)
+{
+#define ALLOC_POINTS    300
+
+  ThotPoint           *points;
+  int                  i,maxpoints, npoints;
+  double               x1, y1, x2, y2, cx1, cy1;
+  x1 = (double) pPa->XStart;
+  y1 = (double) pPa->YStart;
+  x2 = (double) pPa->XEnd;
+  y2 = (double) pPa->YEnd;
+  cx1 = (double) pPa->XRadius;
+  cy1 = (double) pPa->YRadius;
+
+  /* get a buffer to store the points of the polygon */
+  maxpoints = ALLOC_POINTS;
+  points = (ThotPoint *) TtaGetMemory (maxpoints * sizeof(ThotPoint));
+  memset (points, 0, maxpoints * sizeof(ThotPoint));
+  npoints = 0;
+
+  /* Build the polyline that approximates the elliptic arc */
+  EllipticSplit ( 0, 0, 0,
+		  x1, y1,
+		  x2, y2,
+		  cx1, cy1,
+		  (int)fmod((double)pPa->XAxisRotation, (double)360),
+		  pPa->LargeArc, pPa->Sweep,
+		  &points, &npoints, &maxpoints);
+
+  /* Update the limit according to each point */
+  for(i = 0; i < npoints; i++)
+    {
+      UpdateLimits(xmin, xmax, (int)points[i].x);
+      UpdateLimits(ymin, ymax, (int)points[i].y);
+    }
+
+  TtaFreeMemory(points);
+}
+
+/*----------------------------------------------------------------------
+  GivePathLimits
+  ----------------------------------------------------------------------*/
+static void GivePathLimits (PtrAbstractBox pAb, int zoom,
+			    int *x0, int *y0, int *width, int *height)
+{
+  PtrPathSeg       pPa;
+  int xmin, ymin, xmax, ymax;
+
+  pPa = pAb->AbFirstPathSeg;
+
+  if(!pPa)
+    {
+      if(x0 && y0)
+	{
+	  *x0 = 0;
+	  *y0 = 0;
+	}
+
+
+      if(width && height)
+	{
+	  *width = 0;
+	  *height = 0;
+	}
+    }
+  else
+    {
+      /* Take the coordinates of the first point as the initial values for
+	 xmin, ymin, xmax, ymax */
+      xmin = pPa->XEnd;
+      xmax = pPa->XEnd;
+      ymin = pPa->YEnd;
+      ymax = pPa->YEnd;
+
+      /* Now look each fragment of the path */
+      while(pPa)
+	{
+	  switch(pPa->PaShape)
+	    {
+	    case PtLine:
+	      UpdateLimits(&xmin, &xmax, pPa->XStart);
+	      UpdateLimits(&ymin, &ymax, pPa->YStart);
+	      UpdateLimits(&xmin, &xmax, pPa->XEnd);
+	      UpdateLimits(&ymin, &ymax, pPa->YEnd);
+	      break;
+	      
+	    case PtEllipticalArc:
+	      UpdateLimits_EllipticalArc(pPa,
+					 &xmin,
+					 &xmax,
+					 &ymin,
+					 &ymax);
+	      break;
+
+	    case PtQuadraticBezier:
+	      /* Update horizontal limits */
+	      UpdateLimits_QuadraticBezier(pPa->XStart,
+					    pPa->XCtrlStart,
+					    pPa->XEnd,
+					    &xmin,
+					    &xmax);
+
+	      /* Update vertical limits */
+	      UpdateLimits_QuadraticBezier(pPa->YStart,
+					    pPa->YCtrlStart,
+					    pPa->YEnd,
+					    &ymin,
+					    &ymax);
+	      break;
+
+	    case PtCubicBezier:
+	      /* Update horizontal limits */
+	      UpdateLimits_CubicBezier(pPa->XStart,
+					pPa->XCtrlStart,
+					pPa->XCtrlEnd,
+					pPa->XEnd,
+					&xmin,
+					&xmax);
+
+	      /* Update vertical limits */
+	      UpdateLimits_CubicBezier(pPa->YStart,
+					pPa->YCtrlStart,
+					pPa->YCtrlEnd,
+					pPa->YEnd,
+					&ymin,
+					&ymax);
+	      break;
+	    }
+	  pPa = pPa -> PaNext;
+	}
+
+      if(x0 && y0)
+	{
+	  *x0 = PixelValue (xmin, UnPixel, NULL, zoom);
+	  *y0 = PixelValue (ymin, UnPixel, NULL, zoom);
+	}
+
+      if(width && height)
+	{
+	  *width = PixelValue (xmax - xmin, UnPixel, NULL, zoom);
+	  *height = PixelValue (ymax - ymin, UnPixel, NULL, zoom);
+	}
+    }
+}
+#endif /* path_limit */
 
 /*----------------------------------------------------------------------
   FreePolyline frees buffers attached to the polyline box.
@@ -1215,29 +1529,44 @@ PtrBox SplitForScript (PtrBox box, PtrAbstractBox pAb, char script, int lg,
 /*----------------------------------------------------------------------
   UnsplitBox removes all child pieces and scripts.
   ----------------------------------------------------------------------*/
-static void UnsplitBox (PtrBox pBox)
+static void UnsplitBox (PtrBox pBox, int frame)
 {
+  ViewFrame          *pFrame;
   PtrBox              box;
-  
+
   if (pBox->BxType == BoComplete)
     return;
   box = pBox->BxNexChild;
   pBox->BxNexChild = NULL;
   pBox->BxType = BoComplete;
+  pFrame = &ViewFrameTable[frame - 1];
+  // child boxes will be removed
+  if (box)
+    {
+      pBox->BxPrevious = box->BxPrevious;
+      if (box->BxPrevious)
+        box->BxPrevious->BxNext = pBox;
+      else
+        pFrame->FrAbstractBox->AbBox->BxNext = pBox;
+    }
   while (box && (box->BxType == BoScript || box->BxType == BoPiece))
     {
 #ifdef _GL
-#ifdef _WX
-      wxASSERT_MSG( !box->DisplayList ||
-                    glIsList(box->DisplayList),
-                    _T("GLBUG - UnsplitBox : glIsList returns false"));
-#endif /* _WX */
       if (glIsList (box->DisplayList))
         {
           glDeleteLists (box->DisplayList, 1);
           box->DisplayList = 0;
         }
 #endif /* _GL */
+      if (box->BxNexChild == NULL)
+        {
+          // it's the last child box
+          pBox->BxNext = box->BxNext;
+          if (box->BxNext)
+            box->BxNext->BxPrevious = pBox;
+          else
+            pFrame->FrAbstractBox->AbBox->BxPrevious = pBox;
+        }
       box = FreeBox (box);
     }
 }
@@ -1289,7 +1618,7 @@ static void GiveTextSize (PtrAbstractBox pAb, int frame, int *width,
       dir = pAb->AbDirection;
       if (box->BxType == BoMulScript)
         /* remove multi script boxes */
-        UnsplitBox (box);
+        UnsplitBox (box, frame);
       while (nChars > 0)
         {
           bwidth = 0;
@@ -1339,7 +1668,7 @@ void GiveEnclosureSize (PtrAbstractBox pAb, int frame, int *width,
   PtrAbstractBox      pChildAb, pFirstAb, pCurrentAb;
   PtrBox              pChildBox, box, pBox;
   PtrElement          pEl;
-  int                 val, x, y;
+  int                 val, x, y, zoom;
   ThotBool            still, hMin, vMin, isExtra;
 
   box = NULL;
@@ -1583,20 +1912,10 @@ void GiveEnclosureSize (PtrAbstractBox pAb, int frame, int *width,
           (pAb->AbHeight.DimAbRef != NULL || pAb->AbHeight.DimValue != 0 ||
            pAb->AbHeight.DimUnit == UnAuto) && *height == 0)
         {
-#ifdef IV
-          if (pAb->AbLeafType == LtCompound && FrameTable[frame].FrView == 1)
-            {
-              // it's a compound element of a formatted view
-              pChildAb = pAb->AbFirstEnclosed;
-              while (pChildAb && (pChildAb->AbPresentationBox || pChildAb->AbDead))
-                pChildAb = pChildAb->AbNext;
-              if (pChildAb)
-                *height = BoxFontHeight (pAb->AbBox->BxFont, EOS);
-              else
-                *height = 2;
-            }
+          zoom = ViewFrameTable[frame - 1].FrMagnification;
+          if (pAb->AbLeafType != LtText && pAb->AbLeafType != LtSymbol)
+            *height = GetCurrentFontHeight (pAb->AbSize, pAb->AbSizeUnit, frame);
           else
-#endif
             *height = BoxFontHeight (pAb->AbBox->BxFont, EOS);
         }
     }
@@ -2009,7 +2328,8 @@ static ThotBool HasFloatingChild (PtrAbstractBox pAb, int frame,
       if (TypeHasException (ExcIsColHead, pAb->AbElement->ElTypeNumber, pSS) ||
           TypeHasException (ExcIsTable, pAb->AbElement->ElTypeNumber, pSS) ||
           TypeHasException (ExcIsRow, pAb->AbElement->ElTypeNumber, pSS) ||
-          TypeHasException (ExcIsCell, pAb->AbElement->ElTypeNumber, pSS))
+          TypeHasException (ExcIsCell, pAb->AbElement->ElTypeNumber, pSS) ||
+          TypeHasException (ExcNewRoot, pAb->AbElement->ElTypeNumber, pSS))
         return found;
       /* check all enclosed boxes */
       pChildAb = pAb->AbFirstEnclosed;
@@ -2308,10 +2628,12 @@ static void CheckGhost (PtrAbstractBox pAb, int frame, ThotBool inLine,
 {
   PtrSSchema          pSS;
   PtrBox              pBox;
-  ThotBool            uniqueChild, dummyChild, directParent, extraflow;
+  ThotBool            uniqueChild, dummyChild, directParent;
+  ThotBool            extraflow, isroot;
 
   pSS = pAb->AbElement->ElStructSchema;
-  if (TypeHasException (ExcNewRoot, pAb->AbElement->ElTypeNumber, pSS))
+  isroot = TypeHasException (ExcNewRoot, pAb->AbElement->ElTypeNumber, pSS);
+  if (isroot)
     {
       /* that element cannot become a ghost */
       *inlineChildren = FALSE;
@@ -2319,6 +2641,7 @@ static void CheckGhost (PtrAbstractBox pAb, int frame, ThotBool inLine,
       directParent = FALSE;
       uniqueChild = FALSE;
       dummyChild = FALSE;
+      return;
     }
   else
     {
@@ -2471,8 +2794,11 @@ static PtrBox CreateBox (PtrAbstractBox pAb, int frame, ThotBool inLine,
   else
     script = 'L';
   /* teste l'unite */
-  font = ThotLoadFont (script, pAb->AbFont, FontStyleAndWeight(pAb),
-                       height, unit, frame);
+  if (pAb->AbLeafType == LtCompound && pAb->AbEnclosing && pAb->AbEnclosing->AbBox)
+    font = pAb->AbEnclosing->AbBox->BxFont;
+  else
+    font = ThotLoadFont (script, pAb->AbFont, FontStyleAndWeight(pAb),
+                         height, unit, frame);
 
   /* Creation */
   pBox = pAb->AbBox;
@@ -2512,6 +2838,20 @@ static PtrBox CreateBox (PtrAbstractBox pAb, int frame, ThotBool inLine,
         }
       /* New values of margins, paddings and borders */
       pAb->AbMBPChange = FALSE;
+
+      // check if place holder are displayed
+      if (TypeHasException (ExcIsPlaceholder, pAb->AbElement->ElTypeNumber, pSS))
+        {
+          ThotBool show;
+          TtaGetEnvBoolean ("SHOW_PLACEHOLDER", &show);
+          if (!show || ElementIsReadOnly (pAb->AbElement))
+            {
+              pAb->AbTopBColor = -1;
+              pAb->AbRightBColor = -1;
+              pAb->AbBottomBColor = -1;
+              pAb->AbLeftBColor = -1;
+            }
+        }
       ComputeMBP (pAb, frame, TRUE, FALSE);
       ComputeMBP (pAb, frame, FALSE, FALSE);
 
@@ -2661,7 +3001,7 @@ static PtrBox CreateBox (PtrAbstractBox pAb, int frame, ThotBool inLine,
           pBox->BxBuffer = NULL;
           pBox->BxNChars = pAb->AbVolume;
           GiveGraphicSize (pAb, &width, &height);
-          if (pAb->AbShape == 'C')
+          if (pAb->AbShape == 1 || pAb->AbShape == 'C')
             {
               /* update radius of the rectangle with rounded corners */
               ComputeRadius (pAb, frame, TRUE);
@@ -2849,12 +3189,14 @@ static PtrBox CreateBox (PtrAbstractBox pAb, int frame, ThotBool inLine,
       else if (pBox->BxType == BoCell)
         UpdateColumnWidth (pAb, NULL, frame);
     }
+
 #ifdef _GL
   pBox->BxClipX = pBox->BxXOrg + pBox->BxLMargin + pBox->BxLBorder + pBox->BxLPadding;
   pBox->BxClipY = pBox->BxYOrg + pBox->BxTMargin + pBox->BxTBorder + pBox->BxTPadding;
   pBox->BxClipW = pBox->BxW;
   pBox->BxClipH = pBox->BxH;
 #endif /* _GL */
+
   return (pBox);
 }
 
@@ -3003,22 +3345,24 @@ PtrLine SearchLine (PtrBox pBox, int frame)
   between two lines. In that case only the main box is updated and the
   algorithm that splits the ext in lines is called.
   ----------------------------------------------------------------------*/
-void BoxUpdate (PtrBox pBox, PtrLine pLine, int charDelta, int spaceDelta,
-                int wDelta, int adjustDelta, int hDelta, int frame,
-                ThotBool splitBox)
+PtrBox BoxUpdate (PtrBox pBox, PtrLine pLine, int charDelta, int spaceDelta,
+                  int wDelta, int adjustDelta, int hDelta, int frame,
+                  ThotBool splitBox)
 {
-  PtrBox              box1, pMainBox, pParentBox;
+  ViewFrame          *pFrame;
+  ViewSelection      *pViewSel, *pViewSelEnd;
+  PtrBox              box, pMainBox, pParentBox, prev = NULL;
   Propagation         savpropage;
   PtrAbstractBox      pAb;
   AbPosition         *pPosAb;
   AbDimension        *pDimAb;
   int                 j;
 
-  /* Traitement particulier aux boites de coupure */
+  pAb = pBox->BxAbstractBox;
+  pMainBox = pAb->AbBox;
   if (pBox->BxType == BoPiece || pBox->BxType == BoScript || pBox->BxType == BoDotted)
     {
-      /* Mise a jour de sa boite mere (boite coupee) */
-      pMainBox = pBox->BxAbstractBox->AbBox;
+      /* Update the initial box */
       pMainBox->BxNChars += charDelta;
       pMainBox->BxNSpaces += spaceDelta;
       pMainBox->BxW += wDelta;
@@ -3026,7 +3370,6 @@ void BoxUpdate (PtrBox pBox, PtrLine pLine, int charDelta, int spaceDelta,
       pMainBox->BxH += hDelta;
       pMainBox->BxHeight += hDelta;
       /* Faut-il mettre a jour la base ? */
-      pAb = pMainBox->BxAbstractBox;
       pPosAb = &pAb->AbHorizRef;
       if (pPosAb->PosAbRef == NULL)
         {
@@ -3042,23 +3385,108 @@ void BoxUpdate (PtrBox pBox, PtrLine pLine, int charDelta, int spaceDelta,
         }
 
       /* Mise a jour des positions des boites suivantes */
-      box1 = pBox->BxNexChild;
-      while (box1)
+      box = pBox->BxNexChild;
+      while (box)
         {
-          box1->BxFirstChar += charDelta;
-          box1 = box1->BxNexChild;
+          box->BxFirstChar += charDelta;
+          if (box->BxBuffer == pBox->BxBuffer)
+            box->BxIndChar += charDelta;
+          box = box->BxNexChild;
         }
     }
-
   /* Traitement sur la boite passee en parametre */
   savpropage = Propagate;
-  pAb = pBox->BxAbstractBox;
   /* update the box itself */
   if (pAb->AbLeafType == LtText)
     {
       /* when a character between 2 boxes are removed the box is unchanged */
       pBox->BxNSpaces += spaceDelta;
       pBox->BxNChars += charDelta;
+      pFrame = &ViewFrameTable[frame - 1];
+      if (pBox->BxType == BoScript && pBox->BxNChars == 0)
+        {
+          // free the empty script box
+          if (pMainBox->BxNexChild != pBox)
+            {
+              prev = pMainBox->BxNexChild;
+              while (prev && prev->BxNexChild != pBox)
+                prev = prev->BxNexChild;
+            }
+
+          // update box links
+          if (prev)
+            {
+              // there is a previous child
+              prev->BxNexChild = pBox->BxNexChild;
+              prev->BxNext = pBox->BxNext;
+              if (pBox->BxNext)
+                pBox->BxNext->BxPrevious = prev;
+              else
+                pFrame->FrAbstractBox->AbBox->BxPrevious = prev;
+            }
+          else
+            {
+              pMainBox->BxNexChild = pBox->BxNexChild;
+              if (pBox->BxPrevious)
+                pBox->BxPrevious->BxNext = pBox->BxNext;
+              else
+                pFrame->FrAbstractBox->AbBox->BxNext = pBox->BxNext;
+              
+              if (pBox->BxNext)
+                pBox->BxNext->BxPrevious = pBox->BxPrevious;
+              else
+                pFrame->FrAbstractBox->AbBox->BxPrevious = pBox->BxPrevious;
+            }
+#ifdef _GL
+          if (glIsList (pBox->DisplayList))
+            {
+              glDeleteLists (pBox->DisplayList, 1);
+              pBox->DisplayList = 0;
+            }
+#endif /* _GL */
+          pLine = SearchLine (pBox->BxNexChild, frame);
+          pViewSel = &pFrame->FrSelectionBegin;
+          pViewSelEnd = &pFrame->FrSelectionEnd;
+          box = FreeBox (pBox);
+          // update the selection
+          if (box)
+            {
+              pViewSel->VsBox = box;
+              pViewSelEnd->VsBox = box;
+            }
+          else
+            {
+              box = pMainBox->BxNexChild;
+              if (box)
+                {
+                  // there is almost a previous script box
+                  pViewSel->VsBox = box;
+                  pViewSelEnd->VsBox = box;
+                  if (prev)
+                    {
+                      // select the end of previous box
+                      pViewSel->VsXPos = box->BxW;
+                      pViewSel->VsNSpaces = box->BxNSpaces;
+                      pViewSel->VsIndBox = box->BxNChars;
+                    }
+                  pViewSelEnd->VsXPos = pViewSel->VsXPos + 2;
+                  pViewSelEnd->VsNSpaces = pViewSel->VsNSpaces;
+                  pViewSelEnd->VsIndBox = pViewSel->VsIndBox;
+                }
+              else
+                {
+                  pMainBox->BxType = BoComplete;
+                  box = pMainBox;
+                  pViewSel->VsBox = box;
+                  pViewSelEnd->VsBox = box;
+                }
+            }
+          /* Recompute the whole block? */
+          if (Propagate == ToAll)
+            RecomputeLines (pAb->AbEnclosing, pLine, box, frame);
+          Propagate = savpropage;
+          return box;
+        }
     }
 
   /* does the box width depends on the content? */
@@ -3131,6 +3559,9 @@ void BoxUpdate (PtrBox pBox, PtrLine pLine, int charDelta, int spaceDelta,
   Propagate = savpropage;
 #ifdef _GL
   pBox->VisibleModification = TRUE;
+  return pBox;
+#else
+  return pBox;
 #endif /* _GL */
 }
 
@@ -3187,7 +3618,7 @@ void RemoveBoxes (PtrAbstractBox pAb, ThotBool rebuild, int frame)
             CleanPictInfo ((ThotPictInfo *)pBox->BxPictInfo);
           else if (pBox->BxType == BoSplit || pBox->BxType == BoMulScript)
             /* free child boxes */
-            UnsplitBox (pBox);
+            UnsplitBox (pBox, frame);
 
           // Reset the abstract box status
           pAb->AbFloatChange = FALSE;
@@ -3428,6 +3859,9 @@ static void UpdateFloat (PtrAbstractBox pAb, PtrAbstractBox pParent,
           pParent->AbBox &&
           pParent->AbInLine &&
           pParent->AbEnclosing &&
+          (pParent->AbElement &&
+           !TypeHasException (ExcNewRoot, pParent->AbElement->ElTypeNumber,
+                              pParent->AbElement->ElStructSchema)) &&
           pChild == NULL && /* no previous or next */
           pAb->AbFloat != 'N' &&
           (pAb->AbLeafType == LtPicture ||
@@ -4054,7 +4488,8 @@ ThotBool ComputeUpdates (PtrAbstractBox pAb, int frame, ThotBool *computeBBoxes)
                       LoadPicture (frame, pBox, (ThotPictInfo *) pAb->AbPictBackground);
                     }
                 }
-              else if (pAb->AbLeafType == LtGraphics && pAb->AbShape == 'C')
+              else if (pAb->AbLeafType == LtGraphics &&
+		       (pAb->AbShape == 1 || pAb->AbShape == 'C'))
                 {
                   /* update radius of the rectangle with rounded corners */
                   ComputeRadius (pAb, frame, TRUE);
@@ -4115,7 +4550,10 @@ ThotBool ComputeUpdates (PtrAbstractBox pAb, int frame, ThotBool *computeBBoxes)
               /* check the font of the abstract box */
               height = pAb->AbSize;
               unit = pAb->AbSizeUnit;
-              if (pAb->AbLeafType == LtText)
+              if (pAb->AbLeafType == LtCompound &&
+                  pAb->AbEnclosing && pAb->AbEnclosing->AbBox)
+                 pBox->BxFont = pAb->AbEnclosing->AbBox->BxFont;
+              else if (pAb->AbLeafType == LtText)
                 {
                   if (pAb->AbElement->ElLanguage < TtaGetFirstUserLanguage ())
                     /* ElLanguage is actually a script */
@@ -4212,7 +4650,6 @@ ThotBool ComputeUpdates (PtrAbstractBox pAb, int frame, ThotBool *computeBBoxes)
                         {
                           /* Si transformation polyline en graphique simple */
                           pAb->AbRealShape = pAb->AbShape;
-		      
                           /* remonte a la recherche d'un ancetre elastique */
                           pCurrentAb = pAb;
                           while (pCurrentAb != NULL)
@@ -4479,7 +4916,8 @@ ThotBool ComputeUpdates (PtrAbstractBox pAb, int frame, ThotBool *computeBBoxes)
 
               /* check auto margins */
               CheckMBP (pAb, pCurrentBox, frame, TRUE);
-              if (pAb->AbLeafType == LtGraphics && pAb->AbShape == 'C' &&
+              if (pAb->AbLeafType == LtGraphics &&
+		  (pAb->AbShape == 1 || pAb->AbShape == 'C') &&
                   pAb->AbRxUnit == UnPercent)
                 /* update radius of the rectangle with rounded corners */
                 ComputeRadius (pAb, frame, TRUE);
@@ -4571,7 +5009,8 @@ ThotBool ComputeUpdates (PtrAbstractBox pAb, int frame, ThotBool *computeBBoxes)
 
               /* recheck auto and % margins */
               CheckMBP (pAb, pCurrentBox, frame, TRUE);
-              if (pAb->AbLeafType == LtGraphics && pAb->AbShape == 'C' &&
+              if (pAb->AbLeafType == LtGraphics &&
+		  (pAb->AbShape == 1 || pAb->AbShape == 'C') &&
                   pAb->AbRyUnit == UnPercent)
                 /* update radius of the rectangle with rounded corners */
                 ComputeRadius (pAb, frame, FALSE);

@@ -2471,9 +2471,9 @@ STRUCT
 EXCEPT
 
    { exceptions for elements }
-   SVG:           IsDraw, MoveResize, NoMove;
-   g:             NoMove, NoResize, HighlightChildren, NoShowBox,
-                  NoCreate, IsGroup;
+   SVG:           IsDraw, MoveResize, NoMove, ClickableSurface;
+   g:             NoMove, NoResize,
+                  NoCreate, IsGroup, NoShowBox;
    defs:          NoMove, NoResize, NoShowBox, NoCreate;
    linearGradient:NoMove, NoResize, NoShowBox, NoCreate;
    stop:                NoMove, NoResize, NoShowBox, NoCreate;
@@ -2501,7 +2501,7 @@ EXCEPT
    foreignObject: MoveResize, HighlightChildren, NoCreate, NewRoot;
    SVG_Image:     Hidden, SelectParent;
    GRAPHICS:            SelectParent;
-   PICTURE:       NoMove, NoResize, SelectParent;
+   PICTURE:       MoveResize, SelectParent{NoMove, NoResize};
    TEXT:          NoMove, NoResize;
    Unknown_namespace:   NoCreate;
    DOCTYPE:             NoCut, NoSpellCheck, NotAnElementNode;

@@ -1,4 +1,4 @@
-        { Thot presentation schema for SVG
+       { Thot presentation schema for SVG
 
           V. Quint & I. Vatton            1998-2007        }
 
@@ -32,11 +32,13 @@ VIEWS
 #define INVALID_Color Black
 #define COMMENT_Color Black
 #else
-#define TAG_Color DarkIndigo1
-#define ATTR_Color DarkIndigo1
-#define ATTRVALUE_Color DarkMagenta2
+#define TAG_Color DarkMagenta3
+#define ATTR_Color DarkMagenta3
+#define ATTRVALUE_Color DarkBlue2
 #define INVALID_Color Red
-#define COMMENT_Color DarkLawnGreen3
+#define UNKNOWNTAG_Color Red
+#define LINK_Color DarkIndigo1
+#define COMMENT_Color DarkGreen3
 #endif
  
 #define TAG_Font Helvetica
@@ -574,8 +576,8 @@ RULES
         CreateWith (VerticalLine);
         HorizPos: Left = Enclosing . Left UserSpecified;
         VertPos:  Top = Enclosing . Top UserSpecified;
-        Width: Enclosing . Width;
-        Height: Enclosing . Height;
+        Width: Enclosed . Width;
+        Height: Enclosed . Height;
         IN Structure_view BEGIN
                 if within use_
                     Visibility: 0;
@@ -1670,7 +1672,7 @@ RULES
         CreateBefore (ElementName);
         CreateWith (VerticalLine);
            HorizPos: Left = Enclosing . Left Userspecified;
-           VertPos:  HRef = Enclosing . Top + 10 pt Userspecified;
+           VertPos:  HRef = Enclosing . Top Userspecified;
         Width: 2.5 cm UserSpecified;
         Height: 1.5 cm UserSpecified;
         Foreground: Black;

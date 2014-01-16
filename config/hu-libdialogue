@@ -66,7 +66,7 @@
 64 Bezárás mentés nélkül
 65 Karakter stílus
 66 Színek
-67 XHTML
+67 **Elements
 68 Törlés
 69 Kimenet
 70 PostScript fájl
@@ -256,19 +256,157 @@
 254 Oszlop hozzá&adása
 255 A nap tippje
 256 Tipp mutatása a program indulásakor
-257 Következő tipp
-258 Tudta-e..
-259 **Close
-260 Az Amaya testreszabható: öt különböző profilban különböző menü- készletek és panelkészlet áll rendelkezésére. Lásd a Beállításokban.
-261 A panelek az ablak bal vagy jobb szélére helyezhetők, vagy akár panelenként beállíthatók. Lásd a Beállításokban.
-262 Az F2 vagy Esc billentyűvel kijelölhetjük a szerkezeti elem elődelemét, amivel ezután szerkesztési műveletek (másolás, beillesztés, tulajdonságok stb.) végezhetők.
-263 Két dokumentumot egymás mellé vagy alá helyezhetünk, ha az egyiket fülénél fogva a nyitva lévő másik dokumentum keretéhez húzzuk.
-264 Egyedi módban a panelek húzásásal megváltoztatható a sorrendjük, vagy lebegővé tehetők.
-265 Egyedi módban mindkét oldalon több paneltárat is készíthetünk a panelek húzásával.
-266 A szerkesztési mód (Szöveg/XML) váltása az állapotsorban lévő hasonló feliratú gombra kattintva is lehetséges.
-267 Ha az állapotsorban piros gomb látható, rákattintva megkapjuk a hibákat.
-268 Kijelölhetjük az aktuális kijelölés valamely elődelemét, ha az állapotsorban annak a nevére kattintunk.
-269 A dokumentumfüleken lévő nyíl gomb megnyásakor megjelenő menü segítségével átválthatunk másik fülre.
-270 Klasszikus
-271 Modern
-272 Téma nélkül
+257 **Previous tip
+258 Következő tipp
+259 Tudta-e..
+260 **Close
+261 Az Amaya testreszabható: öt különböző profilban különböző menü- készletek és panelkészlet áll rendelkezésére. Lásd a Beállításokban.
+262 A panelek az ablak bal vagy jobb szélére helyezhetők, vagy akár panelenként beállíthatók. Lásd a Beállításokban.
+263 Az F2 vagy Esc billentyűvel kijelölhetjük a szerkezeti elem elődelemét, amivel ezután szerkesztési műveletek (másolás, beillesztés, tulajdonságok stb.) végezhetők.
+264 Két dokumentumot egymás mellé vagy alá helyezhetünk, ha az egyiket fülénél fogva a nyitva lévő másik dokumentum keretéhez húzzuk.
+265 Egyedi módban a panelek húzásásal megváltoztatható a sorrendjük, vagy lebegővé tehetők.
+266 Egyedi módban mindkét oldalon több paneltárat is készíthetünk a panelek húzásával.
+267 A szerkesztési mód (Szöveg/XML) váltása az állapotsorban lévő hasonló feliratú gombra kattintva is lehetséges.
+268 Ha az állapotsorban piros gomb látható, rákattintva megkapjuk a hibákat.
+269 Kijelölhetjük az aktuális kijelölés valamely elődelemét, ha az állapotsorban annak a nevére kattintunk.
+270 A dokumentumfüleken lévő nyíl gomb megnyásakor megjelenő menü segítségével átválthatunk másik fülre.
+271 **If you enable "Show Targets" in the "Views" menu, targets are displayed in formatted view. This is convenient for the creation of link: a target can be chosen by clicking on it.
+272 **When you rotate an SVG object, the center is indicated by a cross. You can use the mouse to move it.
+273 **Basic SVG shapes have handles that can be used to edit them. Blue triangles or green square allow to change their size. For <rect/> element, red circles give a control on radius of rounded corners.
+274 **For SVG drawing, lines are created with a precision of 15� if you press the shift button. It is useful when you want to draw straight lines.
+275 **When you resize an image or an SVG object, pressing the shift button allows to preserve aspect ratio.
+276 **Use Edit>Preferences>Dialogue Language to choose the language of the user interface.
+277 Klasszikus
+278 Modern
+279 Téma nélkül
+280 **Title/Description
+281 **Generate a description
+282 **Square
+283 **Rounded Square
+284 **Rectangle
+285 **Rounded rectangle
+286 **Diamond
+287 **Parallelogram
+288 **Trapezium
+289 **Equilateral triangle
+290 **Isosceles triangle
+291 **Right triangle
+292 **Circle
+293 **Ellipse
+294 **Line
+295 **Arrow
+296 **Double Arrow
+297 **Zigzag
+298 **Group
+299 **Ungroup
+300 **Bring to front
+301 **Send to back
+302 **One level up
+303 **One level down
+304 **90� left
+305 **90� right
+306 **Rotate
+307 **Vertical symmetry
+308 **Horizontal symmetry
+309 **Scale
+310 **Skew
+311 **Move
+312 **Align bottom
+313 **Align center
+314 **Align left
+315 **Align middle
+316 **Align right
+317 **Align top
+318 **Distribute bottom
+319 **Distribute center
+320 **Distribute left
+321 **Distribute middle
+322 **Distribute right
+323 **Distribute top
+324 **Distribute vertical spacing
+325 **Distribute horizontal spacing
+326 **Closed Bezier curve
+327 **Bezier curve
+328 **Polyline
+329 **Polygon
+330 **Foreign Object
+331 **Image
+332 **SVG Canvas
+333 **Text
+334 **Cone
+335 **Cube
+336 **Cylinder
+337 **Octahedron
+338 **Parallelepiped
+339 **Pyramid
+340 **Beaker
+341 **Funnel
+342 **Bunsen burner
+343 **Buchner flask
+344 **Boiling flask
+345 **Burette
+346 **Erlenmeyer flask
+347 **Test tube
+348 **Pipette
+349 **Rectangular
+350 **Rounded rectangular
+351 **Round
+352 **Scream
+353 **Thought
+354 **Capacitor
+355 **Current source
+356 **Diode
+357 **Ground Point
+358 **Inductor
+359 **LED
+360 **Op-amp
+361 **Resistor
+362 **Switch
+363 **Transistor
+364 **Voltage source
+365 **Zener diode
+366 **Pentagon
+367 **Hexagon
+368 **Heptagon
+369 **Octogon
+370 **Star (4 branches)
+371 **Star (5 branches)
+372 **Star (6 branches)
+373 **AND
+374 **NAND
+375 **OR
+376 **NOR
+377 **XOR
+378 **XNOR
+379 **NOT
+380 **Cross
+381 **Frame
+382 **Ring
+383 **Cloud
+384 **Scroll
+385 **Sun
+386 **Lightning_Bolt
+387 **Moon
+388 **Smiley
+389 **Heart
+390 **Flower
+391 **Prohibited
+392 **2-Way Rounded Arrow
+393 **3-Way Arrow Callout
+394 **3-Way Arrow
+395 **4-Way_Arrow_Callout
+396 **4-Way Arrow
+397 **Chevron
+398 **Circular Arrow
+399 **Corner Arrow
+400 **Corner Double Arrow Callout
+401 **Corner Double Arrow
+402 **Double Arrow Callout
+403 **Double Arrow
+404 **Notched Arrow
+405 **Rounded Arrow
+406 **Simple Arrow Callout
+407 **Simple Arrow
+408 **Split Arrow
+409 **S-Shape Arrow
+410 **Striped Arrow

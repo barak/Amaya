@@ -428,7 +428,7 @@
 426 **Send
 427 **The server address and port must be set in Preferences
 428 **Message:
-429 **Alternate textual  message:
+429 **Alternate textual message:
 430 **The server is unreachable or does not respond
 431 **The server has reject you
 432 **The sender address is misformatted
@@ -441,42 +441,67 @@
 439 **Remember passwords for sites
 440 **Sites
 441 **Remove all
-442 **An error occured during the building of the javascript/DOM objects
-443 **A script is still running but will be aborted as soon as possible. Please try later.
-444 **Javascript/DOM can not be enabled in this view.
-445 **Enter a javascript command:
-446 **The command returned the value: %s
-447 **The command returned no value
-448 **SpiderMonkey returned the following error:\n\nFile: %s\nLine: %d\n\n%s
-449 Yeni
-450 **Customizable
-451 **Create
-452 **Create the link by click
-453 tanımı sil
-454 **Save without template
-455 **With theme ...
-456 **Full width
-457 **With caption
-458 **Size
-459 **Position
-460 **XML editing mode
-461 **List of style sheets
-462 **Add a style sheet...
-463 **Remove selected style sheets
-464 **Activate selected style sheets
-465 **Desactivate selected style sheets
-466 **Open selected style sheets
-467 Amaya profili:
-468 **Show "Tip of the day" at startup
-469 **Choose font family and size:
-470 **Template has error(s), it will not be used:
-471 **Close
-472 **Component '%s' has multiple definition.
-473 **Library '%s' can not be loaded.
-474 **Can not convert an instance document to template.
-475 **The document is already a template.
-476 **Error in template creation:
-477 **Text box
-478 **Text box label:
-479 **Free editing box
-480 **Free editing box label:
+442 **XML namespaces generated for new XHTML+RDFa documents
+443 **Select a namespace in the list below or add a new one (syntax prefix="uri")
+444 **An error occured during the building of the javascript/DOM objects
+445 **A script is still running but will be aborted as soon as possible. Please try later.
+446 **Javascript/DOM can not be enabled in this view.
+447 **Enter a javascript command:
+448 **The command returned the value: %s
+449 **The command returned no value
+450 **SpiderMonkey returned the following error:\n\nFile: %s\nLine: %d\n\n%s
+451 Yeni
+452 **Customizable
+453 **Create
+454 **Create the link by click
+455 tanımı sil
+456 **Save without template
+457 **With theme ...
+458 **Full width
+459 **With caption
+460 **Size
+461 **Position
+462 **XML editing mode
+463 **List of style sheets
+464 **Add a style sheet...
+465 **Remove selected style sheets
+466 **Activate selected style sheets
+467 **Desactivate selected style sheets
+468 **Open selected style sheets
+469 Amaya profili:
+470 **Show "Tip of the day" at startup
+471 **Choose font family and size:
+472 **Template has error(s), it will not be used:
+473 **Close
+474 **Component '%s' has multiple definition.
+475 **Library '%s' can not be loaded.
+476 **Can not convert an instance document to template.
+477 **The document is already a template
+478 **Template creation fails
+479 **Text area
+480 **Element label:
+481 **Bag area
+482 **Repeat element
+483 **New component
+484 **Component is used, you can not remove it.
+485 **at the top left corner
+486 **at the bottom left corner
+487 **on the left
+488 **at the top right corner
+489 **at the bottom right corner
+490 **on the right
+491 **at the top
+492 **at the bottom
+493 **in the center
+494 **to the left and above
+495 **to the left and below
+496 **to the left of
+497 **to the right and above
+498 **to the right and below
+499 **to the right of
+500 **above
+501 **below
+502 **in front of
+503 **There are %d objects: 
+504 **New use
+505 **Optional use

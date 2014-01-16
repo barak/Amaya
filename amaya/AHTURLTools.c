@@ -90,19 +90,32 @@ static char UnEscapeChar (char c)
 char *EscapeURL (const char *url)
 {
   char *buffer;
-  int   buffer_len;
+  char *ptr, *server, *param;
+  int   buffer_len, par_len;
+  int   new_chars, len, url_len;
   int   buffer_free_mem;
-  char *ptr;
-  int   new_chars;
   void *status;
 
   if (url && *url)
     {
-      buffer_free_mem = strlen (url) + 20;
+      url_len =  strlen (url);
+      buffer_free_mem = url_len + 20;
+      // a patch for sweetwiki
+      server = TtaStrdup ("http://sweetwiki.inria.fr/");
+      param = TtaStrdup ("?templateoff=true&xslname=queryoff");
+      len = strlen(server);
+      par_len = strlen (param);
+      if (strncmp (url, server, len) ||
+          // or already included
+          url_len < 4 ||
+          strncmp (&url[url_len-4], ".jsp", 4))
+        // it's not necessary to add these parameters
+        par_len = 0;
+
+      buffer_free_mem += par_len;
       buffer = (char *)TtaGetMemory (buffer_free_mem + 1);
       ptr = (char *) url;
       buffer_len = 0;
-
       while (*ptr)
         {
           switch (*ptr)
@@ -153,8 +166,17 @@ char *EscapeURL (const char *url)
           buffer_free_mem -= new_chars;
           /* examine the next char */
           ptr++;
+
+          if (*ptr == EOS && par_len)
+            {
+              // add parameters
+              ptr = param;
+              par_len = 0;
+            }
         }
       buffer[buffer_len] = EOS;
+      TtaFreeMemory (server);
+      TtaFreeMemory (param);
     }
   else
     buffer = NULL;
@@ -749,7 +771,43 @@ ThotBool IsXMLStruct (const char *path)
 }
 
 /*----------------------------------------------------------------------
-  IsXTiger                                                        
+  IsXTigerLibrary                                                        
+  returns TRUE if path points to an XTiger resource.
+  ----------------------------------------------------------------------*/
+ThotBool IsXTigerLibrary (const char *path)
+{
+  char        *temppath;
+  char        *suffix;
+  ThotBool    ret;
+
+  if (!path)
+    return (FALSE);
+
+  temppath = TtaStrdup ((char *)path);
+  suffix = (char *)TtaGetMemory (strlen (path) + 1);
+  TtaExtractSuffix (temppath, suffix);
+
+  if (!strcasecmp (suffix, "xtl"))
+    ret = TRUE;
+  else if (!strcmp (suffix, "gz"))
+    {
+      /* take into account compressed files */
+      TtaExtractSuffix (temppath, suffix);       
+      if (!strcasecmp (suffix, "xtl"))
+        ret = TRUE;
+      else
+        ret = FALSE;
+    }
+  else
+    ret = FALSE;
+
+  TtaFreeMemory (temppath);
+  TtaFreeMemory (suffix);
+  return (ret);
+}
+
+/*----------------------------------------------------------------------
+  IsXTiger
   returns TRUE if path points to an XTiger resource.
   ----------------------------------------------------------------------*/
 ThotBool IsXTiger (const char *path)
@@ -765,13 +823,13 @@ ThotBool IsXTiger (const char *path)
   suffix = (char *)TtaGetMemory (strlen (path) + 1);
   TtaExtractSuffix (temppath, suffix);
 
-  if (!strcasecmp (suffix, "xtd") || !strcasecmp (suffix, "xtl"))
+  if (!strcasecmp (suffix, "xtd"))
     ret = TRUE;
   else if (!strcmp (suffix, "gz"))
     {
       /* take into account compressed files */
       TtaExtractSuffix (temppath, suffix);       
-      if (!strcasecmp (suffix, "xtd") || !strcasecmp (suffix, "xtl"))
+      if (!strcasecmp (suffix, "xtd"))
         ret = TRUE;
       else
         ret = FALSE;
@@ -1534,7 +1592,7 @@ static void CleanCopyFileURL (char *dest, char *src,
   the name "noname.html".
   ----------------------------------------------------------------------*/
 void NormalizeURL (char *orgName, Document doc, char *newName,
-                   char *docName, char *otherPath)
+                   char *docName, const char *otherPath)
 {
   char          *basename;
   char           tempOrgName[MAX_LENGTH];
@@ -1623,8 +1681,8 @@ void NormalizeURL (char *orgName, Document doc, char *newName,
         {
           length = strlen (tempOrgName);
           for (ndx = 0; ndx < length; ndx++)
-            if (tempOrgName [ndx] == '/')
-              tempOrgName [ndx] = '\\';
+            if (tempOrgName[ndx] == '/')
+              tempOrgName[ndx] = '\\';
         }
 #endif /* _WINDOWS */
       ptr = AmayaParseUrl (tempOrgName, basename, AMAYA_PARSE_ALL);
@@ -1829,11 +1887,11 @@ static void scan (char *name, HTURI *parts)
   char *   p;
   char *   after_access = name;
 
-  memset (parts, '\0', sizeof (HTURI));
+  memset (parts, 0, sizeof (HTURI));
   /* Look for fragment identifier */
   if ((p = strchr(name, '#')) != NULL)
     {
-      *p++ = '\0';
+      *p++ = EOS;
       parts->fragment = p;
     }
     
@@ -1903,7 +1961,7 @@ static void scan (char *name, HTURI *parts)
   On exit,
   returns		A pointer to a malloc'd string which MUST BE FREED
   ----------------------------------------------------------------------*/
-char   *AmayaParseUrl (const char *aName, char *relatedName, int wanted)
+char   *AmayaParseUrl (const char *aName, const char *relatedName, int wanted)
 {
   char      *return_value;
   char       result[MAX_LENGTH];
@@ -1913,7 +1971,7 @@ char   *AmayaParseUrl (const char *aName, char *relatedName, int wanted)
   HTURI      given, related;
   int        len, l;
   char       used_sep;
-  char      *used_str;
+  const char*used_str;
 
   if (strchr (aName, DIR_SEP) || strchr (relatedName, DIR_SEP))
     {
@@ -1937,8 +1995,6 @@ char   *AmayaParseUrl (const char *aName, char *relatedName, int wanted)
       strncpy (rel, relatedName, MAX_LENGTH - 1);
       rel[MAX_LENGTH - 1] = EOS;
     }
-  else
-    relatedName[0] = EOS;
   
   scan (name, &given);
   scan (rel,  &related); 
@@ -1947,7 +2003,7 @@ char   *AmayaParseUrl (const char *aName, char *relatedName, int wanted)
     if (access)
       {
         strcat (result, access);
-        if(wanted & AMAYA_PARSE_PUNCTUATION)
+        if (wanted & AMAYA_PARSE_PUNCTUATION)
           strcat (result, ":");
       }
   
@@ -1962,9 +2018,9 @@ char   *AmayaParseUrl (const char *aName, char *relatedName, int wanted)
       }
   
   if (wanted & AMAYA_PARSE_HOST)
-    if(given.host || related.host)
+    if (given.host || related.host)
       {
-        if(wanted & AMAYA_PARSE_PUNCTUATION)
+        if (wanted & AMAYA_PARSE_PUNCTUATION)
           strcat (result, "//");
         strcat (result, given.host ? given.host : related.host);
       }
@@ -2402,16 +2458,17 @@ ThotBool NormalizeFile (char *src, char *target, ConvertionType convertion)
       if (strncmp (&src[start_index], "//localhost/", 12) == 0)
         start_index += 11;
        
+#ifdef _IV
       /* remove the first two slashes in / / /path */
       while (src[start_index] &&
              src[start_index] == '/' 
              && src[start_index + 1] == '/')
         start_index++;
+#endif /* IV */
 
-#ifdef _WINDOWS
+#ifdef _IV
       /* remove any extra slash before the drive name */
-      if (src[start_index] == '/'
-          &&src[start_index+2] == ':')
+      if (src[start_index] == '/' &&src[start_index+2] == ':')
         start_index++;
 #endif /* _WINDOWS */
 
@@ -2432,6 +2489,7 @@ ThotBool NormalizeFile (char *src, char *target, ConvertionType convertion)
       CleanCopyFileURL (target, src, convertion);
     }
 #ifdef _WINDOWS
+#ifdef IV
   else if (src[0] == DIR_SEP && src[1] == DIR_SEP)
     {
       s = getenv ("HOMEDRIVE");
@@ -2440,6 +2498,7 @@ ThotBool NormalizeFile (char *src, char *target, ConvertionType convertion)
       strcpy (&target[i], &src[1]);
       change = TRUE;	    
     }
+#endif /* IV */
 #else /* _WINDOWS */
   else if (src[0] == '~')
     {
@@ -2480,15 +2539,15 @@ ThotBool NormalizeFile (char *src, char *target, ConvertionType convertion)
   parsed by AmayaParseUrl relative to relatedName, will yield aName.
   The caller is responsible for freeing the resulting name later.
   ----------------------------------------------------------------------*/
-char      *MakeRelativeURL (char *aName, char *relatedName)
+char      *MakeRelativeURL (const char *aName, const char *relatedName)
 {
-  char  *return_value;
-  char   result[MAX_LENGTH];
-  char  *p;
-  char  *q;
-  char  *after_access;
-  char  *last_slash = NULL;
-  int    slashes, levels, len;
+  char        *return_value;
+  char         result[MAX_LENGTH];
+  const char  *p;
+  const char  *q;
+  const char  *after_access;
+  const char  *last_slash = NULL;
+  int          slashes, levels, len;
 #ifdef _WINDOWS
   int ndx;
 #endif /* _WINDOWS */
@@ -2584,7 +2643,7 @@ char      *MakeRelativeURL (char *aName, char *relatedName)
   Otherwise, in case of a system error, returns FALSE, with a 
   filesize of 0L.
   ---------------------------------------------------------------------*/
-ThotBool AM_GetFileSize (char *filename, unsigned long *file_size)
+ThotBool AM_GetFileSize (const char *filename, unsigned long *file_size)
 {
   if (!TtaFileExist (filename))
     return FALSE;

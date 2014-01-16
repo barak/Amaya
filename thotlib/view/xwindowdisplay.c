@@ -1461,6 +1461,19 @@ void DrawDiamond (int frame, int thick, int style, int x, int y, int width,
     }
 }
 
+void DrawParallelogram (int frame, int thick, int style, int x, int y,
+			int width, int height, int e, int fg, int bg,
+			int pattern)
+{
+}
+
+void DrawTrapezium (int frame, int thick, int style, int x, int y,
+		    int width, int height, int e, int f,
+		    int fg, int bg,
+		    int pattern)
+{
+}
+
 /*----------------------------------------------------------------------
   DrawSegments draw a set of segments.
   Parameter buffer is a pointer to the list of control points.
@@ -2697,6 +2710,28 @@ void DrawEllipsFrame (int frame, int thick, int style, int x, int y,
     }
 }
 
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+void DrawBezierControl (int frame, int size, int x_point, int y_point,
+			int x_ctrl, int y_ctrl, int bg, int fg)
+{
+  InitDrawing (5, 1, bg);
+  DoDrawOneLine (frame, x_ctrl, y_ctrl, x_point, y_point);
+  DrawEllipsFrame (frame, 1, 5, x_ctrl - size, y_ctrl - size,
+		   size*2+1, size*2+1, fg, bg, 2);
+}
+
+void DrawResizeTriangle (int frame, int size, int x_point, int y_point,
+			 int bg, int fg, int direction)
+{
+}
+
+void DrawTriangle (int frame, int thick, int style, int fg, int bg, int pattern,
+		   int x1, int y1,
+		   int x2, int y2,
+		   int x3, int y3)
+{
+}
 
 /*----------------------------------------------------------------------
   SetMainWindowBackgroundColor :                          

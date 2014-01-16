@@ -134,7 +134,7 @@ static ThotBool     ImportExcept;  /* we met exception ImportLine or
 /*----------------------------------------------------------------------
   InitBasicType                                                  
   ----------------------------------------------------------------------*/
-static void InitBasicType (SRule *pRule, char *name, BasicType typ)
+static void InitBasicType (SRule *pRule, const char *name, BasicType typ)
 {
   if (pRule->SrName == NULL)
     {
@@ -1769,6 +1769,9 @@ static void         ProcessToken (indLine wi, indLine wl, SyntacticCode c,
         break;
       case KWD_GiveName: /* on attribute */
         ExceptionNum (ExcGiveName, False, True, False, wi);
+        break;
+      case KWD_GiveTypes: /* on attribute */
+        ExceptionNum (ExcGiveTypes, False, True, False, wi);
         break;
       case KWD_NoShowBox:
         ExceptionNum (ExcNoShowBox, True, False, False, wi);

@@ -828,7 +828,7 @@ int BoxFontHeight (SpecFont specfont, char code)
   ----------------------------------------------------------------------*/
 int PixelValue (int val, TypeUnit unit, PtrAbstractBox pAb, int zoom)
 {
-  int              dist, i;
+  int              dist, i, h;
 
   dist = 0;
   switch (unit)
@@ -838,7 +838,13 @@ int PixelValue (int val, TypeUnit unit, PtrAbstractBox pAb, int zoom)
           pAb->AbBox->BxFont == NULL)
         dist = 0;
       else
-        dist = (val * BoxFontHeight (pAb->AbBox->BxFont, EOS) + 5) / 10;
+        {
+          if (pAb->AbLeafType != LtText && pAb->AbLeafType != LtSymbol)
+            h = GetCurrentFontHeight (pAb->AbSize, pAb->AbSizeUnit, zoom);
+          else
+            h = BoxFontHeight (pAb->AbBox->BxFont, EOS);
+          dist = (val * h + 5) / 10;
+        }
       break;
     case UnXHeight:
       if (pAb == NULL || pAb->AbBox == NULL ||
@@ -907,7 +913,7 @@ int PixelValue (int val, TypeUnit unit, PtrAbstractBox pAb, int zoom)
   ----------------------------------------------------------------------*/
 int LogicalValue (int val, TypeUnit unit, PtrAbstractBox pAb, int zoom)
 {
-  int              dist, i;
+  int              dist, i, h;
 
   dist = 0;
   switch (unit)
@@ -917,7 +923,13 @@ int LogicalValue (int val, TypeUnit unit, PtrAbstractBox pAb, int zoom)
           pAb->AbBox->BxFont == NULL)
         dist = 0;
       else
-        dist = val * 10 / BoxFontHeight (pAb->AbBox->BxFont, EOS);
+        {
+          if (pAb->AbLeafType != LtText && pAb->AbLeafType != LtSymbol)
+            h = GetCurrentFontHeight (pAb->AbSize, pAb->AbSizeUnit, zoom);
+          else
+            h = BoxFontHeight (pAb->AbBox->BxFont, EOS);
+          dist = val * 10 / h;
+        }
       break;
     case UnXHeight:
       if (pAb == NULL || pAb->AbBox == NULL || 
@@ -1045,8 +1057,8 @@ static void GeneratePostscriptFont (char r_name[10], char script, int family,
                                     int highlight, int size)
 {
   
-  char        *cfamily = "sthc";
-  char        *efamily = "sthcklmnopqruvwxyzabd";
+  const char        *cfamily = "sthc";
+  const char        *efamily = "sthcklmnopqruvwxyzabd";
 
   if (script != 'E')
     {
@@ -1073,7 +1085,7 @@ static void GeneratePostscriptFont (char r_name[10], char script, int family,
 void GetFontIdentifier (char script, int family, int highlight, int size,
                         TypeUnit unit, char r_name[10], char r_nameX[100])
 {
-  char        *ffamily;
+  const char  *ffamily;
   const char  *wght, *slant;
   char        encoding[3];
 
@@ -2280,7 +2292,25 @@ void TtaSetFontZoom (int zoom)
   FontZoom = zoom;
 }
 
-
+/*----------------------------------------------------------------------
+  GetCurrentFontHeight returns the font height without loading the font
+  ----------------------------------------------------------------------*/
+int GetCurrentFontHeight (int size, TypeUnit unit, int zoom)
+{
+  if (zoom)
+    {
+      if (unit == UnRelative)
+        {
+          size = ThotFontPointSize (size);
+          unit = UnPoint;
+        }
+      size = size + (size * zoom / 10);
+    }
+  /* the minimum size is 6 points */
+  if (size < 6 && unit == UnPoint)
+    size = 6;
+  return size;
+}
 
 /*----------------------------------------------------------------------
   InitDialogueFonts initialize the standard fonts used by the Thot Toolkit.

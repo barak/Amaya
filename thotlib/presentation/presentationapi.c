@@ -34,6 +34,7 @@
 #include "appli_f.h"
 #include "applicationapi_f.h"
 #include "attributes_f.h"
+#include "buildboxes_f.h"
 #include "boxpositions_f.h"
 #include "boxselection_f.h"
 #include "callback_f.h"
@@ -2477,7 +2478,11 @@ void TtaGiveBoxColors (Element element, Document document, View view,
           else
             {
               *color = pAb->AbForeground;
-              *bg_color = pAb->AbBackground;
+              if (pAb->AbFillPattern == 0)
+                // no fill color
+                *bg_color = -1;
+              else
+                *bg_color = pAb->AbBackground;
             }
         }
     }
@@ -2532,7 +2537,6 @@ void TtaGiveBoxFontInfo (Element element, Document document, View view,
     }
 }
 
-
 /*----------------------------------------------------------------------
   TtaGiveBoxSize
   Returns the height and width of the box corresponding to an element in
@@ -2572,10 +2576,25 @@ void TtaGiveBoxSize (Element element, Document document, View view,
           pAb = AbsBoxOfEl ((PtrElement) element, view);
           if (pAb == NULL || pAb->AbBox == NULL)
             TtaError (ERR_element_has_no_box);
-          else
+          else if (pAb->AbEnclosing &&
+                   pAb->AbEnclosing->AbElement->ElStructSchema &&
+                   (strcmp (pAb->AbElement->ElStructSchema->SsName,"SVG") ||
+                    TypeHasException (ExcIsDraw, pAb->AbElement->ElTypeNumber,
+                                      pAb->AbElement->ElStructSchema)))
+           // else if (IsSVGComponent (pAb->AbElement))
             {
               *width = pAb->AbBox->BxWidth;
               *height = pAb->AbBox->BxHeight;
+            }
+          else
+            {
+#ifdef _GL
+              *width = pAb->AbBox->BxClipW;
+              *height = pAb->AbBox->BxClipH;
+#else /* _GL */
+              *width = pAb->AbBox->BxWidth;
+              *height = pAb->AbBox->BxHeight;
+#endif /* _GL */
 
               /* Convert values to pixels */
               if (unit == UnPercent)
@@ -2623,8 +2642,9 @@ void TtaGiveBoxPosition (Element element, Document document, View view,
 {
   PtrAbstractBox      pAb;
   PtrBox              pBox;
+  ViewFrame	         *pFrame;
   int                 frame;
-  int                 x, y;
+  int                 x, y, w, h;
 
   UserErrorCode = 0;
   *xCoord = 0;
@@ -2648,32 +2668,64 @@ void TtaGiveBoxPosition (Element element, Document document, View view,
           else
             {
               pBox = pAb->AbBox;
+              pFrame = &ViewFrameTable[frame - 1];
               if (pBox->BxType == BoSplit && pBox->BxNexChild != NULL)
                 pBox = pBox->BxNexChild;
+              
               if (pAb->AbEnclosing == NULL || pAb->AbEnclosing->AbBox == NULL)
                 {
                   GetSizesFrame (frame, &x, &y);
-                  *xCoord = pBox->BxXOrg;
-                  *yCoord = pBox->BxYOrg;
+                  *xCoord = pBox->BxXOrg - pFrame->FrXOrg;
+                  *yCoord = pBox->BxYOrg - pFrame->FrYOrg;
                 }
               else
                 {
-                  x = pAb->AbEnclosing->AbBox->BxWidth;
-                  y = pAb->AbEnclosing->AbBox->BxHeight;
-                  *xCoord = pBox->BxXOrg - pAb->AbEnclosing->AbBox->BxXOrg;
-                  *yCoord = pBox->BxYOrg - pAb->AbEnclosing->AbBox->BxYOrg;
+                 if (pAb->AbEnclosing &&
+                      pAb->AbEnclosing->AbElement->ElStructSchema &&
+                      (strcmp (pAb->AbElement->ElStructSchema->SsName,"SVG") ||
+                        TypeHasException (ExcIsDraw,
+                                          pAb->AbEnclosing->AbElement->ElTypeNumber,
+                                          pAb->AbEnclosing->AbElement->ElStructSchema)))
+                   //if (IsSVGComponent (pAb->AbElement))
+                    {
+                      w = pAb->AbEnclosing->AbBox->BxW;
+                      h = pAb->AbEnclosing->AbBox->BxH;
+                      x = pAb->AbEnclosing->AbBox->BxXOrg - pFrame->FrXOrg;
+                      y = pAb->AbEnclosing->AbBox->BxYOrg - pFrame->FrYOrg;
+                    }
+                  else
+                    {
+#ifdef _GL
+                      w = pAb->AbEnclosing->AbBox->BxClipW;
+                      h = pAb->AbEnclosing->AbBox->BxClipH;
+                      x = pAb->AbEnclosing->AbBox->BxClipX;
+                      y = pAb->AbEnclosing->AbBox->BxClipY;
+#else /* _GL */
+                      w = pAb->AbEnclosing->AbBox->BxW;
+                      h = pAb->AbEnclosing->AbBox->BxH;
+                      x = pAb->AbEnclosing->AbBox->BxXOrg - pFrame->FrXOrg;
+                      y = pAb->AbEnclosing->AbBox->BxYOrg - pFrame->FrYOrg;
+#endif /* _GL */
+                    }
+#ifdef _GL
+                  *xCoord = pBox->BxClipX - x;
+                  *yCoord = pBox->BxClipY - y;
+#else /* _GL */
+                  *xCoord = pBox->BxXorg - pFrame->FrXorg - x;
+                  *yCoord = pBox->BxYOrg - pFrame->FrYorg - y;
+#endif /* _GL */
                 }
 	      
               /* Convert values to the requested unit */
               if (unit == UnPercent)
                 {
-                  *xCoord = LogicalValue (*xCoord, UnPercent, (PtrAbstractBox) x, 0);
-                  *yCoord = LogicalValue (*yCoord, UnPercent, (PtrAbstractBox) y, 0);
+                  *xCoord = LogicalValue (*xCoord, UnPercent, (PtrAbstractBox) w, 0);
+                  *yCoord = LogicalValue (*yCoord, UnPercent, (PtrAbstractBox) h, 0);
                 }
               else
                 {
-                  *xCoord = LogicalValue (*xCoord, unit, pAb, ViewFrameTable[frame - 1].FrMagnification);
-                  *yCoord = LogicalValue (*yCoord, unit, pAb, ViewFrameTable[frame - 1].FrMagnification);
+                  *xCoord = LogicalValue (*xCoord, unit, pAb, pFrame->FrMagnification);
+                  *yCoord = LogicalValue (*yCoord, unit, pAb, pFrame->FrMagnification);
                 }
             }
         }

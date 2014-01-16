@@ -173,7 +173,6 @@ HelpAtW3C
 +object-module
 +script-module
 +struct-module
-+svg
 +text-module
 +css-style
 
@@ -229,7 +228,9 @@ HelpAtW3C
 +basic-style
 +hypertext-module
 +maths
++svg
 +css-style
+&CreateMath
 
 ################# Annot
 {Annot}
@@ -280,6 +281,7 @@ FollowTheLinkNewWin
 FollowTheLinkNewTab
 ZoomIn
 ZoomOut
+ZoomNormal
 DoAction
 GoToHome
 OpenDoc
@@ -332,7 +334,9 @@ ShowEditingBar
 &DoSelectFontFamilly
 &DoSelectFontSize
 *AmayaToolBarEditing
-*AmayaXHTMLToolPanel
+*AmayaXHTMLPanel
+*AmayaTemplatePanel
+*AmayaElementToolPanel
 *AmayaStyleToolPanel
 *AmayaExplorerToolPanel
 *AmayaSpeCharToolPanel
@@ -366,12 +370,13 @@ ShowEditingBar
 HelpXml
 &NewXHTML
 &NewMathML
-#&NewSVG
+&NewSVG
 &NewCss
 &Synchronize
 HelpAttributes
 *AmayaAttributeToolPanel
-*AmayaXMLToolPanel
+*AmayaXMLPanel
+
 
 ######### advanced-edit
 [advanced-edit]
@@ -385,7 +390,8 @@ TtcNextElement
 HelpChanging
 HelpTables
 HelpMath
-*AmayaMathMLToolPanel
+*AmayaMathMLPanel
+*AmayaSVGPanel
 
 ######### doctype
 [doctype]
@@ -501,6 +507,7 @@ HelpEditChar
 &SetOnOffSample
 &SetOnOffVariable
 &CreateDate
+&CreateSpan
 
 [hypertext-module]
 &CreateOrChangeLink
@@ -652,9 +659,68 @@ SelectColumn
 [svg]
 ShowGraphicsPalette
 Anim_Play
-ShowLibrary
-AddNewModelIntoLibraryForm
 HelpSVG
+&ChangeTitle
+*AmayaSVGToolPanel
+&CreateSVG_Template
+&CreateSVG_Svg
+&CreateSVG_Line
+&CreateSVG_Rectangle
+&CreateSVG_RoundedRectangle
+&CreateSVG_Circle
+&CreateSVG_Ellipse
+&CreateSVG_Polyline
+&CreateSVG_Polygon
+&CreateSVG_Spline
+&CreateSVG_Closed
+&CreateSVG_ForeignObject
+&CreateSVG_Text
+&CreateSVG_Group
+&CreateSVG_SimpleArrow
+&CreateSVG_DoubleArrow
+&CreateSVG_Zigzag
+&CreateSVG_Square
+&CreateSVG_RoundedSquare
+&CreateSVG_Diamond
+&CreateSVG_Trapezium
+&CreateSVG_Parallelogram
+&CreateSVG_EquilateralTriangle
+&CreateSVG_IsoscelesTriangle
+&CreateSVG_RectangleTriangle
+#&CreateSVG_Cube
+#&CreateSVG_Parallelepiped
+#&CreateSVG_Cylinder
+&TransformSVG_Ungroup
+&TransformSVG_FlipVertically
+&TransformSVG_FlipHorizontally
+&TransformSVG_BringToFront
+&TransformSVG_BringForward
+&TransformSVG_SendBackward
+&TransformSVG_SendToBack
+&TransformSVG_AntiClockWise
+&TransformSVG_ClockWise
+&TransformSVG_AlignLeft
+&TransformSVG_AlignCenter
+&TransformSVG_AlignRight
+&TransformSVG_AlignTop
+&TransformSVG_AlignMiddle
+&TransformSVG_AlignBottom
+&TransformSVG_Rotate
+&EditSVG_Select
+&EditSVG_Information
+&EditSVG_GenerateDescription
+&CreateSVG_Image
+&TransformSVG_Skew
+&TransformSVG_Scale
+&TransformSVG_Translate
+&TransformSVG_DistributeLeft
+&TransformSVG_DistributeCenter
+&TransformSVG_DistributeRight
+&TransformSVG_DistributeTop
+&TransformSVG_DistributeMiddle
+&TransformSVG_DistributeBottom
+&TransformSVG_DistributeVSpacing
+&TransformSVG_DistributeHSpacing
 
 ########### Javascript/DOM
 [javascript_dom]
@@ -710,6 +776,12 @@ ShowAppliedStyle
 &DoRemoveMargin
 &DoSelectFont
 &DoRemoveFont
+&DoSelectOpacity
+&DoSelectStrokeOpacity
+&DoSelectFillOpacity
+&DoSelectStrokeWidth
+&DoUpdateStrokeStatus
+&DoUpdateFillStatus
 
 ########### OPTIONAL MODULES
 [config]
@@ -721,6 +793,10 @@ HelpShortCuts
 ConfigTemplates
 CreateTemplateFromDocument
 TemplateCreateTextBox
+TemplateCreateUseBox
+TemplateCreateUseCompBox
+TemplateCreateRepeat
+TemplateCreateRepeatComp
 TemplateCreateFreeBox
 
 [spell]

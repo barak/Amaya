@@ -7,13 +7,13 @@
 #ifdef __STDC__
 
 extern void InitNatures ( void );
-extern PtrSSchema GetSSchemaForDoc ( char *name,
+extern PtrSSchema GetSSchemaForDoc ( const char *name,
                                      PtrDocument pDoc );
-extern PtrSSchema GetSSchemaByUriForDoc ( char *uriName,
+extern PtrSSchema GetSSchemaByUriForDoc ( const char *uriName,
                                           PtrDocument pDoc );
 extern void RegisterSSchemaForSavedElements ( PtrSSchema pSSchema );
 extern void ReleaseSSchemasForSavedElements ( void );
-extern ThotBool LoadPresentationSchema ( char *schemaName,
+extern ThotBool LoadPresentationSchema ( const char *schemaName,
                                          PtrSSchema pSS,
                                          PtrDocument pDoc );
 extern void FreePresentationSchema ( PtrPSchema pPSchema,
@@ -35,19 +35,19 @@ extern ThotBool InsertPSchemaExtension ( PtrDocument pDoc,
 extern void UnlinkAllSchemasExtens ( PtrElement pEl );
 extern PtrPSchema PresentationSchema ( PtrSSchema pSS,
                                        PtrDocument pDoc );
-extern PtrSSchema LoadStructureSchema ( char *schemaURI,
-                                        char * schemaName,
+extern PtrSSchema LoadStructureSchema ( const char *schemaURI,
+                                        const char * schemaName,
                                         PtrDocument pDoc );
 extern void ReleaseStructureSchema ( PtrSSchema pSS,
                                      PtrDocument pDoc );
 extern void LoadNatureSchema ( PtrSSchema pSS,
-                               char *PSchName,
+                               const char *PSchName,
                                int rule,
-                               char *schURI,
+                               const char *schURI,
                                PtrDocument pDoc );
-extern int CreateNature ( char *SSchURI,
-                          char *SSchName,
-                          char *PSchName,
+extern int CreateNature ( const char *SSchURI,
+                          const char *SSchName,
+                          const char *PSchName,
                           PtrSSchema pSS,
                           PtrDocument pDoc );
 extern void LoadSchemas ( char *SSchName,
@@ -84,7 +84,7 @@ extern ThotBool HasXmlInLineRule ( ElementType elType,
                                    PtrDocument pDoc );
 extern void SetXmlInLineRule ( ElementType elType,
                                PtrDocument pDoc );
-extern void AppendXmlElement ( char *xmlName,
+extern void AppendXmlElement ( const char *xmlName,
                                int *typeNum,
                                PtrSSchema pSS,
                                char **mappedName,
@@ -92,18 +92,18 @@ extern void AppendXmlElement ( char *xmlName,
 extern void GetXmlAttributeType ( char* xmlName,
                                   AttributeType *attrType,
                                   PtrDocument pDoc );
-extern void GetXmlElementType ( char *xmlName,
+extern void GetXmlElementType ( const char *xmlName,
                                 ElementType *elType,
                                 char **mappedName,
                                 PtrDocument pDoc );
 extern void SetUriSSchema ( PtrSSchema pSSchema,
-                            char *sSchemaUri );
-extern void ChangeGenericSchemaNames ( char *sSchemaUri,
-                                       char *sSchemaName,
+                            const char *sSchemaUri );
+extern void ChangeGenericSchemaNames ( const char *sSchemaUri,
+                                       const char *sSchemaName,
                                        PtrDocument pDoc );
 extern void SetNamespaceDeclaration ( PtrDocument pDoc,
                                       PtrElement element,
-                                      char *nsPrefix,
+                                      const char *nsPrefix,
                                       const char *NsUri );
 extern void RemoveNamespaceDeclaration ( PtrDocument pDoc,
                                          PtrElement element );
@@ -116,17 +116,21 @@ extern void CopyNamespaceDeclarations ( PtrDocument docSource,
                                         PtrElement elTarget );
 extern char *GiveCurrentNsUri ( PtrDocument pDoc,
                                 PtrElement pEl );
+extern void GiveElemNamespaceDeclarations ( PtrDocument pDoc,
+                                            PtrElement pEl,
+                                            char **declarations,
+                                            char **prefixes );
 
 #else /* __STDC__ */
 
 extern void InitNatures ( void );
-extern PtrSSchema GetSSchemaForDoc ( char *name,
+extern PtrSSchema GetSSchemaForDoc ( const char *name,
                                        PtrDocument pDoc );
-extern PtrSSchema GetSSchemaByUriForDoc ( char *uriName,
+extern PtrSSchema GetSSchemaByUriForDoc ( const char *uriName,
                                             PtrDocument pDoc );
 extern void RegisterSSchemaForSavedElements ( PtrSSchema pSSchema );
 extern void ReleaseSSchemasForSavedElements ( void );
-extern ThotBool LoadPresentationSchema ( char *schemaName,
+extern ThotBool LoadPresentationSchema ( const char *schemaName,
                                            PtrSSchema pSS,
                                            PtrDocument pDoc );
 extern void FreePresentationSchema ( PtrPSchema pPSchema,
@@ -148,19 +152,19 @@ extern ThotBool InsertPSchemaExtension ( PtrDocument pDoc,
 extern void UnlinkAllSchemasExtens ( PtrElement pEl );
 extern PtrPSchema PresentationSchema ( PtrSSchema pSS,
                                          PtrDocument pDoc );
-extern PtrSSchema LoadStructureSchema ( char *schemaURI,
-                                          char * schemaName,
+extern PtrSSchema LoadStructureSchema ( const char *schemaURI,
+                                          const char * schemaName,
                                           PtrDocument pDoc );
 extern void ReleaseStructureSchema ( PtrSSchema pSS,
                                        PtrDocument pDoc );
 extern void LoadNatureSchema ( PtrSSchema pSS,
-                                 char *PSchName,
+                                 const char *PSchName,
                                  int rule,
-                                 char *schURI,
+                                 const char *schURI,
                                  PtrDocument pDoc );
-extern int CreateNature ( char *SSchURI,
-                            char *SSchName,
-                            char *PSchName,
+extern int CreateNature ( const char *SSchURI,
+                            const char *SSchName,
+                            const char *PSchName,
                             PtrSSchema pSS,
                             PtrDocument pDoc );
 extern void LoadSchemas ( char *SSchName,
@@ -197,7 +201,7 @@ extern ThotBool HasXmlInLineRule ( ElementType elType,
                                      PtrDocument pDoc );
 extern void SetXmlInLineRule ( ElementType elType,
                                  PtrDocument pDoc );
-extern void AppendXmlElement ( char *xmlName,
+extern void AppendXmlElement ( const char *xmlName,
                                  int *typeNum,
                                  PtrSSchema pSS,
                                  char **mappedName,
@@ -205,18 +209,18 @@ extern void AppendXmlElement ( char *xmlName,
 extern void GetXmlAttributeType ( char* xmlName,
                                     AttributeType *attrType,
                                     PtrDocument pDoc );
-extern void GetXmlElementType ( char *xmlName,
+extern void GetXmlElementType ( const char *xmlName,
                                   ElementType *elType,
                                   char **mappedName,
                                   PtrDocument pDoc );
 extern void SetUriSSchema ( PtrSSchema pSSchema,
-                              char *sSchemaUri );
-extern void ChangeGenericSchemaNames ( char *sSchemaUri,
-                                         char *sSchemaName,
+                              const char *sSchemaUri );
+extern void ChangeGenericSchemaNames ( const char *sSchemaUri,
+                                         const char *sSchemaName,
                                          PtrDocument pDoc );
 extern void SetNamespaceDeclaration ( PtrDocument pDoc,
                                         PtrElement element,
-                                        char *nsPrefix,
+                                        const char *nsPrefix,
                                         const char *NsUri );
 extern void RemoveNamespaceDeclaration ( PtrDocument pDoc,
                                            PtrElement element );
@@ -229,6 +233,10 @@ extern void CopyNamespaceDeclarations ( PtrDocument docSource,
                                           PtrElement elTarget );
 extern char *GiveCurrentNsUri ( PtrDocument pDoc,
                                   PtrElement pEl );
+extern void GiveElemNamespaceDeclarations ( PtrDocument pDoc,
+                                              PtrElement pEl,
+                                              char **declarations,
+                                              char **prefixes );
 
 #endif /* __STDC__ */
 #endif /* __CEXTRACT__ */

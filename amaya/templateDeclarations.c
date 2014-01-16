@@ -39,7 +39,7 @@
 
 #define HTML_LIBRARY          "-HTML-" 
 
-char* XTigerHTMLUnions[] = 
+const char* XTigerHTMLUnions[] = 
 {
   "appHTMLInfoTypes", "em strong cite dfn code var samp kbd abbr acronym ins del",
   "appHTMLCharTypes", "i b tt u s big small sub sup q bdo",
@@ -52,7 +52,7 @@ char* XTigerHTMLUnions[] =
 };
 
 
-char* XTigerHTMLElements = "em strong cite dfn code var samp kbd abbr acronym ins del "
+const char* XTigerHTMLElements = "em strong cite dfn code var samp kbd abbr acronym ins del "
                     "i b tt u s big small sub sup q bdo "
                     "input option optgroup select button label "
                     "a font span img br object "
@@ -183,6 +183,28 @@ XTigerTemplate LookForXTigerLibrary (const char *templatePath)
 #endif /* TEMPLATES */
 }
 
+/*----------------------------------------------------------------------
+  Look for a XTiger template
+  Create it if not found.
+  ----------------------------------------------------------------------*/
+XTigerTemplate LookForXTigerTemplate (const char *templatePath)
+{ 
+#ifdef TEMPLATES
+  XTigerTemplate t = NULL;
+  
+  if (Templates_Map == NULL)
+    InitializeTemplateEnvironment ();
+  t = (XTigerTemplate) HashMap_Get(Templates_Map, (void*)templatePath);
+  if (!t)
+  {
+    t = NewXTigerTemplate(templatePath);
+  }
+  return t;
+#else /* TEMPLATES */
+  return NULL;
+#endif /* TEMPLATES */
+}
+
 
 /*----------------------------------------------------------------------
   Look for a registered XTigerTemplate
@@ -231,30 +253,6 @@ XTigerTemplate GetXTigerDocTemplate (Document doc)
 #endif /* TEMPLATES */
 }
 
-
-/*----------------------------------------------------------------------
-  Look for a XTiger template
-  Create it if not found.
-  ----------------------------------------------------------------------*/
-XTigerTemplate LookForXTigerTemplate (const char *templatePath)
-{ 
-#ifdef TEMPLATES
-  XTigerTemplate t = NULL;
-  
-  if (Templates_Map == NULL)
-    InitializeTemplateEnvironment ();
-  t = (XTigerTemplate) HashMap_Get(Templates_Map, (void*)templatePath);
-  if (!t)
-  {
-    t = NewXTigerTemplate(templatePath);
-  }
-  return t;
-#else /* TEMPLATES */
-  return NULL;
-#endif /* TEMPLATES */
-}
-
-
 /*----------------------------------------------------------------------
   Close a XTiger template
   ----------------------------------------------------------------------*/
@@ -276,15 +274,18 @@ void Template_Close(XTigerTemplate t)
 void Template_AddStandardDependancies(XTigerTemplate t)
 {
 #ifdef TEMPLATES
-  if (t && !Template_IsLibrary(t))
+  if (t)
   {
-      if (DocumentTypes[t->doc]==docHTML)
-      {
-        Template_AddLibraryDeclarations (t,(XTigerTemplate)HashMap_Get(Templates_Map,
-                                                          (void*)HTML_LIBRARY));  
-      }
-    Template_AddLibraryDeclarations (t,(XTigerTemplate)HashMap_Get(Templates_Map,
-                                                      (void*)PREDEFINED_LIB));  
+	Template_AddLibraryDeclarations (t,(XTigerTemplate)HashMap_Get(Templates_Map,
+													  (void*)PREDEFINED_LIB));  
+	if(!Template_IsLibrary(t))
+	  {
+		if (DocumentTypes[t->doc]==docHTML)
+		  {
+			Template_AddLibraryDeclarations (t,(XTigerTemplate)HashMap_Get(Templates_Map,
+															  (void*)HTML_LIBRARY));  
+		  }
+	  }
   }      
 
 #endif /* TEMPLATES */
@@ -339,12 +340,11 @@ XTigerTemplate CreateHTMLLibrary ()
   
   // Add predefined unions
   i=0;
-  while (XTigerHTMLUnions[i]!=NULL)
+  while (XTigerHTMLUnions[i] != NULL)
     {
       Template_DeclareNewUnion (lib, XTigerHTMLUnions[i], XTigerHTMLUnions[i+1], NULL);
       i+=2;
     }
-  
   return lib;
 #else
   return NULL;
@@ -709,8 +709,170 @@ void Template_CalcBlockLevel (XTigerTemplate t)
           Declaration_CalcBlockLevel(decl);
     }
   TtaFreeMemory(iter);
+#endif /* TEMPLATES */
+}
+
+/*----------------------------------------------------------------------
+  Retrieve block-level declarations
+  ----------------------------------------------------------------------*/
+char* Template_GetBlockLevelDeclarations(XTigerTemplate t, ThotBool addAny)
+{
+#ifdef TEMPLATES
+  ForwardIterator iter;
+  SearchSetNode   node;
+  Declaration     decl;
+  char*           str;
   
-#endif
+  if(t)
+    {
+      str = (char*)TtaGetMemory(MAX_LENGTH);
+      str[0] = EOS;
+      
+      if(addAny)
+        {
+          strcat(str, UNION_ANY);
+          strcat(str, " ");
+          strcat(str, UNION_ANYCOMPONENT);
+          strcat(str, " ");
+//          strcat(str, UNION_ANYSIMPLE);
+//          strcat(str, " ");
+          strcat(str, UNION_ANYELEMENT);
+          strcat(str, " ");
+        }
+    
+      // Components
+      iter = SearchSet_GetForwardIterator(t->components);
+      ITERATOR_FOREACH(iter, SearchSetNode, node)
+        {
+          decl = (Declaration) node->elem;
+          if (decl && decl->blockLevel)
+            {
+              strcat(str, decl->name);
+              strcat(str, " ");
+            }
+        }
+      TtaFreeMemory(iter);
+      
+      // Union
+      iter = SearchSet_GetForwardIterator(t->unions);
+      ITERATOR_FOREACH(iter, SearchSetNode, node)
+        {
+          decl = (Declaration) node->elem;
+          if (decl && decl->blockLevel)
+            {
+              if(strcmp(decl->name, UNION_ANY) && 
+                  strcmp(decl->name, UNION_ANYCOMPONENT) &&
+                  strcmp(decl->name, UNION_ANYELEMENT) )
+                {
+                  strcat(str, decl->name);
+                  strcat(str, " ");
+                }
+            }
+        }
+      TtaFreeMemory(iter);      
+
+      // XML elements
+      iter = SearchSet_GetForwardIterator(t->elements);
+      ITERATOR_FOREACH(iter, SearchSetNode, node)
+        {
+          decl = (Declaration) node->elem;
+          if (decl && decl->blockLevel)
+            {
+              strcat(str, decl->name);
+              strcat(str, " ");
+            }
+        }
+      TtaFreeMemory(iter);      
+      
+      return str;
+    }
+#endif /* TEMPLATES */
+  return NULL;
+}
+
+/*----------------------------------------------------------------------
+  Retrieve inline-level declarations
+  ----------------------------------------------------------------------*/
+char* Template_GetInlineLevelDeclarations(XTigerTemplate t, ThotBool addAny, ThotBool addSimple)
+{
+#ifdef TEMPLATES
+  ForwardIterator iter;
+  SearchSetNode   node;
+  Declaration     decl;
+  char*           str;
+  
+  if(t)
+    {
+      str = (char*)TtaGetMemory(MAX_LENGTH);
+      str[0] = EOS;
+      
+      if(addAny)
+        {
+          strcat(str, UNION_ANY);
+          strcat(str, " ");
+          strcat(str, UNION_ANYCOMPONENT);
+          strcat(str, " ");
+          strcat(str, UNION_ANYSIMPLE);
+          strcat(str, " ");
+          strcat(str, UNION_ANYELEMENT);
+          strcat(str, " ");
+        }
+
+      if(addSimple)
+        {
+          strcat(str, TYPE_STRING);
+          strcat(str, " ");
+        }
+      
+      // Components
+      iter = SearchSet_GetForwardIterator(t->components);
+      ITERATOR_FOREACH(iter, SearchSetNode, node)
+        {
+          decl = (Declaration) node->elem;
+          if (decl && !decl->blockLevel)
+            {
+              strcat(str, decl->name);
+              strcat(str, " ");
+            }
+        }
+      TtaFreeMemory(iter);
+      
+      // Union
+      iter = SearchSet_GetForwardIterator(t->unions);
+      ITERATOR_FOREACH(iter, SearchSetNode, node)
+        {
+          decl = (Declaration) node->elem;
+          if (decl && !decl->blockLevel)
+            {
+              if(strcmp(decl->name, UNION_ANY) && 
+                  strcmp(decl->name, UNION_ANYCOMPONENT) &&
+                  strcmp(decl->name, UNION_ANYSIMPLE) &&
+                  strcmp(decl->name, UNION_ANYELEMENT) )
+                {
+                  strcat(str, decl->name);
+                  strcat(str, " ");
+                }
+            }
+        }
+      TtaFreeMemory(iter);      
+
+      // XML elements
+      iter = SearchSet_GetForwardIterator(t->elements);
+      ITERATOR_FOREACH(iter, SearchSetNode, node)
+        {
+          decl = (Declaration) node->elem;
+          if (decl && !decl->blockLevel)
+            {
+              strcat(str, decl->name);
+              strcat(str, " ");
+            }
+        }
+      TtaFreeMemory(iter);      
+      
+      return str;
+    }
+#endif /* TEMPLATES */
+  return NULL;  
 }
 
 
@@ -734,15 +896,16 @@ Declaration Template_DeclareNewSimpleType (XTigerTemplate t, const char *name,
   Add a declaration to a template for a new component.
   ----------------------------------------------------------------------*/
 Declaration Template_DeclareNewComponent (XTigerTemplate t, const char *name,
-                                                           const Element el)
+                                                           Element el)
 {
 #ifdef TEMPLATES
   if (!t)
     return NULL;
 
   Declaration dec = Declaration_Create (t, name, ComponentNat);
-  dec->componentType.content = TtaCopyTree (el, TtaGetDocument (el),
-                                            TtaGetDocument (el), el);
+  dec->componentType.content = el;
+//  dec->componentType.content = TtaCopyTree (el, TtaGetDocument (el),
+//                                            TtaGetDocument (el), el);
   Template_AddDeclaration (t, dec);
   return dec;
 #else /* TEMPLATES */
@@ -809,7 +972,7 @@ void Template_AddDeclaration (XTigerTemplate t, Declaration dec)
 #ifdef TEMPLATES
   if (!t)
     return;
-
+  
   Declaration old = Template_GetDeclaration (t, dec->name);
   if (old==NULL) //New type, not a redefinition
     {
@@ -961,6 +1124,47 @@ Declaration Template_GetElementDeclaration (const XTigerTemplate t, const char *
 }
 
 /*----------------------------------------------------------------------
+  Template_GetUnionDeclaration
+  Find a declaration of an union in a specified template and return it.
+  \param t Template in which search the declaration
+  \param name Declaration name to find.
+  ----------------------------------------------------------------------*/
+Declaration Template_GetUnionDeclaration (const XTigerTemplate t, const char *name)
+{
+#ifdef TEMPLATES
+  if (t)
+     return (Declaration)SearchSet_SearchElement (t->unions, (void*)name, NULL); 
+  else
+#endif /* TEMPLATES */
+    return NULL;
+}
+
+
+/*----------------------------------------------------------------------
+  Re-initialize the XTigerTemplate structure
+  ----------------------------------------------------------------------*/
+void Template_Clear (XTigerTemplate t)
+{
+#ifdef TEMPLATES
+  if(t)
+    {
+      SearchSet_Empty(t->unions);
+      SearchSet_Empty(t->components);
+      SearchSet_Empty(t->elements);
+      SearchSet_Empty(t->simpleTypes);
+      SearchSet_Empty(t->unknowns);
+      
+      TtaFreeMemory(t->uri);
+      TtaFreeMemory(t->version);
+      TtaFreeMemory(t->templateVersion);
+      t->uri = NULL; 
+      t->version = NULL;
+      t->templateVersion = NULL;
+    }
+#endif /* TEMPLATES */
+}
+
+/*----------------------------------------------------------------------
   Free all the space used by a template
   ----------------------------------------------------------------------*/
 static void Template_Destroy (XTigerTemplate t)
@@ -984,7 +1188,7 @@ static void Template_Destroy (XTigerTemplate t)
         }
       HashMap_Destroy(t->libraries);
       t->libraries = NULL;
-      
+
       //Cleaning the unions
       SearchSet_Destroy(t->unions);
       t->unions = NULL;
@@ -1034,8 +1238,10 @@ static void Template_FillDeclarationContent(XTigerTemplate t, Declaration decl)
 #ifdef TEMPLATES
   Element          el;
   Declaration      otherDecl;
-//  ForwardIterator  iter;
+  ForwardIterator  iter;
 //  SearchSetNode    node;
+  StringSet        set;
+  StringSetNode    node;
   
   if (t && decl)
     {
@@ -1051,6 +1257,18 @@ static void Template_FillDeclarationContent(XTigerTemplate t, Declaration decl)
               }
           break;
         case UnionNat:
+          set =  StringSet_CreateFromString(decl->unionType.includeStr, " ");
+          iter = StringSet_GetForwardIterator(set);
+          
+          decl->unionType.include = SearchSet_Create(NULL, (Container_CompareFunction)Declaration_Compare,
+            (Container_CompareFunction)Declaration_CompareToString);
+              
+          ITERATOR_FOREACH(iter, StringSetNode, node)
+            {
+              SearchSet_Insert(decl->unionType.include, Template_GetDeclaration(decl->usedIn, (char*)((Declaration)node)->name));
+            }
+          TtaFreeMemory(iter);
+          
           /**
            *
            * TODO REALLY FILL DECLARATIONS FROM UNION STRINGS
@@ -1448,7 +1666,7 @@ void PrintDeclarations (XTigerTemplate t, FILE *file)
     }
   
   /* Unknowns : */
-  if (!SearchSet_IsEmpty(t->unknowns))
+  if (!SearchSet_IsEmpty (t->unknowns))
     {
       fprintf (file, "\n\nUNKNWONS\n");
       fprintf (file, "------------");
@@ -1641,6 +1859,18 @@ ThotBool Template_IsLibrary(XTigerTemplate t)
 #endif /* TEMPLATES */
   return FALSE;
 }
+
+/*----------------------------------------------------------------------
+  ----------------------------------------------------------------------*/
+ThotBool Template_IsTemplate(XTigerTemplate t)
+{
+#ifdef TEMPLATES
+  if (t)
+    return (t->state&templTemplate)!=0;
+#endif /* TEMPLATES */
+  return FALSE;
+}
+
 
 /*----------------------------------------------------------------------
   ----------------------------------------------------------------------*/
@@ -2287,3 +2517,85 @@ ThotBool Template_CanInsertElementInUse (Document doc, ElementType type, char* u
   return FALSE;
 }
 
+
+/**----------------------------------------------------------------------
+  Template_IsUsedComponentInSubtree
+  Test if a component is used by xt:use or xt:union.
+  Use it to test if a xt:component or a xt:use is used in a template.
+  // Param validity must be tested by caller.
+  ----------------------------------------------------------------------*/
+static ThotBool Template_IsUsedComponentInSubtree(XTigerTemplate t, Document doc,
+                                                    Element elem, const char* name)
+{
+#ifdef TEMPLATES
+  ElementType  elType;
+  SSchema      schema;
+  Declaration  decl;
+  char        *elName, *types;
+  SearchSet    set;
+  ThotBool     res;
+  Element      child;
+  
+#ifdef AMAYA_DEBUG
+  if(t && doc && elem && name && name[0]!=EOS)
+#endif /* AMAYA_DEBUG */
+    {
+      elType = TtaGetElementType(elem);
+      if(elType.ElTypeNum==Template_EL_union)
+        {
+          schema = TtaGetSSchema ("Template", doc);
+          if(elType.ElSSchema == schema)
+            {
+              elName = GetAttributeStringValueFromNum(elem, Template_ATTR_name, NULL);
+              decl = Template_GetUnionDeclaration(t, elName);
+              TtaFreeMemory(elName);
+              set = Template_ExpandUnion(t, decl);
+              return SearchSet_Search(set, (void*) name, NULL)!=NULL;
+            }
+        }
+      else if(elType.ElTypeNum==Template_EL_useEl || elType.ElTypeNum==Template_EL_useSimple)
+        {
+          schema = TtaGetSSchema ("Template", doc);
+          if(elType.ElSSchema == schema)
+            {
+              types = GetAttributeStringValueFromNum(elem, Template_ATTR_types, NULL);
+              set = Template_GetDeclarationSetFromNames(t, types, TRUE);
+              res = SearchSet_Search(set, (void*) name, NULL)!=NULL;
+              SearchSet_Destroy(set);
+              TtaFreeMemory(types);
+              if (res)
+                return TRUE;
+            }          
+        }
+      
+      child = TtaGetFirstChild(elem);
+      while(child)
+        {
+          if(Template_IsUsedComponentInSubtree(t, doc, child, name))
+            return TRUE;
+          TtaNextSibling(&child);
+        }
+
+    }
+#endif /* TEMPLATES */
+  return FALSE;
+}
+
+/**----------------------------------------------------------------------
+  Template_IsUsedComponent
+  Test if a component is used by xt:use or xt:union.
+  Use it to test if a xt:component or a xt:use is used in a template.
+  ----------------------------------------------------------------------*/
+ThotBool Template_IsUsedComponent(XTigerTemplate t, Document doc, const char* name)
+{
+#ifdef TEMPLATES
+  Element elem;
+  if(t && doc&& name && name[0]!=EOS)
+    {
+      elem = TtaGetMainRoot(doc);
+      if(elem)
+        return Template_IsUsedComponentInSubtree(t, doc, elem, name);
+    }
+#endif /* TEMPLATES */
+  return FALSE;
+}

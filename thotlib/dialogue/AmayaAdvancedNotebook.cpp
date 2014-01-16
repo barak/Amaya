@@ -73,12 +73,14 @@ AmayaAdvancedNotebook::~AmayaAdvancedNotebook()
 bool AmayaAdvancedNotebook::InsertPage(size_t index, AmayaPage* page,
 				       const wxString& text, bool select, int imageId)
 {
+#ifndef _MACOS
   if (imageId >= 0)
     {
       wxBitmap bmp(m_imageList->GetIcon(imageId));
       return wxAuiNotebook::InsertPage(index, page, text, select, bmp);
     }
   else
+#endif /* _MACOS */
     return wxAuiNotebook::InsertPage(index, page, text, select, wxNullBitmap);
 }
 
@@ -90,12 +92,14 @@ bool AmayaAdvancedNotebook::InsertPage(size_t index, AmayaPage* page,
  -----------------------------------------------------------------------*/
 bool AmayaAdvancedNotebook::SetPageImage(size_t page, int image)
 {
+#ifndef _MACOS
   if(m_imageList && image!=wxID_ANY && image<m_imageList->GetImageCount())
     {
       wxBitmap bmp(m_imageList->GetIcon(image));
       SetPageBitmap(page, bmp);
       return true;
     }
+#endif /* _MACOS */
   return false;
 }
 
@@ -109,34 +113,34 @@ bool AmayaAdvancedNotebook::ClosePage(int page_id)
 {
   AmayaPage *page = (AmayaPage*)GetPage( page_id );
   bool result = true;
+  if (page == NULL)
+    return result;
 
   page->Hide();
-  
-  if(GetPageCount()==1 &&
-     AmayaNormalWindow::GetNormalWindowCount()==1 &&
-     !GetAmayaWindow()->IsKindOf(CLASSINFO(AmayaHelpWindow))
-     )
-	{
+  if (GetPageCount()==1 &&
+      AmayaNormalWindow::GetNormalWindowCount()==1 &&
+      !GetAmayaWindow()->IsKindOf(CLASSINFO(AmayaHelpWindow)))
+    {
       TtaExecuteMenuAction("NewTab", 1, 1, FALSE);
-	  result = false;
-	}
+      result = false;
+    }
 
   page = (AmayaPage*)GetPage( page_id );
   if (page == NULL)
     return result;
 
-  if(page->Close())
-  {
-    DeletePage(page_id);
-    /** \todo Update selection with old selection page. */
-    UpdatePageId();    
-    return result;
-  }
+  if (page->Close())
+    {
+      DeletePage(page_id);
+      /** \todo Update selection with old selection page. */
+      UpdatePageId();    
+      return result;
+    }
   else
-  {
-    page->Show();
-    return false;
-  }
+    {
+      page->Show();
+      return false;
+    }
 }
 
 
@@ -371,30 +375,27 @@ AmayaWindow * AmayaAdvancedNotebook::GetAmayaWindow()
   return wxDynamicCast(wxGetTopLevelParent(this), AmayaWindow);
 } 
 
-/*----------------------------------------------------------------------
- -----------------------------------------------------------------------*/
-void AmayaAdvancedNotebook::OnContextMenu( wxContextMenuEvent & event )
-{
-  TTALOGDEBUG_2( TTA_LOG_DIALOG, _T("AmayaAdvancedNotebook::OnContextMenu - (x,y)=(%d,%d)"),
-                 event.GetPosition().x,
-                 event.GetPosition().y );
 
+
+void AmayaAdvancedNotebook::OnMouseRightDown(wxAuiNotebookEvent& event)
+{
   int page_id   = GetSelection();
 
   /* Specific wxAuiNotebook protected code : */
   wxWindow* wnd;
-  wxPoint pos = ScreenToClient(event.GetPosition());
+  wxPoint pos = ScreenToClient(wxGetMousePosition());
   wxAuiTabCtrl* tab = GetTabCtrlFromPoint(pos);
   if(tab)
     {
-      pos = tab->ScreenToClient(event.GetPosition());
+      pos = tab->ScreenToClient(wxGetMousePosition());
       if (tab->TabHitTest(pos.x, pos.y, &wnd))
       {
         page_id = GetPageIndex(wnd);
       }
     }
   int window_id = GetAmayaWindow()->GetWindowId();
-  wxPoint point = event.GetPosition();
+  wxPoint point = wxGetMousePosition();
+  
 
   // store the aimed frame, it's possible that it is not the current active one
   if (page_id >= 0)
@@ -403,7 +404,7 @@ void AmayaAdvancedNotebook::OnContextMenu( wxContextMenuEvent & event )
       wxMenu * p_menu = TtaGetContextMenu ( window_id );
       if(p_menu)
         PopupMenu (p_menu, ScreenToClient(point));
-    }
+    }  
 }
 
 /*----------------------------------------------------------------------
@@ -416,7 +417,7 @@ BEGIN_EVENT_TABLE(AmayaAdvancedNotebook, wxAuiNotebook)
 #ifdef __WXDEBUG__  
   EVT_AUINOTEBOOK_PAGE_CHANGING( -1, AmayaAdvancedNotebook::OnPageChanging )
 #endif /* __WXDEBUG__ */
-  EVT_CONTEXT_MENU(               AmayaAdvancedNotebook::OnContextMenu )
+  EVT_AUINOTEBOOK_TAB_RIGHT_DOWN( -1, AmayaAdvancedNotebook::OnMouseRightDown )
 END_EVENT_TABLE()
   
 #endif /* #ifdef _WX */

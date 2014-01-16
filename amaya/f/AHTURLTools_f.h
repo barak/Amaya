@@ -26,6 +26,7 @@ extern ThotBool IsMathMLName ( const char *path );
 extern ThotBool IsSVGName ( const char *path );
 extern ThotBool IsXMLName ( const char *path );
 extern ThotBool IsXMLStruct ( const char *path );
+extern ThotBool IsXTigerLibrary ( const char *path );
 extern ThotBool IsXTiger ( const char *path );
 extern ThotBool IsUndisplayedName ( const char *path );
 extern ThotBool IsCSSName ( const char *path );
@@ -49,22 +50,22 @@ extern void NormalizeURL ( char *orgName,
                            Document doc,
                            char *newName,
                            char *docName,
-                           char *otherPath );
+                           const char *otherPath );
 extern ThotBool IsSameHost ( const char *url1,
                              const char *url2 );
 extern ThotBool HasKnownFileSuffix ( const char *path );
 extern void ChopURL ( char *outputURL,
                       const char *inputURL );
 extern char *AmayaParseUrl ( const char *aName,
-                             char *relatedName,
+                             const char *relatedName,
                              int wanted );
 extern void SimplifyUrl ( char **url );
 extern ThotBool NormalizeFile ( char *src,
                                 char *target,
                                 ConvertionType convertion );
-extern char *MakeRelativeURL ( char *aName,
-                               char *relatedName );
-extern ThotBool AM_GetFileSize ( char *filename,
+extern char *MakeRelativeURL ( const char *aName,
+                               const char *relatedName );
+extern ThotBool AM_GetFileSize ( const char *filename,
                                  unsigned long *file_size );
 extern ThotBool AM_UseXHTMLMimeType ( void );
 extern void AM_gen_tempname ( char *tmpl );
@@ -93,6 +94,7 @@ extern ThotBool IsMathMLName ( const char *path );
 extern ThotBool IsSVGName ( const char *path );
 extern ThotBool IsXMLName ( const char *path );
 extern ThotBool IsXMLStruct ( const char *path );
+extern ThotBool IsXTigerLibrary ( const char *path );
 extern ThotBool IsXTiger ( const char *path );
 extern ThotBool IsUndisplayedName ( const char *path );
 extern ThotBool IsCSSName ( const char *path );
@@ -116,22 +118,22 @@ extern void NormalizeURL ( char *orgName,
                              Document doc,
                              char *newName,
                              char *docName,
-                             char *otherPath );
+                             const char *otherPath );
 extern ThotBool IsSameHost ( const char *url1,
                                const char *url2 );
 extern ThotBool HasKnownFileSuffix ( const char *path );
 extern void ChopURL ( char *outputURL,
                         const char *inputURL );
 extern char *AmayaParseUrl ( const char *aName,
-                               char *relatedName,
+                               const char *relatedName,
                                int wanted );
 extern void SimplifyUrl ( char **url );
 extern ThotBool NormalizeFile ( char *src,
                                   char *target,
                                   ConvertionType convertion );
-extern char *MakeRelativeURL ( char *aName,
-                                 char *relatedName );
-extern ThotBool AM_GetFileSize ( char *filename,
+extern char *MakeRelativeURL ( const char *aName,
+                                 const char *relatedName );
+extern ThotBool AM_GetFileSize ( const char *filename,
                                    unsigned long *file_size );
 extern ThotBool AM_UseXHTMLMimeType ( void );
 extern void AM_gen_tempname ( char *tmpl );

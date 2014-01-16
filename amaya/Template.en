@@ -12,6 +12,7 @@ translation
 
 C_CR: \0
 TEXT_UNIT: \0
+Template: library
 includeAt: include
 listVal : list
 useAt: use
@@ -20,3 +21,10 @@ useEl: use
 useSimple: use
 ref_name: name
 title: label
+Comment\240: Comment
+XMLPI: PI
+xmlid: xml:id
+prompt: initial
+Yes_: true
+option_set: set
+option_unset: unset

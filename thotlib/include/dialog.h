@@ -15,6 +15,22 @@ extern int Current_BackgroundColor; // export the panel Background Color
 extern int Current_FontFamily;      // export the panel Font family
 extern int Current_FontSize;        // export the panel Font size
 extern int SavePANEL_PREFERENCES;   // say if panel preferences are saved
+
+
+/* SVG Style panel */
+extern int  Current_Opacity;
+extern ThotBool FillEnabled;
+extern int  Current_FillColor;
+extern int  Current_FillOpacity;
+extern ThotBool StrokeEnabled;
+extern int  Current_StrokeColor;
+extern int  Current_StrokeOpacity;
+extern int  Current_StrokeWidth;
+
+extern char *LastSVGelement;
+extern char *LastSVGelementTitle;
+extern ThotBool LastSVGelementIsFilled;
+
 #endif /* _WX */
 
 
@@ -44,7 +60,7 @@ extern ThotBool TtaIsActionActive (char *name, Document doc);
   TtaIsActionAvailable
   Returns TRUE if the function is available
   ----------------------------------------------------------------------*/
-extern ThotBool TtaIsActionAvailable (char *name);
+extern ThotBool TtaIsActionAvailable (const char *name);
 
 /*----------------------------------------------------------------------
    TtaNewPulldown cre'e un pull-down menu :                           
@@ -303,14 +319,14 @@ extern void TtaNewSelector (int ref, int ref_parent, char *title, int number,
    se'lectionne'e.                                                    
    Le parame`tre text donne le texte si entry vaut -1.                
   ----------------------------------------------------------------------*/
-extern void TtaSetSelector (int ref, int entry, char *text);
+extern void TtaSetSelector (int ref, int entry, const char *text);
 
 /*----------------------------------------------------------------------
    TtaNewLabel cre'e un intitule' constant dans un formulaire :       
    Le parame`tre ref donne la re'fe'rence du catalogue.               
    Le parame`tre text donne l'intitule'.                              
   ----------------------------------------------------------------------*/
-extern void TtaNewLabel (int ref, int ref_parent, char *text);
+extern void TtaNewLabel (int ref, int ref_parent, const char *text);
 
 /*----------------------------------------------------------------------
    TtaNewPaddedLabel cre'e un intitule' constant dans un formulaire :       

@@ -27,6 +27,7 @@
 #include "HTMLimage_f.h"
 #include "html2thot_f.h"
 #include "HTMLpresentation_f.h"
+#include "HTMLactions_f.h"
 #include "styleparser_f.h"
 #include "undo.h"
 #include "XHTMLbuilder_f.h"
@@ -38,14 +39,14 @@
   Span element, create a span element that contains that text string
   and return TRUE; span contains then the created Span element.
   if the parameter presRule is not NULL and a span is generated, the
-  the presRule should be moved to the new span.
+  presRule should be moved to the new span.
   -----------------------------------------------------------------------*/
 ThotBool MakeASpan (Element elem, Element *span, Document doc, PRule presRule)
 {
   ElementType	elType;
-  Element	    parent, sibling;
-  char       *name;
-  ThotBool	  ret, doit;
+  Element       parent, sibling;
+  char         *name;
+  ThotBool      ret, doit;
 
   ret = FALSE;
   *span = NULL;
@@ -112,6 +113,7 @@ ThotBool MakeASpan (Element elem, Element *span, Document doc, PRule presRule)
               }
           }
       }
+  UpdateContextSensitiveMenus (doc, 1);
   return ret;
 }
 
@@ -488,7 +490,7 @@ ThotBool ChangePRule (NotifyPresentation *event)
 #define STYLELEN 1000
   char               buffer[15], *name;
   int                presType;
-  int                w, h, unit, value, i;
+  int                w, h, unit, value;
   ThotBool           ret;
 
   el = event->element;
@@ -612,7 +614,10 @@ ThotBool ChangePRule (NotifyPresentation *event)
                 {
                   /* store information in Width or Height attribute */
                   if (elType.ElTypeNum == HTML_EL_PICTURE_UNIT)
-                    TtaGiveBoxSize (el, doc, 1, UnPixel, &w, &h);
+                    {
+                      el = TtaGetParent (el);
+                      TtaGiveBoxSize (el, doc, 1, UnPixel, &w, &h);
+                    }
                   else
                     {
                       w = -1;
@@ -624,12 +629,9 @@ ThotBool ChangePRule (NotifyPresentation *event)
                   if (presType == PRWidth)
                     {
                       /* the new value is the old one plus the delta */
-                      TtaGiveBoxSize (el, doc, 1, (TypeUnit)unit, &value, &i);
+                      //TtaGiveBoxSize (el, doc, 1, (TypeUnit)unit, &value, &i);
                       value = event->value;
-                      if (unit == UnPercent)
-                        sprintf (buffer, "%d%%", value);
-                      else
-                        sprintf (buffer, "%d", value);
+                      sprintf (buffer, "%d", value);
 
                       attrType.AttrTypeNum = HTML_ATTR_Width__;
                       attr = TtaGetAttribute (el, attrType);
@@ -650,12 +652,9 @@ ThotBool ChangePRule (NotifyPresentation *event)
                   else
                     {
                       /* the new value is the old one plus the delta */
-                      TtaGiveBoxSize (el, doc, 1, (TypeUnit)unit, &i, &value);
+                      //TtaGiveBoxSize (el, doc, 1, (TypeUnit)unit, &i, &value);
                       value = event->value;
-                      if (unit == UnPercent)
-                        sprintf (buffer, "%d%%", value);
-                      else
-                        sprintf (buffer, "%d", value);
+                      sprintf (buffer, "%d", value);
                       attrType.AttrTypeNum = HTML_ATTR_Height_;
                       attr = TtaGetAttribute (el, attrType);
                       if (attr == NULL)
@@ -668,7 +667,7 @@ ThotBool ChangePRule (NotifyPresentation *event)
                       else
                         {
                           TtaRegisterAttributeReplace (attr, el, doc);
-                          TtaSetAttributeValue (attr, value, el, doc);
+                          TtaSetAttributeText (attr, buffer, el, doc);
                         }
                       CreateAttrHeightPercentPxl (buffer, el, doc, h);
                     }

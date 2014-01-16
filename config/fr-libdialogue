@@ -106,7 +106,7 @@
 104 Saut de page
 105 Langue de l'élément
 106 Langue héritée :
-107 Pas trouvé
+107 Page non trouvée
 108 Recherche dans
 109 Recherche
 110 Elément en lecture seule
@@ -256,19 +256,157 @@
 254 Ajouter une colonne
 255 Conseil du jour
 256 Voir les conseils au démarrage
-257 Conseil suivant
-258 Saviez vous...
-259 Fermer
-260 Amaya s'adapte à vos besoins : cinq profils sont fournis avec différents ensembles de menus et de barres d'outils. Voir les Préférences.
-261 Les panneaux d'outils peuvent être affichés à gauche ou à droite ou à votre convenance panneau par panneau. Voir les Préférences.
-262 Avec la touche F2 ou Escape vous pouvez sélectionner la structure englobante, pour appliquer les fonctions d'édition (copier, coller, attributs, etc.) à ces éléments.
-263 Vous pouvez afficher deux documents côte à côte dans la même fenêtre en déplaçant un onglet de document sur un bord du document affiché.
-264 En mode paramétrable, vous pouvez déplacer les panneaux d'outils pour en changer l'ordre ou les rendre flottants.
-265 En mode paramétrable, vous pouvez placer plusieurs barres d'outils de chaque côté de la fenêtre en déplaçant les panneaux d'outils.
-266 Vous pouvez changer de mode d'édition (Texte/XML) en cliquant sur le bouton correspondant dans le coin inférieur droit.
-267 Quand il y a un bouton rouge dans le coin inférieur droit, vous pouvez afficher les erreurs en cliquant dessus.
-268 Vous pouvez sélectionner un ancêtre de la sélection courante en cliquant sur son nom dans le chemin affiché en bas de la fenêtre.
-269 Vous pouvez changer d'onglet avec le menu affiché par le bouton flèche à droite des onglets.
-270 Classique
-271 Moderne
-272 Pas de thème
+257 Conseil précédent
+258 Conseil suivant
+259 Saviez vous...
+260 Fermer
+261 Amaya s'adapte à vos besoins : cinq profils sont fournis avec différents ensembles de menus et de barres d'outils. Voir les Préférences.
+262 Les panneaux d'outils peuvent être affichés à gauche ou à droite ou à votre convenance panneau par panneau. Voir les Préférences.
+263 Avec la touche F2 ou Escape vous pouvez sélectionner la structure englobante, pour appliquer les fonctions d'édition (copier, coller, attributs, etc.) à ces éléments.
+264 Vous pouvez afficher deux documents côte à côte dans la même fenêtre en déplaçant un onglet de document sur un bord du document affiché.
+265 En mode paramétrable, vous pouvez déplacer les panneaux d'outils pour en changer l'ordre ou les rendre flottants.
+266 En mode paramétrable, vous pouvez placer plusieurs barres d'outils de chaque côté de la fenêtre en déplaçant les panneaux d'outils.
+267 Vous pouvez changer de mode d'édition (Texte/XML) en cliquant sur le bouton correspondant dans le coin inférieur droit.
+268 Quand il y a un bouton rouge dans le coin inférieur droit, vous pouvez afficher les erreurs en cliquant dessus.
+269 Vous pouvez sélectionner un ancêtre de la sélection courante en cliquant sur son nom dans le chemin affiché en bas de la fenêtre.
+270 Vous pouvez changer d'onglet avec le menu affiché par le bouton flèche à droite des onglets.
+271 Si vous activez "Voir les cibles" dans le menu "Vues", des cibles sont affichées en vue formatée. Cela est pratique pour la création de lien : une cible peut être choisie en cliquant dessus.
+272 Lors de la rotation d'un objet SVG, le centre est indiqué par une croix. Il peut être déplacé à l'aide de la souris.
+273 Les figures élémentaires SVG ont des poignées qui peuvent être utilisées pour les éditer. Des triangles bleus ou des carrés verts permettent de changer leur taille. Pour les éléments <rect/>, des ronds rouges donnent un controle sur les rayons des coins arrondis.
+274 Pour les dessins SVG, les lignes sont dessinées avec une précision de 15° si vous pressez le bouton shift. Cela est utile si vous souhaitez dessiner des lignes droites.
+275 Lors du redimensionnement d'une image ou d'un objet SVG, l'appui de la touche shift permet de préserver le rapport des dimensions.
+276 Utilisez Édition>Préférences>Langue des dialogues pour choisir la langue de l'interface utilisateur.
+277 Classique
+278 Moderne
+279 Pas de thème
+280 Titre/Description
+281 Générer une descripion
+282 Carré
+283 Carré à coins arrondis
+284 Rectangle
+285 Rectangle à coins arrondis
+286 Losange
+287 Parallelogramme
+288 Trapèze
+289 Triangle équilatéral
+290 Triangle isocèle
+291 Triangle rectangle
+292 Cercle
+293 Ellipse
+294 Ligne
+295 Flèche
+296 Flèche double
+297 Zigzag
+298 Grouper
+299 Dégrouper
+300 Mettre au dessus
+301 Mettre en dessous
+302 Monter d'un niveau
+303 Descendre d'un niveau
+304 90° à gauche
+305 90° à droite
+306 Tourner
+307 Symétrie verticale
+308 Symétrie horizontale
+309 Redimensionner
+310 Incliner
+311 Déplacer
+312 Aligner bord inférieur
+313 Aligner axe vertical
+314 Aligner bord gauche
+315 Aligner axe horizontal
+316 Aligner bord droit
+317 Aligner bord supérieur
+318 Distribuer bords inférieurs
+319 Distribuer axes verticaux
+320 Distribuer bords gauches
+321 Distribuer axes verticaux
+322 Distribuer bords droits
+323 Distribuer bords supérieurs
+324 Distribuer espacements verticaux
+325 Distribuer espacements horizontaux
+326 Courbe de Bézier fermée
+327 Courbe de Bézier
+328 Segments de droite (<polyline/>)
+329 Polygone
+330 Objet étranger (<foreignObject/>)
+331 Image
+332 Canevas SVG
+333 Texte
+334 Cône
+335 Cube
+336 Cylindre
+337 Octaèdre
+338 Parallèlépidède
+339 Pyramide
+340 Bécher
+341 Entonnoir
+342 Bec bunsen
+343 Fiole à vide
+344 Ballon
+345 Burette
+346 Erlenmeyer
+347 Tube à essai
+348 Pipette
+349 Rectangulaire
+350 À coins arrondis
+351 Ronde
+352 Cri
+353 Pensée
+354 Condensateur
+355 Source de courant
+356 Diode
+357 Terre
+358 Inductance
+359 DEL
+360 Ampli-op
+361 Résistance
+362 Interrupteur
+363 Transistor
+364 Source de tension
+365 Diode Zener
+366 Pentagone
+367 Hexagone
+368 Heptagone
+369 Octogone
+370 Étoile (4 branches)
+371 Étoile (5 branches)
+372 Étoile (6 branches)
+373 **AND
+374 **NAND
+375 **OR
+376 **NOR
+377 **XOR
+378 **XNOR
+379 **NOT
+380 Croix
+381 Cadre
+382 Anneau
+383 Nuage
+384 Parchemin
+385 Soleil
+386 Éclair
+387 Lune
+388 Frimousse
+389 Coeur
+390 Fleur
+391 Interdit
+392 Flèche courbe dans deux directions
+393 Légende avec flèche dans 3 directions
+394 Flèche dans 3 directions
+395 Légende avec flèche dans 4 directions
+396 Flèche dans 4 directions
+397 Chevron
+398 Flèche en arc
+399 Flèche en angle
+400 Légende avec flèche double en angle
+401 Flèche double en angle
+402 Légende avec flèche double
+403 Flèche double
+404 Flèche avec entailles
+405 Flèche courbe
+406 Légende avec flèche simple
+407 Flèche simple
+408 Flèche en fourche
+409 Flèche en S
+410 Flèche avec bandes
