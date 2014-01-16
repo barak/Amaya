@@ -1,0 +1,114 @@
+From: Regis Boudin <regis@debian.org>
+Date: Thu, 16 Jan 2014 11:09:26 +0000
+Subject: build_cleanup
+
+===================================================================
+---
+ Options.in          |  1 -
+ amaya/Makefile.in   |  4 ++--
+ configure.in        | 23 ++++-------------------
+ thotlib/Makefile.in |  4 ++--
+ 4 files changed, 8 insertions(+), 24 deletions(-)
+
+diff --git a/Options.in b/Options.in
+index 6cbba17..8ecc0c2 100644
+--- a/Options.in
++++ b/Options.in
+@@ -39,7 +39,6 @@ AMAYA_ANNOT_OPTIONS=@AMAYA_ANNOT_OPTIONS@
+ AMAYA_ANNOT_INCLUDES=@AMAYA_ANNOT_INCLUDES@
+ AMAYA_ANNOT_EXTRA_LIBS=@AMAYA_ANNOT_EXTRA_LIBS@
+ 
+-IMGLIBS=@IMGLIBS@
+ EXTRA_INCLUDES=@EXTRA_INCLUDES@
+ 
+ EXPAT_INCLUDES=
+diff --git a/amaya/Makefile.in b/amaya/Makefile.in
+index 9699f6c..8d01371 100644
+--- a/amaya/Makefile.in
++++ b/amaya/Makefile.in
+@@ -13,13 +13,13 @@ OBJDIRS = wxdialog
+ 
+ include ../Options
+ 
+-INCLUDES= -DHAVE_CONFIG_H $(AMAYA_INCLUDES) $(EXPAT_INCLUDES) $(GUI_INCLUDES) $(EXTRA_INCLUDES) $(GL_INCLUDES) $(GTK_GL_INCLUDES) $(FREETYPE_INCLUDES) $(XFT_INCLUDES)
++INCLUDES= -DHAVE_CONFIG_H $(AMAYA_INCLUDES) $(EXPAT_INCLUDES) $(GUI_INCLUDES) $(EXTRA_INCLUDES) $(GL_INCLUDES) $(FREETYPE_INCLUDES)
+ LIBS	=  $(AMAYA_ANNOT_LIBS) $(AMAYA_DAV_LIBS) \
+ 	   $(AMAYA_MATH_LIBS) $(AMAYA_GRAPH_LIBS) \
+            -L../thotlib -L.. -lThotEditor \
+           $(AMAYA_OPTION_EXTRA_LIBS) $(EXPAT_LIBRARIES) \
+ 	  $(AMAYA_LIBWWW_LIBS) \
+-	  $(GL_LIBRARIES) $(GTK_GL_LIBRARIES) $(FREETYPE_LIBRARIES) $(XFT_LIBRARIES) \
++	  $(GL_LIBRARIES) $(FREETYPE_LIBRARIES) \
+ 	   @AMAYA_RAPTOR_LIBS@ \
+           $(WX_LIBRARIES)
+ 
+diff --git a/configure.in b/configure.in
+index 1dcc1c7..0928f49 100644
+--- a/configure.in
++++ b/configure.in
+@@ -808,12 +808,6 @@ AC_ARG_ENABLE([templates],
+ 	esac],
+ 	[with_templates="yes"])
+ 
+-if test "$with_templates" = yes -a "$with_wx" != "yes"; then
+-    AC_MSG_WARN(Templates are only available in WX version !!)
+-    AC_MSG_WARN(Disabling templates)
+-    with_templates="no"
+-fi
+-
+ if test "$with_templates" = "yes" ; then
+     TEMPLATES_OPTIONS="-DTEMPLATES"
+ else
+@@ -913,12 +907,6 @@ if test "$with_debug" = "yes" ; then
+   AMAYA_OPTIONS="$AMAYA_OPTIONS -DAMAYA_DEBUG"
+ fi
+ 
+-if test "$with_wx" = "yes" ; then
+-  IMGLIBS=""
+-else
+-  IMGLIBS="-ljpeg -lpng -lz"
+-fi
+-
+ EXTRA_INCLUDES=
+ 
+ # check for malloc.h
+@@ -998,7 +986,6 @@ AC_SUBST(VPATHOPT)
+ 
+ AC_SUBST(THOT_OPTIONS)
+ AC_SUBST(AMAYA_OPTIONS)
+-AC_SUBST(IMGLIBS)
+ AC_SUBST(EXTRA_INCLUDES)
+ 
+ AC_SUBST(DAVDIR)
+@@ -1175,12 +1162,10 @@ if test "$build_amaya" = "yes" ; then
+     fi
+ fi
+ 
+-if test "$with_wx" = "yes" ; then
+-  if test "$with_wxdebug" = "yes" ; then
+-    echo "Amaya configured with wxWidgets {srcdir=$WX_SRCDIR} (debug)"
+-  else
+-    echo "Amaya configured with wxWidgets {srcdir=$WX_SRCDIR}"
+-  fi
++if test "$with_wxdebug" = "yes" ; then
++  echo "Amaya configured with wxWidgets {srcdir=$WX_SRCDIR} (debug)"
++else
++  echo "Amaya configured with wxWidgets {srcdir=$WX_SRCDIR}"
+ fi
+ 
+ 
+diff --git a/thotlib/Makefile.in b/thotlib/Makefile.in
+index 9009b0a..9aaca2c 100644
+--- a/thotlib/Makefile.in
++++ b/thotlib/Makefile.in
+@@ -12,8 +12,8 @@ THOTINCLUDES=@THOTINCLUDES@
+ 
+ include ../Options
+ 
+-INCLUDES= -DHAVE_CONFIG_H -I.. -I@top_srcdir@/amaya/xpm ${THOTINCLUDES} $(GUI_INCLUDES) $(GL_INCLUDES) $(GTK_GL_INCLUDES) $(XFT_INCLUDES) $(FREETYPE_INCLUDES) ${EXTRA_INCLUDES}
+-LIBS	= -L. -L.. @LIBS@ $(IMGLIBS) $(GL_LIBRARIES) $(GTK_GL_LIBRARIES) $(XFT_LIBRARIES) $(FREETYPE_LIBRARIES) $(GTK_LIBRARIES) $(WX_LIBRARIES)
++INCLUDES= -DHAVE_CONFIG_H -I.. -I@top_srcdir@/amaya/xpm ${THOTINCLUDES} $(GUI_INCLUDES) $(GL_INCLUDES) $(FREETYPE_INCLUDES) ${EXTRA_INCLUDES}
++LIBS	= -L. -L.. @LIBS@ $(GL_LIBRARIES) $(FREETYPE_LIBRARIES) $(WX_LIBRARIES)
+ 
+ prefix = @prefix@
+ exec_prefix = @exec_prefix@

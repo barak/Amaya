@@ -1,13 +1,20 @@
+From: Regis Boudin <regis@debian.org>
+Date: Thu, 16 Jan 2014 11:09:26 +0000
+Subject: desktop_file_fix
+
 Remove deprecated Encoding field from .desktop file
 Just call straight amaya instead of a long line setting
 multiple environment variable. The script called sets them
 anyway
+---
+ batch/script_install_gnomekde.in | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Index: amaya-10.1~pre1+dfsg1/batch/script_install_gnomekde.in
-===================================================================
---- amaya-10.1~pre1+dfsg1.orig/batch/script_install_gnomekde.in	2008-04-30 19:41:23.000000000 +0100
-+++ amaya-10.1~pre1+dfsg1/batch/script_install_gnomekde.in	2008-04-30 19:42:11.000000000 +0100
-@@ -60,12 +60,11 @@
+diff --git a/batch/script_install_gnomekde.in b/batch/script_install_gnomekde.in
+index 8a96c4b..8fd0bf5 100644
+--- a/batch/script_install_gnomekde.in
++++ b/batch/script_install_gnomekde.in
+@@ -60,12 +60,11 @@ fi
  # --- creating amaya.desktop
  $ECHO "--> Creating $GNOMEKDEDIR/applications/amaya.desktop file"
  $ECHO "[Desktop Entry]" > $GNOMEKDEDIR/applications/amaya.desktop

@@ -1,8 +1,19 @@
-Index: Amaya/Makefile.in
+From: Regis Boudin <regis@debian.org>
+Date: Thu, 16 Jan 2014 11:09:26 +0000
+Subject: enable_system_libwww
+
 ===================================================================
---- Amaya.orig/Makefile.in	2008-07-08 12:13:24.000000000 +0100
-+++ Amaya/Makefile.in	2008-09-21 21:52:05.000000000 +0100
-@@ -14,7 +14,7 @@
+---
+ Makefile.in           | 127 ++------------------------------------------------
+ amaya/Makefile.libwww |  33 ++-----------
+ configure.in          |  81 ++++++++++++++++++++++++++------
+ 3 files changed, 74 insertions(+), 167 deletions(-)
+
+diff --git a/Makefile.in b/Makefile.in
+index f4b0b15..d35cd09 100644
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -14,7 +14,7 @@ LIBWWW	   = libwww
  
  #MKP: adding davlib
  SUBDIRS	= @SUBDIRS@ tools thotlib batch annotlib @DAVDIR@ amaya
@@ -11,7 +22,7 @@ Index: Amaya/Makefile.in
  
  prefix = @prefix@
  exec_prefix = @exec_prefix@
-@@ -23,7 +23,7 @@
+@@ -23,7 +23,7 @@ bindir = @bindir@
  
  srcdir	= $(THOTDIR)
  
@@ -20,7 +31,7 @@ Index: Amaya/Makefile.in
  
  amaya : tools thotlib amaya_prog print_prog
  
-@@ -128,127 +128,8 @@
+@@ -128,127 +128,8 @@ mkid :
  #
  # Rules to rebuild the libWWW package
  #
@@ -150,11 +161,11 @@ Index: Amaya/Makefile.in
  		@($(ECHO) "libwww is installed")
  
  #
-Index: Amaya/amaya/Makefile.libwww
-===================================================================
---- Amaya.orig/amaya/Makefile.libwww	2008-09-21 16:10:32.000000000 +0100
-+++ Amaya/amaya/Makefile.libwww	2008-09-21 21:54:24.000000000 +0100
-@@ -18,39 +18,14 @@
+diff --git a/amaya/Makefile.libwww b/amaya/Makefile.libwww
+index 0e27df9..75636bc 100644
+--- a/amaya/Makefile.libwww
++++ b/amaya/Makefile.libwww
+@@ -18,39 +18,14 @@ AMAYA_LIBWWW_OBJ= \
  
  AMAYA_LIBWWW_OPTION_LIBS=
  
@@ -198,11 +209,11 @@ Index: Amaya/amaya/Makefile.libwww
 -amaya_comp_libwww : force
 +libwww : force
  		@(cd .. ; $(MAKE) libwww)
-Index: Amaya/configure.in
-===================================================================
---- Amaya.orig/configure.in	2008-09-19 22:22:13.000000000 +0100
-+++ Amaya/configure.in	2008-09-21 21:34:28.000000000 +0100
-@@ -689,6 +689,27 @@
+diff --git a/configure.in b/configure.in
+index 79d8f8d..9276848 100644
+--- a/configure.in
++++ b/configure.in
+@@ -689,6 +689,27 @@ AC_ARG_ENABLE([svg],
  	esac],
  	[with_svg="yes"])
  
@@ -230,7 +241,7 @@ Index: Amaya/configure.in
  dnl
  dnl WebDAV support enabled by default
  dnl
-@@ -710,30 +731,66 @@
+@@ -710,30 +731,66 @@ if test ! -f $srcdir/davlib/Makefile.in ; then
  fi
  
  if test "$with_dav" = "yes" ; then
@@ -306,7 +317,7 @@ Index: Amaya/configure.in
  ##########################Annotations Support####################
  dnl
  dnl annotations are enabled by default
-@@ -880,12 +937,6 @@
+@@ -880,12 +937,6 @@ fi
  
  
  if test "$build_amaya" = "yes" ; then

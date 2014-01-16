@@ -1,0 +1,99 @@
+From: Regis Boudin <regis@debian.org>
+Date: Thu, 16 Jan 2014 11:09:26 +0000
+Subject: warnings_fix
+
+===================================================================
+---
+ thotlib/base/structlist.c    | 2 ++
+ thotlib/content/contentapi.c | 2 +-
+ thotlib/content/dictionary.c | 4 ++--
+ thotlib/image/picture.c      | 2 ++
+ thotlib/internals/h/frame.h  | 2 +-
+ 5 files changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/thotlib/base/structlist.c b/thotlib/base/structlist.c
+index b46da24..afa8cda 100644
+--- a/thotlib/base/structlist.c
++++ b/thotlib/base/structlist.c
+@@ -3752,6 +3752,7 @@ static void wrprules (PtrPRule RP, FILE *fileDescriptor, PtrPSchema pPSch)
+                   fprintf (fileDescriptor, " =");
+               }
+           else if (RP->PrPresMode == PresImmediate)
++           {
+             if (RP->PrAttrValue)
+               fprintf (fileDescriptor, "??");
+             else
+@@ -3759,6 +3760,7 @@ static void wrprules (PtrPRule RP, FILE *fileDescriptor, PtrPSchema pPSch)
+                 fprintf (fileDescriptor, "None");
+               else if (pPSch->PsConstant[RP->PrIntValue-1].PdString)
+                 fprintf (fileDescriptor, pPSch->PsConstant[RP->PrIntValue-1].PdString);
++           }
+           break;
+         case PtListStylePosition:
+           fprintf (fileDescriptor, "ListStylePosition: ");
+diff --git a/thotlib/content/contentapi.c b/thotlib/content/contentapi.c
+index 77ee5d6..adcd0ea 100644
+--- a/thotlib/content/contentapi.c
++++ b/thotlib/content/contentapi.c
+@@ -1463,7 +1463,7 @@ char *TtaGetPathAttributeValue (Element el, int width, int height)
+   PtrElement pEl;
+   PtrPathSeg          b;
+   int                 length, l, add;
+-  char               *path;
++  char               *path = NULL;
+   int nbPoints;
+ #define SIZE_OF_ONE_SEGMENT 50
+ 
+diff --git a/thotlib/content/dictionary.c b/thotlib/content/dictionary.c
+index d35f572..02f9c5b 100644
+--- a/thotlib/content/dictionary.c
++++ b/thotlib/content/dictionary.c
+@@ -132,7 +132,7 @@ static void ReleaseDictionary (PtrDict *pDictionary)
+       d = 0;
+       while (d < MaxDictionaries && dictTable[d] != pdict)
+         d++;
+-      if (dictTable[d] == pdict)
++      if (d < MaxDictionaries)
+         {
+           TtaFreeMemory (pdict->DictDirectory);
+           /* Releases the string and the list of words */
+@@ -590,7 +590,7 @@ ThotBool ReloadDictionary (PtrDict *pDictionary)
+       d = 0;
+       while (d < MaxDictionaries && dictTable[d] != pdict)
+         d++;
+-      if (dictTable[d] == pdict)
++      if (d < MaxDictionaries)
+         {
+           /* Getting information about the dictionary */
+           strcpy (dictName, pdict->DictName);
+diff --git a/thotlib/image/picture.c b/thotlib/image/picture.c
+index 4aaa197..d689fad 100644
+--- a/thotlib/image/picture.c
++++ b/thotlib/image/picture.c
+@@ -413,11 +413,13 @@ static void GL_MakeTextureSize (ThotPictInfo *img, int GL_w, int GL_h)
+         {
+           ptr1 += ix;
+           if (y < GL_h)
++           {
+             /* copy R,G,B,A */
+             if (w < iw)
+               memcpy (ptr2, ptr1, w);
+             else
+               memcpy (ptr2, ptr1, iw);
++           }
+           /* jump over the black transparent zone*/
+           ptr1 += w;
+           ptr2 += iw;
+diff --git a/thotlib/internals/h/frame.h b/thotlib/internals/h/frame.h
+index d86d04f..7cf8a2a 100644
+--- a/thotlib/internals/h/frame.h
++++ b/thotlib/internals/h/frame.h
+@@ -56,7 +56,7 @@ typedef struct _Frame_Ctl {
+ } Frame_Ctl;
+ 
+ 
+-typedef enum
++enum
+ {
+   ToolBarBrowsing,
+   ToolBarEditing,

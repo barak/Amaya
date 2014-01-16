@@ -1,6 +1,6 @@
-cflags_cleanup.diff
-desktop_file_fix.patch
-warnings_fix.diff
-build_cleanup.diff
-libwww_cleanup.diff
-enable_system_libwww.diff
+0001-cflags_cleanup.patch
+0002-desktop_file_fix.patch
+0003-warnings_fix.patch
+0004-build_cleanup.patch
+0005-libwww_cleanup.patch
+0006-enable_system_libwww.patch
