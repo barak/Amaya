@@ -17,6 +17,8 @@
 
 #ifdef _WX
 #include "wx/wx.h"
+#include "wx/utils.h"
+#include "wx/file.h"
 #endif /* _WX */
 
 #define THOT_EXPORT extern
@@ -35,6 +37,9 @@
 #include "templateUtils_f.h"
 #endif /* TEMPLATES */
 #include "templates_f.h"
+#ifdef _WX
+#include "message_wx.h"
+#endif /* _WX */
 
 static char        *TargetDocumentURL = NULL;
 static int          OldWidth;
@@ -631,7 +636,7 @@ ThotBool GenerateInlineElement (int eType, SSchema eSchema, int aType,
                                 const char * data, ThotBool replace)
 {
   Element         el, firstSel, lastSel, next, in_line, sibling, child;
-  Element         last, parent, enclose, selected;
+  Element         last, parent, enclose, selected, lastChild;
   ElementType	  elType, parentType, newType, childType;
   Attribute       newAttr, attr;
   AttributeType   attrType;
@@ -842,8 +847,14 @@ ThotBool GenerateInlineElement (int eType, SSchema eSchema, int aType,
                   while (!strcmp(TtaGetSSchemaName (elType.ElSSchema), "HTML") &&
                          !IsCharacterLevelElement (lastSel))
                     {
-                      child = GetNoTemplateChild (lastSel, FALSE);
+                      // keep all children
+                      child = TtaGetLastChild (lastSel);
                       elType = TtaGetElementType (child);
+                      if (!strcmp(TtaGetSSchemaName (elType.ElSSchema), "Template"))
+                        {
+                          child = GetNoTemplateChild (child, FALSE);
+                          elType = TtaGetElementType (child);
+                        }
                       if (child)
                         {
                           lastSel = child;
@@ -968,7 +979,8 @@ ThotBool GenerateInlineElement (int eType, SSchema eSchema, int aType,
                     next = NULL;
                   else
                     {
-                      next = el;
+                      if (el)
+                        next = el;
                       if (next != selected && TtaIsAncestor (next, selected))
                         {
                           // get next sibling
@@ -1170,6 +1182,7 @@ ThotBool GenerateInlineElement (int eType, SSchema eSchema, int aType,
                                               firstSel = next;
                                               TtaRemoveTree (in_line, doc);
                                               in_line = NULL;
+                                              parent = NULL;
                                             }
                                           else
                                             {
@@ -1255,7 +1268,7 @@ ThotBool GenerateInlineElement (int eType, SSchema eSchema, int aType,
                                       // get next sibling of moved 
                                       child = el;
                                     }
-                                  el = enclose;
+                                  el = NULL;
                                   if (removed)
                                     {
                                       // remove the enclose element
@@ -1331,14 +1344,17 @@ ThotBool GenerateInlineElement (int eType, SSchema eSchema, int aType,
                             }
                           else if (in_line && charlevel)
                             {
-                              TtaRegisterElementDelete (el, doc);
-                              TtaRemoveTree (el, doc);
-                              sibling = TtaGetLastChild (in_line);
-                              TtaInsertSibling (el, sibling, FALSE, doc);
-                              TtaRegisterElementCreate (el, doc);
-                              done = TRUE; // action done
-                              if (el == lastSel)
-                                lastSel = in_line;
+                              if (el)
+                                {
+                                  TtaRegisterElementDelete (el, doc);
+                                  TtaRemoveTree (el, doc);
+                                  lastChild = TtaGetLastChild (in_line);
+                                  TtaInsertSibling (el, lastChild, FALSE, doc);
+                                  TtaRegisterElementCreate (el, doc);
+                                  done = TRUE; // action done
+                                  if (el == lastSel)
+                                    lastSel = in_line;
+                                }
                             }
                           else
                             {
@@ -1496,8 +1512,11 @@ ThotBool GenerateInlineElement (int eType, SSchema eSchema, int aType,
                               sibling = in_line;
                               TtaNextSibling (&sibling);
                               if (sibling != next)
+                                {
                                 // cannot extent the in_line to the next element
                                 in_line = NULL;
+                                parent = NULL;
+                                }
                             }
                         }
                     }
@@ -1574,19 +1593,19 @@ void SetREFattribute (Element element, Document doc, char *targetURL,
           else if (elType.ElTypeNum == HTML_EL_SCRIPT_)
             attrType.AttrTypeNum = HTML_ATTR_script_src;
           else
-		  {
+            {
             /* The anchor element must have an HREF attribute */
             /* create an attribute PseudoClass = link */
             attrType.AttrTypeNum = HTML_ATTR_PseudoClass;
             attr = TtaGetAttribute (element, attrType);
             if (attr == NULL)
-			{
+              {
                 attr = TtaNewAttribute (attrType);
                 TtaAttachAttribute (element, attr, doc);
-			}
+              }
             TtaSetAttributeText (attr, "link", element, doc);
             attrType.AttrTypeNum = HTML_ATTR_HREF_;
-		  }
+            }
         }
 #ifdef _SVG
       else if (isSVG)
@@ -1659,7 +1678,23 @@ void SetREFattribute (Element element, Document doc, char *targetURL,
                             &LoadedResources, FALSE);
         }
       else
-        strcpy (tempURL, targetURL);
+        {
+         if (!IsHTTPPath (DocumentURLs[doc]) &&
+              strncmp (targetURL, "http", 4))
+            {
+              // create the file if needed
+              TtaExtractName (targetURL, tempURL, resname);
+              NormalizeURL (resname, doc, tempURL, resname, NULL);
+              if ((LinkAsCSS || LinkAsXmlCSS) && !TtaFileExist (tempURL))
+                {
+#ifdef _WX
+                  wxString tmpFile = TtaConvMessageToWX(tempURL);
+                  wxFile::wxFile (tmpFile, wxFile::write);
+#endif /* _WX */
+                }
+            }
+         strcpy (tempURL, targetURL);
+        }
     }
   else
     tempURL[0] = EOS;

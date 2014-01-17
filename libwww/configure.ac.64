@@ -671,7 +671,7 @@ dnl find the ssl library dir (empirical)
 if test -d '/usr/local/ssl/lib'; then
   ssllib="-L/usr/local/ssl/lib -lssl -lcrypto"
 else
-  ssllib="-L/usr/lib -lssl -lcrypto"
+  ssllib="-L/usr/lib64 -lssl -lcrypto"
 fi
 dnl find the ssl include dir (empirical)
 if test -d '/usr/local/ssl/include'; then
