@@ -10,8 +10,9 @@ dnl    GENERIC AUTOCONF STUFF : GUESS INFORMATIONS ON SYSTEM SETUP
 dnl
 dnl  ***************************************************************
 
-AC_PREREQ(2.54)
-AC_INIT(thotlib/internals/h/constpiv.h)
+AC_PREREQ([2.69])
+AC_INIT
+AC_CONFIG_SRCDIR([thotlib/internals/h/constpiv.h])
 AC_REVISION
 
 dnl
@@ -33,7 +34,7 @@ dnl
 dnl Checks for platform information
 dnl
 
-AC_CANONICAL_SYSTEM
+AC_CANONICAL_TARGET
 AC_CONFIG_HEADER(config.h)
 
 dnl
@@ -159,7 +160,18 @@ AC_TYPE_GETGROUPS
 AC_PROG_GCC_TRADITIONAL
 AC_FUNC_MEMCMP
 AC_FUNC_MMAP
-AC_TYPE_SIGNAL
+AC_DIAGNOSE([obsolete],[your code may safely assume C89 semantics that RETSIGTYPE is void.
+Remove this warning and the `AC_CACHE_CHECK' when you adjust the code.])dnl
+AC_CACHE_CHECK([return type of signal handlers],[ac_cv_type_signal],[AC_COMPILE_IFELSE(
+[AC_LANG_PROGRAM([#include <sys/types.h>
+#include <signal.h>
+],
+		 [return *(signal (0, 0)) (0) == 1;])],
+		   [ac_cv_type_signal=int],
+		   [ac_cv_type_signal=void])])
+AC_DEFINE_UNQUOTED([RETSIGTYPE],[$ac_cv_type_signal],[Define as the return type of signal handlers
+		    (`int' or `void').])
+
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(getcwd gethostname gettimeofday getwd mkdir mktime putenv select socket strdup strerror strftime strstr strtod strtol uname lstat strcasecmp strncasecmp strchr memcpy)
 
@@ -215,7 +227,7 @@ dnl wxGLCanvas is for integration of opengl in wxWidgets (WX)
 with_wx="yes"
 
 AC_ARG_ENABLE([system-wx],
-    AC_HELP_STRING([--enable-system-wx],[try the wxWidgets system library]),
+    AS_HELP_STRING([--enable-system-wx],[try the wxWidgets system library]),
     [case "${enableval}" in
       yes) with_system_wx="yes";;
       no)  with_system_wx="no" ;;
@@ -226,7 +238,7 @@ AC_ARG_ENABLE([system-wx],
 
 
 AC_ARG_WITH([gl],
-   AC_HELP_STRING([--with-gl],[enable canvas with hardware OpenGL implementation]),
+   AS_HELP_STRING([--with-gl],[enable canvas with hardware OpenGL implementation]),
    [case "${withval}" in
 	  yes) with_gl="yes" ;;
 	  no)  with_gl="no" ;;
@@ -699,7 +711,7 @@ if test "$with_gl" = "yes" -o "$with_mesa" = "yes" ; then
 fi # if with_gl or with_mesa
 
 AC_ARG_ENABLE([svg],
-	AC_HELP_STRING([--disable-svg],[disable SVG support]),
+	AS_HELP_STRING([--disable-svg],[disable SVG support]),
 	[case "${enableval}" in
 	  yes) with_svg="yes" ;;
 	  no)  with_svg="no" ;;
@@ -710,7 +722,7 @@ AC_ARG_ENABLE([svg],
 #################### LibWWW and WebDAV Support ################################
 
 AC_ARG_ENABLE([system-libwww],
-	AC_HELP_STRING([--enable-system-libwww],[try the libWWW system library]),
+	AS_HELP_STRING([--enable-system-libwww],[try the libWWW system library]),
 	[case "${enableval}" in
 	  yes) with_system_libwww="yes" ;;
 	  no)  with_system_libwww="no" ;;
@@ -732,7 +744,7 @@ dnl
 dnl WebDAV support enabled by default
 dnl
 AC_ARG_WITH(dav,
-  AC_HELP_STRING([--with-dav],[enable WebDAV support (default)]),
+  AS_HELP_STRING([--with-dav],[enable WebDAV support (default)]),
   [case "${withval}" in
 	  yes) with_dav="yes" ;;
 	  no)  with_dav="no" ;;
@@ -817,7 +829,7 @@ dnl
 dnl annotations are enabled by default
 dnl
 AC_ARG_ENABLE([annot],
-	AC_HELP_STRING([--disable-annot],[disable Annotations support]),
+	AS_HELP_STRING([--disable-annot],[disable Annotations support]),
 	[case "${enableval}" in
 	  yes) with_annot="yes" ;;
 	  no)  with_annot="no" ;;
@@ -834,7 +846,7 @@ else
 fi
 
 AC_ARG_ENABLE([system-raptor],
-	AC_HELP_STRING([--enable-system-raptor],[try the raptor RDF system library]),
+	AS_HELP_STRING([--enable-system-raptor],[try the raptor RDF system library]),
 	[case "${enableval}" in
 	  yes) with_system_raptor="yes";;
 	  no)  with_system_raptor="no" ;;
@@ -923,7 +935,7 @@ dnl
 dnl The templates support is enabled by default
 dnl
 AC_ARG_ENABLE([templates],
-	AC_HELP_STRING([--disable-templates],[disable experimental templates support]),
+	AS_HELP_STRING([--disable-templates],[disable experimental templates support]),
 	[case "${enableval}" in
 	  yes) with_templates="yes" ;;
 	  no)  with_templates="no" ;;
@@ -948,7 +960,7 @@ dnl
 dnl Generic XML support enabled by default
 dnl
 AC_ARG_ENABLE([generic-xml],
-	AC_HELP_STRING([--disable-generic-xml],[disable Generic XML support]),
+	AS_HELP_STRING([--disable-generic-xml],[disable Generic XML support]),
 	[case "${enableval}" in
 	  yes) with_generic_xml="yes" ;;
 	  no)  with_generic_xml="no" ;;
@@ -1179,7 +1191,8 @@ if test "$AMAYAOS" != "MACOSX" ; then
 fi
 
 AC_SUBST(EXTRA_MAKEFILE_IN)
-AC_OUTPUT($make_output , [
+AC_CONFIG_FILES([$make_output ])
+AC_CONFIG_COMMANDS([default],[
 dnl
 dnl This fragment of shell code is executed after the
 dnl Makefile(s) dump ...
@@ -1216,7 +1229,8 @@ if test -f bin/amaya ; then
    chmod 755 bin/amaya
     echo WARNING : `ls -l bin/amaya`
 fi
-])
+],[])
+AC_OUTPUT
 
 dnl
 if test "$build_amaya" = "yes" ; then
