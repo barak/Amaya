@@ -147,7 +147,7 @@ raptor: force
 MAKEFILE_IN= \
 @EXTRA_MAKEFILE_IN@ \
 $(THOTDIR)/Options.in \
-$(THOTDIR)/configure.in \
+$(THOTDIR)/configure.ac \
 $(THOTDIR)/Makefile.in \
 $(THOTDIR)/amaya/Makefile.in \
 $(THOTDIR)/batch/Makefile.in \
@@ -161,7 +161,7 @@ rebuild : tools/mkdep/mkdep Makefile
 
 ${srcdir}/config.h.in: stamp-h.in
 
-${srcdir}/stamp-h.in: configure.in config.h.in
+${srcdir}/stamp-h.in: configure.ac config.h.in
 	cd ${srcdir} && autoheader
 	echo timestamp > ${srcdir}/stamp-h.in
 

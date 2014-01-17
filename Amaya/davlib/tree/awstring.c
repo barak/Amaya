@@ -26,7 +26,7 @@
  ** amaya/query.c, amaya/init.c, amaya/answer.c, amaya/libwww.h, amaya/amayamsg.h,
  ** amaya/EDITOR.A, amaya/EDITORactions.c, amaya/Makefile.libwww amaya/Makefile.in,
  ** config/amaya.profiles, tools/xmldialogues/bases/base_am_dia.xml,
- ** tools/xmldialogues/bases/base_am_dia.xml, Makefile.in, configure.in
+ ** tools/xmldialogues/bases/base_am_dia.xml, Makefile.in, configure.ac
  ** This new module is only activated when --with-dav options is used in configure.
  **
  ** Revision 1.6  2002/03/27 17:07:55  kirschpi

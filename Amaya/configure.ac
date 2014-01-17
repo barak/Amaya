@@ -18,7 +18,7 @@ AC_REVISION
 dnl
 dnl Verify that configure is not being called in the Amaya directory
 dnl
-if test -d batch -a -f configure.in ; then
+if test -d batch -a -f configure.ac ; then
    echo 
    echo "****************************************************************"
    echo ERROR: You must invoke the configure script in a subidrectory
