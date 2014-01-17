@@ -118,9 +118,9 @@ int TtaGetSystemLanguage( )
   ----------------------------------------------------------------------*/
 wxString TtaGetHomeDir()
 {
-  wxString wx_win_homedir = wxGetHomeDir();
+  wxString wx_win_homedir;
 #ifdef _WINDOWS
-  if (wx_win_homedir.IsEmpty())
+  //if (wx_win_homedir.IsEmpty())
     {
       wxChar      buffer[2000];
       DWORD       dwSize;
@@ -151,6 +151,8 @@ wxString TtaGetHomeDir()
       wxString wx_win_username(buffer);
       wx_win_homedir = wx_win_profiles_dir + _T("\\") + wx_win_username;
     }
+#else /* _WINDOWS */
+  wx_win_homedir = wxGetHomeDir();
 #endif /* _WINDOWS */
   return wx_win_homedir;
 }
