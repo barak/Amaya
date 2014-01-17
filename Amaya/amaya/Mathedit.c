@@ -569,7 +569,8 @@ static void CreateParentMROW (Element el, Document doc)
           elType.ElTypeNum != MathML_EL_CellWrapper)
         /* element is not an intermediate Thot element nor a text leaf */
         {
-          /* count the number of children of parent that are not placeholders */
+          /* count the number of children of parent that are not placeholders
+	     nor comments */
           sibling = TtaGetFirstChild (parent);
           nChildren = 0;
           firstChild = sibling;
@@ -577,7 +578,8 @@ static void CreateParentMROW (Element el, Document doc)
             {
               elType = TtaGetElementType (sibling);
               if (elType.ElTypeNum != MathML_EL_Construct &&
-                  elType.ElTypeNum != MathML_EL_Construct1)
+                  elType.ElTypeNum != MathML_EL_Construct1 &&
+		  elType.ElTypeNum != MathML_EL_XMLcomment)
                 /* it's not a placeholder, count it */
                 nChildren++;
               TtaNextSibling (&sibling);
@@ -5364,7 +5366,7 @@ static ThotBool MathMoveForward ()
   Document      doc;
   Element       el, nextEl, leaf, ancestor, sibling, selected;
   ElementType   elType, successorType;
-  AttributeType attrType;
+  char         *s;
   int           firstChar, lastChar, len, i;
   NotifyElement event;
   ThotBool      done, found, ok;
@@ -5404,6 +5406,7 @@ static ThotBool MathMoveForward ()
       for (i = 1; i < 4 && sibling && !nextEl; i++)
         {
           sibling = TtaGetFirstLeaf(TtaGetSuccessor (sibling));
+	  /* @@@@@ sucessor = comment @@@@ */
           if (sibling)
             {
               successorType = TtaGetElementType (sibling);
@@ -5415,9 +5418,9 @@ static ThotBool MathMoveForward ()
                     successorType.ElTypeNum == MathML_EL_Construct1)
                   /* this an empy construct */
                   {
-                    attrType.AttrSSchema = successorType.ElSSchema;
+		    /* @@@@@@   attrType.AttrSSchema = successorType.ElSSchema;
                     attrType.AttrTypeNum = MathML_ATTR_IntPlaceholder;
-                    if (!TtaGetAttribute (sibling, attrType))
+                    if (!TtaGetAttribute (sibling, attrType))   @@@@ */
                       /* and it is not a placeholder. Take it. */
                       nextEl = sibling;
                   }
@@ -5454,33 +5457,35 @@ static ThotBool MathMoveForward ()
           do
             {
               sibling = el;
+              elType = TtaGetElementType (el);
               TtaNextSibling (&sibling);
-              if (!sibling)
-                {
-                  el = TtaGetParent (el);
-                  elType = TtaGetElementType (el);
-                  if (!strcmp (TtaGetSSchemaName (elType.ElSSchema),"MathML")&&
-                      (elType.ElTypeNum == MathML_EL_Index ||
-                       elType.ElTypeNum == MathML_EL_RootBase))
-                    found = TRUE;
-                }
+              if (!strcmp (TtaGetSSchemaName (elType.ElSSchema),"MathML") &&
+                  (elType.ElTypeNum == MathML_EL_Index ||
+                   elType.ElTypeNum == MathML_EL_RootBase))
+                found = TRUE;
+              else if (!sibling)
+                el = TtaGetParent (el);
             }
           while (!sibling && !found && el);
           if (found)
             {
               if (elType.ElTypeNum == MathML_EL_Index)
                 {
+                  // Index follows RootBase
                   nextEl = el;
                   TtaPreviousSibling (&nextEl);
                 }
               else
                 nextEl = TtaGetSuccessor (ancestor);
             }
+          else
+            nextEl = sibling;
         }
       if (nextEl)
         {
           elType = TtaGetElementType (nextEl);
-          if (!strcmp (TtaGetSSchemaName (elType.ElSSchema),"MathML") &&
+          s = TtaGetSSchemaName (elType.ElSSchema);
+          if (!strcmp (s, "MathML") &&
               (elType.ElTypeNum == MathML_EL_MSPACE ||
                elType.ElTypeNum == MathML_EL_MGLYPH ||
                elType.ElTypeNum == MathML_EL_MALIGNMARK ||
@@ -5493,34 +5498,40 @@ static ThotBool MathMoveForward ()
             }
           else
             {
-              if (!strcmp (TtaGetSSchemaName (elType.ElSSchema), "MathML") &&
+              if (!strcmp (s, "MathML") &&
                   elType.ElTypeNum == MathML_EL_MTABLE)
                 /* don't select within hidden element MTable_head. Skip it */
                 {
                   nextEl = TtaGetFirstChild (nextEl);
                   if (nextEl)
                     nextEl = TtaGetSuccessor (nextEl);
+                  elType = TtaGetElementType (nextEl);
+                  s = TtaGetSSchemaName (elType.ElSSchema);
                 }
+
               if (nextEl)
                 {
-                  elType = TtaGetElementType (nextEl);
-                  if (TtaIsLeaf (elType))
+                  if (elType.ElTypeNum == MathML_EL_TEXT_UNIT ||
+                      elType.ElTypeNum == MathML_EL_SYMBOL_UNIT)
                     {
-                      if (elType.ElTypeNum == MathML_EL_TEXT_UNIT ||
-                          elType.ElTypeNum == MathML_EL_SYMBOL_UNIT)
-                        /* put the caret before the first character in the
-                           string */
-                        TtaSelectString (doc, nextEl, 1, 0);
-                      else
-                        /* select the whole leaf */
-                        TtaSelectElement (doc, nextEl);
+                      /* put the caret before the first character in the
+                         string */
+                      TtaSelectString (doc, nextEl, 1, 0);
+                      selected = nextEl;
+                      done = TRUE;
+                    }
+                  else if (!strcmp (s, "MathML") &&
+                           elType.ElTypeNum == MathML_EL_Construct)
+                    {
+                      /* select the whole leaf */
+                      TtaSelectElement (doc, nextEl);
                       selected = nextEl;
                       done = TRUE;
                     }
                   else
                     {
                       /* if it's a mroot, move to the Index, not the RootBase */
-                      if (!strcmp (TtaGetSSchemaName (elType.ElSSchema),"MathML")&&
+                      if (!strcmp (s, "MathML") &&
                           elType.ElTypeNum == MathML_EL_MROOT)
                         nextEl = TtaGetLastChild (nextEl);
                       /* get the first leaf in that element */
@@ -5559,12 +5570,13 @@ static ThotBool MathMoveForward ()
   -----------------------------------------------------------------------*/
 static ThotBool MathMoveBackward ()
 {
-  Document    doc;
-  Element     el, prevEl, leaf, ancestor, sibling, selected;
-  ElementType elType, predecType;
-  int         firstChar, lastChar, len;
+  Document      doc;
+  Element       el, prevEl, leaf, ancestor, sibling, selected;
+  ElementType   elType, predecType;
+  char         *s;
+  int           firstChar, lastChar, len;
   NotifyElement event;
-  ThotBool    done, found, ok;
+  ThotBool      done, found, ok;
 
   done = FALSE;
   selected = NULL; 
@@ -5620,33 +5632,35 @@ static ThotBool MathMoveBackward ()
           do
             {
               sibling = el;
+              elType = TtaGetElementType (el);
               TtaPreviousSibling (&sibling);
-              if (!sibling)
-                {
-                  el = TtaGetParent (el);
-                  elType = TtaGetElementType (el);
-                  if (!strcmp (TtaGetSSchemaName (elType.ElSSchema),"MathML")&&
-                      (elType.ElTypeNum == MathML_EL_Index ||
-                       elType.ElTypeNum == MathML_EL_RootBase))
+              if (!strcmp (TtaGetSSchemaName (elType.ElSSchema),"MathML") &&
+                  (elType.ElTypeNum == MathML_EL_Index ||
+                   elType.ElTypeNum == MathML_EL_RootBase))
                     found = TRUE;
-                }
+              else if (!sibling)
+                el = TtaGetParent (el);
             }
           while (!sibling && !found && el);
           if (found)
             {
               if (elType.ElTypeNum == MathML_EL_RootBase)
                 {
+                  // Index follows RootBase
                   prevEl = el;
                   TtaNextSibling (&prevEl);
                 }
               else
                 prevEl = TtaGetPredecessor (ancestor);
             }
+          else
+            prevEl = sibling;
         }
       if (prevEl)
         {
           elType = TtaGetElementType (prevEl);
-          if (!strcmp (TtaGetSSchemaName (elType.ElSSchema),"MathML") &&
+          s = TtaGetSSchemaName (elType.ElSSchema);
+          if (!strcmp (s, "MathML") &&
               (elType.ElTypeNum == MathML_EL_MSPACE ||
                elType.ElTypeNum == MathML_EL_MGLYPH ||
                elType.ElTypeNum == MathML_EL_MALIGNMARK ||
@@ -5659,23 +5673,31 @@ static ThotBool MathMoveBackward ()
             }
           else
             {
-              if (!strcmp (TtaGetSSchemaName (elType.ElSSchema), "MathML") &&
+              if (!strcmp (s, "MathML") &&
                   elType.ElTypeNum == MathML_EL_MTable_head)
-                /* don't select within hidden element MTable_head. Skip it */
-                prevEl = TtaGetPredecessor (prevEl);
+                {
+                  /* don't select within hidden element MTable_head. Skip it */
+                  prevEl = TtaGetPredecessor (prevEl);
+                  elType = TtaGetElementType (prevEl);
+                  s = TtaGetSSchemaName (elType.ElSSchema);
+                }
+
               if (prevEl)
                 {
-                  elType = TtaGetElementType (prevEl);
-                  if (TtaIsLeaf (elType))
+                  if (elType.ElTypeNum == MathML_EL_TEXT_UNIT ||
+                      elType.ElTypeNum == MathML_EL_SYMBOL_UNIT)
                     {
-                      if (elType.ElTypeNum == MathML_EL_TEXT_UNIT ||
-                          elType.ElTypeNum == MathML_EL_SYMBOL_UNIT)
-                        /* put the caret before the first character in the
-                           string */
-                        TtaSelectString (doc, prevEl, 1, 0);
-                      else
-                        /* select the whole leaf */
-                        TtaSelectElement (doc, prevEl);
+                      /* put the caret before the first character in the
+                       string */
+                      TtaSelectString (doc, prevEl, 1, 0);
+                      selected = prevEl;
+                      done = TRUE;
+                    }
+                  else if (!strcmp (s, "MathML") &&
+                           elType.ElTypeNum == MathML_EL_Construct)
+                    {
+                      /* select the whole leaf */
+                      TtaSelectElement (doc, prevEl);
                       selected = prevEl;
                       done = TRUE;
                     }
@@ -5765,9 +5787,11 @@ static int GetCharType (CHAR_T c, char script)
   else if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == ' ')
     /* latin letter */
     ret = MathML_EL_MI;
-  else if ((c >= 0x0391 && c <= 0x03A9) || (c >= 0x03B1 && c <= 0x03C9) ||
-           (c == 0x03D5))
-    /* greek letter */
+  else if (((c >= 0x0391 && c <= 0x03A9) || (c >= 0x03B1 && c <= 0x03C9) ||
+           (c == 0x03D5)) &&
+	   c != 0x03a0 && c != 0x03a3)
+    /* greek letter, except capital Sigma and Pi, which are considered as
+       operators */
     ret = MathML_EL_MI;
   else if (c >= 0x0410 && c <= 0x044F)
     /* cyrillic letter */
@@ -7004,21 +7028,22 @@ static void InsertMathEntity (unsigned char *entityName, Document document)
 }
 
 /*----------------------------------------------------------------------
-  CreateMathEntity
+  CreateEntity
   Display a dialogue box to allow input of a character entity name
   and create the corresponding entity at the current selection position
+  It could be used also outside Math construction
   -----------------------------------------------------------------------*/
-void CreateMathEntity (Document document, View view)
+void CreateEntity (Document doc, View view)
 {
   Element       firstSel, lastSel, parent;
   ElementType   elType;
-  int           firstChar, lastChar, i;
+  int           firstChar, lastChar, i, code;
   ThotBool      newMath = FALSE;
 
-  if (!TtaGetDocumentAccessMode (document))
+  if (!TtaGetDocumentAccessMode (doc))
     /* the document is in ReadOnly mode, don't do any change */
     return;
-  TtaGiveFirstSelectedElement (document, &firstSel, &firstChar, &i);
+  TtaGiveFirstSelectedElement (doc, &firstSel, &firstChar, &i);
   if (!firstSel)
     {
       /* no selection. Nothing to do */
@@ -7026,15 +7051,49 @@ void CreateMathEntity (Document document, View view)
       return;
     }
 
+  MathMLEntityName[0] = EOS;
+#ifdef _WX
+  CreateTextDlgWX (BaseDialog + MathEntityForm, BaseDialog + MathEntityText,
+                   TtaGetViewFrame (doc, view),
+                   TtaGetMessage (AMAYA, AM_MEntity),
+                   TtaGetMessage (AMAYA, AM_MATH_ENTITY_NAME),
+                   "");
+  TtaSetDialoguePosition ();
+  TtaShowDialogue (BaseDialog + MathEntityForm, FALSE, TRUE);
+  TtaWaitShowDialogue ();
+#endif /* _WX */
 
   parent = TtaGetParent (firstSel);
   if (parent)
     elType = TtaGetElementType (parent);
-  if (!parent || strcmp (TtaGetSSchemaName (elType.ElSSchema), "MathML"))
+  if (MathMLEntityName[0] == EOS)
+    return;
+  if (MapXMLEntity (XHTML_TYPE, MathMLEntityName, &code))
+    {
+      TtcInsertChar (doc, view, code);
+      return;
+    }
+  else if (((MathMLEntityName[0] >= '0' && MathMLEntityName[0] <= '9') ||
+           (MathMLEntityName[0] >= 'a' && MathMLEntityName[0] <= 'f') ||
+           (MathMLEntityName[0] >= 'A' && MathMLEntityName[0] <= 'F')) &&
+           ((MathMLEntityName[1] >= '0' && MathMLEntityName[1] <= '9') ||
+            (MathMLEntityName[1] >= 'a' && MathMLEntityName[1] <= 'f') ||
+            (MathMLEntityName[1] >= 'A' && MathMLEntityName[1] <= 'F')) &&
+           ((MathMLEntityName[2] >= '0' && MathMLEntityName[2] <= '9') ||
+            (MathMLEntityName[2] >= 'a' && MathMLEntityName[2] <= 'f') ||
+            (MathMLEntityName[2] >= 'A' && MathMLEntityName[2] <= 'F')))
+    // insert the entity at that position
+      sscanf (MathMLEntityName, "%x", &code);
+  if (code >= 32)
+    {
+      TtcInsertChar (doc, view, code);
+      return;
+    }
+  else if (!parent || strcmp (TtaGetSSchemaName (elType.ElSSchema), "MathML"))
     {
       /* if not within a MathML element, create the math element */
-      CreateMathConstruct (document, view, 1);
-      TtaGiveFirstSelectedElement (document, &firstSel, &firstChar, &i);
+      CreateMathConstruct (doc, view, 1);
+      TtaGiveFirstSelectedElement (doc, &firstSel, &firstChar, &i);
       if (!firstSel)
         return;
       
@@ -7044,42 +7103,16 @@ void CreateMathEntity (Document document, View view)
       else
         {
           /* math element created */
-          TtaExtendUndoSequence (document);
+          TtaExtendUndoSequence (doc);
           newMath = TRUE;
         }
     }
 
-  TtaGiveLastSelectedElement (document, &lastSel, &i, &lastChar);
+  TtaGiveLastSelectedElement (doc, &lastSel, &i, &lastChar);
   /* an entity can replace only a single element */
   if (firstSel != lastSel)
     return;
-
-  MathMLEntityName[0] = EOS;
-
-#ifdef _WINGUI
-  CreateMCHARDlgWindow (TtaGetViewFrame (document, view), MathMLEntityName);
-#endif /* _WINGUI */
-
-#ifdef _WX
-  CreateTextDlgWX (BaseDialog + MathEntityForm, BaseDialog + MathEntityText,
-                   TtaGetViewFrame (document, view),
-                   TtaGetMessage (AMAYA, AM_MEntity),
-                   TtaGetMessage (AMAYA, AM_MATH_ENTITY_NAME),
-                   "");
-  TtaSetDialoguePosition ();
-  TtaShowDialogue (BaseDialog + MathEntityForm, FALSE, TRUE);
-  TtaWaitShowDialogue ();
-#endif /* _WX */
-
-  if (MathMLEntityName[0] != EOS)
-    InsertMathEntity ((unsigned char *)MathMLEntityName, document);
-  else if (newMath)
-    {
-      /* We were creating a new image. Delete the empty PICTURE element */
-      TtaCloseUndoSequence (document);
-      TtcUndo (document, view);
-    }
-
+  InsertMathEntity ((unsigned char *)MathMLEntityName, doc);
 }
 
 /*----------------------------------------------------------------------
@@ -7305,22 +7338,13 @@ void MtextCreated (NotifyElement *event)
   -----------------------------------------------------------------------*/
 void MathStringModified (NotifyOnTarget *event)
 {
-  PresentationValue   pval;
-  PresentationContext ctxt;
-
+  RemoveAttr (event->target, event->document, MathML_ATTR_EntityName);
   /* if the event comes from function BreakElement, don't do anything:
-     the user just want to split that character string */
+     the user just wants to split that character string */
   if (event->targetdocument != 0)
     {
-      /* if the old text was a large operator, remove the pRule that
-         made this text bigger */
-      ctxt = TtaGetSpecificStyleContext (event->document);
-      ctxt->destroy = TRUE;
-      pval.typed_data.value = 0;
-      TtaSetStylePresentation (PRSize, event->target, NULL, ctxt, pval);
       /* analyze the new content of the text element */
       ParseMathString (event->target, event->element, event->document);
-      TtaFreeMemory (ctxt);
     }
 }
 
@@ -7331,7 +7355,6 @@ void MathStringModified (NotifyOnTarget *event)
   -----------------------------------------------------------------------*/
 void NewMathString (NotifyElement *event)
 {
-  /* RemoveAttr (event->element, event->document, MathML_ATTR_EntityName); */
   if (TtaGetElementVolume (event->element) > 0)
     ParseMathString (event->element, TtaGetParent (event->element),
                      event->document);

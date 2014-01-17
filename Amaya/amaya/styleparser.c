@@ -311,7 +311,7 @@ static char *SkipProperty (char *ptr, ThotBool reportError)
   if (!warn)
     reportError = FALSE;
   deb = ptr;
-  while (*ptr != EOS && *ptr != ';' && *ptr != '}' && *ptr != '}')
+  while (*ptr != EOS && *ptr != ';' && *ptr != '}')
     {
       if (*ptr == '"' || *ptr == '\'')
         ptr = SkipString (ptr);
@@ -639,6 +639,8 @@ static char *ParseABorderValue (char *cssRule, PresentationValue *border)
   ----------------------------------------------------------------------*/
 static char *ParseBorderStyle (char *cssRule, PresentationValue *border)
 {
+  char             *ptr = cssRule;
+
   /* first parse the attribute string */
   border->typed_data.value = 0;
   border->typed_data.unit = UNIT_PX;
@@ -699,6 +701,8 @@ static char *ParseBorderStyle (char *cssRule, PresentationValue *border)
       border->typed_data.unit = UNIT_INVALID;
       return (cssRule);
     }
+  if (border->typed_data.value != 0)
+    cssRule = CSSCheckEndValue (ptr, cssRule, "Invalid border-style value");
   return (cssRule);
 }
 
@@ -2303,7 +2307,8 @@ void ParseCSSImageCallback (Document doc, Element element, char *file,
              presentation */
           dispMode = TtaGetDisplayMode (redisplaydoc);
           /* force the redisplay of this box */
-          TtaSetDisplayMode (redisplaydoc, NoComputedDisplay);
+          if (dispMode == DisplayImmediately)
+            TtaSetDisplayMode (redisplaydoc, NoComputedDisplay);
           TtaSetDisplayMode (redisplaydoc, dispMode);
         }
       RedisplayBGImage = FALSE;
@@ -2960,14 +2965,14 @@ static char *ParseCSSWhiteSpace (Element element, PSchema tsch,
   ptr = cssRule;
   if (!strncasecmp (cssRule, "normal", 6))
     cssRule += 6;
-  else if (!strncasecmp (cssRule, "pre", 3))
-    cssRule += 3;
-  else if (!strncasecmp (cssRule, "nowrap", 6))
-    cssRule += 6;
   else if (!strncasecmp (cssRule, "pre-wrap", 8))
     cssRule += 8;
   else if (!strncasecmp (cssRule, "pre-line", 8))
     cssRule += 8;
+  else if (!strncasecmp (cssRule, "pre", 3))
+    cssRule += 3;
+  else if (!strncasecmp (cssRule, "nowrap", 6))
+    cssRule += 6;
   else if (!strncasecmp (cssRule, "inherit", 7))
     cssRule += 7;
   else
@@ -5177,7 +5182,8 @@ static char *ParseCSSContent (Element element, PSchema tsch,
   int                 length, val;
   char               *buffer, *p;
   char               *start_value;
-  ThotBool            repeat;
+  wchar_t             wc;
+  ThotBool            repeat, done;
 
   value.typed_data.unit = UNIT_REL;
   value.typed_data.real = FALSE;
@@ -5213,11 +5219,12 @@ static char *ParseCSSContent (Element element, PSchema tsch,
           last = SkipString (last);
           length = last - cssRule;
           /* get a buffer to store the string */
-          buffer = (char *)TtaGetMemory (length);
+          buffer = (char *)TtaGetMemory (3 * length);
           p = buffer; /* beginning of the string */
           cssRule++;
           while (*cssRule != EOS && *cssRule != quoteChar)
             {
+	      done = FALSE;
               if (*cssRule == '\\')
                 {
                   cssRule++; /* skip the backslash */
@@ -5236,17 +5243,17 @@ static char *ParseCSSContent (Element element, PSchema tsch,
                       sscanf (start, "%x", &val);
                       TtaWCToMBstring ((wchar_t) val, (unsigned char **) &p);
                       *cssRule = savedChar;
-                    }
-                  else
-                    {
-                      *p = *cssRule;
-                      p++; cssRule++;
+		      done = TRUE;
                     }
                 }
-              else
+              if (!done)
                 {
-                  *p = *cssRule;
-                  p++; cssRule++;
+		  /* The default encoding of CSS style sheets is ISO-8859-1,
+		     but we should use the real encoding fo the file instead
+		     of this default value @@@@@ */
+		  wc = TtaGetWCFromChar ((unsigned char) cssRule[0], ISO_8859_1);
+		  TtaWCToMBstring (wc, (unsigned char **) &p);
+ 		  cssRule++;
                 }
             }
           *p = EOS;
@@ -6518,7 +6525,7 @@ void  ParseCSSRule (Element element, PSchema tsch, PresentationContext ctxt,
                       /* update index and skip the ";" separator if present */
                       next = SkipBlanksAndComments (p);
                       if (*next != EOS && *next != ';')
-                        CSSParseError ("Missing closing ';'", cssRule, p);
+                        CSSParseError ("Missing closing ';' after", cssRule, p);
                       cssRule = next;
                     }
                 }
@@ -7040,15 +7047,25 @@ static char *ParseGenericSelector (char *selector, char *cssRule,
                   ctxt->pseudo = PbAfter;
                   specificity += 1;
                 }
-	      else if (!strncmp (deb, "target", 6))
+              else if (!strncmp (deb, "target", 6))
                 {
-		  if (warn)
+                  if (warn)
                    CSSPrintError ("Warning: \":target\" is CSS3 syntax",
                                    NULL);
                   specificity += 1;
                   DoApply = FALSE;
                 }
-	      else
+              else if (!strncmp (deb, "not", 3) ||
+                       !strncmp (deb, "only", 4) ||
+                       !strncmp (deb, "last", 4))
+                {
+                  if (warn)
+                   CSSPrintError ("Warning: Not supported CSS3 syntax",
+                                   NULL);
+                  specificity += 1;
+                  DoApply = FALSE;
+                }
+              else
                 {
                   CSSPrintError ("Invalid pseudo-element", deb);
                   DoApply = FALSE;

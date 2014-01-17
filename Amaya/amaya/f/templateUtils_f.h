@@ -7,12 +7,16 @@
 #ifdef __STDC__
 
 extern const char *GetSchemaFromDocType ( DocumentType docType );
+extern ThotBool IsUseInstantiated ( Element el,
+                                    Document doc );
 extern void SetAttributeStringValue ( Element el,
                                       int att,
                                       const char* value );
 extern void SetAttributeStringValueWithUndo ( Element el,
                                               int att,
                                               char* value );
+extern int GetMinOccurence ( Element el,
+                             Document doc );
 extern void GiveAttributeStringValueFromNum ( Element el,
                                               int att,
                                               char* buff,
@@ -30,6 +34,9 @@ extern char *GetAttributeStringValue ( Element el,
                                        Attribute attribute,
                                        int* sz );
 extern char *GetAncestorComponentName ( Element *el );
+extern ThotBool AllowAttributeEdit ( Element el,
+                                     Document doc,
+                                     char *name );
 extern Element GetFirstEditableElement ( Element el );
 extern ThotBool TemplateCanInsertFirstChild ( ElementType elementType,
                                               Element parent,
@@ -46,17 +53,23 @@ extern void DumpSubtree ( Element el,
 extern char *SaveDocumentToNewDoc ( Document doc,
                                     Document newdoc,
                                     char* newpath );
+extern Element TemplateGetParentHead ( Element el,
+                                       Document doc );
 extern Element TemplateFindHead ( Document doc );
 
 #else /* __STDC__ */
 
 extern const char *GetSchemaFromDocType ( DocumentType docType );
+extern ThotBool IsUseInstantiated ( Element el,
+                                      Document doc );
 extern void SetAttributeStringValue ( Element el,
                                         int att,
                                         const char* value );
 extern void SetAttributeStringValueWithUndo ( Element el,
                                                 int att,
                                                 char* value );
+extern int GetMinOccurence ( Element el,
+                               Document doc );
 extern void GiveAttributeStringValueFromNum ( Element el,
                                                 int att,
                                                 char* buff,
@@ -74,6 +87,9 @@ extern char *GetAttributeStringValue ( Element el,
                                          Attribute attribute,
                                          int* sz );
 extern char *GetAncestorComponentName ( Element *el );
+extern ThotBool AllowAttributeEdit ( Element el,
+                                       Document doc,
+                                       char *name );
 extern Element GetFirstEditableElement ( Element el );
 extern ThotBool TemplateCanInsertFirstChild ( ElementType elementType,
                                                 Element parent,
@@ -90,6 +106,8 @@ extern void DumpSubtree ( Element el,
 extern char *SaveDocumentToNewDoc ( Document doc,
                                       Document newdoc,
                                       char* newpath );
+extern Element TemplateGetParentHead ( Element el,
+                                         Document doc );
 extern Element TemplateFindHead ( Document doc );
 
 #endif /* __STDC__ */

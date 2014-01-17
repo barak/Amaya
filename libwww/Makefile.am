@@ -15,11 +15,7 @@ legal : $(BUILT_SOURCES)
 
 EXTRA_DIST = \
 	$(BUILT_SOURCES) \
-	README.html \
-	INSTALL.html \
-	COPYRIGHT.html \
-	PATCHES.html \
-	LICENSE.html
+	config/depcomp
 
 # We need to install the config.h header file as well. As this file
 # is platform specific, we do not install it with the other libwww include files

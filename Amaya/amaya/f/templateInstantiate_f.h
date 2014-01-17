@@ -6,6 +6,12 @@
 #ifndef __CEXTRACT__
 #ifdef __STDC__
 
+extern Element Template_FillEmpty ( Element el,
+                                    Document doc,
+                                    ThotBool withUndo );
+extern void CleanUpRepeat ( Element el,
+                            Document doc,
+                            ThotBool withUndo );
 extern Element Template_InsertRepeatChildAfter ( Document doc,
                                                  Element el,
                                                  Declaration decl,
@@ -15,6 +21,11 @@ extern Element Template_InsertBagChild ( Document doc,
                                          Element bag,
                                          Declaration decl,
                                          ThotBool before );
+extern Element ParseTemplate ( XTigerTemplate t,
+                               Element el,
+                               Document doc,
+                               Element parentLine,
+                               ThotBool loading );
 extern void CreateTemplate ( Document doc,
                              char *templatePath );
 extern void CreateInstance ( char *templatePath,
@@ -41,6 +52,8 @@ extern void Template_FixAccessRight ( XTigerTemplate t,
                                       Document doc );
 extern void AddPromptIndicator ( Element el,
                                  Document doc );
+extern void AddPromptIndicatorInSubtree ( Element el,
+                                          Document doc );
 extern void Template_SetInline ( Element el,
                                  SSchema sstempl,
                                  Document doc,
@@ -49,12 +62,14 @@ extern Element InstantiateUse ( XTigerTemplate t,
                                 Element el,
                                 Document doc,
                                 Element parentLine,
-                                ThotBool registerUndo );
+                                ThotBool registerUndo,
+                                ThotBool loading );
 extern void InstantiateRepeat ( XTigerTemplate t,
                                 Element el,
                                 Document doc,
                                 Element parentLine,
-                                ThotBool registerUndo );
+                                ThotBool registerUndo,
+                                ThotBool loading );
 extern void Template_InsertXTigerPI ( Document doc,
                                       XTigerTemplate t );
 extern void Template_PreInstantiateComponents ( XTigerTemplate t );
@@ -69,6 +84,12 @@ extern ThotBool Template_SetLabel ( Document doc,
 
 #else /* __STDC__ */
 
+extern Element Template_FillEmpty ( Element el,
+                                      Document doc,
+                                      ThotBool withUndo );
+extern void CleanUpRepeat ( Element el,
+                              Document doc,
+                              ThotBool withUndo );
 extern Element Template_InsertRepeatChildAfter ( Document doc,
                                                    Element el,
                                                    Declaration decl,
@@ -78,6 +99,11 @@ extern Element Template_InsertBagChild ( Document doc,
                                            Element bag,
                                            Declaration decl,
                                            ThotBool before );
+extern Element ParseTemplate ( XTigerTemplate t,
+                                 Element el,
+                                 Document doc,
+                                 Element parentLine,
+                                 ThotBool loading );
 extern void CreateTemplate ( Document doc,
                                char *templatePath );
 extern void CreateInstance ( char *templatePath,
@@ -104,6 +130,8 @@ extern void Template_FixAccessRight ( XTigerTemplate t,
                                         Document doc );
 extern void AddPromptIndicator ( Element el,
                                    Document doc );
+extern void AddPromptIndicatorInSubtree ( Element el,
+                                            Document doc );
 extern void Template_SetInline ( Element el,
                                    SSchema sstempl,
                                    Document doc,
@@ -112,12 +140,14 @@ extern Element InstantiateUse ( XTigerTemplate t,
                                   Element el,
                                   Document doc,
                                   Element parentLine,
-                                  ThotBool registerUndo );
+                                  ThotBool registerUndo,
+                                  ThotBool loading );
 extern void InstantiateRepeat ( XTigerTemplate t,
                                   Element el,
                                   Document doc,
                                   Element parentLine,
-                                  ThotBool registerUndo );
+                                  ThotBool registerUndo,
+                                  ThotBool loading );
 extern void Template_InsertXTigerPI ( Document doc,
                                         XTigerTemplate t );
 extern void Template_PreInstantiateComponents ( XTigerTemplate t );

@@ -67,7 +67,7 @@ static int		log_level = -1;
 static idn_log_proc_t	log_proc;
 
 static void	initialize(void);
-static void	log(int level, const char *fmt, va_list args);
+static void	my_log(int level, const char *fmt, va_list args);
 static void	log_to_stderr(int level, const char *buf);
 
 void
@@ -75,7 +75,7 @@ idn_log_fatal(const char *fmt, ...) {
 	va_list args;
 
 	va_start(args, fmt);
-	log(idn_log_level_fatal, fmt, args);
+	my_log(idn_log_level_fatal, fmt, args);
 	va_end(args);
 	exit(1);
 }
@@ -85,7 +85,7 @@ idn_log_error(const char *fmt, ...) {
 	va_list args;
 
 	va_start(args, fmt);
-	log(idn_log_level_error, fmt, args);
+	my_log(idn_log_level_error, fmt, args);
 	va_end(args);
 }
 
@@ -94,7 +94,7 @@ idn_log_warning(const char *fmt, ...) {
 	va_list args;
 
 	va_start(args, fmt);
-	log(idn_log_level_warning, fmt, args);
+	my_log(idn_log_level_warning, fmt, args);
 	va_end(args);
 }
 
@@ -103,7 +103,7 @@ idn_log_info(const char *fmt, ...) {
 	va_list args;
 
 	va_start(args, fmt);
-	log(idn_log_level_info, fmt, args);
+	my_log(idn_log_level_info, fmt, args);
 	va_end(args);
 }
 
@@ -112,7 +112,7 @@ idn_log_trace(const char *fmt, ...) {
 	va_list args;
 
 	va_start(args, fmt);
-	log(idn_log_level_trace, fmt, args);
+	my_log(idn_log_level_trace, fmt, args);
 	va_end(args);
 }
 
@@ -121,7 +121,7 @@ idn_log_dump(const char *fmt, ...) {
 	va_list args;
 
 	va_start(args, fmt);
-	log(idn_log_level_dump, fmt, args);
+	my_log(idn_log_level_dump, fmt, args);
 	va_end(args);
 }
 
@@ -165,7 +165,7 @@ initialize(void) {
 }
 
 static void
-log(int level, const char *fmt, va_list args) {
+my_log(int level, const char *fmt, va_list args) {
 	char buf[1024];
 
 	initialize();

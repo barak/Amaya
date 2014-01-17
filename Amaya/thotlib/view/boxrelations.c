@@ -551,96 +551,6 @@ void ComputeRadius (PtrAbstractBox pAb, int frame, ThotBool horizRef)
     }
 }
 
-
-/*----------------------------------------------------------------------
-  GetGhostSize returns the width (horizontal)  or the height of the ghost
-  The parameter pBlock points to the block element.
-  ----------------------------------------------------------------------*/
-static int GetGhostSize (PtrBox pBox, ThotBool horizontal, PtrBox pBlock)
-{
-  PtrAbstractBox  pAb, pChild, pNext, pParent;
-  int             dim;
-
-  if (pBox == NULL || pBlock == NULL)
-    return 0;
-  else if (pBox->BxType == BoGhost || pBox->BxType == BoFloatGhost)
-    {
-      pAb = pBox->BxAbstractBox;
-      pParent = pAb->AbEnclosing;
-      if ((horizontal &&
-           ((pAb->AbWidth.DimValue < 0 &&
-             pAb->AbWidth.DimAbRef == NULL) ||
-            (pAb->AbWidth.DimUnit == UnAuto && pBlock->BxType == BoBlock))) ||
-          (!horizontal &&
-           ((pAb->AbHeight.DimValue < 0 &&
-             pAb->AbHeight.DimAbRef == NULL) ||
-            pAb->AbHeight.DimUnit == UnAuto)))
-        {
-          /* depend on the contents */
-          pChild = pAb->AbFirstEnclosed;
-          dim = 0;
-          while (pChild)
-            {
-              /* skip presentation boxes */
-              pNext = pChild->AbNext;
-              while (pNext && pNext->AbPresentationBox)
-                pNext = pNext->AbNext;
-              if (pChild->AbBox && !pChild->AbPresentationBox)
-                {
-                  if ((pChild->AbBox->BxType == BoGhost ||
-                       pChild->AbBox->BxType == BoFloatGhost) &&
-                      /* skip enclosed boxes that inherit from the parent */ 
-                      ((horizontal &&
-                        ((pChild->AbWidth.DimValue < 0 &&
-                          pChild->AbWidth.DimAbRef  == NULL) ||
-                         (pChild->AbWidth.DimUnit == UnAuto &&
-                          pBlock->BxType == BoBlock))) ||
-                       (!horizontal &&
-                        ((pChild->AbHeight.DimValue < 0 &&
-                          pChild->AbHeight.DimAbRef == NULL) ||
-                         pChild->AbHeight.DimUnit == UnAuto))))
-                    dim += GetGhostSize (pChild->AbBox, horizontal, pBlock);
-                  else if (!pChild->AbPresentationBox)
-                    {
-                      if (horizontal)
-                        dim += pChild->AbBox->BxWidth;
-                      else
-                        dim += pChild->AbBox->BxHeight;
-                    }
-                  if (!pChild->AbPresentationBox &&
-                      ((horizontal &&
-                        (pParent->AbBox->BxType == BoFloatBlock ||
-                         pParent->AbBox->BxType == BoCellBlock)) ||
-                       (!horizontal && pParent->AbBox->BxType == BoBlock)))
-                    /* the first child gives the size */
-                    return dim;
-                }
-              pChild = pNext;
-            }
-        }
-      else
-        {
-          /* fixed width or inherited from the enclosing box */
-          pBox = pParent->AbBox;
-          if (pBox &&
-              (pBox->BxType == BoGhost || pBox->BxType == BoFloatGhost))
-            dim = GetGhostSize (pBox, horizontal, pBlock);
-          else if (horizontal)
-            dim = pBox->BxW;
-          else
-            dim = pBox->BxH;
-          if (horizontal && pBox->BxAbstractBox->AbWidth.DimUnit == UnPercent)
-            dim = dim * pBox->BxAbstractBox->AbWidth.DimValue / 100;
-        }
-      return dim;
-    }
-  else if (horizontal)
-    return pBox->BxW;
-  else
-    return pBox->BxH;
-}
-
-
 /*----------------------------------------------------------------------
   CleanAutoMargins cleans up all auto margins.
   ----------------------------------------------------------------------*/
@@ -712,7 +622,7 @@ void ComputeMBP (PtrAbstractBox pAb, int frame, ThotBool horizRef,
 {
   PtrAbstractBox      pRefAb;
   PtrBox              pBox;
-  PtrBox              pParent, pBlock;
+  PtrBox              pParent;
   PtrElement          pEl = pAb->AbElement;
   int                 dim, x1, x2, y1, y2;
 
@@ -723,22 +633,6 @@ void ComputeMBP (PtrAbstractBox pAb, int frame, ThotBool horizRef,
     pParent = NULL;
 
   pBox = pAb->AbBox;
-  if (pBox->BxType == BoGhost || pBox->BxType == BoFloatGhost)
-    {
-      /* get the block element */
-      pBlock = pParent;
-      while (pBlock &&
-             (pBlock->BxType == BoGhost || pBlock->BxType == BoFloatGhost))
-        {
-          if (pBlock->BxAbstractBox && pBlock->BxAbstractBox->AbEnclosing)
-            pBlock = pBlock->BxAbstractBox->AbEnclosing->AbBox;
-          else
-            pBlock = NULL;
-        }
-    }
-  else
-    pBlock = NULL;
-
   if (horizRef)
     {
       /* reference for percent rules */
@@ -754,43 +648,40 @@ void ComputeMBP (PtrAbstractBox pAb, int frame, ThotBool horizRef,
            pAb->AbWidth.DimValue != -1))
         {
           /* percent and auto refer the enclosing box */
-          if (pBox->BxType == BoGhost || pBox->BxType == BoFloatGhost)
-            dim = GetGhostSize (pBox, TRUE, pBlock);
-          else
+          if (pAb->AbLeafType == LtCompound &&
+              pAb->AbPositioning &&
+              (pAb->AbPositioning->PnAlgorithm == PnAbsolute ||
+               pAb->AbPositioning->PnAlgorithm == PnFixed))
             {
-              if (pAb->AbLeafType == LtCompound &&
-                  pAb->AbPositioning &&
-                  (pAb->AbPositioning->PnAlgorithm == PnAbsolute ||
-                   pAb->AbPositioning->PnAlgorithm == PnFixed))
+              pRefAb = GetEnclosingViewport (pAb);
+              if (pRefAb == NULL)
+                pRefAb = ViewFrameTable[frame -1].FrAbstractBox;
+              if (pRefAb && pRefAb->AbBox)
                 {
-                  pRefAb = GetEnclosingViewport (pAb);
-                  if (pRefAb == NULL)
-                    pRefAb = ViewFrameTable[frame -1].FrAbstractBox;
-                  if (pRefAb && pRefAb->AbBox)
-                    {
-                      pParent = NULL;
-                      dim = pRefAb->AbBox->BxW;
-                    }
-                  else
-                    dim = pBox->BxW;
+                  pParent = NULL;
+                  dim = pRefAb->AbBox->BxW;
                 }
-              else if (pParent)
-                dim = pParent->BxW;
               else
                 dim = pBox->BxW;
             }
+          else if (pParent)
+            dim = pParent->BxW;
+          else
+            dim = pBox->BxW;
         }
       else
         dim = pBox->BxW;
 
       /* left margin */
-      if (pBox->BxType == BoCell || pBox->BxType == BoRow)
+      if (pBox->BxType == BoCell || pBox->BxType == BoRow ||
+          (pAb->AbLeftMargin >= 0 && ExtraAbFlow (pAb, frame)))
         pBox->BxLMargin = 0;
       else if (pAb->AbLeftMarginUnit != UnAuto)
         pBox->BxLMargin = GetPixelValue (pAb->AbLeftMargin, pAb->AbLeftMarginUnit, dim,
                                          pAb, ViewFrameTable[frame - 1].FrMagnification);
       /* right margin */
-      if (pBox->BxType == BoCell || pBox->BxType == BoRow)
+      if (pBox->BxType == BoCell || pBox->BxType == BoRow ||
+          (pAb->AbRightMargin >= 0 && ExtraAbFlow (pAb, frame)))
         pBox->BxRMargin = 0;
       else if (pAb->AbRightMarginUnit != UnAuto)
         pBox->BxRMargin = GetPixelValue (pAb->AbRightMargin, pAb->AbRightMarginUnit, dim,
@@ -819,6 +710,7 @@ void ComputeMBP (PtrAbstractBox pAb, int frame, ThotBool horizRef,
               pParent->BxType != BoBlock &&
               pParent->BxType != BoFloatBlock &&
               pParent->BxType != BoCellBlock &&
+              pParent->BxType != BoStructGhost &&
               pParent->BxType != BoGhost &&
               pParent->BxType != BoFloatGhost &&
               pParent->BxW >= dim)
@@ -875,36 +767,31 @@ void ComputeMBP (PtrAbstractBox pAb, int frame, ThotBool horizRef,
           pAb->AbTopBorderUnit == UnPercent ||
           pAb->AbBottomBorderUnit == UnPercent)
         {
-          if (pBox->BxType == BoGhost || pBox->BxType == BoFloatGhost)
-            dim = GetGhostSize (pBox, TRUE, pBlock);
-          else
+          //#ifdef POSITIONING
+          if (pAb->AbLeafType == LtCompound &&
+              pAb->AbPositioning &&
+              (pAb->AbPositioning->PnAlgorithm == PnAbsolute ||
+               pAb->AbPositioning->PnAlgorithm == PnFixed))
             {
-              //#ifdef POSITIONING
-              if (pAb->AbLeafType == LtCompound &&
-                  pAb->AbPositioning &&
-                  (pAb->AbPositioning->PnAlgorithm == PnAbsolute ||
-                   pAb->AbPositioning->PnAlgorithm == PnFixed))
+              pRefAb = GetEnclosingViewport (pAb);
+              if (pRefAb == NULL)
+                pRefAb = ViewFrameTable[frame -1].FrAbstractBox;
+              if (pRefAb && pRefAb->AbBox)
                 {
-                  pRefAb = GetEnclosingViewport (pAb);
-                  if (pRefAb == NULL)
-                    pRefAb = ViewFrameTable[frame -1].FrAbstractBox;
-                  if (pRefAb && pRefAb->AbBox)
-                    {
-                      pParent = NULL;
-                      dim = pRefAb->AbBox->BxW;
-                    }
-                  else
-                    dim = pBox->BxW;
+                  pParent = NULL;
+                  dim = pRefAb->AbBox->BxH;
                 }
-              //#endif /* POSITIONING */
-              else if (pParent)
-                dim = pParent->BxW;
               else
-                dim = pBox->BxW;
+                dim = pBox->BxH;
             }
+          //#endif /* POSITIONING */
+          else if (pParent)
+            dim = pParent->BxH;
+          else
+            dim = pBox->BxH;
         }
       else
-        dim = pBox->BxW;
+        dim = pBox->BxH;
 
       if (pAb->AbLeafType == LtCompound && pAb->AbTruncatedHead)
         {
@@ -915,7 +802,9 @@ void ComputeMBP (PtrAbstractBox pAb, int frame, ThotBool horizRef,
       else
         {
           /* top margin */
-          if (pBox->BxType == BoCell || pBox->BxType == BoCellBlock || pBox->BxType == BoRow)
+          if (pBox->BxType == BoCell || pBox->BxType == BoCellBlock ||
+              pBox->BxType == BoRow ||
+              (pAb->AbTopMargin >= 0 && pAb->AbFloat != 'N'))
             pBox->BxTMargin = 0;
           else if (pAb->AbTopMarginUnit != UnAuto)
             pBox->BxTMargin = GetPixelValue (pAb->AbTopMargin, pAb->AbTopMarginUnit, dim,
@@ -946,7 +835,9 @@ void ComputeMBP (PtrAbstractBox pAb, int frame, ThotBool horizRef,
       else
         {
           /* bottom margin */
-          if (pBox->BxType == BoCell || pBox->BxType == BoRow)
+          if (pBox->BxType == BoCell || pBox->BxType == BoCellBlock ||
+              pBox->BxType == BoRow ||
+              (pAb->AbBottomMargin >= 0 && pAb->AbFloat != 'N'))
             pBox->BxBMargin = 0;
           else if (pAb->AbBottomMarginUnit != UnAuto)
             pBox->BxBMargin = GetPixelValue (pAb->AbBottomMargin, pAb->AbBottomMarginUnit, dim,
@@ -970,6 +861,225 @@ void ComputeMBP (PtrAbstractBox pAb, int frame, ThotBool horizRef,
     }
 }
 
+/*----------------------------------------------------------------------
+  GetExtraMargins returns the sum of extra margins, borders, and paddings
+  generated by enclosing ghosts.
+  The parameter pBox points to the non ghost box.
+  When the parameter blockMargin is TRUE, ghost blocks are managed
+  Returns
+  t = the added pixels at the top
+  b = the added pixels at the bottom
+  l = the added pixels at the left
+  r = the added pixels at the right
+  ----------------------------------------------------------------------*/
+void GetExtraMargins (PtrBox pBox, int frame, ThotBool blockMargin,
+                      int *t, int *b, int *l, int *r)
+{
+  PtrAbstractBox      pAb, pNext, pPrev;
+  PtrBox              box;
+  ThotBool            first = TRUE, last = TRUE, isExtra;
+
+  *t = *b = *l = *r = 0;
+  if (pBox == NULL)
+    return;
+  pAb = pBox->BxAbstractBox;
+  isExtra = ExtraAbFlow (pAb, frame);
+  if (pAb && !pAb->AbDead && !isExtra && pAb->AbFloat == 'N')
+    {
+      /* check if there are enclosing ghost boxes */ 
+      if (pAb->AbEnclosing && pAb->AbEnclosing->AbBox &&
+          (pAb->AbEnclosing->AbBox->BxType == BoGhost ||
+           pAb->AbEnclosing->AbBox->BxType == BoStructGhost))
+        {
+          if (pBox->BxType != BoGhost || pAb->AbDisplay != 'B')
+            {
+              /* check if it's the first and/or the last child */
+              pPrev = pAb->AbPrevious;
+              while (pPrev && pPrev->AbPresentationBox)
+                pPrev = pPrev->AbPrevious;
+              first = (pPrev == NULL);
+              pNext = pAb->AbNext;
+              while (pNext && pNext->AbPresentationBox)
+                pNext = pNext->AbNext;
+              last = (pNext == NULL);
+            }
+          if (pBox->BxType == BoPiece || pBox->BxType == BoScript)
+            {
+              /* check if it's the first and/or the last piece of text */
+              if (first)
+                first = (pBox == pAb->AbBox->BxNexChild);
+              if (last)
+                last = (pBox->BxNexChild == NULL);
+            }
+
+          /* Get extra-margins generated by enclosing ghosts */
+          pAb = pAb->AbEnclosing;
+          while (pAb && pAb->AbBox &&
+                 (pAb->AbBox->BxType == BoGhost ||
+                  pAb->AbBox->BxType == BoStructGhost))
+            {
+              box = pAb->AbBox;
+              /* add values if necessary */
+              if (box->BxType != BoStructGhost)
+                {
+                  if (first)
+                    *l += box->BxLMargin + box->BxLBorder + box->BxLPadding;
+                  if (last)
+                    *r += box->BxRMargin + box->BxRBorder + box->BxRPadding;
+                  *t += box->BxTMargin + box->BxTBorder + box->BxTPadding;
+                  *b += box->BxBMargin + box->BxBBorder + box->BxBPadding;
+                }
+              else
+                {
+                  // It's a ghost block
+                  if (blockMargin && pAb->AbEnclosing && pAb->AbEnclosing->AbBox &&
+                      pAb->AbEnclosing->AbBox->BxType != BoStructGhost)
+                    {
+                      if (*l > 0 && box->BxLMargin > 0)
+                        {
+                          if (*l < box->BxLMargin)
+                            *l =  box->BxLMargin;
+                        }
+                      else
+                        *l += box->BxLMargin;
+                      if (*r > 0 && box->BxRMargin > 0)
+                        {
+                          if (*r < box->BxRMargin)
+                            *r =  box->BxRMargin;
+                        }
+                      else
+                        *r += box->BxRMargin;
+                     }
+                  if (first)
+                    {
+                      *t += box->BxTBorder + box->BxTPadding;
+                      if (blockMargin)
+                        {
+                          if (*t > 0 && box->BxTMargin > 0)
+                            {
+                              if (*t < box->BxTMargin)
+                                *t =  box->BxTMargin;
+                            }
+                          else
+                            *t += box->BxTMargin;
+                        }
+                    }
+                  if (last)
+                    {
+                      *b += box->BxBBorder + box->BxBPadding;
+                      if (blockMargin)
+                        {
+                          if (*b > 0 && box->BxBMargin > 0)
+                            {
+                              if (*b < box->BxBMargin)
+                                *b =  box->BxBMargin;
+                            }
+                          else
+                            *b += box->BxBMargin;
+                        }
+                    }
+                }
+              /* search previous and next abstract boxes */
+              if (first)
+                {
+                  pPrev = pAb->AbPrevious;
+                  while (pPrev && pPrev->AbPresentationBox)
+                    pPrev = pPrev->AbPrevious;
+                  first = (pPrev == NULL);
+                }
+              if (last)
+                {
+                  pNext = pAb->AbNext;
+                  while (pNext && pNext->AbPresentationBox)
+                    pNext = pNext->AbNext;
+                  last = (pNext == NULL);
+                }
+              pAb = pAb->AbEnclosing;
+            }
+        }
+    }
+}
+
+
+/*----------------------------------------------------------------------
+  GetLeftRightMargins updates if needed left and right margins and
+  returns these values
+  ----------------------------------------------------------------------*/
+void GetLeftRightMargins (PtrBox box, PtrBox pBlock, int frame, int *l, int *r)
+{
+  PtrAbstractBox      pAb, parent;
+
+  *l = *r = 0;
+  if (box && box->BxAbstractBox)
+    {
+      pAb = box->BxAbstractBox;
+      parent = pAb->AbEnclosing;
+      if (pAb->AbLeftMarginUnit == UnPercent && pBlock && !pBlock->BxContentWidth)
+        {
+          if (parent->AbBox && parent->AbBox->BxType == BoStructGhost)
+            box->BxLMargin = parent->AbBox->BxW * pAb->AbLeftMargin / 100;
+          else
+            box->BxLMargin = pBlock->BxW * pAb->AbLeftMargin / 100;
+        }
+      if (pAb->AbRightMarginUnit == UnPercent && pBlock && !pBlock->BxContentWidth)
+        {
+          if (parent->AbBox && parent->AbBox->BxType == BoStructGhost)
+            box->BxRMargin = parent->AbBox->BxW * pAb->AbRightMargin / 100;
+          else
+            box->BxRMargin = pBlock->BxW * pAb->AbRightMargin / 100;
+        }
+        *l = box->BxLMargin;
+        *r = box->BxRMargin;
+    }
+}
+
+/*----------------------------------------------------------------------
+  GetLeftRightPaddings updates if needed left and right paddings and
+  returns these values
+  ----------------------------------------------------------------------*/
+void GetLeftRightPaddings (PtrBox box, PtrBox pBlock, int *l, int *r)
+{
+  PtrAbstractBox      pAb, parent;
+
+  *l = *r = 0;
+  if (box && box->BxAbstractBox)
+    {
+      pAb = box->BxAbstractBox;
+      do
+        {
+          box = pAb->AbBox;
+          parent = pAb->AbEnclosing;
+          if (parent->AbBox && parent->AbBox->BxType == BoStructGhost)
+            {
+              if (pAb->AbLeftPaddingUnit == UnPercent &&
+                  !parent->AbBox->BxContentWidth)
+                box->BxLPadding = parent->AbBox->BxW * pAb->AbLeftPadding / 100;
+              if (pAb->AbRightPaddingUnit == UnPercent &&
+                  !parent->AbBox->BxContentWidth)
+                box->BxRPadding = parent->AbBox->BxW * pAb->AbRightPadding / 100;
+              // Include extra margins
+              if (box->BxType == BoStructGhost)
+                {
+                  *l += box->BxLMargin;
+                  *r += box->BxRMargin;
+                }
+              pAb = parent;
+           }
+          else
+            {
+              if (pAb->AbLeftPaddingUnit == UnPercent && pBlock && !pBlock->BxContentWidth)
+                box->BxLPadding = pBlock->BxW * pAb->AbLeftPadding / 100;
+              if (pAb->AbRightPaddingUnit == UnPercent && pBlock && !pBlock->BxContentWidth)
+                box->BxRPadding = pBlock->BxW * pAb->AbRightPadding / 100;
+              pAb = NULL;
+           }
+
+          *l += box->BxLPadding;
+          *r += box->BxRPadding;
+        }
+      while (pAb && pAb->AbBox && pAb->AbBox->BxType == BoStructGhost);
+    }
+}
 
 /*----------------------------------------------------------------------
   ComputePosRelation applies fixed and absolute positioning rules.
@@ -1026,6 +1136,7 @@ ThotBool ComputePositioning (PtrBox pBox, int frame)
               pRefBox = pRefAb->AbBox;
               while (pRefBox &&
                      (pRefBox->BxType == BoGhost ||
+                      pRefBox->BxType == BoStructGhost ||
                       pRefBox->BxType == BoFloatGhost))
                 {
                   /* ignore ghosts */
@@ -1048,7 +1159,7 @@ ThotBool ComputePositioning (PtrBox pBox, int frame)
                   y = pRefBox->BxYOrg;
                 }
             }
-          /* negative values don't apply */
+          /* by default don't apply */
           appl = appt = appr = appb = FALSE;
           l = t = r = b = 0;
           if (pos->PnLeftUnit == UnAuto)
@@ -1136,12 +1247,14 @@ ThotBool ComputePositioning (PtrBox pBox, int frame)
               pPosAb->PosEdge = Left;
               if (pRefBox)
                 InsertPosRelation (pBox, pRefBox, OpHorizDep, Left, Left);
+              if (pAb->AbWidth.DimUnit == UnAuto && l && !appr)
+                ResizeWidth (pBox, pRefBox, NULL, -l, 0, 0, 0, frame, FALSE);
             }
           else if (appr)
             {
               /* right positioning */
               pBox->BxHorizEdge = Right;
-              XMoveAllEnclosed (pBox, x + lr + w /*+ rr*/ - r - pBox->BxWidth - pBox->BxXOrg, frame);
+              XMoveAllEnclosed (pBox, x + lr + w - r - pBox->BxWidth - pBox->BxXOrg, frame);
               // register as a pos rule
               pPosAb = &pAb->AbHorizPos;
               pPosAb->PosAbRef = pRefAb;
@@ -1191,7 +1304,7 @@ ThotBool ComputePositioning (PtrBox pBox, int frame)
             {
               /* bottom positioning */
               pBox->BxVertEdge = Bottom;
-              YMoveAllEnclosed (pBox, y + tr + h /*+ br*/ - b - pBox->BxHeight - pBox->BxYOrg, frame);
+              YMoveAllEnclosed (pBox, y + tr + h - b - pBox->BxHeight - pBox->BxYOrg, frame);
               // register as a pos rule
               pPosAb = &pAb->AbVertPos;
               pPosAb->PosAbRef = pRefAb;
@@ -1257,7 +1370,6 @@ void ComputePosRelation (AbPosition *rule, PtrBox pBox, int frame,
     }
 
   pParentAb = pAb->AbEnclosing;
-
   if (pBox->BxType == BoStructGhost)
     {
       // change the position of structure ghost
@@ -1334,32 +1446,51 @@ void ComputePosRelation (AbPosition *rule, PtrBox pBox, int frame,
         rule->PosAbRef = pRefAb;
       }
   
-  if (pRefAb && pRefAb->AbBox && pRefAb->AbBox->BxType == BoGhost)
+  if (pRefAb && pRefAb->AbBox &&
+      pRefAb->AbBox->BxType == BoFloatGhost)
     {
-      /* the box position is computed by the line formatter */
-      if (horizRef)
-        pAb->AbHorizPosChange = FALSE;
-      else
-        pAb->AbVertPosChange = FALSE;
-      return;
+      // get a valid child
+      pRefAb = pRefAb->AbFirstEnclosed;
+      while (pRefAb && pRefAb->AbFloat == 'N')
+         {
+           if (pRefAb != pAb && pRefAb->AbLeafType == LtCompound)
+             pRefAb = pRefAb->AbFirstEnclosed;
+           else
+             pRefAb = pRefAb->AbNext;
+        }
+      rule->PosAbRef = pRefAb;
     }
 
   if (pRefAb && pRefAb->AbBox &&
-      (pRefAb->AbBox->BxType == BoFloatGhost ||
+      (pRefAb->AbBox->BxType == BoStructGhost ||
        pRefAb->AbBox->BxType == BoGhost))
     {
-      // get a valid child
-      while (pRefAb && pRefAb->AbBox &&
-             pRefAb->AbBox->BxType == BoFloatGhost)
+      /* the box position is computed by the line formatter */
+      if (horizRef)
         {
-          pRefAb = pRefAb->AbFirstEnclosed;
-          if (rule->PosRefEdge == Right || rule->PosRefEdge == Bottom)
+          pAb->AbHorizPosChange = FALSE;
+          if (pRefAb->AbBox->BxType == BoGhost &&
+              pAb->AbElement && pAb->AbElement->ElStructSchema &&
+              !strcmp (pAb->AbElement->ElStructSchema->SsName, "Template") &&
+              pAb->AbPresentationBox && pAb->AbTypeNum != 0)
             {
-              // look for the last sibling
-              while (pRefAb && pRefAb->AbNext)
-                pRefAb = pRefAb->AbNext;
+              pAb->AbNotInLine = FALSE;
+              pAb->AbHorizEnclosing = TRUE;
             }
         }
+      else
+        {
+          pAb->AbVertPosChange = FALSE;
+          if (pRefAb->AbBox->BxType == BoGhost &&
+              pAb->AbElement && pAb->AbElement->ElStructSchema &&
+              !strcmp (pAb->AbElement->ElStructSchema->SsName, "Template") &&
+              pAb->AbPresentationBox && pAb->AbTypeNum != 0)
+            {
+              pAb->AbNotInLine = FALSE;
+              pAb->AbVertEnclosing = TRUE;
+            }
+        }
+      return;
     }
 
   if (horizRef)
@@ -1385,7 +1516,8 @@ void ComputePosRelation (AbPosition *rule, PtrBox pBox, int frame,
             pRefAb = pRefAb->AbPrevious;
           pAb->AbHorizPos.PosAbRef = pRefAb;
         }
-      if (pParentAb && pParentAb->AbDisplay == 'I' &&
+      if ((pParentAb && pParentAb->AbDisplay == 'I' ||
+           pParentAb && pParentAb->AbDisplay == 'b') &&
           pParentAb->AbFloat == 'N' &&  !ExtraAbFlow (pAb, frame))
         {
           // force inline display
@@ -1452,6 +1584,7 @@ void ComputePosRelation (AbPosition *rule, PtrBox pBox, int frame,
           /* explicite rule */
           while (pRefAb && pRefAb->AbBox &&
                  (pRefAb->AbBox->BxType == BoGhost ||
+                  pRefAb->AbBox->BxType == BoStructGhost ||
                   pRefAb->AbBox->BxType == BoFloatGhost))
             pRefAb = pRefAb->AbEnclosing;
           if (pParentAb == pRefAb && !pBox->BxHorizFlex)
@@ -1520,7 +1653,8 @@ void ComputePosRelation (AbPosition *rule, PtrBox pBox, int frame,
   else
     {
       /* Vertical rule */
-      if (pParentAb && pParentAb->AbDisplay == 'I' &&
+      if ((pParentAb && pParentAb->AbDisplay == 'I' ||
+           pParentAb && pParentAb->AbDisplay == 'b') &&
           pParentAb->AbFloat == 'N' &&  !ExtraAbFlow (pAb, frame))
         {
           // force inline display
@@ -1706,10 +1840,13 @@ void ComputePosRelation (AbPosition *rule, PtrBox pBox, int frame,
           x = box->BxXOrg;
           y = box->BxYOrg;
         }
-      else if (pRefBox->BxType == BoGhost || pRefBox->BxType == BoFloatGhost)
+      else if (pRefBox->BxType == BoGhost ||
+               pRefBox->BxType == BoStructGhost ||
+               pRefBox->BxType == BoFloatGhost)
         {
           pChildAb = pRefAb;
           while ((pChildAb->AbBox->BxType == BoGhost ||
+                  pChildAb->AbBox->BxType == BoStructGhost ||
                   pChildAb->AbBox->BxType == BoFloatGhost) &&
                  pChildAb->AbFirstEnclosed &&
                  pChildAb->AbFirstEnclosed->AbBox)
@@ -1914,10 +2051,12 @@ void ComputePosRelation (AbPosition *rule, PtrBox pBox, int frame,
               // don't take into account the table border to display the caption
               //pParentAb = pAb->AbEnclosing;
               if (pParentAb && pParentAb->AbBox)
+                {
                 if (localEdge == Bottom && pParentAb->AbBox->BxTBorder)
                   y -= pParentAb->AbBox->BxTBorder;
                 else if (pParentAb->AbBox->BxBBorder)
                   y += pParentAb->AbBox->BxTBorder;
+                }
             }
           ClearBoxMoved (pBox);
           if (pBox->BxYToCompute)
@@ -2270,7 +2409,7 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
   AbDimension        *pDimAb;
   AbPosition         *pPosAb;
   int                 val, delta, i;
-  int                 dx, dy, dim;
+  int                 dx, dy, dim, inx, iny;
   int                 t, b, l, r, zoom;
   ThotBool            inLine, isExtraFlow;
   ThotBool            defaultDim;
@@ -2333,8 +2472,7 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
         }
     }
 
-
-  dx = dy = 0;
+  dx = dy = inx = iny = 0;
   if (pAb->AbLeafType == LtCompound)
     pos = pAb->AbPositioning;
   else
@@ -2385,8 +2523,8 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
                   pAb->AbWidth.DimAbRef = pParentAb;
                   pAb->AbWidth.DimIsPosition = FALSE;
                   pAb->AbWidth.DimValue = 0;
-                  if (pos->PnAlgorithm == PnAbsolute ||
-                      pos->PnAlgorithm == PnFixed &&
+                  if ((pos->PnAlgorithm == PnAbsolute ||
+                      pos->PnAlgorithm == PnFixed) &&
                       pAb->AbWidth.DimUnit == UnAuto)
                     /* shrink does apply */
                     pBox->BxShrink = TRUE;
@@ -2624,6 +2762,43 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
                   pDimAb->DimValue = -1;
                 }
             }
+#ifdef IV
+          else if (horizRef && pDimAb->DimUnit == UnAuto &&
+                   pAb->AbFloat != 'N')
+            {
+              /* the width depends on the contents but the contents
+               depends on the enclosing */
+              pChildAb = pAb->AbFirstEnclosed;
+              {
+                i = 0;
+                while (pChildAb)
+                  {
+                    if (pChildAb->AbWidth.DimUnit == UnPercent &&
+                        pChildAb->AbFloat != 'N')
+                      i += pChildAb->AbWidth.DimValue;
+                    pChildAb = pChildAb->AbNext;
+                  }
+                if (i > 0)
+                  {
+                    pDimAb->DimUnit = UnPercent;
+                    pDimAb->DimValue = i;
+                  }
+              }
+            }
+#endif
+          else if (horizRef && pDimAb->DimUnit == UnPercent && pParentAb &&
+                   pParentAb->AbFloat != 'N' &&
+                   pParentAb->AbWidth.DimAbRef == NULL &&
+                   pParentAb->AbWidth.DimValue == -1)
+            {
+              // the box width is a percent of the enclosing box
+              // but the width of the enclosing box depends on the contents
+              while (pParentAb->AbEnclosing &&
+                     (pParentAb->AbWidth.DimUnit == UnAuto ||
+                      (pParentAb->AbWidth.DimAbRef == NULL &&
+                       pParentAb->AbWidth.DimValue == -1)))
+                pParentAb = pParentAb->AbEnclosing;
+            }
           else if (!horizRef && pDimAb->DimAbRef &&
                    pDimAb->DimUnit != UnAuto &&
                    pDimAb->DimAbRef == pParentAb &&
@@ -2646,6 +2821,7 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
                    (pParentAb->AbBox->BxType == BoBlock ||
                     pParentAb->AbBox->BxType == BoFloatBlock ||
                     pParentAb->AbBox->BxType == BoCellBlock ||
+                    pParentAb->AbBox->BxType == BoStructGhost ||
                     pParentAb->AbBox->BxType == BoGhost)))
                 {
                   /* all child heights depend on the parent height */
@@ -2682,16 +2858,24 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
           dx += l + r;
           if (pBox->BxLMargin > 0)
             dx += pBox->BxLMargin;
+          else
+            inx -= pBox->BxLMargin;
           dx += pBox->BxLBorder + pBox->BxLPadding + pBox->BxRBorder + pBox->BxRPadding;
           if (pBox->BxRMargin > 0)
             dx += pBox->BxRMargin;
+          else
+            inx -= pBox->BxRMargin;
           /* Compute the delta height that must be substract to 100% height or enclosing height */
           dy += t + b;
           if (pBox->BxTMargin > 0)
             dy += pBox->BxTMargin;
+          else
+            iny -= pBox->BxTMargin;
           dy += pBox->BxTBorder + pBox->BxTPadding + pBox->BxBBorder + pBox->BxBPadding;
           if (pBox->BxBMargin > 0)
             dy += pBox->BxBMargin;
+          else
+            iny -= pBox->BxBMargin;
           if (pParentAb == NULL)
             {
               /* It's the root box */
@@ -2717,8 +2901,9 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
                       if (pDimAb->DimValue < 0 || pDimAb->DimUnit == UnPercent ||
                           pDimAb->DimUnit == UnAuto)
                         /* the rule gives the outside value */
-                        val = val - dx;
-                      ResizeWidth (pBox, pBox, NULL, val - pBox->BxW, 0, 0, 0, frame, FALSE);
+                        val = val + inx - dx;
+                      ResizeWidth (pBox, pBox, NULL, val - pBox->BxW, 0, 0, 0,
+                                   frame, FALSE);
                     }
                 }
               else
@@ -2738,7 +2923,7 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
                                              zoom);
                       if (pDimAb->DimValue < 0 || pDimAb->DimUnit == UnPercent)
                         /* the rule gives the outside value */
-                        val = val - dy;
+                        val = val + iny - dy;
                       ResizeHeight (pBox, pBox, NULL, val - pBox->BxH, 0, 0, frame);
                     }
                 }
@@ -2747,12 +2932,13 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
             {
               /* it's not the root box */
               inLine = (!pAb->AbNotInLine &&
-                        (pAb->AbDisplay == 'I' ||
+                        (pAb->AbDisplay == 'I' || pAb->AbDisplay == 'b' ||
                          (pParentAb->AbBox &&
                           (pParentAb->AbBox->BxType == BoBlock ||
                            pParentAb->AbBox->BxType == BoFloatBlock ||
                            pParentAb->AbBox->BxType == BoCellBlock ||
                            pParentAb->AbBox->BxType == BoGhost ||
+                           pParentAb->AbBox->BxType == BoStructGhost ||
                            pParentAb->AbBox->BxType == BoFloatGhost))));
               if (horizRef)
                 {
@@ -2778,7 +2964,9 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
                          with auto and takes the width of the content */
                       if (pDimAb->DimUnit != UnAuto && inLine &&
                           pAb->AbFloat == 'N' &&
-                          (pBox->BxType == BoGhost || pBox->BxType == BoFloatGhost) &&
+                          (pBox->BxType == BoGhost ||
+                           pBox->BxType == BoStructGhost ||
+                           pBox->BxType == BoFloatGhost) &&
                           pParentAb->AbWidth.DimAbRef)
                         pDimAb->DimUnit = UnAuto;
                       else if (pDimAb->DimUnit == UnAuto && pAb->AbFloat != 'N' &&
@@ -2812,7 +3000,7 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
                           if (pAb->AbFloat != 'N'||
                               pBox->BxType == BoFloatGhost ||
                               pAb->AbNotInLine ||
-                              pAb->AbDisplay == 'I')
+                              pAb->AbDisplay == 'I' || pAb->AbDisplay == 'b')
                             {
                               /* floated box or inline -> content width */
                               pDimAb->DimAbRef = NULL;
@@ -2887,7 +3075,7 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
                                    pParentAb->AbWidth.DimAbRef &&
                                    pAb->AbDisplay != 'B' && pAb->AbDisplay != 'L')
                             {
-                              /* inherit from the parent box */
+                              /* inherit from contents */
                               pDimAb->DimAbRef = NULL;
                               pDimAb->DimValue = -1;		  
                               pBox->BxContentWidth = TRUE;
@@ -2926,14 +3114,14 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
                                                     (PtrAbstractBox) i, 0);
                                   if (pDimAb->DimValue == 100)
                                     /* the rule gives the outside value */
-                                    val = val - dx;
+                                    val = val + inx - dx;
                                 }
                               else /* UnAuto */
                                 {
                                   val = PixelValue (100, UnPercent, 
                                                     (PtrAbstractBox) i, 0);
                                   /* the rule gives the outside value */
-                                  val = val - dx;
+                                  val = val + inx - dx;
                                 }
                               if (pParentAb)
                                 {
@@ -2949,7 +3137,7 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
                             {
                               val = PixelValue (pDimAb->DimValue, UnPercent,
                                                 (PtrAbstractBox) pParentAb->AbBox->BxW, 0);
-                              val = val - dx;
+                              val = val + inx - dx;
                             }
                         }
                       else
@@ -2958,7 +3146,8 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
                           val = PixelValue (pDimAb->DimValue, pDimAb->DimUnit, pAb,
                                             zoom);
                         }
-                      ResizeWidth (pBox, pBox, NULL, val - pBox->BxW, 0, 0, 0, frame, FALSE);
+                      ResizeWidth (pBox, pBox, NULL, val - pBox->BxW, 0, 0, 0,
+                                   frame, FALSE);
                     }
                   else
                     {
@@ -2976,6 +3165,7 @@ ThotBool  ComputeDimRelation (PtrAbstractBox pAb, int frame, ThotBool horizRef)
                                    pParentAb->AbWidth.DimValue <= 0) ||
                                   pParentAb->AbInLine ||
                                   pParentAb->AbBox->BxType == BoGhost ||
+                                  pParentAb->AbBox->BxType == BoStructGhost ||
                                   pParentAb->AbBox->BxType == BoFloatGhost))
                             /* look for the right ancestor */
                             pParentAb = pParentAb->AbEnclosing;
@@ -3623,6 +3813,7 @@ void ComputeAxisRelation (AbPosition rule, PtrBox pBox, int frame, ThotBool hori
   /* L'axe est place par rapport a la boite elle-meme */
   if (pRefBox == pBox ||
       pBox->BxType == BoGhost ||
+      pBox->BxType == BoStructGhost ||
       pBox->BxType == BoFloatGhost ||
       pBox->BxType == BoBlock ||
       pBox->BxType == BoFloatBlock ||

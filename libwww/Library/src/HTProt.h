@@ -165,6 +165,6 @@ extern const char * HTProtocol_transport (HTProtocol * protocol);
 
 
 
-@(#) $Id: HTProt.html,v 1.1.1.2 2005/07/06 09:34:02 gully Exp $ 
+@(#) $Id: HTProt.html,v 2.25 1999/12/01 13:07:07 kahan Exp $ 
 
 */

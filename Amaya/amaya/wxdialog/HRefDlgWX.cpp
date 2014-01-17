@@ -82,10 +82,10 @@ HRefDlgWX::HRefDlgWX( int ref, wxWindow* parent, const wxString & title,
   SetAutoLayout( TRUE );
   XRCCTRL(*this, "wxID_DELETE", wxButton)->Show(!LinkAsCSS);
   
-  // set te cursor to the end
-  XRCCTRL(*this, "wxID_COMBOBOX", wxComboBox)->SetSelection (0, -1);
   // give focus to ...
   XRCCTRL(*this, "wxID_COMBOBOX", wxComboBox)->SetFocus();
+  // set te cursor to the end
+  XRCCTRL(*this, "wxID_COMBOBOX", wxComboBox)->SetSelection (0, -1);
 }
 
 /*----------------------------------------------------------------------
@@ -163,13 +163,13 @@ void HRefDlgWX::OnBrowse( wxCommandEvent& event )
      );
   wxString url = XRCCTRL(*this, "wxID_COMBOBOX", wxComboBox)->GetValue();
   if (url.IsEmpty())
-    {
-      url = TtaConvMessageToWX(DocumentURLs[m_doc]);
-    }
+    url = TtaConvMessageToWX(DocumentURLs[m_doc]);
 
   // set an initial path
-  if (url.StartsWith(_T("http")) ||
-      url.StartsWith(TtaConvMessageToWX((TtaGetEnvString ("THOTDIR")))))
+  if (LinkAsImport)
+    p_dlg->SetDirectory(TtaConvMessageToWX(TtaGetDocumentsDir()));    
+  else if (url.StartsWith(_T("http")) ||
+           url.StartsWith(TtaConvMessageToWX((TtaGetEnvString ("THOTDIR")))))
     p_dlg->SetDirectory(TtaConvMessageToWX(TtaGetDocumentsDir()));
   else
    p_dlg->SetPath(url);

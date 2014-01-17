@@ -6,9 +6,9 @@
 # please send bugfixes or comments to feedback@suse.de.
 #
 
-# neededforbuild  autoconf automake mmcore mmbase mmslib xpm libz libpng libjpeg
+# neededforbuild  autoconf automake mmcore mmbase mmslib libz libpng libjpeg
 
-%define version 11.2
+%define version 11.3
 
 Vendor:       W3C World Wide Web Consortium
 Distribution: W3C
@@ -91,7 +91,9 @@ mkdir -p $RPM_BUILD_ROOT/usr/share/
 # WARNING: Check that Mesa/configs/linux-x86-64 uses
 #          "LIB_DIR = lib" "EXTRA_LIB_PATH = -L/usr/X11R6/lib"
 #cp ../Mesa/configs/linux-x86-64-static ../Mesa/configs/current
-autoconf
+#autoconf
+#cd libwww  && libtoolize --force --copy
+#cd libwww && aclocal; autoheader; automake; autoconf
 mkdir linux
 cd linux
 export HOME=`pwd`

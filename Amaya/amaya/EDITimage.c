@@ -270,7 +270,7 @@ static void CreateAreaMap (Document doc, View view, const char *shape)
           div = TtaNewElement (doc, elType);
           TtaInsertSibling (div, el, FALSE, doc);
           TtaInsertFirstChild (&map, div, doc);
-          CreateTargetAnchor (doc, map, FALSE, FALSE);
+          CreateTargetAnchor (doc, map, FALSE, FALSE, FALSE);
           attrType.AttrTypeNum = HTML_ATTR_NAME;
           attr = TtaGetAttribute (map, attrType);
           if (attr == NULL)
@@ -1275,7 +1275,9 @@ void  SRCattrModified (NotifyAttribute *event)
 void  CreateObject (Document doc, View view)
 {
   ElementType         elType;
+  ThotBool            oldStructureChecking;
 
+  oldStructureChecking = TtaGetStructureChecking (doc);
   if (HTMLelementAllowed (doc))
     {
       CreateNewObject = TRUE;
@@ -1293,6 +1295,7 @@ void  CreateObject (Document doc, View view)
       CreateNewImage = FALSE;
       CreateNewObject = FALSE;
     }
+  TtaSetStructureChecking (oldStructureChecking, doc);
 }
 
 

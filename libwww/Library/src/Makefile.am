@@ -33,14 +33,14 @@ EXTRA_LTLIBRARIES = \
         libwwwdav.la \
 	libwwwsql.la
 
-SUBDIRS = windows vms
+SUBDIRS = SSL windows vms
 
 #	.h files are distributed but originally are made from the
 #	self-documenting hypertext files.
 SUFFIXES = .h .html .txt
 .html.h:
     ifdef WWW
-	$(WWW) -w90 -na -p -to text/x-c $(srcdir)/$(*F).html -o $(srcdir)/$(*F).h
+	$(WWW) -w90 -na -p -to text/x-c $(srcdir)/*.html -o $(srcdir)/*.h
     else
 	@echo "**************************************************"
 	@echo "Generating the .h files using the "
@@ -50,7 +50,7 @@ SUFFIXES = .h .html .txt
     endif
 
 icondir = @icondir@
-AM_CPPFLAGS := @CPPFLAGS@ -DW3C_ICONS=\"$(icondir)\"
+AM_CPPFLAGS = @CPPFLAGS@ -DW3C_ICONS=\"$(icondir)\"
 
 inc: $(BUILT_SOURCES)
 	@echo Generated built sources
@@ -383,12 +383,13 @@ libwwwsql_la_SOURCES = \
 	HTSQLLog.h \
 	HTSQLLog.c
 
-libwwwsql_la_LDFLAGS = -rpath $(libdir)
+libwwwsql_la_LDFLAGS = -rpath $(libdir) $(MYSQL_LIBS)
 
 INCLUDES = \
 	-I/usr/local/include \
 	-I${top_srcdir}/modules/md5 \
-	-I${top_srcdir}/modules/expat/lib
+	-I${top_srcdir}/modules/expat/lib \
+	$(MYSQL_CFLAGS)
 
 BUILT_SOURCES = \
 	wwwsys.h \
@@ -547,7 +548,7 @@ BUILT_SOURCES = \
 
 pkginclude_HEADERS = $(BUILT_SOURCES)
 
-DOCS :=	$(wildcard *.html)
+DOCS = 
 
 EXTRA_DIST = \
 	$(BUILT_SOURCES) \

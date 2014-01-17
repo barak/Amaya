@@ -1985,7 +1985,7 @@ ThotBool CutCommand (ThotBool save, ThotBool replace)
           /* try first to select the end of the previous element */
           pSel = LastLeaf (pPrev);
           if (pSel->ElTerminal && pSel->ElLeafType == LtText)
-            SelectPositionWithEvent (pSelDoc, pSel, pSel->ElTextLength + 1);
+            SelectPositionWithEvent (pSelDoc, pSel, pSel->ElTextLength + 1, TRUE);
           else
             SelectElementWithEvent (pSelDoc, pSel, FALSE, TRUE);
         }
@@ -2000,21 +2000,21 @@ ThotBool CutCommand (ThotBool save, ThotBool replace)
               selNext = TRUE;
               /* Select the first character or the whole element */
               if (pSel->ElTerminal && pSel->ElLeafType == LtText)
-                SelectPositionWithEvent (pSelDoc, pSel, 1);
+                SelectPositionWithEvent (pSelDoc, pSel, 1, TRUE);
               else if (pSel->ElTerminal && pSel->ElLeafType == LtSymbol)
-                SelectPositionWithEvent (pSelDoc, pSel, 1);
+                SelectPositionWithEvent (pSelDoc, pSel, 1, TRUE);
               else
                 SelectElementWithEvent (pSelDoc, pSel, TRUE, TRUE);
             }
           else
-            SelectPositionWithEvent (pSelDoc, pNext, nextChar);
+            SelectPositionWithEvent (pSelDoc, pNext, nextChar, TRUE);
         }
       else if (pPrev)
         /* no following element, select the previous */
         {
           pSel = LastLeaf (pPrev);
           if (pSel->ElTerminal && pSel->ElLeafType == LtText)
-            SelectPositionWithEvent (pSelDoc, pSel, pSel->ElTextLength + 1);
+            SelectPositionWithEvent (pSelDoc, pSel, pSel->ElTextLength + 1, TRUE);
           else
             SelectElementWithEvent (pSelDoc, pSel, FALSE, TRUE);
         }
@@ -2031,7 +2031,7 @@ ThotBool CutCommand (ThotBool save, ThotBool replace)
     {
       /* look for and change references */
       pSave = FirstSavedElement;
-      while (pE)
+      while (pSave)
         {
           /* update references */
           //ChangeReferences (pSave->PeElement, &pSelDoc);
@@ -2688,6 +2688,18 @@ static ThotBool ChangeTypeOfElements (PtrElement firstEl, PtrElement lastEl,
                             ok = TRUE;
                           }
                       }
+					if (!ok && NChangeTypeItems == 0 && pEl->ElParent &&
+						pEl->ElParent->ElStructSchema &&
+						!strcmp (pEl->ElParent->ElStructSchema->SsName, "Template") /*&&
+						!strcmp (newSSchema->SsName,
+                                     pEl->ElStructSchema->SsName)*/)
+					{
+						// Perhaps the right test is the CsAny constructor
+						ok = TRUE;
+						if (IsomorphicTypes (pEl->ElStructSchema, pEl->ElTypeNumber,
+                                 newSSchema, newTypeNum))
+						  method = M_EQUIV;
+					}
                     if (ok)
                       /* le type est dans la table, on effectue le
                          changement */
@@ -2860,8 +2872,12 @@ ThotBool CreateNewElement (int typeNum, PtrSSchema pSS, PtrDocument pDoc,
   NSiblings = 0;
   if (!GetCurrentSelection (&pSelDoc, &firstSel, &lastSel, &firstChar,
                             &lastChar))
-    return FALSE;
-  else if (pSelDoc != pDoc)
+    {
+      if (GetDeferredSelection (doc, &firstSel, &lastSel, &firstChar,
+                                &lastChar))
+        pSelDoc = pDoc;
+    }
+  if (pSelDoc != pDoc)
     /* the document asking for the creation of a new element is NOT the */
     /* document containing the current selection */
     return FALSE;
@@ -3084,7 +3100,22 @@ ThotBool CreateNewElement (int typeNum, PtrSSchema pSS, PtrDocument pDoc,
                                      typeNum, pSS, pSelDoc);
           if (ok && empty && !EmptyElement (pEl))
             empty = FALSE;
-
+          if (pEl->ElTypeNumber == 1 && pEl->ElParent && (selHead || selTail))
+            // check the upper level
+            pParent = pEl->ElParent->ElParent;
+          else if (pEl->ElStructSchema &&
+                   !strcmp (pEl->ElStructSchema->SsName, "Template"))
+            pParent = NULL;
+          else
+            pParent = pEl->ElParent;
+          if (!ok && pParent && pParent->ElStructSchema &&
+              !strcmp (pParent->ElStructSchema->SsName, "Template"))
+            {
+              // let amaya check the validity
+              if (pParent = pEl->ElParent->ElParent)
+                pEl = pEl->ElParent;
+              ok = TRUE;
+            }
           ancestorRule = 0;
           if (!ok)
             /* si l'element a creer apparait dans le schema de structure
@@ -3746,7 +3777,7 @@ void TtaInsertAnyElement (Document document, ThotBool before)
               /* set a new selection */
               pSel = FirstLeaf (pNew);
               if (pSel->ElTerminal && pSel->ElLeafType == LtText)
-                SelectPositionWithEvent (pDoc, pSel, 1);
+                SelectPositionWithEvent (pDoc, pSel, 1, TRUE);
               else
                 SelectElementWithEvent (pDoc, pSel, TRUE, TRUE);
             }

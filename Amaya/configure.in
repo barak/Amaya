@@ -172,8 +172,8 @@ case $target_os in
   aix*)       AMAYAOS="LINUX" ;;
   cygwin*)    AMAYAOS="WINDOWS" ;;
   darwin*)    AMAYAOS="MACOSX" ;;
-  freebsd2*)  AMAYAOS="LINUX" ;;
-  freebsd*)   AMAYAOS="LINUX" ;;
+  freebsd2*)  AMAYAOS="FREEBSD" ;;
+  freebsd*)   AMAYAOS="FREEBSD" ;;
   hpux*)      AMAYAOS="LINUX" ;;
   irix*)      AMAYAOS="LINUX" ;;
   linuxaout*) AMAYAOS="LINUX" ;;
@@ -183,8 +183,8 @@ case $target_os in
   openbsd*)   AMAYAOS="LINUX" ;;
   osf[12]*)   AMAYAOS="LINUX" ;;
   osf*)       AMAYAOS="LINUX" ;;
-  solaris2*)  AMAYAOS="LINUX" ;;
-  sunos4*)    AMAYAOS="LINUX" ;;
+  solaris2*)  AMAYAOS="FREEBSD" ;;
+  sunos4*)    AMAYAOS="FREEBSD" ;;
   ultrix*)    AMAYAOS="LINUX" ;;
 esac
 AC_SUBST(AMAYAOS)
@@ -198,6 +198,7 @@ case $AMAYAOS in
   LINUX)       OS_OPTIONS="-D_UNIX" ;;
   WINDOWS)     OS_OPTIONS="-D_WINDOWS" ;; # not tested (cygwin or mingw)
   MACOSX)      OS_OPTIONS="-D_UNIX -D_MACOS" ;;
+  FREEBSD)     OS_OPTIONS="-D_UNIX -D_FREEBSD" ;;
 esac
 
 dnl
@@ -250,7 +251,7 @@ else
   fi
 fi
 
-# check if wxWidgets debug is enable
+# check if wxWidgets debug is enabled
 AC_ARG_WITH(wxdebug,              [  --with-wxdebug          compiles wxWidgets with debuging options ])
 if test "$with_wxdebug" = "yes" ; then
   with_wxdebug="yes"
@@ -443,7 +444,7 @@ dnl  ***************************************************************
 
 # the wx version
 AMAYAWX_MAJVER=11
-AMAYAWX_MINVER=2
+AMAYAWX_MINVER=3
 AMAYAWX_SUBVER=0
 APP_MAJVER=$AMAYAWX_MAJVER
 APP_MINVER=$AMAYAWX_MINVER
@@ -627,8 +628,10 @@ if test "$with_gl" = "yes" -o "$with_mesa" = "yes" ; then
      # we use a static version of freetype lib for mac osx
      # ** search for includes (freetype.h)
      for ac_dir in               \
-         /Developer/SDKs/MacOSX10.1.5.sdk/usr/X11R6/include/  \
-         /Developer/SDKs/MacOSX10.1.5.sdk/usr/X11R6/include/freetype2/  \
+         /Developer/SDKs/MacOSX10.6.sdk/usr/X11R6/include/  \
+         /Developer/SDKs/MacOSX10.6.sdk/usr/X11R6/include/freetype2/  \
+         /Developer/SDKs/MacOSX10.5.sdk/usr/X11R6/include/  \
+         /Developer/SDKs/MacOSX10.5.sdk/usr/X11R6/include/freetype2/  \
          /Developer/SDKs/MacOSX10.2.8.sdk/usr/X11R6/include/  \
          /Developer/SDKs/MacOSX10.2.8.sdk/usr/X11R6/include/freetype2/  \
          /Developer/SDKs/MacOSX10.3.0.sdk/usr/X11R6/include/  \
@@ -653,7 +656,6 @@ if test "$with_gl" = "yes" -o "$with_mesa" = "yes" ; then
      done
      # ** search for binary (libfreetype.a)
      for ac_dir in               \
-         /Developer/SDKs/MacOSX10.1.5.sdk/usr/X11R6/lib/  \
          /Developer/SDKs/MacOSX10.2.8.sdk/usr/X11R6/lib/  \
          /Developer/SDKs/MacOSX10.3.0.sdk/usr/X11R6/lib/  \
          /Developer/SDKs/MacOSX10.4u.sdk/usr/X11R6/lib/  \
@@ -761,7 +763,7 @@ if test "$with_system_libwww" != "yes" ; then
     --build=$build_alias --host=$host_alias --target=$target_alias \
     --disable-shared \
     $WITHDAV \
-    --with-zlib && \
+    --with-zlib --with-ssl && \
     echo "libwww is configured" ; \
     echo "patching wwwconf.h because appkit.h do not compile on macos, and it seems that appkit.h is not used in amaya" ; \
     cp wwwconf.h wwwconf.h.orig ; \
@@ -773,9 +775,11 @@ if test "$with_system_libwww" != "yes" ; then
   BUILDLIBWWW="libwww"
   LIBWWW_CONFIG="libwww/libwww-config"
   LIBWWW_LDFLAGS="-L$CURRENT_PATH/libwww/Library/src/.libs -lwwwxml -lwwwzip -lwwwinit -lwwwapp -lwwwhtml -lwwwtelnet -lwwwnews -lwwwhttp -lwwwmime -lwwwgopher -lwwwftp -lwwwfile -lwwwdir -lwwwcache -lwwwstream -lwwwmux -lwwwtrans -lwwwcore -lwwwutils -lwwwdav \
+  -L$CURRENT_PATH/libwww/Library/src/SSL/.libs -lwwwssl\
   -L$CURRENT_PATH/libwww/modules/md5/.libs -lmd5 \
-  -L$CURRENT_PATH/libwww/modules/expat/.libs -lexpat"
-  LIBWWW_CFLAGS="-I$CURRENT_PATH/../../libwww/Library/src -I$CURRENT_PATH/libwww"
+  -L$CURRENT_PATH/libwww/modules/expat/.libs -lexpat \
+  -L/usr/lib -lssl -lcrypto -L/usr/lib64 -lssl -lcrypto"
+  LIBWWW_CFLAGS="-I$CURRENT_PATH/../../libwww/Library/src -I$CURRENT_PATH/libwww -I$CURRENT_PATH/../../libwww/modules/expat/lib -I$CURRENT_PATH/../../libwww/Library/src/SSL"
 else
   LIBWWW_CFLAGS="`$LIBWWW_CONFIG --cflags`"
   LIBWWW_LDFLAGS="`$LIBWWW_CONFIG --libs`"
@@ -1003,8 +1007,10 @@ EXTRA_INCLUDES=
 # on macosx, this file is not at the right place
 if test "$AMAYAOS" = "MACOSX" ; then
 for ac_dir in               \
-  /Developer/SDKs/MacOSX10.1.5.sdk/usr/include/objc/   \
-  /Developer/SDKs/MacOSX10.1.5.sdk/usr/include/sys/    \
+  /Developer/SDKs/MacOSX10.6.sdk/usr/include/objc/   \
+  /Developer/SDKs/MacOSX10.6.sdk/usr/include/sys/    \
+  /Developer/SDKs/MacOSX10.5.sdk/usr/include/objc/   \
+  /Developer/SDKs/MacOSX10.5.sdk/usr/include/sys/    \
   /Developer/SDKs/MacOSX10.2.8.sdk/usr/include/objc/   \
   /Developer/SDKs/MacOSX10.2.8.sdk/usr/include/sys/    \
   /Developer/SDKs/MacOSX10.3.0.sdk/usr/include/objc/   \
@@ -1227,7 +1233,7 @@ if test "$build_amaya" = "yes" ; then
       if test "$with_system_raptor" = "yes" ; then
  	echo Amaya configured with the RaptorF library \(system\)
       else
-	echo Amaya configured with the Raptor library \(system\)
+	echo Amaya configured with the Raptor library \(local source\)
       fi
     fi
     if test "$with_templates" = "yes" ; then

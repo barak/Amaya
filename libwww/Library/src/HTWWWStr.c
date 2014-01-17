@@ -20,11 +20,11 @@ PRIVATE char * months[12] = {
     "Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"
 };
 
-#ifndef HAVE_STRFTIME
+// #ifndef HAVE_STRFTIME
 PRIVATE char * wkdays[7] = {
     "Sun","Mon","Tue","Wed","Thu","Fri","Sat"
 };
-#endif
+// #endif
 
 /* ------------------------------------------------------------------------- */
 
@@ -574,8 +574,20 @@ PUBLIC const char *HTDateTimeStr (time_t * calendar, BOOL local)
 	gmtime_r(calendar, &gmt);
     	strftime(buf, 40, "%a, %d %b %Y %H:%M:%S GMT", &gmt);
 #else
+	/* go round a non-us locale bug */
+	/*
 	struct tm *gmt = gmtime(calendar);
     	strftime(buf, 40, "%a, %d %b %Y %H:%M:%S GMT", gmt);
+	*/
+	struct tm *gmt = gmtime(calendar);
+	sprintf(buf,"%s, %02d %s %04d %02d:%02d:%02d GMT",
+		wkdays[gmt->tm_wday],
+		gmt->tm_mday,
+		months[gmt->tm_mon],
+		gmt->tm_year + 1900,
+		gmt->tm_hour,
+		gmt->tm_min,
+		gmt->tm_sec);
 #endif /* SOLARIS || HT_REENTRANT */
     }
 #else

@@ -1,10 +1,10 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2008
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
- 
+
 /*
  * Initialization functions and button functions of Amaya application.
  *
@@ -14,6 +14,7 @@
 
 #ifdef _WX
 #include "wx/wx.h"
+#include "registry_wx.h"
 #endif /* _WX */
 
 /* Included headerfiles */
@@ -55,7 +56,7 @@ static struct _SubDoc  *SubDocs = NULL;
 static char             PSfile[MAX_PATH];
 static char             PPrinter[MAX_PATH];
 static char            *DocPrintURL;
-static Document		      DocPrint;
+static Document		DocPrint;
 static int              PaperPrint;
 static int              ManualFeed = PP_OFF;
 static int              Orientation;
@@ -99,7 +100,6 @@ void  RedisplayDocument(Document doc, View view)
   TtaShowElement (doc, view, el, distance);
 }
 
-
 /*----------------------------------------------------------------------
   RegisterSubDoc adds a new entry in SubDoc table.
   ----------------------------------------------------------------------*/
@@ -125,7 +125,6 @@ static void RegisterSubDoc (Element el, char *url)
       last->SDnext = entry;
     }
 }
-
 
 /*----------------------------------------------------------------------
   SearchSubDoc searches whether a document name is registered or not
@@ -173,7 +172,6 @@ static void FreeSubDocTable ()
     }
   SubDocs = NULL;
 }
-
 
 /*----------------------------------------------------------------------
   SetInternalLinks
@@ -393,11 +391,9 @@ static void CheckPrintingDocument (Document document)
       DocPrintURL = TtaStrdup (DocumentURLs[document]);
       
       /* define the new default PS file */
-      ptr = TtaGetEnvString ("APP_TMPDIR");
-      if (ptr != NULL && TtaCheckDirectory (ptr))
-        strcpy (PSfile, ptr);
-      else
-        strcpy (PSfile, TtaGetDefEnvString ("APP_TMPDIR"));
+      ptr = TtaGetDocumentsDir ();
+      TtaCheckMakeDirectory (ptr, TRUE);
+      strcpy (PSfile, ptr);
       lg = strlen (PSfile);
       if (PSfile[lg - 1] == DIR_SEP)
         PSfile[--lg] = EOS;
@@ -413,14 +409,6 @@ static void CheckPrintingDocument (Document document)
   ----------------------------------------------------------------------*/  
 static void PrintDocument (Document doc, View view)
 {
-#if defined(_WINDOWS) && defined(_WX) && defined(IV)
-  /* On windows and with wxWidgets, disable printing for the moment */
-  wxMessageDialog messagedialog( NULL,
-                                 TtaConvMessageToWX("Not implemented yet"), 
-                                 _T("Warning"),
-                                 (long) wxOK | wxICON_EXCLAMATION | wxSTAY_ON_TOP);
-  messagedialog.ShowModal();
-#else /* defined(_WINDOWS) && defined(_WX) */
   AttributeType      attrType;
   ElementType        elType;
   Attribute          attr;
@@ -548,7 +536,6 @@ static void PrintDocument (Document doc, View view)
     TtaFreeMemory (files);
   if (!status)
     TtaSetDocumentUnmodified (doc);
-#endif /* defined(_WINDOWS) && defined(_WX) */
 }
 
 /*----------------------------------------------------------------------
@@ -660,9 +647,6 @@ void CallbackPrint (int ref, int typedata, char *data)
           if (PaperPrint == PP_PS)
             {
               PaperPrint = PP_PRINTER;
-#ifdef _GTK
-              TtaSetTextForm (BasePrint + PPrinterName, PPrinter);
-#endif /* _GTK */
               TtaSetPrintParameter (PP_Destination, PaperPrint);
             }
           break;
@@ -670,9 +654,6 @@ void CallbackPrint (int ref, int typedata, char *data)
           if (PaperPrint == PP_PRINTER)
             {
               PaperPrint = PP_PS;
-#ifdef _GTK
-              TtaSetTextForm (BasePrint + PPrinterName, PSfile);
-#endif /* _GTK */
               TtaSetPrintParameter (PP_Destination, PaperPrint);
             }
           break;
@@ -709,7 +690,11 @@ void InitPrint (void)
   else
     strcpy (PPrinter, ptr);
   TtaSetPrintCommand (PPrinter);
+#ifdef _MACOS
+  PaperPrint = PP_PS;
+#else /* _MACOS */
   PaperPrint = PP_PRINTER;
+#endif /* _MACOS */
   TtaSetPrintParameter (PP_Destination, PaperPrint);
 
   /* define the new default PrintSchema */
@@ -1027,7 +1012,7 @@ static Element MoveDocumentBody (Element el, Document destDoc,
       TtaInsertSibling (lastInserted, elem, TRUE, destDoc);
       /* this delimits the new inserted part of the document */
       RegisterSubDoc (lastInserted, url);
-      CreateTargetAnchor (destDoc, lastInserted, FALSE, FALSE);
+      CreateTargetAnchor (destDoc, lastInserted, FALSE,TRUE,  FALSE);
       div = lastInserted;
 
       // check if new natures are added
@@ -1119,7 +1104,6 @@ static Element MoveDocumentBody (Element el, Document destDoc,
   return (div);
 }
 
-
 /*----------------------------------------------------------------------
   CloseMakeBook
   ----------------------------------------------------------------------*/
@@ -1136,7 +1120,6 @@ static void CloseMakeBook (Document document)
   DocBook = 0;
   TtaSetStatus (document, 1, TtaGetMessage (AMAYA, AM_DOCUMENT_LOADED), NULL);
 }
-
 
 /*----------------------------------------------------------------------
   GetIncludedDocuments_callback finishes the GetIncludedDocuments procedure
@@ -1313,7 +1296,6 @@ static ThotBool GetIncludedDocuments (Element el, Element link,
     }
   return (found);
 }
-
 
 /*----------------------------------------------------------------------
   MakeBook
@@ -1510,24 +1492,20 @@ void ReadAsSHIFT_JIS (Document doc, View view)
 }
 
 /*----------------------------------------------------------------------
-  SectionNumbering generates numbers for all HTML Hi elements after
+  SectionNumbering generates numbers for all HTML H* elements after
   the current position.
   ----------------------------------------------------------------------*/
 void SectionNumbering (Document doc, View view)
 {
-  Element             el, new_, child;
+  Element             root, el, new_, child;
   DisplayMode         dispMode;
   SSchema             HTMLschema;
   ElementType         elType, childType, searchedType1, searchedType2;
   ElementType         searchedType3, searchedType4, searchedType5;
   Language            lang;
   char                s[MAX_LENGTH], n[20], *text;
-  int                 nH2, nH3, nH4, nH5, nH6, length, i;
-  ThotBool            closeUndo, change = FALSE;
-
-  /* check if there is HTML Hi elements and if the current position is
-     within a HTML Body element */
-  dispMode = TtaGetDisplayMode (doc);
+  int                 nH1, nH2, nH3, nH4, nH5, nH6, length, i;
+  ThotBool            closeUndo, manyH1, change = FALSE;
 
   /* check if there is any HTML element within the document */
   HTMLschema = TtaGetSSchema ("HTML", doc);
@@ -1535,6 +1513,7 @@ void SectionNumbering (Document doc, View view)
     /* no HTML element */
     return;
 
+  dispMode = TtaGetDisplayMode (doc);
   if (TtaHasUndoSequence (doc))
     closeUndo = FALSE;
   else
@@ -1543,18 +1522,78 @@ void SectionNumbering (Document doc, View view)
       TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
     }
 
-  el = TtaGetMainRoot (doc);
+  /* check if there are more than one HTML H1 element */
+  manyH1 = FALSE;
+  root = TtaGetMainRoot (doc);
+  elType.ElSSchema = HTMLschema;
+  elType.ElTypeNum = HTML_EL_H1;
+  el = TtaSearchTypedElement (elType, SearchForward, root);
+  if (el)
+    {
+      if (TtaSearchTypedElement (elType, SearchForward, el))
+	/* there are at least 2 H1 elements in the document */
+	manyH1 = TRUE;
+      else
+	/* there is 1 and only 1 H1 in the document */
+	{
+	  /* remove its section number if it has one */
+          /* look for the first leaf child */
+          child = el;
+	  do
+	    {
+	      child = TtaGetFirstChild (child);
+	      if (child)
+		childType = TtaGetElementType (child);
+	    }
+	  while (child && !TtaIsLeaf (childType) &&
+		 childType.ElSSchema == HTMLschema);
+          if (child && childType.ElSSchema == HTMLschema &&
+              childType.ElTypeNum == HTML_EL_TEXT_UNIT)
+	    /* the first leaf is a text unit */
+            {
+              /* check the text contents */
+              length = TtaGetTextLength (child) + 1;
+              text = (char *)TtaGetMemory (length);
+              TtaGiveTextContent (child, (unsigned char *)text, &length, &lang);
+              /* remove the old number */
+              i = 0;
+              while (isdigit (text[i]) || text[i] == '.')
+                i++;
+              // remove extra spaces
+              while (text[i] == SPACE)
+                i++;
+              TtaRegisterElementReplace (child, doc);
+              TtaSetTextContent (child, (unsigned char *)&text[i],
+				 Latin_Script, doc);
+              TtaFreeMemory (text);
+              change = TRUE;
+            }
+	}
+    }
+
   searchedType1.ElSSchema = HTMLschema;
-  searchedType1.ElTypeNum = HTML_EL_H2;
   searchedType2.ElSSchema = HTMLschema;
-  searchedType2.ElTypeNum = HTML_EL_H3;
   searchedType3.ElSSchema = HTMLschema;
-  searchedType3.ElTypeNum = HTML_EL_H4;
   searchedType4.ElSSchema = HTMLschema;
-  searchedType4.ElTypeNum = HTML_EL_H5;
   searchedType5.ElSSchema = HTMLschema;
-  searchedType5.ElTypeNum = HTML_EL_H6;
-  nH2 = nH3 = nH4 = nH5 = nH6 = 0;
+  if (manyH1)
+    {
+      searchedType1.ElTypeNum = HTML_EL_H1;
+      searchedType2.ElTypeNum = HTML_EL_H2;
+      searchedType3.ElTypeNum = HTML_EL_H3;
+      searchedType4.ElTypeNum = HTML_EL_H4;
+      searchedType5.ElTypeNum = HTML_EL_H5;
+    }
+  else
+    {
+      searchedType1.ElTypeNum = HTML_EL_H2;
+      searchedType2.ElTypeNum = HTML_EL_H3;
+      searchedType3.ElTypeNum = HTML_EL_H4;
+      searchedType4.ElTypeNum = HTML_EL_H5;
+      searchedType5.ElTypeNum = HTML_EL_H6;
+    }
+  nH1 = nH2 = nH3 = nH4 = nH5 = nH6 = 0;
+  el = root;
   while (el)
     {
       el = TtaSearchElementAmong5Types (searchedType1, searchedType2,
@@ -1567,49 +1606,101 @@ void SectionNumbering (Document doc, View view)
           s[0] = EOS;
           switch (elType.ElTypeNum)
             {
+            case HTML_EL_H1:
+	      nH1++;
+	      nH2 = nH3 = nH4 = nH5 = nH6 = 0;
+              sprintf (s, "%d.", nH1);
+	      break;
             case HTML_EL_H2:
               nH2++;
               nH3 = nH4 = nH5 = nH6 = 0;
-              sprintf (s, "%d.", nH2);
+	      if (manyH1)
+		{
+		  if (nH1)
+		    sprintf (s, "%d.", nH1);
+		  sprintf (n, "%d.", nH2);
+		  strcat (s, n);
+		}
+	      else
+		sprintf (s, "%d.", nH2);
               break;
             case HTML_EL_H3:
               nH3++;
               nH4 = nH5 = nH6 = 0;
-              if (nH2)
-                sprintf (s, "%d.", nH2);
-              sprintf (n, "%d.", nH3);
-              strcat (s, n);
+	      if (manyH1)
+		{
+		  if (nH1)
+		    sprintf (s, "%d.", nH1);
+		  if (nH2)
+		    {
+		      sprintf (n, "%d.", nH2);
+		      strcat (s, n);
+		    }
+		}
+	      else
+		{
+		  if (nH2)
+		    sprintf (s, "%d.", nH2);
+		}
+	      sprintf (n, "%d.", nH3);
+	      strcat (s, n);
               break;
             case HTML_EL_H4:
               nH4++;
               nH5 = nH6 = 0;
-              if (nH2)
-                sprintf (s, "%d.", nH2);
-              if (nH3)
-                {
-                  sprintf (n, "%d.", nH3);
-                  strcat (s, n);
-                }
-              sprintf (n, "%d.", nH4);
-              strcat (s, n);
+	      if (manyH1)
+		{
+		  if (nH1)
+		    sprintf (s, "%d.", nH1);
+		  if (nH2)
+		    {
+		      sprintf (n, "%d.", nH2);
+		      strcat (s, n);
+		    }
+		}
+	      else
+		{
+		  if (nH2)
+		    sprintf (s, "%d.", nH2);
+		}
+	      if (nH3)
+		{
+		  sprintf (n, "%d.", nH3);
+		  strcat (s, n);
+		}
+	      sprintf (n, "%d.", nH4);
+	      strcat (s, n);
               break;
             case HTML_EL_H5:
               nH5++;
               nH6 = 0;
-              if (nH2)
-                sprintf (s, "%d.", nH2);
-              if (nH3)
-                {
-                  sprintf (n, "%d.", nH3);
-                  strcat (s, n);
+	      if (manyH1)
+		{
+		  if (nH1)
+		    sprintf (s, "%d.", nH1);
+		  if (nH2)
+		    {
+		      sprintf (n, "%d.", nH2);
+		      strcat (s, n);
+		    }
                 }
-              if (nH4)
-                {
-                  sprintf (n, "%d.", nH4);
-                  strcat (s, n);
-                }
-              sprintf (n, "%d.", nH5);
-              strcat (s, n);
+	      else
+		{
+		  if (nH2)
+		    sprintf (s, "%d.", nH2);
+		}
+	      if (nH3)
+		{
+		  sprintf (n, "%d.", nH3);
+		  strcat (s, n);
+		}
+	      if (nH4)
+		{
+		  sprintf (n, "%d.", nH4);
+		  strcat (s, n);
+		}
+	      sprintf (n, "%d.", nH5);
+	      strcat (s, n);
               break;
             case HTML_EL_H6:
               nH6++;
@@ -1646,7 +1737,8 @@ void SectionNumbering (Document doc, View view)
                   child = TtaGetFirstChild (child);
                   childType = TtaGetElementType (child);
                 }
-              while (!TtaIsLeaf (childType) && childType.ElSSchema == HTMLschema);
+              while (!TtaIsLeaf (childType) &&
+		     childType.ElSSchema == HTMLschema);
             }
           if (child && childType.ElSSchema == HTMLschema &&
               childType.ElTypeNum == HTML_EL_TEXT_UNIT)
@@ -1697,12 +1789,12 @@ void SectionNumbering (Document doc, View view)
 
 /*----------------------------------------------------------------------
   MakeToC generates a Table of Contents at the current position.
-  Looks for all HTML Hi elements after the current position.
+  Looks for all HTML H* elements after the current position.
   ----------------------------------------------------------------------*/
 void MakeToc (Document doc, View view)
 {
   Element             el, new_, *list, parent, copy, srce, child, prev, ancest;
-  Element             toc, lH2, lH3, lH4, lH5, lH6, item;
+  Element             root, toc, lH1, lH2, lH3, lH4, lH5, lH6, item;
   ElementType         elType, searchedType1, searchedType2;
   ElementType         searchedType3, searchedType4, searchedType5;
   ElementType         ulType, copyType;
@@ -1711,10 +1803,8 @@ void MakeToc (Document doc, View view)
   DisplayMode         dispMode;
   char               *s, *id, *value;
   int                 firstChar, i;
-  ThotBool            closeUndo, found;
+  ThotBool            closeUndo, found, manyH1, extendUndo;
 
-  /* check if there is HTML Hi elements and if the current position is
-     within a HTML Body element */
   dispMode = TtaGetDisplayMode (doc);
 
   /* get the insert point */
@@ -1745,25 +1835,32 @@ void MakeToc (Document doc, View view)
       if (strcmp (s, "HTML"))
         return;
     }
-
+  if (!TtaIsSelectionEmpty())
+    {
+      TtaInsertAnyElement (doc, TRUE);
+      extendUndo = TRUE;
+    }
+  else
+     extendUndo = FALSE;
   if (!HTMLelementAllowed (doc))
     /* the creation of an HTML element is not allowed here */
     return;
 
+  root = TtaGetMainRoot (doc);
+  elType.ElTypeNum = HTML_EL_H1;
+  manyH1 = FALSE;
+  lH1 = TtaSearchTypedElement (elType, SearchForward, root);
+  if (lH1)
+    {
+      if (TtaSearchTypedElement (elType, SearchForward, lH1))
+        /* there are at least 2 H1 elements in the document */
+        manyH1 = TRUE;
+    }
+
   attrType.AttrSSchema = elType.ElSSchema;
   ulType.ElSSchema = elType.ElSSchema;
   ulType.ElTypeNum = HTML_EL_Unnumbered_List;
-  searchedType1.ElSSchema = elType.ElSSchema;
-  searchedType1.ElTypeNum = HTML_EL_H2;
-  searchedType2.ElSSchema = elType.ElSSchema;
-  searchedType2.ElTypeNum = HTML_EL_H3;
-  searchedType3.ElSSchema = elType.ElSSchema;
-  searchedType3.ElTypeNum = HTML_EL_H4;
-  searchedType4.ElSSchema = elType.ElSSchema;
-  searchedType4.ElTypeNum = HTML_EL_H5;
-  searchedType5.ElSSchema = elType.ElSSchema;
-  searchedType5.ElTypeNum = HTML_EL_H6;
-  toc = lH2 = lH3 = lH4 = lH5 = lH6 = prev = NULL;
+  toc = lH1 = lH2 = lH3 = lH4 = lH5 = lH6 = prev = NULL;
   list = NULL;
   /* check if the insert point is already within a table of contents */
   ancest = el;
@@ -1822,7 +1919,10 @@ void MakeToc (Document doc, View view)
   else
     {
       closeUndo = TRUE;
-      TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
+      if (extendUndo)
+        TtaExtendUndoSequence (doc);
+      else
+        TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
     }
 
   if (toc)
@@ -1834,9 +1934,31 @@ void MakeToc (Document doc, View view)
       TtaSetDocumentModified (doc);
     }
 
+  searchedType1.ElSSchema = elType.ElSSchema;
+  searchedType2.ElSSchema = elType.ElSSchema;
+  searchedType3.ElSSchema = elType.ElSSchema;
+  searchedType4.ElSSchema = elType.ElSSchema;
+  searchedType5.ElSSchema = elType.ElSSchema;
+  if (manyH1)
+    {
+      searchedType1.ElTypeNum = HTML_EL_H1;
+      searchedType2.ElTypeNum = HTML_EL_H2;
+      searchedType3.ElTypeNum = HTML_EL_H3;
+      searchedType4.ElTypeNum = HTML_EL_H4;
+      searchedType5.ElTypeNum = HTML_EL_H5;
+    }
+  else
+    {
+      searchedType1.ElTypeNum = HTML_EL_H2;
+      searchedType2.ElTypeNum = HTML_EL_H3;
+      searchedType3.ElTypeNum = HTML_EL_H4;
+      searchedType4.ElTypeNum = HTML_EL_H5;
+      searchedType5.ElTypeNum = HTML_EL_H6;
+    }
+
   // keep in memory the current selected element
   ancest = el;
-  el = TtaGetMainRoot (doc);
+  el = root;
   while (el)
     {
       el = TtaSearchElementAmong5Types (searchedType1, searchedType2,
@@ -1888,7 +2010,7 @@ void MakeToc (Document doc, View view)
               if (!attr)
                 {
                   /* generate the ID if it does't exist */
-                  CreateTargetAnchor (doc, el, TRUE, TRUE);
+                  CreateTargetAnchor (doc, el, TRUE, TRUE, TRUE);
                   attr = TtaGetAttribute (el, attrType);
                 }
               i = TtaGetTextAttributeLength (attr) + 1;
@@ -1898,58 +2020,124 @@ void MakeToc (Document doc, View view)
 	      
               /* locate or generate the list */
               elType = TtaGetElementType (el);
-              if (elType.ElTypeNum == HTML_EL_H2)
+
+              if (elType.ElTypeNum == HTML_EL_H1)
                 {
                   parent = toc;
-                  lH3 = lH4 = lH5 = lH6 = NULL;
-                  list = &lH2;
+                  lH2 = lH3 = lH4 = lH5 = NULL;
+                  list = &lH1;
+                }
+	      else if (elType.ElTypeNum == HTML_EL_H2)
+                {
+		  if (manyH1)
+		    {
+		      if (lH1)
+			parent = TtaGetLastChild (lH1);
+		      else
+			parent = toc;
+		      lH3 = lH4 = lH5 = NULL;
+		      list = &lH2;
+		    }
+		  else
+		    {
+		      parent = toc;
+		      lH3 = lH4 = lH5 = lH6 = NULL;
+		      list = &lH2;
+		    }
                 }
               else if (elType.ElTypeNum == HTML_EL_H3)
                 {
-                  if (lH2)
-                    parent = TtaGetLastChild (lH2);
-                  else
-                    parent = toc;
-                  lH4 = lH5 = lH6 = NULL;
-                  list = &lH3;
+		  if (manyH1)
+		    {
+		      if (lH2)
+			parent =  TtaGetLastChild (lH2);
+		      else if (lH3)
+			parent =  TtaGetLastChild (lH3);
+		      else
+			parent = toc;
+		      lH4 = lH5 = NULL;
+		      list = &lH3;
+		    }
+		  else
+		    {
+		      if (lH2)
+			parent = TtaGetLastChild (lH2);
+		      else
+			parent = toc;
+		      lH4 = lH5 = lH6 = NULL;
+		      list = &lH3;
+		    }
                 }
               else if (elType.ElTypeNum == HTML_EL_H4)
                 {
-                  if (lH3)
-                    parent =  TtaGetLastChild (lH3);
-                  else if (lH2)
-                    parent =  TtaGetLastChild (lH2);
-                  else
-                    parent = toc;
-                  lH5 = lH6 = NULL;
-                  list = &lH4;
+		  if (manyH1)
+		    {
+		      if (lH3)
+			parent =  TtaGetLastChild (lH3);
+		      else if (lH2)
+			parent =  TtaGetLastChild (lH2);
+		      else if (lH1)
+			parent =  TtaGetLastChild (lH1);
+		      else
+			parent = toc;
+		      lH5 = NULL;
+		      list = &lH4;
+		    }
+		  else
+		    {
+		      if (lH3)
+			parent =  TtaGetLastChild (lH3);
+		      else if (lH2)
+			parent =  TtaGetLastChild (lH2);
+		      else
+			parent = toc;
+		      lH5 = lH6 = NULL;
+		      list = &lH4;
+		    }
                 }
               else if (elType.ElTypeNum == HTML_EL_H5)
                 {
-                  if (lH4)
-                    parent =  TtaGetLastChild (lH4);
-                  else if (lH3)
-                    parent =  TtaGetLastChild (lH3);
-                  else if (lH2)
-                    parent =  TtaGetLastChild (lH2);
-                  else
-                    parent = toc;
-                  lH6 = NULL;
-                  list = &lH5;
+		  if (manyH1)
+		    {
+		      if (lH4)
+			parent =  TtaGetLastChild (lH4);
+		      else if (lH3)
+			parent =  TtaGetLastChild (lH3);
+		      else if (lH2)
+			parent =  TtaGetLastChild (lH2);
+		      else if (lH1)
+			parent =  TtaGetLastChild (lH1);
+		      else
+			parent = toc;
+		      list = &lH5;
+		    }
+		  else
+		    {
+		      if (lH4)
+			parent =  TtaGetLastChild (lH4);
+		      else if (lH3)
+			parent =  TtaGetLastChild (lH3);
+		      else if (lH2)
+			parent =  TtaGetLastChild (lH2);
+		      else
+			parent = toc;
+		      lH6 = NULL;
+		      list = &lH5;
+		    }
                 }
               else if (elType.ElTypeNum == HTML_EL_H6)
                 {
-                  if (lH5)
-                    parent =  TtaGetLastChild (lH5);
-                  else if (lH4)
-                    parent =  TtaGetLastChild (lH4);
-                  else if (lH3)
-                    parent =  TtaGetLastChild (lH3);
-                  else if (lH2)
-                    parent =  TtaGetLastChild (lH2);
-                  else
-                    parent = toc;
-                  list = &lH6;
+		  if (lH5)
+		    parent =  TtaGetLastChild (lH5);
+		  else if (lH4)
+		    parent =  TtaGetLastChild (lH4);
+		  else if (lH3)
+		    parent =  TtaGetLastChild (lH3);
+		  else if (lH2)
+		    parent =  TtaGetLastChild (lH2);
+		  else
+		    parent = toc;
+		  list = &lH6;
                 }
 
               if (*list == NULL)

@@ -21,9 +21,7 @@
 #ifdef XML_STATIC
 #define XMLPARSEAPI(type) type __cdecl
 #else
-/* JK: Supressed the call to the DLL */
-#define XMLPARSEAPI(type) type __cdecl
-/* #define XMLPARSEAPI(type) __declspec(dllimport) type __cdecl */
+#define XMLPARSEAPI(type) __declspec(dllimport) type __cdecl
 #endif
 #else
 #define XMLPARSEAPI(type) type

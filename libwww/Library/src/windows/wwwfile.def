@@ -26,6 +26,7 @@ HTFile_dirReadme	@ 304
 HTFile_doFileSuffixBinding @ 305
 HTFile_fileSuffixBinding @ 306
 HTLoadFile		@ 307
+HTFile_dirent_buf_size	@ 308
 
 ;HTMulti.c		@ 400
 HTAddWelcome		@ 401

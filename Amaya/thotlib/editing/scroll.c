@@ -33,7 +33,7 @@
 #include "frame_f.h"
 #include "structselect_f.h"
 #include "textcommands_f.h"
-#include "xwindowdisplay_f.h"
+#include "windowdisplay_f.h"
 
 #ifdef _GL
 #include "glwindowdisplay.h"
@@ -56,7 +56,7 @@ void VerticalScroll (int frame, int delta, int selection)
   PtrAbstractBox      pAb;
   ThotBool            add;
   
-  if (delta != 0)
+  if (delta != 0 && GL_prepare (frame))
     {
       pFrame = &ViewFrameTable[frame - 1];
       if (pFrame->FrReady && pFrame->FrAbstractBox)
@@ -66,7 +66,7 @@ void VerticalScroll (int frame, int delta, int selection)
           CloseTextInsertion ();
           srcbox = pAb->AbBox;
           /* Limites du scroll */
-          if (srcbox != NULL)
+          if (srcbox)
             {
               /* A priori pas de paves ajoutes */
               add = FALSE;
@@ -107,10 +107,10 @@ void VerticalScroll (int frame, int delta, int selection)
                       else
                         width = lframe + 1;
                       Scroll (frame, width, height, 0, y, 0, 0);
-                      height = pFrame->FrYOrg + hframe;
-                      DefClip (frame, pFrame->FrXOrg, height,
-                               pFrame->FrXOrg + lframe, 
-                               height + delta);
+		      height = pFrame->FrYOrg + hframe;
+		      DefClip (frame, pFrame->FrXOrg, height,
+			       pFrame->FrXOrg + lframe, 
+			       height + delta);
                       add = RedrawFrameBottom (frame, delta, NULL);
                     }
                   else
@@ -145,11 +145,14 @@ void VerticalScroll (int frame, int delta, int selection)
                     /* On reprend la nouvelle */
                     /* On reallume la selection deja visualisee */
                   }
-            }
 #ifdef _GL
-          /* to be sure the scrolled page has been displayed */
-          GL_Swap( frame );
+	      /* to be sure the scrolled page has been displayed */
+#ifdef DEBUG_MAC
+printf ("VerticalScroll:GL_Swap frame=%d\n",frame);
+#endif /* DEBUG_MAC */
+	      GL_Swap( frame );
 #endif /* _GL */
+            }
         }
     }
 }
@@ -171,7 +174,7 @@ void HorizontalScroll (int frame, int delta, int selection)
   PtrBox              srcbox;
   ViewFrame          *pFrame;
   
-  if (delta != 0)
+  if (delta != 0 && GL_prepare (frame))
     {
       pFrame = &ViewFrameTable[frame - 1];
       if (pFrame->FrReady && pFrame->FrAbstractBox != NULL)
@@ -225,6 +228,9 @@ void HorizontalScroll (int frame, int delta, int selection)
               UpdateScrollbars (frame);
             }
 #ifdef _GL
+#ifdef DEBUG_MAC
+printf ("HorizontalScroll:GL_Swap frame=%d\n",frame);
+#endif /* DEBUG_MAC */
           /* to be sure the scrolled page has been displayed */
           GL_Swap( frame );
 #endif /* _GL */
@@ -595,14 +601,21 @@ void ShowBox (int frame, PtrBox pBox, int position, int percent,
   pBox1 = pBox;
   pBlock = NULL;
   pLine = NULL;
-  if (pBox->BxType == BoGhost || pBox->BxType == BoFloatGhost)
+  if (pBox->BxType == BoGhost ||
+      pBox->BxType == BoStructGhost ||
+      pBox->BxType == BoFloatGhost)
     {
-      while (pBox && (pBox->BxType == BoGhost || pBox->BxType == BoFloatGhost))
+      while (pBox &&
+             (pBox->BxType == BoGhost ||
+              pBox->BxType == BoStructGhost ||
+              pBox->BxType == BoFloatGhost))
         pBox = pBox->BxAbstractBox->AbFirstEnclosed->AbBox;
       if (!pBox)
         {
           pBox = pBox1;
-          while (pBox->BxType == BoGhost || pBox->BxType == BoFloatGhost)
+          while (pBox->BxType == BoGhost ||
+                 pBox->BxType == BoStructGhost ||
+                 pBox->BxType == BoFloatGhost)
             pBox = pBox->BxAbstractBox->AbEnclosing->AbBox;
         }
       /* manage the line instead of the box itself */
@@ -652,10 +665,13 @@ void ShowBox (int frame, PtrBox pBox, int position, int percent,
   /* Il faut realiser l'affichage par scroll ou par appel explicite */
   if (dy != 0)
     VerticalScroll (frame, dy, 1);
-  else
+  else if (GL_prepare (frame))
     {
       RedrawFrameBottom (frame, dy, NULL);
 #ifdef _GL
+#ifdef DEBUG_MAC
+printf ("ShowBox:GL_Swap frame=%d\n",frame);
+#endif /* DEBUG_MAC */
       /* to be sure the scrolled page has been displayed */
       GL_Swap (frame);
 #endif /* _GL */
@@ -769,6 +785,24 @@ void ShowSelectedBox (int frame, ThotBool active)
   if (pFrame->FrSelectionBegin.VsBox != NULL && pFrame->FrReady)
     {
       pBox = pFrame->FrSelectionBegin.VsBox;
+      if (pBox)
+        pAb = pBox->BxAbstractBox;
+      if (pBox &&
+          (pBox->BxType == BoGhost ||
+           pBox->BxType == BoStructGhost ||
+           pBox->BxType == BoFloatGhost))
+        {
+          // get the position of the fist visible box
+          while (pAb && pAb->AbBox &&
+                 (pAb->AbBox->BxType == BoGhost ||
+                  pAb->AbBox->BxType == BoStructGhost ||
+                  pAb->AbBox->BxType == BoFloatGhost))
+            pAb = pAb->AbFirstEnclosed;
+          if (pAb)
+            pBox = pAb->AbBox;
+          else
+            pBox = NULL;
+        }
       /* Check if almost one box is displayed */
       while (pBox && pBox->BxAbstractBox &&
              pBox->BxAbstractBox->AbVisibility < pFrame->FrVisibility)
@@ -779,19 +813,6 @@ void ShowSelectedBox (int frame, ThotBool active)
           else
             /* no box found */
             return;
-        }
-      if (pBox)
-        pAb = pBox->BxAbstractBox;
-      if (pBox && (pBox->BxType == BoGhost || pBox->BxType == BoGhost))
-        {
-          // get the position of the fist visible box
-          while (pAb && pAb->AbBox &&
-                 (pAb->AbBox->BxType == BoGhost || pAb->AbBox->BxType == BoGhost))
-            pAb = pAb->AbFirstEnclosed;
-          if (pAb)
-            pBox = pAb->AbBox;
-          else
-            pBox = NULL;
         }
 
       // check the show of the SVG element instead of enclosed constructs
@@ -883,6 +904,7 @@ ThotBool IsAbsBoxVisible (int frame, PtrAbstractBox pAb)
     return (FALSE);		/* pas de boite a tester */
   else if (pAb->AbVisibility < pFrame->FrVisibility ||
            pAb->AbBox->BxType == BoGhost ||
+           pAb->AbBox->BxType == BoStructGhost ||
            pAb->AbBox->BxType == BoFloatGhost)
     return (FALSE);		/* la boite n'est pas visible par definition */
   else

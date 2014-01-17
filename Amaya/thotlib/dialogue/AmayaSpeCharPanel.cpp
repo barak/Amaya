@@ -231,11 +231,11 @@ void AmayaSpeCharToolPanel::InitializeBitmapMap()
 void AmayaSpeCharToolPanel::OnTool(wxCommandEvent& event)
 {
   Document doc;
-  int      view;
+  int      view, value;
 
-  int charactere = m_hash[event.GetId()]->unicode;
+  value = m_hash[event.GetId()]->unicode;
   FrameToView (TtaGiveActiveFrame(), &doc, &view);
-  TtcInsertChar (doc, view, charactere);
+  TtcInsertChar (doc, view, value);
   CloseTextInsertion ();
   TtaRedirectFocus();
 }
@@ -295,11 +295,16 @@ AmayaSpeChar filtre_greek[] =
   {0x3dd, "digamma"},
   {0x3df, "koppa"},
   {0x3e1, "sampi"},
-  
   {0x3f0, "script kappa"},
   {0x3f1, "tailed rho"},
   {0x3f2, "lunate sigma"},
   {0x3f3, "yot"},
+  {0x3ac, "alpha with tonos"},
+  {0x3ad, "epsilon with tonos"},
+  {0x3ae, "eta with tonos"},
+  {0x3af, "iota with tonos"},
+  {0x3b0, "upsilon with dialytika and tonos"},
+   {0x3db, "stigma"},
   {-1, ""}
 };
 
@@ -332,11 +337,13 @@ AmayaSpeChar filtre_greek_maj[] =
     {0x3a9, "OMEGA"},
     {0x3aa, "IOTA WITH DIALYTIKA"},
     {0x3ab, "UPSILON WITH DIALYTIKA"},
-    {0x3ac, "APLHA WITH TONOS"},
-    {0x3ad, "EPSILON WITH TONOS"},
-    {0x3ae, "ETA WITH TONOS"},
-    {0x3af, "IOTA WITH TONOS"},
-    {0x3b0, "UPSILON WITH DIALYTIKA AND TONOS"},
+    {0x386, "APLHA WITH TONOS"},
+    {0x388, "EPSILON WITH TONOS"},
+    {0x389, "ETA WITH TONOS"},
+    {0x38a, "IOTA WITH TONOS"},
+    {0x38c, "OMICRON WITH TONOS"},
+    {0x38e, "UPSILON WITH DIALYTIKA AND TONOS"},
+    {0x38f, "OMEGA WITH TONOS"},
     {0x3da, "STIGMA"},
     {0x3dc, "DIGAMA"},
     {0x3de, "KOPPA"},
@@ -355,10 +362,10 @@ AmayaSpeChar filtre_maths[] =
     {0x2200, "for all"},
     {0x2203, "there exists"},
     {0x2204, "there does not exist"},
-    {0x2036, "reversed double prime"},
-    {0x2037, "reversed triple prime"},
-    {0x2571, "light diagonal upper right to lower left"},
-    {0x2572, "light diagonal upper left to lower right"},
+    {0x2215, "division slash"},
+    {0x2216, "set minus"},
+    {0x22A2, "right tack"},
+    {0x22A3, "left tack"},
     {0x22A4, "down tack"},
     {0x22a5, "up tack"},
     {0x019B, "barred lambda"},
@@ -385,10 +392,13 @@ AmayaSpeChar filtre_maths[] =
     {0x211A, "double-struck Q"},
     {0x211D, "double-struck R"},
     {0x2124, "double-struck Z"},
+    {0x2135, "aleph"},
+    {0x2136, "bet"},
+    {0x2137, "gimel"},
+    {0x2138, "dalet"},
     {0x2103, "degree celsius"},
     {0x2109, "degree fahrenheit"},
     {0x210B, "script H"},
-    {0x2136, "second transfinite cardinal (bet)"},
     {0x212B, "angstrom unit"},
     {0x212F, "script e"},
     {0x212E, "estimated symbol"},
@@ -398,6 +408,10 @@ AmayaSpeChar filtre_maths[] =
     {0x212A, "kelvin sign"},
     {0x2223, "divides"},
     {0x220f, "n-ary product"},
+    {0x22EE, "vertical ellipsis"},
+    {0x22EF, "midline horizontal ellipsis"},
+    {0x22F0, "up right diagonal ellipsis"},
+    {0x22F1, "down right diagonal ellipsis"},
     {-1, ""}
   };
 
@@ -598,14 +612,25 @@ AmayaSpeChar filtre_divers[] =
     {0x201D, "right double quotation mark"},
     {0x00AB, "left guillemet"}, /* << */
     {0x00BB, "right guillemet"}, /* >> */
+
     {0x00A1, "inverted exclamation mark"},
     {0x2030, "per mille sign"},
     {0x00B0, "degree sign"},
-    {0x00B6, "paragraph sign"},
+    {0x2026, "horizontal ellipsis"},
+    {0x2013, "en dash"},
+    {0x2014, "em dash"},
+    {0x00F7, "division sign"},
+    {0x00A6, "broken bar"},
+
     {0x0153, "oe"},
     {0x0152, "OE"},
     {0x00E6, "ae"},
     {0x00C6, "AE"},
+    {0x00FE, "thorn"},
+    {0x00DE, "THORN"},
+    {0x00DF, "eszett"},
+    {0x017F, "long s"},
+
     {0x20AC, "euro"},
     {0x00A2, "cent"},
     {0x00A3, "pound"},
@@ -614,14 +639,16 @@ AmayaSpeChar filtre_divers[] =
     {0x00A4, "currency"},
     {0x2020, "dagger"},
     {0x2021, "double dagger"},
-    {0x2013, "en dash"},
-    {0x2014, "em dash"},
-    {0x00A6, "broken bar"},
+
+    {0x00B6, "paragraph sign"},
     {0x00A7, "section"},
     {0x00A9, "copyright"},
     {0x00AE, "registered"},
     {0x2122, "trade mark"},
     {0x2234, "therefore"},
+    {0x00D8, "O slash"},
+    {0x2720, "maltese cross"},
+
     {0x2605, "black star"},
     {0x2606, "white star"},
     {0x2663, "black club suit"},
@@ -630,6 +657,7 @@ AmayaSpeChar filtre_divers[] =
     {0x2660, "black spade suit"},
     {0x25A0, "black square"},
     {0x25A1, "white square"},
+
     {0x25B2, "black up-pointing triangle"},
     {0x25B3, "white up-pointing triangle"},
     {0x25BC, "black down-pointing triangle"},
@@ -638,14 +666,13 @@ AmayaSpeChar filtre_divers[] =
     {0x25C7, "white diamond"},
     {0x25CB, "white circle"},
     {0x25CF, "black circle"},
+
     {0x25D0, "circle with left half"},
     {0x25D1, "circle with right half"},
     {0x25D2, "circle with lower half"},
     {0x25D3, "circle with upper half"},
-    {0x00D8, "O slash"},
     {0x25ca, "lozenge"},
     {0x25B1, "white parallelogram"},
-    {0x2720, "maltese cross"},
     {0x260E, "black telephone"},
     {0x2460, "circled 1"},
     {-1, ""}

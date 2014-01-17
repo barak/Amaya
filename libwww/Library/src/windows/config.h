@@ -109,7 +109,7 @@
 #define W3C_PACKAGE "w3c-libwww"
 
 /* Define to be the version. */
-#define W3C_VERSION "5.4.0"
+#define W3C_VERSION "5.3.1"
 
 /* Define to be the location of the W3C Icons */
 #define W3C_ICONS "/usr/local/share/w3c-icons"
@@ -497,4 +497,4 @@
 #define HT_DAV 1
 
 /* Define this if you want enable the "extension methods" */
-/* #undef HT_EXT */
+/*#undef HT_EXT */

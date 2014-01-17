@@ -219,8 +219,8 @@ void AmayaNormalWindow::RegisterThotToolPanels()
   if (s == NULL || strstr (s, "AmayaXHTMLToolPanel"))
     TtaSetEnvString("CLASSIC_PANEL_ORDER",
                     "AmayaElementToolPanel;AmayaStyleToolPanel;AmayaApplyClassToolPanel;"
-                    "StyleListToolPanel;AmayaExplorerToolPanel;AmayaAttributeToolPanel;"
-                    "AmayaSpeCharToolPanel",
+                    "AmayaAttributeToolPanel;AmayaSpeCharToolPanel;"
+                    "StyleListToolPanel;AmayaExplorerToolPanel",
                     TRUE);
 
   RegisterToolPanelClass(CLASSINFO(AmayaExplorerToolPanel));
@@ -263,11 +263,11 @@ void AmayaNormalWindow::LoadConfig()
       if(ci && g_AmayaToolPanelClassInfoSet.find(ci)!=g_AmayaToolPanelClassInfoSet.end())
         {
           wxString name = ci->GetClassName();
-          if(Prof_ShowGUI((const char*)wxString(name).mb_str(wxConvUTF8)))
+          if (Prof_ShowGUI((const char*)wxString(name).mb_str(wxConvUTF8)))
             {
               wxObject* object = ci->CreateObject();
               AmayaToolPanel* panel = wxDynamicCast(object, AmayaToolPanel);
-              if(panel)
+              if (panel)
                 {
                   RegisterToolPanel(panel);
                   wxString str = wxT("OPEN_") + panel->GetToolPanelConfigKeyName();
@@ -809,22 +809,23 @@ void AmayaNormalWindow::RefreshShowToolPanelToggleMenu()
   int itemID    = WindowTable[window_id].MenuItemShowPanelID;
   int action    = FindMenuActionFromMenuItemID(NULL, itemID);
   ThotBool on   = ToolPanelsShown();
-    
-  while ( action >= 0 && doc_id < MAX_DOCUMENTS )
-    {
-      if (LoadedDocument[doc_id-1])
-        {
-          frame_id = LoadedDocument[doc_id-1]->DocViewFrame[0];
-          if (FrameTable[frame_id].FrWindowId == window_id &&
-			  MenuActionList[action].ActionToggle[doc_id] != on)
-            {
-              /* toggle the menu item of every documents */
-              MenuActionList[action].ActionToggle[doc_id] = on;
-              TtaRefreshMenuItemStats( doc_id, NULL, itemID );
-            }
-        }
-      doc_id++;
-    }
+
+  if (action >= 0)
+    while (doc_id < MAX_DOCUMENTS)
+      {
+        if (LoadedDocument[doc_id - 1])
+          {
+            frame_id = LoadedDocument[doc_id-1]->DocViewFrame[0];
+            if (FrameTable[frame_id].FrWindowId == window_id &&
+                MenuActionList[action].ActionToggle[doc_id] != on)
+              {
+                /* toggle the menu item of every documents */
+                MenuActionList[action].ActionToggle[doc_id] = on;
+                TtaRefreshMenuItemStats( doc_id, NULL, itemID );
+              }
+          }
+        doc_id++;
+      }
 }
 
 
@@ -1036,7 +1037,7 @@ void AmayaNormalWindow::OnMenuItem( wxCommandEvent& event )
  -----------------------------------------------------------------------*/
 void AmayaNormalWindow::PrepareRecentDocumentMenu(wxMenuItem* item)
 {
-  if(item)
+  if (item)
     {
       wxMenu* menu = item->GetMenu();
       menu->AppendSeparator();

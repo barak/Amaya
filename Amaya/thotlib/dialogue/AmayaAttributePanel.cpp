@@ -152,7 +152,7 @@ bool AmayaAttributeToolPanel::Create(wxWindow* parent, wxWindowID id, const wxPo
         {
           /* Init the array of embed subpanels */
           int i;
-          for(i=0; i<wxATTR_PANEID_MAX; i++)
+          for (i = 0; i < wxATTR_PANEID_MAX; i++)
             {
               wxClassInfo* ci = wxClassInfo::FindClass(s_subpanelClassNames[i]);
               if (ci)
@@ -276,19 +276,17 @@ void AmayaAttributeToolPanel::SendDataToPanel( AmayaParams& p )
 {
   if (IsShown())
     {
-      DesactivatePanel();
-      switch ( (int)p.param1 )
+      if ( (int)(p.param1) == wxATTR_ACTION_LISTUPDATE)
         {
-        case wxATTR_ACTION_LISTUPDATE:
-          m_firstSel  = (PtrElement)p.param5;
-          m_lastSel   = (PtrElement)p.param6;
+          DesactivatePanel();
+          m_firstSel  = (PtrElement)(p.param5);
+          m_lastSel   = (PtrElement)(p.param6);
           m_firstChar = p.param7;
           m_lastChar  = p.param8;
           ShowAttributValue( wxATTR_PANEID_NONE );
-          SetupListValue((DLList)p.param2);
-          break;
+          SetupListValue ((DLList)(p.param2));
+          ActivePanel();
         }
-      ActivePanel();
     }
 }
 
@@ -519,10 +517,10 @@ void AmayaAttributeToolPanel::ShowAttributValue( wxATTR_PANEID type )
   m_currentPane = type;
 
   int i;
-  for(i=0; i<wxATTR_PANEID_MAX; i++)
+  for (i = 0; i < wxATTR_PANEID_MAX; i++)
     m_pSubpanelSizer->Show(m_subpanels[i], false );
   
-  if (type >= 0 && type<wxATTR_PANEID_MAX)
+  if (type >= 0 && type < wxATTR_PANEID_MAX)
     {
       m_pSubpanelSizer->Show( type, true );
       m_pCurrentlyEditedControl = m_subpanels[type]->GetEditionControl();
@@ -530,7 +528,7 @@ void AmayaAttributeToolPanel::ShowAttributValue( wxATTR_PANEID type )
       m_pSubpanelSizer->Layout();
       ShowAttributeBar(true);
     }
-  else
+  else if (m_pCurrentlyEditedControl)
     {
       m_pCurrentlyEditedControl = NULL;
       ShowAttributeBar(false);
@@ -957,7 +955,7 @@ bool AmayaEnumAttributeSubpanel::SetAttrListElem(PtrAttrListElem elem)
         {
           // Restricted enumeration
           tkz.SetString(TtaConvMessageToWX(elem->restr.RestrEnumVal), wxT(" "));
-          while(tkz.HasMoreTokens())
+          while (tkz.HasMoreTokens())
               m_pChoice->Append(tkz.GetNextToken());
           
           if (elem->val)
@@ -974,10 +972,7 @@ bool AmayaEnumAttributeSubpanel::SetAttrListElem(PtrAttrListElem elem)
                 }
             }
           else
-            {
-              m_pChoice->SetStringSelection(TtaConvMessageToWX(elem->restr.RestrDefVal));
-            }
-          
+            m_pChoice->SetStringSelection(TtaConvMessageToWX(elem->restr.RestrDefVal));
         }
       return true;
     }
@@ -1248,10 +1243,8 @@ bool AmayaLangAttributeSubpanel::SetAttrListElem(PtrAttrListElem elem)
   Language            language;
   PtrAttribute        pHeritAttr;
   PtrElement          pElAttr;
-//  char               *ptr;
   char                languageCode[MAX_TXT_LEN];
-//  char                label[200];
-  int                 i;
+  int                 i, max;
   wxString            filter, code, lang, herit, str;
   
   
@@ -1264,12 +1257,11 @@ bool AmayaLangAttributeSubpanel::SetAttrListElem(PtrAttrListElem elem)
       if (AttrListElem_IsEnum(elem))
         {
           filter = TtaConvMessageToWX(elem->restr.RestrEnumVal);
-          for (i=0; i < (int)s_arrLangs.GetCount(); i++)
+          max = (int)s_arrLangs.GetCount();
+          for (i = 0; i < max; i++)
             {
-              if (filter.Find(s_arrLangs[i])!=wxNOT_FOUND)
-                {
-                  m_pCombo->Append(s_arrLangs[i]);
-                }
+              if (filter.Find(s_arrLangs[i]) != wxNOT_FOUND)
+                m_pCombo->Append(s_arrLangs[i]);
             }
         }
       else
@@ -1298,15 +1290,10 @@ bool AmayaLangAttributeSubpanel::SetAttrListElem(PtrAttrListElem elem)
           lang = TtaConvMessageToWX(TtaGetLanguageNameFromCode(languageCode));
         }
       else if (elem->restr.RestrDefVal)
-        {
-          lang = TtaConvMessageToWX(TtaGetLanguageNameFromCode(elem->restr.RestrDefVal));
-        }
+        lang = TtaConvMessageToWX(TtaGetLanguageNameFromCode(elem->restr.RestrDefVal));
       else
-        {
-          lang = herit;
-        }
+        lang = herit;
       m_pCombo->SetStringSelection(herit);
-
     }
   return true;
 }

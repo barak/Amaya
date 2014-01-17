@@ -32,7 +32,7 @@
 PRIVATE char * HTAppName = NULL;	  /* Application name: please supply */
 PRIVATE char * HTAppVersion = NULL;    /* Application version: please supply */
 
-PRIVATE char * HTLibName = "amaya";
+PRIVATE char * HTLibName = "libwww";
 PRIVATE char * HTLibVersion = W3C_VERSION;
 
 PRIVATE BOOL   HTSecure = NO;		 /* Can we access local file system? */

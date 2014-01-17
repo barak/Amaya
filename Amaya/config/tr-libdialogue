@@ -273,7 +273,7 @@
 271 **If you enable "Show Targets" in the "Views" menu, targets are displayed in formatted view. This is convenient for the creation of link: a target can be chosen by clicking on it.
 272 **When you rotate an SVG object, the center is indicated by a cross. You can use the mouse to move it.
 273 **Basic SVG shapes have handles that can be used to edit them. Blue triangles or green square allow to change their size. For <rect/> element, red circles give a control on radius of rounded corners.
-274 **For SVG drawing, lines are created with a precision of 15° if you press the shift button. It is useful when you want to draw straight lines.
+274 **For SVG drawing, lines are created with a precision of 15� if you press the shift button. It is useful when you want to draw straight lines.
 275 **When you resize an image or an SVG object, pressing the shift button allows to preserve aspect ratio.
 276 **Use Edit>Preferences>Dialogue Language to choose the language of the user interface.
 277 **Classic
@@ -303,8 +303,8 @@
 301 **Send to back
 302 **One level up
 303 **One level down
-304 **90° left
-305 **90° right
+304 **90� left
+305 **90� right
 306 **Rotate
 307 **Vertical symmetry
 308 **Horizontal symmetry
@@ -414,14 +414,16 @@
 412 **Create template from current document
 413 **Create a text area
 414 **Use a component or an element
-415 **Create and use a component
+415 **Create a component
 416 **Repeat the current use
-417 **Create and repeat a component
+417 **Create and repeat a use
 418 **Create a free editing box
 419 **Create a new types union
-420 **Button up to close
-421 **Double click to close
-422 **Click to close
-423 **Locked resource
-424 **Unlocked resource
-425 **Not a WebDAV resource
+420 Kütüphane yarat
+421 **Import a library
+422 **Button up to close
+423 **Double click to close
+424 **Click to close
+425 **Locked resource
+426 **Unlocked resource
+427 **Not a WebDAV resource
