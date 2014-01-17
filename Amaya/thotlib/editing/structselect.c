@@ -42,6 +42,7 @@
 #include "appli_f.h"
 #include "applicationapi_f.h"
 #include "boxselection_f.h"
+#include "buildboxes_f.h"
 #include "callback_f.h"
 #include "changepresent_f.h"
 #include "checkermenu_f.h"
@@ -116,6 +117,7 @@ void InitSelection ()
   FirstSelectedColumn = NULL;
   LastSelectedColumn = NULL;
   WholeColumnSelected = FALSE;
+  SelPosition = FALSE;
 }
 
 
@@ -1657,7 +1659,7 @@ static void DisplaySel (PtrElement pEl, int view, int frame, ThotBool *abExist)
   DisplayFrame (frame);
 #ifdef _GL
   /* not sure it's the right place */
-  GL_Swap (frame);
+  //GL_Swap (frame);
 #endif /* _GL */
   SelPosition = saveSelPosition; // restore original value
 }
@@ -1926,7 +1928,8 @@ void SelectStringInAttr (PtrDocument pDoc, PtrAbstractBox pAb, int firstChar,
   two characters.
   ----------------------------------------------------------------------*/
 static void SelectStringOrPosition (PtrDocument pDoc, PtrElement pEl,
-                                    int firstChar, int lastChar, ThotBool string)
+                                    int firstChar, int lastChar, ThotBool string,
+                                    ThotBool withDecoration)
 {
   PtrElement          pAncest;
   ThotBool            elVisible;
@@ -2041,8 +2044,10 @@ static void SelectStringOrPosition (PtrDocument pDoc, PtrElement pEl,
                 if (ThotLocalActions[T_chsplit] != NULL)
                   (*(Proc1)ThotLocalActions[T_chsplit]) ((void *)pDoc);
 #ifdef _WX
-          // update the status bar and style panel
-          DecorationAfterSeletion (TRUE);
+           if ( !TypeHasException (ExcHidden, pEl->ElTypeNumber, pEl->ElStructSchema))
+             // update the status bar and style panel
+             if (withDecoration)
+               DecorationAfterSeletion (TRUE);
 #endif /* _WX */
         }
     }
@@ -2057,7 +2062,7 @@ static void SelectStringOrPosition (PtrDocument pDoc, PtrElement pEl,
   ----------------------------------------------------------------------*/
 void MoveCaret (PtrDocument pDoc, PtrElement pEl, int firstChar)
 {
-  SelectStringOrPosition (pDoc, pEl, firstChar, firstChar, FALSE);
+  SelectStringOrPosition (pDoc, pEl, firstChar, firstChar, FALSE, FALSE);
 }
 
 /*----------------------------------------------------------------------
@@ -2079,7 +2084,7 @@ void SelectString (PtrDocument pDoc, PtrElement pEl, int firstChar, int lastChar
   if (firstChar > lastChar)
     /* it's a position */
     string = FALSE;
-  SelectStringOrPosition (pDoc, pEl, firstChar, lastChar, string);
+  SelectStringOrPosition (pDoc, pEl, firstChar, lastChar, string, TRUE);
 }
 
 /*----------------------------------------------------------------------
@@ -3343,7 +3348,8 @@ void SelectElementWithEvent (PtrDocument pDoc, PtrElement pEl,
   Same function as MoveCaret, but send  events TteElemSelect.Pre and
   TteElemSelect.Post to the application.
   ----------------------------------------------------------------------*/
-void SelectPositionWithEvent (PtrDocument pDoc, PtrElement pEl, int first)
+void SelectPositionWithEvent (PtrDocument pDoc, PtrElement pEl, int first,
+                              ThotBool withDecoration)
 {
   NotifyElement       notifyEl;
   Document            doc;
@@ -3363,7 +3369,7 @@ void SelectPositionWithEvent (PtrDocument pDoc, PtrElement pEl, int first)
       notifyEl.position = 0;
       if (!CallEventType ((NotifyEvent *) & notifyEl, TRUE))
         {
-          SelectStringOrPosition (pDoc, pEl, first, first, FALSE);
+          SelectStringOrPosition (pDoc, pEl, first, first, FALSE, withDecoration);
           notifyEl.event = TteElemSelect;
           notifyEl.document = doc;
           notifyEl.element = (Element) pEl;
@@ -3403,7 +3409,7 @@ void SelectStringWithEvent (PtrDocument pDoc, PtrElement pEl, int firstChar,
       notifyEl.position = 0;
       if (!CallEventType ((NotifyEvent *) & notifyEl, TRUE))
         {
-          SelectStringOrPosition (pDoc, pEl, firstChar, lastChar, TRUE);
+          SelectStringOrPosition (pDoc, pEl, firstChar, lastChar, TRUE, TRUE);
           notifyEl.event = TteElemSelect;
           notifyEl.document = doc;
           notifyEl.element = (Element) pEl;
@@ -3416,40 +3422,6 @@ void SelectStringWithEvent (PtrDocument pDoc, PtrElement pEl, int firstChar,
     }
 }
 
-/*----------------------------------------------------------------------
-  GetParentGroup returns the top enclosing IsGroup element or NULL
-  ----------------------------------------------------------------------*/
-PtrAbstractBox GetParentGroup (PtrAbstractBox pAb)
-{
-  PtrAbstractBox      pParent, pFound = NULL;
-  ThotBool            found;
-
-  /* check parents */
-  found = FALSE;
-  if (pAb == NULL)
-    return NULL;
-  if (pAb->AbElement == NULL || pAb->AbElement->ElStructSchema == NULL ||
-      strcmp (pAb->AbElement->ElStructSchema->SsName, "SVG"))
-    return NULL;
-  pParent = pAb->AbEnclosing;
-  while (pParent && !found)
-    {
-      if (pParent->AbElement &&
-          TypeHasException (ExcIsGroup, pParent->AbElement->ElTypeNumber,
-                            pParent->AbElement->ElStructSchema))
-        {
-          found = TRUE;
-          while (pParent)
-            {
-              pFound = pParent;
-              pParent = GetParentGroup (pParent);
-            }
-        }
-      else
-        pParent = pParent->AbEnclosing;
-    }
-  return (pFound);
-}
 
 /*----------------------------------------------------------------------
   ChangeSelection
@@ -3518,7 +3490,7 @@ ThotBool ChangeSelection (int frame, PtrAbstractBox pAb, int rank,
   else if (view == 1)
     {
       // do we have to move the selection to an emclosing SVG group
-      pGroup = GetParentGroup (pAb);
+      pGroup = GetParentGroup (pAb->AbBox);
       if (pGroup)
         pAb = pGroup;
     }
@@ -3780,7 +3752,7 @@ ThotBool ChangeSelection (int frame, PtrAbstractBox pAb, int rank,
                     pEl->ElLeafType == LtPath ||
                     pEl->ElLeafType == LtGraphics ||
                     pEl->ElLeafType == LtPicture))
-            SelectPositionWithEvent (pDoc, pEl, rank);
+            SelectPositionWithEvent (pDoc, pEl, rank, FALSE);
           else
             SelectElementWithEvent (pDoc, pEl, TRUE, FALSE);
         }

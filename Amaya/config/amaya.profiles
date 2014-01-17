@@ -51,29 +51,37 @@ ShowLinks
 ShowTargets
 SplitHorizontally
 SplitVertically
-CopyLocation
 
 ################# AMAYA Lite
 <Editor_Lite>
 +browsing_lite
 +edit_lite
-&SingleCreateTable
 &SingleNewXHTML
 
-################# AMAYA Lite+Math
+################# AMAYA Lite+Web
 <Editor_Lite2>
 +browsing_lite
 +edit_lite
-+advanced-edit
-&SingleCreateTable
 &SingleNewXHTML
+#---> Add
++web-module
++advanced-edit
++doctype
++clientside-module
++presentation-module
++object-module
++hypertext-module
++forms
++link-module
+FullScreen
+&SingleCreateTable
 *AmayaAttributeToolPanel
 
-################# AMAYA Lite+Math+Web
+################# AMAYA Lite+Web+CSS
 <Editor_Lite3>
 +browsing_lite
-+web-module
 +edit_lite
++web-module
 +advanced-edit
 +doctype
 +clientside-module
@@ -84,30 +92,39 @@ CopyLocation
 +link-module
 FullScreen
 &SingleCreateTable
-&SingleNewXHTML
 *AmayaAttributeToolPanel
-
-################# AMAYA Lite+Math+Web+CSS
-<Editor_Lite4>
-+browsing_lite
-+web-module
-+edit_lite
-+advanced-edit
-+doctype
-+clientside-module
-+presentation-module
-+object-module
-+hypertext-module
-+forms
-+link-module
+#---> Add
 +css-style
-FullScreen
-&SingleCreateTable
 &SetCSSStyle
 &Synchronize
-&SingleNewXHTML
+&NewXHTML
 &NewCss
+
+################# AMAYA Lite+Web+CSS+MathSVG
+<Editor_Lite4>
++browsing_lite
++edit_lite
++web-module
++advanced-edit
++doctype
++clientside-module
++presentation-module
++object-module
++hypertext-module
++forms
++link-module
+FullScreen
+&SingleCreateTable
 *AmayaAttributeToolPanel
++css-style
+&SetCSSStyle
+&Synchronize
+&NewXHTML
+&NewCss
+#---> Add
++math-svg
+&NewMathML
+&NewSVG
 
 ################# AMAYA BROWSER
 <Browser>
@@ -149,6 +166,7 @@ HelpAtW3C
 +tables
 +text-module
 +css-style
++doctype
 
 ################# XHTML-STRICT
 {XHTML 1.0 Strict}
@@ -173,6 +191,7 @@ HelpAtW3C
 +struct-module
 +text-module
 +css-style
++doctype
 
 ################# XHTML-BASIC
 {XHTML Basic}
@@ -187,6 +206,7 @@ HelpAtW3C
 +text-module
 +css-style
 &RemoveDeprecatedElements
++doctype
 
 ################# XHTML1.1
 {XHTML 1.1}
@@ -213,6 +233,7 @@ HelpAtW3C
 +text-module
 +ruby
 +css-style
++doctype
 
 ################# MathML
 {MathML}
@@ -220,6 +241,8 @@ HelpAtW3C
 +hypertext-module
 +maths
 +css-style
+&RemoveDoctype
+&AddDoctype
 
 ################# SVG
 {SVG}
@@ -229,6 +252,8 @@ HelpAtW3C
 +svg
 +css-style
 &CreateMath
+&RemoveDoctype
+&AddDoctype
 
 ################# Annot
 {Annot}
@@ -286,6 +311,7 @@ RefreshTab
 RefreshAllTabs
 CloseOtherTabs
 AmayaCloseTab
+UndoCloseTab
 AmayaCloseWindow
 AmayaClose
 TtcCopySelection
@@ -319,7 +345,7 @@ DoNewXHTML
 &TtcRedo
 &SelectAll
 ShowEditingBar
-&DoSelectFontFamilly
+&DoSelectFontFamily
 &DoSelectFontSize
 *AmayaToolBarEditing
 *AmayaXHTMLPanel
@@ -342,6 +368,7 @@ ShowEditingBar
 +hypertext-module
 +struct-module
 +makebook
++math-svg
 +text-module
 +forms
 +link-module
@@ -359,22 +386,26 @@ ShowEditingBar
 &NewMathML
 &NewSVG
 &NewCss
+&NewLibrary
 &Synchronize
 *AmayaAttributeToolPanel
 *AmayaXMLPanel
 
 
-######### advanced-edit
-[advanced-edit]
+######### math-svg
+[math-svg]
 +maths
 &CreateMath
+*AmayaMathMLPanel
+*AmayaSVGPanel
+
+######### advanced-edit
+[advanced-edit]
 &TransformType
 TtcParentElement
 TtcChildElement
 TtcPreviousElement
 TtcNextElement
-*AmayaMathMLPanel
-*AmayaSVGPanel
 
 ######### doctype
 [doctype]
@@ -390,11 +421,25 @@ TtcNextElement
 
 ######### web-module
 [web-module]
+CopyLocation
 DocumentInfo
 GotoPreviousHTML
 GotoNextHTML
 StopTransfer
 FollowTheLink
+ShowTargets
+ShowBrowsingBar
+*AmayaToolBarBrowsing
+
+######### VIEWS
+[views]
+ShowLinks
+ShowSource
+ShowStructure
+ShowToC
+#ShowFormatted
+#ShowTimeLineWindow
+ShowPanel
 ReadAsUTF_8
 ReadAsISO_8859_1
 ReadAsISO_8859_15
@@ -419,20 +464,6 @@ ReadAsGB_2312
 ReadAsISO_2022_JP
 ReadAsEUC_JP
 ReadAsSHIFT_JIS
-CopyLocation
-ShowTargets
-ShowBrowsingBar
-*AmayaToolBarBrowsing
-
-######### VIEWS
-[views]
-ShowLinks
-ShowSource
-ShowStructure
-ShowToC
-#ShowFormatted
-#ShowTimeLineWindow
-ShowPanel
 TtcCloseView
 HelpAmaya
 HelpAtW3C
@@ -455,6 +486,7 @@ SetupAndPrint
 &CreateComment
 
 [text-module-lite]
+&CreateEntity
 &ChangeTitle
 &CreateBreak
 &SetOnOffCode
@@ -498,6 +530,7 @@ SetupAndPrint
 &CreateDefinitionDef
 &CreateList
 &CreateNumberedList
+&CreateNestedList
 
 [presentation-lite]
 &CreateHorizontalRule
@@ -610,7 +643,7 @@ SelectColumn
 &CreateMN
 &CreateMO
 &CreateMSPACE
-&CreateMathEntity
+&CreateEntity
 &CreateInvisibleTimes
 &CreateApplyFunction
 &CreateMROOT
@@ -769,6 +802,7 @@ TemplateCreateRepeat
 TemplateCreateRepeatComp
 TemplateCreateFreeBox
 TemplateCreateUnion
+TemplateCreateImport
 
 [spell]
 SpellCheck

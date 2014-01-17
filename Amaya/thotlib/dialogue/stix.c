@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2008
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -26,14 +26,9 @@
 #ifdef _GL
 #include "openglfont.h"
 #include "glwindowdisplay.h"
-#endif /*_GL*/
-
-#ifdef _WINGUI
+#else /*_GL*/
 #include "windowdisplay_f.h"
-#endif /*_WINGUI*/
-#if defined(_GTK) || defined(_WX)
-#include "xwindowdisplay_f.h"
-#endif /* #if defined(_GTK) || defined(_WX) */
+#endif /*_GL*/
 
 #include "font_f.h"
 #include "stix_f.h"
@@ -85,23 +80,23 @@ int Stix_Symbs_Start = 0x2100;
 MapEntry     Stix_Symbs [] = {
   /* 210x */ {0, 0x00}, {0, 0x00}, {14, 0x43}, {0, 0x00},
   {0, 0x00}, {0, 0x00}, {0, 0x00}, {13, 0x45},
-  {0, 0x00}, {0, 0x00}, {13, 0x47}, {13, 0x48},
-  {0, 0x00}, {14, 0x48}, {13, 0x68}, {5, 0x5a},
-  /* 211x */ {13, 0x46}, {13, 0x54}, {13, 0x4c}, {13, 0x6c},
+  {0, 0x00}, {0, 0x00}, {13, 0x67}, {13, 0x48},
+  {15, 0x48}, {14, 0x48}, {13, 0x68}, {5, 0x5a},
+  /* 211x */ {13, 0x49}, {15, 0x49}, {13, 0x4c}, {13, 0x6c},
   {0, 0x00}, {14, 0x4e}, {0, 0x00}, {0, 0x00},
   {13, 0x50}, {14, 0x50}, {14, 0x51}, {13, 0x52},
-  {13, 0x52}, {14, 0x52}, {0, 0x00}, {0, 0x00},
+  {15, 0x52}, {14, 0x52}, {0, 0x00}, {0, 0x00},
   /* 212x */ {0, 0x00}, {0, 0x00}, {0, 0x00}, {0, 0x00},
-  {14, 0x5a}, {16, 0x42}, {11, 0x55}, {11, 0x5b},
-  {16, 0x69}, {12, 0x31}, {0, 0x00}, {0, 0x00},
-  {15, 0x42}, {15, 0x43}, {13, 0x65}, {13, 0x65},
-  /* 213x */ {13, 0x45}, {13, 0x46}, {0, 0x00}, {15, 0x4D},
+  {14, 0x5a}, {16, 0x42}, {10, 0x55}, {10, 0x5b},
+  {15, 0x5a}, {10, 0x31}, {0, 0x00}, {0, 0x00},
+  {13, 0x42}, {15, 0x43}, {13, 0x65}, {13, 0x65},
+  /* 213x */ {13, 0x45}, {13, 0x46}, {0, 0x00}, {13, 0x4D},
   {13, 0x6f}, {14, 0x61}, {14, 0x62}, {14, 0x64},
   {14, 0x63}, {0, 0x00}, {0, 0x00}, {0, 0x00},
   {0, 0x00}, {0, 0x00}, {0, 0x00}, {0, 0x00},
-  /* 214x */ {12, 0x76}, {0, 0x00}, {0, 0x00}, {0, 0x00},
-  {0, 0x00}, {0, 0x00}, {0, 0x00}, {13, 0x65},
-  {13, 0x69}, {0, 0x00}, {0, 0x00}, {0, 0x00}
+  /* 214x */ {0, 0x00}, {0, 0x00}, {0, 0x00}, {0, 0x00},
+  {0, 0x00}, {0, 0x00}, {0, 0x00}, {0, 0x00},
+  {0, 0x00}, {0, 0x00}, {0, 0x00}, {0, 0x00}
 };
 #define Stix_Symbs_length sizeof(Stix_Symbs) / sizeof(MapEntry)
 
@@ -262,6 +257,60 @@ MapEntry     Stix_OverBrace [] = {
 };
 #define Stix_OverBrace_length sizeof(Stix_OverBrace) / sizeof(MapEntry)
 
+/* Mapping of Unicode Script symbols (0x1D49C-0x1D4CF) */
+int Stix_ScriptSymbols_Start = 0x1D49C;
+MapEntry   Stix_ScriptSymbols [] = {
+  /* 1D49C */ {13, 0x41}, {0, 0x00}, {13, 0x43}, {13, 0x44},
+  /* 1D4Ax */ {0, 0x00}, {0, 0x00}, {13, 0x47}, {0, 0x00},
+  {0, 0x00}, {13, 0x4a}, {13, 0x4b}, {0, 0x00},
+  {0, 0x00}, {13, 0x4e}, {13, 0x4f}, {13, 0x50},
+  {13, 0x51}, {0, 0x00}, {13, 0x53}, {13, 0x54},
+  /* 1D4Bx */ {13, 0x55}, {13, 0x56}, {13, 0x57}, {13, 0x58},
+  {13, 0x59}, {13, 0x5a}, {13, 0x61}, {13, 0x62},
+  {13, 0x63}, {13, 0x64}, {0, 0x00}, {13, 0x66},
+  {0, 0x00}, {13, 0x68}, {13, 0x69}, {13, 0x6a},
+  /* 1D4Cx */ {13, 0x6b}, {13, 0x6c}, {13, 0x6d}, {13, 0x6e},
+  {0, 0x00}, {13, 0x70}, {13, 0x71}, {13, 0x72},
+  {13, 0x73}, {13, 0x74}, {13, 0x75}, {13, 0x76},
+  {13, 0x77}, {13, 0x78}, {13, 0x79}, {13, 0x7a}
+};
+#define Stix_ScriptSymbols_length sizeof(Stix_ScriptSymbols) / sizeof(MapEntry)
+
+/* Mapping of Unicode Fraktur and Double-struck symbols (0x1D504-0x1D56B) */
+int Stix_DoubleStruck_Start = 0x1D504;
+MapEntry   Stix_DoubleStruck [] = {
+  /* 1D504 */ {15, 0x41}, {15, 0x42}, {0, 0x00}, {15, 0x44},
+  {15, 0x45}, {15, 0x46}, {15, 0x47}, {0, 0x00},
+  {0, 0x00}, {15, 0x4a}, {15, 0x4b}, {15, 0x4c},
+  /* 1D51x */ {15, 0x4d}, {15, 0x4e}, {15, 0x4f}, {15, 0x50},
+  {15, 0x51}, {0, 0x00}, {15, 0x53}, {15, 0x54},
+  {15, 0x55}, {15, 0x56}, {15, 0x57}, {15, 0x58},
+  {15, 0x59}, {0, 0x00}, {15, 0x61}, {15, 0x62},
+  /* 1D52x */ {15, 0x63}, {15, 0x64}, {15, 0x65}, {15, 0x66},
+  {15, 0x67}, {15, 0x68}, {15, 0x69}, {15, 0x6a},
+  {15, 0x6b}, {15, 0x6c}, {15, 0x6d}, {15, 0x6e},
+  {15, 0x6f}, {15, 0x70}, {15, 0x71}, {15, 0x72},
+  /* 1D53x */ {15, 0x73}, {15, 0x74}, {15, 0x75}, {15, 0x76},
+  {15, 0x77}, {15, 0x78}, {15, 0x79}, {15, 0x7a},
+  {14, 0x41}, {14, 0x42}, {0, 0x00}, {14, 0x44},
+  {14, 0x45}, {14, 0x46}, {14, 0x47}, {0, 0x00},
+  /* 1D54x */ {14, 0x49}, {14, 0x4a}, {14, 0x4b}, {14, 0x4c},
+  {14, 0x4d}, {0, 0x00}, {14, 0x4f}, {0, 0x00},
+  {0, 0x00}, {0, 0x00}, {14, 0x53}, {14, 0x54},
+  {14, 0x55}, {14, 0x56}, {14, 0x57}, {14, 0x58},
+  /* 1D55x */ {14, 0x59}, {0, 0x00}
+};
+#define Stix_DoubleStruck_length sizeof(Stix_DoubleStruck) / sizeof(MapEntry)
+
+/* Mapping of Unicode Double-struck digits (0x1D7D8-0x1D7E1) */
+int Stix_DoubleDigits_Start = 0x1D7D8;
+MapEntry   Stix_DoubleDigits [] = {
+  /* 1D7D8 */ {14, 0x30}, {14, 0x31}, {14, 0x32}, {14, 0x33},
+  {14, 0x34}, {14, 0x35}, {14, 0x36}, {14, 0x37},
+  /* 1D7Ex */ {14, 0x38}, {14, 0x39}
+};
+#define Stix_DoubleDigits_length sizeof(Stix_DoubleDigits) / sizeof(MapEntry)
+
 #ifndef _GL
 /*----------------------------------------------------------------------
   DrawCompoundBraceStix
@@ -290,8 +339,8 @@ static void DrawCompoundBraceStix (int frame, int x, int y, int l, int h,
       else
         {  topChar = 0x47;  bottomChar = 0x48; }
       yf += (h - (2 * hd)) / 2;
-      DrawChar ((char)topChar, frame, xm, yf, font, fg);
-      DrawChar ((char)bottomChar, frame, xm, yf+hd, font, fg);      
+      DrawChar ((CHAR_T)topChar, frame, xm, yf, font, fg);
+      DrawChar ((CHAR_T)bottomChar, frame, xm, yf+hd, font, fg);      
     }
   else if (h < 4 * hd)
     /* we can use three characters, but the two gaps are too narrow to
@@ -303,25 +352,25 @@ static void DrawCompoundBraceStix (int frame, int x, int y, int l, int h,
         yf += delta;
       else
         delta -= 1;
-      DrawChar ((char)topChar, frame, xm, yf, font, fg);
+      DrawChar ((CHAR_T)topChar, frame, xm, yf, font, fg);
       yf += hd;
       if (delta < 0)
         yf += delta;
-      DrawChar ((char)middleChar, frame, xm, yf, font, fg);
+      DrawChar ((CHAR_T)middleChar, frame, xm, yf, font, fg);
       yf += hd;
       if (delta < 0)
         yf += delta;
-      DrawChar ((char)bottomChar, frame, xm, yf, font, fg);
+      DrawChar ((CHAR_T)bottomChar, frame, xm, yf, font, fg);
     }
   else
     /* use the total height */
     {
-      DrawChar ((char)topChar, frame, xm, yf, font, fg);
+      DrawChar ((CHAR_T)topChar, frame, xm, yf, font, fg);
       yend = y + h - CharacterHeight (bottomChar, font) +
         CharacterAscent (bottomChar, font) - 1;
-      DrawChar ((char)bottomChar, frame, xm, yend, font, fg);
+      DrawChar ((CHAR_T)bottomChar, frame, xm, yend, font, fg);
       ym = (yf + yend) / 2;
-      DrawChar ((char)middleChar, frame, xm, ym, font, fg);
+      DrawChar ((CHAR_T)middleChar, frame, xm, ym, font, fg);
       delta = (h - 3*hd) / 2;
       if (delta > 0 && hd > 0)
         /* there are two gaps between the top, middle and bottom characters */
@@ -330,8 +379,8 @@ static void DrawCompoundBraceStix (int frame, int x, int y, int l, int h,
             /* the gap is less than one character. Draw a single fill
                character centered in each gap */
             {
-              DrawChar ((char)fillChar, frame, xm, (ym + yf) / 2, font, fg);
-              DrawChar ((char)fillChar, frame, xm, (yend + ym) / 2, font, fg);
+              DrawChar ((CHAR_T)fillChar, frame, xm, (ym + yf) / 2, font, fg);
+              DrawChar ((CHAR_T)fillChar, frame, xm, (yend + ym) / 2, font, fg);
             }
           else
             /* draw several fill characters in each gap */
@@ -340,14 +389,14 @@ static void DrawCompoundBraceStix (int frame, int x, int y, int l, int h,
               while (delta > 0)
                 {
                   yf += hd;
-                  DrawChar ((char)fillChar, frame, xm, yf, font, fg);
-                  DrawChar ((char)fillChar, frame, xm, yf+second, font, fg);
+                  DrawChar ((CHAR_T)fillChar, frame, xm, yf, font, fg);
+                  DrawChar ((CHAR_T)fillChar, frame, xm, yf+second, font, fg);
                   delta -= hd;
                   ym -= hd;
                   if (delta > 0)
                     {
-                      DrawChar ((char)fillChar, frame, xm, ym, font, fg);
-                      DrawChar ((char)fillChar, frame, xm, ym+second+1, font, fg);
+                      DrawChar ((CHAR_T)fillChar, frame, xm, ym, font, fg);
+                      DrawChar ((CHAR_T)fillChar, frame, xm, ym+second+1, font, fg);
                       delta -= hd;
                     }
                 }
@@ -385,15 +434,15 @@ static void DrawCompoundExtendedStix (int frame, int x, int y, int l, int h,
        characters, next to each other, centered in the box */
     {
       yf += (h - (2 * hd)) / 2;
-      DrawChar ((char)topChar, frame, xm, yf, font, fg);
-      DrawChar ((char)bottomChar, frame, xm, yf+hd, font, fg);
+      DrawChar ((CHAR_T)topChar, frame, xm, yf, font, fg);
+      DrawChar ((CHAR_T)bottomChar, frame, xm, yf+hd, font, fg);
     }
   else
     {
-      DrawChar ((char)topChar, frame, xm, yf, font, fg);
+      DrawChar ((CHAR_T)topChar, frame, xm, yf, font, fg);
       yend = y + h - CharacterHeight (bottomChar, font) +
         CharacterAscent (bottomChar, font) - 1;
-      DrawChar ((char)bottomChar, frame, xm, yend, font, fg);
+      DrawChar ((CHAR_T)bottomChar, frame, xm, yend, font, fg);
       delta = yend - yf - hd;
       if (delta > 0 && hd > 0)
         /* there is a gap between the top and bottom characters.
@@ -402,19 +451,19 @@ static void DrawCompoundExtendedStix (int frame, int x, int y, int l, int h,
           if (delta <= hd)
             /* the gap is less than one character. Draw a single fill
                character centered in the gap */
-            DrawChar ((char)fillChar, frame, xm, (yend + yf) / 2, font, fg);
+            DrawChar ((CHAR_T)fillChar, frame, xm, (yend + yf) / 2, font, fg);
           else
             /* draw several fill characters */
             {
               while (delta > 0)
                 {
                   yf += hd;
-                  DrawChar ((char)fillChar, frame, xm, yf, font, fg);
+                  DrawChar ((CHAR_T)fillChar, frame, xm, yf, font, fg);
                   delta -= hd;
                   yend -= hd;
                   if (delta > 0)
                     {
-                      DrawChar ((char)fillChar, frame, xm, yend, font, fg);
+                      DrawChar ((CHAR_T)fillChar, frame, xm, yend, font, fg);
                       delta -= hd;
                     }
                 }
@@ -433,7 +482,7 @@ void DrawCenteredStixChar (ThotFont font, unsigned char symb, int x, int y,
   x = x + ((l - CharacterWidth ((char) symb, font)) / 2);
   y = y + ((h - CharacterHeight ((char)symb, font)) / 2)
 	  + CharacterAscent ((char) symb, font);
-  DrawChar ((char) symb, frame, x, y, font, fg);
+  DrawChar ((CHAR_T) symb, frame, x, y, font, fg);
 }
 
 /*----------------------------------------------------------------------
@@ -445,7 +494,7 @@ static void DrawStixChar (ThotFont font, unsigned char symb, int x,
 {
   y = y + ((h - CharacterHeight ((char)symb, font)) / 2)
 	  + CharacterAscent ((char) symb, font);
-  DrawChar ((char) symb, frame, x, y, font, fg);
+  DrawChar ((CHAR_T) symb, frame, x, y, font, fg);
 }
 
 /*----------------------------------------------------------------------
@@ -688,7 +737,7 @@ void DrawStixBracket (int frame, int x, int y, int l, int h,
   unsigned char   symb;
   ThotFont        font;
 
-  size = PixelToPoint (h);
+  size = PixelToPoint (l);
   font = (ThotFont)LoadStixFont (7, size);
   if (CharacterHeight (33, font) > (3 * h) / 4)
     {
@@ -791,22 +840,22 @@ void DrawStixBracket (int frame, int x, int y, int l, int h,
 /* ----------------------------------------------------------------------
    StixBracketWidth
    ----------------------------------------------------------------------*/
-static int StixBracketWidth (int height, SpecFont font)
+static int StixBracketWidth (int h, SpecFont font)
 {
   int             i, size;
   ThotFont        pfont;
 
   GetFontAndIndexFromSpec (32, font, 1, &pfont);
-  if (pfont && height <= (int) (1.3 * FontHeight (pfont)))
+  if (pfont && h <= (int) (1.3 * FontHeight (pfont)))
     /* use an ordinary parenthesis */
     i = CharacterWidth ('(', pfont);
   else
     {
-      size = PixelToPoint (height);
+      size = PixelToPoint (h);
       pfont = (ThotFont)LoadStixFont (7, size);
-      if (height < LOW_HEIGHT)
+      if (h < LOW_HEIGHT)
         i = CharacterWidth (63, pfont);
-      else if (height < MID_HEIGHT)
+      else if (h < MID_HEIGHT)
         i = CharacterWidth (36, pfont);
       else 
         i = CharacterWidth (50, pfont);
@@ -828,7 +877,7 @@ void DrawStixPointyBracket (int frame, int x, int y, int l, int h,
   if (fg < 0)
     return;
 
-  size = PixelToPoint (h);
+  size = PixelToPoint (l);
   font = (ThotFont)LoadStixFont (7, size);
   /*  write a single Esstix 7 character:
       61 normal
@@ -887,7 +936,7 @@ void DrawStixParenthesis (int frame, int x, int y, int l, int h,
   unsigned char   symb;
   ThotFont        font;
 
-  size = PixelToPoint (h);
+  size = PixelToPoint (l);
   font = (ThotFont)LoadStixFont (7, size);
   if (CharacterHeight (33, font) > (3 * h) / 4)
     {
@@ -966,7 +1015,7 @@ void DrawStixBrace (int frame, int x, int y, int l, int h,
   ThotFont        font;
 
 #ifdef _GL
-  size = PixelToPoint ((3 * h) / 4);
+  size = PixelToPoint (l);
   font = (ThotFont)LoadStixFont (7, size);
   if (direction == 0)
     symb = 38;
@@ -1069,10 +1118,10 @@ static void DrawCompoundHorizBraceStix (int frame, int x, int y, int l, int h,
   mWidth = CharacterWidth (middleChar, font);
   rWidth = CharacterWidth (rightChar, font);
   fWidth = CharacterWidth (fillChar, font);
-  DrawChar ((char)leftChar, frame, x, baseline, font, fg);
+  DrawChar ((CHAR_T)leftChar, frame, x, baseline, font, fg);
   xMiddleChar = x + (l - mWidth) / 2;
-  DrawChar ((char)middleChar, frame, xMiddleChar, baseline, font, fg);
-  DrawChar ((char)rightChar, frame, x + l - rWidth, baseline, font, fg);
+  DrawChar ((CHAR_T)middleChar, frame, xMiddleChar, baseline, font, fg);
+  DrawChar ((CHAR_T)rightChar, frame, x + l - rWidth, baseline, font, fg);
 
   gap = l - lWidth - mWidth - rWidth;
   if (gap > 0 && fWidth > 0)
@@ -1084,9 +1133,9 @@ static void DrawCompoundHorizBraceStix (int frame, int x, int y, int l, int h,
         /* the gap is less than onefill character. Draw a single fill
            character centered in each gap */
         {
-          DrawChar ((char)fillChar, frame, x+lWidth-((fWidth-gap)*3/4), baseline,
+          DrawChar ((CHAR_T)fillChar, frame, x+lWidth-((fWidth-gap)*3/4), baseline,
                     font, fg);
-          DrawChar ((char)fillChar, frame, xMiddleChar+mWidth-(fWidth-gap)/4,
+          DrawChar ((CHAR_T)fillChar, frame, xMiddleChar+mWidth-(fWidth-gap)/4,
                     baseline, font, fg);
         }
       else
@@ -1097,8 +1146,8 @@ static void DrawCompoundHorizBraceStix (int frame, int x, int y, int l, int h,
           xf2 = xMiddleChar + mWidth;
           do
             {
-              DrawChar ((char)fillChar, frame, xf1, baseline, font, fg);
-              DrawChar ((char)fillChar, frame, xf2, baseline, font, fg);
+              DrawChar ((CHAR_T)fillChar, frame, xf1, baseline, font, fg);
+              DrawChar ((CHAR_T)fillChar, frame, xf2, baseline, font, fg);
               gap -= fWidth;
               if (gap > 0)
                 {
@@ -1170,8 +1219,8 @@ static void DrawCompoundHorizArrow (int frame, int x, int y, int l, int h,
   lWidth = CharacterWidth (leftChar, font);
   mWidth = CharacterWidth (middleChar, font);
   rWidth = CharacterWidth (rightChar, font);
-  DrawChar ((char)leftChar, frame, x, baseline, font, fg);
-  DrawChar ((char)rightChar, frame, x + l - rWidth, baseline, font, fg);
+  DrawChar ((CHAR_T)leftChar, frame, x, baseline, font, fg);
+  DrawChar ((CHAR_T)rightChar, frame, x + l - rWidth, baseline, font, fg);
 
   gap = l - lWidth - rWidth;
   xf1 = x + lWidth;
@@ -1183,10 +1232,10 @@ static void DrawCompoundHorizArrow (int frame, int x, int y, int l, int h,
           if (gap < mWidth/2)
             /* the gap is less than onefill character. Draw a single fill
                character centered in each gap */
-            DrawChar ((char)middleChar, frame, xf1-(gap/2), baseline,
+            DrawChar ((CHAR_T)middleChar, frame, xf1-(gap/2), baseline,
                       font, fg);
           else
-            DrawChar ((char)middleChar, frame, xf1, baseline, font, fg);
+            DrawChar ((CHAR_T)middleChar, frame, xf1, baseline, font, fg);
           gap -= mWidth;
           xf1 += mWidth;
         }
@@ -1452,7 +1501,6 @@ void GetMathFontFromChar (char typesymb, SpecFont fontset, void **font,
     }
 }
 
-
 /*----------------------------------------------------------------------
   GetStixFontAndIndex returns the glyph index and the font
   used to display the wide character c
@@ -1528,6 +1576,32 @@ int GetStixFontAndIndex (int c, SpecFont fontset, ThotFont **font)
       index = (int) (entry.MapIndex);
       face = (int) (entry.MapFont);
     }
+  else if (c == 0x27fa) /* Long left right double arrow */
+    /* use the short arrow instead */
+    {
+      entry = Stix_Arrows[0x21d4 - Stix_Arrows_Start];
+      index = (int) (entry.MapIndex);
+      face = (int) (entry.MapFont);
+    }
+  else if (c >= Stix_ScriptSymbols_Start && c < (int) (Stix_ScriptSymbols_Start + Stix_ScriptSymbols_length))
+    {
+      entry = Stix_ScriptSymbols[c - Stix_ScriptSymbols_Start];
+      index = (int) (entry.MapIndex);
+      face = (int) (entry.MapFont);
+    }
+  else if (c >= Stix_DoubleStruck_Start && c < (int) (Stix_DoubleStruck_Start + Stix_DoubleStruck_length))
+    {
+      entry = Stix_DoubleStruck[c - Stix_DoubleStruck_Start];
+      index = (int) (entry.MapIndex);
+      face = (int) (entry.MapFont);
+    }
+  else if (c >= Stix_DoubleDigits_Start && c < (int) (Stix_DoubleDigits_Start + Stix_DoubleDigits_length))
+    {
+      entry = Stix_DoubleDigits[c - Stix_DoubleDigits_Start];
+      index = (int) (entry.MapIndex);
+      face = (int) (entry.MapFont);
+    }
+
   if (face == 1)
     *font = &(fontset->SFont_1);
   else if (face == 2)

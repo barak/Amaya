@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2005
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -400,30 +400,17 @@ static FontScript **FontConfigLoad ()
   char                fname[MAX_TXT_LEN], name[MAX_TXT_LEN];
   char                word[50];
   char               *appHome;
-  char                fname1[MAX_TXT_LEN];
-  char                word1[50];
   ThotBool            complete;
 
   appHome = TtaGetEnvString ("APP_HOME");
-#ifndef _GL
-#ifdef _WINDOWS
-  strcpy (word, "fonts.win");  
-#else /* _WINDOWS */
-  strcpy (word, "fonts.unix");  
-#endif /* _WINDOWS */
-#else /* _GL */
-
-#ifdef _UNIX
-#ifdef _MACOS
-  strcpy (word, "fonts.gl.mac");  
-#else /* _MACOS */
-  strcpy (word, "fonts.gl");  
-#endif /* _MACOS */  
-#endif /* _UNIX */
-
+#ifdef _GL
 #ifdef _WINDOWS
   strcpy (word, "fonts.gl.win");  
+#else /* _WINDOWS */
+  strcpy (word, "fonts.gl");  
 #endif /* _WINDOWS */
+#else /* _GL */
+  strcpy (word, "fonts.win");  
 #endif /* _GL */
 
   strcpy (fname, appHome);
@@ -445,63 +432,6 @@ static FontScript **FontConfigLoad ()
   /* load the first config file */
   complete = FontLoadFile (file, fontsscript_tab);
   TtaReadClose (file);
-  if (!complete)
-    {
-#if defined(_UNIX) && !defined(_MACOS)
-      /* try a redhat font file */
-      strcpy (word1, word);
-      strcat (word1, ".rd");
-      strcpy (fname1, fname);
-      strcat (fname1, ".rd");
-      if (!SearchFile (fname1, 0, name))
-        SearchFile (word1, 2, name);
-      /* open the fonts definition file */
-      file = TtaReadOpen (name);
-      if (file)
-        complete = FontLoadFile (file, fontsscript_tab);
-      if (!complete)
-        {
-          /* try a debian font file */
-          strcpy (word1, word);
-          strcat (word1, ".deb");
-          strcpy (fname1, fname);
-          strcat (fname1, ".deb");
-          if (!SearchFile (fname1, 0, name))
-            SearchFile (word1, 2, name);
-          /* open the fonts definition file */
-          file = TtaReadOpen (name);
-          if (file)
-            complete = FontLoadFile (file, fontsscript_tab);
-        }
-      if (!complete)
-        {
-          /* try a debian font file */
-          strcpy (word1, word);
-          strcat (word1, ".deb1");
-          strcpy (fname1, fname);
-          strcat (fname1, ".deb1");
-          if (!SearchFile (fname1, 0, name))
-            SearchFile (word1, 2, name);
-          /* open the fonts definition file */
-          file = TtaReadOpen (name);
-          if (file)
-            complete = FontLoadFile (file, fontsscript_tab);
-        }
-#endif /* _UNIX && !_MACOS*/
-#if defined(_WINDOWS) && defined (_GL) 
-      /* try a redhat font file */
-      strcpy (word1, word);
-      strcat (word1, ".nt");
-      strcpy (fname1, fname);
-      strcat (fname1, ".nt");
-      if (!SearchFile (fname1, 0, name))
-        SearchFile (word1, 2, name);
-      /* open the fonts definition file */
-      file = TtaReadOpen (name);
-      if (file)
-        complete = FontLoadFile (file, fontsscript_tab);
-#endif /* _WINDOWS && _GL */
-    }
   return fontsscript_tab;
 }
 

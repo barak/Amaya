@@ -1,6 +1,6 @@
 ## Process this file with Automake to create Makefile.in.
 
-DOCS :=	$(wildcard *.html *.gif)
+DOCS = *.html
 
 EXTRA_DIST = \
 	$(DOCS)

@@ -40,6 +40,7 @@
 #include "applicationapi_f.h"
 #include "appli_f.h"
 #include "boxmoves_f.h"
+#include "boxrelations_f.h"
 #include "boxlocate_f.h"
 #include "boxpositions_f.h"
 #include "boxselection_f.h"
@@ -158,7 +159,7 @@ ThotBool APPgraphicModify (PtrElement pEl, int value, int frame,
 /*----------------------------------------------------------------------
   NotifyClick sends a message event to parent elements of a graphic.
   ----------------------------------------------------------------------*/
-static ThotBool NotifyClick (int event, ThotBool pre, PtrElement pEl, int doc)
+static ThotBool NotifyClick (int event, ThotBool pre, PtrElement pEl, int doc, int pos)
 {
   PtrElement          pAsc;
   NotifyElement       notifyEl;
@@ -176,7 +177,7 @@ static ThotBool NotifyClick (int event, ThotBool pre, PtrElement pEl, int doc)
     pAsc = pAsc->ElParent;
   notifyEl.event = (APPevent)event;
   notifyEl.document = doc;
-  notifyEl.position = 0;
+  notifyEl.position = pos;
   notifyEl.element = (Element) pAsc;
   notifyEl.info = 0; /* not sent by undo */
   notifyEl.elementType.ElTypeNum = pAsc->ElTypeNumber;
@@ -297,18 +298,17 @@ ThotBool LocateSelectionInView (int frame, int x, int y, int button,
   PtrElement          pEl = NULL, firstEl;
   PtrDocument         selecteddoc;
   PtrTextBuffer       pBuffer = NULL;
-  PtrAbstractBox      pAb;
+  PtrAbstractBox      pAb, sibling;
   PtrElement          el = NULL;
   ViewFrame          *pFrame;
   ViewSelection      *pViewSel;
   PtrFlow             pFlow = NULL;
-  int                 nChars;
-  int                 nSpaces;
+  int                 nChars, nSpaces;
   int                 index, pos;
   int                 xOrg, yOrg;
   int                 width, height;
   int                 doc, view;
-  int                 firstC;
+  int                 firstC, presBox = 0;
   ThotBool            extend, ok, left = FALSE;
   PtrDocument         pDoc;
 
@@ -451,7 +451,23 @@ ThotBool LocateSelectionInView (int frame, int x, int y, int button,
             case 2:
               /* send event TteElemLClick.Pre to the application */
               el = pAb->AbElement;
-              SkipClickEvent = NotifyClick (TteElemLClick, TRUE, el, doc);
+              if (pAb->AbPresentationBox)
+                {
+                  // within the element box
+                  presBox = 2;
+                  if (pAb->AbEnclosing && pAb->AbEnclosing->AbElement != el)
+                    {
+                      sibling = pAb->AbPrevious;
+                      while (sibling && sibling->AbElement == el && sibling->AbPresentationBox)
+                        sibling = sibling->AbPrevious;
+                      if (sibling && sibling->AbElement == el)
+                        // after the element box
+                        presBox = 3;
+                      else
+                        presBox = 1;
+                    }
+                }
+              SkipClickEvent = NotifyClick (TteElemLClick, TRUE, el, doc, presBox);
               if (SkipClickEvent)
                 /* the application asks Thot to do nothing */
                 return SkipClickEvent;
@@ -488,7 +504,7 @@ ThotBool LocateSelectionInView (int frame, int x, int y, int button,
                         }
                       else
                         {
-                          NotifyClick (TteElemLClick, FALSE, el, doc);
+                          NotifyClick (TteElemLClick, FALSE, el, doc, presBox);
                           return FALSE;
                         }
 
@@ -507,13 +523,13 @@ ThotBool LocateSelectionInView (int frame, int x, int y, int button,
                         }
                       else
                         {
-                          NotifyClick (TteElemLClick, FALSE, el, doc);
+                          NotifyClick (TteElemLClick, FALSE, el, doc, presBox);
                           return FALSE;
                         }
                     }
                 }
 
-              /* the document can be reloaded */
+              /* reinitialize pAb as the document could be reloaded */
               pAb = pFrame->FrAbstractBox;
               nChars = 0;
               GetClickedBox (&pBox, &pFlow, pAb, frame, x, y, Y_RATIO, &nChars);
@@ -522,10 +538,9 @@ ThotBool LocateSelectionInView (int frame, int x, int y, int button,
                 {
                   el = pBox->BxAbstractBox->AbElement;
 
-                  if(FrameTable[frame].FrView == 1 &&
-                     drag != NULL && el &&
-                     el->ElLeafType != LtText &&
-                     el->ElParent && IsSVGComponent(el->ElParent))
+                  if (FrameTable[frame].FrView == 1 && el &&
+                      el->ElLeafType != LtText &&
+                      el->ElParent && IsSVGComponent(el->ElParent))
                     {
                       /* click on an SVG element. Does the user want to
                          move it ? */
@@ -544,7 +559,7 @@ ThotBool LocateSelectionInView (int frame, int x, int y, int button,
                             }
                         }
                     }
-                  NotifyClick (TteElemLClick, FALSE, el, doc);
+                  NotifyClick (TteElemLClick, FALSE, el, doc, presBox);
                 }
               break;
             case 3:
@@ -570,11 +585,11 @@ ThotBool LocateSelectionInView (int frame, int x, int y, int button,
                 {
                   /* send event TteElemClick.Pre to the application */
                   el = pAb->AbElement;
-                  if (NotifyClick (TteElemClick, TRUE, el, doc))
+                  if (NotifyClick (TteElemClick, TRUE, el, doc, presBox))
                     /* the application asks Thot to do nothing */
                     return TRUE;
                   /* send event TteElemClick.Post to the application */
-                  NotifyClick (TteElemClick, FALSE, el, doc);
+                  NotifyClick (TteElemClick, FALSE, el, doc, presBox);
                 }
               break;
             case 5:
@@ -584,7 +599,7 @@ ThotBool LocateSelectionInView (int frame, int x, int y, int button,
                 {
                   /* send event TteElemMClick.Pre to the application */
                   el = pAb->AbElement;
-                  if (NotifyClick (TteElemMClick, TRUE, el, doc))
+                  if (NotifyClick (TteElemMClick, TRUE, el, doc, presBox))
                     /* the application asks Thot to do nothing */
                     return TRUE;
                 }
@@ -602,7 +617,7 @@ ThotBool LocateSelectionInView (int frame, int x, int y, int button,
                 {
                   /* send event TteElemRClick.Pre to the application */
                   el = pAb->AbElement;
-                  if (NotifyClick (TteElemRClick, TRUE, el, doc))
+                  if (NotifyClick (TteElemRClick, TRUE, el, doc, presBox))
                     /* the application asks Thot to do nothing */
                     return TRUE;
                 }
@@ -616,7 +631,7 @@ ThotBool LocateSelectionInView (int frame, int x, int y, int button,
               else if (x >= xOrg && x <= xOrg + pBox->BxW &&
                        y >= yOrg && y <= yOrg + pBox->BxH)
                 /* send event TteElemRClick.Post to the application */
-                NotifyClick (TteElemRClick, FALSE, el, doc);
+                NotifyClick (TteElemRClick, FALSE, el, doc, presBox);
               break;
             case 7: /* reset the previous selection */
               ChangeSelection (frame, pAb, nChars, FALSE, TRUE, FALSE, FALSE);
@@ -628,7 +643,7 @@ ThotBool LocateSelectionInView (int frame, int x, int y, int button,
                 {
                   /* send event TteElemRClick.Pre to the application */
                   el = pAb->AbElement;
-                  if (NotifyClick (TteElemRClick, TRUE, el, doc))
+                  if (NotifyClick (TteElemRClick, TRUE, el, doc, presBox))
                     /* the application asks Thot to do nothing */
                     return TRUE;
                 }
@@ -2060,7 +2075,9 @@ PtrBox GetEnclosingClickedBox (PtrAbstractBox pAb, int higherX,
             }
           return (NULL);
         }
-      else if (pBox->BxType == BoGhost || pBox->BxType == BoFloatGhost)
+      else if (pBox->BxType == BoGhost ||
+               pBox->BxType == BoStructGhost ||
+               pBox->BxType == BoFloatGhost)
         /* dummy box */
         return (NULL);
       else if (pAb->AbLeafType == LtGraphics &&
@@ -2325,7 +2342,9 @@ PtrBox GetLeafBox (PtrBox pSourceBox, int frame, int *x, int *y,
                   if (pLine  && pLine->LiPrevious)
                     {
                       box = pBox->BxAbstractBox->AbEnclosing->AbBox;
-                      while (box->BxType == BoGhost || box->BxType == BoFloatGhost)
+                      while (box->BxType == BoGhost ||
+                             box->BxType == BoStructGhost ||
+                             box->BxType == BoFloatGhost)
                         box = box->BxAbstractBox->AbEnclosing->AbBox;
 #ifdef _GL
                       if (pBox->BxBoundinBoxComputed)
@@ -2762,6 +2781,7 @@ static ThotBool CanBeResized (PtrAbstractBox pAb, int frame,
             pParentAb->AbBox->BxType == BoFloatBlock ||
             pParentAb->AbBox->BxType == BoCellBlock ||
             pParentAb->AbBox->BxType == BoGhost ||
+            pParentAb->AbBox->BxType == BoStructGhost ||
             pParentAb->AbBox->BxType == BoFloatGhost))
     /* text box displayed in block of lines */
     ok = FALSE;

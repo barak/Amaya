@@ -74,12 +74,12 @@ extern void SelectElementWithEvent ( PtrDocument pDoc,
                                      ThotBool check );
 extern void SelectPositionWithEvent ( PtrDocument pDoc,
                                       PtrElement pEl,
-                                      int first );
+                                      int first,
+                                      ThotBool withDecoration );
 extern void SelectStringWithEvent ( PtrDocument pDoc,
                                     PtrElement pEl,
                                     int firstChar,
                                     int lastChar );
-extern PtrAbstractBox GetParentGroup ( PtrAbstractBox pAb );
 extern ThotBool ChangeSelection ( int frame,
                                   PtrAbstractBox pAb,
                                   int rank,
@@ -176,12 +176,12 @@ extern void SelectElementWithEvent ( PtrDocument pDoc,
                                        ThotBool check );
 extern void SelectPositionWithEvent ( PtrDocument pDoc,
                                         PtrElement pEl,
-                                        int first );
+                                        int first,
+                                        ThotBool withDecoration );
 extern void SelectStringWithEvent ( PtrDocument pDoc,
                                       PtrElement pEl,
                                       int firstChar,
                                       int lastChar );
-extern PtrAbstractBox GetParentGroup ( PtrAbstractBox pAb );
 extern ThotBool ChangeSelection ( int frame,
                                     PtrAbstractBox pAb,
                                     int rank,

@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2007
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -40,24 +40,30 @@ extern XmlEntity *pMathEntityTable;
   Return TRUE if character is listed as a largeop in the MathML 2.0
   Operator dictionary (appendix F.5)
   ----------------------------------------------------------------------*/
-static ThotBool IsLargeOp (CHAR_T character, char script)
+static ThotBool IsLargeOp (CHAR_T character)
 {
-  if (character == 0x22C1 || /* Vee */
+  if (character == 0x7C   || /* vertical bar */
+      character == 0x22C1 || /* Vee */
       character == 0x2296 || /* CircleMinus */
       character == 0x2295 || /* CirclePlus */
       character == 0x2211 || /* Sum */
-      character == 0x22C3 || /* Union */
+      character == 0x03A3 || /* Sigma */
+      character == 0x222A || /* Union */
+      character == 0x22C3 || /* n-ary Union */
       character == 0x228E || /* UnionPlus */
       character == 0x2232 || /* ClockwiseContourIntegral */
       character == 0x222E || /* ContourIntegral */
       character == 0x2233 || /* CounterClockwiseContourIntegral */
       character == 0x222F || /* DoubleContourIntegral */
       character == 0x222B || /* Integral */
+      //      character == 0x222D || /* TripleIntegral */
       character == 0x22C0 || /* Wedge */
       character == 0x2297 || /* CircleTimes */
       character == 0x2210 || /* Coproduct */
       character == 0x220F || /* Product */
-      character == 0x22C2 || /* Intersection */
+      character == 0x03A0 || /* Pi */
+      character == 0x2229 || /* Intersection */
+      character == 0x22C2 || /* n-ary Intersection */
       character == 0x2299 )  /* CircleDot */
     /* it's a large operator */
     return TRUE;
@@ -274,60 +280,77 @@ static void	CreatePlaceholders (Element el, Document doc)
   Element	 sibling, prev, constr, child;
   Attribute	 attr;
   ElementType	 elType;
-  AttributeType attrType;
-  ThotBool	 create, stretchableSubsup;
+  AttributeType  attrType;
+  ThotBool	 first, create, stretchableSubsup;
 
   if (!el)
     return;
   elType.ElSSchema = GetMathMLSSchema (doc);
   prev = NULL;
   create = TRUE;
+  first = TRUE;
   sibling = el;
   while (sibling != NULL)
     {
-      if (!ElementNeedsPlaceholder (sibling))
-        create = FALSE;
-      else
-        {
-          if (sibling == el)
-            /* first element */
-            {
-              elType = TtaGetElementType (sibling);
-              if (elType.ElTypeNum == MathML_EL_MF)
-                /* the first element is a MF. Don't create a placeholder
-                   before */
-                create = FALSE;
-              else if (elType.ElTypeNum == MathML_EL_MROW)
-                /* the first element is a MROW */
-                {
-                  child = TtaGetFirstChild (sibling);
-                  if (child != NULL)
-                    {
-                      elType = TtaGetElementType (child);
-                      if (elType.ElTypeNum != MathML_EL_MF)
-                        /* the first child of the MROW element is not a MF */
-                        /* Don't create a placeholder before */
-                        create = FALSE;
-                    }
-                }
-            }
-          if (create)
-            {
-              elType.ElTypeNum = MathML_EL_Construct;
-              constr = TtaNewElement (doc, elType);
-              TtaInsertSibling (constr, sibling, TRUE, doc);
-              attrType.AttrSSchema = elType.ElSSchema;
-              attrType.AttrTypeNum = MathML_ATTR_IntPlaceholder;
-              attr = TtaNewAttribute (attrType);
-              TtaAttachAttribute (constr, attr, doc);
-              TtaSetAttributeValue (attr, MathML_ATTR_IntPlaceholder_VAL_yes_,
-                                    constr, doc);
-            }
-          create = TRUE;
-        }
-      prev = sibling;
-      TtaNextSibling (&sibling);
+      /* skip comments */
+      elType = TtaGetElementType (sibling);
+      while (sibling && elType.ElTypeNum == MathML_EL_XMLcomment)
+	{
+	  TtaNextSibling (&sibling);
+	  if (sibling)
+	    elType = TtaGetElementType (sibling);
+	}
+
+      if (sibling)
+	/* there is an element that is not a comment */
+	{
+	  if (!ElementNeedsPlaceholder (sibling))
+	    create = FALSE;
+	  else
+	    {
+	      if (first)
+		/* first element */
+		{
+		  elType = TtaGetElementType (sibling);
+		  if (elType.ElTypeNum == MathML_EL_MF)
+		    /* the first element is a MF. Don't create a placeholder
+		       before */
+		    create = FALSE;
+		  else if (elType.ElTypeNum == MathML_EL_MROW)
+		    /* the first element is a MROW */
+		    {
+		      child = TtaGetFirstChild (sibling);
+		      if (child != NULL)
+			{
+			  elType = TtaGetElementType (child);
+			  if (elType.ElTypeNum != MathML_EL_MF)
+			    /* the first child of the MROW element is not a MF*/
+			    /* Don't create a placeholder before */
+			    create = FALSE;
+			}
+		    }
+		}
+	      if (create)
+		{
+		  elType.ElTypeNum = MathML_EL_Construct;
+		  constr = TtaNewElement (doc, elType);
+		  TtaInsertSibling (constr, sibling, TRUE, doc);
+		  attrType.AttrSSchema = elType.ElSSchema;
+		  attrType.AttrTypeNum = MathML_ATTR_IntPlaceholder;
+		  attr = TtaNewAttribute (attrType);
+		  TtaAttachAttribute (constr, attr, doc);
+		  TtaSetAttributeValue (attr,
+					MathML_ATTR_IntPlaceholder_VAL_yes_,
+					constr, doc);
+		}
+	      create = TRUE;
+	    }
+	  prev = sibling;
+	  TtaNextSibling (&sibling);
+	  first = FALSE;
+	}
     }
+
   if (prev != NULL && create)
     {
       stretchableSubsup = FALSE;
@@ -577,15 +600,12 @@ static void  CheckMinus (Element el, Document doc)
   ----------------------------------------------------------------------*/
 void      CheckLargeOp (Element el, Document doc)
 {
-  ElementType	       elType, contType;
-  Element	       content, ancestor;
+  ElementType	      elType, contType;
+  Element	      content, ancestor;
   AttributeType       attrType;
-  Attribute	       attrLargeop, attr;
-  Language	       lang;
-  PresentationValue   pval;
-  PresentationContext ctxt;
+  Attribute	      attrLargeop, attr;
+  Language	      lang;
   CHAR_T              text[2];
-  char	               script;
   int                 len, val;
   ThotBool            largeop;
 
@@ -604,7 +624,6 @@ void      CheckLargeOp (Element el, Document doc)
                 /* the MO element contains a single character */
                 {
                   TtaGiveBufferContent (content, text, len+1, &lang);
-                  script = TtaGetScript (lang);
                   largeop = FALSE;
                   /* is there an attribute largeop on this MO element? */
                   attrType.AttrSSchema = elType.ElSSchema;
@@ -634,29 +653,29 @@ void      CheckLargeOp (Element el, Document doc)
                           if (val == MathML_ATTR_IntDisplaystyle_VAL_true)
                             /* an ancestor has an attribute IntDisplaystyle = true */
                             /* Look at the symbol */
-                            largeop = IsLargeOp (text[0], script);
+                            largeop = IsLargeOp (text[0]);
                         }
                     }
-                  ctxt = TtaGetSpecificStyleContext (doc);
+                  attrType.AttrTypeNum = MathML_ATTR_IntLargeOp;
+                  attrLargeop = TtaGetAttribute (el, attrType);
                   if (largeop)
-                    /* it's a large operator. Make it larger */
+                    /* it's a large operator. Set the IntLargeOp attribute if
+		       it's not already set */
                     {
-                      ctxt->destroy = FALSE;
-                      /* the specific presentation to be created is not a CSS rule */
-                      ctxt->cssSpecificity = 0;
-                      pval.typed_data.unit = UNIT_PERCENT;
-                      pval.typed_data.real = FALSE;
-                      pval.typed_data.value = 180;
+		      if (!attrLargeop)
+			{
+			  attrLargeop = TtaNewAttribute (attrType);
+			  TtaSetAttributeValue (attrLargeop,
+						MathML_ATTR_IntLargeOp_VAL_yes_,
+						el, doc);
+			  TtaAttachAttribute (el, attrLargeop, doc);
+			}
                     }
                   else
-                    /* it's not a large operator, remove the Size presentation rule
-                       if it's present */
-                    {
-                      ctxt->destroy = TRUE;
-                      pval.typed_data.value = 0;
-                    }
-                  TtaSetStylePresentation (PRSize, content, NULL, ctxt, pval);
-                  TtaFreeMemory (ctxt);
+                    /* it's not a large operator, remove the IntLargeOp
+                       attribute if it's present */
+		    if (attrLargeop)
+		      TtaRemoveAttribute (el, attrLargeop, doc);
                 }
             }
         }
@@ -1378,7 +1397,8 @@ void SetIntVertStretchAttr (Element el, Document doc, int base, Element* selEl)
                        text[i] == 0x296E || /* UpEquilibrium */
                        text[i] == 0x296F || /* ReverseUpEquilibrium */
                        text[i] == 0x2758 || /* VerticalSeparator */
-                       text[i] == 0x2223    /* VerticalSeparator */
+                       text[i] == 0x2223 || /* VerticalSeparator */
+		       text[i] == 0x007C    /* vertical line */
                        ))/* accept only symbols like simple integral, double or
                          triple integral, contour integral, etc. or vertical
                          arrows (add more arrows *****) */
@@ -1525,7 +1545,9 @@ void SetIntVertStretchAttr (Element el, Document doc, int base, Element* selEl)
                                 break;
                                 case 0x2758: /* VerticalSeparator */
                                   c = 7;
+				break;
                                 case 0x2223: /* VerticalBar */
+				case 0x007C: /* Vertical Line */
                                   c = 11;
                                 break;
                                 case 0x2956: /* DoubleVerticalBar */
@@ -1546,7 +1568,7 @@ void SetIntVertStretchAttr (Element el, Document doc, int base, Element* selEl)
                             }
                           TtaRegisterElementDelete (textEl, doc);
                           TtaDeleteTree (textEl, doc);
-                          /* is there an other text element after the
+                          /* is there another text element after the
                              stretchable symbol? */
                           textEl = symbolEl; TtaNextSibling (&textEl);
                           if (textEl)
@@ -1569,13 +1591,18 @@ void SetIntVertStretchAttr (Element el, Document doc, int base, Element* selEl)
                                       TtaGiveBufferContent (textEl, text,
                                                             len+1, &lang); 
                                       script = TtaGetScript (lang);
-                                      if (text[0] != 0x222B &&
+                                      if (text[0] != 0x007C &&  // vertical bar
+					  text[0] != 0x2223 &&
+					  text[0] != 0x222B &&  // integrals
                                           text[0] != 0x222C &&
                                           text[0] != 0x222D &&
                                           text[0] != 0x222E &&
                                           text[0] != 0x222F &&
                                           text[0] != 0x2230 &&
-                                          text[0] != 0x2191 &&
+                                          text[0] != 0x2231 &&
+                                          text[0] != 0x2232 &&
+                                          text[0] != 0x2233 &&
+                                          text[0] != 0x2191 &&  // vertical arrows
                                           text[0] != 0x2193)
                                         /* not a stretchable symbol */
                                         textEl = NULL;
@@ -1683,7 +1710,8 @@ static void SetIntPlaceholderAttr (Element el, Document doc)
   -----------------------------------------------------------------------*/
 static void BuildMultiscript (Element elMMULTISCRIPT, Document doc)
 {
-  Element	elem, base, next, group, pair, script, prevPair, prevScript;
+  Element	elem, base, next, group, pair, script, prevPair, prevScript,
+                prev, comment;
   ElementType	elType, elTypeGroup, elTypePair, elTypeScript;
   SSchema       MathMLSSchema;
   base = NULL;
@@ -1697,10 +1725,23 @@ static void BuildMultiscript (Element elMMULTISCRIPT, Document doc)
   elTypeGroup.ElTypeNum = 0;
   elTypePair.ElTypeNum = 0;
   elTypeScript.ElSSchema = MathMLSSchema;
+  prev = NULL;
+
+  /* skip the initial comments in the MMULTISCRIPT element */
+  elem = TtaGetFirstChild (elMMULTISCRIPT);
+  elType = TtaGetElementType (elem);
+  while (elem &&
+	 (elType.ElTypeNum == MathML_EL_XMLcomment) &&
+	 elType.ElSSchema == MathMLSSchema)
+    {
+      prev = elem;
+      TtaNextSibling (&elem);
+      if (elem)
+	elType = TtaGetElementType (elem);
+    }
 
   /* process all children of the MMULTISCRIPT element */
-  elem = TtaGetFirstChild (elMMULTISCRIPT);
-  while (elem != NULL)
+  while (elem)
     {
       /* remember the element to be processed after the current one */
       next = elem;
@@ -1718,7 +1759,10 @@ static void BuildMultiscript (Element elMMULTISCRIPT, Document doc)
              of the MultiscriptBase element */
           elTypeGroup.ElTypeNum = MathML_EL_MultiscriptBase;
           base = TtaNewElement (doc, elTypeGroup);
-          TtaInsertFirstChild (&base, elMMULTISCRIPT, doc);
+	  if (prev)
+	    TtaInsertSibling (base, prev, FALSE, doc);
+	  else
+	    TtaInsertFirstChild (&base, elMMULTISCRIPT, doc);
           TtaInsertFirstChild (&elem, base, doc);
         }
       else
@@ -1771,10 +1815,32 @@ static void BuildMultiscript (Element elMMULTISCRIPT, Document doc)
           /* insert the current element as a child of the new MSuperscript or
              MSubscript element */
           TtaInsertFirstChild (&elem, script, doc);
-          SetIntPlaceholderAttr (elem, doc);
+	  elType = TtaGetElementType (elem);
+	  if (elType.ElTypeNum != MathML_EL_Construct)
+	    /* it's not a <none/> element in the souirce code */
+	    SetIntPlaceholderAttr (elem, doc);
         }
 
       CreatePlaceholders (elem, doc);
+
+      /* move also the comments that followed the element we have just moved */
+      if (next)
+	{
+	  prev = elem;
+	  elType = TtaGetElementType (next);
+	  while (next &&
+		 (elType.ElTypeNum == MathML_EL_XMLcomment) &&
+		 elType.ElSSchema == MathMLSSchema)
+	    {
+	      comment = next;
+	      TtaNextSibling (&next);
+	      TtaRemoveTree (comment, doc);
+	      TtaInsertSibling (comment, prev, FALSE, doc);
+	      prev = comment;
+	      if (next)
+		elType = TtaGetElementType (next);
+	    }
+	}
 
       /* get next child of the MMULTISCRIPT element */
       elem = next;
@@ -1795,7 +1861,7 @@ static void BuildMultiscript (Element elMMULTISCRIPT, Document doc)
                   SetIntPlaceholderAttr (group, doc);
                 }
               /* the following elements will be interpreted as sub- superscripts
-                 in PrescriptPair elements, wich will be children of this
+                 in PrescriptPair elements, which will be children of this
                  PrescriptPairs element */
               elTypeGroup.ElTypeNum = MathML_EL_PrescriptPairs;
               elTypePair.ElTypeNum = MathML_EL_PrescriptPair;
@@ -1810,6 +1876,27 @@ static void BuildMultiscript (Element elMMULTISCRIPT, Document doc)
               SetIntPlaceholderAttr (pair, doc);
               prevScript = NULL;
               TtaNextSibling (&elem);
+	      /* move the elements that follwed the MPRESCRIPTS element */
+	      if (elem)
+		{
+		  prev = NULL;
+		  elType = TtaGetElementType (elem);
+		  while (elem &&
+			 (elType.ElTypeNum == MathML_EL_XMLcomment) &&
+			 elType.ElSSchema == MathMLSSchema)
+		    {
+		      comment = elem;
+		      TtaNextSibling (&elem);
+		      TtaRemoveTree (comment, doc);
+		      if (prev)
+			TtaInsertSibling (comment, prev, FALSE, doc);
+		      else
+			TtaInsertFirstChild (&comment, group, doc);
+		      prev = comment;
+		      if (elem)
+			elType = TtaGetElementType (elem);
+		    }
+		}
             }
         }
     }
@@ -2009,7 +2096,7 @@ void SetFontstyleAttr (Element el, Document doc)
   ElementType	elType;
   AttributeType	attrType, attrType1;
   Attribute	attr, IntAttr;
-  Element       ancestor, textEl;
+  Element       ancestor, textEl, child;
   int		len;
   Language      lang;
   CHAR_T        text[2];
@@ -2059,9 +2146,24 @@ void SetFontstyleAttr (Element el, Document doc)
            IntFontstyle attribute with a value that depends on the content of
            the MI element */
         {
-          /* get content length */
-          len = TtaGetElementVolume (el);
-          if (len > 1)
+	  textEl = NULL;
+          len = 0;
+	  /* if the MI element contains some comments, these should not
+	     be counted */
+	  child = TtaGetFirstChild (el);
+	  while (child && !textEl)
+	    {
+	      elType = TtaGetElementType (child);
+	      if (elType.ElTypeNum == MathML_EL_TEXT_UNIT)
+		{
+		  textEl = child;
+		  /* get content length */
+		  len = TtaGetElementVolume (textEl);
+		}
+	      else
+		TtaNextSibling (&child);
+	    }
+          if (len != 1)
             /* put an attribute IntFontstyle = IntNormal */
             {
               if (IntAttr == NULL)
@@ -2079,8 +2181,7 @@ void SetFontstyleAttr (Element el, Document doc)
                DifferentialD */
             {
               italic = TRUE;
-              textEl = TtaGetFirstChild (el);
-              if (textEl != NULL)
+              if (textEl)
                 {
                   elType = TtaGetElementType (textEl);
                   if (elType.ElTypeNum == MathML_EL_MGLYPH)
@@ -2219,7 +2320,10 @@ void SetIntAddSpaceAttr (Element el, Document doc)
         /* no form attribute. Analyze the content */
         {
           len = TtaGetElementVolume (textEl);
-          if (len == 1)
+	  if (len == 0)
+	    /* empty string */
+	    val = MathML_ATTR_IntAddSpace_VAL_nospace;
+	  else if (len == 1)
             {
               TtaGiveBufferContent (textEl, text, len+1, &lang);
               script = TtaGetScript (lang);
@@ -2289,39 +2393,39 @@ void SetIntAddSpaceAttr (Element el, Document doc)
                        (int)text[0] == 130 ||  /* en space */
                        (int)text[0] == 160)    /* em space */
                 val = MathML_ATTR_IntAddSpace_VAL_nospace;
-              else
-                if ((int)text[0] == 0x2264 || /* less or equal */
-                    (int)text[0] == 0x2265 || /* greater or equal */
-                    (int)text[0] == 0x00B1 || /* plus or minus */
-                    (int)text[0] == 0x00D7 || /* times */
-                    (int)text[0] == 0x00F7 || /* divide */
-                    (int)text[0] == 0x2260 || /* not equal */
-                    (int)text[0] == 0x2261 || /* identical */
-                    (int)text[0] == 0x2248 || /* equivalent */
-                    (int)text[0] == 0x2297 || /* circle times */
-                    (int)text[0] == 0x2295 || /* circle plus */
-                    (int)text[0] == 0x2218 || /* ring operator */
-                    (int)text[0] == 0x2229 || /* Intersection */
-                    (int)text[0] == 0x222A || /* Union */
-                    (int)text[0] == 0x2283 || /* Superset of */
-                    (int)text[0] == 0x2287 || /* Superset of or equal to */
-                    (int)text[0] == 0x2284 || /* Not a subset of */
-                    (int)text[0] == 0x2282 || /* Subset of */
-                    (int)text[0] == 0x2286 || /* Subset of or equal to */
-                    (int)text[0] == 0x2208 || /* Element of */
-                    (int)text[0] == 0x2209 || /* Not an element of */
-                    (int)text[0] == 0x2220 || /* Angle */
-                    (int)text[0] == 0x2207 || /* Nabla */
-                    (int)text[0] == 0x2223 || /* Vertical bar */
-                    (int)text[0] == 0x2227 || /* and */
-                    (int)text[0] == 0x2228 || /* or */
-                    (int)text[0] == 0x2190 || /* left arrow */
-                    (int)text[0] == 0x2192 || /* right arrow */
-                    (int)text[0] == 0x2194)   /* left right arrow */
-                  /* infix operator */
-                  val = MathML_ATTR_IntAddSpace_VAL_both_;
-                else
-                  val = MathML_ATTR_IntAddSpace_VAL_nospace;
+              else if ((int)text[0] == 0x2264 || /* less or equal */
+		       (int)text[0] == 0x2265 || /* greater or equal */
+		       (int)text[0] == 0x00B1 || /* plus or minus */
+		       (int)text[0] == 0x00D7 || /* times */
+		       (int)text[0] == 0x00F7 || /* divide */
+		       (int)text[0] == 0x2044 || /* frasl */
+		       (int)text[0] == 0x2260 || /* not equal */
+		       (int)text[0] == 0x2261 || /* identical */
+		       (int)text[0] == 0x2248 || /* equivalent */
+		       (int)text[0] == 0x2297 || /* circle times */
+		       (int)text[0] == 0x2295 || /* circle plus */
+		       (int)text[0] == 0x2218 || /* ring operator */
+		       (int)text[0] == 0x2229 || /* Intersection */
+		       (int)text[0] == 0x222A || /* Union */
+		       (int)text[0] == 0x2283 || /* Superset of */
+		       (int)text[0] == 0x2287 || /* Superset of or equal to */
+		       (int)text[0] == 0x2284 || /* Not a subset of */
+		       (int)text[0] == 0x2282 || /* Subset of */
+		       (int)text[0] == 0x2286 || /* Subset of or equal to */
+		       (int)text[0] == 0x2208 || /* Element of */
+		       (int)text[0] == 0x2209 || /* Not an element of */
+		       (int)text[0] == 0x2220 || /* Angle */
+		       (int)text[0] == 0x2207 || /* Nabla */
+		       (int)text[0] == 0x2223 || /* Vertical bar */
+		       (int)text[0] == 0x2227 || /* and */
+		       (int)text[0] == 0x2228 || /* or */
+		       (int)text[0] == 0x2190 || /* left arrow */
+		       (int)text[0] == 0x2192 || /* right arrow */
+		       (int)text[0] == 0x2194)   /* left right arrow */
+		/* infix operator */
+		val = MathML_ATTR_IntAddSpace_VAL_both_;
+	      else
+		val = MathML_ATTR_IntAddSpace_VAL_nospace;
             }
         }
       TtaSetAttributeValue (attr, val, el, doc);
@@ -2482,11 +2586,11 @@ void CreateFencedSeparators (Element fencedExpression, Document doc, ThotBool re
 {
   ElementType	 elType;
   Element	 child, separator, leaf, next, prev, mfenced;
-  AttributeType attrType;
-  Attribute     attr;
+  AttributeType  attrType;
+  Attribute      attr;
   int		 length, sep, i;
   Language	 lang;
-  char	 text[32], sepValue[4];
+  CHAR_T	 text[100], sepValue[4];
 
   /* get the separators attribute */
   mfenced = TtaGetParent (fencedExpression);
@@ -2497,10 +2601,10 @@ void CreateFencedSeparators (Element fencedExpression, Document doc, ThotBool re
   text[1] = EOS;
   length = 1;
   attr = TtaGetAttribute (mfenced, attrType);
-  if (attr != NULL)
+  if (attr)
     {
-      length = 31;
-      TtaGiveTextAttributeValue (attr, text, &length);
+      length = 100;
+      TtaGiveTextAttributeValue (attr, (char*)text, &length);
     }
 
   /* create FencedSeparator elements in the FencedExpression */
@@ -2519,7 +2623,9 @@ void CreateFencedSeparators (Element fencedExpression, Document doc, ThotBool re
           next = child;
           TtaNextSibling (&next);
           elType = TtaGetElementType (child);
-          if (elType.ElTypeNum != MathML_EL_Construct)
+          if (elType.ElTypeNum != MathML_EL_Construct &&
+	      elType.ElTypeNum != MathML_EL_MSPACE
+	      )
             {
               if (prev != NULL)
                 {
@@ -2532,7 +2638,8 @@ void CreateFencedSeparators (Element fencedExpression, Document doc, ThotBool re
                   sepValue[0] = text[sep];
                   sepValue[1] = EOS;
                   lang = TtaGetLanguageIdFromScript('L');
-                  TtaSetTextContent (leaf, (unsigned char *)sepValue, lang, doc);
+                  TtaSetTextContent (leaf, (unsigned char *)sepValue, lang,
+				     doc);
                   SetIntAddSpaceAttr (separator, doc);
                   SetIntVertStretchAttr (separator, doc, 0, NULL);
                   CheckFence (separator, doc);
@@ -4754,17 +4861,29 @@ void MathMLSetScriptLevel (Document doc, Element el, char *value)
               else if (pval.typed_data.value <= -3)
                 /* scriptlevel="-3" or less */
                 percentage = 282;
-              pval.typed_data.value = percentage;
-              pval.typed_data.unit = UNIT_PERCENT;
-              /* the specific presentation to be created is not a CSS rule */
-              ctxt->cssSpecificity = 0;
-              TtaSetStylePresentation (PRSize, el, NULL, ctxt, pval);       
             }
           else
             /* absolute value */
             {
-              /****  ****/;
+              percentage = 100;
+              if (pval.typed_data.value == 0)
+                /* scriptlevel="0" */
+                percentage = 100;
+              else if (pval.typed_data.value == 1)
+                /* scriptlevel="1" */
+                percentage = 71;
+              else if (pval.typed_data.value == 2)
+                /* scriptlevel="2" */
+                percentage = 50;
+              else if (pval.typed_data.value >= 3)
+                /* scriptlevel="3" or more */
+                percentage = 35;
             }
+	  pval.typed_data.value = percentage;
+	  pval.typed_data.unit = UNIT_PERCENT;
+	  /* the specific presentation to be created is not a CSS rule */
+	  ctxt->cssSpecificity = 0;
+	  TtaSetStylePresentation (PRSize, el, NULL, ctxt, pval);       
         }
     }
   TtaFreeMemory (ctxt);

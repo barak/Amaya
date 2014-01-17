@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2008
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -218,6 +218,7 @@ PtrAbstractBox GetParentWithException (int exceptNum, PtrAbstractBox pAb)
 void GetClickedBox (PtrBox *result, PtrFlow *pFlow, PtrAbstractBox pRootAb,
                     int frame, int x, int y, int ratio, int *pointselect)
 {
+  PtrElement          pEl;
   PtrAbstractBox      pAb, active, sel_active, marker, group;
   PtrBox              pSelBox, pBox;
   PtrBox              graphicBox;
@@ -246,6 +247,7 @@ void GetClickedBox (PtrBox *result, PtrFlow *pFlow, PtrAbstractBox pRootAb,
       while (pBox && pBox->BxAbstractBox && pBox->BxAbstractBox->AbElement)
         {
           pAb = pBox->BxAbstractBox;
+          pEl = pAb->AbElement;
           marker = group = NULL;
           if (matchCell)
             // keep in memory the previous found cell
@@ -287,8 +289,8 @@ void GetClickedBox (PtrBox *result, PtrFlow *pFlow, PtrAbstractBox pRootAb,
                           by <= y && by + pBox->BxClipH >= y))
                         {
                           if (pAb->AbLeafType == LtPicture &&
-                              pAb->AbElement && pAb->AbElement->ElStructSchema &&
-                              !strcmp (pAb->AbElement->ElStructSchema->SsName, "Template"))
+                              pEl && pEl->ElStructSchema &&
+                              !strcmp (pEl->ElStructSchema->SsName, "Template"))
                             graphicBox = pBox;
                           else
                             graphicBox = GetEnclosingClickedBox (pAb, x, x, y, frame,
@@ -296,7 +298,9 @@ void GetClickedBox (PtrBox *result, PtrFlow *pFlow, PtrAbstractBox pRootAb,
                         }
                       if (graphicBox)
                         d = 0;
-                      else if (pAb->AbLeafType == LtGraphics)
+                      else if (pAb->AbLeafType == LtGraphics && pEl &&
+                               (FrameTable[frame].FrView != 1 ||
+                                !TypeHasException (ExcIsCell, pEl->ElTypeNumber, pEl->ElStructSchema) ))
                         d = GetBoxDistance (pBox, *pFlow, x, y, ratio, frame, &matchCell) + 2;
                       else
                         /* eliminate this box */
@@ -331,9 +335,12 @@ void GetClickedBox (PtrBox *result, PtrFlow *pFlow, PtrAbstractBox pRootAb,
                     {
                     if (active->AbBox == NULL)
                       active = NULL;
-                    else if (active->AbBox->BxType == BoGhost && d != 0)
+                    else if ((active->AbBox->BxType == BoGhost ||
+                              active->AbBox->BxType == BoStructGhost) &&
+                             d != 0)
                       active = NULL;	    
                     else if (active->AbBox->BxType != BoGhost &&
+                             active->AbBox->BxType != BoStructGhost &&
                              GetBoxDistance (active->AbBox, *pFlow, x, y, ratio, frame, &matchCell) != 0)
                       active = NULL;
                     }

@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2008
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -15,14 +15,9 @@
  *
  */
 #ifdef _GL
-
 #ifdef _WINGUI
 #include <windows.h>
 #endif /* _WINGUI*/
-
-#ifdef _GTK
-#include <gtkgl/gtkglarea.h>
-#endif /* _GTK */
 
 #ifdef _WX
 #include "wx/wx.h"
@@ -63,7 +58,7 @@
 #include "inites_f.h"
 #include "memory_f.h"
 #include "units_f.h"
-#include "xwindowdisplay_f.h"
+#include "windowdisplay_f.h"
 #include "tesse_f.h"
 
 #include "glwindowdisplay.h"

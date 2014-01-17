@@ -627,7 +627,8 @@ static void UpdateAttribute (Attribute attr, char * data, Element el, Document d
   If the selection is within a style element and the element type is
   a span adds the data into the style element.
   -----------------------------------------------------------------------*/
-ThotBool GenerateInlineElement (int eType, SSchema eSchema, int aType, const char * data, ThotBool replace)
+ThotBool GenerateInlineElement (int eType, SSchema eSchema, int aType,
+                                const char * data, ThotBool replace)
 {
   Element         el, firstSel, lastSel, next, in_line, sibling, child;
   Element         last, parent, enclose, selected;
@@ -1205,6 +1206,14 @@ ThotBool GenerateInlineElement (int eType, SSchema eSchema, int aType, const cha
                             }
                           else if (in_line)
                             {
+                              if (doit)
+                                {
+                                  // should we change the selection
+                                  if (el == lastSel)
+                                    lastSel = in_line;
+                                  if (el == firstSel)
+                                    firstSel = in_line;
+                                }
                               if (doit && (selpos || inside))
                                 {
                                   // empty selection or block selection
@@ -1263,26 +1272,25 @@ ThotBool GenerateInlineElement (int eType, SSchema eSchema, int aType, const cha
                               else
                                 {
                                   // add the element into the new in_line
-                                  TtaPreviousSibling (&sibling);
-                                  if (sibling == NULL)
+                                  if (doit)
                                     {
+                                      // the in_line element must be inserted
+                                      if (parent == NULL)
+                                        parent = TtaGetParent (el);
+                                      // get the previous sibling
                                       sibling = el;
-                                      TtaNextSibling (&sibling);
-                                      before = TRUE;
+                                      TtaPreviousSibling (&sibling);
+                                       before = FALSE;
                                     }
-                                  if (sibling == NULL)
-                                    TtaInsertSibling (in_line, el, FALSE, doc);
                                   TtaRegisterElementDelete (el, doc);
                                   TtaRemoveTree (el, doc);
-                                  TtaInsertFirstChild (&el, in_line, doc);
-                                }
-                              if (doit)
-                                {
-                                  // should we change the selection
-                                  if (el == lastSel)
-                                    lastSel = in_line;
-                                  if (el == firstSel)
-                                    firstSel = in_line;
+                                  child = TtaGetLastChild (in_line);
+                                  if (child)
+                                    TtaInsertSibling (el, in_line, FALSE, doc);
+                                  else
+                                    TtaInsertFirstChild (&el, in_line, doc);
+                                  if (!doit)
+                                    TtaRegisterElementCreate (el, doc);
                                 }
                             }
 
@@ -1300,7 +1308,7 @@ ThotBool GenerateInlineElement (int eType, SSchema eSchema, int aType, const cha
                                        these attributes in the undo queue, as the
                                        in_line element itself will be registered
                                        with its attributes */
-                                    CreateTargetAnchor (doc, in_line, FALSE, FALSE);
+                                    CreateTargetAnchor (doc, in_line, FALSE, FALSE, FALSE);
                                   else if ((aType == HTML_ATTR_Style_ ||
                                             aType == HTML_ATTR_Class) &&
                                            data &&
@@ -1368,7 +1376,7 @@ ThotBool GenerateInlineElement (int eType, SSchema eSchema, int aType, const cha
                                         child = TtaGetFirstChild (child);
                                       if (aType == HTML_ATTR_ID)
                                         // generate id and/or name
-                                        CreateTargetAnchor (doc, child, FALSE, TRUE);
+                                        CreateTargetAnchor (doc, child, FALSE, FALSE, TRUE);
                                       else
                                         {
                                           newAttr = TtaGetAttribute (child, attrType);
@@ -1535,7 +1543,7 @@ void SetREFattribute (Element element, Document doc, char *targetURL,
   char                buffer[MAX_LENGTH];
   int                 length, piNum;
   ThotBool            new_, oldStructureChecking;
-  ThotBool            isHTML, isSVG;
+  ThotBool            isHTML, isSVG, isLib;
 
   if (element == NULL)
     return;
@@ -1549,6 +1557,7 @@ void SetREFattribute (Element element, Document doc, char *targetURL,
   s = TtaGetSSchemaName (elType.ElSSchema);
   isHTML = !strcmp (s, "HTML");
   isSVG = !strcmp (s, "SVG");
+  isLib = !strcmp (s, "Template");
 
   if (!LinkAsXmlCSS)
     /* It isn't a link to an xml stylesheet */
@@ -1565,13 +1574,29 @@ void SetREFattribute (Element element, Document doc, char *targetURL,
           else if (elType.ElTypeNum == HTML_EL_SCRIPT_)
             attrType.AttrTypeNum = HTML_ATTR_script_src;
           else
+		  {
+            /* The anchor element must have an HREF attribute */
+            /* create an attribute PseudoClass = link */
+            attrType.AttrTypeNum = HTML_ATTR_PseudoClass;
+            attr = TtaGetAttribute (element, attrType);
+            if (attr == NULL)
+			{
+                attr = TtaNewAttribute (attrType);
+                TtaAttachAttribute (element, attr, doc);
+			}
+            TtaSetAttributeText (attr, "link", element, doc);
             attrType.AttrTypeNum = HTML_ATTR_HREF_;
+		  }
         }
 #ifdef _SVG
       else if (isSVG)
           attrType.AttrTypeNum = SVG_ATTR_xlink_href;
 #endif /* _SVG */
-      else
+#ifdef TEMPLATES
+      else if (isLib)
+          attrType.AttrTypeNum = Template_ATTR_src;
+#endif /* TEMPLATES */
+       else
         {
           /* the origin of the link is not a HTML element */
           /* create a XLink link */
@@ -1599,7 +1624,7 @@ void SetREFattribute (Element element, Document doc, char *targetURL,
           TtaSetStructureChecking (FALSE, doc);
           TtaAttachAttribute (element, attr, doc);
           TtaSetStructureChecking (oldStructureChecking, doc);
-          if (!isHTML && !isSVG)
+          if (!isHTML && !isSVG && !isLib)
             {
               /* Attach the XLink namespace declaration */
               TtaSetUriSSchema (attrType.AttrSSchema, XLink_URI);
@@ -1616,9 +1641,15 @@ void SetREFattribute (Element element, Document doc, char *targetURL,
     }
 
   /* build the complete target URL */
-  if (targetURL && strcmp(targetURL, DocumentURLs[doc]))
+  if (targetURL && targetURL[0] != EOS && strcmp (targetURL, DocumentURLs[doc]))
     {
-      if (!IsHTTPPath (targetURL) && IsHTTPPath (DocumentURLs[doc]))
+      if (targetURL[0] != '.' &&
+#ifdef _WINDOWS
+          targetURL[1] == ':' &&
+#else /* _WINDOWS */
+          targetURL[0] == '/' && TtaFileExist (targetURL) &&
+#endif /* _WINDOWS */
+          IsHTTPPath (DocumentURLs[doc]))
         {
           /* link a local resource to a remote document */
           /* copy the file into the temporary directory of the document */
@@ -1779,7 +1810,8 @@ void SetREFattribute (Element element, Document doc, char *targetURL,
       AttrHREFundoable = FALSE;
     }
   TtaSetDocumentModified (doc);
-  TtaSetStatus (doc, 1, " ", NULL);
+  DisplayUrlAnchor (element, doc);
+  //TtaSetStatus (doc, 1, " ", NULL);
   // update the attributes panel
   TtaUpdateAttrMenu (doc);
 }
@@ -2016,6 +2048,14 @@ void SelectDestination (Document doc, Element el, ThotBool withUndo,
                   attrType.AttrTypeNum = SVG_ATTR_xlink_href;
                 }
 #endif /* _SVG */
+#ifdef TEMPLATES
+              else if (!strcmp (name, "Template"))
+                /* it's an SVG element */
+                {
+                  attrType.AttrSSchema = elType.ElSSchema;
+                  attrType.AttrTypeNum = Template_ATTR_src;
+                }
+#endif /* TEMPLATES */
               else
                 {
                   attrType.AttrSSchema = TtaGetSSchema ("XLink", doc);
@@ -2045,6 +2085,14 @@ void SelectDestination (Document doc, Element el, ThotBool withUndo,
                                    TtaGetViewFrame (doc, 1), URL_list,
                                    AttrHREFvalue,
                                    doc, docCSS);
+#ifdef TEMPLATES
+      else if (LinkAsImport)
+        /* select a Javascript file */
+        created = CreateHRefDlgWX (BaseDialog + AttrHREFForm,
+                                   TtaGetViewFrame (doc, 1), URL_list,
+                                   AttrHREFvalue,
+                                   doc, docTemplate);
+#endif /* TEMPLATES */
       else if (LinkAsJavascript)
         /* select a Javascript file */
         created = CreateHRefDlgWX (BaseDialog + AttrHREFForm,
@@ -2076,7 +2124,6 @@ void SelectDestination (Document doc, Element el, ThotBool withUndo,
         }
       if (created)
         {
-          TtaSetDialoguePosition ();
           TtaShowDialogue (BaseDialog + AttrHREFForm, TRUE, TRUE);
         }
 #endif /* _WX */
@@ -2160,11 +2207,13 @@ Attribute GetNameAttr (Document doc, Element selectedElement)
   CreateTargetAnchor
   Create a NAME or ID attribute with a default value for element el.
   If the withUndo parameter is true, we'll register the undo sequence.
-  If the forceID parameter, we'll always use an ID attribute, rather
-  than a NAME one in some cases.
+  If the forceID parameter is true, we'll always use an ID attribute,
+  rather than a NAME one in some cases.
+  If the generic parameter is true, the label is used to generate the
+  new value.
   ----------------------------------------------------------------------*/
 void CreateTargetAnchor (Document doc, Element el, ThotBool forceID,
-                         ThotBool withUndo)
+                         ThotBool generic, ThotBool withUndo)
 {
   AttributeType       attrType;
   Attribute           attr;
@@ -2234,6 +2283,8 @@ void CreateTargetAnchor (Document doc, Element el, ThotBool forceID,
   else if (withinHTML && elType.ElTypeNum == HTML_EL_LINK)
     /* linkxxx for a link element */
     strcpy (url, "link");
+  else if (generic)
+    strcpy (url, TtaGetElementLabel (el));
   else
     /* get the content for other elements */
     {
@@ -2321,7 +2372,6 @@ void CreateAnchor (Document doc, View view, ThotBool createLink)
   Element             first, last, el;
   Element             parag, child, anchor, ancestor;
   ElementType         elType, parentType;
-  AttributeType       attrType;
   Attribute           attr;
   DisplayMode         dispMode;
 #ifdef TEMPLATES
@@ -2383,7 +2433,7 @@ void CreateAnchor (Document doc, View view, ThotBool createLink)
       if (!createLink)
         {
           TtaOpenUndoSequence (doc, first, last, firstChar, lastChar);
-          CreateTargetAnchor (doc, anchor, FALSE, TRUE);
+          CreateTargetAnchor (doc, anchor, FALSE, FALSE, TRUE);
           TtaCloseUndoSequence (doc);
         }
     }
@@ -2396,7 +2446,7 @@ void CreateAnchor (Document doc, View view, ThotBool createLink)
       if (!createLink)
         {
           TtaOpenUndoSequence (doc, first, last, firstChar, lastChar);
-          CreateTargetAnchor (doc, anchor, FALSE, TRUE);
+          CreateTargetAnchor (doc, anchor, FALSE, FALSE, TRUE);
           TtaCloseUndoSequence (doc);
         }
     }
@@ -2415,7 +2465,7 @@ void CreateAnchor (Document doc, View view, ThotBool createLink)
           if (!createLink)
             {
               TtaOpenUndoSequence (doc, first, last, firstChar, lastChar);
-              CreateTargetAnchor (doc, anchor, FALSE, TRUE);
+              CreateTargetAnchor (doc, anchor, FALSE, FALSE, TRUE);
               TtaCloseUndoSequence (doc);
             }
         }
@@ -2519,7 +2569,7 @@ void CreateAnchor (Document doc, View view, ThotBool createLink)
                 /* create an ID for target element */
                 {
                   TtaOpenUndoSequence (doc, first, last, firstChar, lastChar);
-                  CreateTargetAnchor (doc, first, FALSE, TRUE);
+                  CreateTargetAnchor (doc, first, FALSE, FALSE, TRUE);
                   TtaCloseUndoSequence (doc);
                 }
               return;
@@ -2631,21 +2681,6 @@ void CreateAnchor (Document doc, View view, ThotBool createLink)
       else
         /* Select the destination */
         SelectDestination (doc, anchor, FALSE, FALSE);
-      /* The anchor element must have an HREF attribute */
-      /* create an attribute PseudoClass = link */
-      s = TtaGetSSchemaName (elType.ElSSchema);	  
-      if (!strcmp (s, "HTML"))
-        {
-          attrType.AttrSSchema = elType.ElSSchema;
-          attrType.AttrTypeNum = HTML_ATTR_PseudoClass;
-          attr = TtaGetAttribute (anchor, attrType);
-          if (attr == NULL)
-            {
-              attr = TtaNewAttribute (attrType);
-              TtaAttachAttribute (anchor, attr, doc);
-            }
-          TtaSetAttributeText (attr, "link", anchor, doc);
-        }
     }
   TtaCloseUndoSequence (doc);
 }
@@ -3017,7 +3052,7 @@ void CreateRemoveIDAttribute (char *elName, Document doc, ThotBool createID,
           if (!attr && createID) /* add it */
 		  {
             /* we reuse an existing Amaya function */
-            CreateTargetAnchor (doc, el, TRUE, TRUE);
+            CreateTargetAnchor (doc, el, TRUE, FALSE, TRUE);
             i++;
 		  }
           else if (attr && !createID) /* delete it */

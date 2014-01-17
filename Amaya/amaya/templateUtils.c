@@ -11,8 +11,7 @@
 
 #include "AHTURLTools_f.h"
 #include "HTMLsave_f.h"
-
-
+#include "templateUtils_f.h"
 #include <stdarg.h>
 
 /*----------------------------------------------------------------------
@@ -39,6 +38,44 @@ const char *GetSchemaFromDocType (DocumentType docType)
     }
 #endif // TEMPLATES
 	return "HTML";
+}
+
+/*----------------------------------------------------------------------
+  IsUseInstantiated
+  Return TRUE if the use must be instantiated
+  ----------------------------------------------------------------------*/
+ThotBool IsUseInstantiated (Element el, Document doc)
+{
+#ifdef TEMPLATES
+  Element       parent;
+  ElementType	  elType, parentType;
+  int           option;
+  ThotBool      opt;
+
+  elType = TtaGetElementType (el);
+  if (elType.ElTypeNum == Template_EL_useEl &&
+      elType.ElSSchema &&
+      !strcmp (TtaGetSSchemaName (elType.ElSSchema), "Template"))
+    {
+      parent = TtaGetParent (el);
+      parentType = TtaGetElementType (parent);
+      if (parentType.ElTypeNum == Template_EL_repeat &&
+          parentType.ElSSchema == elType.ElSSchema &&
+          el == TtaGetFirstChild (parent))
+        {
+          // check if the minOccurs of the repeat is 0
+          option = GetMinOccurence (parent, doc);
+          opt = option != 0;
+        }
+      else
+        {
+          option = GetAttributeIntValueFromNum (el, Template_ATTR_option);
+          opt = (option == 0 || option == Template_ATTR_option_VAL_option_set);
+        }
+  return opt;
+    }
+#endif /* TEMPLATES */
+  return FALSE;
 }
 
 /*----------------------------------------------------------------------
@@ -91,6 +128,35 @@ void SetAttributeStringValueWithUndo (Element el, int att, char* value)
 #endif /* TEMPLATES */
 }
 
+
+/*----------------------------------------------------------------------
+  GetMinOccurence returns the minOccurs value
+----------------------------------------------------------------------*/
+int GetMinOccurence (Element el, Document doc)
+{
+  int            minVal = 1;
+#ifdef TEMPLATES
+  AttributeType  minType;
+  Attribute      minAtt;
+  char          *text;
+
+  // Get minOccurs
+  minType.AttrSSchema = TtaGetElementType (el).ElSSchema;
+  minType.AttrTypeNum = Template_ATTR_minOccurs;
+  minAtt = TtaGetAttribute (el, minType);
+  if (minAtt)
+    {
+      text = GetAttributeStringValue(el, minAtt, NULL);
+      if (text)
+        {
+          minVal = atoi(text);
+          TtaFreeMemory(text);
+        }
+    }
+#endif /* TEMPLATES */
+  return minVal;
+}
+
 /*----------------------------------------------------------------------
 Returns the value of a string attribute without copy it
 ----------------------------------------------------------------------*/
@@ -113,8 +179,6 @@ void GiveAttributeStringValueFromNum (Element el, int att, char* buff, int* sz)
 #endif /* TEMPLATES */
 }
 
-
-
 /*----------------------------------------------------------------------
   Returns the value of a string attribute or NULL
 ----------------------------------------------------------------------*/
@@ -131,7 +195,6 @@ char *GetAttributeStringValueFromNum (Element el, int att, int* sz)
 	attribute = TtaGetAttribute(el, attType);
 	if (attribute == NULL)
     return NULL;
-
 	size = TtaGetTextAttributeLength (attribute);
 	aux = (char*) TtaGetMemory (size+1);
 	TtaGiveTextAttributeValue (attribute, aux, &size);
@@ -153,13 +216,15 @@ int GetAttributeIntValueFromNum (Element el, int att)
   AttributeType attType;
   Attribute     attribute;
 
-  attType.AttrSSchema = TtaGetElementType(el).ElSSchema;
+  attType.AttrSSchema = TtaGetElementType (el).ElSSchema;
   attType.AttrTypeNum = att;
-  attribute = TtaGetAttribute(el, attType);
-
-  return TtaGetAttributeValue(attribute);
+  attribute = TtaGetAttribute (el, attType);
+  if (attribute)
+    return TtaGetAttributeValue (attribute);
+  else
+    return 0;
 #else
-  return NULL;
+  return 0;
 #endif /* TEMPLATES */
 }
 
@@ -190,9 +255,6 @@ void SetAttributeIntValue (Element el, int att, int value, ThotBool undo)
     TtaRegisterAttributeReplace(attribute, el, doc);
 #endif /* TEMPLATES */
 }
-
-
-
 
 /*----------------------------------------------------------------------
 Returns the value of a string attribute
@@ -238,6 +300,53 @@ char *GetAncestorComponentName (Element *el)
   return NULL;
 }
 
+/*----------------------------------------------------------------------
+  AllowAttributeEdit returns TRUE if the template allows the user to edit
+  the attribute
+  ----------------------------------------------------------------------*/
+ThotBool AllowAttributeEdit (Element el, Document doc, char *name)
+{
+#ifdef TEMPLATES
+  Element      child;
+  ElementType  childType;
+  char         *value;
+  int           val;
+  ThotBool      ok;
+
+  if (name == NULL || *name == EOS)
+    return FALSE;
+  child = TtaGetFirstChild (el);
+  while (child)
+    {
+      childType = TtaGetElementType (child);
+      if (childType.ElTypeNum == Template_EL_attribute &&
+          !strcmp (TtaGetSSchemaName(childType.ElSSchema) , "Template"))
+        {
+          value = GetAttributeStringValueFromNum (child, Template_ATTR_ref_name, NULL);
+          ok = (value && !strcmp (value, name));
+          TtaFreeMemory (value);
+          if (ok)
+            {
+              val = GetAttributeIntValueFromNum (el, Template_ATTR_useAt);
+              if (val == Template_ATTR_useAt_VAL_prohibited)
+                return FALSE;
+              value = GetAttributeStringValueFromNum (child, Template_ATTR_fixed, NULL);
+              if (value)
+                {
+                  TtaFreeMemory (value);
+                  return FALSE;
+                }
+              return ok;
+            }
+          else
+            TtaNextSibling(&child);
+        }
+      else
+        return FALSE;
+    }
+#endif /* TEMPLATES */
+  return FALSE;
+}
 
 /*----------------------------------------------------------------------
 GetFirstEditableElement
@@ -299,9 +408,9 @@ ThotBool CheckTemplateAttrInMenu (NotifyAttribute *event)
 {
 #ifdef TEMPLATES
   Document      doc = event->document;
-  Element       elem;
-  Element       parent = event->element;
+  Element       elem, parent = event->element;
   ElementType   elType;
+  SSchema       schema;
   AttributeType attrType;
   Attribute     attr;
   char         *attrName;
@@ -311,28 +420,28 @@ ThotBool CheckTemplateAttrInMenu (NotifyAttribute *event)
   /* Prevent from showing attributes for template instance but not templates. */
   if (IsTemplateInstanceDocument(doc))
     {
+      schema = TtaGetSSchema ("Template", doc);
       /* Prevent if attribute's element is not a descendant of xt:use */
       /* Dont prevent if descendant of xt:bag. */
-      elem = GetFirstTemplateParentElement(parent);
-      if (!elem)
-        return TRUE;
-      elType = TtaGetElementType(elem);
-      if (elType.ElTypeNum == Template_EL_bag)
-        return FALSE;	/* let Thot perform normal operation */
-      if (elType.ElTypeNum != Template_EL_useSimple)
-        return TRUE;
-      if (!TtaIsReadOnly (parent))
-        return FALSE;	/* let Thot perform normal operation */
- 
+      elem = GetFirstTemplateParentElement (parent);
+      if (elem)
+        {
+          elType = TtaGetElementType (elem);
+          if (elType.ElTypeNum == Template_EL_bag)
+            return FALSE;	/* let Thot perform normal operation */
+          if (elType.ElTypeNum != Template_EL_useSimple)
+            return TRUE;
+          if (!TtaIsReadOnly (parent))
+            return FALSE;	/* let Thot perform normal operation */
+        }
       /* Search for the corresponding xt:attribute element*/
-      attrName = TtaGetAttributeName(event->attributeType);
-      attrType.AttrSSchema = TtaGetSSchema ("Template", doc);
-      for (elem = TtaGetFirstChild(parent); elem; TtaNextSibling(&elem))
+      attrName = TtaGetAttributeName (event->attributeType);
+      attrType.AttrSSchema = schema;
+      for (elem = TtaGetFirstChild (parent); elem; TtaNextSibling (&elem))
         {
           attrType.AttrTypeNum = Template_ATTR_ref_name;
           elType = TtaGetElementType(elem);
-          if (elType.ElTypeNum == Template_EL_attribute &&
-              elType.ElSSchema == TtaGetSSchema ("Template", doc))
+          if (elType.ElTypeNum == Template_EL_attribute && elType.ElSSchema == schema)
             {
                attr = TtaGetAttribute(elem, attrType);
                if (attr)
@@ -362,10 +471,8 @@ ThotBool CheckTemplateAttrInMenu (NotifyAttribute *event)
                        if (useAt == Template_ATTR_useAt_VAL_prohibited)
                            return TRUE;
                        if (useAt == Template_ATTR_useAt_VAL_required)
-                         {
-                           /* Force the usage of this attribute.*/
-                           event->restr.RestrFlags |= attr_mandatory;
-                         }
+                         /* Force the usage of this attribute.*/
+                         event->restr.RestrFlags |= attr_mandatory;
 
                        /* Get 'fixed' attr value. */
                        attrType.AttrTypeNum = Template_ATTR_fixed;
@@ -518,16 +625,16 @@ void DumpTemplateElement (Element el, Document doc)
               case Template_EL_useSimple:
               case Template_EL_useEl:
                 str = GetAttributeStringValueFromNum(el, Template_ATTR_title, NULL);
-                printf(" label=%s", str);
+                printf (" label=%s", str);
                 TtaFreeMemory(str);
                 str = GetAttributeStringValueFromNum(el, Template_ATTR_types, NULL);
-                printf(" types=%s", str);
+                printf (" types=%s", str);
                 TtaFreeMemory(str);
                 attType.AttrSSchema = elType.ElSSchema;
                 attType.AttrTypeNum = Template_ATTR_option;
                 att = TtaGetAttribute (el, attType);
                 if (att)
-                  printf(" option");
+                  printf (" option");
                 break;
               case Template_EL_bag:
                 str = GetAttributeStringValueFromNum(el, Template_ATTR_title, NULL);
@@ -539,19 +646,19 @@ void DumpTemplateElement (Element el, Document doc)
                 break;
               case Template_EL_attribute:
                 str = GetAttributeStringValueFromNum(el, Template_ATTR_ref_name, NULL);
-                printf(" name=%s", str);
+                printf (" name=%s", str);
                 TtaFreeMemory(str);
                 str = GetAttributeStringValueFromNum(el, Template_ATTR_type, NULL);
-                printf(" type=%s", str);
+                printf (" type=%s", str);
                 TtaFreeMemory(str);
                 str = GetAttributeStringValueFromNum(el, Template_ATTR_useAt, NULL);
-                printf(" use=%s", str);
+                printf (" use=%s", str);
                 TtaFreeMemory(str);
                 str = GetAttributeStringValueFromNum(el, Template_ATTR_defaultAt, NULL);
-                printf(" default=%s", str);
+                printf (" default=%s", str);
                 TtaFreeMemory(str);
                 str = GetAttributeStringValueFromNum(el, Template_ATTR_fixed, NULL);
-                printf(" fixed=%s", str);
+                printf (" fixed=%s", str);
                 TtaFreeMemory(str);
                 break;
             }
@@ -640,7 +747,29 @@ char *SaveDocumentToNewDoc(Document doc, Document newdoc, char* newpath)
 }
 
 /*----------------------------------------------------------------------
- * Retrieve the xt:head element.
+  TemplateGetParentHead looks for the parent xt:head element
+  ----------------------------------------------------------------------*/
+Element TemplateGetParentHead (Element el, Document doc)
+{
+#ifdef TEMPLATES
+  ElementType headType;
+  SSchema     schema;
+
+  schema = TtaGetSSchema ("Template", doc);
+  if (schema == TtaGetDocumentSSchema (doc))
+    return TtaGetMainRoot (doc);
+  if (schema == NULL)
+    // no template element in that document
+    return NULL;
+
+  headType.ElTypeNum = Template_EL_head;
+  return TtaGetExactTypedAncestor (el, headType);
+#endif /* TEMPLATES */
+}
+
+/*----------------------------------------------------------------------
+  TemplateFindHead looks for the xt:head element and creates it
+  if it doesn't exist.
   ----------------------------------------------------------------------*/
 Element TemplateFindHead (Document doc)
 {
@@ -652,14 +781,17 @@ Element TemplateFindHead (Document doc)
   if (headType.ElSSchema == NULL)
     return NULL;
 
-  headType.ElTypeNum = Template_EL_head;
   root = TtaGetMainRoot (doc);
-  head = TtaSearchTypedElement (headType, SearchInTree, root);
+  elType = TtaGetElementType (root);
+  headType.ElTypeNum = Template_EL_head;
+  if (elType.ElSSchema == headType.ElSSchema)
+    head = root;
+  else
+    head = TtaSearchTypedElement (headType, SearchInTree, root);
   if (head == NULL)
     {
       // create the template head
       head = TtaNewElement (doc, headType);
-      elType = TtaGetElementType (root);
       if (!strcmp (TtaGetSSchemaName (elType.ElSSchema), "HTML"))
         {
           elType.ElTypeNum = HTML_EL_HEAD;

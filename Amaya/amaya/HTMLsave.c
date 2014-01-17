@@ -797,7 +797,7 @@ static void InitSaveForm (Document document, View view, char *pathname)
     {
       SaveAsHTML = FALSE;
       SaveAsXML = FALSE;
-      SaveAsText = TRUE;
+      SaveAsText = FALSE;
     }
   else if (IsXMLName (pathname) || DocumentMeta[document]->xmlformat)
     {
@@ -2504,9 +2504,12 @@ static int SaveLocalCopy (Document doc, View view, char *url,
               DocumentMeta[doc]->content_location)
               // add the default name
             strcat (pathname, DocumentMeta[doc]->content_location);
-          if (ask)
+         if (ask)
             {
               sprintf (msg, TtaGetMessage (AMAYA, AM_CANNOT_SAVE), DocumentURLs[doc]);
+	      strcat (msg, "(");
+	      strcat (msg, AmayaLastHTTPErrorMsg);
+	      strcat (msg, ")");
               InitConfirm3L (doc, 1, msg, TtaGetMessage (AMAYA, AM_SAVING_FAILED),
                              pathname, TRUE);
             }
@@ -3301,17 +3304,16 @@ void SaveDocument (Document doc, View view)
           TtaSetDocumentUnmodified (xmlDoc);
           TtaSetInitialSequence (xmlDoc);
           // Reinitialize the template description
-          Template_FillFromDocument (xmlDoc);
+          if (IsTemplateDocument (xmlDoc) && !IsTemplateInstanceDocument(xmlDoc))
+            Template_FillFromDocument (xmlDoc);
         }
-      else
+      else if (DocumentSource[doc])
         {
           // Reinitialize the template description
-          Template_FillFromDocument (doc);
-          if (DocumentSource[doc])
-            {
-              TtaSetDocumentUnmodified (DocumentSource[doc]);
-              TtaSetInitialSequence (DocumentSource[doc]);
-            }
+          if (IsTemplateDocument (doc) && !IsTemplateInstanceDocument(doc))
+            Template_FillFromDocument (doc);
+          TtaSetDocumentUnmodified (DocumentSource[doc]);
+          TtaSetInitialSequence (DocumentSource[doc]);
         }
         
       /* switch Amaya buttons and menus */

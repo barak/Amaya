@@ -258,7 +258,10 @@ ThotBool CheckPromptIndicator (Element el, Document doc)
           att = TtaGetAttribute (parent, attrType);
           if (att)
             {
-              TtaSelectElement (doc, el);
+              if (TtaGetElementVolume (el) == 0)
+                TtaSelectElement (doc, parent);
+              else
+                TtaSelectElement (doc, el);
               return TRUE;
             }
         }
@@ -748,7 +751,7 @@ void UseCreated (NotifyElement *event)
     }
   // look for the enclosing target element
   parent = GetParentLine (parent, templateSSchema);
-  InstantiateUse (t, el, doc, parent, TRUE);
+  InstantiateUse (t, el, doc, parent, TRUE, FALSE);
 #endif /* TEMPLATES */
 }
 
@@ -878,7 +881,6 @@ ThotBool BagButtonClicked (NotifyElement *event)
   Element         bagEl = el;
   Element         firstEl;
   Element         newEl = NULL;
-  View            view;
   SSchema         templateSSchema;
   char           *listtypes = NULL;
   char           *result = NULL;
@@ -890,10 +892,12 @@ ThotBool BagButtonClicked (NotifyElement *event)
   if (!IsTemplateInstanceDocument (doc))
     return FALSE; /* let Thot perform normal operation */
 
+#ifdef IV
+  View            view;
   TtaGetActiveView (&doc, &view);
-  if (view != 1)
+  if (view == 1)
     return FALSE; /* let Thot perform normal operation */
-
+#endif
   TtaCancelSelection (doc);
   templateSSchema = TtaGetSSchema ("Template", doc);
   t = GetXTigerDocTemplate(doc);
@@ -940,12 +944,12 @@ ThotBool BagButtonClicked (NotifyElement *event)
                   if (firstEl)
                     {
                       TtaSelectElement (doc, firstEl);
-                      TtaSetStatusSelectedElement (doc, view, firstEl);
+                      TtaSetStatusSelectedElement (doc, 1, firstEl);
                     }
                   else
                     {
                       TtaSelectElement (doc, newEl);
-                      TtaSetStatusSelectedElement (doc, view, newEl);
+                      TtaSetStatusSelectedElement (doc, 1, newEl);
                     }
                 }
             }
@@ -1047,9 +1051,10 @@ ThotBool RepeatButtonClicked (NotifyElement *event)
     return FALSE; /* let Thot perform normal operation */
 
   TtaGetActiveView (&doc, &view);
-  if (view != 1)
+#ifdef IV
+  if (view == 1)
     return FALSE; /* let Thot perform normal operation */
-
+#endif
   TtaCancelSelection(doc);
   t = GetXTigerDocTemplate(doc);
   elType = TtaGetElementType(el);
@@ -1065,7 +1070,10 @@ ThotBool RepeatButtonClicked (NotifyElement *event)
       if (Template_CanInsertRepeatChild (repeatEl))
         {
           firstEl = TtaGetFirstChild (repeatEl);
-          listtypes = Template_GetListTypes (t, firstEl);
+          if (firstEl)
+            listtypes = Template_GetListTypes (t, firstEl);
+          else
+            listtypes = Template_GetListTypes (t, repeatEl);
           if (listtypes)
             {
 #ifdef TEMPLATE_DEBUG
@@ -1074,7 +1082,20 @@ ThotBool RepeatButtonClicked (NotifyElement *event)
               result = QueryStringFromMenu (doc, listtypes, FALSE);
               TtaFreeMemory (listtypes);
               if (result)
-                DoReplicateUseElement (t, doc, view, el, repeatEl, result);
+                {
+                  if (event->position == 1)
+                    {
+                      // force the insert before
+                      if (el != repeatEl)
+                        TtaPreviousSibling (&el);
+                      if (el)
+                        DoReplicateUseElement (t, doc, view, el, repeatEl, result);
+                      else
+                        DoReplicateUseElement (t, doc, view, repeatEl, repeatEl, result);
+                    }
+                  else
+                    DoReplicateUseElement (t, doc, view, el, repeatEl, result);
+                }
             }
           TtaFreeMemory (result);
           DumpSubtree (repeatEl, doc, 0);
@@ -1116,7 +1137,7 @@ ThotBool UseButtonClicked (NotifyElement *event)
   Element         el = event->element;
   Element         child, parent;
   ElementType     elType, parentType;
-  View            view;
+  View            view = 1;
   XTigerTemplate  t;
   Declaration     decl;
   Element         firstEl, newEl = NULL;
@@ -1127,11 +1148,11 @@ ThotBool UseButtonClicked (NotifyElement *event)
     return TRUE;
   if (!IsTemplateInstanceDocument (doc))
     return FALSE; /* let Thot perform normal operation */
-
+#ifdef IV
   TtaGetActiveView (&doc, &view);
-  if (view != 1)
+  if (view == 1)
     return FALSE; /* let Thot perform normal operation */
-
+#endif
   TtaCancelSelection(doc);
   t = GetXTigerDocTemplate(doc);
   if (!t)
@@ -1234,11 +1255,13 @@ ThotBool UseSimpleButtonClicked (NotifyElement *event)
   if (!IsTemplateInstanceDocument (event->document))
     return FALSE; /* let Thot perform normal operation */
 
+  if (event->position == 0)
+    return FALSE; /* let Thot perform normal operation */
   elType = TtaGetElementType (event->element);
   attrType.AttrSSchema = elType.ElSSchema;
   attrType.AttrTypeNum = Template_ATTR_option;
   att = TtaGetAttribute (event->element, attrType);
-  if (att)
+  if (att && event->position == 2)
     return OptionButtonClicked (event);
 
   parentType = TtaGetElementType (TtaGetParent( event->element));
@@ -1246,6 +1269,12 @@ ThotBool UseSimpleButtonClicked (NotifyElement *event)
     return RepeatButtonClicked (event);
   else if (parentType.ElTypeNum == Template_EL_bag)
     return BagButtonClicked (event);
+  else
+    {
+      // select to the whole element
+      TtaSelectElement (event->document, event->element);
+      return TRUE;
+    }
 #endif /* TEMPLATES */
   return FALSE;
 }
@@ -1256,21 +1285,21 @@ ThotBool UseSimpleButtonClicked (NotifyElement *event)
 ThotBool OptionButtonClicked (NotifyElement *event)
 {
 #ifdef TEMPLATES
-  Element         el, child, next, parent;
+  Element         el, child, parent;
   ElementType     useType, childType;
   Document        doc;
   XTigerTemplate  t;
-  View            view;
 
   if (!TtaGetDocumentAccessMode (event->document))
     return TRUE;
   if (!IsTemplateInstanceDocument (event->document))
     return FALSE; /* let Thot perform normal operation */
-
+#ifdef IV
+  View            view;
   TtaGetActiveView (&doc, &view);
   if (view != 1)
     return FALSE; /* let Thot perform normal operation */
-
+#endif
   doc = event->document;
   el = event->element;
   if (!el)
@@ -1300,34 +1329,20 @@ ThotBool OptionButtonClicked (NotifyElement *event)
 
       // look for the enclosing target element
       parent = GetParentLine (el, useType.ElSSchema);
-      InstantiateUse (t, el, doc, parent, TRUE);
+      InstantiateUse (t, el, doc, parent, TRUE, FALSE);
       SetAttributeIntValue (el, Template_ATTR_option,
                             Template_ATTR_option_VAL_option_set, TRUE);
     }
   else
     /* remove the content of the "use" element */
     {
-      do
-        {
-          next = child;
-          TtaNextSibling (&next);
-          TtaRegisterElementDelete(child, doc);
-          TtaDeleteTree (child, doc);
-          child = next;
-        }
-      while (next);
-      childType.ElSSchema = useType.ElSSchema;
-      childType.ElTypeNum = Template_EL_TemplateObject;
-      child = TtaNewElement (doc, childType);
-      TtaInsertFirstChild (&child, el, doc);
-      TtaRegisterElementCreate (child, doc);
-      TtaSetAccessRight (child, ReadOnly, doc);
+      child = Template_FillEmpty (el, doc, TRUE);
       SetAttributeIntValue (el, Template_ATTR_option,
                             Template_ATTR_option_VAL_option_unset, TRUE);
     }
   child = TtaGetFirstChild (el);
   TtaSelectElement (doc, child);
-  TtaCloseUndoSequence(doc);
+  TtaCloseUndoSequence (doc);
   TtaSetDocumentModified (doc);
   return TRUE; /* don't let Thot perform normal operation */
 #endif /* TEMPLATES */
@@ -1348,27 +1363,29 @@ void Template_FillFromDocument (Document doc)
 
   if (t)
     {
-#ifdef TEMPLATE_DEBUG
-      printf("Template_FillFromDocument state: %d\n", t->state);
-#endif
       SetTemplateDocument (t, doc);
+#ifdef TEMPLATE_DEBUG
+      printf("Template_FillFromDocument state: %d ", t->doc);
+#endif
       Template_PrepareTemplate(t, doc);
       if (IsTemplateInstanceDocument (doc))
         {
 #ifdef TEMPLATE_DEBUG
-          printf("  > instance\n");
+          printf("  -> instance\n");
 #endif
           // fix all access rights in the instance
           root = TtaGetRootElement (doc);
           TtaSetAccessRight (root, ReadOnly, doc);
           Template_FixAccessRight (t, root, doc);
           TtaUpdateAccessRightInViews (doc, root);
+          // Parse template to fill structure and remove extra data
+          ParseTemplate (t, root, doc, NULL, TRUE);
         }
 #ifdef TEMPLATE_DEBUG
       else if (t->state & templLibraryFlag)
-        printf("  > library\n");
+        printf("  -> library\n");
       else if (t->state & templTemplate)
-        printf("  > template\n");
+        printf("  -> template\n");
 #endif
       // Mark loaded
       t->state |= templloaded;
@@ -1387,12 +1404,12 @@ void Template_FillFromDocument (Document doc)
   Template_CheckAndPrepareTemplate checks if the document is a template
   or a library and prepare XTigerTemplate structure to use it.
   ----------------------------------------------------------------------*/
-ThotBool Template_CheckAndPrepareTemplate(char* docURL)
+ThotBool Template_CheckAndPrepareTemplate (char* docURL)
 {
 #ifdef TEMPLATES
   XTigerTemplate t = NULL; //GetXTigerTemplate(docURL);
 
-  if (IsXTiger(docURL))
+  if (IsXTiger (docURL))
     {
 #ifdef TEMPLATE_DEBUG
       printf("Template_CheckAndPrepareTemplate %s templTemplate\n", docURL);
@@ -1400,7 +1417,7 @@ ThotBool Template_CheckAndPrepareTemplate(char* docURL)
       t = LookForXTigerTemplate (docURL);
       t->state |= templTemplate;
     }
-  else if (IsXTigerLibrary(docURL))
+  else if (IsXTigerLibrary (docURL))
     {
 #ifdef TEMPLATE_DEBUG
       printf("Template_CheckAndPrepareTemplate %s templLibrary\n", docURL);
@@ -1501,10 +1518,10 @@ void Template_CheckAndPrepareInstance (char *localFileName, Document doc,
   ClosingTemplateDocument
   Callback called before closing a document which uses templates.
   ----------------------------------------------------------------------*/
-ThotBool ClosingTemplateDocument(NotifyDialog* dialog)
+ThotBool ClosingTemplateDocument (NotifyDialog* dialog)
 {
 #ifdef TEMPLATES
-  XTigerTemplate t = GetXTigerDocTemplate(dialog->document);
+  XTigerTemplate t = GetXTigerDocTemplate (dialog->document);
   if (t)
     Template_RemoveReference(t);
 #endif /* TEMPLATES */
@@ -1520,9 +1537,9 @@ ThotBool IsTemplateElement (Element elem)
 #ifdef TEMPLATES
   ElementType     elType;
 
-  elType = TtaGetElementType(elem);
+  elType = TtaGetElementType (elem);
   if (elType.ElSSchema)
-    return (strcmp(TtaGetSSchemaName(elType.ElSSchema) , "Template") == 0);
+    return (strcmp (TtaGetSSchemaName(elType.ElSSchema) , "Template") == 0);
 #endif /* TEMPLATES */
   return FALSE;
 }
@@ -1532,7 +1549,7 @@ ThotBool IsTemplateElement (Element elem)
   GetFirstTemplateParentElement
   Return the first element which has "Template" as schema name or null.
   ----------------------------------------------------------------------*/
-Element GetFirstTemplateParentElement(Element elem)
+Element GetFirstTemplateParentElement (Element elem)
 {
 #ifdef TEMPLATES
   ElementType     elType;
@@ -1585,14 +1602,14 @@ ThotBool TemplateElementWillBeCreated (NotifyElement *event)
 #ifdef TEMPLATES
   ElementType     elType = event->elementType;
   Element         parent = event->element;
-  ElementType     parentType = TtaGetElementType(parent);
-  Element         ancestor, el, next;
+  ElementType     parentType = TtaGetElementType(parent), childType;
+  Element         ancestor, el, next, child;
   ElementType     ancestorType;
   SSchema         templateSSchema;
   XTigerTemplate  t;
   char           *types, *ptr, *name = NULL;
   int             len, view, i, doc = event->document;
-  ThotBool        b;
+  ThotBool        b, isInstance;
 
   if (event->info == 1)
     return FALSE;
@@ -1606,8 +1623,7 @@ ThotBool TemplateElementWillBeCreated (NotifyElement *event)
   templateSSchema = TtaGetSSchema ("Template", doc);
   if (templateSSchema == NULL)
     return FALSE; // let Thot do the job
-  if (!IsTemplateInstanceDocument(doc))
-    return FALSE; // let Thot do the job
+  isInstance = IsTemplateInstanceDocument(doc);
 
   // Fisrt, test if in a xt:bag or in a base-element xt:use
   if (parentType.ElSSchema == templateSSchema)
@@ -1618,11 +1634,13 @@ ThotBool TemplateElementWillBeCreated (NotifyElement *event)
   if (ancestor)
     {
       ancestorType = TtaGetElementType(ancestor);
+      if (ancestorType.ElTypeNum == Template_EL_component)
+        return FALSE; // let Thot do the job
       if (ancestorType.ElTypeNum == Template_EL_bag)
         {
           // only check the use child
           if (ancestor != parent)
-            return  FALSE; // let Thot do the job
+            return FALSE; // let Thot do the job
           if (elType.ElSSchema == templateSSchema &&
               (elType.ElTypeNum == Template_EL_useSimple ||
                elType.ElTypeNum == Template_EL_useEl))
@@ -1662,11 +1680,33 @@ ThotBool TemplateElementWillBeCreated (NotifyElement *event)
             return TRUE; // don't let Thot do the job
           if (ancestor != parent)
             return  (TtaIsReadOnly (parent) != 0); // let or not Thot do the job
-          types = GetAttributeStringValueFromNum (ancestor, Template_ATTR_currentType, NULL);
+          if (isInstance)
+            types = GetAttributeStringValueFromNum (ancestor, Template_ATTR_currentType, NULL);
+          else
+            types = GetAttributeStringValueFromNum (ancestor, Template_ATTR_types, NULL);
           b = Template_CanInsertElementInUse (doc, elType, types,
                                               parent, event->position);
           if (types && !b)
             {
+              child = TtaGetFirstChild (ancestor);
+              childType = TtaGetElementType(child);
+              if (childType.ElSSchema != templateSSchema ||
+                  childType.ElTypeNum != Template_EL_TemplateObject)
+                {
+                  parent = TtaGetParent (ancestor);
+                  elType = TtaGetElementType(parent);
+                  if (elType.ElSSchema == templateSSchema &&
+                      elType.ElTypeNum == Template_EL_repeat)
+                    {
+                      t = GetXTigerDocTemplate (doc);
+                      name = GetUsedTypeName (ancestor);
+                      DoReplicateUseElement (t, doc, 1, ancestor, parent, name);
+                      TtaFreeMemory (name);
+                    }
+                  TtaFreeMemory(types);
+                  return TRUE; // don't let Thot do the job
+                }
+
               // check with equivalent component
               name = (char *)GetXMLElementName (elType, doc);
               if (name)
@@ -1729,6 +1769,7 @@ ThotBool TemplateElementWillBeCreated (NotifyElement *event)
   return FALSE;
 }
 
+
 /*----------------------------------------------------------------------
   TemplateElementWillBeDeleted
   Processed when an element will be deleted in a template context.
@@ -1737,97 +1778,126 @@ ThotBool TemplateElementWillBeDeleted (NotifyElement *event)
 {
 #ifdef TEMPLATES
   Document       doc = event->document;
-  Element        elem = event->element;
-  Element        xtElem, parent = NULL, sibling;
+  Element        el = event->element;
+  Element        xtEl, parent = NULL, sibling;
   ElementType    xtType, elType;
-  char          *type;
-  Declaration    dec;
   SSchema        templateSSchema;
   XTigerTemplate t;
-  ThotBool       selparent = FALSE;
 
-  if (event->info==1)
+  if (event->info == 1)
     return FALSE;
 
-  if (!TtaGetDocumentAccessMode(event->document))
+  if (!TtaGetDocumentAccessMode(doc))
     return TRUE;
+  if (!IsTemplateInstanceDocument (doc))
+    return FALSE; // If template or library, pass to specialized functions.
 
-  templateSSchema = TtaGetSSchema ("Template", event->document);
+  templateSSchema = TtaGetSSchema ("Template", doc);
   if (templateSSchema == NULL)
     return FALSE; // let Thot do the job
 
   t = GetXTigerDocTemplate(doc);
-  if (Template_IsTemplate(t)||Template_IsLibrary(t))
-    return FALSE; // If template or library, pass to specialized functions.
-
-  xtElem = GetFirstTemplateParentElement(elem);
-  if (xtElem)
+  elType = TtaGetElementType (el);
+  xtEl = GetFirstTemplateParentElement (el);
+  if (elType.ElSSchema == templateSSchema &&
+      elType.ElTypeNum == Template_EL_repeat)
     {
-      xtType = TtaGetElementType(xtElem);
+      TtaOpenUndoSequence (doc, el, el, 0, 0);
+      CleanUpRepeat (el, doc, TRUE);
+      TtaCloseUndoSequence (doc);
+      TtaSelectElement (doc, el);
+      TtaSetDocumentModified (doc);
+    }
+  else if (elType.ElSSchema == templateSSchema &&
+           elType.ElTypeNum == Template_EL_bag)
+    {
+      // clean up the content of the bag or repeat
+      sibling = TtaGetFirstChild (el);
+      xtEl = el;
+      TtaOpenUndoSequence (doc, el, el, 0, 0);
+      while (sibling)
+        {
+          el = sibling;
+          TtaNextSibling (&sibling);
+          TtaRegisterElementDelete (el, doc);
+          TtaDeleteTree (el, doc);
+        }
+      TtaCloseUndoSequence (doc);
+      TtaSelectElement (doc, xtEl);
+      TtaSetDocumentModified (doc);
+    }
+  else if (xtEl)
+    {
+      xtType = TtaGetElementType (xtEl);
       if (xtType.ElTypeNum==Template_EL_bag)
+        return FALSE; // xt:bag always allow remove children.
+      else
         {
-          elType = TtaGetElementType(elem);
-          if (elType.ElSSchema==templateSSchema &&
-              (elType.ElTypeNum==Template_EL_useSimple ||
-               elType.ElTypeNum==Template_EL_useEl))
+          // look for the enclosing use
+          if (elType.ElSSchema != templateSSchema)
             {
-              // Remove element manually.
-              TtaOpenUndoSequence(doc, elem, elem, 0, 0);
-              TtaRegisterElementDelete(elem, doc);
-              TtaDeleteTree(elem, doc);
-              TtaCloseUndoSequence(doc);
-              return TRUE;
+              // check if the element is alone
+              sibling = el;
+              TtaNextSibling (&sibling);
+              while (sibling == NULL)
+                {
+                  // there is no next element
+                  sibling = el;
+                  TtaPreviousSibling (&sibling);
+                  if (parent == xtEl)
+                    break;
+                  if (sibling == NULL)
+                    {
+                      el = parent;
+                      parent = TtaGetParent (el);
+                      sibling = el;
+                      TtaNextSibling (&sibling);
+                    }
+                }
+              if (sibling)
+                return TRUE; // cannot delete
             }
-          else
-            return FALSE; // xt:bag always allow remove children.
-        }
-      else if (xtType.ElTypeNum == Template_EL_useSimple ||
-               xtType.ElTypeNum == Template_EL_useEl)
-        {
-          parent = TtaGetParent(elem);
-          if (xtElem != parent)
-            {
-              type = GetAttributeStringValueFromNum (xtElem, Template_ATTR_currentType, NULL);
-              dec = Template_GetDeclaration(t, type);
-              TtaFreeMemory (type);
 
-              if (dec && dec->nature == XmlElementNat)
-                // Can remove only if the current type is a target element.
-                return FALSE;
-              else
-                return TRUE;
-            }
-        }
-      else if (xtType.ElTypeNum == Template_EL_repeat)
-        {
-          sibling = TtaGetSuccessor (elem);
-          if (sibling == NULL)
+          TtaOpenUndoSequence (doc, el, el, 0, 0);
+          xtEl = TtaGetParent (el);
+          xtType = TtaGetElementType (xtEl);
+          if (xtType.ElSSchema == templateSSchema &&
+              xtType.ElTypeNum == Template_EL_repeat)
             {
-              // there is no next element
-              sibling = TtaGetPredecessor (elem);
+              // check if the repeat becomes empty
+              elType = TtaGetElementType (el);
+              sibling = el;
+              TtaNextSibling (&sibling);
               if (sibling == NULL)
-                selparent = TRUE;
+                {
+                  // there is no next element
+                  sibling = el;
+                  TtaPreviousSibling (&sibling);
+                }
+              if (sibling)
+                {
+                  // delete the use within a bag or a repeat
+                  TtaRegisterElementDelete (el, doc);
+                  TtaDeleteTree (el, doc);
+                }
+              else
+                // keep an empty use element
+                Template_FillEmpty (el, doc, TRUE);
+              TtaSetDocumentModified (doc);
             }
-          TtaRegisterElementDelete (elem, doc);
-          TtaDeleteTree (elem, doc);
-          parent = GetParentLine (xtElem, templateSSchema);
-          InstantiateRepeat (t, xtElem, doc, parent, TRUE);
-          if (selparent)
-            // look for the new sibling
-            sibling = TtaGetFirstChild (parent);
-          if (sibling)
-            TtaSelectElement(doc, sibling);
-          else
-            TtaSelectElement(doc, parent);
-          return TRUE;
+          else if (xtType.ElSSchema == templateSSchema &&
+                   xtType.ElTypeNum == Template_EL_bag)
+            {
+              // delete the use within a bag or a repeat
+              TtaRegisterElementDelete (el, doc);
+              TtaDeleteTree (el, doc);
+              TtaSetDocumentModified (doc);
+            }
+          TtaCloseUndoSequence (doc);
+          TtaSelectElement (doc, xtEl);
         }
     }
-
-  //TODO Test if current element is use or repeat.
-  // Because if an element is delete and it is the unique child of its parent,
-  // the parent intends to destroy itself.
-
-  return TRUE;
+  return TRUE; // don't let thot do something
 #else /* TEMPLATES */
   return FALSE;
 #endif /* TEMPLATES */
@@ -1894,9 +1964,10 @@ void UpdateTemplateMenus (Document doc)
       TtaSetItemOff (doc, 1, Tools, BTemplateCreateRepeatComp);
       TtaSetItemOff (doc, 1, Tools, BTemplateCreateFreeBox);
       TtaSetItemOff (doc, 1, Tools, BTemplateCreateUnion);
+      TtaSetItemOff (doc, 1, Tools, BTemplateCreateImport);
     }
   else if (DocumentURLs[doc] && DocumentTypes[doc] != docSource &&
-           IsXTiger (DocumentURLs[doc]))
+           (IsXTiger (DocumentURLs[doc]) || IsXTigerLibrary (DocumentURLs[doc])))
     {
       // Template document
       TtaSetItemOff (doc, 1, Tools, BCreateTemplateFromDocument);
@@ -1907,6 +1978,7 @@ void UpdateTemplateMenus (Document doc)
       TtaSetItemOn (doc, 1, Tools, BTemplateCreateRepeatComp);
       TtaSetItemOn (doc, 1, Tools, BTemplateCreateFreeBox);
       TtaSetItemOn (doc, 1, Tools, BTemplateCreateUnion);
+      TtaSetItemOn (doc, 1, Tools, BTemplateCreateImport);
     }
   else
     {
@@ -1919,6 +1991,7 @@ void UpdateTemplateMenus (Document doc)
       TtaSetItemOff (doc, 1, Tools, BTemplateCreateRepeatComp);
       TtaSetItemOff (doc, 1, Tools, BTemplateCreateFreeBox);
       TtaSetItemOff (doc, 1, Tools, BTemplateCreateUnion);
+      TtaSetItemOff (doc, 1, Tools, BTemplateCreateImport);
     }
 }
 
@@ -1942,19 +2015,38 @@ void UninstanciateTemplateDocument(Document doc)
   Allocate XTigerTemplate structure for instance and initialize template
   url and template version.
   ----------------------------------------------------------------------*/
-void Template_PrepareInstance(char *fileName, Document doc, char* template_version, char* template_url)
+void Template_PrepareInstance (char *url, Document doc,
+                               char* template_version, char* template_url)
 {
 #ifdef TEMPLATES
-  XTigerTemplate t = GetXTigerTemplate(fileName);
+  XTigerTemplate t = GetXTigerTemplate (url);
   if (!t)
-    t = NewXTigerTemplate(fileName);
+    t = NewXTigerTemplate (url);
   t->state           = templInstance;
   t->templateVersion = TtaStrdup (template_version);
   //t->uri             = TtaStrdup (fileName); // already done
   t->base_uri        = TtaStrdup (template_url);
   t->doc             = doc;
   t->ref             = 1;
+#endif /* TEMPLATES */
+}
 
+/*----------------------------------------------------------------------
+  Template_PrepareLibrary
+  Allocate XTigerTemplate structure for a library and initialize template
+  url and template version.
+  ----------------------------------------------------------------------*/
+void Template_PrepareLibrary (char *url, Document doc, char* template_version)
+{
+#ifdef TEMPLATES
+  XTigerTemplate t = GetXTigerTemplate(url);
+  if (!t)
+    t = NewXTigerTemplate (url);
+  t->state           = templLibrary;
+  t->templateVersion = TtaStrdup (template_version);
+  //t->uri             = TtaStrdup (fileName); // already done
+  t->doc             = doc;
+  t->ref             = 1;
 #endif /* TEMPLATES */
 }
 
@@ -1963,10 +2055,10 @@ void Template_PrepareInstance(char *fileName, Document doc, char* template_versi
   SetDocumentAsXTigerTemplate
   Set the document template structure as template.
   ----------------------------------------------------------------------*/
-void SetDocumentAsXTigerTemplate(Document doc)
+void SetDocumentAsXTigerTemplate (Document doc)
 {
 #ifdef TEMPLATES
-  XTigerTemplate t = GetXTigerDocTemplate(doc);
+  XTigerTemplate t = GetXTigerDocTemplate (doc);
   if (t)
     t->state |= templTemplate;
 #endif /* TEMPLATES */
@@ -2020,11 +2112,16 @@ void Template_CreateTextBox (Document doc, ThotBool createComp)
           if (selType.ElTypeNum == 1)
             {
               // request the element label
-              title = TtaGetMessage (AMAYA, AM_TEMPLATE_USESTRING);
               if (createComp)
-                label = TtaGetMessage (AMAYA, AM_NAME);
+                {
+                  label = TtaGetMessage (AMAYA, AM_NAME);
+                  title = TtaGetMessage (AMAYA, AM_TEMPLATE_NEWCOMP);
+                }
               else
-                label = TtaGetMessage (AMAYA, AM_TEMPLATE_LABEL);
+                {
+                  label = TtaGetMessage (AMAYA, AM_TEMPLATE_LABEL);
+                  title = TtaGetMessage (AMAYA, AM_TEMPLATE_USESTRING);
+                }
               QueryStringFromUser(label, title, buffer, 32);
               if (buffer[0] == EOS)
                 // stop the creation
@@ -2056,6 +2153,7 @@ void Template_CreateTextBox (Document doc, ThotBool createComp)
                       if (!open)
                         TtaCloseUndoSequence (doc);
                       TtaSelectElement (doc, use);
+		      TtaSetDocumentModified (doc);
                     }
                 }
               else if (GenerateInlineElement (Template_EL_useSimple, sstempl, 0, "", TRUE))
@@ -2111,6 +2209,7 @@ void Template_CreateTextBox (Document doc, ThotBool createComp)
                         }
                       if (!open)
                         TtaCloseUndoSequence (doc);
+		      TtaSetDocumentModified (doc);
                     }
                 }
               TtaSetStructureChecking (oldStructureChecking, doc);
@@ -2129,6 +2228,76 @@ void TemplateCreateTextBox (Document doc, View view)
 {
 #ifdef TEMPLATES
   Template_CreateTextBox (doc, FALSE);
+#endif /* TEMPLATES */
+}
+
+/*----------------------------------------------------------------------
+  TemplateCreateImport
+  Create a xt:import
+  ----------------------------------------------------------------------*/
+void TemplateCreateImport (Document doc, View view)
+{
+#ifdef TEMPLATES
+  Element        selElem, selElem2, parent;
+  Element        el, prev, next;
+  ElementType    elType;
+  SSchema        sstempl;
+  XTigerTemplate t;
+  int            firstChar, lastChar, firstChar2, lastChar2;
+
+  if (!TtaGetDocumentAccessMode(doc))
+    return;
+
+  sstempl = TtaGetSSchema ("Template", doc);
+  if (sstempl && IsTemplateDocument(doc) && !IsTemplateInstanceDocument(doc))
+    {
+      TtaGiveFirstSelectedElement (doc, &selElem, &firstChar, &lastChar);
+      TtaGiveLastSelectedElement (doc, &selElem2, &firstChar2, &lastChar2);
+      t = GetXTigerDocTemplate (doc);
+      if (selElem == NULL || t == NULL || selElem != selElem2 || lastChar > firstChar)
+        return;
+
+      elType =  TtaGetElementType(selElem);
+      if (elType.ElSSchema == sstempl)
+        {
+          // locate the position of the new import
+          prev = next = NULL;
+          if (elType.ElSSchema == sstempl &&
+              elType.ElTypeNum == Template_EL_component)
+            next = selElem;
+          else if (elType.ElSSchema == sstempl &&
+                   (elType.ElTypeNum == Template_EL_union ||
+                    elType.ElTypeNum == Template_EL_import))
+            prev = selElem;
+          else if (elType.ElSSchema == sstempl &&
+                   (elType.ElTypeNum == Template_EL_head ||
+                    elType.ElTypeNum == Template_EL_Template))
+            parent = selElem;
+          else
+            {
+              parent = TemplateGetParentHead (selElem, doc);
+              if (parent == NULL)
+                return;
+              elType.ElSSchema = sstempl;
+              elType.ElTypeNum = Template_EL_component;
+              prev = TtaGetExactTypedAncestor (selElem, elType);
+            }
+          // create the import
+          elType.ElTypeNum = Template_EL_import;
+          el = TtaNewElement (doc, elType);
+          if (prev)
+            TtaInsertSibling (el, prev, FALSE, doc);
+          else if (next)
+            TtaInsertSibling (el, next, TRUE, doc);
+          else
+            TtaInsertFirstChild (&el, parent, doc);
+          TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
+          TtaRegisterElementCreate (el, doc);
+          TtaSelectElement (doc, el);
+          LinkAsImport = TRUE;
+          SelectDestination (doc, el, TRUE, FALSE);
+        }
+    }
 #endif /* TEMPLATES */
 }
 
@@ -2293,10 +2462,8 @@ void TemplateCreateUnion (Document doc, View view)
           if (QueryUnionFromUser(proposed, NULL, &name, &types, TRUE))
             {
               TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
-
               head = TemplateFindHead(doc);
               sibling = TtaGetLastChild(head);
-
               unionType.ElSSchema = sstempl;
               unionType.ElTypeNum = Template_EL_union;
               unionEl = TtaNewElement(doc, unionType);
@@ -2333,7 +2500,7 @@ void Template_ModifyUnionElement(Document doc, Element unionEl)
   XTigerTemplate t = GetXTigerDocTemplate(doc);
   SSchema        sstempl = TtaGetSSchema ("Template", doc);
   ElementType    unionType;
-  char          *proposed, *checked, *name, *types=NULL;
+  char          *proposed, *checked, *name, *types = NULL;
 
   if (doc && unionEl && t && sstempl)
     {
@@ -2637,7 +2804,7 @@ Element Template_CreateUseFromSelection (Document doc, int view, ThotBool create
   DisplayMode    dispMode;
   Element        selElem, selElem2, parent, parent2;
   Element        use = NULL, comp, prev, next;
-  ElementType    selType, selType2, useType;
+  ElementType    selType, selType2, useType, compType;
   SSchema        sstempl, sshtml;
   XTigerTemplate t;
   int            firstChar, lastChar, firstChar2, lastChar2;
@@ -2652,6 +2819,7 @@ Element Template_CreateUseFromSelection (Document doc, int view, ThotBool create
 
   sstempl = TtaGetSSchema ("Template", doc);
   sshtml  = TtaGetSSchema ("HTML", doc);
+  buffer[0] = EOS;
   if (doc && TtaGetDocumentAccessMode(doc) && sstempl &&
       IsTemplateDocument(doc) && !IsTemplateInstanceDocument(doc))
     {
@@ -2672,40 +2840,33 @@ Element Template_CreateUseFromSelection (Document doc, int view, ThotBool create
 
       if (firstChar == 0 && firstChar2 == 0 && parent == parent2)
         {
-          if (selType.ElSSchema == sstempl)
+          if (selType.ElSSchema == sstempl &&
+              (selType.ElTypeNum == Template_EL_useEl ||
+               selType.ElTypeNum == Template_EL_useSimple))
             {
               // The selection is a template element.
-              switch(selType.ElTypeNum)
+              // TODO query to add/remove some types
+              if (TtaGetElementVolume(selElem) == 0)
                 {
-                case Template_EL_useEl:
-                case Template_EL_useSimple:
-                  // TODO query to add/remove some types
-                  if (TtaGetElementVolume(selElem) == 0)
+                  proposed = Template_GetAllDeclarations(t, TRUE, TRUE, TRUE);
+                  checked = GetAttributeStringValueFromNum (selElem, Template_ATTR_types, NULL);
+                  option = GetAttributeIntValueFromNum (selElem, Template_ATTR_option);
+                  opt = (option == Template_ATTR_option_VAL_option_set);
+                  if (QueryUseFromUser (proposed, checked, buffer, 128, &types, &opt))
                     {
-                      proposed = Template_GetAllDeclarations(t, TRUE, TRUE, TRUE);
-                      checked = GetAttributeStringValueFromNum (selElem, Template_ATTR_types, NULL);
-                      option = GetAttributeIntValueFromNum (selElem, Template_ATTR_option);
-                      opt = (option == Template_ATTR_option_VAL_option_set);
-                      if (QueryUseFromUser (proposed, checked, buffer, 128, &types, &opt))
-                        {
-                          SetAttributeStringValueWithUndo(selElem, Template_ATTR_types, types);
-                          SetAttributeStringValueWithUndo(selElem, Template_ATTR_title, buffer);
-                          if (opt)
-                            SetAttributeIntValue (selElem, Template_ATTR_option, Template_ATTR_option_VAL_option_set, TRUE);
-                          else
-                            SetAttributeIntValue (selElem, Template_ATTR_option, Template_ATTR_option_VAL_option_unset, TRUE);
-                          // register document modification
-                          TtaSetDocumentModified (doc);
-                        }
-                      TtaFreeMemory (proposed);
-                      TtaFreeMemory (checked);
-                      TtaFreeMemory (types);
-                      createComp = FALSE;
+                      SetAttributeStringValueWithUndo(selElem, Template_ATTR_types, types);
+                      SetAttributeStringValueWithUndo(selElem, Template_ATTR_title, buffer);
+                      if (opt)
+                        SetAttributeIntValue (selElem, Template_ATTR_option, Template_ATTR_option_VAL_option_set, TRUE);
+                      else
+                        SetAttributeIntValue (selElem, Template_ATTR_option, Template_ATTR_option_VAL_option_unset, TRUE);
+                      // register document modification
+                      TtaSetDocumentModified (doc);
                     }
-                  break;
-                default:
-                  // Do nothing
-                  break;
+                  TtaFreeMemory (proposed);
+                  TtaFreeMemory (checked);
+                  TtaFreeMemory (types);
+                  createComp = FALSE;
                 }
             }
           else if (selElem != selElem2 &&
@@ -2747,6 +2908,58 @@ Element Template_CreateUseFromSelection (Document doc, int view, ThotBool create
                      TtaGetElementVolume(selElem) == 0)))
             // Create a block-level xt:use instead of selection.
             use = Template_CreateEmptyBlockUse (doc);
+          else if (selType.ElSSchema == sstempl)
+            {
+              // locate the position of the new component
+              prev = next = NULL;
+              if (selType.ElSSchema == sstempl &&
+                  selType.ElTypeNum == Template_EL_component)
+                next = selElem;
+              else if (selType.ElSSchema == sstempl &&
+                       (selType.ElTypeNum == Template_EL_union ||
+                        selType.ElTypeNum == Template_EL_import))
+                prev = selElem;
+              else if (selType.ElSSchema == sstempl &&
+                       (selType.ElTypeNum == Template_EL_head ||
+                        selType.ElTypeNum == Template_EL_Template))
+                parent = selElem;
+              else
+                {
+                  selType.ElSSchema = sstempl;
+                  selType.ElTypeNum = Template_EL_head;
+                  parent = TtaGetExactTypedAncestor (selElem, selType);
+                  if (parent == NULL)
+                    {
+                      selType.ElTypeNum = Template_EL_Template;
+                      parent = TtaGetExactTypedAncestor (selElem, selType);
+                    }
+                  if (parent == NULL)
+                    return NULL;
+                  selType.ElTypeNum = Template_EL_component;
+                  prev = TtaGetExactTypedAncestor (selElem, selType);
+                }
+              
+              if (QueryComponentFromUser (buffer, 128))
+                {
+                  // create the component
+                  compType.ElSSchema = sstempl;
+                  compType.ElTypeNum = Template_EL_component;
+                  comp = TtaNewElement (doc, compType);
+                  if (prev)
+                    TtaInsertSibling (comp, prev, FALSE, doc);
+                  else if (next)
+                    TtaInsertSibling (comp, next, TRUE, doc);
+                  else
+                    TtaInsertFirstChild (&comp, parent, doc);
+                  SetAttributeStringValue (comp, Template_ATTR_name, buffer);
+                  // generate a content
+                  selElem = Template_FillEmpty (comp, doc, FALSE);
+                  TtaRegisterElementCreate (comp, doc);
+                  TtaSelectElement (doc, selElem);
+                  // register document modification
+                  TtaSetDocumentModified (doc);
+                }
+            }
           else
             {
               if (dispMode == DisplayImmediately)
@@ -2782,7 +2995,7 @@ Element Template_CreateUseFromSelection (Document doc, int view, ThotBool create
               if (createComp)
                 {
                   // Create a component from selection and a use using it
-                  comp = Template_CreateComponentFromSelection(doc);
+                  comp = Template_CreateComponentFromSelection (doc);
                   if (comp)
                     {
                       useType.ElSSchema = sstempl;
@@ -2865,11 +3078,13 @@ Element Template_CreateUseFromSelection (Document doc, int view, ThotBool create
                 TtaSetDisplayMode (doc, dispMode);
             }
         }
-      else if (lastChar < firstChar)
-        use = Template_CreateInlineUse (doc);
       else
-        Template_CreateTextBox (doc, createComp);
-
+        {
+          if (lastChar < firstChar && !createComp)
+            use = Template_CreateInlineUse (doc);
+          else
+            Template_CreateTextBox (doc, createComp);
+        }
       TtaSetStructureChecking (oldStructureChecking, doc);
       TtaCloseUndoSequence(doc);
     }

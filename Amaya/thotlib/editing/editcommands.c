@@ -56,6 +56,7 @@ static ThotBool           NewInsert;
 #include "applicationapi_f.h"
 #include "attributes_f.h"
 #include "boxmoves_f.h"
+#include "boxrelations_f.h"
 #include "boxlocate_f.h"
 #include "boxparams_f.h"
 #include "boxselection_f.h"
@@ -490,7 +491,9 @@ static ThotBool CloseTextInsertionWithControl (ThotBool toNotify)
                       LastInsertThotWindow = frame;
                       pBox = NULL;
                     }
-                  else if (pBox->BxType != BoGhost && pBox->BxType != BoFloatGhost)
+                  else if (pBox->BxType != BoGhost &&
+                           pBox->BxType != BoStructGhost &&
+                           pBox->BxType != BoFloatGhost)
                     pBox = NULL;
                 }
             }
@@ -1270,7 +1273,9 @@ void CloseParagraphInsertion (PtrAbstractBox pAb, int frame)
                 pEl = pAb->AbElement;
                 if (pBox)
                   {
-                    if (pBox->BxType == BoGhost || pBox->BxType == BoFloatGhost ||
+                    if (pBox->BxType == BoGhost ||
+                        pBox->BxType == BoStructGhost ||
+                        pBox->BxType == BoFloatGhost ||
                         (pEl &&
                          TypeHasException (ExcIsImg, pEl->ElTypeNumber, pEl->ElStructSchema)))
                       pAb = pAb->AbEnclosing;
@@ -3156,7 +3161,10 @@ ThotBool InsertChar (int frame, CHAR_T c, int keyboard)
             {
               pAb = pViewSel->VsBox->BxAbstractBox;
               CloseTextInsertion ();
-              DeleteNextChar (frame, pAb->AbElement, TRUE);
+              if (pAb->AbElement &&
+                  pAb->AbElement->ElStructSchema &&
+                  strcmp (pAb->AbElement->ElStructSchema->SsName, "Template"))
+                DeleteNextChar (frame, pAb->AbElement, TRUE);
               pFrame->FrReady = TRUE;
             }
         }
@@ -3364,7 +3372,7 @@ ThotBool InsertChar (int frame, CHAR_T c, int keyboard)
                                           pAb->AbBox->BxBuffer = pBuffer->BuNext;
                                         }
                                       if (pSelBox->BxBuffer == pBuffer)
-                                        pSelBox->BxBuffer = NULL;
+                                        pSelBox->BxBuffer = pBuffer->BuNext;
                                       pBuffer = DeleteBuffer (pBuffer, frame);
                                     }
                                 }

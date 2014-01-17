@@ -42,6 +42,8 @@
 #include <GL/gl.h>
 #endif /* _MACOS */
 #include "glwindowdisplay.h"
+#else /*_GL*/
+#include "windowdisplay_f.h"
 #endif /*_GL*/
 static ThotBool     ComputeScrollBar = TRUE;
 
@@ -65,6 +67,7 @@ static ThotBool TtAppVersion_IsInit = FALSE;
 #include "appdialogue_tv.h"
 #include "platform_tv.h"
 #include "thotcolor_tv.h"
+#include "select_tv.h"
 #include "attrmenu.h"
 
 #include "AmayaWindow.h"
@@ -104,7 +107,6 @@ static ThotBool TtAppVersion_IsInit = FALSE;
 #include "uconvert_f.h"
 #include "views_f.h"
 #include "viewapi_f.h"
-#include "xwindowdisplay_f.h"
 #include "appdialogue_wx_f.h"
 #include "paneltypes_wx.h"
 
@@ -116,7 +118,7 @@ extern void ZoomOut (Document document, View view);
 // This flag is used to recalculate the glcanvas after a RESIZE event
 // because GTK&GL clear automaticaly the GL canvas just after the frame is resized.
 // (it appends only on some hardware opengl implementations on Linux)
-static ThotBool g_NeedRedisplayAllTheFrame[MAX_FRAME];
+//static ThotBool g_NeedRedisplayAllTheFrame[MAX_FRAME];
 #endif /* _GL */
 
 
@@ -287,8 +289,8 @@ ThotBool FrameExposeCallback ( int frame, int x, int y, int w, int h)
       documentDisplayMode[FrameTable[frame].FrDoc - 1] == NoComputedDisplay)
     return FALSE;
 
-  if (Current_Expose)
-	  return FALSE;
+   if (Current_Expose)
+     return FALSE;
   Current_Expose = TRUE;
   pFrame = &ViewFrameTable[frame - 1];
 #ifdef _GL
@@ -301,26 +303,25 @@ ThotBool FrameExposeCallback ( int frame, int x, int y, int w, int h)
      They will see the Speed problem...*/
   if (GL_prepare (frame))
     {
-      /* prevent flickering*/
-      GL_SwapStop (frame);
-      if ( g_NeedRedisplayAllTheFrame[frame] || glhard() || GetBadCard() )
+//      if ( g_NeedRedisplayAllTheFrame[frame] || glhard() || GetBadCard() )
         {
+          /* prevent flickering*/
+          GL_SwapStop (frame);
           // we need to recalculate the glcanvas only once : after the RESIZE event
           // because GTK&GL clear automaticaly the GL canvas just after the frame is resized.
           // (it appends only on some hardware opengl implementations on Linux)
-          g_NeedRedisplayAllTheFrame[frame] = FALSE;
+          //g_NeedRedisplayAllTheFrame[frame] = FALSE;
           
           // refresh the invalide frame content
           x += pFrame->FrXOrg;
           y += pFrame->FrYOrg;
           DefClip (frame, x, y, x + w, y + h);
           RedrawFrameBottom (frame, 0, NULL);
+          GL_SwapEnable (frame);
         }
-   
       // display the backbuffer
-      GL_SwapEnable (frame);
       GL_Swap (frame);
-    }
+     }
 #else /* _GL */
   x += pFrame->FrXOrg;
   y += pFrame->FrYOrg;
@@ -371,10 +372,9 @@ ThotBool FrameResizedCallback (int frame, int new_width, int new_height)
   FrameTable[frame].FrHeight = new_height;
 
   /* redraw */
-  if (GL_prepare( frame))
+  if (GL_prepare (frame))
     {
       /* prevent flickering*/
-      //GL_SwapStop (frame);
       GLResize (new_width, new_height, 0, 0);
       DefClip (frame, -1, -1, -1, -1);
       FrameRedraw (frame, new_width, new_height);
@@ -385,9 +385,8 @@ ThotBool FrameResizedCallback (int frame, int new_width, int new_height)
       // we need to recalculate the glcanvas after the RESIZE event
       // because GTK&GL clear automaticaly the GL canvas just after the frame is resized.
       // (it appends only on some hardware opengl implementations on Linux)
-      g_NeedRedisplayAllTheFrame[frame] = TRUE;
+      //g_NeedRedisplayAllTheFrame[frame] = TRUE;
       //#endif /* !defined(_MACOS) && !defined(_WINDOWS) */
-
     }
   /* Ok now allow next UpdateScrollbar to hide/show scrollbars 
    * At this point, UpdateScrollbar is not more called, so infinite loop cannot apend */
@@ -656,11 +655,7 @@ void TtaRaiseView (Document document, View view)
       /* TODO: the page position should depends of the current active view */
       if (page_position == 0)
         page_position = 2;
-      
-      TtaAttachFrame( frame_id,
-                      window_id,
-                      page_id,
-                      page_position );
+      TtaAttachFrame (frame_id, window_id, page_id, page_position, 1);
     }
 }
 
@@ -806,52 +801,47 @@ ThotBool FrameButtonDownCallback (int frame, int thot_button_id,
           {
             ApplyDirectResize(box, frame, ctrlpt, x, y);
           }
-        else
+        else if ((thot_mod_mask & THOT_MOD_SHIFT) == THOT_MOD_SHIFT)
           {
-            if ((thot_mod_mask & THOT_MOD_SHIFT) == THOT_MOD_SHIFT)
-              {
-                /* a selection extension */
-                TtaAbortShowDialogue ();
-                LocateSelectionInView (frame, x, y, 1, &Dragging);
+            /* a selection extension */
+            TtaAbortShowDialogue ();
+            LocateSelectionInView (frame, x, y, 1, &Dragging);
 #if !defined (_WINDOWS) && !defined (_MACOS)
-                FrameToView (frame, &document, &view);
-                DoCopyToClipboard (document, view, FALSE, TRUE);
+            FrameToView (frame, &document, &view);
+            DoCopyToClipboard (document, view, FALSE, TRUE);
 #endif /* _WINDOWS */
-
-		FrameRedraw (frame,
-			     FrameTable[frame].FrWidth,
-			     FrameTable[frame].FrHeight);
-		
-              }
+            FrameRedraw (frame,
+                         FrameTable[frame].FrWidth,
+                         FrameTable[frame].FrHeight);
+            
+          }
 #if !defined (_MACOS)
-            else if ((thot_mod_mask & THOT_MOD_CTRL) == THOT_MOD_CTRL)
-              {	
-		ClickFrame = frame;
-		ClickX = x;
-		ClickY = y;
-		if (LocateSelectionInView (frame, ClickX, ClickY, 8, &Dragging))
-		  return FALSE;
-		/* open in a new tab */
-		FrameToView (frame, &document, &view);
-		TtaExecuteMenuAction ("FollowTheLinkNewTab", document, view, FALSE);
-              }
+        else if ((thot_mod_mask & THOT_MOD_CTRL) == THOT_MOD_CTRL)
+          {	
+            ClickFrame = frame;
+            ClickX = x;
+            ClickY = y;
+            if (LocateSelectionInView (frame, ClickX, ClickY, 8, &Dragging))
+              return FALSE;
+            /* open in a new tab */
+            FrameToView (frame, &document, &view);
+            TtaExecuteMenuAction ("FollowTheLinkNewTab", document, view, FALSE);
+          }
 #endif /* MACOS */
-            else
-              {
-                /* a simple selection */
-                ClickFrame = frame;
-                ClickX = x;
-                ClickY = y;
-                /* it's important to setup Dragging before the call of
-                   LocateSelectionInView because LocateSelectionInView will
-                   handle gui events (keyup) and Dragging variable
-                   * will not be unset => cause a infinit selection ! */
-                Dragging = TRUE;
-                if (LocateSelectionInView (frame, ClickX, ClickY, 2, &Dragging))
-                  {
-                  return FALSE;
-                  }
-             }
+        else if (!SelPosition ||
+                 ClickFrame != frame || ClickX != x || ClickY != y)
+          {
+            /* a simple selection */
+            ClickFrame = frame;
+            ClickX = x;
+            ClickY = y;
+            /* it's important to setup Dragging before the call of
+               LocateSelectionInView because LocateSelectionInView will
+               handle gui events (keyup) and Dragging variable
+               * will not be unset => cause a infinit selection ! */
+            Dragging = TRUE;
+            if (LocateSelectionInView (frame, ClickX, ClickY, 2, &Dragging))
+              return FALSE;
           }
       }
       break;
@@ -1110,36 +1100,24 @@ ThotBool FrameMouseWheelCallback( int frame, int thot_mod_mask,
       /* wheel mice up*/
       FrameToView (frame, &document, &view);
       if (thot_mod_mask & THOT_MOD_CTRL)
-        {
-          /* if CTRL is down then zoom */
-          ZoomOut (document, view);	   
-        }
+        /* if CTRL is down then zoom */
+        ZoomOut (document, view);	   
       else if (thot_mod_mask & THOT_MOD_SHIFT)
-        {
-          HorizontalScroll (frame, -39, 1);
-        }
+        HorizontalScroll (frame, -39, 1);
       else
-        { 
-          VerticalScroll (frame, -39, 1);
-        }
+        VerticalScroll (frame, -39, 1);
     }
   else
     {
       /* wheel mice down */
       FrameToView (frame, &document, &view); 
       if (thot_mod_mask & THOT_MOD_CTRL)
-        {
-          /* if CTRL is down then zoom */
-          ZoomIn (document, view);
-        }
+        /* if CTRL is down then zoom */
+        ZoomIn (document, view);
       else if (thot_mod_mask & THOT_MOD_SHIFT)
-        {
-          HorizontalScroll (frame, 39, 1);          
-        }
+        HorizontalScroll (frame, 39, 1);          
       else
-        {
-          VerticalScroll (frame, 39, 1);
-        }
+        VerticalScroll (frame, 39, 1);
     }
   return TRUE;
 }
@@ -1333,6 +1311,7 @@ void ChangeSelFrame (int frame)
       UpdateAttrMenu (LoadedDocument[doc-1], TRUE);
       // update the show errors
       TtaExecuteMenuAction ("UpdateShowError", doc, 1, FALSE);
+      TtaExecuteMenuAction ("UpdateStyleList", doc, 1, FALSE);
       GetCurrentSelection (&docsel, &first, &last, &firstChar, &lastChar);
       if (LoadedDocument[doc-1] != docsel)
         TtaSetStatusSelectedElement (doc, 1, NULL);

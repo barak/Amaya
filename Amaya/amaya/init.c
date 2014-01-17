@@ -1532,9 +1532,9 @@ static ThotBool  CompleteUrl(char **url)
       s = (char *)TtaGetMemory (MAX_LENGTH);
         s[0] = EOS;
       *url = s;
-      if (ptr[0] == '/' && ptr[1] == '/' && ptr[2] == '/')
-        ptr = &ptr[2];
 #ifdef _WINDOWS
+      if (ptr[0] == '/' && ptr[1] == '/' && ptr[2] == '/')
+        ptr = &ptr[3];
       else if (ptr[0] == '/' && ptr[1] == '/' && ptr[3] == ':')
         ptr = &ptr[2];
       if (ptr[1] != ':')
@@ -1548,6 +1548,9 @@ static ThotBool  CompleteUrl(char **url)
             strcpy (s, "c:");
 		  s= &s[2];
         }
+#else /* _WINDOWS */
+      if (ptr[0] == '/' && ptr[1] == '/' && ptr[2] == '/')
+        ptr = &ptr[2];
 #endif /* _WINDOWS */
 	  while (*ptr != EOS)
 	  {
@@ -2080,6 +2083,14 @@ void OpenNew (Document document, View view, int docType, int docProfile)
       strcpy (ScanFilter, "*.svg");
       InitOpenDocForm (document, view, name,
                        TtaGetMessage (AMAYA, AM_NEW_SVG), docSVG);
+    }
+  else if (NewDocType == docTemplate)
+    {
+      /* will scan html documents */
+      strcat (name,".xtl");
+      strcpy (ScanFilter, "*.xtl");
+      InitOpenDocForm (document, view, name,
+                       TtaGetMessage (LIB, TemplateLibrary), docLibrary);
     }
   else
     {
@@ -2671,11 +2682,11 @@ void PostInitView(Document doc, DocumentType docType, int visibility,
               TtaSetItemOff (doc, 1, Style, BDisableCSS);
               TtaSetItemOff (doc, 1, Style, BEnableCSS);
               TtaSetItemOff (doc, 1, Style, BRemoveCSS);
+              TtaSetMenuOff (doc, 1, Types);
             }
           TtaSetItemOff (doc, 1, Views, TShowMapAreas);
           TtaSetItemOff (doc, 1, Views, TShowTargets);
           TtaSetMenuOff (doc, 1, Doctype1);
-          TtaSetMenuOff (doc, 1, Types);
           TtaSetMenuOff (doc, 1, Links);
           if (DocumentTypes[doc] == docMath)
             TtaSetMenuOn (doc, 1, Views);
@@ -4197,6 +4208,9 @@ void Reload (Document doc, View view)
   if (method == CE_FORM_POST)
     mode |= AMAYA_FORM_POST;
 
+  // force the reload of CSS files
+  RemoveDocCSSs (doc, TRUE);
+
   tempfile = (char *)TtaGetMemory (MAX_LENGTH);
   tempfile[0] = EOS;
   toparse = 0;
@@ -4802,7 +4816,7 @@ void GetAmayaDoc_callback (int newdoc, int status, char *urlName, char *outputfi
    
 #ifdef TEMPLATES
   if (method != CE_LOG && method != CE_HELP)
-    Template_CheckAndPrepareTemplate(urlName);
+    Template_CheckAndPrepareTemplate (urlName);
 #endif /* TEMPLATES */  
   
   /* now the new window is open */
@@ -4992,7 +5006,12 @@ void GetAmayaDoc_callback (int newdoc, int status, char *urlName, char *outputfi
   TtaFreeMemory (ctx);
   /* check if a refresh is requested */
   CheckRefresh (newdoc);
-  if (DocumentTypes[newdoc] == docXml && !DocHasCSS (newdoc))
+  if (IsTemplateInstanceDocument(newdoc))
+    {
+      ShowStructure (newdoc, 1);
+      //SplitVertically (newdoc, 1);
+    }
+  else if (DocumentTypes[newdoc] == docXml && !DocHasCSS (newdoc))
     // Display the source view
     ShowSource (newdoc, 1);
 }
@@ -5047,7 +5066,7 @@ Document GetAmayaDoc (const char *urlname, const char *form_data,
   if (doc && DocumentTypes[doc] == docSource)
     doc = GetDocFromSource (doc);
   ok = TRUE;
-  if (IsXTiger (DocumentURLs[doc]))
+  if (IsXTiger (DocumentURLs[doc]) || IsXTigerLibrary (DocumentURLs[doc]))
     // cannot replace a template by a document
     DontReplaceOldDoc = TRUE;
 
@@ -5680,7 +5699,6 @@ void CallbackDialogue (int ref, int typedata, char *data)
           LastURLName[0] = EOS;
           DirectoryName[0] = EOS;
           DocumentName[0] = EOS;
-          TtaSetTextForm (BaseDialog + URLName, LastURLName);
         }
       else if (val == 0)
         {
@@ -5796,7 +5814,6 @@ void CallbackDialogue (int ref, int typedata, char *data)
               strcat (DirectoryName, DIR_STR);
               strcat (DirectoryName, data);
             }
-          TtaSetTextForm (BaseDialog + URLName, DirectoryName);
           TtaListDirectory (DirectoryName, BaseDialog + OpenForm,
                             TtaGetMessage (LIB, TMSG_DOC_DIR),
                             BaseDialog + DirSelect, ScanFilter,
@@ -5817,7 +5834,6 @@ void CallbackDialogue (int ref, int typedata, char *data)
       strcpy (tempfile, DirectoryName);
       strcat (tempfile, DIR_STR);
       strcat (tempfile, DocumentName);
-      TtaSetTextForm (BaseDialog + URLName, tempfile);
       break;
 
     case ConfirmForm:
@@ -5831,8 +5847,6 @@ void CallbackDialogue (int ref, int typedata, char *data)
       /* Filter value */
       if (strlen (data) <= NAME_LENGTH)
         strcpy (ScanFilter, data);
-      else
-        TtaSetTextForm (BaseDialog + FilterText, ScanFilter);
       break;
 
     case FormAnswer:
@@ -5945,18 +5959,11 @@ void CallbackDialogue (int ref, int typedata, char *data)
                     /* HTML -> XHTML */
                     ChangeDoctype (TRUE);
                 }
-	      
               if ((!DocumentMeta[SavingDocument] 
                    || !DocumentMeta[SavingDocument]->content_type
                    || DocumentMeta[SavingDocument]->content_type[0] == EOS)
                   && (UserMimeType[0] == EOS))
-                {
-
-                  TtaNewLabel (BaseDialog + SaveFormStatus,
-                               BaseDialog + SaveForm,
-                               TtaGetMessage (AMAYA, AM_INVALID_MIMETYPE));
-                  break;
-                }
+                break;
             }
           TtaDestroyDialogue (BaseDialog + SaveForm);
           if (SavingDocument)
@@ -6015,12 +6022,6 @@ void CallbackDialogue (int ref, int typedata, char *data)
                       strcpy (UserCharset, SaveFormTmp);
                     }
                 }
-              else
-                {
-                  TtaNewLabel (BaseDialog + SaveFormStatus,
-                               BaseDialog + SaveForm,
-                               TtaGetMessage (AMAYA, AM_NOCHARSET_SUPPORT));
-                }
             }
         }
       else if (val == 5)
@@ -6030,23 +6031,9 @@ void CallbackDialogue (int ref, int typedata, char *data)
             {
               if (SavePath[0])
                 {
-                  /* clear the status message */
-                  TtaNewLabel (BaseDialog + SaveFormStatus,
-                               BaseDialog + SaveForm,
-                               " ");
                   InitMimeType (SavingDocument, 1, SavePath, NULL);
                   if (SaveFormTmp[0] != EOS)
-                    {
                       strcpy (UserMimeType, SaveFormTmp);   
-                      TtaNewLabel (BaseDialog + MimeTypeSave,  
-                                   BaseDialog + SaveForm, UserMimeType);
-                    }
-                }
-              else
-                {
-                  TtaNewLabel (BaseDialog + SaveFormStatus,
-                               BaseDialog + SaveForm,
-                               TtaGetMessage (AMAYA, AM_NOMIMETYPE_SUPPORT));
                 }
             }
         }
@@ -6127,6 +6114,7 @@ void CallbackDialogue (int ref, int typedata, char *data)
               LinkAsCSS = FALSE;
               LinkAsXmlCSS = FALSE;
               LinkAsJavascript = FALSE;
+              LinkAsImport = FALSE;
             }
           TtaDestroyDialogue (BaseDialog + AttrHREFForm);
           //TtaDestroyDialogue (BaseDialog + FileBrowserForm);
@@ -6136,6 +6124,8 @@ void CallbackDialogue (int ref, int typedata, char *data)
         {
           if (LinkAsXmlCSS || LinkAsCSS)
             strcpy (ScanFilter, "*.css");
+          else if (LinkAsImport)
+            strcpy (ScanFilter, "*.xtl");
           else if (LinkAsJavascript)
             strcpy (ScanFilter, "*.js");
           else if (!strcmp (ScanFilter, "*.css") && !strcmp (ScanFilter, "*.js"))
@@ -6150,7 +6140,6 @@ void CallbackDialogue (int ref, int typedata, char *data)
         {
           /* Clear button */
           AttrHREFvalue[0] = EOS;
-          TtaSetTextForm (BaseDialog + AttrHREFText, AttrHREFvalue);
         }
       else 
         /* Cancel button */
@@ -6199,18 +6188,15 @@ void CallbackDialogue (int ref, int typedata, char *data)
           strcat (tempfile, DocumentName);
           if (WidgetParent == HrefAttrBrowser)
             {
-              TtaSetTextForm (BaseDialog + AttrHREFText, tempfile);
               strcpy (AttrHREFvalue, tempfile);
               CallbackDialogue (BaseDialog + AttrHREFForm, INTEGER_DATA, (char *) 1);
             }
           else if (WidgetParent == OpenDocBrowser)
             {
-              TtaSetTextForm (BaseDialog + URLName, tempfile);
               CallbackDialogue (BaseDialog + OpenForm, INTEGER_DATA, (char *) 1);
             }
           else if (WidgetParent == DocSaveBrowser)
             {
-              TtaSetTextForm (BaseDialog + NameSave, tempfile);
               CallbackDialogue (BaseDialog + NameSave, STRING_DATA, tempfile);
             }
           /* remove the browsing dialogue */
@@ -6222,12 +6208,10 @@ void CallbackDialogue (int ref, int typedata, char *data)
           if (WidgetParent == OpenDocBrowser)
             {
               LastURLName[0] = EOS;
-              TtaSetTextForm (BaseDialog + FileBrowserText, LastURLName);
             }
           else if (WidgetParent == HrefAttrBrowser)
             {
               tempname[0] = EOS; 	       
-              TtaSetTextForm (BaseDialog + FileBrowserText, tempname);
             }
         }
       else if (val == 3)
@@ -6283,7 +6267,6 @@ void CallbackDialogue (int ref, int typedata, char *data)
           if (WidgetParent == OpenDocBrowser)
             LastURLName[0] = EOS;
 	  
-          TtaSetTextForm (BaseDialog + FileBrowserText, DirectoryName);
           TtaListDirectory (DirectoryName, BaseDialog + FileBrowserForm,
                             TtaGetMessage (LIB, TMSG_DOC_DIR),
                             BaseDialog + BrowserDirSelect, ScanFilter,
@@ -6306,7 +6289,6 @@ void CallbackDialogue (int ref, int typedata, char *data)
       strcpy (tempfile, DirectoryName);
       strcat (tempfile, DIR_STR);
       strcat (tempfile, DocumentName);
-      TtaSetTextForm (BaseDialog + FileBrowserText, tempfile);
       break;
       
       /* *********Browser Filter*********** */
@@ -6314,8 +6296,6 @@ void CallbackDialogue (int ref, int typedata, char *data)
       /* Filter value */
       if (strlen(data) <= NAME_LENGTH)
         strcpy (ScanFilter, data);
-      else
-        TtaSetTextForm (BaseDialog + BrowserFilterText, ScanFilter);
       break;
       
     case TitleForm:
@@ -6396,17 +6376,9 @@ void CallbackDialogue (int ref, int typedata, char *data)
         {
         case 1:
           CreateRemoveIDAttribute (IdElemName, IdDoc, TRUE, IdApplyToSelection);
-          /* and show the status */
-          TtaNewLabel (BaseDialog + mIdStatus,
-                       BaseDialog + MakeIdMenu,
-                       IdStatus);
           break;
         case 2:
           CreateRemoveIDAttribute (IdElemName, IdDoc, FALSE, IdApplyToSelection);
-          /* and show the status */
-          TtaNewLabel (BaseDialog + mIdStatus,
-                       BaseDialog + MakeIdMenu,
-                       IdStatus);
           break;
         }
       break;
@@ -6813,6 +6785,8 @@ void FreeAmayaStructures ()
       FreeMathML();
       /* free svg allocations */
       FreeSVG ();
+      /* free last opened tab */
+      FreeLastClosedTab ();
 #ifdef ANNOTATIONS
       XPointer_bufferFree ();
       ANNOT_Quit ();
@@ -6893,6 +6867,7 @@ void InitAmaya (NotifyEvent * event)
   LinkAsCSS = FALSE;
   LinkAsXmlCSS = FALSE;
   LinkAsJavascript = FALSE;
+  LinkAsImport = FALSE;
   ImgPosition = 0;
   AttrHREFelement = NULL;
   Right_ClickedElement = NULL;
@@ -6984,7 +6959,7 @@ void InitAmaya (NotifyEvent * event)
   if (ptr == NULL)
     {
       TtaSetEnvString ("CURRENT_PROFILE", "Advanced", FALSE);
-          // Avoid to save previous "AUI_DECORATION"
+      // Avoid to save previous "AUI_DECORATION"
       SavePANEL_PREFERENCES = 0;
     }
   else
@@ -7458,45 +7433,9 @@ void ShowMapAreas (Document doc, View view)
   ----------------------------------------------------------------------*/
 void MakeIDMenu (Document doc, View view)
 {
-  int     i;
-  char    s[MAX_LENGTH];
-
   /* initialize the global variables */
   IdStatus[0] = EOS;
   IdDoc = doc;
-
-  /* Create the dialogue form */
-  i = 0;
-  strcpy (&s[i], TtaGetMessage (AMAYA, ADD_ID));
-  i += strlen (&s[i]) + 1;
-  strcpy (&s[i], TtaGetMessage (AMAYA, REMOVE_ID));
-  TtaNewSheet (BaseDialog + MakeIdMenu,
-               TtaGetViewFrame (doc, view),
-               TtaGetMessage (AMAYA, ADD_REMOVE_ID),
-               2, s, FALSE, 6, 'L', D_DONE);
-  TtaNewTextForm (BaseDialog + mElemName,
-                  BaseDialog + MakeIdMenu,
-                  TtaGetMessage (AMAYA, ENTER_ELEMENT_NAME),
-                  10, 1, FALSE);
-  TtaSetTextForm (BaseDialog + mElemName, IdElemName);
-  /* apply operation in */
-  i = 0;
-  sprintf (&s[i], "%s%s", "B", TtaGetMessage (LIB, TMSG_IN_WHOLE_DOC));
-  i += strlen (&s[i]) + 1;
-  sprintf (&s[i], "%s%s", "B", TtaGetMessage (LIB, TMSG_WITHIN_SEL));
-  TtaNewSubmenu (BaseDialog + mIdUseSelection,
-                 BaseDialog + MakeIdMenu, 0,
-                 TtaGetMessage (AMAYA, APPLY_OPERATION),
-                 2, s,
-                 NULL, 0 /* no max length */, FALSE);
-  /* status label */
-  TtaNewLabel (BaseDialog + mIdStatus,
-               BaseDialog + MakeIdMenu,
-               " ");
-  /* select the current radio button */
-  TtaSetMenuForm (BaseDialog + mIdUseSelection, IdApplyToSelection);
-  TtaSetDialoguePosition ();
-  TtaShowDialogue (BaseDialog + MakeIdMenu, TRUE, TRUE);
 
   if (CreateMakeIdDlgWX (BaseDialog + MakeIdMenu, TtaGetViewFrame (doc, view)))
     {

@@ -276,10 +276,19 @@ void Template_Close (XTigerTemplate t)
     {
 	  if (Template_IsInstance (t))
         HashMap_DestroyElement (Templates_Map, t->uri);
-      t->uri = NULL; // the uri was freed
-      TtaFreeMemory (t->base_uri);
-      t->base_uri = NULL; // the uri was freed
-      Template_Clear (t);
+	  else
+	  {
+        Template_Clear (t);
+        TtaFreeMemory(t->uri);
+        TtaFreeMemory (t->base_uri);
+        TtaFreeMemory(t->version);
+        TtaFreeMemory(t->templateVersion);
+        t->uri = NULL;
+        t->base_uri = NULL; // the uri was freed
+        t->version = NULL;
+        t->templateVersion = NULL;
+        t->ref = 0;
+	  }
     }
 #endif /* TEMPLATES */
 }
@@ -1287,14 +1296,6 @@ void Template_Clear (XTigerTemplate t)
       SearchSet_Empty(t->elements);
       SearchSet_Empty(t->simpleTypes);
       SearchSet_Empty(t->unknowns);
-      
-      TtaFreeMemory(t->uri);
-      TtaFreeMemory(t->version);
-      TtaFreeMemory(t->templateVersion);
-      t->uri = NULL;
-      t->version = NULL;
-      t->templateVersion = NULL;
-	  t->ref = 0;
     }
 #endif /* TEMPLATES */
 }
@@ -1939,7 +1940,7 @@ void Template_AddReference (XTigerTemplate t)
 {
 #ifdef TEMPLATES
   if (t)
-    t->ref++;
+    t->ref += 1;
 #endif /* TEMPLATES */
 }
 
@@ -1950,7 +1951,7 @@ void Template_RemoveReference (XTigerTemplate t)
 #ifdef TEMPLATES
   if (t && t->ref > 0)
   {
-    t->ref--;
+    t->ref -= 1;
     if (t->ref == 0 && !Template_IsPredefined(t))
       Template_Close (t);
   }  
@@ -2658,7 +2659,7 @@ ThotBool Template_CanInsertElementInUse (Document doc, ElementType type,
   Use it to test if a xt:component or a xt:use is used in a template.
   // Param validity must be tested by caller.
   ----------------------------------------------------------------------*/
-ThotBool Template_IsUsedComponentInSubtree(XTigerTemplate t, Document doc,
+ThotBool Template_IsUsedComponentInSubtree (XTigerTemplate t, Document doc,
                                            Element elem, const char* name)
 {
 #ifdef TEMPLATES
@@ -2675,7 +2676,7 @@ ThotBool Template_IsUsedComponentInSubtree(XTigerTemplate t, Document doc,
 #endif /* TEMPLATE_DEBUG */
     {
       elType = TtaGetElementType(elem);
-      if(elType.ElTypeNum==Template_EL_union)
+      if (elType.ElTypeNum==Template_EL_union)
         {
           schema = TtaGetSSchema ("Template", doc);
           if(elType.ElSSchema == schema)

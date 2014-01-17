@@ -108,6 +108,8 @@ static ThotBool     Follow_exclusive = FALSE;
 static ThotBool     Refresh_exclusive = FALSE;
 static ThotBool     SelectionChanging = FALSE;
 static ThotBool     GoToSection = FALSE;
+/* last closed tab */
+static char        *LastClosedTab = NULL;
 
 /*----------------------------------------------------------------------
   CharNum_IN_Line
@@ -2030,8 +2032,9 @@ void FollowTheLinkNewTab (Document doc, View view)
 
 /*----------------------------------------------------------------------
   DisplayUrlAnchor displays the url when an anchor is selected
+  Return TRUE if an anchor is selected
   ----------------------------------------------------------------------*/
-static void DisplayUrlAnchor (Element element, Document doc)
+ThotBool DisplayUrlAnchor (Element element, Document doc)
 {
   Attribute           HrefAttr, titleAttr;
   Element             anchor, ancestor;
@@ -2053,7 +2056,7 @@ static void DisplayUrlAnchor (Element element, Document doc)
         {
           /* Get the URL */
           TtaGiveTextAttributeValue (HrefAttr, utf8value, &length);
-	  utf8value[MAX_LENGTH / 4] = EOS;
+          utf8value[MAX_LENGTH / 4] = EOS;
           url = (char *)TtaConvertMbsToByte ((unsigned char *)utf8value,
                                              TtaGetDefaultCharset ());
           TtaFreeMemory (utf8value);
@@ -2110,8 +2113,10 @@ static void DisplayUrlAnchor (Element element, Document doc)
           TtaFreeMemory (pathname);
           TtaFreeMemory (documentname);
           TtaFreeMemory (url);
+          return TRUE;
         }
     }
+  return FALSE;
 }
 
 /*----------------------------------------------------------------------
@@ -2790,6 +2795,35 @@ void FocusChanged (Document doc)
 }
 
 /*----------------------------------------------------------------------
+  Free the last closed tab
+  ----------------------------------------------------------------------*/
+void FreeLastClosedTab ()
+{
+  if (LastClosedTab != NULL)
+    {
+      TtaFreeMemory (LastClosedTab);
+      LastClosedTab = NULL;
+    }
+}
+
+/*----------------------------------------------------------------------
+  UndoCloseTab
+  Undo the last closed tab
+  ----------------------------------------------------------------------*/
+void UndoCloseTab (Document doc, View view)
+{
+  if (LastClosedTab != NULL)
+    {
+      DontReplaceOldDoc = TRUE;
+      InNewWindow       = FALSE;
+      GetAmayaDoc (LastClosedTab, NULL, doc, doc,
+		   CE_ABSOLUTE, FALSE, NULL, NULL);
+      TtaFreeMemory (LastClosedTab);
+      LastClosedTab = NULL;
+    }
+}
+
+/*----------------------------------------------------------------------
   FreeDocumentResource
   ----------------------------------------------------------------------*/
 void FreeDocumentResource (Document doc)
@@ -2830,6 +2864,27 @@ void FreeDocumentResource (Document doc)
         }
       /* remove the document from the auto save list */
       RemoveAutoSavedDoc (doc);
+
+      /* Save the last closed document */
+      if (DocumentTypes[doc] == docHTML ||
+	  DocumentTypes[doc] == docCSS ||
+	  DocumentTypes[doc] == docMath ||
+	  DocumentTypes[doc] == docSVG ||
+	  DocumentTypes[doc] == docXml ||
+	  DocumentTypes[doc] == docCSS)
+	{
+	  if (LastClosedTab != NULL)
+	    {
+	      TtaFreeMemory (LastClosedTab);
+	      LastClosedTab = NULL;
+	    }
+	  if (DocumentURLs[doc] != NULL)
+	    {
+	      LastClosedTab  = (char *)TtaGetMemory (strlen (DocumentURLs[doc]) + 1);
+	      strcpy (LastClosedTab, DocumentURLs[doc]);
+	    }
+	}
+
       TtaFreeMemory (DocumentURLs[doc]);
       DocumentURLs[doc] = NULL;
       if (DocumentMeta[doc])
@@ -4043,7 +4098,8 @@ void SelectionChanged (NotifyElement *event)
         {
           // update the XML list
           UpdateXmlElementListTool (el, doc);
-          TtaSetStatus (doc, 1, "  ", NULL);
+          if (!DisplayUrlAnchor (el, doc))
+            TtaSetStatus (doc, 1, "  ", NULL);
 #ifdef TEMPLATES
           if (!TtaIsTextInserting ())
             // no current text insertion

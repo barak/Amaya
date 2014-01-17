@@ -9,7 +9,7 @@ THOTDIR = @top_srcdir@
 WWWDAV = @WWWDAV@
 LIBWWW_RDF_PARSER = @LIBWWW_RDF_PARSER@
 
-OBJDIRS = wxdialog mathedit
+OBJDIRS = wxdialog
 
 include ../Options
 
@@ -18,8 +18,8 @@ LIBS	=  $(AMAYA_ANNOT_LIBS) $(AMAYA_DAV_LIBS) \
 	   $(AMAYA_MATH_LIBS) $(AMAYA_GRAPH_LIBS) \
            -L../thotlib -L.. -lThotEditor \
           $(AMAYA_OPTION_EXTRA_LIBS) $(EXPAT_LIBRARIES) \
-	  $(AMAYA_LIBWWW_LIBS) \
 	  $(GL_LIBRARIES) $(GTK_GL_LIBRARIES) $(FREETYPE_LIBRARIES) $(XFT_LIBRARIES) \
+	  $(AMAYA_LIBWWW_LIBS) \
 	   @AMAYA_RAPTOR_LIBS@ \
           $(WX_LIBRARIES)
 
@@ -149,7 +149,7 @@ AMAYA_OPTION_SCHEMAS= \
          $(ANNOT_SCHEMAS) $(TEMPLATES_SCHEMAS)
 
 AMAYA_INCLUDES= -I. -I.. -I@top_srcdir@/thotlib/include -I@srcdir@ \
-		-I@srcdir@/f -I@srcdir@/xpm \
+		-I@srcdir@/f \
                 $(AMAYA_OPTION_INCLUDES) $(WX_INCLUDES)
 
 AMAYA_LIBS= ../thotlib/libThotEditor.a \
@@ -483,7 +483,6 @@ EDITORAPP.c : @srcdir@/EDITOR.A
 	(if test "@srcdir@" != "" -a "@srcdir@" != "." -a \
 	         "@srcdir@" != "../amaya" ; then \
 	    $(CP) @srcdir@/EDITOR.A . ; \
-	    $(CP) @srcdir@/xpm/logo.xpm . ; \
 	fi)
 	THOTDIR=$(THOTDIR) ; export THOTDIR ; \
 	../bin/app $(ALL_AMAYA_OPTIONS) EDITOR.A

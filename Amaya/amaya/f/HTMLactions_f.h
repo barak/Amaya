@@ -52,6 +52,8 @@ extern void FollowTheLinkNewWin ( Document doc,
                                   View view );
 extern void FollowTheLinkNewTab ( Document doc,
                                   View view );
+extern ThotBool DisplayUrlAnchor ( Element element,
+                                   Document doc );
 extern void DoAction ( Document doc,
                        View view );
 extern ThotBool AcceptTab ( NotifyOnTarget *event );
@@ -73,6 +75,9 @@ extern void UpdateTitle ( Element el,
                           Document doc );
 extern void CloseLogs ( Document doc );
 extern void FocusChanged ( Document doc );
+extern void FreeLastClosedTab ( void );
+extern void UndoCloseTab ( Document doc,
+                           View view );
 extern void FreeDocumentResource ( Document doc );
 extern void DocumentClosed ( NotifyDialog * event );
 extern void UpdateContextSensitiveMenus ( Document doc,
@@ -147,6 +152,8 @@ extern void FollowTheLinkNewWin ( Document doc,
                                     View view );
 extern void FollowTheLinkNewTab ( Document doc,
                                     View view );
+extern ThotBool DisplayUrlAnchor ( Element element,
+                                     Document doc );
 extern void DoAction ( Document doc,
                          View view );
 extern ThotBool AcceptTab ( NotifyOnTarget *event );
@@ -168,6 +175,9 @@ extern void UpdateTitle ( Element el,
                             Document doc );
 extern void CloseLogs ( Document doc );
 extern void FocusChanged ( Document doc );
+extern void FreeLastClosedTab ( void );
+extern void UndoCloseTab ( Document doc,
+                             View view );
 extern void FreeDocumentResource ( Document doc );
 extern void DocumentClosed ( NotifyDialog * event );
 extern void UpdateContextSensitiveMenus ( Document doc,

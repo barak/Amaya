@@ -523,14 +523,10 @@ void TtaRefreshTopMenuStats( int doc_id, int menu_id )
           // we must check that the menu has been found because
           // the contextual menu do not have a title
           if (top_menu_pos >= 0 && top_menu_pos < top_menu_count)
-            {
-              // it has been found, update it
-              p_menu_bar->EnableTop(top_menu_pos, (bool)pDoc->EnabledMenus[menu_id]);
-            }
+            // it has been found, update it
+            p_menu_bar->EnableTop(top_menu_pos, (bool)pDoc->EnabledMenus[menu_id]);
           else
-            {
-              wxASSERT_MSG(FALSE,_T("didn't find the top menu"));
-            }
+            wxASSERT_MSG(FALSE,_T("didn't find the top menu"));
         }
       return;
     }
@@ -550,10 +546,8 @@ void TtaRefreshTopMenuStats( int doc_id, int menu_id )
           // we must check that the menu has been found because the
           // contextual menu do not have a title
           if (top_menu_pos >= 0 && top_menu_pos < top_menu_count)
-            {
-              // it has been found, update it
-              p_menu_bar->EnableTop(top_menu_pos, (bool)pDoc->EnabledMenus[menu_id]);
-            }
+            // it has been found, update it
+            p_menu_bar->EnableTop(top_menu_pos, (bool)pDoc->EnabledMenus[menu_id]);
         }
       menu_id++;
     }
@@ -948,11 +942,13 @@ void TtaSetPageIcon( Document doc, View view, char *iconpath)
   + frame_id : the frame
   + window_id : the window where the frame should be attached
   + page_id : the page index into the window where the frame should be attached
+  + split: 0 for horizontal, 1 if for vertical
   returns:
   + true if ok
   + false if it's impossible to attach the frame to the window
   ----------------------------------------------------------------------*/
-ThotBool TtaAttachFrame( int frame_id, int window_id, int page_id, int position )
+ThotBool TtaAttachFrame( int frame_id, int window_id, int page_id, int position,
+                         int split)
 {
   int kind;
 
@@ -978,7 +974,7 @@ ThotBool TtaAttachFrame( int frame_id, int window_id, int page_id, int position 
       
       /* now attach the frame to this page */
       AmayaFrame * p_oldframe = NULL;
-      p_oldframe = p_page->AttachFrame( FrameTable[frame_id].WdFrame, position );
+      p_oldframe = p_page->AttachFrame( FrameTable[frame_id].WdFrame, position, split );
     }
   else if ( p_window->GetKind() == WXAMAYAWINDOW_SIMPLE )
     {
@@ -999,6 +995,15 @@ ThotBool TtaAttachFrame( int frame_id, int window_id, int page_id, int position 
      wxWindowDisabler and it makes menus blinking */
   wxYield();
   return TRUE;
+}
+
+/*----------------------------------------------------------------------
+  TtaRefreshActiveFrame force a refresh of window widgets
+  ----------------------------------------------------------------------*/
+void TtaRefreshActiveFrame ()
+{
+  if (FrameTable[ActiveFrame].WdFrame)
+    FrameTable[ActiveFrame].WdFrame->SetActive(TRUE);
 }
 
 /*----------------------------------------------------------------------
@@ -2254,17 +2259,26 @@ ThotBool TtaHandleSpecialKey( wxKeyEvent& event )
         thot_keysym = WXK_NEXT;
 #endif /* _MACOS */
       
-      wxWindow *       p_win_focus         = wxWindow::FindFocus();
-      wxGLCanvas *     p_gl_canvas         = wxDynamicCast(p_win_focus, wxGLCanvas);
-      wxSplitterWindow * p_splitter        = wxDynamicCast(p_win_focus, wxSplitterWindow);
-      wxNotebook *     p_notebook          = wxDynamicCast(p_win_focus, wxNotebook);
-      wxScrollBar *    p_scrollbar         = wxDynamicCast(p_win_focus, wxScrollBar);
+      wxWindow *p_win_focus = wxWindow::FindFocus();
+      wxGLCanvas *p_gl_canvas = wxDynamicCast(p_win_focus, wxGLCanvas);
+      wxSplitterWindow *p_splitter = wxDynamicCast(p_win_focus, wxSplitterWindow);
+      wxNotebook *p_notebook = wxDynamicCast(p_win_focus, wxNotebook);
+      wxScrollBar *p_scrollbar = wxDynamicCast(p_win_focus, wxScrollBar);
+      wxTextCtrl *p_text_ctrl = wxDynamicCast(p_win_focus, wxTextCtrl);
+      wxComboBox *p_combo_box = wxDynamicCast(p_win_focus, wxComboBox);
+      wxSpinCtrl *p_spinctrl = wxDynamicCast(p_win_focus, wxSpinCtrl);
       
       if (p_win_focus)
         TTALOGDEBUG_1( TTA_LOG_FOCUS, _T("focus = %s"), p_win_focus->GetClassInfo()->GetClassName())
       else
         TTALOGDEBUG_0( TTA_LOG_FOCUS, _T("no focus"))
-              
+    
+      if ((p_text_ctrl || p_combo_box || p_spinctrl) &&
+	  (thot_keysym == WXK_RETURN || thot_keysym == WXK_TAB))
+        {
+	  return FALSE;
+	}
+
       /* do not allow special key outside the canvas */
       if (!p_gl_canvas && !p_splitter && !p_notebook &&
           !p_scrollbar && proceed_key)

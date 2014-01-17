@@ -422,12 +422,14 @@
 #define TemplateRepeatComp		417
 #define TemplateFreeBox		418
 #define TemplateUnion		419
-#define BUTTON_UP		420
-#define TMSG_DOUBLECLICK		421
-#define TMSG_SIMPLECLICK		422
-#define LOCK		423
-#define UNLOCK		424
-#define NO_WEBDAV		425
-#define TMSG_LIB_MSG_MAX		426
+#define TemplateLibrary		420
+#define TemplateImport		421
+#define BUTTON_UP		422
+#define TMSG_DOUBLECLICK		423
+#define TMSG_SIMPLECLICK		424
+#define LOCK		425
+#define UNLOCK		426
+#define NO_WEBDAV		427
+#define TMSG_LIB_MSG_MAX		428
 
 #endif

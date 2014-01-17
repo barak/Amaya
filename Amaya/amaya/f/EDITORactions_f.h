@@ -24,6 +24,8 @@ extern void DoNewXHTML ( Document doc,
                          View view );
 extern void NewXHTML ( Document doc,
                        View view );
+extern void NewLibrary ( Document doc,
+                         View view );
 extern void NewMathML ( Document doc,
                         View view );
 extern void NewSVG ( Document doc,
@@ -96,7 +98,7 @@ extern void CreateDate ( Document doc,
                          View view );
 extern void CreateScript ( Document doc,
                            View view,
-                           ThotBool ExternalFile );
+                           ThotBool externalFile );
 extern ThotBool HTMLelementAllowed ( Document doc );
 extern ThotBool CreateHTMLelement ( int typeNum,
                                     Document doc );
@@ -116,6 +118,12 @@ extern void CreateHeading6 ( Document doc,
                              View view );
 extern void CreateMap ( Document doc,
                         View view );
+extern void IndentListItem ( Document doc,
+                             View view );
+extern void UnindentListItem ( Document doc,
+                               View view );
+extern ThotBool ReplaceEmptyItem ( int typeNum,
+                                   Document doc );
 extern void CreateList ( Document doc,
                          View view );
 extern void CreateNumberedList ( Document doc,
@@ -260,16 +268,6 @@ extern void ReplyToAnnotation ( Document doc,
                                 View view );
 extern void CustomQuery ( Document doc,
                           View view );
-extern void BookmarkFile ( Document doc,
-                           View view );
-extern void EditTopics ( Document doc,
-                         View view );
-extern void AddSeparator ( Document doc,
-                           View view );
-extern void ViewBookmarks ( Document doc,
-                            View view );
-extern void MoveItem ( Document doc,
-                       View view );
 extern void CopyLockInformation ( Document doc,
                                   View view );
 extern void LockUnlock ( Document doc,
@@ -297,6 +295,8 @@ extern void DoNewXHTML ( Document doc,
                            View view );
 extern void NewXHTML ( Document doc,
                          View view );
+extern void NewLibrary ( Document doc,
+                           View view );
 extern void NewMathML ( Document doc,
                           View view );
 extern void NewSVG ( Document doc,
@@ -369,7 +369,7 @@ extern void CreateDate ( Document doc,
                            View view );
 extern void CreateScript ( Document doc,
                              View view,
-                             ThotBool ExternalFile );
+                             ThotBool externalFile );
 extern ThotBool HTMLelementAllowed ( Document doc );
 extern ThotBool CreateHTMLelement ( int typeNum,
                                       Document doc );
@@ -389,6 +389,12 @@ extern void CreateHeading6 ( Document doc,
                                View view );
 extern void CreateMap ( Document doc,
                           View view );
+extern void IndentListItem ( Document doc,
+                               View view );
+extern void UnindentListItem ( Document doc,
+                                 View view );
+extern ThotBool ReplaceEmptyItem ( int typeNum,
+                                     Document doc );
 extern void CreateList ( Document doc,
                            View view );
 extern void CreateNumberedList ( Document doc,
@@ -533,16 +539,6 @@ extern void ReplyToAnnotation ( Document doc,
                                   View view );
 extern void CustomQuery ( Document doc,
                             View view );
-extern void BookmarkFile ( Document doc,
-                             View view );
-extern void EditTopics ( Document doc,
-                           View view );
-extern void AddSeparator ( Document doc,
-                             View view );
-extern void ViewBookmarks ( Document doc,
-                              View view );
-extern void MoveItem ( Document doc,
-                         View view );
 extern void CopyLockInformation ( Document doc,
                                     View view );
 extern void LockUnlock ( Document doc,

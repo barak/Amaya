@@ -150,6 +150,8 @@ void AmayaCanvas::OnSize( wxSizeEvent& event )
   new_height = GetClientSize().GetHeight();
  
   // call the generic callback
+  if (new_width != FrameTable[frame].FrWidth ||
+      new_height != FrameTable[frame].FrHeight)
   FrameResizedCallback( frame, new_width, new_height );
 }
 
@@ -314,7 +316,7 @@ void AmayaCanvas::OnMouseWheel( wxMouseEvent& event )
                            direction,
                            delta,
                            event.GetX(), event.GetY() );
-  GL_Swap( frame );
+  //GL_Swap( frame );
 }
 
 /*----------------------------------------------------------------------

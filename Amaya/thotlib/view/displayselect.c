@@ -25,14 +25,14 @@
 #include "edit_tv.h"
 #include "frame_tv.h"
 
-#include "boxmoves_f.h"
+#include "boxrelations_f.h"
 #include "boxpositions_f.h"
 #include "displayselect_f.h"
 #include "exceptions_f.h"
 #include "font_f.h"
 #include "frame_f.h"
 #include "units_f.h"
-#include "xwindowdisplay_f.h"
+#include "windowdisplay_f.h"
 
 
 #ifdef _GL
@@ -194,7 +194,7 @@ void DisplayPointSelection (int frame, PtrBox pBox, int pointselect,
         }
 
       /* selection points */
-      GetExtraMargins (pBox, frame, FALSE, &t, &b, &l, &r);
+      GetExtraMargins (pBox, frame, TRUE, &t, &b, &l, &r);
       if (pEl->ElSystemOrigin)
         {
           leftX = pBox->BxLMargin + pBox->BxLBorder;
@@ -945,6 +945,7 @@ void DisplayStringSelection (int frame, int leftX, int rightX, int t,
           /* holophrasted elements have no enclosing */
           pParentBox = pBox->BxAbstractBox->AbEnclosing->AbBox;
           while (pParentBox->BxType == BoGhost ||
+                 pParentBox->BxType == BoStructGhost ||
                  pParentBox->BxType == BoFloatGhost)
             {
               pAb = pParentBox->BxAbstractBox;

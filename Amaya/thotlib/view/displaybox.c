@@ -32,10 +32,9 @@
 #include "appdialogue_tv.h"
 #include "picture_tv.h" 
 
-#include "boxmoves_f.h"
+#include "boxrelations_f.h"
 #include "buildboxes_f.h"
 #include "displaybox_f.h"
-#include "windowdisplay_f.h"
 #include "displayselect_f.h"
 #include "font_f.h"
 #include "exceptions_f.h"
@@ -45,7 +44,7 @@
 #include "selectionapi_f.h"
 #include "stix_f.h"
 #include "units_f.h"
-#include "xwindowdisplay_f.h"
+#include "windowdisplay_f.h"
 
 #ifdef _GL
 #if defined (_MACOS) && defined (_WX)
@@ -317,12 +316,15 @@ static void DisplaySymbol (PtrBox pBox, int frame, ThotBool selected,
       useStix = FALSE;
       /* if its a prenthesis, a brace or a bracket, and if this character
          is not high, draw it as an ordinary character */
-      if (pBox->BxAbstractBox->AbShape == '(' ||
-          pBox->BxAbstractBox->AbShape == ')' ||
-          pBox->BxAbstractBox->AbShape == '[' ||
-          pBox->BxAbstractBox->AbShape == ']' ||
-          pBox->BxAbstractBox->AbShape == '{' ||
-          pBox->BxAbstractBox->AbShape == '}')
+      if (pBox->BxH <= ((int)1.3 * pBox->BxFont->FontSize) &&
+          (pBox->BxAbstractBox->AbShape == '(' ||
+           pBox->BxAbstractBox->AbShape == ')' ||
+           pBox->BxAbstractBox->AbShape == '[' ||
+           pBox->BxAbstractBox->AbShape == ']' ||
+           pBox->BxAbstractBox->AbShape == '<' ||
+           pBox->BxAbstractBox->AbShape == '>' ||
+           pBox->BxAbstractBox->AbShape == '{' ||
+           pBox->BxAbstractBox->AbShape == '}'))
         {
           /* get the regular font for that box (not the Symbol font used by
              the SYMBOL element, but the regular font of its parent) */
@@ -351,11 +353,7 @@ static void DisplaySymbol (PtrBox pBox, int frame, ThotBool selected,
             /* this is an extended symbol. */
             font = NULL;
         }
-#ifdef IV
-#ifdef _WINGUI
-      if (WinFontExist ("esstix6_.ttf"))
-#endif /*_WINGUI*/
-#endif
+
         if (StixExist && font == NULL && pBox->BxH > 0)
           {
             size = PixelToPoint (pBox->BxH);
@@ -860,7 +858,7 @@ static void DisplaySymbol (PtrBox pBox, int frame, ThotBool selected,
               DrawRectangle (frame, 1, 5, xd, yd, w, height-1, fg, 0, 0);
               break;
             default:
-              DrawChar (pBox->BxAbstractBox->AbShape, frame, xd,
+              DrawChar ((CHAR_T)pBox->BxAbstractBox->AbShape, frame, xd,
                         yd + FontBase (font), font, fg);
               break;
             } 
@@ -1616,7 +1614,9 @@ static void DisplayJustifiedText (PtrBox pBox, PtrBox mbox, int frame,
   PtrBox              nbox;
   PtrAbstractBox      pAb;
   SpecFont            font;
+#ifdef _GL
   PtrLine             pLine;
+#endif /* _GL */
   ThotFont            prevfont = NULL;
   ThotFont            nextfont = NULL;
   CHAR_T              c, transc;
@@ -1932,7 +1932,7 @@ static void DisplayJustifiedText (PtrBox pBox, PtrBox mbox, int frame,
       nbcar = 0;
       psW = 0; /* width used to justify a PostScript string */
       xpos = x; /* position of the new displayed character */
-      while (charleft > 0)
+      while (charleft > 0 && adbuff)
         {
           /* handle each char in the buffer */
           while ((rtl && indbuff >= indmax) || (!rtl && indbuff <= indmax))
@@ -2106,13 +2106,13 @@ static void DisplayJustifiedText (PtrBox pBox, PtrBox mbox, int frame,
                           DrawHorizontalLine (frame, 1, 5, x+2, y, lg-2, pBox->BxH,
                                               2, BgSelColor, pBox, 0, 0);
 #else /* _WX */
-                        DrawChar ((char)val, frame, x, y1, nextfont, BgSelColor);
+                        DrawChar ((CHAR_T)(char)val, frame, x, y1, nextfont, BgSelColor);
 #endif /* _WX */
                         }
                       else if (transc == SHOWN_SPACE ||
                           transc == SHOWN_UNBREAKABLE_SPACE || transc == SHOWN_HALF_EM)
                         /* a new space is handled */
-                        DrawChar ((char)val, frame, x, y1, nextfont, BgSelColor);
+                        DrawChar ((CHAR_T)(char)val, frame, x, y1, nextfont, BgSelColor);
                       else
                         bl++;
                       nbcar = 0;
@@ -2278,7 +2278,7 @@ static void DisplayJustifiedText (PtrBox pBox, PtrBox mbox, int frame,
                 {
                   y = pBox->BxYOrg + pBox->BxHorizRef - pFrame->FrYOrg;
                   nextfont = (ThotFont)LoadStixFont (1, 12);
-                  DrawChar (0x40, frame, x, y, nextfont, 1);
+                  DrawChar ((CHAR_T)0x40, frame, x, y, nextfont, 1);
                   pLine = NULL;
                 }
               else
@@ -2356,7 +2356,15 @@ void DisplayBorders (PtrBox box, PtrAbstractBox pFrom, int frame,
       height = box->BxHeight;
     }
   if (box->BxLMargin < 0)
-    width += box->BxLMargin;
+    {
+      el -= box->BxLMargin;
+      xFrame += box->BxLMargin;
+    }
+  if (box->BxTMargin < 0)
+    {
+      et -= box->BxTMargin;
+      yFrame += box->BxTMargin;
+    }
   if (x < xFrame)
     {
       width = width + xFrame - x;
@@ -2546,17 +2554,22 @@ void DisplayBox (PtrBox box, int frame, int xmin, int xmax, int ymin,
     {
       /* get the visible enclosing box */
       mbox = pAb->AbEnclosing->AbBox;
-      if (mbox->BxType == BoGhost || mbox->BxType == BoFloatGhost)
+      if (mbox->BxType == BoGhost ||
+          mbox->BxType == BoStructGhost ||
+          mbox->BxType == BoFloatGhost)
         {
           selfsel = selfsel || mbox->BxAbstractBox->AbSelected;
           while (mbox->BxAbstractBox->AbEnclosing &&
                  (mbox->BxType == BoGhost ||
+                  mbox->BxType == BoStructGhost ||
                   mbox->BxType == BoFloatGhost))
             {
               mbox = mbox->BxAbstractBox->AbEnclosing->AbBox;
               selfsel = selfsel ||
                 (mbox->BxAbstractBox->AbSelected &&
-                 (mbox->BxType == BoGhost || mbox->BxType == BoFloatGhost));
+                 (mbox->BxType == BoGhost ||
+                  mbox->BxType == BoStructGhost ||
+                  mbox->BxType == BoFloatGhost));
             }
         }
       else if (pAb->AbLeafType == LtPicture)

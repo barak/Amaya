@@ -59,6 +59,7 @@
 #include "docs_f.h"
 #include "editcommands_f.h"
 #include "exceptions_f.h"
+#include "glwindowdisplay.h"
 #include "frame_f.h"
 #include "memory_f.h"
 #include "presrules_f.h"
@@ -140,15 +141,21 @@ void GetViewFromFrame (int nframe, PtrDocument pDoc, int *viewNum)
 void RedisplayDocViews (PtrDocument pDoc)
 {
   DisplayMode       displayMode;
-  int                 i;
+  int                 i, frame;
 
   displayMode = documentDisplayMode[IdentDocument (pDoc) - 1];
   if (displayMode == DisplayImmediately)
     {
       for (i = 0; i < MAX_VIEW_DOC; i++)
         if (pDoc->DocView[i].DvPSchemaView > 0)
-          /* open view */
-          DisplayFrame (pDoc->DocViewFrame[i]);
+          {
+            /* open view */
+            frame = pDoc->DocViewFrame[i];
+#ifdef _GL
+            GL_SwapEnable (frame);
+#endif /* _GL */
+            DisplayFrame (frame);
+          }
     }
 }
 
@@ -400,7 +407,7 @@ void RedisplayNewElement (Document document,
       /* reaffiche les paves qui copient le nouvel element */
       RedisplayCopies (newElement, pDoc, (ThotBool)(documentDisplayMode[document - 1] == DisplayImmediately));
       /* reaffiche les numeros suivants qui changent */
-      UpdateNumbers (newElement, newElement, pDoc,
+      UpdateNumbers (NextElement(newElement), newElement, pDoc,
                      (ThotBool)(documentDisplayMode[document - 1] == DisplayImmediately));
     }
 }
@@ -427,15 +434,19 @@ void TCloseDocument (PtrDocument pDoc)
       notifyDoc.view = 0;
       if (!CallEventType ((NotifyEvent *) & notifyDoc, TRUE))
         {
-          /* if there is a "Spell checker" menu entry, close the spell checker
-             dialog box */
-          if (ThotLocalActions[T_clearhistory] != NULL)
-            (*(Proc1)ThotLocalActions[T_clearhistory]) ((void *)pDoc);
-          /* if some dialog boxes for attribute input are displayed
-             for that document, close them */
-          CloseAttributeDialogues (pDoc);
-          TtaHandlePendingEvents ();
-          CloseDocumentAndViews(pDoc, TRUE);
+		  pDoc = LoadedDocument[document-1];
+		  if (pDoc)
+		  {
+            /* if there is a "Spell checker" menu entry, close the spell checker
+               dialog box */
+            if (ThotLocalActions[T_clearhistory] != NULL)
+              (*(Proc1)ThotLocalActions[T_clearhistory]) ((void *)pDoc);
+            /* if some dialog boxes for attribute input are displayed
+               for that document, close them */
+            CloseAttributeDialogues (pDoc);
+            TtaHandlePendingEvents ();
+            CloseDocumentAndViews(pDoc, TRUE);
+		  }
         }
     }
 }
@@ -907,7 +918,6 @@ void RedisplayCommand (Document doc)
 }
 
 
-
 /*----------------------------------------------------------------------
   NewSelection
   ----------------------------------------------------------------------*/
@@ -923,6 +933,38 @@ void NewSelection (Document doc, Element element, Attribute attr,
   NewDocSelection[doc - 1].SDElemSel = element;
   NewDocSelection[doc - 1].SDFirstChar = firstCharacter;
   NewDocSelection[doc - 1].SDLastChar = lastCharacter;
+}
+
+/*----------------------------------------------------------------------
+  GetDeferredSelection
+  Return TRUE if there is a differed selection
+  ----------------------------------------------------------------------*/
+ThotBool GetDeferredSelection (Document doc, PtrElement *firstSel, PtrElement *lastSel,
+                               int *firstCharacter, int *lastCharacter)
+{
+  if (documentDisplayMode[doc - 1] == DeferredDisplay && NewDocSelection[doc - 1].SDSelActive)
+    {
+      *firstSel = (PtrElement) NewDocSelection[doc - 1].SDElemSel;
+      *firstCharacter = NewDocSelection[doc - 1].SDFirstChar;
+      if (NewDocSelection[doc - 1].SDElemExt)
+        {
+          // there is an extension
+          *lastCharacter = NewDocSelection[doc - 1].SDCharExt;
+          *lastSel = (PtrElement)NewDocSelection[doc - 1].SDElemExt;
+        }
+      else
+        {
+          *lastCharacter = NewDocSelection[doc - 1].SDLastChar;
+          *lastSel = (PtrElement) NewDocSelection[doc - 1].SDElemSel;
+        }
+      return TRUE;
+    }
+  else
+    {
+      *firstSel = *lastSel = NULL;
+      *firstCharacter = *lastCharacter = 0;
+      return FALSE;
+    }
 }
 
 /*----------------------------------------------------------------------

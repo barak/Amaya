@@ -31,6 +31,12 @@
 #include "ANNOTevent_f.h"
 #include "ANNOTmenu_f.h"
 #endif /* ANNOTATIONS */
+#ifdef TEMPLATES
+#include "Template.h"
+#include "templates.h"
+#include "templateUtils_f.h"
+#include "templates_f.h"
+#endif /* TEMPLATES */
 
 #ifdef BOOKMARKS
 #include "BMevent_f.h"
@@ -347,6 +353,14 @@ void DoNewXHTML (Document doc, View view)
 void NewXHTML (Document doc, View view)
 {
   OpenNew (doc, view, docHTML, L_Other);
+}
+
+/*----------------------------------------------------------------------
+  NewLibrary: Create a new  document
+  ----------------------------------------------------------------------*/
+void NewLibrary (Document doc, View view)
+{
+  OpenNew (doc, view, docTemplate, L_Other);
 }
 
 /*----------------------------------------------------------------------
@@ -967,6 +981,34 @@ void InitializeNewDoc (char *url, int docType, Document doc, int profile,
       SelectionDoc = doc;
 #endif /* _SVG */
     }
+  else if (docType == docTemplate)
+    {
+#ifdef TEMPLATES
+      /*-------------  New Template library document ------------*/
+      /* Set the namespace declaration */
+      root = TtaGetRootElement (doc);
+      TtaSetUriSSchema (elType.ElSSchema, Template_URI);
+      TtaSetANamespaceDeclaration (doc, root, "xt", Template_URI);
+      SetAttributeStringValue(root, Template_ATTR_version, Template_Current_Version);
+      SetAttributeStringValue(root, Template_ATTR_templateVersion, "1.0");
+      TtaNewNature (doc, elType.ElSSchema,  NULL, "HTML", "HTMLP");
+      TtaSetANamespaceDeclaration (doc, root, "ht", XHTML_URI);
+
+      /* force the XML parsing */
+      DocumentMeta[doc]->xmlformat = TRUE;
+      DocumentMeta[doc]->compound = TRUE;
+      Template_PrepareLibrary (url, doc, "1.0");
+      UpdateTemplateMenus (doc);
+      /* set the initial selection */
+      el = TtaGetLastChild (root);
+      if (el)
+         TtaSelectElement (doc, el);
+      if (SelectionDoc != 0)
+        UpdateContextSensitiveMenus (SelectionDoc, 1);
+      SelectionDoc = doc;
+      TtaRaiseDoctypePanels (WXAMAYA_DOCTYPE_XTIGER);
+#endif /* _TEMPLATES */
+    }
   else
     {
       /*-------------  Other documents ------------*/
@@ -1021,6 +1063,7 @@ void InitializeNewDoc (char *url, int docType, Document doc, int profile,
 #endif /* _WX */
   UpdateEditorMenus (doc);
   UpdateContextSensitiveMenus (doc, 1);
+  TtaRefreshActiveFrame ();
 }
 
 /*----------------------------------------------------------------------
@@ -2214,7 +2257,7 @@ void CreateDate (Document doc, View view)
 /*----------------------------------------------------------------------
   CreateScript
   ----------------------------------------------------------------------*/
-void CreateScript (Document doc, View view, ThotBool ExternalFile)
+void CreateScript (Document doc, View view, ThotBool externalFile)
 {
   SSchema             docSchema;
   ElementType         elType, headType;
@@ -2260,7 +2303,6 @@ void CreateScript (Document doc, View view, ThotBool ExternalFile)
     }
 
   TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
-
   if (s == NULL || strcmp (s, "HTML") || elType.ElTypeNum == HTML_EL_HEAD)
     {
       /* cannot insert at the current position */
@@ -2275,8 +2317,7 @@ void CreateScript (Document doc, View view, ThotBool ExternalFile)
       /* create Script in the body if we are within an HTML document
          and within an HTML element */
       elType.ElTypeNum = HTML_EL_SCRIPT_;
-
-      if(ExternalFile)
+      if (externalFile)
         {
         /* insert a script element after the selected element */
         TtaInsertSibling (TtaNewElement (doc, elType), el, FALSE, doc);
@@ -2292,14 +2333,12 @@ void CreateScript (Document doc, View view, ThotBool ExternalFile)
 
   if (el)
     {
-
-      if(ExternalFile)
+      if (externalFile)
         {
         /* register new created elements */
         TtaRegisterElementCreate (el, doc);
         LinkAsJavascript = TRUE;
         SelectDestination (doc, el, FALSE, FALSE);
-        TtaCloseUndoSequence (doc);
         }
       else
         {
@@ -2324,8 +2363,6 @@ void CreateScript (Document doc, View view, ThotBool ExternalFile)
 
         /* register new created elements */
         TtaRegisterElementCreate (el, doc);
-        TtaCloseUndoSequence (doc);
-
         while (child)
           {
             el = child;
@@ -2336,7 +2373,6 @@ void CreateScript (Document doc, View view, ThotBool ExternalFile)
         else
           TtaSelectElement (doc, el);
         }
-
     }
   TtaCloseUndoSequence (doc);
 #ifdef _WX
@@ -2353,6 +2389,7 @@ ThotBool HTMLelementAllowed (Document doc)
   Element             el, ancestor, sibling;
   char               *s;
   int                 firstChar, lastChar;
+  ThotBool            within_use = FALSE;
 
   if (!TtaGetDocumentAccessMode (doc))
     /* the document is in ReadOnly mode */
@@ -2368,21 +2405,37 @@ ThotBool HTMLelementAllowed (Document doc)
   
   elType = TtaGetElementType (el);
   s = TtaGetSSchemaName (elType.ElSSchema);
-
   ancestor = el;
   while (ancestor && !strcmp (s, "Template"))
     {
-      ancestor = TtaGetParent (ancestor);
-      if (ancestor)
+      if (elType.ElTypeNum == Template_EL_component)
         {
-          elType = TtaGetElementType (ancestor);
-          s = TtaGetSSchemaName (elType.ElSSchema);
+          // no structure check within a template component
+          if (!within_use)
+            TtaSetStructureChecking (FALSE, doc);
+          ancestor = NULL;
+        }
+      else
+        {
+          if (!within_use)
+            within_use = (elType.ElTypeNum == Template_EL_component);
+          ancestor = TtaGetParent (ancestor);
+          if (ancestor)
+            {
+              elType = TtaGetElementType (ancestor);
+              s = TtaGetSSchemaName (elType.ElSSchema);
+            }
         }
     }
 
   if (strcmp (s, "HTML") == 0)
     /* within an HTML element */
     return TRUE;
+#ifdef TEMPLATES
+  if (strcmp (s, "Template") == 0)
+    /* within a template */
+    return TRUE;
+#endif /* TEMPLATES */
 #ifdef _SVG
   else if (strcmp (s, "SVG") == 0)
     {
@@ -2452,8 +2505,9 @@ ThotBool CreateHTMLelement (int typeNum, Document doc)
 {
   DisplayMode         dispMode;
   ElementType         elType;
-  ThotBool            done;
+  ThotBool            done, oldStructureChecking;
 
+  oldStructureChecking = TtaGetStructureChecking (doc);
   if (HTMLelementAllowed (doc))
     {
       dispMode = TtaGetDisplayMode (doc);
@@ -2464,9 +2518,11 @@ ThotBool CreateHTMLelement (int typeNum, Document doc)
       done = TtaCreateElement (elType, doc);
       if (dispMode == DisplayImmediately)
         TtaSetDisplayMode (doc, dispMode);
-      return done;
     }
-  return FALSE;
+  else
+    done = FALSE;
+  TtaSetStructureChecking (oldStructureChecking, doc);
+  return done;
 }
 
 /*----------------------------------------------------------------------
@@ -2548,7 +2604,7 @@ void CreateMap (Document doc, View view)
       TtaInsertFirstChild (&map, div, doc);
       TtaDeleteTree (el, doc);
       // generate the id and or name attribute
-      CreateTargetAnchor (doc, map, FALSE, TRUE);
+      CreateTargetAnchor (doc, map, FALSE, FALSE, TRUE);
       // generate a division
       elType.ElTypeNum = HTML_EL_Division;
       div = TtaNewElement (doc, elType);
@@ -2568,11 +2624,337 @@ void CreateMap (Document doc, View view)
 }
 
 /*----------------------------------------------------------------------
+  IndentListItem
+  ----------------------------------------------------------------------*/
+void IndentListItem (Document doc, View view)
+{
+  DisplayMode         dispMode;
+  ElementType         elType;
+  Element             el, last, item, child, sibling;
+  SSchema             sshtml;
+  int                 firstChar, lastChar, i;
+
+  sshtml  = TtaGetSSchema ("HTML", doc);
+  TtaGiveFirstSelectedElement (doc, &el, &firstChar, &lastChar);
+  if (el && sshtml)
+    {
+      TtaGiveLastSelectedElement (doc, &last, &i, &lastChar);
+      // look for the enclosing list item
+      elType = TtaGetElementType (el);
+      if (elType.ElSSchema == sshtml &&
+          (elType.ElTypeNum == HTML_EL_Unnumbered_List ||
+           elType.ElTypeNum == HTML_EL_Numbered_List))
+        return;
+      if (elType.ElSSchema != sshtml ||
+          elType.ElTypeNum != HTML_EL_List_Item)
+        {
+          elType.ElSSchema = sshtml;
+          elType.ElTypeNum = HTML_EL_List_Item;
+          item = TtaGetExactTypedAncestor (el, elType);
+        }
+      else
+        item = el;
+      if (item == NULL)
+        return;
+
+      elType = TtaGetElementType (last);
+      if (last == el)
+        last = item;
+      else if (elType.ElSSchema != sshtml ||
+               elType.ElTypeNum != HTML_EL_List_Item)
+        {
+          elType.ElSSchema = sshtml;
+          elType.ElTypeNum = HTML_EL_List_Item;
+          last = TtaGetExactTypedAncestor (last, elType);
+          if (last == NULL)
+            return;
+        }
+      // locate a previous list item
+      sibling = item;
+      TtaPreviousSibling (&sibling);
+      if (sibling == NULL)
+        return;
+      // get the last children of the previous item
+      child = TtaGetFirstChild (sibling);
+      while (child)
+        {
+          sibling = child;
+          TtaNextSibling (&child);
+        }
+
+      /* stop displaying changes that will be made */
+      dispMode = TtaGetDisplayMode (doc);
+      if (dispMode == DisplayImmediately)
+        TtaSetDisplayMode (doc, DeferredDisplay);
+      // move selected list items into a new sub-list
+      TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
+      // create the sub-list
+      elType.ElTypeNum = HTML_EL_Unnumbered_List;
+      elType.ElSSchema = sshtml;
+      el = TtaNewElement (doc, elType);
+      TtaInsertSibling (el, sibling, FALSE, doc);
+      child = item;
+      sibling = NULL;
+      do
+        {
+          item = child;
+          TtaNextSibling (&child);
+          TtaRegisterElementDelete (item, doc);
+          TtaRemoveTree (item, doc);
+          if (sibling)
+            TtaInsertSibling (item, sibling, FALSE, doc);
+          else
+            TtaInsertFirstChild (&item, el, doc);
+          sibling = item;
+        }
+      while (item != last);
+      TtaRegisterElementCreate (el, doc);
+      TtaCloseUndoSequence (doc);
+      /* ask Thot to display changes made in the document */
+      TtaSetDisplayMode (doc, dispMode);
+      TtaSelectElement (doc, el);
+    }
+}
+
+/*----------------------------------------------------------------------
+  IndentListItem
+  ----------------------------------------------------------------------*/
+void UnindentListItem (Document doc, View view)
+{
+  DisplayMode         dispMode;
+  ElementType         elType;
+  Element             el, last, item, child, sibling, list, sublist;
+  SSchema             sshtml;
+  int                 firstChar, lastChar, i;
+  ThotBool            emptylist = FALSE;
+
+  sshtml  = TtaGetSSchema ("HTML", doc);
+  TtaGiveFirstSelectedElement (doc, &el, &firstChar, &lastChar);
+  if (el && sshtml)
+    {
+      TtaGiveLastSelectedElement (doc, &last, &i, &lastChar);
+      // look for the enclosing list item
+      elType = TtaGetElementType (el);
+      if (elType.ElSSchema == sshtml &&
+          (elType.ElTypeNum == HTML_EL_Unnumbered_List ||
+           elType.ElTypeNum == HTML_EL_Numbered_List))
+          {
+            list = el;
+            emptylist = TRUE;
+            item = TtaGetFirstChild (el);
+            child = item;
+            while (child)
+              {
+                last = child;
+                TtaNextSibling (&child);
+              }
+          }
+      else
+        {
+          if (elType.ElSSchema != sshtml ||
+              elType.ElTypeNum != HTML_EL_List_Item)
+            {
+              elType.ElSSchema = sshtml;
+              elType.ElTypeNum = HTML_EL_List_Item;
+              item = TtaGetExactTypedAncestor (el, elType);
+            }
+          else
+            item = el;
+          if (item == NULL)
+            return;
+
+          elType = TtaGetElementType (last);
+          if (last == el)
+            last = item;
+          else if (elType.ElSSchema != sshtml ||
+                   elType.ElTypeNum != HTML_EL_List_Item)
+            {
+              elType.ElSSchema = sshtml;
+              elType.ElTypeNum = HTML_EL_List_Item;
+              last = TtaGetExactTypedAncestor (last, elType);
+              if (last == NULL)
+                return;
+            }
+          // locate a previous list item in the enclosing list
+          list = TtaGetParent (item);
+          child = item;
+          TtaPreviousSibling (&child);
+          emptylist = FALSE;
+          if (child == NULL)
+            {
+              child = last;
+              TtaNextSibling (&child);
+              if (child == NULL)
+                // the whole list will be removed
+                emptylist = TRUE;
+            }
+        }
+
+      elType.ElSSchema = sshtml;
+      elType.ElTypeNum = HTML_EL_List_Item;
+      sibling = TtaGetExactTypedAncestor (list, elType);
+      if (sibling == NULL)
+        // cannot unindent
+        return;
+
+      /* stop displaying changes that will be made */
+      dispMode = TtaGetDisplayMode (doc);
+      if (dispMode == DisplayImmediately)
+        TtaSetDisplayMode (doc, DeferredDisplay);
+      TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
+      child = item;
+      el = NULL;
+      do
+        {
+          item = child;
+          TtaNextSibling (&child);
+          TtaRegisterElementDelete (item, doc);
+          TtaRemoveTree (item, doc);
+          TtaInsertSibling (item, sibling, FALSE, doc);
+          TtaRegisterElementCreate (item, doc);
+          sibling = item;
+          if (el == NULL)
+            // register the first created item
+            el = item;
+        }
+      while (item != last);
+      if (emptylist)
+        {
+          // delete the sub-list
+          TtaRegisterElementDelete (list, doc);
+          TtaDeleteTree (list, doc);
+        }
+      else if (child)
+        {
+          // create a new empty sublist with same attributes
+          sublist = TtaCopyTree (list, doc, doc, last);
+          sibling = TtaGetFirstChild (sublist);
+          do
+            {
+              item = sibling;
+              TtaNextSibling (&sibling);              
+              TtaRemoveTree (item, doc);
+            }
+          while (sibling);
+          item = TtaGetFirstChild (last);
+          while (item)
+            {
+              sibling = item;
+              TtaNextSibling (&item);
+            }
+          TtaInsertSibling (sublist, sibling, FALSE, doc);
+
+          // move also the end of the current sub-list
+          sibling = NULL;
+          do
+            {
+              item = child;
+              TtaNextSibling (&child);
+              TtaRegisterElementDelete (item, doc);
+              TtaRemoveTree (item, doc);
+              if (sibling)
+                TtaInsertSibling (item, sibling, FALSE, doc);
+              else
+                TtaInsertFirstChild (&item, sublist, doc);
+              sibling = item;
+            }
+          while (item);
+        }
+      TtaCloseUndoSequence (doc);
+      /* ask Thot to display changes made in the document */
+      TtaSetDisplayMode (doc, dispMode);
+      TtaSelectElement (doc, el);
+      if (last != el)
+        TtaExtendSelection (doc, last, 0);
+    }
+}
+
+/*----------------------------------------------------------------------
+  ReplaceEmptyItem checks if the created element is within an empty
+  list item.
+  Return true if the creation is already done or ignored
+  ----------------------------------------------------------------------*/
+ThotBool ReplaceEmptyItem (int typeNum, Document doc)
+{
+  ElementType         elType;
+  Element             el, prev, child;
+  char               *s;
+  int                 firstChar, lastChar;
+  ThotBool            result = FALSE, empty;
+
+  TtaGiveFirstSelectedElement (doc, &el, &firstChar, &lastChar);
+  if (el)
+    {
+      elType = TtaGetElementType (el);
+      s = TtaGetSSchemaName (elType.ElSSchema);
+      empty = TtaGetElementVolume (el) == 0;
+      while (empty &&
+             (elType.ElTypeNum != HTML_EL_List_Item || strcmp (s, "HTML")))
+        {
+          // check if it's an empty content of an empty list item
+          child = el;
+          empty = FALSE;
+          TtaPreviousSibling (&child);
+          if (child == NULL)
+            {
+              child = el;
+              TtaNextSibling (&child);
+              if (child == NULL)
+                {
+                  el = TtaGetParent (el);
+                  elType = TtaGetElementType (el);
+                  s = TtaGetSSchemaName (elType.ElSSchema);
+                   empty = TRUE;
+                }
+            }
+        }
+      if (empty &&
+          elType.ElTypeNum == HTML_EL_List_Item && !strcmp (s, "HTML"))
+        {
+          prev = el;
+          TtaPreviousSibling (&prev);
+          if (prev)
+            {
+              // remove the empty list item
+              TtaOpenUndoSequence (doc, NULL, NULL, 0, 0);
+              TtaRegisterElementDelete (el, doc);
+              TtaDeleteTree (el, doc);
+              child = TtaGetFirstChild (prev);
+              while (child)
+                {
+                  prev = child;
+                  TtaNextSibling (&child);
+                }
+              // create the sub-list
+              elType.ElTypeNum = typeNum;
+              child = TtaNewTree (doc, elType, "");
+              TtaInsertSibling (child, prev, FALSE, doc);
+              TtaRegisterElementCreate (child, doc);
+              TtaCloseUndoSequence (doc);
+              // select the new created element
+              while (child)
+                {
+                  el = child;
+                  child = TtaGetFirstChild (el);
+                }
+              if (child)
+                TtaSelectElement (doc, child);
+              else
+                TtaSelectElement (doc, el);
+            }
+          result = TRUE;          
+        }
+    }
+  return result;
+}
+
+/*----------------------------------------------------------------------
   CreateList
   ----------------------------------------------------------------------*/
 void CreateList (Document doc, View view)
 {
-  CreateHTMLelement (HTML_EL_Unnumbered_List, doc);
+  if (!ReplaceEmptyItem (HTML_EL_Unnumbered_List, doc))
+    CreateHTMLelement (HTML_EL_Unnumbered_List, doc);
 }
 
 /*----------------------------------------------------------------------
@@ -2580,7 +2962,8 @@ void CreateList (Document doc, View view)
   ----------------------------------------------------------------------*/
 void CreateNumberedList (Document doc, View view)
 {
-  CreateHTMLelement (HTML_EL_Numbered_List, doc);
+  if (!ReplaceEmptyItem (HTML_EL_Numbered_List, doc))
+    CreateHTMLelement (HTML_EL_Numbered_List, doc);
 }
 
 /*----------------------------------------------------------------------
@@ -2588,7 +2971,8 @@ void CreateNumberedList (Document doc, View view)
   ----------------------------------------------------------------------*/
 void CreateDefinitionList (Document doc, View view)
 {
-  CreateHTMLelement (HTML_EL_Definition_List, doc);
+  if (!ReplaceEmptyItem (HTML_EL_Definition_List, doc))
+    CreateHTMLelement (HTML_EL_Definition_List, doc);
 }
 
 /*----------------------------------------------------------------------
@@ -2868,17 +3252,19 @@ void CreateRuby (Document doc, View view)
   DisplayMode   dispMode;
   ThotBool      oldStructureChecking;
 
+  elType.ElSSchema = TtaGetSSchema ("HTML", doc);
+  elType.ElTypeNum = HTML_EL_complex_ruby;
+  /* if we are already within a ruby element, return immediately */
+  TtaGiveFirstSelectedElement (doc, &firstEl, &firstSelectedChar, &j);
+  if (TtaGetTypedAncestor (firstEl, elType))
+    return;
+  elType.ElTypeNum = HTML_EL_simple_ruby;
+  if (TtaGetTypedAncestor (firstEl, elType))
+    return;
+
+  oldStructureChecking = TtaGetStructureChecking (doc);
   if (HTMLelementAllowed (doc))
     {
-      elType.ElSSchema = TtaGetSSchema ("HTML", doc);
-      elType.ElTypeNum = HTML_EL_complex_ruby;
-      /* if we are already within a ruby element, return immediately */
-      TtaGiveFirstSelectedElement (doc, &firstEl, &firstSelectedChar, &j);
-      if (TtaGetTypedAncestor (firstEl, elType))
-        return;
-      elType.ElTypeNum = HTML_EL_simple_ruby;
-      if (TtaGetTypedAncestor (firstEl, elType))
-        return;
       /* stop displaying changes that will be made */
       dispMode = TtaGetDisplayMode (doc);
       if (dispMode == DisplayImmediately)
@@ -3046,8 +3432,6 @@ void CreateRuby (Document doc, View view)
            the new ruby element */
         {
           /* create a first rp element after the rb element */
-          oldStructureChecking = TtaGetStructureChecking (doc);
-          TtaSetStructureChecking (FALSE, doc);
           elType.ElTypeNum = HTML_EL_rp;
           el = TtaNewTree (doc, elType, "");
           TtaInsertSibling (el, rbEl, FALSE, doc);
@@ -3069,7 +3453,6 @@ void CreateRuby (Document doc, View view)
           TtaInsertSibling (el, prevEl, FALSE, doc);
           el = TtaGetFirstChild (el);
           TtaSetTextContent (el, (unsigned char*)")", TtaGetDefaultLanguage (), doc);
-          TtaSetStructureChecking (oldStructureChecking, doc);
           /* create a text element after the ruby element, to allow the
              user to add some more text after the ruby */
           el = rubyEl;
@@ -3087,6 +3470,7 @@ void CreateRuby (Document doc, View view)
       if (selEl)
         TtaSelectElement (doc, selEl);
     }
+  TtaSetStructureChecking (oldStructureChecking, doc);
 }
 
 /*----------------------------------------------------------------------
@@ -3255,7 +3639,7 @@ void CreateTable (Document doc, View view)
   SSchema             sch;
   int                 firstChar, lastChar;
   char               *name;
-  ThotBool            withinTable, inMath, created;
+  ThotBool            withinTable, inMath, created, oldStructureChecking;
 
   withinTable = FALSE;
   inMath = FALSE;
@@ -3297,36 +3681,42 @@ void CreateTable (Document doc, View view)
         }
     }
 
-  if (!HTMLelementAllowed (doc))
-    return;
-  elType.ElSSchema = sch;
-  if (elType.ElSSchema)
+  oldStructureChecking = TtaGetStructureChecking (doc);
+  if (HTMLelementAllowed (doc))
     {
-      /* check the selection */
-      if (TtaIsSelectionEmpty ())
-        /* selection empty.  Display the Table dialogue box */
+      elType.ElSSchema = sch;
+      if (elType.ElSSchema)
         {
-          TtaGetEnvInt ("TABLE_ROWS", &NumberRows);
-          TtaGetEnvInt ("TABLE_COLUMNS", &NumberCols);
-          TtaGetEnvInt ("TABLE_BORDER", &TBorder);
-          created = CreateCreateTableDlgWX (BaseDialog + TableForm,
-                                            TtaGetViewFrame (doc, view),
-                                            NumberCols, NumberRows, TBorder);
-          if (created)
+          /* check the selection */
+          if (TtaIsSelectionEmpty ())
+            /* selection empty.  Display the Table dialogue box */
             {
-              TtaShowDialogue (BaseDialog + TableForm, FALSE, TRUE);
-              /* wait for an answer */
-              TtaWaitShowDialogue ();
+              TtaGetEnvInt ("TABLE_ROWS", &NumberRows);
+              TtaGetEnvInt ("TABLE_COLUMNS", &NumberCols);
+              TtaGetEnvInt ("TABLE_BORDER", &TBorder);
+              created = CreateCreateTableDlgWX (BaseDialog + TableForm,
+                                                TtaGetViewFrame (doc, view),
+                                                NumberCols, NumberRows, TBorder);
+              if (created)
+                {
+                  TtaShowDialogue (BaseDialog + TableForm, FALSE, TRUE);
+                  /* wait for an answer */
+                  TtaWaitShowDialogue ();
+                }
+              if (!UserAnswer)
+                {
+                  TtaSetStructureChecking (oldStructureChecking, doc);
+                return;
+                }
             }
-          if (!UserAnswer)
-            return;
+          else
+            TBorder = 1;
+          /* create the table or 
+             try to transform the current selection if the selection is not empty */
+          DoTableCreation (doc);
         }
-      else
-        TBorder = 1;
-      /* create the table or 
-         try to transform the current selection if the selection is not empty */
-      DoTableCreation (doc);
     }
+  TtaSetStructureChecking (oldStructureChecking, doc);
 }
 
 /*----------------------------------------------------------------------
@@ -5452,7 +5842,9 @@ void  CreateIFrame (Document doc, View view)
   Attribute           attr;
   AttributeType       attrType;
   int                 firstchar, lastchar;
+  ThotBool            oldStructureChecking;
 
+  oldStructureChecking = TtaGetStructureChecking (doc);
   if (HTMLelementAllowed (doc))
     {
       /* Don't check mandatory attributes */
@@ -5473,42 +5865,43 @@ void  CreateIFrame (Document doc, View view)
               elType = TtaGetElementType (el);
             }
           
-          if (el == NULL)
-            return;
-
-          TtaExtendUndoSequence (doc);
-          /* copy SRC attribute */
-          attrType.AttrSSchema = elType.ElSSchema;
-          attrType.AttrTypeNum = HTML_ATTR_FrameSrc;
-          attr = TtaGetAttribute (el, attrType);
-          if (attr == NULL)
+          if (el)
             {
-              attr = TtaNewAttribute (attrType);
-              TtaAttachAttribute (el, attr, doc);
-              TtaSetAttributeText (attr, "source.html", el, doc);
-              TtaRegisterAttributeCreate (attr, el, doc);
-            }
-          /* now create a child element */
-          child = TtaGetLastChild (el);
-          if (child == NULL)
-            {
-              elType.ElTypeNum = HTML_EL_Iframe_Content;
+              TtaExtendUndoSequence (doc);
+              /* copy SRC attribute */
+              attrType.AttrSSchema = elType.ElSSchema;
+              attrType.AttrTypeNum = HTML_ATTR_FrameSrc;
+              attr = TtaGetAttribute (el, attrType);
+              if (attr == NULL)
+                {
+                  attr = TtaNewAttribute (attrType);
+                  TtaAttachAttribute (el, attr, doc);
+                  TtaSetAttributeText (attr, "source.html", el, doc);
+                  TtaRegisterAttributeCreate (attr, el, doc);
+                }
+              /* now create a child element */
+              child = TtaGetLastChild (el);
+              if (child == NULL)
+                {
+                  elType.ElTypeNum = HTML_EL_Iframe_Content;
+                  child = TtaNewElement (doc, elType);
+                  TtaInsertFirstChild (&child, el, doc);
+                  TtaRegisterElementCreate (child, doc);
+                }
+              elType.ElTypeNum = HTML_EL_Pseudo_paragraph;
+              el = TtaNewElement (doc, elType);
+              TtaInsertFirstChild (&el, child, doc);
+              TtaRegisterElementCreate (el, doc);
+              elType.ElTypeNum = HTML_EL_TEXT_UNIT;
               child = TtaNewElement (doc, elType);
               TtaInsertFirstChild (&child, el, doc);
+              TtaSelectElement (doc, child);
               TtaRegisterElementCreate (child, doc);
+              TtaCloseUndoSequence (doc);
             }
-          elType.ElTypeNum = HTML_EL_Pseudo_paragraph;
-          el = TtaNewElement (doc, elType);
-          TtaInsertFirstChild (&el, child, doc);
-          TtaRegisterElementCreate (el, doc);
-          elType.ElTypeNum = HTML_EL_TEXT_UNIT;
-          child = TtaNewElement (doc, elType);
-          TtaInsertFirstChild (&child, el, doc);
-          TtaSelectElement (doc, child);
-          TtaRegisterElementCreate (child, doc);
-          TtaCloseUndoSequence (doc);
         }
-  }
+    }
+  TtaSetStructureChecking (oldStructureChecking, doc);
 }
 
 /*----------------------------------------------------------------------
@@ -5540,9 +5933,6 @@ void  CreateOrChangeLink (Document doc, View view)
     return;
   UseLastTarget = FALSE;
   TtaGiveFirstSelectedElement (doc, &el, &firstSelectedChar, &i);
-  if (TtaIsReadOnly (el))
-    /* the selected element is read-only */
-    return;
 
   if (el != NULL)
     {
@@ -5557,9 +5947,23 @@ void  CreateOrChangeLink (Document doc, View view)
               && (elType.ElTypeNum != SVG_EL_a || strcmp (s, "SVG"))
 #endif /* _SVG */
               )
-            /* it's not an anchor */
-            el = NULL;
+            {
+              /* it's not an anchor */
+              if (TtaIsReadOnly (el))
+                /* the selected element is read-only */
+                return;
+              el = NULL;
+            }
+          else if (TtaIsReadOnly (el))
+           {
+             if (!IsTemplateInstanceDocument (doc) ||
+                 (!strcmp (s, "HTML") && !AllowAttributeEdit (el, doc, "href")) ||
+                 (!strcmp (s, "SVG") && !AllowAttributeEdit (el, doc, "xlink:href")))
+               /* the selected element is read-only */
+               return;
+            }
         }
+
       if (el == NULL)
         {
           /* The link element is a new created one */
@@ -5692,6 +6096,7 @@ void DoDeleteAnchor (Document doc, View view, ThotBool noCallback)
       if (anchor == AttrHREFelement)
         AttrHREFelement = NULL;
       TtaDeleteTree (anchor, doc);
+      TtaSetStatus (doc, 1, " ", NULL);
       /* ask Thot to display changes made in the document */
       TtaSetDisplayMode (doc, dispMode);
     }
@@ -5849,63 +6254,8 @@ void ReplyToAnnotation (Document doc, View view)
 void CustomQuery (Document doc, View view)
 {
 #ifdef ANNOTATIONS
-  CustomQueryMenuInit (doc, view);
+  //CustomQueryMenuInit (doc, view);
 #endif /* ANNOTATIONS */
-}
-
-/*----------------------------------------------------------------------
-  BookmarkFile
-  Bookmarks a file
-  ----------------------------------------------------------------------*/
-void BookmarkFile (Document doc, View view)
-{
-#ifdef BOOKMARKS
-  BM_CreateBM (doc, view);
-#endif /* BOOKMARKS */
-}
-
-/*----------------------------------------------------------------------
-  EditTopics
-  Edit Bookmark Topics
-  ----------------------------------------------------------------------*/
-void EditTopics (Document doc, View view)
-{
-#ifdef BOOKMARKS
-  BM_CreateTopic (doc, view);
-#endif /* BOOKMARKS */
-}
-
-/*----------------------------------------------------------------------
-  AddSeparator
-  Edit Bookmark Topics
-  ----------------------------------------------------------------------*/
-void AddSeparator (Document doc, View view)
-{
-#ifdef BOOKMARKS
-  BM_CreateSeparator (doc, view);
-#endif /* BOOKMARKS */
-}
-
-/*----------------------------------------------------------------------
-  ViewBookmarks
-  Opens the Amaya bookmarks window
-  ----------------------------------------------------------------------*/
-void ViewBookmarks (Document doc, View view)
-{
-#ifdef BOOKMARKS
-  BM_ViewBookmarks (0, 0, FALSE);
-#endif /* BOOKMARKS */
-}
-
-/*----------------------------------------------------------------------
-  MoveItem
-  Moves a previously copied bookmark item in the bookmark view
-  ----------------------------------------------------------------------*/
-void MoveItem (Document doc, View view)
-{
-#ifdef BOOKMARKS
-  BM_MoveHandler (doc, view);
-#endif /* BOOKMARKS */
 }
 
 /*------------ Begin: WebDAV Modifications by Manuele Kirsch -----------*/

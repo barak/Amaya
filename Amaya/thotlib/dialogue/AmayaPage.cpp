@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2008
+ *  (c) COPYRIGHT INRIA, 1996-2009
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -162,6 +162,7 @@ void AmayaPage::SetSelected( bool isSelected )
 void AmayaPage::RaisePage()
 {
   AmayaPageContainer * p_container = GetContainer();
+
   if (p_container)
     {
       // raise the notebook page
@@ -228,7 +229,7 @@ AmayaSimplePage::~AmayaSimplePage()
 *      return:
 *        + AmayaFrame * : the old frame or NULL if there was no old frame at this place
  -----------------------------------------------------------------------*/
-AmayaFrame * AmayaSimplePage::AttachFrame( AmayaFrame * p_frame, int )
+AmayaFrame *AmayaSimplePage::AttachFrame (AmayaFrame *p_frame, int pos, int split)
 {
   AmayaFrame* res = m_pFrame;
   
@@ -322,7 +323,7 @@ void AmayaSimplePage::OnClose(wxCloseEvent& event)
       if ( !TtaFrameIsClosed (frame_id) )
         {
           // if the frame didnt die, just re-attach it
-          AttachFrame(m_pFrame, 1);
+          AttachFrame(m_pFrame, 1, 1);
           SetIsClosed(false);
         }
     }
@@ -330,11 +331,6 @@ void AmayaSimplePage::OnClose(wxCloseEvent& event)
   if(!IsClosed())
     event.Veto();
 }
-
-
-
-
-
 
 
 //
@@ -360,10 +356,11 @@ IMPLEMENT_DYNAMIC_CLASS(AmayaSplittablePage, AmayaPage)
  *       ]
  *   ]
   -----------------------------------------------------------------------*/
-AmayaSplittablePage::AmayaSplittablePage( wxWindow * p_parent_window, AmayaWindow * p_amaya_parent_window )
+AmayaSplittablePage::AmayaSplittablePage( wxWindow * p_parent_window,
+                                          AmayaWindow * p_amaya_parent_window )
   :  AmayaPage( p_parent_window, p_amaya_parent_window)
   ,m_pWindowParent( p_amaya_parent_window )
-  ,m_SlashRatio( 0.5 )
+  ,m_SlashRatio( 0.6 )
   ,m_ActiveFrame(1) // by default, frame 1 is selected
 {
   // Insert a forground sizer
@@ -386,7 +383,7 @@ AmayaSplittablePage::AmayaSplittablePage( wxWindow * p_parent_window, AmayaWindo
 					    /*| wxSP_PERMIT_UNSPLIT*/
 #endif /* 0 */
 					    );
-  SetSplitMode( wxSPLIT_HORIZONTAL );
+  SetSplitMode(0); // undefined
   p_sizerTop2->Add( m_pSplitterWindow, 1, wxEXPAND, 0 );
 
 
@@ -408,8 +405,7 @@ AmayaSplittablePage::AmayaSplittablePage( wxWindow * p_parent_window, AmayaWindo
   m_pSplitterWindow->Initialize( m_DummyPanel );
 
   // initialize the last open view name
-  strcpy(m_LastOpenViewName, "Formatted_view");
-
+  //strcpy(m_LastOpenViewName, "Formatted_view");
   SetAutoLayout(TRUE);
 }
 
@@ -437,16 +433,17 @@ AmayaQuickSplitButton * AmayaSplittablePage::GetQuickSplitButton (ThotBool horiz
 }
 
  /*----------------------------------------------------------------------
- *       Class: AmayaSplittablePage 
- *      Method: AttachFrame
- * Description: attache a AmayaFrame to the page (top or bottom)
- *      params:
- *        + AmayaFrame * p_frame : the frame to attach
- *        + int position : the position identifier - top (1) or bottom (2)
- *      return:
- *        + AmayaFrame * : the old frame or NULL if there was no old frame at this place
+   Class: AmayaSplittablePage 
+   Method: AttachFrame
+   Description: attache a AmayaFrame to the page (top or bottom)
+   params:
+   + AmayaFrame * p_frame : the frame to attach
+   + int position : the position identifier - top (1) or bottom (2)
+   + split: 0 for horizontal, 1 if for vertical
+   return:
+   + AmayaFrame * : the old frame or NULL if there was no old frame at this place
   -----------------------------------------------------------------------*/
-AmayaFrame * AmayaSplittablePage::AttachFrame( AmayaFrame * p_frame, int position )
+AmayaFrame *AmayaSplittablePage::AttachFrame (AmayaFrame *p_frame, int position, int split)
 {
   // check if this is the first frame or not
   // the first one will be considered ad the master
@@ -492,27 +489,28 @@ AmayaFrame * AmayaSplittablePage::AttachFrame( AmayaFrame * p_frame, int positio
   if (oldframe != NULL)
     ok = m_pSplitterWindow->ReplaceWindow( oldframe, p_frame );
   else if (m_pBottomFrame == NULL || m_pTopFrame == NULL)
-  {
+    {
     ok = m_pSplitterWindow->ReplaceWindow( m_DummyPanel, p_frame );
     m_DummyPanel->Hide();
-  }
+    }
   else
-  {
+    {
     AmayaFrame * p_frame = GetFrame(1);
     Document document = FrameTable[p_frame->GetFrameId()].FrDoc;
     View view         = FrameTable[p_frame->GetFrameId()].FrView;
-    if (m_pSplitterWindow->GetSplitMode() == wxSPLIT_VERTICAL)
-  	{
+    int mode = m_pSplitterWindow->GetSplitMode();
+    if ((split == 2 && mode != wxSPLIT_HORIZONTAL) || mode == wxSPLIT_VERTICAL)
+      {
   	  ok = m_pSplitterWindow->SplitVertically( m_pTopFrame, m_pBottomFrame );
   	  TtaExecuteMenuAction ("ShowVSplitToggle", document, view, FALSE);
-  	}
+      }
     else
-  	{
+      {
   	  ok = m_pSplitterWindow->SplitHorizontally( m_pTopFrame, m_pBottomFrame );
   	  TtaExecuteMenuAction ("ShowHSplitToggle", document, view, FALSE);
-  	}
+      }
     AdjustSplitterPos();
-  }
+    }
   wxASSERT_MSG(ok, _T("AmayaSplittablePage::AttachFrame -> Impossible d'attacher la frame") );
 
   // update old and new AmayaFrame parents
@@ -528,7 +526,7 @@ AmayaFrame * AmayaSplittablePage::AttachFrame( AmayaFrame * p_frame, int positio
   SetAutoLayout(TRUE);
 
   // remember the last open view
-  strcpy(m_LastOpenViewName, FrameTable[p_frame->GetFrameId()].FrViewName);
+  //strcpy(m_LastOpenViewName, FrameTable[p_frame->GetFrameId()].FrViewName);
 
   // return the old frame : needs to be manualy deleted ..
   return oldframe;
@@ -655,13 +653,13 @@ void AmayaSplittablePage::DoBottomSplitButtonAction()
     {
       // Update toggle buttons
       if ( m_pSplitterWindow->IsSplit() )
-	TtaExecuteMenuAction ("HideHSplitToggle", document, view, FALSE);
+        TtaExecuteMenuAction ("HideHSplitToggle", document, view, FALSE);
       else
-	TtaExecuteMenuAction ("ShowHSplitToggle", document, view, FALSE);
+        TtaExecuteMenuAction ("ShowHSplitToggle", document, view, FALSE);
       // store the wanted orientation for the next split action
-      SetSplitMode(wxSPLIT_HORIZONTAL);
+      SetSplitMode (wxSPLIT_HORIZONTAL);
       // do the split/unsplit action
-      DoSplitUnsplit();
+      DoSplitUnsplit (wxSPLIT_HORIZONTAL);
     }
 }
 
@@ -689,13 +687,13 @@ void AmayaSplittablePage::DoRightSplitButtonAction()
     {
       // Update toggle buttons
       if ( m_pSplitterWindow->IsSplit() )
-	TtaExecuteMenuAction ("HideVSplitToggle", document, view, FALSE);
+        TtaExecuteMenuAction ("HideVSplitToggle", document, view, FALSE);
       else
-	TtaExecuteMenuAction ("ShowVSplitToggle", document, view, FALSE);
+        TtaExecuteMenuAction ("ShowVSplitToggle", document, view, FALSE);
       // store the wanted orientation for the next split action
-      SetSplitMode(wxSPLIT_VERTICAL);
+      SetSplitMode (wxSPLIT_VERTICAL);
       // do the split/unsplit action
-      DoSplitUnsplit();
+      DoSplitUnsplit (wxSPLIT_VERTICAL);
     }
 }
 
@@ -744,7 +742,7 @@ wxSplitterWindow * AmayaSplittablePage::GetSplitterWindow()
  *      Method:  DoSplitUnsplit
  * Description:  toggle split/unsplit state
   -----------------------------------------------------------------------*/
-void AmayaSplittablePage::DoSplitUnsplit()
+void AmayaSplittablePage::DoSplitUnsplit(int mode)
 {
     AmayaFrame * p_frame = GetFrame(1);
     if (p_frame == NULL)
@@ -754,21 +752,28 @@ void AmayaSplittablePage::DoSplitUnsplit()
 
   if (!m_pSplitterWindow->IsSplit())
     {
-      // TODO: montrer la meme vue que la premiere frame
-      if ( !strcmp(m_LastOpenViewName, "Formatted_view") )
-        TtaExecuteMenuAction ("ShowSource", document, view, FALSE);
-      else if ( !strcmp(m_LastOpenViewName, "Links_view") )
+#ifdef IV
+      if ( !strcmp(m_LastOpenViewName, "Links_view") )
         TtaExecuteMenuAction ("ShowLinks", document, view, FALSE);
       else if ( !strcmp(m_LastOpenViewName, "Alternate_view") )
         TtaExecuteMenuAction ("ShowAlternate", document, view, FALSE);
       else if ( !strcmp(m_LastOpenViewName, "Table_of_contents") )
         TtaExecuteMenuAction ("ShowToC", document, view, FALSE);
-      else // if ( !strcmp(m_LastOpenViewName, "Structure_view") )
-        TtaExecuteMenuAction ("ShowStructure", document, view, FALSE); 
+      else
+#endif
+        {
+          if (mode == wxSPLIT_HORIZONTAL)
+            TtaExecuteMenuAction ("ShowSource", document, view, FALSE);
+          else // if ( !strcmp(m_LastOpenViewName, "Structure_view") )
+            TtaExecuteMenuAction ("ShowStructure", document, view, FALSE); 
+        }
     }
   else
     {
 	  FrameToView(TtaGiveActiveFrame(), &document, &view);
+    // remember the last open view
+    //if (FrameTable[view].FrViewName)
+    //strcpy(m_LastOpenViewName, FrameTable[view].FrViewName);
 	  TtaExecuteMenuAction("Synchronize", document, view, TRUE);
 
 	  if(m_pBottomFrame)
@@ -815,7 +820,7 @@ void AmayaSplittablePage::OnSplitterPosChanged( wxSplitterEvent& event )
     else if ( split_mode == 2 ) // vertically
       m_SlashRatio = new_slash_pos / width;
     if ( m_SlashRatio <= 0 || m_SlashRatio >= 1 )
-      m_SlashRatio = 0.5;
+      m_SlashRatio = 0.6;
     
     // do not forward this event because the panel/notebook splitter should not receive it
     //    event.Skip();
@@ -833,7 +838,7 @@ void AmayaSplittablePage::OnSplitterDClick( wxSplitterEvent& event )
   Document document = FrameTable[p_frame->GetFrameId()].FrDoc;
   View view         = FrameTable[p_frame->GetFrameId()].FrView;
 
-  DoSplitUnsplit();
+  DoSplitUnsplit (wxSPLIT_VERTICAL);
   // Update Toggle buttons
   TtaExecuteMenuAction ("HideHSplitToggle", document, view, FALSE);
   TtaExecuteMenuAction ("HideVSplitToggle", document, view, FALSE);
@@ -941,7 +946,7 @@ void AmayaSplittablePage::OnClose(wxCloseEvent& event)
       if ( !TtaFrameIsClosed (frame_id) )
         {
           // if the frame didnt die, just re-attach it
-          AttachFrame(p_AmayaFrame, 1);
+          AttachFrame(p_AmayaFrame, 1, 1);
           SetIsClosed(false);
         }
     }
@@ -959,7 +964,7 @@ void AmayaSplittablePage::OnClose(wxCloseEvent& event)
       if ( !TtaFrameIsClosed (frame_id) )
         {
           // if the frame didnt die, just re-attach it
-          AttachFrame(p_AmayaFrame, 2);
+          AttachFrame(p_AmayaFrame, 2, 1);
           SetIsClosed(false);
         }
       
@@ -1023,8 +1028,9 @@ void AmayaSplittablePage::SetActiveFrame( const AmayaFrame * p_frame )
 {
   AmayaFrame *n_frame;
   Document    document;
-  int         frame_id;
+  int         frame_id, old_active;
 
+  old_active = m_ActiveFrame;
   if ( p_frame == GetFrame(1) )
     m_ActiveFrame = 1;
   else if ( p_frame == GetFrame(2) )
@@ -1038,10 +1044,13 @@ void AmayaSplittablePage::SetActiveFrame( const AmayaFrame * p_frame )
     {
       frame_id = n_frame->GetFrameId();
       if (frame_id && ActiveFrame == 0)
-	// after a unsplit the active frame is lost
-	n_frame->SetActive(true);
-      document = FrameTable[frame_id].FrDoc;
-      TtaExecuteMenuAction ("UpdateStyleList", document, 1, TRUE);
+        // after a unsplit the active frame is lost
+        n_frame->SetActive(true);
+      if (old_active != m_ActiveFrame)
+        {
+          document = FrameTable[frame_id].FrDoc;
+          TtaExecuteMenuAction ("UpdateStyleList", document, 1, TRUE);
+        }
     }
 }
 

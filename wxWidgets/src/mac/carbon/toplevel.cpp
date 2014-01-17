@@ -668,7 +668,8 @@ pascal OSStatus wxMacTopLevelMouseEventHandler( EventHandlerCallRef handler , Ev
 
         if (!gGlobalCursor.IsOk())
         {
-            while ( cursorTarget && !cursorTarget->MacSetupCursor( cursorPoint ) )
+            while ( cursorTarget && cursorTarget->MacIsReallyEnabled() &&
+                    !cursorTarget->MacSetupCursor( cursorPoint ) )
             {
                 cursorTarget = cursorTarget->GetParent() ;
                 if ( cursorTarget )

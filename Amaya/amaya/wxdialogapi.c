@@ -1041,6 +1041,8 @@ ThotBool CreateHRefDlgWX (int ref, ThotWindow parent,
     wx_filter = APPCSSNAMEFILTER;
   else if (doc_type == docJavascript)
     wx_filter = APPJAVASCRIPTNAMEFILTER;
+  else if (doc_type == docTemplate)
+    wx_filter = APPLIBRARYNAMEFILTER;
   else
     wx_filter = APPFILENAMEFILTER;
 
@@ -1372,12 +1374,12 @@ ThotBool CreateFontDlgWX(ThotWindow parent, const char *title, int* family,
       FontDlgWX dlg (parent, wx_title);
       // manage the return of the modal dialog
       if (*family > 0)
-        dlg.SetFontFamily(*family-1);
+        dlg.SetFontFamily((*family) - 1);
       if (*size > 0)
         dlg.SetFontSize(*size);
-      if (dlg.ShowModal()==wxID_OK)
+      if (dlg.ShowModal() == wxID_OK)
         {
-          *family = dlg.GetFontFamily();
+          *family = dlg.GetFontFamily() + 1;
           *size = dlg.GetFontSize();
           return TRUE;
         }
@@ -1539,7 +1541,8 @@ ThotBool QueryTitleAndDescFromUser(char* title, int titleSz, char* desc,
   to a user.
   Return FALSE if user cancel the query or an error occurs.
   ----------------------------------------------------------------------*/
-ThotBool QueryNewUseFromUser(const char* proposed, char** label, char**types, ThotBool* option)
+ThotBool QueryNewUseFromUser (const char* proposed, char** label,
+                              char**types, ThotBool* option)
 {
 #ifdef TEMPLATES
   unsigned int i, n;
@@ -1548,7 +1551,7 @@ ThotBool QueryNewUseFromUser(const char* proposed, char** label, char**types, Th
   wxArrayString arr = wxStringTokenize(strs);
   wxCheckListBox* box;
 
-  if (wxXmlResource::Get()->LoadDialog(&dialog, NULL, wxT("TemplateNewUseDlgWX")))
+  if (wxXmlResource::Get()->LoadDialog(&dialog, NULL, wxT("TemplateDlgWX")))
     {
       dialog.SetTitle(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_TEMPLATE_NEWUSE)));
       XRCCTRL(dialog, "wxID_LABEL_LABEL", wxStaticText)->
@@ -1575,15 +1578,15 @@ ThotBool QueryNewUseFromUser(const char* proposed, char** label, char**types, Th
       dialog.SetSize (250, 320);
       dialog.Layout();
 
-      if (dialog.ShowModal()==wxID_OK)
+      if (dialog.ShowModal() == wxID_OK)
         {
-          strs.Clear();
-          n = box->GetCount();
-          for (i=0; i<n; i++)
+          strs.Clear ();
+          n = box->GetCount ();
+          for (i = 0; i < n; i++)
             {
-              if (box->IsChecked(i))
+              if (box->IsChecked (i))
                 {
-                  strs += box->GetString(i);
+                  strs += box->GetString (i);
                   strs += wxT(" ");
                 }
             }
@@ -1606,27 +1609,24 @@ ThotBool QueryNewUseFromUser(const char* proposed, char** label, char**types, Th
 
 /*----------------------------------------------------------------------
   QueryUnionFromUser
-  Query the label, the types and the option value for a new xt:use
-  to a user.
+  Query the label, and the types for a new xt:union to a user.
   Return FALSE if user cancel the query or an error occurs.
   ----------------------------------------------------------------------*/
 ThotBool QueryUnionFromUser (const char* proposed, const char* checked,
                              char** label, char**types, ThotBool newUnion)
 {
 #ifdef TEMPLATES
-  int i;
-  unsigned int n, count;
-  wxDialog dialog;
-  wxString strs = TtaConvMessageToWX(proposed);
-  wxArrayString arr = wxStringTokenize(strs), arrchecked;
+  int             i;
+  unsigned int    n, count;
+  wxDialog        dialog;
+  wxString        strs = TtaConvMessageToWX(proposed);
+  wxArrayString   arr = wxStringTokenize(strs), arrchecked;
+  wxCheckListBox *box;
 
-  wxCheckListBox* box;
-
-  if (wxXmlResource::Get()->LoadDialog(&dialog, NULL, wxT("TemplateNewUseDlgWX")))
+  if (wxXmlResource::Get()->LoadDialog(&dialog, NULL, wxT("TemplateDlgWX")))
     {
 
       dialog.SetTitle(TtaConvMessageToWX(TtaGetMessage(AMAYA, newUnion?AM_TEMPLATE_NEWUNION:AM_TEMPLATE_UNION)));
-
 
       XRCCTRL(dialog, "wxID_LABEL_LABEL", wxStaticText)->
             SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_TEMPLATE_UNIONNAME)));
@@ -1638,11 +1638,11 @@ ThotBool QueryUnionFromUser (const char* proposed, const char* checked,
       XRCCTRL(dialog, "wxID_CHECK_OPTIONAL", wxCheckBox)->Hide();
       if (!newUnion)
         {
-          if (label!=0 && *label!=0)
+          if (label && *label)
             {
               XRCCTRL(dialog, "wxID_TEXT_LABEL", wxTextCtrl)->SetValue(TtaConvMessageToWX(*label));
               i = arr.Index(TtaConvMessageToWX(*label));
-              if (i!=wxNOT_FOUND)
+              if (i != wxNOT_FOUND)
                 arr.RemoveAt(i);
             }
           XRCCTRL(dialog, "wxID_TEXT_LABEL", wxTextCtrl)->Disable();
@@ -1658,17 +1658,19 @@ ThotBool QueryUnionFromUser (const char* proposed, const char* checked,
         {
           arrchecked = wxStringTokenize(TtaConvMessageToWX(checked));
           count =  box->GetCount();
-          for (i=0; i<(int)count; i++)
+          for (i = 0; i < (int)count; i++)
             {
-              if (arrchecked.Index(box->GetString(i))!=wxNOT_FOUND)
+              if (arrchecked.Index(box->GetString(i)) != wxNOT_FOUND)
                 box->Check(i);
             }
         }
 
       dialog.SetSize(200, 320);
       dialog.Layout();
+      // give focus to ...
+      XRCCTRL(dialog, "wxID_TEXT_LABEL", wxTextCtrl)->SetFocus();
 
-      if (dialog.ShowModal()==wxID_OK)
+      if (dialog.ShowModal() == wxID_OK)
         {
           strs.Clear();
           n = box->GetCount();
@@ -1699,24 +1701,21 @@ ThotBool QueryUnionFromUser (const char* proposed, const char* checked,
   to a user.
   Return FALSE if user cancel the query or an error occurs.
   ----------------------------------------------------------------------*/
-ThotBool QueryUseFromUser (const char* proposed, const char* checked, char* label,
-                           int labelsz, char**types, ThotBool* option)
+ThotBool QueryUseFromUser (const char *proposed, const char *checked, char *label,
+                           int labelsz, char **types, ThotBool *option)
 {
 #ifdef TEMPLATES
-  int i;
-  unsigned int n, count;
-  wxDialog dialog;
-  wxString strs = TtaConvMessageToWX(proposed);
-  wxArrayString arr = wxStringTokenize(strs), arrchecked;
+  int             i;
+  unsigned int    n, count;
+  wxDialog        dialog;
+  wxString        strs = TtaConvMessageToWX (proposed);
+  wxArrayString   arr = wxStringTokenize(strs), arrchecked;
+  wxCheckListBox *box;
 
-  wxCheckListBox* box;
-
-  if (wxXmlResource::Get()->LoadDialog(&dialog, NULL, wxT("TemplateNewUseDlgWX")))
+  if (wxXmlResource::Get()->LoadDialog(&dialog, NULL, wxT("TemplateDlgWX")))
     {
 
       dialog.SetTitle(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_TEMPLATE_USE)));
-
-
       XRCCTRL(dialog, "wxID_LABEL_LABEL", wxStaticText)->
             SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_TEMPLATE_USELABEL)));
       XRCCTRL(dialog, "wxID_CANCEL", wxButton)->
@@ -1758,8 +1757,10 @@ ThotBool QueryUseFromUser (const char* proposed, const char* checked, char* labe
 
       dialog.SetSize(200, 320);
       dialog.Layout();
+      // give focus to ...
+      XRCCTRL(dialog, "wxID_TEXT_LABEL", wxTextCtrl)->SetFocus();
 
-      if (dialog.ShowModal()==wxID_OK)
+      if (dialog.ShowModal() == wxID_OK)
         {
           strs.Clear();
           n = box->GetCount();
@@ -1789,3 +1790,47 @@ ThotBool QueryUseFromUser (const char* proposed, const char* checked, char* labe
 #endif /* TEMPLATES */
   return FALSE;
 }
+
+/*----------------------------------------------------------------------
+  QueryComponentFromUser
+  Query the name for a xt:component to a user.
+  Return FALSE if user cancel the query or an error occurs.
+  ----------------------------------------------------------------------*/
+ThotBool QueryComponentFromUser (char* label, int labelsz)
+{
+#ifdef TEMPLATES
+  wxDialog        dialog;
+
+  if (wxXmlResource::Get()->LoadDialog(&dialog, NULL, wxT("TemplateDlgWX")))
+    {
+      dialog.SetTitle(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_TEMPLATE_NAME)));
+      XRCCTRL(dialog, "wxID_LABEL_LABEL", wxStaticText)->
+            SetLabel(TtaConvMessageToWX(TtaGetMessage(AMAYA, AM_TEMPLATE_NAME)));
+      XRCCTRL(dialog, "wxID_CANCEL", wxButton)->
+            SetLabel(TtaConvMessageToWX(TtaGetMessage(LIB, TMSG_CANCEL) ));
+      XRCCTRL(dialog, "wxID_OK", wxButton)->
+            SetLabel(TtaConvMessageToWX(TtaGetMessage(LIB, TMSG_LIB_CONFIRM) ));
+
+      XRCCTRL(dialog, "wxID_CHECK_OPTIONAL", wxCheckBox)->Hide();
+      if (label && *label)
+        XRCCTRL(dialog, "wxID_TEXT_LABEL", wxTextCtrl)->SetValue(TtaConvMessageToWX(label));
+
+      if (labelsz == 0)
+        XRCCTRL(dialog, "wxID_TEXT_LABEL", wxTextCtrl)->Disable();
+      // give focus to ...
+      XRCCTRL(dialog, "wxID_TEXT_LABEL", wxTextCtrl)->SetFocus();
+
+      if (dialog.ShowModal() == wxID_OK)
+        {
+          if (label && labelsz)
+            {
+              strncpy (label, (const char*)XRCCTRL(dialog, "wxID_TEXT_LABEL", wxTextCtrl)->GetValue().mb_str(wxConvUTF8), labelsz-1);
+              label[labelsz-1] = EOS;
+            }
+          return TRUE;
+        }
+    }
+#endif /* TEMPLATES */
+  return FALSE;
+}
+

@@ -1701,7 +1701,7 @@ ThotBool CondPresentation (PtrCondition pCond, PtrElement pEl,
 
 /*----------------------------------------------------------------------
   GetPreviousSibling
-  returns the sibling element before element el, ignoring Tamplate
+  returns the sibling element before element el, ignoring Template
   elements.
   ----------------------------------------------------------------------*/
 static PtrElement GetPreviousSibling (PtrElement el)
@@ -1771,7 +1771,7 @@ static PtrElement GetPreviousSibling (PtrElement el)
                         {
                           if (strcmp (sibling->ElStructSchema->SsName, "Template"))
                             /* not a template element */
-                            ancestor = NULL;
+                            return sibling;
                           else
                             /* it's a Template element. Look for its first
                                descendant that is not a Template element */
@@ -1838,7 +1838,7 @@ ThotBool ComputeListItemNumber (PtrAbstractBox pAb)
       /* get the parent element */
       pAsc = pAb->AbElement->ElParent;
       /* skip enclosing Template elements to find the real parent */
-      while (!strcmp (pAsc->ElStructSchema->SsName, "Template"))
+      while (pAsc && !strcmp (pAsc->ElStructSchema->SsName, "Template"))
         pAsc = pAsc->ElParent;
       pAttr = GetAttrElementWithException (ExcStartCounter, pAsc);
       if (pAttr && pAttr->AeAttrType == AtNumAttr)
@@ -3049,7 +3049,7 @@ PtrAbstractBox CrAbsBoxesPres (PtrElement pEl, PtrDocument pDoc,
                               /* on n'a pas pu appliquer la regle, on */
                               /* l'appliquera lorsque le pave pere */
                               /* sera  termine' */
-                              Delay (pRV, pSchP, pAbbCreated, NULL);
+                              Delay (pRV, pSchP, pAbbCreated, pAttr);
                           }
                       }
                 }
@@ -5927,6 +5927,9 @@ PtrAbstractBox AbsBoxesCreate (PtrElement pEl, PtrDocument pDoc,
                 {
                   pNewAbbox = InitAbsBoxes (pEl, viewNb, vis, pDoc->DocReadOnly);
                   pNewAbbox->AbPSchema = pSchP;
+                  // generate the CSS visibility of the top element
+                  if (pEl->ElParent == NULL)
+                    pNewAbbox->AbVis = 'V';
                   if (pDoc->DocReadOnly)
                     {
                       /* document en lecture seule */
