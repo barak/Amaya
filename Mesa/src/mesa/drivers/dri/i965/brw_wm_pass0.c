@@ -168,7 +168,6 @@ static const struct brw_wm_ref *pass0_get_reg( struct brw_wm_compile *c,
       case PROGRAM_PAYLOAD:
       case PROGRAM_TEMPORARY:
       case PROGRAM_OUTPUT:
-      case PROGRAM_VARYING:
 	 break;
 
       case PROGRAM_LOCAL_PARAM:
@@ -180,8 +179,6 @@ static const struct brw_wm_ref *pass0_get_reg( struct brw_wm_compile *c,
 	 break;
 
       case PROGRAM_STATE_VAR:
-      case PROGRAM_UNIFORM:
-      case PROGRAM_CONSTANT:
       case PROGRAM_NAMED_PARAM: {
 	 struct gl_program_parameter_list *plist = c->fp->program.Base.Parameters;
 	 
@@ -200,7 +197,6 @@ static const struct brw_wm_ref *pass0_get_reg( struct brw_wm_compile *c,
 	    break;
 	    
 	 case PROGRAM_STATE_VAR:
-	 case PROGRAM_UNIFORM:
 	    /* These may change from run to run:
 	     */
 	    ref = get_param_ref(c, &plist->ParameterValues[idx][component] );

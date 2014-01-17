@@ -38,7 +38,6 @@
 #include "fbobject.h"
 #include "framebuffer.h"
 #include "renderbuffer.h"
-#include "texobj.h"
 
 
 
@@ -191,11 +190,17 @@ _mesa_free_framebuffer_data(struct gl_framebuffer *fb)
          _mesa_reference_renderbuffer(&att->Renderbuffer, NULL);
       }
       if (att->Texture) {
-         _mesa_reference_texobj(&att->Texture, NULL);
+         /* render to texture */
+         att->Texture->RefCount--;
+         if (att->Texture->RefCount == 0) {
+            GET_CURRENT_CONTEXT(ctx);
+            if (ctx) {
+               ctx->Driver.DeleteTexture(ctx, att->Texture);
+            }
+         }
       }
-      ASSERT(!att->Renderbuffer);
-      ASSERT(!att->Texture);
       att->Type = GL_NONE;
+      att->Texture = NULL;
    }
 
    /* unbind _Depth/_StencilBuffer to decr ref counts */

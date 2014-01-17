@@ -1,5 +1,7 @@
 # Top-level Mesa makefile
 
+SHELL = /bin/bash
+
 TOP = .
 
 SUBDIRS = src progs
@@ -68,22 +70,14 @@ aix-gcc \
 aix-static \
 beos \
 bluegene-osmesa \
-bluegene-xlc-osmesa \
-catamount-osmesa-pgi \
 darwin \
-darwin-fat-32bit \
-darwin-fat-all \
 darwin-static \
 darwin-static-x86ppc \
-dragonfly \
-dragonfly-dri \
-dragonfly-dri-amd64 \
-dragonfly-dri-x86 \
+darwin-x86ppc \
 freebsd \
 freebsd-dri \
 freebsd-dri-amd64 \
 freebsd-dri-x86 \
-freebsd-static \
 hpux10 \
 hpux10-gcc \
 hpux10-static \
@@ -162,7 +156,7 @@ sunos5-v9 \
 sunos5-v9-static \
 sunos5-v9-cc-g++ \
 ultrix-gcc:
-	@ if test -f configs/current || test -L configs/current ; then \
+	@ if [ -e configs/current ] ; then \
 		echo "Please run 'make realclean' before changing configs" ; \
 		exit 1 ; \
 	fi
@@ -172,10 +166,10 @@ ultrix-gcc:
 
 # Rules for making release tarballs
 
-DIRECTORY = Mesa-7.0.4
-LIB_NAME = MesaLib-7.0.4
-DEMO_NAME = MesaDemos-7.0.4
-GLUT_NAME = MesaGLUT-7.0.4
+DIRECTORY = Mesa-7.0.1
+LIB_NAME = MesaLib-7.0.1
+DEMO_NAME = MesaDemos-7.0.1
+GLUT_NAME = MesaGLUT-7.0.1
 
 MAIN_FILES = \
 	$(DIRECTORY)/Makefile*						\
@@ -219,7 +213,6 @@ MAIN_FILES = \
 	$(DIRECTORY)/src/mesa/Makefile*					\
 	$(DIRECTORY)/src/mesa/sources					\
 	$(DIRECTORY)/src/mesa/descrip.mms				\
-	$(DIRECTORY)/src/mesa/gl.pc.in					\
 	$(DIRECTORY)/src/mesa/depend					\
 	$(DIRECTORY)/src/mesa/main/*.[chS]				\
 	$(DIRECTORY)/src/mesa/main/descrip.mms				\
@@ -327,13 +320,11 @@ DRI_FILES = \
 SGI_GLU_FILES = \
 	$(DIRECTORY)/src/glu/Makefile					\
 	$(DIRECTORY)/src/glu/descrip.mms				\
-	$(DIRECTORY)/src/glu/glu.pc.in					\
 	$(DIRECTORY)/src/glu/sgi/Makefile				\
 	$(DIRECTORY)/src/glu/sgi/Makefile.mgw				\
 	$(DIRECTORY)/src/glu/sgi/Makefile.win				\
 	$(DIRECTORY)/src/glu/sgi/Makefile.DJ				\
 	$(DIRECTORY)/src/glu/sgi/glu.def				\
-	$(DIRECTORY)/src/glu/sgi/glu.exports				\
 	$(DIRECTORY)/src/glu/sgi/dummy.cc				\
 	$(DIRECTORY)/src/glu/sgi/descrip.mms				\
 	$(DIRECTORY)/src/glu/sgi/mesaglu.opt				\
@@ -362,7 +353,6 @@ GLW_FILES = \
 	$(DIRECTORY)/src/glw/*.[ch]			\
 	$(DIRECTORY)/src/glw/Makefile*			\
 	$(DIRECTORY)/src/glw/README			\
-	$(DIRECTORY)/src/glw/glw.pc.in			\
 	$(DIRECTORY)/src/glw/depend
 
 DEMO_FILES = \
@@ -406,7 +396,6 @@ GLUT_FILES = \
 	$(DIRECTORY)/include/GL/glutf90.h		\
 	$(DIRECTORY)/src/glut/glx/Makefile*		\
 	$(DIRECTORY)/src/glut/glx/depend		\
-	$(DIRECTORY)/src/glut/glx/glut.pc.in		\
 	$(DIRECTORY)/src/glut/glx/*def			\
 	$(DIRECTORY)/src/glut/glx/descrip.mms		\
 	$(DIRECTORY)/src/glut/glx/mms_depend		\
@@ -422,10 +411,6 @@ GLUT_FILES = \
 	$(DIRECTORY)/src/glut/fbdev/Makefile		\
 	$(DIRECTORY)/src/glut/fbdev/*[ch]		\
 	$(DIRECTORY)/src/glut/mini/*[ch]		\
-	$(DIRECTORY)/src/glut/mini/glut.pc.in		\
-	$(DIRECTORY)/src/glut/directfb/Makefile		\
-	$(DIRECTORY)/src/glut/directfb/NOTES		\
-	$(DIRECTORY)/src/glut/directfb/*[ch]		\
 	$(DIRECTORY)/windows/VC6/progs/glut/glut.dsp	\
 	$(DIRECTORY)/windows/VC7/progs/glut/glut.vcproj
 

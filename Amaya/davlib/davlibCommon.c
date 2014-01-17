@@ -19,10 +19,10 @@
 **
 ** Date : May / 2002
 **
-** $Id: davlibCommon.c,v 1.18 2009/06/29 08:28:58 vatton Exp $
-** $Date: 2009/06/29 08:28:58 $
+** $Id: davlibCommon.c,v 1.18 2009-06-29 08:28:58 vatton Exp $
+** $Date: 2009-06-29 08:28:58 $
 ** $Log: davlibCommon.c,v $
-** Revision 1.18  2009/06/29 08:28:58  vatton
+** Revision 1.18  2009-06-29 08:28:58  vatton
 ** Fix Windows warnings
 ** Irene
 **

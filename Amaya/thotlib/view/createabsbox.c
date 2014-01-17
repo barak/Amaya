@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2009
+ *  (c) COPYRIGHT INRIA, 1996-2010
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -1280,7 +1280,8 @@ ThotBool CondPresentation (PtrCondition pCond, PtrElement pEl,
         {
           pSchP = PresentationSchema (pSS, pDoc);
           if (pSchP)
-            valcompt = CounterVal (pCond->CoCounter, pSS, pSchP, pElem, view);
+            valcompt = CounterVal (pCond->CoCounter, pSS, pSchP, pElem, view,
+				   pDoc);
         }
       if (pElem)
         switch (pCond->CoCondition)
@@ -1485,7 +1486,8 @@ ThotBool CondPresentation (PtrCondition pCond, PtrElement pEl,
                   /* on compte les ancetres ou freres successifs de ce type */
                   while (pAsc && !found)
                     {
-                      if ((pRule->PrCSSURL || pRule->PrCSSLine != 0) &&
+                      if (pRule &&
+			  (pRule->PrCSSURL || pRule->PrCSSLine != 0) &&
                           (TypeHasException (ExcHidden, pAsc->ElTypeNumber,
                                              pAsc->ElStructSchema) ||
                           (pAsc->ElStructSchema &&
@@ -1587,7 +1589,7 @@ ThotBool CondPresentation (PtrCondition pCond, PtrElement pEl,
             /* verifie si l'attribut est attache' a un element du
                type voulu */
             found = (pCond->CoTypeElem == AnyType+1 ||
-                     pElAttr->ElTypeNumber == pCond->CoTypeElem);
+                     (pElAttr && pElAttr->ElTypeNumber == pCond->CoTypeElem));
             if (!found)
               /* if the element type is a choice, check all options of the
                  choice */
@@ -4488,37 +4490,7 @@ static ThotBool ComputeVisib (PtrElement pEl, PtrDocument pDoc,
     else
       pAsc = pAsc->ElParent;
 
-  /* first, look at specific presentation rules attached ot the element */
   pSP = PresentationSchema (pEl->ElStructSchema, pDoc);
-  pRule = pEl->ElFirstPRule;
-  while (pRule)
-    /* apply a rule if it is related to the view */
-    {
-      if ((pRule->PrType == PtVisibility || pRule->PrType == PtDisplay)
-          && pRule->PrViewNum == viewSch)
-        {
-          if (pRule->PrSpecifAttr == 0)
-            /* this rule does not depend on an attribute */
-            pAttr = NULL;
-          else
-            /* get the attribute the rule depends on */
-            {
-              pAttr = pEl->ElFirstAttr;
-              stop = FALSE;
-              while (pAttr != NULL && !stop)
-                if (pAttr->AeAttrNum == pRule->PrSpecifAttr &&
-                    !strcmp (pAttr->AeAttrSSchema->SsName,
-                             pRule->PrSpecifAttrSSchema->SsName))
-                  stop = TRUE;
-                else
-                  pAttr = pAttr->AeNext;
-            }
-          // keep the right rule
-          CascadeVisibility (pRule, pSP, NULL, NULL);
-        }
-      pRule = pRule->PrNextPRule;
-    }
-
   /* look for visibility rules in the main presentation schema */
   pRule = GetRule (pRSpec, pRDef, pEl, NULL, pEl->ElStructSchema, pDoc);
   /* first rule to be applied */
@@ -4663,6 +4635,36 @@ static ThotBool ComputeVisib (PtrElement pEl, PtrDocument pDoc,
       cssUndisplay = ApplyVisibRuleAttr (pEl, pAttr, pEl, pDoc, vis,
                                          viewNb, &ok, FALSE);
       pAttr = pAttr->AeNext;	/* next attribute for the element */
+    }
+
+  /* finally, look at specific presentation rules attached to the element */
+  pRule = pEl->ElFirstPRule;
+  while (pRule)
+    /* apply a rule if it is related to the view */
+    {
+      if ((pRule->PrType == PtVisibility || pRule->PrType == PtDisplay)
+          && pRule->PrViewNum == viewSch)
+        {
+          if (pRule->PrSpecifAttr == 0)
+            /* this rule does not depend on an attribute */
+            pAttr = NULL;
+          else
+            /* get the attribute the rule depends on */
+            {
+              pAttr = pEl->ElFirstAttr;
+              stop = FALSE;
+              while (pAttr != NULL && !stop)
+                if (pAttr->AeAttrNum == pRule->PrSpecifAttr &&
+                    !strcmp (pAttr->AeAttrSSchema->SsName,
+                             pRule->PrSpecifAttrSSchema->SsName))
+                  stop = TRUE;
+                else
+                  pAttr = pAttr->AeNext;
+            }
+          // keep the right rule
+          CascadeVisibility (pRule, NULL, NULL, NULL);
+        }
+      pRule = pRule->PrNextPRule;
     }
 
   // apply the selected rule
@@ -5066,8 +5068,38 @@ static void GetRulesFromInheritedAttributes (PtrElement pEl,
 }
 
 /*----------------------------------------------------------------------
+  CounterRuleForElem
+  Generate in the file the CSS syntax of counting rules from schema pSchP
+  that are triggered by element pEl.
+  ----------------------------------------------------------------------*/
+static void CounterRuleForElem (FILE *fileDescriptor, PtrElement pEl,
+				PtrPSchema pSchP, PtrSSchema pSchS,
+				PtrDocument pDoc, int view)
+{
+  int       i, j;
+
+  for (i = 0; i < pSchP->PsNCounters; i++)
+    {
+      for (j = 0; j < pSchP->PsCounter[i].CnNItems; j++)
+	{
+	  if ((pSchP->PsCounter[i].CnItem[j].CiCntrOp == CntrSet ||
+	      pSchP->PsCounter[i].CnItem[j].CiCntrOp == CntrAdd) &&
+	      pSchP->PsCounter[i].CnItem[j].CiElemType == pEl->ElTypeNumber &&
+	      pSchS == pEl->ElStructSchema)
+	    {
+	      if (!pSchP->PsCounter[i].CnItem[j].CiCond ||
+		  CondPresentation (pSchP->PsCounter[i].CnItem[j].CiCond, pEl,
+				    NULL, NULL, NULL, view, pSchS, pDoc))
+		DisplayCounterRule (i, j, fileDescriptor, pEl, pSchP);
+	    }
+	}
+    }
+}
+
+/*----------------------------------------------------------------------
   ApplyPresRules applies all presentation rules to a new abstract box
-  if fileDescriptor is NULL or displays the origin of presentation rules.
+  if fileDescriptor is NULL, otherwise displays the origin of presentation
+  rules.
   ----------------------------------------------------------------------*/
 void ApplyPresRules (PtrElement pEl, PtrDocument pDoc,
                      DocViewNumber viewNb,
@@ -5108,7 +5140,7 @@ void ApplyPresRules (PtrElement pEl, PtrDocument pDoc,
       pRule = GetRule (pRSpec, pRDef, pEl, NULL, pSchS, pDoc);
       if (pRule)
         {
-        /* if its a rule that creates a presentation box, apply it */
+        /* if it's a rule that creates a presentation box, apply it */
         if (!ApplCrRule (pRule, pSchS, pSchP, NULL, pAbbReturn, viewNb, pDoc,
                          pEl, forward, lqueue, queue, pNewAbbox,
                          fileDescriptor))
@@ -5159,6 +5191,11 @@ void ApplyPresRules (PtrElement pEl, PtrDocument pDoc,
       while (pHd)
         {
           pSchPres = pHd->HdPSchema;
+	  if (fileDescriptor)
+	    /* check all counters defined in the P schema that may be affected
+	       by the element */
+	    CounterRuleForElem (fileDescriptor, pEl, pSchPres, pSchS, pDoc,
+				viewSch);
           /* look at the rules that apply to any element type in this
              P schema extension */
           pRule = pSchPres->PsElemPRule->ElemPres[AnyType];

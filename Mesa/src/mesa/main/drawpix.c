@@ -1,8 +1,8 @@
 /*
  * Mesa 3-D graphics library
- * Version:  7.0.3
+ * Version:  6.5
  *
- * Copyright (C) 1999-2008  Brian Paul   All Rights Reserved.
+ * Copyright (C) 1999-2006  Brian Paul   All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -341,11 +341,12 @@ _mesa_Bitmap( GLsizei width, GLsizei height,
    }
 
    if (ctx->RenderMode == GL_RENDER) {
-      /* Truncate, to satisfy conformance tests (matches SGI's OpenGL). */
-      const GLfloat epsilon = 0.0001;
-      GLint x = IFLOOR(ctx->Current.RasterPos[0] + epsilon - xorig);
-      GLint y = IFLOOR(ctx->Current.RasterPos[1] + epsilon - yorig);
-      ctx->Driver.Bitmap( ctx, x, y, width, height, &ctx->Unpack, bitmap );
+      if (bitmap) {
+         /* Truncate, to satisfy conformance tests (matches SGI's OpenGL). */
+         GLint x = IFLOOR(ctx->Current.RasterPos[0] - xorig);
+         GLint y = IFLOOR(ctx->Current.RasterPos[1] - yorig);
+         ctx->Driver.Bitmap( ctx, x, y, width, height, &ctx->Unpack, bitmap );
+      }
    }
 #if _HAVE_FULL_GL
    else if (ctx->RenderMode == GL_FEEDBACK) {

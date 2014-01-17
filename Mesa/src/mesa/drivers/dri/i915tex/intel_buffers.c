@@ -714,8 +714,7 @@ intel_wait_flips(struct intel_context *intel, GLuint batch_flags)
 			     BUFFER_BIT_FRONT_LEFT ? BUFFER_FRONT_LEFT :
 			     BUFFER_BACK_LEFT);
 
-   if (intel_fb->Base.Name == 0 && intel_rb &&
-       intel_rb->pf_pending == intel_fb->pf_seq) {
+   if (intel_fb->Base.Name == 0 && intel_rb->pf_pending == intel_fb->pf_seq) {
       GLint pf_pipes = intel_fb->pf_pipes;
       BATCH_LOCALS;
 
@@ -1020,11 +1019,16 @@ intel_draw_buffer(GLcontext * ctx, struct gl_framebuffer *fb)
    /*
     * How many color buffers are we drawing into?
     */
-   if (fb->_NumColorDrawBuffers[0] != 1) {
+   if (fb->_NumColorDrawBuffers[0] != 1
+#if 0
+       /* XXX FBO temporary - always use software rendering */
+       || 1
+#endif
+      ) {
       /* writing to 0 or 2 or 4 color buffers */
       /*_mesa_debug(ctx, "Software rendering\n");*/
       FALLBACK(intel, INTEL_FALLBACK_DRAW_BUFFER, GL_TRUE);
-      colorRegion = NULL;
+      front = 1;                /* might not have back color buffer */
    }
    else {
       /* draw to exactly one color buffer */
@@ -1033,29 +1037,29 @@ intel_draw_buffer(GLcontext * ctx, struct gl_framebuffer *fb)
       if (fb->_ColorDrawBufferMask[0] == BUFFER_BIT_FRONT_LEFT) {
          front = 1;
       }
+   }
 
-      /*
-       * Get the intel_renderbuffer for the colorbuffer we're drawing into.
-       * And set up cliprects.
-       */
-      if (fb->Name == 0) {
-	 /* drawing to window system buffer */
-	 if (front) {
-	    intelSetFrontClipRects(intel);
-	    colorRegion = intel_get_rb_region(fb, BUFFER_FRONT_LEFT);
-	 }
-	 else {
-	    intelSetBackClipRects(intel);
-	    colorRegion = intel_get_rb_region(fb, BUFFER_BACK_LEFT);
-	 }
+   /*
+    * Get the intel_renderbuffer for the colorbuffer we're drawing into.
+    * And set up cliprects.
+    */
+   if (fb->Name == 0) {
+      /* drawing to window system buffer */
+      if (front) {
+         intelSetFrontClipRects(intel);
+         colorRegion = intel_get_rb_region(fb, BUFFER_FRONT_LEFT);
       }
       else {
-	 /* drawing to user-created FBO */
-	 struct intel_renderbuffer *irb;
-	 intelSetRenderbufferClipRects(intel);
-	 irb = intel_renderbuffer(fb->_ColorDrawBuffers[0][0]);
-	 colorRegion = (irb && irb->region) ? irb->region : NULL;
+         intelSetBackClipRects(intel);
+         colorRegion = intel_get_rb_region(fb, BUFFER_BACK_LEFT);
       }
+   }
+   else {
+      /* drawing to user-created FBO */
+      struct intel_renderbuffer *irb;
+      intelSetRenderbufferClipRects(intel);
+      irb = intel_renderbuffer(fb->_ColorDrawBuffers[0][0]);
+      colorRegion = (irb && irb->region) ? irb->region : NULL;
    }
 
    /* Update culling direction which changes depending on the
@@ -1120,15 +1124,6 @@ intel_draw_buffer(GLcontext * ctx, struct gl_framebuffer *fb)
       ctx->Driver.Enable(ctx, GL_STENCIL_TEST, ctx->Stencil.Enabled);
    }
 
-   /*
-    * Update depth test state
-    */
-   if (ctx->Depth.Test && fb->Visual.depthBits > 0) {
-      ctx->Driver.Enable(ctx, GL_DEPTH_TEST, GL_TRUE);
-   }
-   else {
-      ctx->Driver.Enable(ctx, GL_DEPTH_TEST, GL_FALSE);
-   }
 
    /**
     ** Release old regions, reference new regions

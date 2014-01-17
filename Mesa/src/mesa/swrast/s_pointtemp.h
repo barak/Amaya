@@ -1,8 +1,8 @@
 /*
  * Mesa 3-D graphics library
- * Version:  7.0.3
+ * Version:  6.5.3
  *
- * Copyright (C) 1999-2008  Brian Paul   All Rights Reserved.
+ * Copyright (C) 1999-2007  Brian Paul   All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -105,7 +105,6 @@ NAME ( GLcontext *ctx, const SWvertex *vert )
     */
    span->interpMask = SPAN_FOG;
    span->arrayMask = SPAN_XY | SPAN_Z;
-   span->facing = swrast->PointLineFacing;
    span->attrStart[FRAG_ATTRIB_FOGC][0] = vert->attrib[FRAG_ATTRIB_FOGC][0];
    span->attrStepX[FRAG_ATTRIB_FOGC][0] = 0.0;
    span->attrStepY[FRAG_ATTRIB_FOGC][0] = 0.0;
@@ -218,9 +217,9 @@ NAME ( GLcontext *ctx, const SWvertex *vert )
       }
       else {
          /* even size */
-         xmin = (GLint) (vert->win[0] + 0.5) - iRadius;
+         xmin = (GLint) vert->win[0] - iRadius + 1;
          xmax = xmin + iSize - 1;
-         ymin = (GLint) (vert->win[1] + 0.5) - iRadius;
+         ymin = (GLint) vert->win[1] - iRadius + 1;
          ymax = ymin + iSize - 1;
       }
 #endif /*SMOOTH*/

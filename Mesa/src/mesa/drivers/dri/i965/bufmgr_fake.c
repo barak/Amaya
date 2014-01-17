@@ -169,7 +169,7 @@ static GLboolean alloc_from_pool( struct intel_context *intel,
    if (!block)
       return GL_FALSE;
 
-   sz = ALIGN(buf->size, align);
+   sz = (buf->size + align-1) & ~(align-1);
 
    block->mem = mmAllocMem(pool->heap, 
 			   sz, 
@@ -703,9 +703,6 @@ void bmDeleteBuffers(struct intel_context *intel, unsigned n, struct buffer **bu
 
 	 if (buf && buf->block)
 	    free_block(intel, buf->block);
-
-	 if (buf && buf->backing_store)
-	    free_backing_store(intel, buf);
 
 	 if (buf) 
 	    free(buf);	 

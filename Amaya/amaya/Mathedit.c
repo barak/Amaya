@@ -3614,6 +3614,7 @@ void CreateMOVERHAT (Document document, View view)
   ----------------------------------------------------------------------*/
 void CreateMOVERTILDE (Document document, View view)
 {
+  /* Unicode Character 'TILDE' (U+007E) */
   CreateMathConstruct (document, view,  59, 'T');
 }
 
@@ -3710,7 +3711,9 @@ void CreateMABS (Document document, View view)
   ----------------------------------------------------------------------*/
 void CreateMNORM (Document document, View view)
 {
-  CreateMathConstruct (document, view,  40,8741,8741, FALSE);}
+  /* Unicode Character 'DOUBLE VERTICAL LINE' (U+2016) */
+  CreateMathConstruct (document, view,  40, 0x2016, 0x2016, FALSE);
+}
 /*----------------------------------------------------------------------
   CreateMALEPHSUB
   ----------------------------------------------------------------------*/
@@ -3972,7 +3975,9 @@ void CreateMEQUIVALENTBINARY (Document document, View view)
   ----------------------------------------------------------------------*/
 void CreateMEQUIVALENTUNDER (Document document, View view)
 {
-  CreateMathConstruct (document, view,  33, TRUE, MathML_EL_MO, '~');}
+  /* Unicode Character 'TILDE OPERATOR' (U+223C) */
+  CreateMathConstruct (document, view,  33, TRUE, MathML_EL_MO, 0x223C);
+}
 /*----------------------------------------------------------------------
   CreateMEULERGAMMA
   ----------------------------------------------------------------------*/

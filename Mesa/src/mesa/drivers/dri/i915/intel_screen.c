@@ -53,7 +53,7 @@ DRI_CONF_BEGIN
     DRI_CONF_SECTION_END
     DRI_CONF_SECTION_QUALITY
        DRI_CONF_FORCE_S3TC_ENABLE(false)
-       DRI_CONF_ALLOW_LARGE_TEXTURES(2)
+       DRI_CONF_ALLOW_LARGE_TEXTURES(1)
       DRI_CONF_SECTION_END
 DRI_CONF_END;
 const GLuint __driNConfigOptions = 4;
@@ -511,14 +511,9 @@ static GLboolean intelCreateContext( const __GLcontextModes *mesaVis,
 				sharedContextPrivate );
 
    case PCI_CHIP_I915_G:
-   case PCI_CHIP_E7221_G: 
    case PCI_CHIP_I915_GM:
    case PCI_CHIP_I945_G:
    case PCI_CHIP_I945_GM:
-   case PCI_CHIP_I945_GME:
-   case PCI_CHIP_G33_G:
-   case PCI_CHIP_Q35_G:
-   case PCI_CHIP_Q33_G:
       return i915CreateContext( mesaVis, driContextPriv, 
 			       sharedContextPrivate );
  

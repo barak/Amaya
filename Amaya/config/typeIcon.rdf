@@ -5,7 +5,7 @@
 
 <rdf:Description rdf:about="http://www.w3.org/2001/10/typeIcon#">
  <rdfs:comment>A namespace for describing associations between classes and graphical objects</rdfs:comment>
- <rdfs:comment>$Revision: 1.3 $ $Date: 2002/04/26 13:56:23 $</rdfs:comment>
+ <rdfs:comment>$Revision: 1.3 $ $Date: 2002-04-26 13:56:23 $</rdfs:comment>
  <rdfs:seeAlso rdf:resource="http://www.w3.org/Annotea"/>
 </rdf:Description>
 

@@ -454,12 +454,7 @@ static void i915SetTexImages( i915ContextPtr i915,
 
    case MESA_FORMAT_Z16:
       t->intel.texelBytes = 2;
-      if (tObj->DepthMode == GL_ALPHA)
-	  textureFormat = (MAPSURF_16BIT | MT_16BIT_A16);
-      else if (tObj->DepthMode == GL_INTENSITY)
-	  textureFormat = (MAPSURF_16BIT | MT_16BIT_I16);
-      else
-	  textureFormat = (MAPSURF_16BIT | MT_16BIT_L16);
+      textureFormat = (MAPSURF_16BIT | MT_16BIT_L16);
       break;
 
    case MESA_FORMAT_RGBA_DXT1:
@@ -496,19 +491,12 @@ static void i915SetTexImages( i915ContextPtr i915,
       abort();
    }
 
-   switch (i915->intel.intelScreen->deviceID) {
-   case PCI_CHIP_I945_G:
-   case PCI_CHIP_I945_GM:
-   case PCI_CHIP_I945_GME:
-   case PCI_CHIP_G33_G:
-   case PCI_CHIP_Q33_G:
-   case PCI_CHIP_Q35_G:
-       i945LayoutTextureImages( i915, tObj );
-       break;
-   default:
-       i915LayoutTextureImages( i915, tObj );
-       break;
-   }
+
+   if (i915->intel.intelScreen->deviceID == PCI_CHIP_I945_G ||
+       i915->intel.intelScreen->deviceID == PCI_CHIP_I945_GM)
+      i945LayoutTextureImages( i915, tObj );	 
+   else
+      i915LayoutTextureImages( i915, tObj );
 
    t->Setup[I915_TEXREG_MS3] = 
       (((tObj->Image[0][t->intel.base.firstLevel]->Height - 1) << MS3_HEIGHT_SHIFT) |
@@ -738,16 +726,10 @@ static GLboolean enable_tex_common( GLcontext *ctx, GLuint unit )
    }
 
    /* Fallback if there's a texture border */
-   if ( tObj->Image[0][tObj->BaseLevel]->Border > 0 ||
-        ((tObj->Image[0][tObj->BaseLevel]->_BaseFormat == GL_DEPTH_COMPONENT) &&
-         ((tObj->WrapS == GL_CLAMP_TO_BORDER) ||
-          (tObj->WrapT == GL_CLAMP_TO_BORDER)))) {
+   if ( tObj->Image[0][tObj->BaseLevel]->Border > 0 ) {
       return GL_FALSE;
    }
 
-   if (tObj->Target == GL_TEXTURE_1D &&
-       tObj->CompareMode == GL_COMPARE_R_TO_TEXTURE_ARB)
-      return GL_FALSE;
 
    /* Update state if this is a different texture object to last
     * time.

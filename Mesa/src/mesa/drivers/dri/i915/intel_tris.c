@@ -202,19 +202,12 @@ static void intel_wpos_triangle( intelContextPtr intel,
 {
    GLuint offset = intel->wpos_offset;
    GLuint size = intel->wpos_size;
-   GLfloat *v0_wpos = (GLfloat *)((char *)v0 + offset);
-   GLfloat *v1_wpos = (GLfloat *)((char *)v1 + offset);
-   GLfloat *v2_wpos = (GLfloat *)((char *)v2 + offset);
+   
+   __memcpy( ((char *)v0) + offset, v0, size );
+   __memcpy( ((char *)v1) + offset, v1, size );
+   __memcpy( ((char *)v2) + offset, v2, size );
 
-   __memcpy(v0_wpos, v0, size);
-   __memcpy(v1_wpos, v1, size);
-   __memcpy(v2_wpos, v2, size);
-
-   v0_wpos[1] = -v0_wpos[1] + intel->driDrawable->h;
-   v1_wpos[1] = -v1_wpos[1] + intel->driDrawable->h;
-   v2_wpos[1] = -v2_wpos[1] + intel->driDrawable->h;
-
-   intel_draw_triangle(intel, v0, v1, v2);
+   intel_draw_triangle( intel, v0, v1, v2 );
 }
 
 
@@ -224,14 +217,9 @@ static void intel_wpos_line( intelContextPtr intel,
 {
    GLuint offset = intel->wpos_offset;
    GLuint size = intel->wpos_size;
-   GLfloat *v0_wpos = (GLfloat *)((char *)v0 + offset);
-   GLfloat *v1_wpos = (GLfloat *)((char *)v1 + offset);
 
-   __memcpy(v0_wpos, v0, size);
-   __memcpy(v1_wpos, v1, size);
-
-   v0_wpos[1] = -v0_wpos[1] + intel->driDrawable->h;
-   v1_wpos[1] = -v1_wpos[1] + intel->driDrawable->h;
+   __memcpy( ((char *)v0) + offset, v0, size );
+   __memcpy( ((char *)v1) + offset, v1, size );
 
    intel_draw_line( intel, v0, v1 );
 }
@@ -242,10 +230,8 @@ static void intel_wpos_point( intelContextPtr intel,
 {
    GLuint offset = intel->wpos_offset;
    GLuint size = intel->wpos_size;
-   GLfloat *v0_wpos = (GLfloat *)((char *)v0 + offset);
 
-   __memcpy(v0_wpos, v0, size);
-   v0_wpos[1] = -v0_wpos[1] + intel->driDrawable->h;
+   __memcpy( ((char *)v0) + offset, v0, size );
 
    intel_draw_point( intel, v0 );
 }

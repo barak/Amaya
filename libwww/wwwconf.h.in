@@ -22,12 +22,6 @@
 /* Define this if you have the external variable 'altzone' */
 #undef HAVE_ALTZONE
 
-/* Define to 1 if you have the <appkit/appkit.h> header file. */
-#undef HAVE_APPKIT_APPKIT_H
-
-/* Define to 1 if you have the <appkit.h> header file. */
-#undef HAVE_APPKIT_H
-
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #undef HAVE_ARPA_INET_H
 
@@ -72,6 +66,9 @@
 /* Define this if directory entries have inodes. */
 #undef HAVE_DIRENT_INO
 
+/* Define to 1 if you have the `dirfd' function. */
+#undef HAVE_DIRFD
+
 /* Define to 1 if you have the <dir.h> header file. */
 #undef HAVE_DIR_H
 
@@ -95,6 +92,9 @@
 
 /* Define to 1 if you have the <fcntl.h> header file. */
 #undef HAVE_FCNTL_H
+
+/* Define to 1 if you have the `fpathconf' function. */
+#undef HAVE_FPATHCONF
 
 /* Define to 1 if you have the `getcwd' function. */
 #undef HAVE_GETCWD

@@ -1,6 +1,6 @@
 /*
  * Mesa 3-D graphics library
- * Version:  7.0.2
+ * Version:  6.5.3
  *
  * Copyright (C) 1999-2007  Brian Paul   All Rights Reserved.
  *
@@ -71,20 +71,13 @@ regions_overlap(GLint srcx, GLint srcy,
    }
    else {
       /* add one pixel of slop when zooming, just to be safe */
-      if (srcx > (dstx + ((zoomX > 0.0F) ? (width * zoomX + 1.0F) : 0.0F))) {
-         /* src is completely right of dest */
-         return GL_FALSE;
-      }
-      else if (srcx + width + 1.0F < dstx + ((zoomX > 0.0F) ? 0.0F : (width * zoomX))) {
-         /* src is completely left of dest */
+      if ((srcx > dstx + (width * zoomX) + 1) || (srcx + width + 1 < dstx)) {
          return GL_FALSE;
       }
       else if ((srcy < dsty) && (srcy + height < dsty + (height * zoomY))) {
-         /* src is completely below dest */
          return GL_FALSE;
       }
       else if ((srcy > dsty) && (srcy + height > dsty + (height * zoomY))) {
-         /* src is completely above dest */
          return GL_FALSE;
       }
       else {
@@ -101,6 +94,7 @@ static void
 copy_conv_rgba_pixels(GLcontext *ctx, GLint srcx, GLint srcy,
                       GLint width, GLint height, GLint destx, GLint desty)
 {
+   SWcontext *swrast = SWRAST_CONTEXT(ctx);
    GLint row;
    const GLboolean zoom = ctx->Pixel.ZoomX != 1.0F || ctx->Pixel.ZoomY != 1.0F;
    const GLbitfield transferOps = ctx->_ImageTransferState;
@@ -113,7 +107,7 @@ copy_conv_rgba_pixels(GLcontext *ctx, GLint srcx, GLint srcy,
 
    if (ctx->Depth.Test)
       _swrast_span_default_z(ctx, &span);
-   if (SPAN_NEEDS_FOG(ctx))
+   if (swrast->_FogEnabled)
       _swrast_span_default_fog(ctx, &span);
    _swrast_span_default_secondary_color(ctx, &span);
 
@@ -200,6 +194,7 @@ static void
 copy_rgba_pixels(GLcontext *ctx, GLint srcx, GLint srcy,
                  GLint width, GLint height, GLint destx, GLint desty)
 {
+   SWcontext *swrast = SWRAST_CONTEXT(ctx);
    GLfloat *tmpImage, *p;
    GLint sy, dy, stepy, row;
    const GLboolean zoom = ctx->Pixel.ZoomX != 1.0F || ctx->Pixel.ZoomY != 1.0F;
@@ -247,7 +242,7 @@ copy_rgba_pixels(GLcontext *ctx, GLint srcx, GLint srcy,
    INIT_SPAN(span, GL_BITMAP, 0, 0, SPAN_RGBA);
    if (ctx->Depth.Test)
       _swrast_span_default_z(ctx, &span);
-   if (SPAN_NEEDS_FOG(ctx))
+   if (swrast->_FogEnabled)
       _swrast_span_default_fog(ctx, &span);
    _swrast_span_default_secondary_color(ctx, &span);
 
@@ -318,6 +313,7 @@ copy_ci_pixels( GLcontext *ctx, GLint srcx, GLint srcy,
                 GLint width, GLint height,
                 GLint destx, GLint desty )
 {
+   SWcontext *swrast = SWRAST_CONTEXT(ctx);
    GLuint *tmpImage,*p;
    GLint sy, dy, stepy;
    GLint j;
@@ -356,7 +352,7 @@ copy_ci_pixels( GLcontext *ctx, GLint srcx, GLint srcy,
 
    if (ctx->Depth.Test)
       _swrast_span_default_z(ctx, &span);
-   if (SPAN_NEEDS_FOG(ctx))
+   if (swrast->_FogEnabled)
       _swrast_span_default_fog(ctx, &span);
 
    if (overlapping) {
@@ -454,6 +450,7 @@ copy_depth_pixels( GLcontext *ctx, GLint srcx, GLint srcy,
                    GLint width, GLint height,
                    GLint destx, GLint desty )
 {
+   SWcontext *swrast = SWRAST_CONTEXT(ctx);
    struct gl_framebuffer *fb = ctx->ReadBuffer;
    struct gl_renderbuffer *readRb = fb->_DepthBuffer;
    GLfloat *p, *tmpImage;
@@ -494,7 +491,7 @@ copy_depth_pixels( GLcontext *ctx, GLint srcx, GLint srcy,
 
    _swrast_span_default_color(ctx, &span);
    _swrast_span_default_secondary_color(ctx, &span);
-   if (SPAN_NEEDS_FOG(ctx))
+   if (swrast->_FogEnabled)
       _swrast_span_default_fog(ctx, &span);
 
    if (overlapping) {

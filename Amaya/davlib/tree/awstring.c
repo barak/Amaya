@@ -7,12 +7,12 @@
  **
  ** Date : 25 / Oct / 2001
  **
- ** $Id: awstring.c,v 1.3 2008/05/07 13:49:08 kia Exp $
- ** $Date: 2008/05/07 13:49:08 $
+ ** $Id: awstring.c,v 1.3 2008-05-07 13:49:08 kia Exp $
+ ** $Date: 2008-05-07 13:49:08 $
  ** $Author: kia $
  ** $Revision: 1.3 $
  ** $Log: awstring.c,v $
- ** Revision 1.3  2008/05/07 13:49:08  kia
+ ** Revision 1.3  2008-05-07 13:49:08  kia
  ** char* => const char*
  ** (Regis patches + many many others)
  **

@@ -7,12 +7,12 @@
  **
  ** Date : 26 / Oct / 2001
  **
- ** $Id: awtree.h,v 1.2 2002/06/17 10:04:48 cheyroul Exp $
- ** $Date: 2002/06/17 10:04:48 $
+ ** $Id: awtree.h,v 1.2 2002-06-17 10:04:48 cheyroul Exp $
+ ** $Date: 2002-06-17 10:04:48 $
  ** $Author: cheyroul $
  ** $Revision: 1.2 $
  ** $Log: awtree.h,v $
- ** Revision 1.2  2002/06/17 10:04:48  cheyroul
+ ** Revision 1.2  2002-06-17 10:04:48  cheyroul
  ** Win32 : calloc and free bad re-prototyping correction
  **
  ** Revision 1.1  2002/05/31 10:48:47  kirschpi

@@ -5,7 +5,7 @@
 
 /*
  * Mesa 3-D graphics library
- * Version:  7.0.3
+ * Version:  7.0.1
  *
  * Copyright (C) 1999-2007  Brian Paul   All Rights Reserved.
  *
@@ -57,7 +57,6 @@ _mesa_PointSize( GLfloat size )
 
    FLUSH_VERTICES(ctx, _NEW_POINT);
    ctx->Point.Size = size;
-   /* _Size is only used for non-attenuated path */
    ctx->Point._Size = CLAMP(ctx->Point.Size,
 			    ctx->Point.MinSize,
 			    ctx->Point.MaxSize);
@@ -124,15 +123,9 @@ _mesa_PointParameterfvEXT( GLenum pname, const GLfloat *params)
 	       return;
 	    FLUSH_VERTICES(ctx, _NEW_POINT);
             COPY_3V(ctx->Point.Params, params);
-
             ctx->Point._Attenuated = (ctx->Point.Params[0] != 1.0 ||
                                       ctx->Point.Params[1] != 0.0 ||
                                       ctx->Point.Params[2] != 0.0);
-
-            if (ctx->Point._Attenuated)
-               ctx->_TriangleCaps |= DD_POINT_ATTEN;
-            else
-               ctx->_TriangleCaps &= ~DD_POINT_ATTEN;
          }
          else {
             _mesa_error(ctx, GL_INVALID_ENUM,
@@ -151,10 +144,6 @@ _mesa_PointParameterfvEXT( GLenum pname, const GLfloat *params)
                return;
             FLUSH_VERTICES(ctx, _NEW_POINT);
             ctx->Point.MinSize = params[0];
-            /* re-clamp _Size */
-            ctx->Point._Size = CLAMP(ctx->Point.Size,
-                                     ctx->Point.MinSize,
-                                     ctx->Point.MaxSize);
          }
          else {
             _mesa_error(ctx, GL_INVALID_ENUM,
@@ -173,10 +162,6 @@ _mesa_PointParameterfvEXT( GLenum pname, const GLfloat *params)
                return;
             FLUSH_VERTICES(ctx, _NEW_POINT);
             ctx->Point.MaxSize = params[0];
-            /* re-clamp _Size */
-            ctx->Point._Size = CLAMP(ctx->Point.Size,
-                                     ctx->Point.MinSize,
-                                     ctx->Point.MaxSize);
          }
          else {
             _mesa_error(ctx, GL_INVALID_ENUM,

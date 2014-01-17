@@ -245,11 +245,6 @@ vbo_exec_DrawArrays(GLenum mode, GLint start, GLsizei count)
    if (ctx->NewState)
       _mesa_update_state( ctx );
       
-   if (!vbo_validate_shaders(ctx)) {
-      _mesa_error(ctx, GL_INVALID_OPERATION, "glDrawArrays(bad shader)");
-      return;
-   }
-
    bind_arrays( ctx );
 
    prim[0].begin = 1;
@@ -284,11 +279,6 @@ vbo_exec_DrawRangeElements(GLenum mode,
 
    if (ctx->NewState)
       _mesa_update_state( ctx );
-
-   if (!vbo_validate_shaders(ctx)) {
-      _mesa_error(ctx, GL_INVALID_OPERATION, "glDrawRangeElements(bad shader)");
-      return;
-   }
 
    bind_arrays( ctx );
 
@@ -349,11 +339,6 @@ vbo_exec_DrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *ind
 
    if (!_mesa_validate_DrawElements( ctx, mode, count, type, indices ))
       return;
-
-   if (!vbo_validate_shaders(ctx)) {
-      _mesa_error(ctx, GL_INVALID_OPERATION, "glDrawElements(bad shader)");
-      return;
-   }
 
    if (ctx->Array.ElementArrayBufferObj->Name) {
       const GLvoid *map = ctx->Driver.MapBuffer(ctx,

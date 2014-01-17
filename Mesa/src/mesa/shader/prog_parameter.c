@@ -40,7 +40,8 @@
 struct gl_program_parameter_list *
 _mesa_new_parameter_list(void)
 {
-   return CALLOC_STRUCT(gl_program_parameter_list);
+   return (struct gl_program_parameter_list *)
+      _mesa_calloc(sizeof(struct gl_program_parameter_list));
 }
 
 
@@ -383,7 +384,7 @@ sizeof_state_reference(const GLint *stateTokens)
  *    PARAM ambient = state.material.front.ambient;
  *
  * \param paramList  the parameter list
- * \param stateTokens  an array of 5 (STATE_LENGTH) state tokens
+ * \param state  an array of 6 (STATE_LENGTH) state tokens
  * \return index of the new parameter.
  */
 GLint

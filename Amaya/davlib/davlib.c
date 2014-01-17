@@ -18,10 +18,10 @@
  **
  ** Date : April / 2002
  **
- ** $Id: davlib.c,v 1.21 2009/06/10 10:57:23 vatton Exp $
- ** $Date: 2009/06/10 10:57:23 $
+ ** $Id: davlib.c,v 1.21 2009-06-10 10:57:23 vatton Exp $
+ ** $Date: 2009-06-10 10:57:23 $
  ** $Log: davlib.c,v $
- ** Revision 1.21  2009/06/10 10:57:23  vatton
+ ** Revision 1.21  2009-06-10 10:57:23  vatton
  ** Change the management of Templates list
  ** + Implementation of a new WebDAV list of sites
  ** + Fix problems with lock/unlock status

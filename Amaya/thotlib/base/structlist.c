@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA, 1996-2009
+ *  (c) COPYRIGHT INRIA, 1996-2010
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -2837,6 +2837,9 @@ static void wrfontstyle (PtrPRule pR, FILE *fileDescriptor)
           case 'g':
             fprintf (fileDescriptor, "LowerGreek");
             break;
+          case 'G':
+            fprintf (fileDescriptor, "UpperGreek");
+            break;
           case 'a':
             fprintf (fileDescriptor, "LowerLatin");
             break;
@@ -3359,6 +3362,32 @@ static void wrCondition (PtrCondition pCond, FILE *fileDescriptor)
 }
 
 /*----------------------------------------------------------------------
+  wrAllConditions
+  ----------------------------------------------------------------------*/
+static void wrAllConditions (PtrCondition pCond,  FILE *fileDescriptor)
+{
+  if (pCond)
+    {
+      if (pCond->CoCondition == PcDefaultCond)
+	fprintf (fileDescriptor, "OTHERWISE ");
+      else
+	{
+	  fprintf (fileDescriptor, "IF ");
+	  wrCondition (pCond, fileDescriptor);
+	}
+      pCond = pCond->CoNextCondition;
+      while (pCond != NULL)
+	{
+	  if (!pCond->CoChangeElem)
+	    fprintf (fileDescriptor, "AND ");
+	  wrCondition (pCond, fileDescriptor);
+	  pCond = pCond->CoNextCondition;
+	}
+    }
+}
+
+
+/*----------------------------------------------------------------------
   wrFonctPres ecrit au terminal la fonction de presentation       
   contenue dans la regle pointee par pR.                  
   ----------------------------------------------------------------------*/
@@ -3541,8 +3570,6 @@ static void wrjustif (PtrPRule pR, FILE *fileDescriptor)
   ----------------------------------------------------------------------*/
 static void wrprules (PtrPRule RP, FILE *fileDescriptor, PtrPSchema pPSch)
 {
-  PtrCondition        pCond;
-
   while (RP)
     {
       /* display a presentation rule */
@@ -3553,25 +3580,7 @@ static void wrprules (PtrPRule RP, FILE *fileDescriptor, PtrPSchema pPSch)
           fprintf (fileDescriptor, pSc1->PsView[RP->PrViewNum - 1]);
           fprintf (fileDescriptor, " ");
         }
-      if (RP->PrCond != NULL)
-        {
-          pCond = RP->PrCond;
-          if (pCond->CoCondition == PcDefaultCond)
-            fprintf (fileDescriptor, "OTHERWISE ");
-          else
-            {
-              fprintf (fileDescriptor, "IF ");
-              wrCondition (pCond, fileDescriptor);
-            }
-          pCond = pCond->CoNextCondition;
-          while (pCond != NULL)
-            {
-              if (!pCond->CoChangeElem)
-                fprintf (fileDescriptor, "AND ");
-              wrCondition (pCond, fileDescriptor);
-              pCond = pCond->CoNextCondition;
-            }
-        }
+      wrAllConditions (RP->PrCond, fileDescriptor);
       switch (RP->PrType)
         {
         case PtVisibility:
@@ -4107,6 +4116,9 @@ void TtaListStyleSchemas (Document document, FILE *fileDescriptor)
                                   wrnumber (pItem->ViConstant, fileDescriptor);
                                   break;
                                 case VarCounter:
+                                  fprintf (fileDescriptor, " Cntr");
+                                  wrnumber (pItem->ViCounter, fileDescriptor);
+				  break;
                                 case VarDate:
                                 case VarFDate:
                                 case VarDirName:
@@ -4334,6 +4346,63 @@ void TtaListStyleSchemas (Document document, FILE *fileDescriptor)
 }
 
 /*----------------------------------------------------------------------
+  DisplayCounterRule displays an item of a counter in the CSS format.
+  ----------------------------------------------------------------------*/
+void DisplayCounterRule (int counter, int item, FILE *fileDescriptor,
+			 PtrElement pEl, PtrPSchema pSchP)
+{
+  CntrItem        *CntItem;
+  char            *name;
+  int              l;
+
+  CntItem = &pSchP->PsCounter[counter].CnItem[item];
+  /* if there is no number for the source line, don't do anything */
+  if (CntItem->CiCSSLine == 0)
+    return;
+  l = 0;
+  fprintf (fileDescriptor, "@");
+  if (CntItem->CiCntrOp == CntrSet)
+    {
+      fprintf (fileDescriptor, "counter-reset: ");
+      l += 15;
+    }
+  else if (CntItem->CiCntrOp == CntrAdd)
+    {
+      fprintf (fileDescriptor, "counter-increment: ");
+      l += 19;
+    }
+  name = pSchP->PsConstant[pSchP->PsCounter[counter].CnNameIndx-1].PdString;
+  fprintf (fileDescriptor, name);
+  l += strlen (name);
+  if ((CntItem->CiCntrOp == CntrAdd && CntItem->CiParamValue != 1) ||
+      (CntItem->CiCntrOp == CntrSet && CntItem->CiParamValue != 0))
+    {
+      fprintf (fileDescriptor, " %d", CntItem->CiParamValue);
+      l += 2;
+      if (CntItem->CiParamValue > 9)
+	l++;
+      if (CntItem->CiParamValue > 99)
+	l++;
+      if (CntItem->CiParamValue > 999)
+	l++;
+    }
+  fprintf (fileDescriptor, "; ");
+  l += 2;
+  while (l < 30)
+    {
+      fprintf (fileDescriptor, " ");
+      l++;
+    }
+
+  if (CntItem->CiCSSURL)
+    fprintf (fileDescriptor, "line %d, file %s\n", CntItem->CiCSSLine,
+             CntItem->CiCSSURL);
+  else
+    fprintf (fileDescriptor, "line %d, style element\n", CntItem->CiCSSLine);
+  DisplayedRuleCounter++;
+}
+
+/*----------------------------------------------------------------------
   DisplayPRule displays the presentation rule in the CSS format.
   ----------------------------------------------------------------------*/
 void DisplayPRule (PtrPRule rule, FILE *fileDescriptor,
@@ -4393,7 +4462,7 @@ void DisplayPRule (PtrPRule rule, FILE *fileDescriptor,
               else if (pSchP->PsConstant[item->ViConstant - 1].PdType == tt_Picture)
                 {
                   fprintf (fileDescriptor, " url(\"");
-                  l += 8;
+                  l += 7;
                   if (ptr)
                     {
                       fprintf (fileDescriptor, "%s", ptr);
@@ -4403,18 +4472,95 @@ void DisplayPRule (PtrPRule rule, FILE *fileDescriptor,
                 }
               break;
             case VarCounter:
-              fprintf (fileDescriptor, " counter(Cnt%d)", pSchP->PsCounter[item->ViCounter - 1].CnNItems);
-              l += 14;
+	      if (pSchP->PsCounter[item->ViCounter - 1].CnNameIndx == 0)
+		{
+                   fprintf (fileDescriptor, " counter(Cnt%d", item->ViCounter);
+		   l += 13;
+                   if (item->ViCounter > 9)
+		     l++;
+                   if (item->ViCounter > 99)
+		     l++;
+                   if (item->ViCounter > 999)
+		     l++;
+		}
+	      else
+		{
+		  fprintf (fileDescriptor, " counter(%s",
+			   pSchP->PsConstant[pSchP->PsCounter[item->ViCounter-1].CnNameIndx-1].PdString);
+		  l+= 9;
+		  l+= strlen(pSchP->PsConstant[pSchP->PsCounter[item->ViCounter-1].CnNameIndx-1].PdString);
+		
+		}
+	      if (item->ViStyle != CntDecimal)
+		{
+		  fprintf (fileDescriptor, ", ");
+		  l+= 2;
+		  switch (item->ViStyle)
+		    {
+		    case CntDisc:
+		      fprintf (fileDescriptor, "disc");
+		      l+= 4;
+		      break;
+		    case CntCircle:
+		      fprintf (fileDescriptor, "circle");
+		      l+= 6;
+		      break;
+		    case CntSquare:
+		      fprintf (fileDescriptor, "square");
+		      l+= 6;
+		      break;
+		    case CntDecimal:
+		      fprintf (fileDescriptor, "decimal");
+		      l+= 7;
+		      break;
+		    case CntZLDecimal:
+		      fprintf (fileDescriptor, "decimal-leading-zero");
+		      l+= 20;
+		      break;
+		    case CntLRoman:
+		      fprintf (fileDescriptor, "lower-roman");
+		      l+= 11;
+		      break;
+		    case CntURoman:
+		      fprintf (fileDescriptor, "upper-roman");
+		      l+= 11;
+		      break;
+		    case CntLGreek:
+		      fprintf (fileDescriptor, "lower-greek");
+		      l+= 11;
+		      break;
+		    case CntUGreek:
+		      fprintf (fileDescriptor, "upper-greek");
+		      l+= 11;
+		      break;
+		    case CntLowercase:
+		      fprintf (fileDescriptor, "lower-latin");
+		      l+= 11;
+		      break;
+		    case CntUppercase:
+		      fprintf (fileDescriptor, "upper-latin"); 
+		      l+= 11;
+		      break;
+		    case CntNone:
+		      fprintf (fileDescriptor, "none");
+		      l+= 4;
+		      break;
+		    }
+		}
+	      fprintf (fileDescriptor, ")");
+              l++;
               break;
             case VarAttrValue:
               fprintf (fileDescriptor, " attr(%s)", pSchP->PsSSchema->SsAttribute->TtAttr[item->ViAttr - 1]->AttrName);
+	      l = l + 7 + strlen(pSchP->PsSSchema->SsAttribute->TtAttr[item->ViAttr - 1]->AttrName);
               break;
             case VarNamedAttrValue:
               ptr = pSchP->PsConstant[item->ViConstant - 1].PdString;
-              fprintf (fileDescriptor, " attr(");
               if (ptr)
-                fprintf (fileDescriptor, "%s", ptr);
-              fprintf (fileDescriptor, ")");
+		{
+		  fprintf (fileDescriptor, " attr(%s)", ptr);
+		  l = l + 7 + strlen(ptr);
+		}
               break;
             default:
               break;
@@ -4473,11 +4619,11 @@ int TtaListStyleOfCurrentElement (Document document, FILE *fileDescriptor)
   else if (LoadedDocument[document - 1] == NULL)
     TtaError (ERR_invalid_document_parameter);
   else
-    /* parametre document correct */
     {
       pDoc = LoadedDocument[document - 1];
       TtaGiveFirstSelectedElement (document, &El, &f, &l);
       pEl = (PtrElement) El;
+      /* if it's a leaf, get the rules for the parent element instead */
       if (pEl && pEl->ElTerminal &&
           (pEl->ElLeafType == LtText ||
            pEl->ElLeafType == LtGraphics ||
@@ -4486,7 +4632,7 @@ int TtaListStyleOfCurrentElement (Document document, FILE *fileDescriptor)
            pEl->ElLeafType == LtSymbol ||
            pEl->ElLeafType == LtPicture))
         pEl = pEl->ElParent;
-
+      /* if element is hidden, get the rules for the parent element instead */
       while (pEl && TypeHasException (ExcHidden, pEl->ElTypeNumber,
                                       pEl->ElStructSchema))
         pEl = pEl->ElParent;
@@ -4497,10 +4643,11 @@ int TtaListStyleOfCurrentElement (Document document, FILE *fileDescriptor)
           if (pSchP)
             {
               pRSpec = pSchP->PsElemPRule->ElemPres[index - 1];
-              /* premiere regle de presentation par defaut */
+              /* first default presentation rule */
               pRDef = pSchP->PsFirstDefaultPRule;
               pAb = pEl->ElAbstractBox[0];
               pNew = pAb;
+	      /* get the presentation rules that apply to this element */
               ApplyPresRules (pEl, pDoc, 1, viewSch, pSchS, pSchP,
                               &pRSpec, &pRDef, &pAb, FALSE, &lqueue, NULL,
                               pNew, NULL, fileDescriptor, FALSE);

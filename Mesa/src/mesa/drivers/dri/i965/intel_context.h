@@ -183,8 +183,12 @@ struct intel_context
 
    GLubyte clear_chan[4];
    GLuint ClearColor;
+   GLuint ClearDepth;
 
+   GLfloat depth_scale;
    GLfloat polygon_offset_scale; /* dependent on depth_scale, bpp */
+   GLuint depth_clear_mask;
+   GLuint stencil_clear_mask;
 
    GLboolean hw_stencil;
    GLboolean hw_stipple;
@@ -230,7 +234,6 @@ struct intel_context
    int driFd;
 
    __DRIdrawablePrivate *driDrawable;
-   __DRIdrawablePrivate *driReadDrawable;
    __DRIscreenPrivate *driScreen;
    intelScreenPrivate *intelScreen; 
    volatile drmI830Sarea *sarea; 
@@ -264,8 +267,6 @@ void UNLOCK_HARDWARE( struct intel_context *intel );
 
 #define SUBPIXEL_X 0.125
 #define SUBPIXEL_Y 0.125
-
-#define ALIGN(value, alignment)  ((value + alignment - 1) & ~(alignment - 1))
 
 /* ================================================================
  * Color packing:
@@ -385,11 +386,6 @@ extern int INTEL_DEBUG;
 #define PCI_CHIP_I946_GZ		0x2972
 #define PCI_CHIP_I965_GM                0x2A02
 
-#define PCI_CHIP_GM45_GM                0x2A42
-
-#define PCI_CHIP_IGD_E_G                0x2E02
-#define PCI_CHIP_Q45_G                  0x2E12
-#define PCI_CHIP_G45_G                  0x2E22
 
 /* ================================================================
  * intel_context.c:
@@ -467,7 +463,7 @@ extern void intelInitStateFuncs( struct dd_function_table *functions );
 #define BLENDFACT_INV_CONST_ALPHA	0x0f
 #define BLENDFACT_MASK          	0x0f
 
-extern int intel_translate_shadow_compare_func( GLenum func );
+
 extern int intel_translate_compare_func( GLenum func );
 extern int intel_translate_stencil_op( GLenum op );
 extern int intel_translate_blend_factor( GLenum factor );

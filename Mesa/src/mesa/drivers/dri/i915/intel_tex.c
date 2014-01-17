@@ -677,11 +677,7 @@ static void intelUploadTexImage( intelContextPtr intel,
    /* Time for another vtbl entry:
     */
    else if (intel->intelScreen->deviceID == PCI_CHIP_I945_G ||
-            intel->intelScreen->deviceID == PCI_CHIP_I945_GM ||
-            intel->intelScreen->deviceID == PCI_CHIP_I945_GME ||
-            intel->intelScreen->deviceID == PCI_CHIP_G33_G ||
-            intel->intelScreen->deviceID == PCI_CHIP_Q33_G ||
-            intel->intelScreen->deviceID == PCI_CHIP_Q35_G) {
+            intel->intelScreen->deviceID == PCI_CHIP_I945_GM) {
       GLuint row_len = image->Width * image->TexFormat->TexelBytes;
       GLubyte *dst = (GLubyte *)(t->BufAddr + offset);
       GLubyte *src = (GLubyte *)image->Data;
@@ -759,7 +755,7 @@ int intelUploadTexImages( intelContextPtr intel,
 			  GLuint face)
 {
    const int numLevels = t->base.lastLevel - t->base.firstLevel + 1;
-   const struct gl_texture_image *firstImage = t->image[face][0].image;
+   const struct gl_texture_image *firstImage = t->image[face][t->base.firstLevel].image;
    int pitch = firstImage->RowStride * firstImage->TexFormat->TexelBytes;
 
    /* Can we texture out of the existing client data? */

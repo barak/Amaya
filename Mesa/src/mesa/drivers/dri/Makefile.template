@@ -50,6 +50,7 @@ SHARED_INCLUDES = \
 	-I$(TOP)/src/mesa/main \
 	-I$(TOP)/src/mesa/glapi \
 	-I$(TOP)/src/mesa/math \
+	-I$(TOP)/src/mesa/transform \
 	-I$(TOP)/src/mesa/shader \
 	-I$(TOP)/src/mesa/swrast \
 	-I$(TOP)/src/mesa/swrast_setup \
@@ -73,7 +74,7 @@ default: depend symlinks $(LIBNAME) $(TOP)/$(LIB_DIR)/$(LIBNAME)
 
 
 $(LIBNAME): $(OBJECTS) $(MESA_MODULES) $(WINOBJ) Makefile $(TOP)/src/mesa/drivers/dri/Makefile.template
-	$(TOP)/bin/mklib -ldflags '$(LDFLAGS)' -noprefix -o $@ \
+	$(TOP)/bin/mklib -noprefix -o $@ \
 		$(OBJECTS) $(MESA_MODULES) $(WINOBJ) $(DRI_LIB_DEPS)
 
 
@@ -99,8 +100,8 @@ clean:
 
 
 install: $(LIBNAME)
-	$(INSTALL) -d $(DESTDIR)$(DRI_DRIVER_INSTALL_DIR)
-	$(INSTALL) -m 755 $(LIBNAME) $(DESTDIR)$(DRI_DRIVER_INSTALL_DIR)
+	$(INSTALL) -d $(DRI_DRIVER_INSTALL_DIR)
+	$(INSTALL) -m 755 $(LIBNAME) $(DRI_DRIVER_INSTALL_DIR)
 
 
 include depend

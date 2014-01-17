@@ -262,14 +262,13 @@ void brw_clip_kill_thread(struct brw_clip_compile *c)
 		 c->reg.R0,
 		 0,		/* allocate */
 		 0,		/* used */
-		 1, 		/* msg len */
+		 0, 		/* msg len */
 		 0, 		/* response len */
 		 1, 		/* eot */
 		 1,		/* writes complete */
 		 0,
 		 BRW_URB_SWIZZLE_NONE);
 }
-
 
 
 
@@ -328,7 +327,8 @@ void brw_clip_init_clipmask( struct brw_clip_compile *c )
    
    /* Shift so that lowest outcode bit is rightmost: 
     */
-   brw_SHR(p, c->reg.planemask, incoming, brw_imm_ud(26));
+   brw_MOV(p, c->reg.planemask, incoming);
+   brw_SHR(p, c->reg.planemask, c->reg.planemask, brw_imm_ud(26));
 
    if (c->key.nr_userclip) {
       struct brw_reg tmp = retype(vec1(get_tmp(c)), BRW_REGISTER_TYPE_UD);
@@ -342,5 +342,13 @@ void brw_clip_init_clipmask( struct brw_clip_compile *c )
       
       release_tmp(c, tmp);
    }
+
+   /* Test for -ve rhw workaround 
+    */
+   brw_set_conditionalmod(p, BRW_CONDITIONAL_NZ);
+   brw_AND(p, vec1(brw_null_reg()), incoming, brw_imm_ud(1<<20));
+   brw_OR(p, c->reg.planemask, c->reg.planemask, brw_imm_ud(0x3f));
+   brw_set_predicate_control(p, BRW_PREDICATE_NONE);
+
 }
 

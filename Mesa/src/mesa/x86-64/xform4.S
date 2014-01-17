@@ -1,8 +1,10 @@
+/* $Id: xform4.S,v 1.2 2006/04/17 18:58:24 krh Exp $ */
+
 /*
  * Mesa 3-D graphics library
- * Version:  7.0.1
+ * Version:  3.5
  *
- * Copyright (C) 1999-2007  Brian Paul   All Rights Reserved.
+ * Copyright (C) 1999-2001  Brian Paul   All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -62,7 +64,7 @@ _mesa_x86_64_transform_points4_general:
 
 p4_general_loop:
 
-	movups (%rdx), %xmm8		/* ox | oy | oz | ow */
+	movaps (%rdx), %xmm8		/* ox | oy | oz | ow */
 	prefetchw 16(%rdi)
 
 	pshufd $0x00, %xmm8, %xmm0	/* ox | ox | ox | ox */
@@ -147,7 +149,7 @@ _mesa_x86_64_transform_points4_3d:
 
 p4_3d_loop:
 
-	movups (%rdx), %xmm8		/* ox | oy | oz | ow */
+	movaps (%rdx), %xmm8		/* ox | oy | oz | ow */
 	prefetchw 16(%rdi)
 
 	pshufd $0x00, %xmm8, %xmm0	/* ox | ox | ox | ox */

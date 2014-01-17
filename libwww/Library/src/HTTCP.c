@@ -86,6 +86,8 @@
 				 (e)==EHOSTDOWN || (e)==EINVAL)
 #endif
 
+PRIVATE int SocketBufferSize = 0;
+
 /* ------------------------------------------------------------------------- */
 /*	       	      CONNECTION ESTABLISHMENT MANAGEMENT 		     */
 /* ------------------------------------------------------------------------- */
@@ -126,6 +128,18 @@ PRIVATE int _makeSocket (HTHost * host, HTRequest * request, int preemptive)
 	} else {
 	    HTTRACE(PROT_TRACE, "Socket...... Turned off Nagle's algorithm\n");
 	}
+
+	/* Go round SSL writer bug */
+	if (SocketBufferSize != 0) {
+	  int status_sol = 1;
+	  int tcpbufsize = 0;
+	  int size = sizeof(int);
+	  status_sol = getsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, (void *) &tcpbufsize, &size);
+	  if (SocketBufferSize > tcpbufsize) {
+	    setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, (char*) &SocketBufferSize, sizeof(int));
+	  }
+	}
+
     }
 #endif
 
@@ -681,4 +695,16 @@ PUBLIC int HTDoClose (HTNet * net)
     return status < 0 ? HT_ERROR : HT_OK;
 }
 
+/*	HTSocketBufSize
+*/
+PUBLIC void HTSetSocketBufSize (int buffer_size)
+{
+  SocketBufferSize = buffer_size;
+}
+
+PUBLIC void HTUnSetSocketBufSize ()
+{
+  SocketBufferSize = 0;
+
+}
 
