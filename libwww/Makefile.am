@@ -1,7 +1,7 @@
 # Process this file with Automake to create Makefile.in.
 # (c) COPYRIGHT MIT 1995.
 # Please first read the full copyright statement in the file COPYRIGH.
-# @(#) $Id: Makefile.am,v 1.1.1.2 2005/07/06 09:34:01 gully Exp $
+# @(#) $Id: Makefile.am,v 1.45 2003-03-21 13:24:00 kahan Exp $
 
 #	.h files are distributed but originally are made from the
 #	self-documenting hypertext files.
@@ -15,7 +15,19 @@ legal : $(BUILT_SOURCES)
 
 EXTRA_DIST = \
 	$(BUILT_SOURCES) \
+	README.html \
+	INSTALL.html \
+	COPYRIGHT.html \
+	PATCHES.html \
+	LICENSE.html \
+	config/htmlCase.pl \
+	config/splitBigTcpdump.pl \
+	config/makeindx.pl \
+	config/netmon2tcpdump.pl \
+	config/makedefs.pl \
+	config/winConfigure.pl \
 	config/depcomp
+
 
 # We need to install the config.h header file as well. As this file
 # is platform specific, we do not install it with the other libwww include files
@@ -42,7 +54,7 @@ dist-hook:
 
 # Tag before making distribution.  Also, don't make a distribution if
 # checks fail.
-CVSSTUFF = config modules Library  \
+CVSSTUFF = config modules Library PICS-client LineMode Robot ComLine WinCom Icons \
 Makefile.am acconfig.h aclocal.m4 wwwconf.h.in configure.in
 
 # If not indicated otherwise then use this to make the CVS diff with

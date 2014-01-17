@@ -1,6 +1,6 @@
 /*
  * Mesa 3-D graphics library
- * Version:  7.0.3
+ * Version:  6.5.3
  *
  * Copyright (C) 1999-2007  Brian Paul   All Rights Reserved.
  *
@@ -75,8 +75,10 @@
    GLfloat tPlane[FRAG_ATTRIB_MAX][4];  /* texture T */
    GLfloat uPlane[FRAG_ATTRIB_MAX][4];  /* texture R */
    GLfloat vPlane[FRAG_ATTRIB_MAX][4];  /* texture Q */
+   GLfloat texWidth[FRAG_ATTRIB_MAX];
+   GLfloat texHeight[FRAG_ATTRIB_MAX];
 #endif
-   GLfloat bf = SWRAST_CONTEXT(ctx)->_BackfaceCullSign;
+   GLfloat bf = SWRAST_CONTEXT(ctx)->_BackfaceSign;
    
    (void) swrast;
 
@@ -114,7 +116,6 @@
    majDx = vMax->win[0] - vMin->win[0];
    majDy = vMax->win[1] - vMin->win[1];
 
-   /* front/back-face determination and cullling */
    {
       const GLfloat botDx = vMid->win[0] - vMin->win[0];
       const GLfloat botDy = vMid->win[1] - vMin->win[1];
@@ -123,8 +124,6 @@
       if (area * bf < 0 || area == 0 || IS_INF_OR_NAN(area))
 	 return;
       ltor = (GLboolean) (area < 0.0F);
-
-      span.facing = area * swrast->_BackfaceSign > 0.0F;
    }
 
    /* Plane equation setup:
@@ -204,6 +203,16 @@
          compute_plane(p0, p1, p2, t0, t1, t2, tPlane[attr]);
          compute_plane(p0, p1, p2, r0, r1, r2, uPlane[attr]);
          compute_plane(p0, p1, p2, q0, q1, q2, vPlane[attr]);
+         if (attr < FRAG_ATTRIB_VAR0 && attr >= FRAG_ATTRIB_TEX0) {
+            const GLuint u = attr - FRAG_ATTRIB_TEX0;
+            const struct gl_texture_object *obj = ctx->Texture.Unit[u]._Current;
+            const struct gl_texture_image *texImage = obj->Image[0][obj->BaseLevel];
+            texWidth[attr]  = (GLfloat) texImage->Width;
+            texHeight[attr] = (GLfloat) texImage->Height;
+         }
+         else {
+            texWidth[attr] = texHeight[attr] = 1.0;
+         }
       ATTRIB_LOOP_END
    }
    span.arrayMask |= (SPAN_TEXTURE | SPAN_LAMBDA | SPAN_VARYING);
@@ -280,14 +289,11 @@
                array->attribs[attr][count][0] = solve_plane(cx, cy, sPlane[attr]) * invQ;
                array->attribs[attr][count][1] = solve_plane(cx, cy, tPlane[attr]) * invQ;
                array->attribs[attr][count][2] = solve_plane(cx, cy, uPlane[attr]) * invQ;
-               if (attr >= FRAG_ATTRIB_TEX0 && attr < FRAG_ATTRIB_VAR0) {
+               if (attr < FRAG_ATTRIB_VAR0 && attr >= FRAG_ATTRIB_TEX0) {
                   const GLuint unit = attr - FRAG_ATTRIB_TEX0;
-                  array->lambda[unit][count] = compute_lambda(ctx,
-                                                              sPlane[attr],
-                                                              tPlane[attr],
-                                                              vPlane[attr],
-                                                              cx, cy, invQ,
-                                                              unit);
+                  array->lambda[unit][count] = compute_lambda(sPlane[attr], tPlane[attr],
+                                                              vPlane[attr], cx, cy, invQ,
+                                                              texWidth[attr], texHeight[attr]);
                }
             ATTRIB_LOOP_END
 #endif
@@ -330,7 +336,7 @@
          }
 
          /* skip fragments with zero coverage */
-         while (startX > 0) {
+         while (startX >= 0) {
             coverage = compute_coveragef(pMin, pMax, pMid, startX, iy);
             if (coverage > 0.0F)
                break;
@@ -344,7 +350,6 @@
             /* (cx,cy) = center of fragment */
             const GLfloat cx = ix + 0.5F, cy = iy + 0.5F;
             SWspanarrays *array = span.array;
-            ASSERT(ix >= 0);
 #ifdef DO_INDEX
             array->coverage[ix] = (GLfloat) compute_coveragei(pMin, pMax, pMid, ix, iy);
 #else
@@ -376,14 +381,14 @@
                array->attribs[attr][ix][0] = solve_plane(cx, cy, sPlane[attr]) * invQ;
                array->attribs[attr][ix][1] = solve_plane(cx, cy, tPlane[attr]) * invQ;
                array->attribs[attr][ix][2] = solve_plane(cx, cy, uPlane[attr]) * invQ;
-               if (attr >= FRAG_ATTRIB_TEX0 && attr < FRAG_ATTRIB_VAR0) {
+               if (attr < FRAG_ATTRIB_VAR0 && attr >= FRAG_ATTRIB_TEX0) {
                   const GLuint unit = attr - FRAG_ATTRIB_TEX0;
-                  array->lambda[unit][ix] = compute_lambda(ctx,
-                                                           sPlane[attr],
+                  array->lambda[unit][ix] = compute_lambda(sPlane[attr],
                                                            tPlane[attr],
                                                            vPlane[attr],
                                                            cx, cy, invQ,
-                                                           unit);
+                                                           texWidth[attr],
+                                                           texHeight[attr]);
                }
             ATTRIB_LOOP_END
 #endif

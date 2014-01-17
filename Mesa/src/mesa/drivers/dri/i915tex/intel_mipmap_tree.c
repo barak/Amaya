@@ -75,16 +75,11 @@ intel_miptree_create(struct intel_context *intel,
    mt->cpp = compress_byte ? compress_byte : cpp;
    mt->compressed = compress_byte ? 1 : 0;
    mt->refcount = 1; 
-   mt->pitch = 0;
 
    switch (intel->intelScreen->deviceID) {
    case PCI_CHIP_I945_G:
    case PCI_CHIP_I945_GM:
-   case PCI_CHIP_I945_GME:
-   case PCI_CHIP_G33_G:
-   case PCI_CHIP_Q33_G:
-   case PCI_CHIP_Q35_G:
-      ok = i945_miptree_layout(intel, mt);
+      ok = i945_miptree_layout(mt);
       break;
    case PCI_CHIP_I915_G:
    case PCI_CHIP_I915_GM:
@@ -94,16 +89,13 @@ intel_miptree_create(struct intel_context *intel,
    default:
       /* All the i830 chips and the i915 use this layout:
        */
-      ok = i915_miptree_layout(intel, mt);
+      ok = i915_miptree_layout(mt);
       break;
    }
 
-   if (ok) {
-      assert (mt->pitch);
-
+   if (ok)
       mt->region = intel_region_alloc(intel->intelScreen,
                                       mt->cpp, mt->pitch, mt->total_height);
-   }
 
    if (!mt->region) {
       free(mt);
@@ -113,42 +105,6 @@ intel_miptree_create(struct intel_context *intel,
    return mt;
 }
 
-/**
- * intel_miptree_pitch_align:
- *
- * @intel: intel context pointer
- *
- * @mt: the miptree to compute pitch alignment for
- *
- * @pitch: the natural pitch value
- *
- * Given @pitch, compute a larger value which accounts for
- * any necessary alignment required by the device
- */
-
-int intel_miptree_pitch_align (struct intel_context *intel,
-			       struct intel_mipmap_tree *mt,
-			       int pitch)
-{
-   if (!mt->compressed) {
-      /* XXX: Align pitch to multiple of 64 bytes for now to allow
-       * render-to-texture to work in all cases. This should probably be
-       * replaced at some point by some scheme to only do this when really
-       * necessary.
-       */
-      pitch = (pitch * mt->cpp + 63) & ~63;
-
-      /* XXX: At least the i915 seems very upset when the pitch is a multiple
-       * of 1024 and sometimes 512 bytes - performance can drop by several
-       * times. Go to the next multiple of the required alignment for now.
-       */
-      if (!(pitch & 511))
-	 pitch += 64;
-
-      pitch /= mt->cpp;
-   }
-   return pitch;
-}
 
 void
 intel_miptree_reference(struct intel_mipmap_tree **dst,
@@ -365,7 +321,6 @@ intel_miptree_image_data(struct intel_context *intel,
    }
 }
 
-extern GLuint intel_compressed_alignment(GLenum);
 /* Copy mipmap image between trees
  */
 void
@@ -383,12 +338,8 @@ intel_miptree_image_copy(struct intel_context *intel,
    const GLuint *src_depth_offset = intel_miptree_depth_offsets(src, level);
    GLuint i;
 
-   if (dst->compressed) {
-       GLuint alignment = intel_compressed_alignment(dst->internal_format);
-       height = (height + 3) / 4;
-       width = ((width + alignment - 1) & ~(alignment - 1));
-   }
-
+   if (dst->compressed)
+      height /= 4;
    for (i = 0; i < depth; i++) {
       intel_region_copy(intel->intelScreen,
                         dst->region, dst_offset + dst_depth_offset[i],

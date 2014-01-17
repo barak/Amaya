@@ -1,8 +1,9 @@
+
 /*
  * Mesa 3-D graphics library
- * Version:  7.1
+ * Version:  3.5
  *
- * Copyright (C) 1999-2007  Brian Paul   All Rights Reserved.
+ * Copyright (C) 1999-2001  Brian Paul   All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -80,5 +81,8 @@ _tnl_draw_prims( GLcontext *ctx,
 		 const struct _mesa_index_buffer *ib,
 		 GLuint min_index,
 		 GLuint max_index);
+
+extern void
+_mesa_load_tracked_matrices(GLcontext *ctx);
 
 #endif

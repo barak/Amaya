@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2009
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2010
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -1075,6 +1075,7 @@ void SetSingleIntHorizStretchAttr (Element el, Document doc, Element* selEl)
                             case 0x2194: /* LeftRightArrow */
                               c = 'A';
                             break;
+#ifdef STRETCHY_ARROWS // workaround for Bug 8890 - fred
                             case 0x21A4: /* LeftTeeArrow */
                               c = 160;
                             break;
@@ -1168,6 +1169,7 @@ void SetSingleIntHorizStretchAttr (Element el, Document doc, Element* selEl)
                             case 0x21CB: /* ReverseEquilibrium */
                               c = 215;
                             break;
+#endif
 
                             default:
                             break;
@@ -1456,6 +1458,7 @@ void SetIntVertStretchAttr (Element el, Document doc, int base, Element* selEl)
                                 case 0x2195: /* UpDownArrow */
                                   c = 155;
                                 break;
+#ifdef STRETCHY_ARROWS // workaround for Bug 8890 - fred
                                 case 0x2196: /* UpperLeftArrow */
                                   c = 156;
                                 break;
@@ -1543,6 +1546,7 @@ void SetIntVertStretchAttr (Element el, Document doc, int base, Element* selEl)
                                 case 0x296F: /* ReverseUpEquilibrium */
                                   c = 213;
                                 break;
+#endif
                                 case 0x2758: /* VerticalSeparator */
                                   c = 7;
 				break;
@@ -2542,10 +2546,10 @@ void      CheckFence (Element el, Document doc)
                             }
                           /* create a new content for the MF element */
                           elType.ElTypeNum = MathML_EL_SYMBOL_UNIT;
-                          if (text[0] == 0x2329)
-                            c = '<';    /* LeftAngleBracket */
-                          else if (text[0] == 0x232a)
-                            c = '>';    /* RightAngleBracket */
+                          if (text[0] == 0x27E8)
+                            c = '<';    /* mathematical left angle bracket */
+                          else if (text[0] == 0x27E9)
+                            c = '>';    /* mathematical right angle bracket */
                           else if (text[0] == 0x301a)
                             c = 1;    /* LeftDoubleBracket */
                           else if (text[0] == 0x301b)
@@ -2885,7 +2889,7 @@ void MathMLScriptShift (Document doc, Element el, char *value, int attr)
                 pval.typed_data.unit = UNIT_EM;
               pval.typed_data.mainValue = TRUE;
               /* the specific presentation to be created is not a CSS rule */
-              ctxt->cssSpecificity = 0;
+              ctxt->cssSpecificity = 2000;
               if (attr == MathML_ATTR_superscriptshift)
                 pval.typed_data.value = - pval.typed_data.value;
               TtaSetStylePresentation (PRVertPos, script, NULL, ctxt, pval);
@@ -3340,7 +3344,7 @@ void HandleRowspacingAttribute (Attribute attr, Element el, Document doc,
 
   ctxt = TtaGetSpecificStyleContext (doc);
   /* the specific presentation to be created is not a CSS rule */
-  ctxt->cssSpecificity = 0;
+  ctxt->cssSpecificity = 2000;
   ptr = value;
   rowspanType.AttrSSchema = elType.ElSSchema;
   rowspanType.AttrTypeNum = MathML_ATTR_rowspan_;
@@ -3613,7 +3617,7 @@ void HandleColumnspacingAttribute (Attribute attr, Element el, Document doc,
 
   ctxt = TtaGetSpecificStyleContext (doc);
   /* the specific presentation to be created is not a CSS rule */
-  ctxt->cssSpecificity = 0;
+  ctxt->cssSpecificity = 2000;
   val = 0;
   colspanType.AttrSSchema = elType.ElSSchema;
   colspanType.AttrTypeNum = MathML_ATTR_columnspan;
@@ -4162,7 +4166,7 @@ void HandleFramespacingAttribute (Attribute attr, Element el, Document doc,
     }
   ctxt = TtaGetSpecificStyleContext (doc);
   /* the specific presentation to be created is not a CSS rule */
-  ctxt->cssSpecificity = 0;
+  ctxt->cssSpecificity = 2000;
   vertPadding = 0;
   horizPadding = 0;
   vertPaddingUnit = UNIT_PT;
@@ -4340,7 +4344,9 @@ void      MathMLElementCreated (Element el, Document doc)
 }
 
 /*----------------------------------------------------------------------
-  EvaluateChildRendering tests what children should be displayed
+  EvaluateChildRendering
+  choose the child of element el (a <semantics> element) that should be
+  displayed
   ----------------------------------------------------------------------*/
 void EvaluateChildRendering (Element el, Document doc)
 {
@@ -4355,17 +4361,19 @@ void EvaluateChildRendering (Element el, Document doc)
   int                  length;
 
   ctxt = TtaGetSpecificStyleContext (doc);
-  ctxt->cssSpecificity = 0;   /* the presentation rule to be set is not a CSS rule */
+  ctxt->cssSpecificity = 2000;   /* the presentation rule to be set is not a CSS rule */
+  /* prepare the value of the rule */
   pval.typed_data.unit = UNIT_PX;
   pval.typed_data.value = 0;
   pval.typed_data.real = FALSE;
   MathMLSSchema = TtaGetElementType(el).ElSSchema;
-  /* process all children in order */
+  renderedChild = NULL; /* no child to render yet */
+  /* check all children of element el */
   child = TtaGetFirstChild (el);
-  renderedChild = NULL;
   while (child)
     {
-      /* if this child is a comment or a processing instruction, skip it */
+      /* if this child is a comment, a processing instruction, or an annotation
+	 we skip it */
       elType = TtaGetElementType (child);
       ctxt->destroy = FALSE; /* we will most probably create a PRule
                                 Visibility: 0; for this child */
@@ -4376,11 +4384,13 @@ void EvaluateChildRendering (Element el, Document doc)
           elType.ElTypeNum != MathML_EL_ANNOTATION)
         {
           if (!renderedChild && elType.ElTypeNum == MathML_EL_ANNOTATION_XML)
+	    /* it's an <annotation-xml> element */
             {
-              /* check if the mime type is known */
+              /* check its encoding */
               attrType.AttrSSchema = MathMLSSchema;
               attrType.AttrTypeNum = MathML_ATTR_encoding;
               attr = TtaGetAttribute (child, attrType);
+	      /* there is an "encoding" attribute */
               if (attr)
                 {
                   length = TtaGetTextAttributeLength (attr);
@@ -4394,8 +4404,9 @@ void EvaluateChildRendering (Element el, Document doc)
                           !strncmp (value, "text/htm", 8) ||
                           !strcmp (value, AM_XHTML_MIME_TYPE))
                         {
-                          /* display that child */
+                          /* we know this encoding. We will display that child*/
                           renderedChild = child;
+			  /* remove the Visibility rule if there is one */
                           ctxt->destroy = TRUE;
                         }  
                     }
@@ -4644,8 +4655,8 @@ void      MathMLElementComplete (ParserData *context, Element el, int *error)
           CreatePlaceholders (TtaGetFirstChild (el), doc);
           break;
         case MathML_EL_SEMANTICS:
-          /* it's a ANNOTATION_XML element */
-          /* Evaluate what direct child element to be rendered */
+          /* it's a <semantics> element */
+          /* Evaluate what child element to be rendered */
           EvaluateChildRendering (el, doc);
           break;
         case MathML_EL_MGLYPH:
@@ -4882,7 +4893,7 @@ void MathMLSetScriptLevel (Document doc, Element el, char *value)
 	  pval.typed_data.value = percentage;
 	  pval.typed_data.unit = UNIT_PERCENT;
 	  /* the specific presentation to be created is not a CSS rule */
-	  ctxt->cssSpecificity = 0;
+	  ctxt->cssSpecificity = 2000;
 	  TtaSetStylePresentation (PRSize, el, NULL, ctxt, pval);       
         }
     }
@@ -4946,7 +4957,7 @@ void MathMLSpacingAttr (Document doc, Element el, const char *value, int attr)
           if (pval.typed_data.unit == UNIT_BOX)
             pval.typed_data.unit = UNIT_PX;
           /* the specific presentation to be created is not a CSS rule */
-          ctxt->cssSpecificity = 0;
+          ctxt->cssSpecificity = 2000;
           TtaSetStylePresentation (ruleType, el, NULL, ctxt, pval);
         }
       TtaFreeMemory(tmp);

@@ -8,12 +8,12 @@
  **
  ** Date : 02 / Nov / 2001
  **
- ** $Id: awparser.h,v 1.3 2008/05/13 09:30:27 kia Exp $ 
- ** $Date: 2008/05/13 09:30:27 $
+ ** $Id: awparser.h,v 1.3 2008-05-13 09:30:27 kia Exp $ 
+ ** $Date: 2008-05-13 09:30:27 $
  ** $Author: kia $
  ** $Revision: 1.3 $
  ** $Log: awparser.h,v $
- ** Revision 1.3  2008/05/13 09:30:27  kia
+ ** Revision 1.3  2008-05-13 09:30:27  kia
  ** More char* fixes
  **
  ** Revision 1.2  2002/06/03 14:37:44  kirschpi

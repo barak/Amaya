@@ -19,10 +19,10 @@
 **
 ** Date : May / 2002
 **
-** $Id: davlibUI.c,v 1.34 2009/06/11 15:12:32 vatton Exp $
-** $Date: 2009/06/11 15:12:32 $
+** $Id: davlibUI.c,v 1.34 2009-06-11 15:12:32 vatton Exp $
+** $Date: 2009-06-11 15:12:32 $
 ** $Log: davlibUI.c,v $
-** Revision 1.34  2009/06/11 15:12:32  vatton
+** Revision 1.34  2009-06-11 15:12:32  vatton
 ** Keep the value of the old DAV_URLS environment variable
 ** + update dialogs
 ** Irene

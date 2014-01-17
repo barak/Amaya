@@ -35,11 +35,10 @@
 #include "texenvprogram.h"
 
 /**
- * This MAX is probably a bit generous, but that's OK.  There can be
- * up to four instructions per texture unit (TEX + 3 for combine),
- * then there's fog and specular add.
+ * According to Glean's texCombine test, no more than 21 instructions
+ * are needed.  Allow a few extra just in case.
  */
-#define MAX_INSTRUCTIONS ((MAX_TEXTURE_UNITS * 4) + 12)
+#define MAX_INSTRUCTIONS 24
 
 #define DISASSEM (MESA_VERBOSE & VERBOSE_DISASSEM)
 
@@ -199,8 +198,8 @@ static void make_state_key( GLcontext *ctx,  struct state_key *key )
 
    for (i=0;i<MAX_TEXTURE_UNITS;i++) {
       const struct gl_texture_unit *texUnit = &ctx->Texture.Unit[i];
-
-      if (!texUnit->_ReallyEnabled || !texUnit->Enabled)
+		
+      if (!texUnit->_ReallyEnabled)
          continue;
 
       key->unit[i].enabled = 1;
@@ -461,8 +460,8 @@ static void emit_dst( struct prog_dst_register *dst,
    dst->File = ureg.file;
    dst->Index = ureg.idx;
    dst->WriteMask = mask;
-   dst->CondMask = COND_TR;  /* always pass cond test */
-   dst->CondSwizzle = SWIZZLE_NOOP;
+   dst->CondMask = 0;
+   dst->CondSwizzle = 0;
 }
 
 static struct prog_instruction *
@@ -477,9 +476,7 @@ emit_op(struct texenv_fragment_program *p,
 {
    GLuint nr = p->program->Base.NumInstructions++;
    struct prog_instruction *inst = &p->program->Base.Instructions[nr];
-
-   assert(nr < MAX_INSTRUCTIONS);
-
+      
    _mesa_init_instructions(inst, 1);
    inst->Opcode = op;
    
@@ -1242,7 +1239,7 @@ _mesa_UpdateTexEnvProgram( GLcontext *ctx )
 
    /* If a conventional fragment program/shader isn't in effect... */
    if (!ctx->FragmentProgram._Enabled &&
-       (!ctx->Shader.CurrentProgram || !ctx->Shader.CurrentProgram->FragmentProgram)) {
+       !ctx->Shader.CurrentProgram) {
       make_state_key(ctx, &key);
       hash = hash_key(&key);
       
@@ -1271,8 +1268,7 @@ _mesa_UpdateTexEnvProgram( GLcontext *ctx )
       }
    } 
    else {
-      /* _Current pointer has been updated in update_program */
-      /* ctx->FragmentProgram._Current = ctx->FragmentProgram.Current; */
+      ctx->FragmentProgram._Current = ctx->FragmentProgram.Current;
    }
 
    /* Tell the driver about the change.  Could define a new target for

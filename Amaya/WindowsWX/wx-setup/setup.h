@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     01/02/97
-// RCS-ID:      $Id: setup.h,v 1.9 2007/07/11 13:59:36 cvs Exp $
+// RCS-ID:      $Id: setup.h,v 1.9 2007-07-11 13:59:36 cvs Exp $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////

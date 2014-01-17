@@ -4,7 +4,7 @@
 
 <rdf:Description about="http://www.w3.org/2001/12/replyType#">
  <rdfs:comment>A namespace for describing types of replies</rdfs:comment>
- <rdfs:comment>$Revision: 1.1 $ $Date: 2001/12/13 03:51:36 $</rdfs:comment>
+ <rdfs:comment>$Revision: 1.1 $ $Date: 2001-12-13 03:51:36 $</rdfs:comment>
  <rdfs:seeAlso rdf:resource="http://www.w3.org/2000/02/Collaboration/Annotation/papers"/>
  <rdfs:seeAlso rdf:resource="http://www.w3.org/2001/03/thread#" />
 </rdf:Description>

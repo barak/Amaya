@@ -40,7 +40,7 @@ SUBDIRS = SSL windows vms
 SUFFIXES = .h .html .txt
 .html.h:
     ifdef WWW
-	$(WWW) -w90 -na -p -to text/x-c $(srcdir)/*.html -o $(srcdir)/*.h
+	$(WWW) -w90 -na -p -to text/x-c $(srcdir)/$(*F).html -o $(srcdir)/$(*F).h
     else
 	@echo "**************************************************"
 	@echo "Generating the .h files using the "
@@ -50,7 +50,7 @@ SUFFIXES = .h .html .txt
     endif
 
 icondir = @icondir@
-AM_CPPFLAGS = @CPPFLAGS@ -DW3C_ICONS=\"$(icondir)\"
+AM_CPPFLAGS := @CPPFLAGS@ -DW3C_ICONS=\"$(icondir)\"
 
 inc: $(BUILT_SOURCES)
 	@echo Generated built sources
@@ -548,7 +548,7 @@ BUILT_SOURCES = \
 
 pkginclude_HEADERS = $(BUILT_SOURCES)
 
-DOCS = 
+DOCS :=	$(wildcard *.html)
 
 EXTRA_DIST = \
 	$(BUILT_SOURCES) \

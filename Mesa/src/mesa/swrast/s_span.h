@@ -210,12 +210,6 @@ do {								\
 
 
 
-#define SPAN_NEEDS_FOG(ctx)                                             \
-   (SWRAST_CONTEXT(ctx)->_FogEnabled ||                                 \
-    (ctx->FragmentProgram._Current &&                                   \
-     ctx->FragmentProgram._Current->Base.InputsRead & FRAG_BIT_FOGC))
-
-
 extern void
 _swrast_span_default_z( GLcontext *ctx, SWspan *span );
 

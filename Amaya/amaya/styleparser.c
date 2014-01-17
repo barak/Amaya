@@ -1,6 +1,6 @@
 /*
  *
- *  (c) COPYRIGHT INRIA and W3C, 1996-2009
+ *  (c) COPYRIGHT INRIA and W3C, 1996-2010
  *  Please first read the full copyright statement in file COPYRIGHT.
  *
  */
@@ -76,6 +76,7 @@ static char         *ImportantPos = NULL;
 static ThotBool      RedisplayBGImage = FALSE; /* TRUE when a BG image is inserted */
 static ThotBool      DoApply = TRUE;
 static ThotBool      All_sides = FALSE; // TRUE when "boder valus must be displayed
+static char          CSSbuffer[MAX_CSS_LENGTH + 1];
 
 
 /*----------------------------------------------------------------------
@@ -183,7 +184,7 @@ static char *SkipQuotedString (char *ptr, char quote)
 /*----------------------------------------------------------------------
   CSSPrintError
   print the error message msg on stderr.
-  When the line is 0 ask to expat the current line number
+  When the line is 0 ask expat the current line number
   ----------------------------------------------------------------------*/
 static void CSSPrintError (const char *msg, const char *value)
 {
@@ -330,8 +331,6 @@ static char *SkipProperty (char *ptr, ThotBool reportError)
            strncasecmp (deb, "border-spacing", 14) &&
            strncasecmp (deb, "caption-side", 12) &&
            strncasecmp (deb, "clip", 4) &&
-           strncasecmp (deb, "counter-increment", 16) &&
-           strncasecmp (deb, "counter-reset", 13) &&
            strncasecmp (deb, "cue-after", 9) &&
            strncasecmp (deb, "cue-before", 10) &&
            strncasecmp (deb, "cue", 3) &&
@@ -2010,6 +2009,106 @@ static char *ParseCSSLetterSpacing (Element element, PSchema tsch,
 }
 
 /*----------------------------------------------------------------------
+  ParseCounterStyle: parse a CSS counter style.
+  ----------------------------------------------------------------------*/
+static char *ParseCounterStyle (char *cssRule, PresentationValue *pval,
+				char *start_value)
+{
+  (*pval).typed_data.unit = UNIT_REL;
+  (*pval).typed_data.real = FALSE;
+  cssRule = SkipBlanksAndComments (cssRule);
+  start_value = cssRule;
+  if (!strncasecmp (cssRule, "disc", 4))
+    {
+      cssRule += 4;
+      (*pval).typed_data.value = Disc;
+    }
+  else if (!strncasecmp (cssRule, "circle", 6))
+    {
+      cssRule += 6;
+      (*pval).typed_data.value = Circle;
+    }
+  else if (!strncasecmp (cssRule, "square", 6))
+    {
+      cssRule += 6;
+      (*pval).typed_data.value = Square;
+    }
+  else if (!strncasecmp (cssRule, "decimal", 7))
+    {
+      cssRule += 7;
+      (*pval).typed_data.value = Decimal;
+    }
+  else if (!strncasecmp (cssRule, "decimal-leading-zero", 20))
+    {
+      cssRule += 20;
+      (*pval).typed_data.value = DecimalLeadingZero;
+    }
+  else if (!strncasecmp (cssRule, "lower-roman", 11))
+    {
+      cssRule += 11;
+      (*pval).typed_data.value = LowerRoman;
+    }
+  else if (!strncasecmp (cssRule, "upper-roman", 11))
+    {
+      cssRule += 11;
+      (*pval).typed_data.value = UpperRoman;
+    }
+  else if (!strncasecmp (cssRule, "lower-greek", 11))
+    {
+      cssRule += 11;
+      (*pval).typed_data.value = LowerGreek;
+    }
+  else if (!strncasecmp (cssRule, "upper-greek", 11))
+    {
+      cssRule += 11;
+      (*pval).typed_data.value = UpperGreek;
+    }
+  else if (!strncasecmp (cssRule, "lower-latin", 11))
+    {
+      cssRule += 11;
+      (*pval).typed_data.value = LowerLatin;
+    }
+  else if (!strncasecmp (cssRule, "upper-latin", 11))
+    {
+      cssRule += 11;
+      (*pval).typed_data.value = UpperLatin;
+    }
+  else if (!strncasecmp (cssRule, "armenian", 8))
+    {
+      cssRule += 8;
+      (*pval).typed_data.value = Decimal;
+    }
+  else if (!strncasecmp (cssRule, "georgian", 8))
+    {
+      cssRule += 8;
+      (*pval).typed_data.value = Decimal;
+    }
+  else if (!strncasecmp (cssRule, "lower-alpha", 11))
+    {
+      cssRule += 11;
+      (*pval).typed_data.value = LowerLatin;
+    }
+  else if (!strncasecmp (cssRule, "upper-alpha", 11))
+    {
+      cssRule += 11;
+      (*pval).typed_data.value = UpperLatin;
+    }
+  else if (!strncasecmp (cssRule, "none", 4))
+    {
+      cssRule += 4;
+      (*pval).typed_data.value = ListStyleTypeNone;
+    }
+  else if (!strncasecmp (cssRule, "inherit", 7))
+    {
+      cssRule += 7;
+      (*pval).typed_data.unit = VALUE_INHERIT;
+    }
+  else
+    cssRule = SkipValue ("Invalid list-style-type value", cssRule);
+  return (cssRule);
+}
+
+/*----------------------------------------------------------------------
   ParseACSSListStyleType: parse a CSS list-style-type
   attribute string.                                          
   ----------------------------------------------------------------------*/
@@ -2020,96 +2119,7 @@ static char *ParseACSSListStyleType (Element element, PSchema tsch,
   PresentationValue   pval;
   char               *start_value;
 
-  pval.typed_data.unit = UNIT_REL;
-  pval.typed_data.real = FALSE;
-  cssRule = SkipBlanksAndComments (cssRule);
-  start_value = cssRule;
-  if (!strncasecmp (cssRule, "disc", 4))
-    {
-      cssRule += 4;
-      pval.typed_data.value = Disc;
-    }
-  else if (!strncasecmp (cssRule, "circle", 6))
-    {
-      cssRule += 6;
-      pval.typed_data.value = Circle;
-    }
-  else if (!strncasecmp (cssRule, "square", 6))
-    {
-      cssRule += 6;
-      pval.typed_data.value = Square;
-    }
-  else if (!strncasecmp (cssRule, "decimal-leading-zero", 20))
-    {
-      cssRule += 20;
-      pval.typed_data.value = DecimalLeadingZero;
-    }
-  else if (!strncasecmp (cssRule, "decimal", 7))
-    {
-      cssRule += 7;
-      pval.typed_data.value = Decimal;
-    }
-  else if (!strncasecmp (cssRule, "lower-roman", 11))
-    {
-      cssRule += 11;
-      pval.typed_data.value = LowerRoman;
-    }
-  else if (!strncasecmp (cssRule, "upper-roman", 11))
-    {
-      cssRule += 11;
-      pval.typed_data.value = UpperRoman;
-    }
-  else if (!strncasecmp (cssRule, "lower-greek", 11))
-    {
-      cssRule += 11;
-      pval.typed_data.value = LowerGreek;
-    }
-  else if (!strncasecmp (cssRule, "lower-latin", 11))
-    {
-      cssRule += 11;
-      pval.typed_data.value = LowerLatin;
-    }
-  else if (!strncasecmp (cssRule, "lower-alpha", 11))
-    {
-      cssRule += 11;
-      pval.typed_data.value = LowerLatin;
-    }
-  else if (!strncasecmp (cssRule, "upper-latin", 11))
-    {
-      cssRule += 11;
-      pval.typed_data.value = UpperLatin;
-    }
-  else if (!strncasecmp (cssRule, "upper-alpha", 11))
-    {
-      cssRule += 11;
-      pval.typed_data.value = UpperLatin;
-    }
-  else if (!strncasecmp (cssRule, "armenian", 8))
-    {
-      cssRule += 8;
-      pval.typed_data.value = Decimal;
-    }
-  else if (!strncasecmp (cssRule, "georgian", 8))
-    {
-      cssRule += 8;
-      pval.typed_data.value = Decimal;
-    }
-  else if (!strncasecmp (cssRule, "none", 4))
-    {
-      cssRule += 4;
-      pval.typed_data.value = ListStyleTypeNone;
-    }
-  else if (!strncasecmp (cssRule, "inherit", 7))
-    {
-      cssRule += 7;
-      pval.typed_data.unit = VALUE_INHERIT;
-    }
-  else
-    {
-      cssRule = SkipValue ("Invalid list-style-type value", cssRule);
-      return (cssRule);
-    }
-
+  cssRule = ParseCounterStyle (cssRule, &pval, start_value);
   if (DoDialog)
     DisplayStyleValue ("list-style-type", start_value, cssRule);
   else if (DoApply)
@@ -4748,7 +4758,7 @@ static char *ParseCSSBackgroundColor (Element element, PSchema tsch,
             {
               /* install the new presentation. */
               TtaSetStylePresentation (PRBackground, element, tsch, context, best);
-              /* thot specificity: need to set fill pattern for background color */
+              /* thot specifics: need to set fill pattern for background color */
               best.typed_data.value = PATTERN_BACKGROUND;
               best.typed_data.unit = UNIT_REL;
               TtaSetStylePresentation (PRFillPattern, element, tsch, context, best);
@@ -4871,7 +4881,7 @@ static char *ParseSVGFill (Element element, PSchema tsch,
       TtaSetStylePresentation (PRBackground, element, tsch, context, fill);
       if (url)
 	TtaFreeMemory (url);
-      /* thot specificity: need to set fill pattern for background color */
+      /* thot specifics: need to set fill pattern for background color */
       fill.typed_data.value = pattern;
       fill.typed_data.unit = UNIT_REL;
       TtaSetStylePresentation (PRFillPattern, element, tsch, context, fill);
@@ -5177,9 +5187,9 @@ static char *ParseCSSContent (Element element, PSchema tsch,
                               PresentationContext ctxt, char *cssRule,
                               CSSInfoPtr css, ThotBool isHTML)
 {
-  PresentationValue   value;
+  PresentationValue   value, pval;
   char                *last, *start, quoteChar, savedChar;
-  int                 length, val;
+  int                 length, val, l;
   char               *buffer, *p;
   char               *start_value;
   wchar_t             wc;
@@ -5215,17 +5225,27 @@ static char *ParseCSSContent (Element element, PSchema tsch,
         {
           quoteChar = *cssRule;
           /* how long is the string? */
-          last = cssRule;
-          last = SkipString (last);
+          last = SkipString (cssRule);
           length = last - cssRule;
           /* get a buffer to store the string */
           buffer = (char *)TtaGetMemory (3 * length);
           p = buffer; /* beginning of the string */
           cssRule++;
-          while (*cssRule != EOS && *cssRule != quoteChar)
+
+          if (ctxt->cssURL)
+	    /* it's an external style sheet. Assume it is encoded in the
+	       default encoding (iso-latin-1), but we should use the actual
+	       encoding of the file @@@@ */
+	    l = TtaGetNextWCFromString (&wc, (unsigned char **) &cssRule,
+					ISO_8859_1);
+	  else
+	    /* it's the content of a <style> element. It is encoded in UTF-8 */
+	    l = TtaGetNextWCFromString (&wc, (unsigned char **) &cssRule,
+					UTF_8);
+          while (wc != EOS && wc != quoteChar && l > 0)
             {
 	      done = FALSE;
-              if (*cssRule == '\\')
+              if (wc == '\\')
                 {
                   cssRule++; /* skip the backslash */
                   if ((*cssRule >= '0' && *cssRule <= '9') ||
@@ -5243,17 +5263,25 @@ static char *ParseCSSContent (Element element, PSchema tsch,
                       sscanf (start, "%x", &val);
                       TtaWCToMBstring ((wchar_t) val, (unsigned char **) &p);
                       *cssRule = savedChar;
+		      wc = savedChar;
 		      done = TRUE;
                     }
                 }
               if (!done)
                 {
-		  /* The default encoding of CSS style sheets is ISO-8859-1,
-		     but we should use the real encoding fo the file instead
-		     of this default value @@@@@ */
-		  wc = TtaGetWCFromChar ((unsigned char) cssRule[0], ISO_8859_1);
 		  TtaWCToMBstring (wc, (unsigned char **) &p);
- 		  cssRule++;
+                  cssRule+= l;
+		  if (ctxt->cssURL)
+		    /* it's an external style sheet. Assume it is encoded in
+		       the default encoding (iso-latin-1), but we should use
+		       the actual encoding of the file @@@@ */
+		    l = TtaGetNextWCFromString (&wc, (unsigned char **)&cssRule,
+						ISO_8859_1);
+		  else
+		    /* it's the content of a <style> element. It is encoded
+		       in UTF-8 */
+		    l = TtaGetNextWCFromString (&wc, (unsigned char **)&cssRule,
+						UTF_8);
                 }
             }
           *p = EOS;
@@ -5291,15 +5319,63 @@ static char *ParseCSSContent (Element element, PSchema tsch,
         }
       else if (!strncasecmp (cssRule, "counter", 7))
         {
+          value.pointer = NULL;
           cssRule += 7;
-          /* @@@@@@ */
-          if (DoDialog)
+	  cssRule = SkipBlanksAndComments (cssRule);
+	  if (*cssRule == '(')
+	    {
+	      cssRule++;
+	      cssRule = SkipBlanksAndComments (cssRule);
+	      start = cssRule;
+	      while (*cssRule != EOS && *cssRule != ')' && *cssRule != ',')
+		cssRule++;
+	      if (*cssRule != ')' && *cssRule != ',')
+		cssRule = start;
+	      else
+		{
+                  /* remove extra spaces */
+		  last = cssRule;
+                  while (last[-1] == SPACE || last[-1] == TAB)
+		    last--;
+                  savedChar = *last;
+                  *last = EOS;
+                  value.pointer = start;
+                  if (DoDialog)
+                    {
+                      DisplayStyleValue ("", start_value, p);
+                      start_value = p;
+                    }
+                  else if (DoApply)
+                    TtaSetStylePresentation (PRContentCounter, element, tsch,
+                                             ctxt, value);
+                  *last = savedChar;
+		  if (*cssRule == ',')
+		    /* parse the counter style */
+		    {
+		      cssRule++;
+		      cssRule = ParseCounterStyle (cssRule, &pval, start_value);
+		      cssRule = SkipBlanksAndComments (cssRule);
+		      if (*cssRule == ')')
+			{
+			  cssRule++;
+			  TtaSetStylePresentation (PRContentCounterStyle,
+						   element, tsch, ctxt, pval);
+			}
+		    }
+		}
+	    }
+          if (value.pointer == NULL)
             {
-              DisplayStyleValue ("", start_value, p);
-              start_value = p;
+              CSSParseError ("Invalid content value", (char*) p, cssRule);
+              if (DoDialog)
+                {
+                  DisplayStyleValue ("", start_value, p);
+                  start_value = p;
+                }
+              else
+                cssRule = SkipProperty (cssRule, FALSE);
             }
-          else
-            cssRule = SkipProperty (cssRule, FALSE);
+          cssRule++;
         }
       else if (!strncasecmp (cssRule, "counters", 8))
         {
@@ -5311,7 +5387,9 @@ static char *ParseCSSContent (Element element, PSchema tsch,
               start_value = p;
             }
           else
-            cssRule = SkipProperty (cssRule, FALSE);
+	    {
+	      cssRule = SkipProperty (cssRule, FALSE);
+	    }
         }
       else if (!strncasecmp (cssRule, "attr", 4))
         {
@@ -5331,13 +5409,8 @@ static char *ParseCSSContent (Element element, PSchema tsch,
                 {
                   last = cssRule;
                   /* remove extra spaces */
-                  if (last[-1] == SPACE)
-                    {
-                      *last = SPACE;
-                      last--;
-                      while (last[-1] == SPACE)
-                        last--;
-                    }
+		  while (last[-1] == SPACE || last[-1] == TAB)
+		    last--;
                   savedChar = *last;
                   *last = EOS;
                   value.typed_data.unit = UNIT_REL;
@@ -5411,6 +5484,98 @@ static char *ParseCSSContent (Element element, PSchema tsch,
           repeat = FALSE;
     }
   return (cssRule);
+}
+
+/*----------------------------------------------------------------------
+  ParseCSSCounterOp: parse a CSS counter operation (increment or reset,
+  depending on type).
+  ----------------------------------------------------------------------*/
+static char *ParseCSSCounterOp (Element element, PSchema tsch,
+				PresentationContext ctxt,
+				char *cssRule, unsigned int type)
+{
+  PresentationValue  pval;
+  char              *start, *start_value, *p, *buff;
+  char               saved;
+
+  cssRule = SkipBlanksAndComments (cssRule);
+  if (!strncasecmp (cssRule, "inherit", 7))
+    {
+      pval.typed_data.unit = VALUE_INHERIT;
+      cssRule += 7;
+      /* @@@@ do something */
+    }
+  else if (!strncasecmp (cssRule, "none", 4))
+    {
+      pval.typed_data.value = 0;
+      cssRule += 4;
+      /* @@@@ do something */
+    }
+  else
+    {
+      start_value = cssRule;
+      /* there may be multiple counter names (each possibly followed by an
+	 integer)  */
+      do
+	{
+	  p = cssRule;
+	  /* name of a counter */
+	  start = cssRule;
+	  cssRule = SkipWord (cssRule);
+	  saved = *cssRule;
+	  *cssRule = EOS;
+          buff = TtaStrdup (start);
+	  *cssRule = saved;
+	  pval.pointer = buff;
+	  /* set default value of parameter */
+	  if (type == PRCounterReset)
+	    pval.data = 0;
+	  else if (type == PRCounterIncrement)
+	    pval.data = 1;
+	  /* use the actual value of parameter (integer) if it is specified */
+	  cssRule = ParseNumber (cssRule, &pval);
+	  if (pval.typed_data.unit != UNIT_INVALID)
+	    /* there is an integer, the value of the parameter */
+	    {
+	      pval.data = pval.typed_data.value;
+	      cssRule = SkipBlanksAndComments (cssRule);
+	    }
+	  if (DoDialog)
+	    {
+	      DisplayStyleValue ("", start_value, p);
+	      start_value = p;
+	    }
+	  else if (DoApply)
+	    TtaSetStylePresentation (type, element, tsch, ctxt, pval);
+          TtaFreeMemory (buff);
+	}
+      while (*cssRule != ';' && *cssRule != '}' && *cssRule != EOS &&
+	     *cssRule != ',');
+    }
+  cssRule = SkipBlanksAndComments (cssRule);
+  return (cssRule);
+}
+
+/*----------------------------------------------------------------------
+  ParseCSSCounterIncrement: parse a CSS counter-increment property
+  ----------------------------------------------------------------------*/
+static char *ParseCSSCounterIncrement (Element element, PSchema tsch,
+				       PresentationContext ctxt,
+				       char *cssRule, CSSInfoPtr css,
+				       ThotBool isHTML)
+{
+  return ParseCSSCounterOp (element, tsch, ctxt, cssRule, PRCounterIncrement);
+}
+
+/*----------------------------------------------------------------------
+  ParseCSSCounterReset: parse a CSS counter-reset property
+  ----------------------------------------------------------------------*/
+static char *ParseCSSCounterReset (Element element, PSchema tsch,
+				   PresentationContext ctxt,
+				   char *cssRule, CSSInfoPtr css,
+				   ThotBool isHTML)
+{
+  return ParseCSSCounterOp (element, tsch, ctxt, cssRule, PRCounterReset);
 }
 
 /*----------------------------------------------------------------------
@@ -6283,12 +6448,12 @@ static char *ParseCSSZIndex (Element element, PSchema tsch,
 
 /*----------------------------------------------------------------------
  *
- *	FUNCTIONS STYLE DECLARATIONS
+ *	STYLE PROPERTY DECLARATIONS
  *
  *----------------------------------------------------------------------*/
 /*
- * NOTE: Long attribute name MUST be placed before shortened ones !
- *        e.g. "FONT-SIZE" must be placed before "FONT"
+ * NOTE: Long property names MUST be placed before shortened ones !
+ *        e.g. "font-size" must be placed before "font"
  */
 static CSSProperty CSSProperties[] =
   {
@@ -6322,6 +6487,8 @@ static CSSProperty CSSProperties[] =
     {"clear", ParseCSSClear},
     {"color", ParseCSSForeground},
     {"content", ParseCSSContent},
+    {"counter-increment", ParseCSSCounterIncrement},
+    {"counter-reset", ParseCSSCounterReset},
     {"direction", ParseCSSDirection},
     {"display", ParseCSSDisplay},
     {"float", ParseCSSFloat},
@@ -6570,14 +6737,26 @@ void  ParseHTMLSpecificStyle (Element el, char *cssRule, Document doc,
   DisplayMode         dispMode;
   PresentationContext ctxt;
   ElementType         elType;
+  Element             asc;
   char               *buff, *ptr, *end;
   ThotBool            isHTML;
 
   /*  A rule applying to BODY is really meant to address HTML */
   elType = TtaGetElementType (el);
   NewLineSkipped = 0;
-  /* store the current line for eventually reported errors */
+  /* store the current line for reporting errors and for displaying applied
+     style rules. */
   LineNumber = TtaGetElementLineNumber (el);
+  asc = el;
+  /* if the element has just been created (such as a <span>) for a new style
+  attribute, use the line number of its parent element, otherwise command
+  "Show applied style" would not display this style. */
+  while (LineNumber == 0 && asc)
+    {
+      asc = TtaGetParent (asc);
+      if (asc)
+	LineNumber = TtaGetElementLineNumber (asc);
+    }
   if (destroy)
     /* no reported errors */
     ParsedDoc = 0;

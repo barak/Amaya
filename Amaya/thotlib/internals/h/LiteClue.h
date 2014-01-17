@@ -25,7 +25,7 @@ gary@compgen.com
 */
 /* Revision History:
 $Log: LiteClue.h,v $
-Revision 1.5  2003/12/16 12:10:10  cvs
+Revision 1.5  2003-12-16 12:10:10  cvs
 Rename flags _WINDOWS by _WINGUI
 + the flag _WINDOWS must be used only for windows specific code.
 + the flag _WINGUI must be used only for old windows gui stuff.

@@ -130,18 +130,6 @@ intelGetString(GLcontext * ctx, GLenum name)
       case PCI_CHIP_I945_GM:
          chipset = "Intel(R) 945GM";
          break;
-      case PCI_CHIP_I945_GME:
-         chipset = "Intel(R) 945GME";
-         break;
-      case PCI_CHIP_G33_G:
-	 chipset = "Intel(R) G33";
-	 break;
-      case PCI_CHIP_Q35_G:
-	 chipset = "Intel(R) Q35";
-	 break;
-      case PCI_CHIP_Q33_G:
-	 chipset = "Intel(R) Q33";
-	 break;
       default:
          chipset = "Unknown Intel Chipset";
          break;
@@ -315,7 +303,7 @@ intelFinish(GLcontext * ctx)
    intelFlush(ctx);
    if (intel->batch->last_fence) {
       driFenceFinish(intel->batch->last_fence,
-                     DRM_FENCE_TYPE_EXE | DRM_I915_FENCE_TYPE_RW, GL_FALSE);
+                     0, GL_FALSE);
       driFenceUnReference(intel->batch->last_fence);
       intel->batch->last_fence = NULL;
    }

@@ -164,7 +164,7 @@ static void brw_set_src0( struct brw_instruction *insn,
 }
 
 
-void brw_set_src1( struct brw_instruction *insn,
+static void brw_set_src1( struct brw_instruction *insn,
 			  struct brw_reg reg )
 {
    assert(reg.file != BRW_MESSAGE_REGISTER_FILE);
@@ -186,7 +186,7 @@ void brw_set_src1( struct brw_instruction *insn,
        * in the future:
        */
       assert (reg.address_mode == BRW_ADDRESS_DIRECT);
-      //assert (reg.file == BRW_GENERAL_REGISTER_FILE);
+      assert (reg.file == BRW_GENERAL_REGISTER_FILE);
 
       if (insn->header.access_mode == BRW_ALIGN_1) {
 	 insn->bits3.da1.src1_subreg_nr = reg.subnr;
@@ -318,8 +318,7 @@ static void brw_set_dp_read_message( struct brw_instruction *insn,
    insn->bits3.dp_read.end_of_thread = end_of_thread;
 }
 
-static void brw_set_sampler_message(struct brw_context *brw,
-				     struct brw_instruction *insn,
+static void brw_set_sampler_message( struct brw_instruction *insn,
 				     GLuint binding_table_index,
 				     GLuint sampler,
 				     GLuint msg_type,
@@ -329,24 +328,14 @@ static void brw_set_sampler_message(struct brw_context *brw,
 {
    brw_set_src1(insn, brw_imm_d(0));
 
-   if (BRW_IS_GM45(brw) || BRW_IS_G4X(brw)) {
-      insn->bits3.sampler_gm45_g4x.binding_table_index = binding_table_index;
-      insn->bits3.sampler_gm45_g4x.sampler = sampler;
-      insn->bits3.sampler_gm45_g4x.msg_type = msg_type;
-      insn->bits3.sampler_gm45_g4x.response_length = response_length;
-      insn->bits3.sampler_gm45_g4x.msg_length = msg_length;
-      insn->bits3.sampler_gm45_g4x.end_of_thread = eot;
-      insn->bits3.sampler_gm45_g4x.msg_target = BRW_MESSAGE_TARGET_SAMPLER;
-   } else {
-      insn->bits3.sampler.binding_table_index = binding_table_index;
-      insn->bits3.sampler.sampler = sampler;
-      insn->bits3.sampler.msg_type = msg_type;
-      insn->bits3.sampler.return_format = BRW_SAMPLER_RETURN_FORMAT_FLOAT32;
-      insn->bits3.sampler.response_length = response_length;
-      insn->bits3.sampler.msg_length = msg_length;
-      insn->bits3.sampler.end_of_thread = eot;
-      insn->bits3.sampler.msg_target = BRW_MESSAGE_TARGET_SAMPLER;
-   }
+   insn->bits3.sampler.binding_table_index = binding_table_index;
+   insn->bits3.sampler.sampler = sampler;
+   insn->bits3.sampler.msg_type = msg_type;
+   insn->bits3.sampler.return_format = BRW_SAMPLER_RETURN_FORMAT_FLOAT32;
+   insn->bits3.sampler.response_length = response_length;
+   insn->bits3.sampler.msg_length = msg_length;
+   insn->bits3.sampler.end_of_thread = eot;
+   insn->bits3.sampler.msg_target = BRW_MESSAGE_TARGET_SAMPLER;
 }
 
 
@@ -608,34 +597,6 @@ void brw_ENDIF(struct brw_compile *p,
    }
 }
 
-struct brw_instruction *brw_BREAK(struct brw_compile *p)
-{
-   struct brw_instruction *insn;
-   insn = next_insn(p, BRW_OPCODE_BREAK);
-   brw_set_dest(insn, brw_ip_reg());
-   brw_set_src0(insn, brw_ip_reg());
-   brw_set_src1(insn, brw_imm_d(0x0));
-   insn->header.compression_control = BRW_COMPRESSION_NONE;
-   insn->header.execution_size = BRW_EXECUTE_8;
-   insn->header.mask_control = BRW_MASK_DISABLE;
-   insn->bits3.if_else.pad0 = 0;
-   return insn;
-}
-
-struct brw_instruction *brw_CONT(struct brw_compile *p)
-{
-   struct brw_instruction *insn;
-   insn = next_insn(p, BRW_OPCODE_CONTINUE);
-   brw_set_dest(insn, brw_ip_reg());
-   brw_set_src0(insn, brw_ip_reg());
-   brw_set_src1(insn, brw_imm_d(0x0));
-   insn->header.compression_control = BRW_COMPRESSION_NONE;
-   insn->header.execution_size = BRW_EXECUTE_8;
-   insn->header.mask_control = BRW_MASK_DISABLE;
-   insn->bits3.if_else.pad0 = 0;
-   return insn;
-}
-
 /* DO/WHILE loop:
  */
 struct brw_instruction *brw_DO(struct brw_compile *p, GLuint execute_size)
@@ -647,15 +608,13 @@ struct brw_instruction *brw_DO(struct brw_compile *p, GLuint execute_size)
 
       /* Override the defaults for this instruction:
        */
-      brw_set_dest(insn, brw_null_reg());
-      brw_set_src0(insn, brw_null_reg());
-      brw_set_src1(insn, brw_null_reg());
+      brw_set_dest(insn, retype(brw_vec1_grf(0,0), BRW_REGISTER_TYPE_UD));
+      brw_set_src0(insn, retype(brw_vec1_grf(0,0), BRW_REGISTER_TYPE_UD));
+      brw_set_src1(insn, retype(brw_vec1_grf(0,0), BRW_REGISTER_TYPE_UD));
 
       insn->header.compression_control = BRW_COMPRESSION_NONE;
       insn->header.execution_size = execute_size;
-      insn->header.predicate_control = BRW_PREDICATE_NONE;
       /* insn->header.mask_control = BRW_MASK_ENABLE; */
-      insn->header.mask_control = BRW_MASK_DISABLE;
 
       return insn;
    }
@@ -663,7 +622,7 @@ struct brw_instruction *brw_DO(struct brw_compile *p, GLuint execute_size)
 
 
 
-struct brw_instruction *brw_WHILE(struct brw_compile *p, 
+void brw_WHILE(struct brw_compile *p, 
 	       struct brw_instruction *do_insn)
 {
    struct brw_instruction *insn;
@@ -687,16 +646,14 @@ struct brw_instruction *brw_WHILE(struct brw_compile *p,
       insn->header.execution_size = do_insn->header.execution_size;
 
       assert(do_insn->header.opcode == BRW_OPCODE_DO);
-      insn->bits3.if_else.jump_count = do_insn - insn + 1;
+      insn->bits3.if_else.jump_count = do_insn - insn;
       insn->bits3.if_else.pop_count = 0;
       insn->bits3.if_else.pad0 = 0;
    }
 
 /*    insn->header.mask_control = BRW_MASK_ENABLE; */
 
-   insn->header.mask_control = BRW_MASK_DISABLE;
    p->current->header.predicate_control = BRW_PREDICATE_NONE;   
-   return insn;
 }
 
 
@@ -1028,7 +985,7 @@ void brw_SAMPLE(struct brw_compile *p,
 
       brw_set_dest(insn, dest);
       brw_set_src0(insn, src0);
-      brw_set_sampler_message(p->brw, insn,
+      brw_set_sampler_message(insn,
 			      binding_table_index,
 			      sampler,
 			      msg_type,

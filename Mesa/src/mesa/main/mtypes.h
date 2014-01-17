@@ -7,7 +7,7 @@
 
 /*
  * Mesa 3-D graphics library
- * Version:  7.0.3
+ * Version:  6.5.3
  *
  * Copyright (C) 1999-2007  Brian Paul   All Rights Reserved.
  *
@@ -1063,7 +1063,7 @@ struct gl_point_attrib
 {
    GLboolean SmoothFlag;	/**< True if GL_POINT_SMOOTH is enabled */
    GLfloat Size;		/**< User-specified point size */
-   GLfloat _Size;		/**< Size clamped to user limits */
+   GLfloat _Size;		/**< Size clamped to Const.Min/MaxPointSize */
    GLfloat Params[3];		/**< GL_EXT_point_parameters */
    GLfloat MinSize, MaxSize;	/**< GL_EXT_point_parameters */
    GLfloat Threshold;		/**< GL_EXT_point_parameters */
@@ -1522,6 +1522,12 @@ struct gl_texture_unit
    struct gl_texture_object *CurrentRect;    /**< GL_NV_texture_rectangle */
 
    struct gl_texture_object *_Current; /**< Points to really enabled tex obj */
+
+   struct gl_texture_object Saved1D;  /**< only used by glPush/PopAttrib */
+   struct gl_texture_object Saved2D;
+   struct gl_texture_object Saved3D;
+   struct gl_texture_object SavedCubeMap;
+   struct gl_texture_object SavedRect;
 
    /* GL_SGI_texture_color_table */
    struct gl_color_table ColorTable;
@@ -2842,6 +2848,7 @@ struct mesa_display_list
  */
 struct gl_dlist_state
 {
+   struct mesa_display_list *CallStack[MAX_LIST_NESTING];
    GLuint CallDepth;		/**< Current recursion calling depth */
 
    struct mesa_display_list *CurrentList;
@@ -3031,6 +3038,12 @@ struct __GLcontextRec
    /**@}*/
 
    struct gl_list_extensions ListExt; /**< driver dlist extensions */
+
+
+   GLuint _Facing; /**< This is a hack for 2-sided stencil test.
+		    *
+		    * We don't have a better way to communicate this value from
+		    * swrast_setup to swrast. */
 
    /** \name For debugging/development only */
    /*@{*/

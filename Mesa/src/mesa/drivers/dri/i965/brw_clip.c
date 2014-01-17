@@ -60,7 +60,7 @@ static void compile_clip_prog( struct brw_context *brw,
    
    /* Begin the compilation:
     */
-   brw_init_compile(brw, &c.func);
+   brw_init_compile(&c.func);
 
    c.func.single_program_flow = 1;
 
@@ -211,10 +211,6 @@ static void upload_clip_prog( struct brw_context *brw )
 	       break;
 	    }
 	 }
-
-    if (brw->attribs.Polygon->BackMode != GL_FILL ||
-        brw->attribs.Polygon->FrontMode != GL_FILL)
-        key.do_unfilled = 1;
 
 	 /* Most cases the fixed function units will handle.  Cases where
 	  * one or more polygon faces are unfilled will require help:

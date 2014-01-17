@@ -493,11 +493,6 @@ struct dd_function_table {
     */
    void (*FreeTexImageData)( GLcontext *ctx, struct gl_texture_image *tImage );
 
-   /** Map texture image data into user space */
-   void (*MapTexture)( GLcontext *ctx, struct gl_texture_object *tObj );
-   /** Unmap texture images from user space */
-   void (*UnmapTexture)( GLcontext *ctx, struct gl_texture_object *tObj );
-
    /**
     * Note: no context argument.  This function doesn't initially look
     * like it belongs here, except that the driver is the only entity
@@ -862,8 +857,6 @@ struct dd_function_table {
                            GLsizei *length, GLcharARB *sourceOut);
    void (*GetUniformfv)(GLcontext *ctx, GLuint program, GLint location,
                         GLfloat *params);
-   void (*GetUniformiv)(GLcontext *ctx, GLuint program, GLint location,
-                        GLint *params);
    GLint (*GetUniformLocation)(GLcontext *ctx, GLuint program,
                                const GLcharARB *name);
    GLboolean (*IsProgram)(GLcontext *ctx, GLuint name);

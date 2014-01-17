@@ -93,6 +93,9 @@ extern int HTDoClose (HTNet * net);
 /*
 */
 
+extern void HTSetSocketBufSize (int buffer_size);
+extern void HTUnSetSocketBufSize ();
+
 #endif   /* HTTCP_H */
 
 /*

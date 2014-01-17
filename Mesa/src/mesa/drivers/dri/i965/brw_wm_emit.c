@@ -122,30 +122,26 @@ static void emit_delta_xy(struct brw_compile *p,
    }
 }
 
-static void emit_wpos_xy(struct brw_wm_compile *c,
-			 const struct brw_reg *dst,
-			 GLuint mask,
-			 const struct brw_reg *arg0)
+static void emit_wpos_xy(struct brw_compile *p,
+			   const struct brw_reg *dst,
+			   GLuint mask,
+			   const struct brw_reg *arg0)
 {
-   struct brw_compile *p = &c->func;
-
-   /* Calculate the pixel offset from window bottom left into destination
-    * X and Y channels.
+   /* Calc delta X,Y by subtracting origin in r1 from the pixel
+    * centers.
     */
    if (mask & WRITEMASK_X) {
-      /* X' = X - origin */
-      brw_ADD(p,
+      brw_MOV(p,
 	      dst[0],
-	      retype(arg0[0], BRW_REGISTER_TYPE_W),
-	      brw_imm_d(0 - c->key.origin_x));
+	      retype(arg0[0], BRW_REGISTER_TYPE_UW));
    }
 
    if (mask & WRITEMASK_Y) {
-      /* Y' = height - (Y - origin_y) = height + origin_y - Y */
-      brw_ADD(p,
+      /* TODO -- window_height - Y */
+      brw_MOV(p,
 	      dst[1],
-	      negate(retype(arg0[1], BRW_REGISTER_TYPE_W)),
-	      brw_imm_d(c->key.origin_y + c->key.drawable_height - 1));
+	      negate(retype(arg0[1], BRW_REGISTER_TYPE_UW)));
+
    }
 }
 
@@ -223,10 +219,6 @@ static void emit_pinterp( struct brw_compile *p,
       if (mask & (1<<i)) {
 	 brw_LINE(p, brw_null_reg(), interp[i], deltas[0]);
 	 brw_MAC(p, dst[i], suboffset(interp[i],1), deltas[1]);
-      }
-   }
-   for(i = 0; i < 4; i++ ) {
-      if (mask & (1<<i)) {
 	 brw_MUL(p, dst[i], dst[i], w[3]);
       }
    }
@@ -237,20 +229,20 @@ static void emit_cinterp( struct brw_compile *p,
 			 GLuint mask,
 			 const struct brw_reg *arg0 )
 {
-	struct brw_reg interp[4];
-	GLuint nr = arg0[0].nr;
-	GLuint i;
+   struct brw_reg interp[4];
+   GLuint nr = arg0[0].nr;
+   GLuint i;
 
-	interp[0] = brw_vec1_grf(nr, 0);
-	interp[1] = brw_vec1_grf(nr, 4);
-	interp[2] = brw_vec1_grf(nr+1, 0);
-	interp[3] = brw_vec1_grf(nr+1, 4);
+   interp[0] = brw_vec1_grf(nr, 0);
+   interp[1] = brw_vec1_grf(nr, 4);
+   interp[2] = brw_vec1_grf(nr+1, 0);
+   interp[3] = brw_vec1_grf(nr+1, 4);
 
-	for(i = 0; i < 4; i++ ) {
-		if (mask & (1<<i)) {
-			brw_MOV(p, dst[i], suboffset(interp[i],3));	/* TODO: optimize away like other moves */
-		}
-	}
+   for(i = 0; i < 4; i++ ) {
+      if (mask & (1<<i)) {
+	 brw_MOV(p, dst[i], suboffset(interp[i],3));	/* TODO: optimize away like other moves */
+      }
+   }
 }
 
 
@@ -351,10 +343,11 @@ static void emit_lrp( struct brw_compile *p,
       }
    }
 }
-static void emit_sop( struct brw_compile *p, 
+
+
+static void emit_slt( struct brw_compile *p, 
 		      const struct brw_reg *dst,
 		      GLuint mask,
-		      GLuint cond,
 		      const struct brw_reg *arg0,
 		      const struct brw_reg *arg1 )
 {
@@ -363,66 +356,34 @@ static void emit_sop( struct brw_compile *p,
    for (i = 0; i < 4; i++) {
       if (mask & (1<<i)) {	
 	 brw_MOV(p, dst[i], brw_imm_f(0));
-	 brw_CMP(p, brw_null_reg(), cond, arg0[i], arg1[i]);
+	 brw_CMP(p, brw_null_reg(), BRW_CONDITIONAL_L, arg0[i], arg1[i]);
 	 brw_MOV(p, dst[i], brw_imm_f(1.0));
 	 brw_set_predicate_control_flag_value(p, 0xff);
       }
    }
 }
 
-static void emit_slt( struct brw_compile *p, 
-		      const struct brw_reg *dst,
-		      GLuint mask,
-		      const struct brw_reg *arg0,
-		      const struct brw_reg *arg1 )
-{
-	 emit_sop(p, dst, mask, BRW_CONDITIONAL_L, arg0, arg1);
-}
-
-static void emit_sle( struct brw_compile *p, 
-		      const struct brw_reg *dst,
-		      GLuint mask,
-		      const struct brw_reg *arg0,
-		      const struct brw_reg *arg1 )
-{
-	 emit_sop(p, dst, mask, BRW_CONDITIONAL_LE, arg0, arg1);
-}
-
-static void emit_sgt( struct brw_compile *p, 
-		      const struct brw_reg *dst,
-		      GLuint mask,
-		      const struct brw_reg *arg0,
-		      const struct brw_reg *arg1 )
-{
-	 emit_sop(p, dst, mask, BRW_CONDITIONAL_G, arg0, arg1);
-}
-
+/* Isn't this just the same as the above with the args swapped?
+ */
 static void emit_sge( struct brw_compile *p, 
 		      const struct brw_reg *dst,
 		      GLuint mask,
 		      const struct brw_reg *arg0,
 		      const struct brw_reg *arg1 )
 {
-	 emit_sop(p, dst, mask, BRW_CONDITIONAL_GE, arg0, arg1);
+   GLuint i;
+
+   for (i = 0; i < 4; i++) {
+      if (mask & (1<<i)) {	
+	 brw_MOV(p, dst[i], brw_imm_f(0));
+	 brw_CMP(p, brw_null_reg(), BRW_CONDITIONAL_GE, arg0[i], arg1[i]);
+	 brw_MOV(p, dst[i], brw_imm_f(1.0));
+	 brw_set_predicate_control_flag_value(p, 0xff);
+      }
+   }
 }
 
-static void emit_seq( struct brw_compile *p, 
-		      const struct brw_reg *dst,
-		      GLuint mask,
-		      const struct brw_reg *arg0,
-		      const struct brw_reg *arg1 )
-{
-	 emit_sop(p, dst, mask, BRW_CONDITIONAL_EQ, arg0, arg1);
-}
 
-static void emit_sne( struct brw_compile *p, 
-		      const struct brw_reg *dst,
-		      GLuint mask,
-		      const struct brw_reg *arg0,
-		      const struct brw_reg *arg1 )
-{
-	 emit_sop(p, dst, mask, BRW_CONDITIONAL_NEQ, arg0, arg1);
-}
 
 static void emit_cmp( struct brw_compile *p, 
 		      const struct brw_reg *dst,
@@ -504,9 +465,6 @@ static void emit_dp3( struct brw_compile *p,
 		      const struct brw_reg *arg0,
 		      const struct brw_reg *arg1 )
 {
-   if (!(mask & WRITEMASK_XYZW))
-      return; /* Do not emit dead code*/
-
    assert((mask & WRITEMASK_XYZW) == WRITEMASK_X);
 
    brw_MUL(p, brw_null_reg(), arg0[0], arg1[0]);
@@ -524,9 +482,6 @@ static void emit_dp4( struct brw_compile *p,
 		      const struct brw_reg *arg0,
 		      const struct brw_reg *arg1 )
 {
-   if (!(mask & WRITEMASK_XYZW))
-      return; /* Do not emit dead code*/
-
    assert((mask & WRITEMASK_XYZW) == WRITEMASK_X);
 
    brw_MUL(p, brw_null_reg(), arg0[0], arg1[0]);
@@ -545,9 +500,6 @@ static void emit_dph( struct brw_compile *p,
 		      const struct brw_reg *arg0,
 		      const struct brw_reg *arg1 )
 {
-   if (!(mask & WRITEMASK_XYZW))
-      return; /* Do not emit dead code*/
-
    assert((mask & WRITEMASK_XYZW) == WRITEMASK_X);
 
    brw_MUL(p, brw_null_reg(), arg0[0], arg1[0]);
@@ -591,11 +543,8 @@ static void emit_math1( struct brw_compile *p,
 			GLuint mask,
 			const struct brw_reg *arg0 )
 {
-   if (!(mask & WRITEMASK_XYZW))
-      return; /* Do not emit dead code*/
-
-   //assert((mask & WRITEMASK_XYZW) == WRITEMASK_X ||
-   //	  function == BRW_MATH_FUNCTION_SINCOS);
+   assert((mask & WRITEMASK_XYZW) == WRITEMASK_X ||
+	  function == BRW_MATH_FUNCTION_SINCOS);
    
    brw_MOV(p, brw_message_reg(2), arg0[0]);
 
@@ -618,9 +567,6 @@ static void emit_math2( struct brw_compile *p,
 			const struct brw_reg *arg0,
 			const struct brw_reg *arg1)
 {
-   if (!(mask & WRITEMASK_XYZW))
-      return; /* Do not emit dead code*/
-
    assert((mask & WRITEMASK_XYZW) == WRITEMASK_X);
 
    brw_push_insn_state(p);
@@ -724,6 +670,7 @@ static void emit_tex( struct brw_wm_compile *c,
 	      responseLength,
 	      msgLength,
 	      0);	
+
 }
 
 
@@ -830,7 +777,6 @@ static void emit_kil( struct brw_wm_compile *c,
       brw_push_insn_state(p);
       brw_CMP(p, brw_null_reg(), BRW_CONDITIONAL_GE, arg0[i], brw_imm_f(0));   
       brw_set_predicate_control_flag_value(p, 0xff);
-      brw_set_compression_control(p, BRW_COMPRESSION_NONE);
       brw_AND(p, r0uw, brw_flag_reg(), r0uw);
       brw_pop_insn_state(p);
    }
@@ -1134,7 +1080,7 @@ void brw_wm_emit( struct brw_wm_compile *c )
 	 break;
 
       case WM_WPOSXY:
-	 emit_wpos_xy(c, dst, dst_flags, args[0]);
+	 emit_wpos_xy(p, dst, dst_flags, args[0]);
 	 break;
 
       case WM_PIXELW:
@@ -1262,21 +1208,9 @@ void brw_wm_emit( struct brw_wm_compile *c )
 	 emit_slt(p, dst, dst_flags, args[0], args[1]);
 	 break;
 
-      case OPCODE_SLE:
-	 emit_sle(p, dst, dst_flags, args[0], args[1]);
-	break;
-      case OPCODE_SGT:
-	 emit_sgt(p, dst, dst_flags, args[0], args[1]);
-	break;
       case OPCODE_SGE:
 	 emit_sge(p, dst, dst_flags, args[0], args[1]);
 	 break;
-      case OPCODE_SEQ:
-	 emit_seq(p, dst, dst_flags, args[0], args[1]);
-	break;
-      case OPCODE_SNE:
-	 emit_sne(p, dst, dst_flags, args[0], args[1]);
-	break;
 
       case OPCODE_LIT:
 	 emit_lit(p, dst, dst_flags, args[0]);
@@ -1297,8 +1231,7 @@ void brw_wm_emit( struct brw_wm_compile *c )
 	 break;
 
       default:
-	_mesa_printf("unsupport opcode %d in fragment program\n", 
-		inst->opcode);
+	 assert(0);
       }
       
       for (i = 0; i < 4; i++)

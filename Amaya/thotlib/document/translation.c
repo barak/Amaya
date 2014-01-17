@@ -275,23 +275,33 @@ static void ExportChar (wchar_t c, int fnum, char *outBuf, Document doc,
             }
           else if (c == 0xA0) /* &nbsp; */
             {
-              if (DocumentHasDocType && GetEntityFunction)
-                /* check if there is a DOCTYPE */
-                (*(Proc4)GetEntityFunction) ((void *)c, (void *)doc,
-                                             (void *)WithMath, (void *)&entity);
-              else
-                entity = NULL;
-              if (entity)
-                {
-                  /* alphanumeric entity accepted */
-                  strcpy ((char *)&mbc[0], "&nbsp;");
-                  nb_bytes2write = 6;
-                }
-              else
-                {
-                  nb_bytes2write = 1;
-                  mbc[0] = (unsigned char)0xA0;
-                }
+	      if (charset == UTF_8)
+		{
+		  nb_bytes2write = 2;
+		  mbc[0] = (unsigned char)0xC2;
+		  mbc[1] = (unsigned char)0xA0;
+		}
+	      else
+		{
+		  if (DocumentHasDocType && GetEntityFunction)
+		    /* check if there is a DOCTYPE */
+		    (*(Proc4)GetEntityFunction) ((void *)c, (void *)doc,
+						 (void *)WithMath,
+						 (void *)&entity);
+		  else
+		    entity = NULL;
+		  if (entity)
+		    {
+		      /* alphanumeric entity accepted */
+		      strcpy ((char *)&mbc[0], "&nbsp;");
+		      nb_bytes2write = 6;
+		    }
+		  else
+		    {
+		      nb_bytes2write = 1;
+		      mbc[0] = (unsigned char)0xA0;
+		    }
+		}
             }
         }
       /* translate the input character */
@@ -1336,10 +1346,10 @@ static void TranslateLeaf (PtrElement pEl, ThotBool transChar,
                         c = 0x22C3; /* n-ary union */
                         break;
                       case '<':
-                        c = 0x2329; /* mathematical left angle bracket */
+                        c = 0x27E8; /* mathematical left angle bracket */
                         break;
                       case '>':
-                        c = 0x232A; /* mathematical right angle bracket */
+                        c = 0x27E9; /* mathematical right angle bracket */
                         break;
                       case '|':
                         c = 0x2223; /* divides */

@@ -53,7 +53,7 @@ static const struct {
    GLuint min_entry_size;
    GLuint max_entry_size;
 } limits[CS+1] = {
-   { 16, 32, 1, 5 },			/* vs */
+   { 8, 32, 1, 5 },			/* vs */
    { 4, 8,  1, 5 },			/* gs */
    { 6, 8,  1, 5 },			/* clp */
    { 1, 8,  1, 12 },		        /* sf */
@@ -69,7 +69,7 @@ static GLboolean check_urb_layout( struct brw_context *brw )
    brw->urb.sf_start = brw->urb.clip_start + brw->urb.nr_clip_entries * brw->urb.vsize;
    brw->urb.cs_start = brw->urb.sf_start + brw->urb.nr_sf_entries * brw->urb.sfsize;
 
-   return brw->urb.cs_start + brw->urb.nr_cs_entries * brw->urb.csize <= URB_SIZES(brw);
+   return brw->urb.cs_start + brw->urb.nr_cs_entries * brw->urb.csize <= 256;
 }
 
 /* Most minimal update, forces re-emit of URB fence packet after GS
@@ -153,7 +153,7 @@ static void recalculate_urb_fence( struct brw_context *brw )
 		      brw->urb.clip_start,
 		      brw->urb.sf_start,
 		      brw->urb.cs_start, 
-		      URB_SIZES(brw));
+		      256);
       
       brw->state.dirty.brw |= BRW_NEW_URB_FENCE;
    }
@@ -191,13 +191,13 @@ void brw_upload_urb_fence(struct brw_context *brw)
    /* The ordering below is correct, not the layout in the
     * instruction.
     *
-    * There are 256/384 urb reg pairs in total.
+    * There are 256 urb reg pairs in total.
     */
    uf.bits0.vs_fence  = brw->urb.gs_start;
    uf.bits0.gs_fence  = brw->urb.clip_start; 
    uf.bits0.clp_fence = brw->urb.sf_start; 
    uf.bits1.sf_fence  = brw->urb.cs_start; 
-   uf.bits1.cs_fence  = URB_SIZES(brw);
+   uf.bits1.cs_fence  = 256;
 
    BRW_BATCH_STRUCT(brw, &uf);
 }

@@ -6,7 +6,7 @@
 
 /*
  * Mesa 3-D graphics library
- * Version:  7.0.2
+ * Version:  7.0
  *
  * Copyright (C) 1999-2007  Brian Paul   All Rights Reserved.
  *
@@ -467,11 +467,16 @@ alloc_shared_state( GLcontext *ctx )
    if (!ss->DefaultRect)
       goto cleanup;
 
-   /* sanity check */
-   assert(ss->Default1D->RefCount == 1);
+   /* Effectively bind the default textures to all texture units */
+   ss->Default1D->RefCount += MAX_TEXTURE_IMAGE_UNITS;
+   ss->Default2D->RefCount += MAX_TEXTURE_IMAGE_UNITS;
+   ss->Default3D->RefCount += MAX_TEXTURE_IMAGE_UNITS;
+   ss->DefaultCubeMap->RefCount += MAX_TEXTURE_IMAGE_UNITS;
+   ss->DefaultRect->RefCount += MAX_TEXTURE_IMAGE_UNITS;
 
    _glthread_INIT_MUTEX(ss->TexMutex);
    ss->TextureStateStamp = 0;
+
 
 #if FEATURE_EXT_framebuffer_object
    ss->FrameBuffers = _mesa_NewHashTable();
@@ -482,9 +487,10 @@ alloc_shared_state( GLcontext *ctx )
       goto cleanup;
 #endif
 
+
    return GL_TRUE;
 
-cleanup:
+ cleanup:
    /* Ran out of memory at some point.  Free everything and return NULL */
    if (ss->DisplayList)
       _mesa_DeleteHashTable(ss->DisplayList);
@@ -610,21 +616,6 @@ delete_arrayobj_cb(GLuint id, void *data, void *userData)
 }
 
 /**
- * Callback for freeing shader program data. Call it before delete_shader_cb
- * to avoid memory access error.
- */
-static void
-free_shader_program_data_cb(GLuint id, void *data, void *userData)
-{
-   GLcontext *ctx = (GLcontext *) userData;
-   struct gl_shader_program *shProg = (struct gl_shader_program *) data;
-
-   if (shProg->Type == GL_SHADER_PROGRAM_MESA) {
-       _mesa_free_shader_program_data(ctx, shProg);
-   }
-}
-
-/**
  * Callback for deleting shader and shader programs objects.
  * Called by _mesa_HashDeleteAll().
  */
@@ -642,39 +633,6 @@ delete_shader_cb(GLuint id, void *data, void *userData)
       _mesa_free_shader_program(ctx, shProg);
    }
 }
-
-/**
- * Callback for deleting a framebuffer object.  Called by _mesa_HashDeleteAll()
- */
-static void
-delete_framebuffer_cb(GLuint id, void *data, void *userData)
-{
-   struct gl_framebuffer *fb = (struct gl_framebuffer *) data;
-   /* The fact that the framebuffer is in the hashtable means its refcount
-    * is one, but we're removing from the hashtable now.  So clear refcount.
-    */
-   /*assert(fb->RefCount == 1);*/
-   fb->RefCount = 0;
-
-   /* NOTE: Delete should always be defined but there are two reports
-    * of it being NULL (bugs 13507, 14293).  Work-around for now.
-    */
-   if (fb->Delete)
-      fb->Delete(fb);
-}
-
-/**
- * Callback for deleting a renderbuffer object. Called by _mesa_HashDeleteAll()
- */
-static void
-delete_renderbuffer_cb(GLuint id, void *data, void *userData)
-{
-   struct gl_renderbuffer *rb = (struct gl_renderbuffer *) data;
-   rb->RefCount = 0;  /* see comment for FBOs above */
-   if (rb->Delete)
-      rb->Delete(rb);
-}
-
 
 
 /**
@@ -698,15 +656,29 @@ free_shared_state( GLcontext *ctx, struct gl_shared_state *ss )
    _mesa_HashDeleteAll(ss->DisplayList, delete_displaylist_cb, ctx);
    _mesa_DeleteHashTable(ss->DisplayList);
 
+   /*
+    * Free texture objects
+    */
+   ASSERT(ctx->Driver.DeleteTexture);
+   /* the default textures */
+   ctx->Driver.DeleteTexture(ctx, ss->Default1D);
+   ctx->Driver.DeleteTexture(ctx, ss->Default2D);
+   ctx->Driver.DeleteTexture(ctx, ss->Default3D);
+   ctx->Driver.DeleteTexture(ctx, ss->DefaultCubeMap);
+   ctx->Driver.DeleteTexture(ctx, ss->DefaultRect);
+   /* all other textures */
+   _mesa_HashDeleteAll(ss->TexObjects, delete_texture_cb, ctx);
+   _mesa_DeleteHashTable(ss->TexObjects);
+
 #if defined(FEATURE_NV_vertex_program) || defined(FEATURE_NV_fragment_program)
    _mesa_HashDeleteAll(ss->Programs, delete_program_cb, ctx);
    _mesa_DeleteHashTable(ss->Programs);
 #endif
 #if FEATURE_ARB_vertex_program
-   ctx->Driver.DeleteProgram(ctx, ss->DefaultVertexProgram);
+   _mesa_delete_program(ctx, ss->DefaultVertexProgram);
 #endif
 #if FEATURE_ARB_fragment_program
-   ctx->Driver.DeleteProgram(ctx, ss->DefaultFragmentProgram);
+   _mesa_delete_program(ctx, ss->DefaultFragmentProgram);
 #endif
 
 #if FEATURE_ATI_fragment_shader
@@ -724,32 +696,14 @@ free_shared_state( GLcontext *ctx, struct gl_shared_state *ss )
    _mesa_DeleteHashTable(ss->ArrayObjects);
 
 #if FEATURE_ARB_shader_objects
-   _mesa_HashWalk(ss->ShaderObjects, free_shader_program_data_cb, ctx);
    _mesa_HashDeleteAll(ss->ShaderObjects, delete_shader_cb, ctx);
    _mesa_DeleteHashTable(ss->ShaderObjects);
 #endif
 
 #if FEATURE_EXT_framebuffer_object
-   _mesa_HashDeleteAll(ss->FrameBuffers, delete_framebuffer_cb, ctx);
    _mesa_DeleteHashTable(ss->FrameBuffers);
-   _mesa_HashDeleteAll(ss->RenderBuffers, delete_renderbuffer_cb, ctx);
    _mesa_DeleteHashTable(ss->RenderBuffers);
 #endif
-
-   /*
-    * Free texture objects (after FBOs since some textures might have
-    * been bound to FBOs).
-    */
-   ASSERT(ctx->Driver.DeleteTexture);
-   /* the default textures */
-   ctx->Driver.DeleteTexture(ctx, ss->Default1D);
-   ctx->Driver.DeleteTexture(ctx, ss->Default2D);
-   ctx->Driver.DeleteTexture(ctx, ss->Default3D);
-   ctx->Driver.DeleteTexture(ctx, ss->DefaultCubeMap);
-   ctx->Driver.DeleteTexture(ctx, ss->DefaultRect);
-   /* all other textures */
-   _mesa_HashDeleteAll(ss->TexObjects, delete_texture_cb, ctx);
-   _mesa_DeleteHashTable(ss->TexObjects);
 
    _glthread_DESTROY_MUTEX(ss->Mutex);
 
@@ -771,7 +725,7 @@ _mesa_init_current(GLcontext *ctx)
    }
 
    /* redo special cases: */
-   ASSIGN_4V( ctx->Current.Attrib[VERT_ATTRIB_WEIGHT], 1.0, 0.0, 0.0, 0.0 );
+   ASSIGN_4V( ctx->Current.Attrib[VERT_ATTRIB_WEIGHT], 1.0, 0.0, 0.0, 1.0 );
    ASSIGN_4V( ctx->Current.Attrib[VERT_ATTRIB_NORMAL], 0.0, 0.0, 1.0, 1.0 );
    ASSIGN_4V( ctx->Current.Attrib[VERT_ATTRIB_COLOR0], 1.0, 1.0, 1.0, 1.0 );
    ASSIGN_4V( ctx->Current.Attrib[VERT_ATTRIB_COLOR1], 0.0, 0.0, 0.0, 1.0 );
@@ -999,6 +953,7 @@ init_attrib_groups(GLcontext *ctx)
    /* Miscellaneous */
    ctx->NewState = _NEW_ALL;
    ctx->ErrorValue = (GLenum) GL_NO_ERROR;
+   ctx->_Facing = 0;
 
    return GL_TRUE;
 }
@@ -1202,20 +1157,18 @@ _mesa_create_context(const GLvisual *visual,
 void
 _mesa_free_context_data( GLcontext *ctx )
 {
-   if (!_mesa_get_current_context()){
-      /* No current context, but we may need one in order to delete
-       * texture objs, etc.  So temporarily bind the context now.
-       */
-      _mesa_make_current(ctx, NULL, NULL);
+   /* if we're destroying the current context, unbind it first */
+   if (ctx == _mesa_get_current_context()) {
+      _mesa_make_current(NULL, NULL, NULL);
+   }
+   else {
+      /* unreference WinSysDraw/Read buffers */
+      _mesa_unreference_framebuffer(&ctx->WinSysDrawBuffer);
+      _mesa_unreference_framebuffer(&ctx->WinSysReadBuffer);
+      _mesa_unreference_framebuffer(&ctx->DrawBuffer);
+      _mesa_unreference_framebuffer(&ctx->ReadBuffer);
    }
 
-   /* unreference WinSysDraw/Read buffers */
-   _mesa_unreference_framebuffer(&ctx->WinSysDrawBuffer);
-   _mesa_unreference_framebuffer(&ctx->WinSysReadBuffer);
-   _mesa_unreference_framebuffer(&ctx->DrawBuffer);
-   _mesa_unreference_framebuffer(&ctx->ReadBuffer);
-
-   _mesa_free_attrib_data(ctx);
    _mesa_free_lighting_data( ctx );
    _mesa_free_eval_data( ctx );
    _mesa_free_texture_data( ctx );
@@ -1247,11 +1200,6 @@ _mesa_free_context_data( GLcontext *ctx )
 
    if (ctx->Extensions.String)
       _mesa_free((void *) ctx->Extensions.String);
-
-   /* unbind the context if it's currently bound */
-   if (ctx == _mesa_get_current_context()) {
-      _mesa_make_current(NULL, NULL, NULL);
-   }
 }
 
 
@@ -1483,6 +1431,8 @@ void
 _mesa_make_current( GLcontext *newCtx, GLframebuffer *drawBuffer,
                     GLframebuffer *readBuffer )
 {
+   GET_CURRENT_CONTEXT(oldCtx);
+
    if (MESA_VERBOSE & VERBOSE_API)
       _mesa_debug(newCtx, "_mesa_make_current()\n");
 
@@ -1507,6 +1457,13 @@ _mesa_make_current( GLcontext *newCtx, GLframebuffer *drawBuffer,
    _glapi_set_context((void *) newCtx);
    ASSERT(_mesa_get_current_context() == newCtx);
 
+   if (oldCtx) {
+      _mesa_unreference_framebuffer(&oldCtx->WinSysDrawBuffer);
+      _mesa_unreference_framebuffer(&oldCtx->WinSysReadBuffer);
+      _mesa_unreference_framebuffer(&oldCtx->DrawBuffer);
+      _mesa_unreference_framebuffer(&oldCtx->ReadBuffer);
+   }
+         
    if (!newCtx) {
       _glapi_set_dispatch(NULL);  /* none current */
    }

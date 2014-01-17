@@ -373,7 +373,7 @@ void intelClearWithBlit(GLcontext *ctx, GLbitfield flags)
    clear_depth = 0;
 
    if (flags & BUFFER_BIT_DEPTH) {
-      clear_depth = (GLuint)(ctx->Depth.Clear * ctx->DrawBuffer->_DepthMax);
+      clear_depth = (GLuint)(ctx->Depth.Clear * intel->ClearDepth);
    }
 
    if (flags & BUFFER_BIT_STENCIL) {
@@ -537,8 +537,7 @@ intelEmitImmediateColorExpandBlit(struct intel_context *intel,
 {
    struct xy_setup_blit setup;
    struct xy_text_immediate_blit text;
-   int dwords = ALIGN(src_size, 8) / 4;
-   uint32_t opcode, br13;
+   int dwords = ((src_size + 7) & ~7) / 4;
 
    assert( logic_op - GL_CLEAR >= 0 );
    assert( logic_op - GL_CLEAR < 0x10 );

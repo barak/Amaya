@@ -91,6 +91,11 @@ static void set_bit( GLubyte *dest,
    dest[bit/8] |= 1 << (bit % 8);
 }
 
+static int align(int x, int align)
+{
+   return (x + align - 1) & ~(align - 1);
+}
+
 /* Extract a rectangle's worth of data from the bitmap.  Called
  * per-cliprect.
  */
@@ -142,7 +147,7 @@ static GLuint get_bitmap_rect(GLsizei width, GLsizei height,
       }
 
       if (row_align)
-	 bit = ALIGN(bit, row_align);
+	 bit = (bit + row_align - 1) & ~(row_align - 1);
    }
 
    return count;
@@ -163,12 +168,12 @@ do_blit_bitmap( GLcontext *ctx,
 {
    struct intel_context *intel = intel_context(ctx);
    struct intel_region *dst = intel_drawbuf_region(intel);
-   GLfloat tmpColor[4];
-   GLubyte ubcolor[4];
-   GLuint color8888, color565;
+   
+   union {
+      GLuint ui;
+      GLubyte ub[4];
+   } color;
 
-   if (!dst)
-       return GL_FALSE;
 
    if (unpack->BufferObj->Name) {
       bitmap = map_pbo(ctx, width, height, unpack, bitmap);
@@ -176,20 +181,10 @@ do_blit_bitmap( GLcontext *ctx,
 	 return GL_TRUE;	/* even though this is an error, we're done */
    }
 
-   COPY_4V(tmpColor, ctx->Current.RasterColor);
-
-   if (NEED_SECONDARY_COLOR(ctx)) {
-       ADD_3V(tmpColor, tmpColor, ctx->Current.RasterSecondaryColor);
-   }
-
-   UNCLAMPED_FLOAT_TO_UBYTE(ubcolor[0], tmpColor[0]);
-   UNCLAMPED_FLOAT_TO_UBYTE(ubcolor[1], tmpColor[1]);
-   UNCLAMPED_FLOAT_TO_UBYTE(ubcolor[2], tmpColor[2]);
-   UNCLAMPED_FLOAT_TO_UBYTE(ubcolor[3], tmpColor[3]);
-
-   color8888 = INTEL_PACKCOLOR8888(ubcolor[0], ubcolor[1], ubcolor[2], ubcolor[3]);
-   color565 = INTEL_PACKCOLOR565(ubcolor[0], ubcolor[1], ubcolor[2]);
- 
+   UNCLAMPED_FLOAT_TO_CHAN(color.ub[0], ctx->Current.RasterColor[2]);
+   UNCLAMPED_FLOAT_TO_CHAN(color.ub[1], ctx->Current.RasterColor[1]);
+   UNCLAMPED_FLOAT_TO_CHAN(color.ub[2], ctx->Current.RasterColor[0]);
+   UNCLAMPED_FLOAT_TO_CHAN(color.ub[3], ctx->Current.RasterColor[3]);
 
    /* Does zoom apply to bitmaps?
     */
@@ -231,10 +226,10 @@ do_blit_bitmap( GLcontext *ctx,
       dsty = dPriv->y + (dPriv->h - dsty - height);  
       dstx = dPriv->x + dstx;
 
-      dest_rect.x1 = dstx < 0 ? 0 : dstx;
-      dest_rect.y1 = dsty < 0 ? 0 : dsty;
-      dest_rect.x2 = dstx + width < 0 ? 0 : dstx + width;
-      dest_rect.y2 = dsty + height < 0 ? 0 : dsty + height;
+      dest_rect.x1 = dstx;
+      dest_rect.y1 = dsty;
+      dest_rect.x2 = dstx + width;
+      dest_rect.y2 = dsty + height;
 
       for (i = 0; i < nbox; i++) {
          drm_clip_rect_t rect;
@@ -264,7 +259,7 @@ do_blit_bitmap( GLcontext *ctx,
 	    for (px = 0; px < box_w; px += DX) { 
 	       int h = MIN2(DY, box_h - py);
 	       int w = MIN2(DX, box_w - px); 
-	       GLuint sz = ALIGN(ALIGN(w,8) * h, 64)/8;
+	       GLuint sz = align(align(w,8) * h, 64)/8;
 	       GLenum logic_op = ctx->Color.ColorLogicOpEnabled ?
 		  ctx->Color.LogicOp : GL_COPY;
 
@@ -288,7 +283,7 @@ do_blit_bitmap( GLcontext *ctx,
 						  dst->cpp,
 						  (GLubyte *)stipple, 
 						  sz,
-						  (dst->cpp == 2) ? color565 : color8888,
+						  color.ui,
 						  dst->pitch,
 						  dst->buffer,
 						  0,

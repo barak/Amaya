@@ -7,12 +7,12 @@
  **
  ** Date : 02 / Nov / 2001
  **
- ** $Id: awparser.c,v 1.6 2008/05/13 09:30:27 kia Exp $
- ** $Date: 2008/05/13 09:30:27 $
+ ** $Id: awparser.c,v 1.6 2008-05-13 09:30:27 kia Exp $
+ ** $Date: 2008-05-13 09:30:27 $
  ** $Author: kia $
  ** $Revision: 1.6 $
  ** $Log: awparser.c,v $
- ** Revision 1.6  2008/05/13 09:30:27  kia
+ ** Revision 1.6  2008-05-13 09:30:27  kia
  ** More char* fixes
  **
  ** Revision 1.5  2003/11/19 12:33:16  gully

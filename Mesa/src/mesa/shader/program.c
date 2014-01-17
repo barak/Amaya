@@ -187,6 +187,7 @@ _mesa_init_program_struct( GLcontext *ctx, struct gl_program *prog,
 {
    (void) ctx;
    if (prog) {
+      _mesa_bzero(prog, sizeof(*prog));
       prog->Id = id;
       prog->Target = target;
       prog->Resident = GL_TRUE;
@@ -342,7 +343,7 @@ _mesa_clone_program(GLcontext *ctx, const struct gl_program *prog)
    clone->Format = prog->Format;
    clone->Instructions = _mesa_alloc_instructions(prog->NumInstructions);
    if (!clone->Instructions) {
-      ctx->Driver.DeleteProgram(ctx, clone);
+      _mesa_delete_program(ctx, clone);
       return NULL;
    }
    _mesa_copy_instructions(clone->Instructions, prog->Instructions,

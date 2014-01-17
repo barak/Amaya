@@ -112,8 +112,6 @@ _mesa_init_driver_functions(struct dd_function_table *driver)
    driver->DeleteTexture = _mesa_delete_texture_object;
    driver->NewTextureImage = _mesa_new_texture_image;
    driver->FreeTexImageData = _mesa_free_texture_image_data; 
-   driver->MapTexture = NULL;
-   driver->UnmapTexture = NULL;
    driver->TextureMemCpy = _mesa_memcpy; 
    driver->IsTextureResident = NULL;
    driver->PrioritizeTexture = NULL;
@@ -284,7 +282,6 @@ _mesa_init_glsl_driver_functions(struct dd_function_table *driver)
    driver->GetShaderInfoLog = _mesa_get_shader_info_log;
    driver->GetShaderSource = _mesa_get_shader_source;
    driver->GetUniformfv = _mesa_get_uniformfv;
-   driver->GetUniformiv = _mesa_get_uniformiv;
    driver->GetUniformLocation = _mesa_get_uniform_location;
    driver->IsProgram = _mesa_is_program;
    driver->IsShader = _mesa_is_shader;

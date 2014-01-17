@@ -150,18 +150,22 @@ _mesa_remove_attachment(GLcontext *ctx, struct gl_renderbuffer_attachment *att)
 {
    if (att->Type == GL_TEXTURE) {
       ASSERT(att->Texture);
-      if (ctx->Driver.FinishRenderTexture) {
-         /* tell driver we're done rendering to this texobj */
-         ctx->Driver.FinishRenderTexture(ctx, att);
+      att->Texture->RefCount--;
+      if (att->Texture->RefCount == 0) {
+	 ctx->Driver.DeleteTexture(ctx, att->Texture);
       }
-      _mesa_reference_texobj(&att->Texture, NULL); /* unbind */
-      ASSERT(!att->Texture);
+      else {
+         /* tell driver that we're done rendering to this texture. */
+         if (ctx->Driver.FinishRenderTexture) {
+            ctx->Driver.FinishRenderTexture(ctx, att);
+         }
+      }
+      att->Texture = NULL;
    }
    if (att->Type == GL_TEXTURE || att->Type == GL_RENDERBUFFER_EXT) {
       ASSERT(att->Renderbuffer);
       ASSERT(!att->Texture);
-      _mesa_reference_renderbuffer(&att->Renderbuffer, NULL); /* unbind */
-      ASSERT(!att->Renderbuffer);
+      _mesa_reference_renderbuffer(&att->Renderbuffer, NULL);
    }
    att->Type = GL_NONE;
    att->Complete = GL_TRUE;
@@ -187,8 +191,8 @@ _mesa_set_texture_attachment(GLcontext *ctx,
       /* new attachment */
       _mesa_remove_attachment(ctx, att);
       att->Type = GL_TEXTURE;
-      assert(!att->Texture);
-      _mesa_reference_texobj(&att->Texture, texObj);
+      att->Texture = texObj;
+      texObj->RefCount++;
    }
 
    /* always update these fields */
@@ -302,7 +306,7 @@ test_attachment_completeness(const GLcontext *ctx, GLenum format,
             /* OK */
          }
          else if (ctx->Extensions.EXT_packed_depth_stencil &&
-                  texImage->TexFormat->BaseFormat == GL_DEPTH_STENCIL_EXT) {
+                  att->Renderbuffer->_BaseFormat == GL_DEPTH_STENCIL_EXT) {
             /* OK */
          }
          else {
@@ -979,7 +983,6 @@ _mesa_BindFramebufferEXT(GLenum target, GLuint framebuffer)
 	    return;
 	 }
          _mesa_HashInsert(ctx->Shared->FrameBuffers, framebuffer, newFb);
-         ASSERT(newFb->RefCount == 1);
       }
    }
    else {
@@ -1003,10 +1006,8 @@ _mesa_BindFramebufferEXT(GLenum target, GLuint framebuffer)
    if (bindDrawBuf) {
       /* check if old FB had any texture attachments */
       check_end_texture_render(ctx, ctx->DrawBuffer);
-
-      /* bind new drawing buffer */
+      /* check if time to delete this framebuffer */
       _mesa_reference_framebuffer(&ctx->DrawBuffer, newFb);
-
       if (newFb->Name != 0) {
          /* check if newly bound framebuffer has any texture attachments */
          check_begin_texture_render(ctx, newFb);
@@ -1464,12 +1465,7 @@ _mesa_GetFramebufferAttachmentParameterivEXT(GLenum target, GLenum attachment,
       return;
    case GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE_EXT:
       if (att->Type == GL_TEXTURE) {
-         if (att->Texture && att->Texture->Target == GL_TEXTURE_CUBE_MAP) {
-            *params = GL_TEXTURE_CUBE_MAP_POSITIVE_X + att->CubeMapFace;
-         }
-         else {
-            *params = 0;
-         }
+	 *params = GL_TEXTURE_CUBE_MAP_POSITIVE_X + att->CubeMapFace;
       }
       else {
 	 _mesa_error(ctx, GL_INVALID_ENUM,
@@ -1478,12 +1474,7 @@ _mesa_GetFramebufferAttachmentParameterivEXT(GLenum target, GLenum attachment,
       return;
    case GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_3D_ZOFFSET_EXT:
       if (att->Type == GL_TEXTURE) {
-         if (att->Texture && att->Texture->Target == GL_TEXTURE_3D) {
-            *params = att->Zoffset;
-         }
-         else {
-            *params = 0;
-         }
+	 *params = att->Zoffset;
       }
       else {
 	 _mesa_error(ctx, GL_INVALID_ENUM,

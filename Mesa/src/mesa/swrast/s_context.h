@@ -128,8 +128,7 @@ typedef struct
     * _swrast_validate_derived():
     */
    GLbitfield _RasterMask;
-   GLfloat _BackfaceSign;      /** +1 or -1 */
-   GLfloat _BackfaceCullSign;  /** +1, 0, or -1 */
+   GLfloat _BackfaceSign;
    GLboolean _PreferPixelFog;    /* Compute fog blend factor per fragment? */
    GLboolean _AnyTextureCombine;
    GLboolean _FogEnabled;
@@ -152,7 +151,6 @@ typedef struct
    /* Working values:
     */
    GLuint StippleCounter;    /**< Line stipple counter */
-   GLuint PointLineFacing;
    GLbitfield NewState;
    GLuint StateChanges;
    GLenum Primitive;    /* current primitive being drawn (ala glBegin) */
@@ -205,7 +203,6 @@ typedef struct
     * on some systems.
     */
    SWspanarrays *SpanArrays;
-   SWspanarrays *ZoomedArrays;  /**< For pixel zooming */
 
    /**
     * Used to buffer N GL_POINTS, instead of rendering one by one.

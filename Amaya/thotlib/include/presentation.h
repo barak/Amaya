@@ -102,12 +102,16 @@ typedef int        *PRule;
 #define PRContentString 86
 #define PRContentURL 87
 #define PRContentAttr 88
-#define PRFillRule 89
-#define PRMarker 90
-#define PRMarkerEnd 91
-#define PRMarkerMid 92
-#define PRMarkerStart 93
-#define LAST_PRES_RULE_TYPE 94
+#define PRContentCounter 89
+#define PRContentCounterStyle 90
+#define PRCounterReset 91
+#define PRCounterIncrement 92
+#define PRFillRule 93
+#define PRMarker 94
+#define PRMarkerEnd 95
+#define PRMarkerMid 96
+#define PRMarkerStart 97
+#define LAST_PRES_RULE_TYPE 98
 
 /*
  * A bunch of constants describing the most common values for presentation
@@ -248,9 +252,10 @@ typedef int        *PRule;
 #define LowerRoman 6
 #define UpperRoman 7
 #define LowerGreek 8
-#define LowerLatin 9
-#define UpperLatin 10
-#define ListStyleTypeNone 11
+#define UpperGreek 9
+#define LowerLatin 10
+#define UpperLatin 11
+#define ListStyleTypeNone 12
 
 /* values for rule PRListStylePosition */
 #define Inside 1

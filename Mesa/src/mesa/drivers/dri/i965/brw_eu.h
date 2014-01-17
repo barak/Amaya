@@ -105,7 +105,6 @@ struct brw_compile {
 
    GLuint flag_value;
    GLboolean single_program_flow;
-   struct brw_context *brw;
 };
 
 
@@ -335,14 +334,14 @@ static __inline struct brw_reg brw_imm_ud( GLuint ud )
 static __inline struct brw_reg brw_imm_uw( GLushort uw )
 {
    struct brw_reg imm = brw_imm_reg(BRW_REGISTER_TYPE_UW);
-   imm.dw1.ud = uw | (uw << 16);
+   imm.dw1.ud = uw;
    return imm;
 }
 
 static __inline struct brw_reg brw_imm_w( GLshort w )
 {
    struct brw_reg imm = brw_imm_reg(BRW_REGISTER_TYPE_W);
-   imm.dw1.d = w | (w << 16);
+   imm.dw1.d = w;
    return imm;
 }
 
@@ -649,16 +648,6 @@ static __inline struct brw_reg deref_1uw(struct brw_indirect ptr, GLint offset)
    return retype(deref_1f(ptr, offset), BRW_REGISTER_TYPE_UW);
 }
 
-static __inline struct brw_reg deref_1d(struct brw_indirect ptr, GLint offset)
-{
-   return retype(deref_1f(ptr, offset), BRW_REGISTER_TYPE_D);
-}
-
-static __inline struct brw_reg deref_1ud(struct brw_indirect ptr, GLint offset)
-{
-   return retype(deref_1f(ptr, offset), BRW_REGISTER_TYPE_UD);
-}
-
 static __inline struct brw_reg get_addr_reg(struct brw_indirect ptr)
 {
    return brw_address_reg(ptr.addr_subnr);
@@ -679,10 +668,7 @@ static __inline struct brw_indirect brw_indirect( GLuint addr_subnr, GLint offse
    return ptr;
 }
 
-static __inline struct brw_instruction *current_insn( struct brw_compile *p)
-{
-	return &p->store[p->nr_insn];
-}
+
 
 void brw_pop_insn_state( struct brw_compile *p );
 void brw_push_insn_state( struct brw_compile *p );
@@ -694,7 +680,7 @@ void brw_set_predicate_control_flag_value( struct brw_compile *p, GLuint value )
 void brw_set_predicate_control( struct brw_compile *p, GLuint pc );
 void brw_set_conditionalmod( struct brw_compile *p, GLuint conditional );
 
-void brw_init_compile( struct brw_context *, struct brw_compile *p );
+void brw_init_compile( struct brw_compile *p );
 const GLuint *brw_get_program( struct brw_compile *p, GLuint *sz );
 
 
@@ -822,11 +808,9 @@ void brw_ENDIF(struct brw_compile *p,
 struct brw_instruction *brw_DO(struct brw_compile *p,
 			       GLuint execute_size);
 
-struct brw_instruction *brw_WHILE(struct brw_compile *p, 
+void brw_WHILE(struct brw_compile *p, 
 	       struct brw_instruction *patch_insn);
 
-struct brw_instruction *brw_BREAK(struct brw_compile *p);
-struct brw_instruction *brw_CONT(struct brw_compile *p);
 /* Forward jumps:
  */
 void brw_land_fwd_jump(struct brw_compile *p, 
@@ -876,6 +860,5 @@ void brw_math_invert( struct brw_compile *p,
 		      struct brw_reg dst,
 		      struct brw_reg src);
 
-void brw_set_src1( struct brw_instruction *insn,
-                          struct brw_reg reg );
+
 #endif

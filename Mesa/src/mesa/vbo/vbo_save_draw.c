@@ -131,12 +131,10 @@ static void vbo_bind_vertex_list( GLcontext *ctx,
       break;
    }
 
-   for (attr = 0; attr < VERT_ATTRIB_MAX; attr++) {
-      GLuint src = map[attr];
-
-      if (node->attrsz[src]) {
+   for (attr = 0; attr < VBO_ATTRIB_MAX; attr++) {
+      if (node->attrsz[attr]) {
 	 arrays[attr].Ptr = (const GLubyte *)data;
-	 arrays[attr].Size = node->attrsz[src];
+	 arrays[attr].Size = node->attrsz[attr];
 	 arrays[attr].StrideB = node->vertex_size * sizeof(GLfloat);
 	 arrays[attr].Stride = node->vertex_size * sizeof(GLfloat);
 	 arrays[attr].Type = GL_FLOAT;
@@ -146,7 +144,7 @@ static void vbo_bind_vertex_list( GLcontext *ctx,
 	 
 	 assert(arrays[attr].BufferObj->Name);
 
-	 data += node->attrsz[src] * sizeof(GLfloat);
+	 data += node->attrsz[attr] * sizeof(GLfloat);
       }
    }
 }

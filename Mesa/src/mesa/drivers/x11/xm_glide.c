@@ -64,8 +64,7 @@ FXcreateContext(XMesaVisual v, XMesaWindow w, XMesaContext c, XMesaBuffer b)
        attribs[numAttribs++] = FXMESA_NONE;
 
        /* [dBorca] we should take an envvar for `fxMesaSelectCurrentBoard'!!! */
-/*       hw = fxMesaSelectCurrentBoard(0); */
-       hw = GR_SSTTYPE_Voodoo2;
+       hw = fxMesaSelectCurrentBoard(0);
 
        /* if these fail, there's a new bug somewhere */
        ASSERT(b->mesa_buffer.Width > 0);

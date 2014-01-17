@@ -115,7 +115,7 @@ driFenceType(DriFenceObject * fence)
     unsigned ret;
 
     _glthread_LOCK_MUTEX(bmMutex);
-    ret = fence->fence.type;
+    ret = fence->fence.flags;
     _glthread_UNLOCK_MUTEX(bmMutex);
     
     return ret;

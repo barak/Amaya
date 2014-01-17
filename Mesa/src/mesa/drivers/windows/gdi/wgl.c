@@ -55,7 +55,7 @@
 #include <windows.h>
 
 #endif
-#include "config.h"
+
 #include "glapi.h"
 #include "GL/wmesa.h"   /* protos for wmesa* functions */
 
@@ -70,12 +70,10 @@ struct __pixelformat__
     GLboolean doubleBuffered;
 };
 
-
-
 /* These are the PFD's supported by this driver. */
 struct __pixelformat__	pfd[] =
 {
-#if 0 
+#if 0
     /* Double Buffer, alpha */
     {	
 	{	
@@ -89,7 +87,7 @@ struct __pixelformat__	pfd[] =
 	    8, 16,	
 	    8, 24,
 	    0, 0, 0, 0, 0,	
-	    DEFAULT_SOFTWARE_DEPTH_BITS,	8,	
+	    16,	8,	
 	    0, 0, 0,	
 	    0, 0, 0 
 	},
@@ -108,13 +106,13 @@ struct __pixelformat__	pfd[] =
 	    8, 16,	
 	    8, 24,
 	    0, 0, 0, 0,	0,	
-	    DEFAULT_SOFTWARE_DEPTH_BITS,	8,	
+	    16,	8,
 	    0, 0, 0,	
 	    0, 0, 0
 	},
         GL_FALSE
     },
-#endif 
+#endif
     /* Double Buffer, no alpha */
     {	
 	{	
@@ -128,7 +126,7 @@ struct __pixelformat__	pfd[] =
 	    8, 16,
 	    0, 0,
 	    0, 0, 0, 0,	0,
-	    DEFAULT_SOFTWARE_DEPTH_BITS,	8,	
+	    16,	8,
 	    0, 0, 0, 
 	    0, 0, 0 
 	},
@@ -147,7 +145,7 @@ struct __pixelformat__	pfd[] =
 	    8, 16,
 	    0, 0,
 	    0, 0, 0, 0,	0,
-	    DEFAULT_SOFTWARE_DEPTH_BITS,	8,	
+	    16,	8,
 	    0, 0, 0,
 	    0, 0, 0 
 	},

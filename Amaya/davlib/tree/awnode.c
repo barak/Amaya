@@ -7,12 +7,12 @@
  **
  ** Date : 30 / Oct / 2001
  **
- ** $Id: awnode.c,v 1.2 2002/06/12 10:30:06 kirschpi Exp $
- ** $Date: 2002/06/12 10:30:06 $
+ ** $Id: awnode.c,v 1.2 2002-06-12 10:30:06 kirschpi Exp $
+ ** $Date: 2002-06-12 10:30:06 $
  ** $Author: kirschpi $
  ** $Revision: 1.2 $
  ** $Log: awnode.c,v $
- ** Revision 1.2  2002/06/12 10:30:06  kirschpi
+ ** Revision 1.2  2002-06-12 10:30:06  kirschpi
  ** - adjusts in code format
  ** Manuele
  **

@@ -75,7 +75,7 @@ struct intel_mipmap_tree *intel_miptree_create( struct intel_context *intel,
    mt->width0 = width0;
    mt->height0 = height0;
    mt->depth0 = depth0;
-   mt->cpp = cpp;
+   mt->cpp = compressed ? 2 : cpp;
    mt->compressed = compressed;
 
    switch (intel->intelScreen->deviceID) {
@@ -91,7 +91,7 @@ struct intel_mipmap_tree *intel_miptree_create( struct intel_context *intel,
    default:
       if (INTEL_DEBUG & DEBUG_TEXTURE)
 	 _mesa_printf("assuming BRW texture layouts\n");
-      ok = brw_miptree_layout( intel, mt );
+      ok = brw_miptree_layout( mt );
       break;
    }
 
@@ -109,29 +109,6 @@ struct intel_mipmap_tree *intel_miptree_create( struct intel_context *intel,
    return mt;
 }
 
-
-/**
- * intel_miptree_pitch_align:
- *
- * @intel: intel context pointer
- *
- * @mt: the miptree to compute pitch alignment for
- *
- * @pitch: the natural pitch value
- *
- * Given @pitch, compute a larger value which accounts for
- * any necessary alignment required by the device
- */
-
-int intel_miptree_pitch_align (struct intel_context *intel,
-			       struct intel_mipmap_tree *mt,
-			       int pitch)
-{
-   if (!mt->compressed)
-      pitch = ALIGN(pitch * mt->cpp, 4) / mt->cpp;
-
-   return pitch;
-}
 
 
 void intel_miptree_destroy( struct intel_context *intel,
@@ -234,7 +211,7 @@ GLuint intel_miptree_image_offset(struct intel_mipmap_tree *mt,
 
 
 
-extern GLuint intel_compressed_alignment(GLenum);
+
 /* Upload data for a particular image.
  */
 GLboolean intel_miptree_image_data(struct intel_context *intel, 
@@ -249,17 +226,6 @@ GLboolean intel_miptree_image_data(struct intel_context *intel,
    GLuint dst_offset = intel_miptree_image_offset(dst, face, level);
    const GLuint *dst_depth_offset = intel_miptree_depth_offsets(dst, level);
    GLuint i;
-   GLuint width, height, alignment;
-
-   width = dst->level[level].width;
-   height = dst->level[level].height;
-
-   if (dst->compressed) {
-       alignment = intel_compressed_alignment(dst->internal_format);
-       src_row_pitch = ALIGN(src_row_pitch, alignment);
-       width = ALIGN(width, alignment);
-       height = (height + 3) / 4;
-   }
 
    DBG("%s\n", __FUNCTION__);
    for (i = 0; i < depth; i++) {
@@ -271,8 +237,8 @@ GLboolean intel_miptree_image_data(struct intel_context *intel,
 			     src,
 			     src_row_pitch,
 			     0, 0,	/* source x,y */
-			     width,
-			     height))
+			     dst->level[level].width,
+			     dst->level[level].height))
 	 return GL_FALSE;
       src += src_image_pitch;
    }

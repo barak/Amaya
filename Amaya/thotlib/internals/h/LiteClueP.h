@@ -26,7 +26,7 @@ gary@compgen.com
 */
 /* Revision History:
 $Log: LiteClueP.h,v $
-Revision 1.2  1998/06/08 07:12:51  cvs
+Revision 1.2  1998-06-08 07:12:51  cvs
 New version of LiteClue.
 Improvement of table formatting.
 Irene

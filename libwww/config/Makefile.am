@@ -1,6 +1,7 @@
 ## Process this file with Automake to create Makefile.in.
 
-SRC =  *.c
+PERL := $(wildcard *.pl)
+SRC := $(wildcard *.c)
 
 AUTOMAKE_OPTIONS = foreign
 
@@ -11,4 +12,5 @@ EXTRA_DIST = \
 	mkinstalldirs \
 	missing \
 	ltmain.sh \
+	$(PERL) \
 	$(SRC)

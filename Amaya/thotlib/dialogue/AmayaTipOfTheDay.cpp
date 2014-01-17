@@ -204,7 +204,13 @@ void TtaShowTipOfTheDay()
   
   if(res!=show)
     TtaSetShowTipOfTheDayAtStartup(res);
-  TtaSetEnvInt("TIP_OF_THE_DAY_NUMBER", (int)prov.GetCurrentTip(), TRUE);
+
+  //TtaSetEnvInt("TIP_OF_THE_DAY_NUMBER", (int)prov.GetCurrentTip(), TRUE);
+  // Update current tip
+  num = (int)prov.GetCurrentTip();
+  int tip = (num+1+s_tipsCount)%s_tipsCount;
+  TtaSetEnvInt("TIP_OF_THE_DAY_NUMBER", tip, TRUE);
+
 #endif /* _WX */
 }
 

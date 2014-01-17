@@ -41,9 +41,10 @@ GLboolean brw_pool_alloc( struct brw_mem_pool *pool,
 			  GLuint align,
 			  GLuint *offset_return)
 {
-   GLuint fixup = ALIGN(pool->offset, align) - pool->offset;
+   GLuint align_mask = (1<<align)-1;
+   GLuint fixup = ((pool->offset + align_mask) & ~align_mask) - pool->offset;
 
-   size = ALIGN(size, 4);
+   size = (size + 3) & ~3;
 
    if (pool->offset + fixup + size >= pool->size) {
       _mesa_printf("%s failed\n", __FUNCTION__);

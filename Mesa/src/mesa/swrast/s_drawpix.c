@@ -74,7 +74,7 @@ fast_draw_rgba_pixels(GLcontext *ctx, GLint x, GLint y,
    _swrast_span_default_secondary_color(ctx, &span);
    if (ctx->Depth.Test)
       _swrast_span_default_z(ctx, &span);
-   if (SPAN_NEEDS_FOG(ctx))
+   if (swrast->_FogEnabled)
       _swrast_span_default_fog(ctx, &span);
    if (ctx->Texture._EnabledCoordUnits)
       _swrast_span_default_texcoords(ctx, &span);
@@ -333,6 +333,7 @@ draw_index_pixels( GLcontext *ctx, GLint x, GLint y,
                    const struct gl_pixelstore_attrib *unpack,
                    const GLvoid *pixels )
 {
+   SWcontext *swrast = SWRAST_CONTEXT(ctx);
    const GLint imgX = x, imgY = y;
    const GLboolean zoom = ctx->Pixel.ZoomX!=1.0 || ctx->Pixel.ZoomY!=1.0;
    GLint row, skipPixels;
@@ -342,7 +343,7 @@ draw_index_pixels( GLcontext *ctx, GLint x, GLint y,
 
    if (ctx->Depth.Test)
       _swrast_span_default_z(ctx, &span);
-   if (SPAN_NEEDS_FOG(ctx))
+   if (swrast->_FogEnabled)
       _swrast_span_default_fog(ctx, &span);
 
    /*
@@ -431,6 +432,7 @@ draw_depth_pixels( GLcontext *ctx, GLint x, GLint y,
                    const struct gl_pixelstore_attrib *unpack,
                    const GLvoid *pixels )
 {
+   SWcontext *swrast = SWRAST_CONTEXT(ctx);
    const GLboolean scaleOrBias
       = ctx->Pixel.DepthScale != 1.0 || ctx->Pixel.DepthBias != 0.0;
    const GLboolean zoom = ctx->Pixel.ZoomX != 1.0 || ctx->Pixel.ZoomY != 1.0;
@@ -440,7 +442,7 @@ draw_depth_pixels( GLcontext *ctx, GLint x, GLint y,
 
    _swrast_span_default_color(ctx, &span);
    _swrast_span_default_secondary_color(ctx, &span);
-   if (SPAN_NEEDS_FOG(ctx))
+   if (swrast->_FogEnabled)
       _swrast_span_default_fog(ctx, &span);
    if (ctx->Texture._EnabledCoordUnits)
       _swrast_span_default_texcoords(ctx, &span);
@@ -547,6 +549,7 @@ draw_rgba_pixels( GLcontext *ctx, GLint x, GLint y,
                   const struct gl_pixelstore_attrib *unpack,
                   const GLvoid *pixels )
 {
+   SWcontext *swrast = SWRAST_CONTEXT(ctx);
    const GLint imgX = x, imgY = y;
    const GLboolean zoom = ctx->Pixel.ZoomX!=1.0 || ctx->Pixel.ZoomY!=1.0;
    GLfloat *convImage = NULL;
@@ -562,7 +565,7 @@ draw_rgba_pixels( GLcontext *ctx, GLint x, GLint y,
    _swrast_span_default_secondary_color(ctx, &span);
    if (ctx->Depth.Test)
       _swrast_span_default_z(ctx, &span);
-   if (SPAN_NEEDS_FOG(ctx))
+   if (swrast->_FogEnabled)
       _swrast_span_default_fog(ctx, &span);
    if (ctx->Texture._EnabledCoordUnits)
       _swrast_span_default_texcoords(ctx, &span);
@@ -857,8 +860,7 @@ _swrast_DrawPixels( GLcontext *ctx,
                                      format, type, pixels)) {
          _mesa_error(ctx, GL_INVALID_OPERATION,
                      "glDrawPixels(invalid PBO access)");
-         RENDER_FINISH(swrast, ctx);
-	 return;
+         goto end;
       }
       buf = (GLubyte *) ctx->Driver.MapBuffer(ctx, GL_PIXEL_UNPACK_BUFFER_EXT,
                                               GL_READ_ONLY_ARB,
@@ -866,8 +868,7 @@ _swrast_DrawPixels( GLcontext *ctx,
       if (!buf) {
          /* buffer is already mapped - that's an error */
          _mesa_error(ctx, GL_INVALID_OPERATION, "glDrawPixels(PBO is mapped)");
-         RENDER_FINISH(swrast, ctx);
-	 return;
+         goto end;
       }
       pixels = ADD_POINTERS(buf, pixels);
    }
@@ -906,6 +907,8 @@ _swrast_DrawPixels( GLcontext *ctx,
       _mesa_problem(ctx, "unexpected format in _swrast_DrawPixels");
       /* don't return yet, clean-up */
    }
+
+end:
 
    RENDER_FINISH(swrast,ctx);
 

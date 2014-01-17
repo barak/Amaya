@@ -4,7 +4,7 @@
 
 <rdf:Description about="http://www.w3.org/2001/03/thread#">
  <rdfs:comment>A namespace for describing discussion threads</rdfs:comment>
- <rdfs:comment>$Revision: 1.3 $ $Date: 2004/06/04 12:03:52 $</rdfs:comment>
+ <rdfs:comment>$Revision: 1.3 $ $Date: 2004-06-04 12:03:52 $</rdfs:comment>
  <rdfs:seeAlso rdf:resource="http://www.w3.org/2001/Annotea"/>
  <rdfs:seeAlso rdf:resource="http://www.w3.org/2000/10/annotation-ns#"/>
 </rdf:Description>

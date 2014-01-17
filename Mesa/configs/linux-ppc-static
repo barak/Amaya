@@ -5,7 +5,6 @@ include $(TOP)/configs/linux-ppc
 CONFIG_NAME = linux-ppc-static
 
 MKLIB_OPTIONS = -static
-PIC_FLAGS =
 
 # Library names (actual file names)
 GL_LIB_NAME = libGL.a

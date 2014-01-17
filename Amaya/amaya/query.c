@@ -12,6 +12,7 @@
  *
  * Author: J. Kahan
  *         J. Kahan/R. Guetari Windows 95/NT routines
+ *         L. Carcone SSL support
  */
 
 /* defines to include elsewhere
@@ -2582,6 +2583,20 @@ void QueryInit ()
 #ifdef CATCH_SIG
   signal (SIGPIPE, SIG_IGN);
 #endif
+
+#ifdef SSL
+  ptr = TtaGetEnvString ("BUF_SIZE_SOCKET");
+  if (ptr && *ptr) {
+    int bufSize;
+    bufSize = atoi (ptr);
+    TtaSetEnvInt ("BUF_SIZE_SOCKET", bufSize, TRUE);
+    bufSize = bufSize * 1024;
+    HTSetSocketBufSize (bufSize);
+  }
+  else {
+    HTUnSetSocketBufSize ();
+  }
+#endif /* SSL */
 }
 
 static AHTReqContext *LoopRequest= NULL;
@@ -3361,6 +3376,13 @@ int PutObjectWWW (int docid, char *fileName, char *urlName,
   TtaFreeMemory (esc_url);
 
   me->block_size =  file_size;
+
+#ifdef LC
+#ifdef SSL
+  HTSetSocketBufSize (file_size);
+#endif /* SSL */
+#endif /* LC */
+
   /* select the parameters that distinguish a PUT from a GET/POST */
   me->method = METHOD_PUT;
   if (mode & AMAYA_SIMPLE_PUT)

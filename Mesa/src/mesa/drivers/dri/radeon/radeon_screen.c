@@ -53,7 +53,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "r200_context.h"
 #include "r200_ioctl.h"
 #include "r200_span.h"
-#include "r200_tex.h"
 #elif RADEON_COMMON && defined(RADEON_COMMON_FOR_R300)
 #include "r300_context.h"
 #include "r300_fragprog.h"
@@ -90,7 +89,7 @@ DRI_CONF_BEGIN
         DRI_CONF_COLOR_REDUCTION(DRI_CONF_COLOR_REDUCTION_DITHER)
         DRI_CONF_ROUND_MODE(DRI_CONF_ROUND_TRUNC)
         DRI_CONF_DITHER_MODE(DRI_CONF_DITHER_XERRORDIFF)
-        DRI_CONF_ALLOW_LARGE_TEXTURES(2)
+        DRI_CONF_ALLOW_LARGE_TEXTURES(1)
     DRI_CONF_SECTION_END
     DRI_CONF_SECTION_DEBUG
         DRI_CONF_NO_RAST(false)
@@ -117,7 +116,7 @@ DRI_CONF_BEGIN
         DRI_CONF_COLOR_REDUCTION(DRI_CONF_COLOR_REDUCTION_DITHER)
         DRI_CONF_ROUND_MODE(DRI_CONF_ROUND_TRUNC)
         DRI_CONF_DITHER_MODE(DRI_CONF_DITHER_XERRORDIFF)
-        DRI_CONF_ALLOW_LARGE_TEXTURES(2)
+        DRI_CONF_ALLOW_LARGE_TEXTURES(1)
         DRI_CONF_TEXTURE_BLEND_QUALITY(1.0,"0.0:1.0")
     DRI_CONF_SECTION_END
     DRI_CONF_SECTION_DEBUG
@@ -188,7 +187,7 @@ DRI_CONF_BEGIN
 		DRI_CONF_MAX_TEXTURE_IMAGE_UNITS(8, 2, 8)
 		DRI_CONF_MAX_TEXTURE_COORD_UNITS(8, 2, 8)
 		DRI_CONF_COMMAND_BUFFER_SIZE(8, 8, 32)
-		DRI_CONF_DISABLE_FALLBACK(true)
+		DRI_CONF_DISABLE_FALLBACK(false)
 		DRI_CONF_DISABLE_DOUBLE_SIDE_STENCIL(false)
 	DRI_CONF_SECTION_END
 	DRI_CONF_SECTION_QUALITY
@@ -585,7 +584,6 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
    case PCI_CHIP_RV370_5B63:
    case PCI_CHIP_RV370_5B64:
    case PCI_CHIP_RV370_5B65:
-   case PCI_CHIP_RV370_5657:
    case PCI_CHIP_RV380_3150:
    case PCI_CHIP_RV380_3152:
    case PCI_CHIP_RV380_3154:
@@ -635,13 +633,6 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
       screen->chip_flags = RADEON_CHIPSET_TCL;
       break;
 
-   /* RV410 SE chips have half the pipes of regular RV410 */
-   case PCI_CHIP_RV410_5E4C:
-   case PCI_CHIP_RV410_5E4F:
-      screen->chip_family = CHIP_FAMILY_RV380;
-      screen->chip_flags = RADEON_CHIPSET_TCL;
-      break;
-
    case PCI_CHIP_RV410_564A:
    case PCI_CHIP_RV410_564B:
    case PCI_CHIP_RV410_564F:
@@ -650,7 +641,9 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
    case PCI_CHIP_RV410_5E48:
    case PCI_CHIP_RV410_5E4A:
    case PCI_CHIP_RV410_5E4B:
+   case PCI_CHIP_RV410_5E4C:
    case PCI_CHIP_RV410_5E4D:
+   case PCI_CHIP_RV410_5E4F:
       screen->chip_family = CHIP_FAMILY_RV410;
       screen->chip_flags = RADEON_CHIPSET_TCL;
       break;
@@ -708,11 +701,8 @@ radeonCreateScreen( __DRIscreenPrivate *sPriv )
    screen->depthPitch	= dri_priv->depthPitch;
 
    /* Check if ddx has set up a surface reg to cover depth buffer */
-   screen->depthHasSurface = (sPriv->ddxMajor > 4) ||
-      /* these chips don't use tiled z without hyperz. So always pretend
-         we have set up a surface which will cause linear reads/writes */
-      ((screen->chip_family & RADEON_CLASS_R100) &&
-      !(screen->chip_flags & RADEON_CHIPSET_TCL));
+   screen->depthHasSurface = ((sPriv->ddxMajor > 4) &&
+      (screen->chip_flags & RADEON_CHIPSET_TCL));
 
    if ( dri_priv->textureSize == 0 ) {
       screen->texOffset[RADEON_LOCAL_TEX_HEAP] = screen->gart_texture_offset;
@@ -983,8 +973,7 @@ static const struct __DriverAPIRec r200API = {
    .WaitForMSC      = driWaitForMSC32,
    .WaitForSBC      = NULL,
    .SwapBuffersMSC  = NULL,
-   .CopySubBuffer   = r200CopySubBuffer,
-   .setTexOffset    = r200SetTexOffset
+   .CopySubBuffer   = r200CopySubBuffer
 };
 #endif
 

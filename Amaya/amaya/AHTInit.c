@@ -3,7 +3,7 @@
 **
 **	(c) COPYRIGHT MIT 1995.
 **	Please first read the full copyright statement in the file COPYRIGH.
-**	@(#) $Id: AHTInit.c,v 1.3 2008/05/07 13:49:05 kia Exp $
+**	@(#) $Id: AHTInit.c,v 1.3 2008-05-07 13:49:05 kia Exp $
 **
 **	General initialization functions.
 **

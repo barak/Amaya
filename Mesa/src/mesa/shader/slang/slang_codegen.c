@@ -2344,8 +2344,7 @@ _slang_gen_field(slang_assemble_ctx * A, slang_operation *oper)
       return n;
    }
    else if (   ti.spec.type == SLANG_SPEC_FLOAT
-            || ti.spec.type == SLANG_SPEC_INT
-            || ti.spec.type == SLANG_SPEC_BOOL) {
+            || ti.spec.type == SLANG_SPEC_INT) {
       const GLuint rows = 1;
       slang_swizzle swz;
       slang_ir_node *n;
